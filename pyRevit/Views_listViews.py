@@ -1,4 +1,4 @@
-from Autodesk.Revit.DB import View
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
 # from Autodesk.Revit.DB.Architecture import *
 # from Autodesk.Revit.DB.Analysis import *
 # import Autodesk.Revit.UI

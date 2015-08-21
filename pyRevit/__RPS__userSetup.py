@@ -26,7 +26,7 @@ def report( message ):
 	if verbose:
 		print( message )
 
-def findHomeDirectory( ):
+def findHomeDirectory():
 	try:
 		#getting home directory from __file__ provided by RPS
 		folder = os.path.dirname( __file__ )
@@ -40,6 +40,10 @@ def findHomeDirectory( ):
 		settingsFile = Path.Combine( settingFolder, "RevitPythonShell.xml" )
 		xdoc = XDocument.Load( settingsFile )
 		return op.dirname( xdoc.Root.Element("StartupScript").Attribute("src").Value )
+
+def findUserTempDirectory():
+	tempFolder = os.getenv('Temp')
+	return tempFolder
 
 #EXCEPTIONS
 class pyRevitException( Exception ):
@@ -55,6 +59,7 @@ class unknownFileNameFormat( pyRevitException ):
 class pyRevitUISettings():
 	#settings - load from settings file in future
 	pyRevitRibbonName = 'pyRevit'
+	pyRevitAssemblyName = 'pyRevit'
 	linkButtonTypeName = 'PushButton'
 	pushButtonTypeName = 'PushButton'
 	pulldownButtonTypeName = 'PulldownButton'
@@ -180,8 +185,8 @@ class ScriptCommand():
 
 class pyRevitUISession():
 	def __init__( self, homeDirectory, settingsClass ):
-		self.loadedUserScripts = []
-		self.loadedUserScriptAssemblies = []
+		self.loadedPyRevitScripts = []
+		self.loadedPyRevitAssemblies = []
 		self.pyRevitUIPanels = {}
 		self.pyRevitUIButtons = {}
 		self.scriptPanelsDict = {}
@@ -200,7 +205,7 @@ class pyRevitUISession():
 		#collect information about previously loaded assemblies
 		report('Initializing python script loader...')
 		self.findRPSCommandLoader()
-		self.findLoadedUserScriptAssemblies()
+		self.findLoadedPyRevitAssemblies()
 
 		# find commands
 		report('Searching for panels, groups, and scripts...')
@@ -219,7 +224,7 @@ class pyRevitUISession():
 		self.createUI()
 
 	def isReloadingScripts( self ):
-		return len( self.loadedUserScriptAssemblies ) > 0
+		return len( self.loadedPyRevitAssemblies ) > 0
 
 	def getRevitVersionStr( self ):
 		return str( self.revitVersion )
@@ -232,13 +237,13 @@ class pyRevitUISession():
 				self.rpsCommandLoader = loadedAssembly.GetType("RevitPythonShell.CommandLoaderBase")
 				self.rps = loadedAssembly
 
-	def findLoadedUserScriptAssemblies( self ):
-		report('Asking Revit for previously loaded userScript assemblies...')
+	def findLoadedPyRevitAssemblies( self ):
+		report('Asking Revit for previously loaded pyRevit assemblies...')
 		for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-			if "userScript" in loadedAssembly.FullName:
+			if self.settings.pyRevitAssemblyName in loadedAssembly.FullName:
 				report('Existing assembly found: {0}'.format( loadedAssembly.FullName ))
-				self.loadedUserScriptAssemblies.append( loadedAssembly )
-				self.loadedUserScripts.extend( [ ct.Name for ct in loadedAssembly.GetTypes() ] )
+				self.loadedPyRevitAssemblies.append( loadedAssembly )
+				self.loadedPyRevitScripts.extend( [ ct.Name for ct in loadedAssembly.GetTypes() ] )
 
 	def getSortedScriptPanels( self ):
 		return sorted( self.scriptPanelsDict.values(), key = lambda x: x.panelOrder )
@@ -295,11 +300,12 @@ class pyRevitUISession():
 
 	def createAssmebly( self ):
 		# create DLL folder
-		dllFolder = Path.Combine( self.homeDir, "userScripts")
-		if not os.path.exists( dllFolder ):
-			os.mkdir( dllFolder )
+		# dllFolder = Path.Combine( self.homeDir, self.settings.pyRevitAssemblyName )
+		# if not os.path.exists( dllFolder ):
+			# os.mkdir( dllFolder )
+		dllFolder = findUserTempDirectory()
 		# make assembly name
-		assemblyName = "userScripts" + self.getRevitVersionStr() + datetime.now().strftime('_%y%m%d%H%M%S')
+		assemblyName = self.settings.pyRevitAssemblyName + self.getRevitVersionStr() + datetime.now().strftime('_%y%m%d%H%M%S')
 		dllName = assemblyName + ".dll"
 		# create assembly
 		WindowsAssemblyName = AssemblyName( Name = assemblyName, Version = Version(1,0,0,0))
@@ -500,9 +506,9 @@ class simpleInOut():
 #MAIN
 thisSession = pyRevitUISession( findHomeDirectory(), pyRevitUISettings() )
 
-#SIGNING IN SimpleInOut
-# if not thisSession.isReloadingScripts():
-	# simpleInOut.updateStatus()
+# SIGNING IN SimpleInOut
+if not thisSession.isReloadingScripts():
+	simpleInOut.updateStatus()
 
 #FINAL REPORT
 report('All done...')

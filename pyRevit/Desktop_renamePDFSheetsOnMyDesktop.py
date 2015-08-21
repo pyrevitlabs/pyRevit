@@ -1,9 +1,15 @@
 '''	Rename Revit output PDFs on user desktop to remove the project name from file name.'''
 import os, sys
 import os.path as op
+from Autodesk.Revit.UI import TaskDialog
+
+__window__.Close()
 
 basefolder = op.expandvars('%userprofile%\\desktop')
 sheetcount = 0
+
+def alert(msg):
+	TaskDialog.Show('RevitPythonShell', msg)
 
 def renamePDF( file ):
 	import re
@@ -25,4 +31,4 @@ for file in filenames:
 		except:
 			print("Unexpected error:", sys.exc_info()[0])
 
-print('{0} FILES RENAMED.'.format(sheetcount))
+alert('{0} FILES RENAMED.'.format(sheetcount))
