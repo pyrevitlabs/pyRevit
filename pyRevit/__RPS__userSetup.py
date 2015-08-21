@@ -18,6 +18,7 @@ from System.Xml.Linq import XDocument
 
 from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
+from System.Diagnostics import Process
 
 verbose = True
 
@@ -193,6 +194,7 @@ class pyRevitUISession():
 		self.scriptGroupsByPanelDict = {}
 		self.pyRevitCommands = []
 		self.homeDir = homeDirectory
+		self.userTempFolder = findUserTempDirectory()
 		self.rpsCommandLoader = None
 		self.rps = None
 		self.newAssemblyLocation = None
@@ -206,6 +208,7 @@ class pyRevitUISession():
 		report('Initializing python script loader...')
 		self.findRPSCommandLoader()
 		self.findLoadedPyRevitAssemblies()
+		self.cleanupOldAssemblies()
 
 		# find commands
 		report('Searching for panels, groups, and scripts...')
@@ -222,6 +225,22 @@ class pyRevitUISession():
 		self.createOrFindPyRevitPanels()
 		report("Ribbon tab and panels are ready. Creating script group buttons...")
 		self.createUI()
+
+	def cleanupOldAssemblies( self ):
+		revitInstances = list( Process.GetProcessesByName('Revit') )
+		revitVersionStr = self.getRevitVersionStr()
+		if len(revitInstances) > 1:
+			report('Multiple Revit instance are running...Skipping DLL Cleanup')
+		elif len(revitInstances) == 1 and not self.isReloadingScripts():
+			report('Cleaning up old DLL files...')
+			files = os.listdir( self.userTempFolder )
+			for f in files:
+				if f.startswith( self.settings.pyRevitAssemblyName + revitVersionStr ):
+					try:
+						os.remove( op.join( self.userTempFolder, f ))
+						report('Dll Removed: {0}'.format( f ))
+					except:
+						report('Error deleting: {0}'.format( f ))
 
 	def isReloadingScripts( self ):
 		return len( self.loadedPyRevitAssemblies ) > 0
@@ -303,15 +322,15 @@ class pyRevitUISession():
 		# dllFolder = Path.Combine( self.homeDir, self.settings.pyRevitAssemblyName )
 		# if not os.path.exists( dllFolder ):
 			# os.mkdir( dllFolder )
-		dllFolder = findUserTempDirectory()
+		dllFolder = self.userTempFolder
 		# make assembly name
-		assemblyName = self.settings.pyRevitAssemblyName + self.getRevitVersionStr() + datetime.now().strftime('_%y%m%d%H%M%S')
-		dllName = assemblyName + ".dll"
+		generatedAssemblyName = self.settings.pyRevitAssemblyName + self.getRevitVersionStr() + datetime.now().strftime('_%y%m%d%H%M%S')
+		dllName = generatedAssemblyName + ".dll"
 		# create assembly
-		WindowsAssemblyName = AssemblyName( Name = assemblyName, Version = Version(1,0,0,0))
-		assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly( WindowsAssemblyName, AssemblyBuilderAccess.RunAndSave, dllFolder)
-		moduleBuilder = assemblyBuilder.DefineDynamicModule( assemblyName , dllName )
-
+		windowsAssemblyName = AssemblyName( Name = generatedAssemblyName, Version = Version(1,0,0,0))
+		assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly( windowsAssemblyName, AssemblyBuilderAccess.RunAndSave, dllFolder)
+		moduleBuilder = assemblyBuilder.DefineDynamicModule( generatedAssemblyName , dllName )
+		
 		# create command classes
 		for cmd in self.pyRevitCommands:
 			typebuilder = moduleBuilder.DefineType( cmd.className, TypeAttributes.Class | TypeAttributes.Public, self.rpsCommandLoader )
@@ -494,21 +513,9 @@ class pyRevitUISession():
 		#final report
 		report("\n\n{0} buttons created...\n{1} buttons updated...\n\n".format( newButtonCount, updatedButtonCount ))
 
-class simpleInOut():
-	@staticmethod
-	def updateStatus():
-		if 7 <= datetime.now().hour < 19 and 0 <= datetime.now().weekday() < 5:
-			report('Signing in on SimpleInOut...')
-			os.startfile( op.join( thisSession.homeDir, '__py__simpleIn.py' ))
-		else:
-			report('Not working hours. Skipping signing in.')
 
 #MAIN
 thisSession = pyRevitUISession( findHomeDirectory(), pyRevitUISettings() )
-
-# SIGNING IN SimpleInOut
-if not thisSession.isReloadingScripts():
-	simpleInOut.updateStatus()
 
 #FINAL REPORT
 report('All done...')

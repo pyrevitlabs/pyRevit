@@ -3,7 +3,7 @@ from System import AppDomain
 userScriptsAssemblies = []
 for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
 	loc = ''
-	if 'userScripts' in loadedAssembly.FullName:
+	if 'pyRevit' in loadedAssembly.FullName:
 		userScriptsAssemblies.append( loadedAssembly )
 		continue
 	try:
