@@ -22,10 +22,13 @@ XXX
 
 ## License
 
+This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
+See LICENSE.md for full license text.
 
 ## Credits
 
-  * Daren Thomas (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell))
+I'd like to thank people listed here for their great contributions:
+  * Daren Thomas (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is relying on and helping me out throught this process.
   * Jeremy Tammik (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
