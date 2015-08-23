@@ -6,10 +6,14 @@ PyRevit really has two sides:
 
 ## Installation
 
-XXX
+Installation is very easy (not really an installation per se):
+- Download the package to your machine and place under a folder of your choice.
+- Open Revit, go to RevitPythonShell > Configuration and assign `__RPS__userSetup.py` (part of this package) as the main startup script.
+- Restart Revit. The `__RPS__userSetup.py` script will find all other scripts in its current directory and will create UI panels and buttons under 'pyRevit' ribbon tab. See below on how to add our own scripts and shortcuts to this tool.
 
 ## How to add your scripts:
 
+And please feel free to fork, your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
 
 ## Contribute
 
@@ -24,6 +28,7 @@ XXX
 
 This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
 See LICENSE.md for full license text.
+See [this](http://choosealicense.com/) page for more information on licensing your work.
 
 ## Credits
 
