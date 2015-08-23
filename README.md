@@ -1,7 +1,7 @@
-# pyRevit
+# pyRevit for Autodesk Revit
 
 PyRevit really has two sides:
-- It is a series of scripts that automates the process of creating user interface for your IronPython scripts for Autodesk Revit
+- It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts
 - It is also planning to be an IronPython package `import pyRevit` that will provide easier access to Revit's API.
 
 ## Installation
