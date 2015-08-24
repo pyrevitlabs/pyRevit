@@ -1,15 +1,15 @@
 # pyRevit for Autodesk Revit
 
-pyRevit really has two sides:
-- It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts
-- It is also hoping to be an IronPython package `import pyRevit` that will provide easier access to Revit's API, through a command prompt style object-oriented framework acting on the current document database. As an example, ` Sheet['A201'].Rename('A202')`
+pyRevit has two goals:
+- It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts. Creating a button is as easy as adding a `.py` script to the pyRevit folder.
+- It is also hoping to be an IronPython package e.g `import pyRevit` that will provide easier access to Revit's API, through a command-prompt-style object-oriented framework acting on the current document database. e.g `Sheet['A201'].Rename('A202')`
 
 ## Setup process
 
 Setup is very easy but a few important points first:
   - This tool requires installation of most recent version of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) (with `__file__` property defined)
-  - These scripts are only tested under WINDOWS OS (7,8,10) and REVIT 2015-2016.
-  - These scripts create their temporary files (e.g. the dynamic DLL module that contains the commands for each script) under user %temp% folder. But at every startup it'll cleanup after itself.
+  -  Scripts are only tested under WINDOWS OS (7,8,10) and REVIT 2015-2016.
+  -  Scripts create their temporary files (e.g. the dynamic DLL module that contains the commands for each script) under user %temp% folder. But at every startup it'll cleanup after itself.
 
 Now the setup process:
 - Download and extract to your machine and place under a folder of your choice.
@@ -22,7 +22,7 @@ And please feel free to fork, modify and add your own scripts, and send me pull 
 
 ## Documentation:
 
-I'll figure out a system for the documentation soon. But for now please refer to tooltips for every script. These tooltips are included inside each script source file. I'm open to all comments and suggestions :)
+I'll figure out a system for the documentation soon. But for now please refer to tooltips for every script. These tooltips are included inside each script source file. I'm open to comments and suggestions :)
 
 ## Contribute
 
