@@ -110,8 +110,8 @@ See [this](http://choosealicense.com/) page for more help on licensing your work
 ## Credits
 
 I'd like to thank people listed here for their great contributions:
-  * Daren Thomas (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is heavily relying on and helping me through out this process.
-  * Jeremy Tammik (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
+  * [Daren Thomas](https://github.com/daren-thomas) (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is heavily relying on and helping me through out this process.
+  * [Jeremy Tammik](https://github.com/jeremytammik) (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
   * [Icons8](https://icons8.com/) for the beautiful icons.
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
