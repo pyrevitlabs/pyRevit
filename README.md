@@ -86,8 +86,6 @@ I hope I have explained everything clearly and you find it simple to use.
 
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
 
-And please feel free to fork, modify and add your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
-
 ## Documentation:
 
 I'll figure out a system for the documentation soon. But for now please refer to tooltips for every script. These tooltips are included inside each script source file. I'm open to comments and suggestions :)
@@ -96,6 +94,8 @@ I'll figure out a system for the documentation soon. But for now please refer to
 
 - Issue Tracker: https://github.com/eirannejad/pyRevit/issues
 - Source Code: https://github.com/eirannejad/pyRevit
+
+And please feel free to fork, modify and add your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
 
 ## Support
 
