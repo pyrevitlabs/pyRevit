@@ -2,7 +2,7 @@
 
 PyRevit really has two sides:
 - It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts
-- It is also planning to be an IronPython package `import pyRevit` that will provide easier access to Revit's API.
+- It is also hoping to be an IronPython package `import pyRevit` that will provide easier access to Revit's API, thorugh a command prompt style object-oriented framework acting on the current document database. As an example, ` Sheet['A201'].Rename('A202')`
 
 ## Setup process
 
@@ -18,11 +18,11 @@ Now the setup process:
 
 ## How to add your scripts:
 
-And please feel free to fork, your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
+And please feel free to fork, modify and add your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
 
 ## Documentation:
 
-I'll figure out a system for the documentation soon. But for now please refer to tooltips for every script. These tooltips are included inside the script `.py` file as well. I'm open to all comments and suggestions :)
+I'll figure out a system for the documentation soon. But for now please refer to tooltips for every script. These tooltips are included inside each script source file. I'm open to all comments and suggestions :)
 
 ## Contribute
 
@@ -31,18 +31,19 @@ I'll figure out a system for the documentation soon. But for now please refer to
 
 ## Support
 
-[stackoverflow](http://stackoverflow.com) (Note: use the ```pyRevit```, ``revit-api`` and ``revitpythonshell`` tags)
+[stackoverflow](http://stackoverflow.com) (Note: use `pyRevit` tag)
 
 ## License
 
 This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
 See LICENSE.md for full license text.
-See [this](http://choosealicense.com/) page for more information on licensing your work.
+See [this](http://choosealicense.com/) page for more help on licensing your work.
 
 ## Credits
 
 I'd like to thank people listed here for their great contributions:
-  * Daren Thomas (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is relying on and helping me out throught this process.
+  * Daren Thomas (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is heavily relying on and helping me through out this process.
   * Jeremy Tammik (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
+  * [Icons8](https://icons8.com/) for the beautiful icons.
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
