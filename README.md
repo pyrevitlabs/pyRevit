@@ -18,6 +18,74 @@ Now the setup process:
 
 ## How to add your scripts:
 
+The `__RPS__userSetup.py` startup script will setup a ribbon panel named 'pyRevit'. There are 5 ways to add buttons to this ribbon panel and categorize them under sub-panels.
+
+####Method 1 (PullDown Buttons):
+Step 1: Create a `.png` file, with name pattern as below:
+
+`<00 Panel Order><00 Button Order>_<Panel Name>_PulldownButton_<Button Group Name>.png`
+
+Example:
+
+`1003_Selection_PulldownButton_Filter.png` defines a subpanel under `pyRevit` ribbon panel, named `Selection`, with order number `10`, and a `PulldownButton` in this panel, named `Filter` with order number `03`. Startup script will use the order numbers to sort the panels and buttons and later to create them in order. 
+
+Step 2: All `.py` script under the home directory should have the below name pattern:
+
+`<Button Group Name>_scriptCommandName.py`
+
+Scripts be organized under the group button specified in the source file name. For example a script file named `Filter_filterGroupedElements.py` will be placed under group button Filter (defined by the png above) and its command name will be `filterGroupedElements`. The `.png` file defining the Pulldown Button will be used as the default icon.
+
+####Method 2 (SplitButton):
+Same as Method 1 except it will create Split Buttons (The last selected sub-item will be the default active item)
+
+For the Method 1 and 2 scripts, if there is a `.png` file with a matching name to a script, that `.png` file will override the default image and will be used as the button icon.
+
+Example:
+`Analyse_sumAllSelectedEntityVolumes.png`
+`Analyse_sumAllSelectedEntityVolumes.py`
+This `.png` image will override the default icon for Analyse group button.
+
+####Method 3 (Stack3):
+Step 1: Create a `.png` file, with name pattern as below:
+
+`<00 Panel Order><00 Button Order>_<Panel Name>_Stack3_<Stack Name>.png`
+
+Example:
+
+`1005_Selection_Stack3_Inspect.png` defines a subpanel under `pyRevit`, named `Selection`, with order number `10`, and 3 Stacked Buttons in this panel, named `Inspect` with order number `05`. Startup script will use the order numbers to sort the panels and buttons and later to create them in order. For a Stack3 button group, the startup script will expect to find exactly 3 scripts to be categorized under this stack. The actual stack name will be ignored since the stack doesn't have any visual representation other then the 3 buttons stacked in 3 rows. The scripts use the same naming pattern as Method 1. As an example the 3 scripts below will be used to create 3 buttons in this stack (sorted alphabetically):
+
+`Inspect_findLinkedElements.py`
+`Inspect_findListOfViewsShowingElement.py`
+`Inspect_findPaintedSurfacesOnSelected.py`
+
+####Method 4 (PushButton):
+Step 1: Create a `.png` file, with name pattern as below:
+
+`<00 Panel Order><00 Button Order>_<Panel Name>_PushButton_<Button Name>.png`
+
+Example:
+
+`1005_Revit_PushButton_BIM.png` defines a subpanel under `pyRevit`, named `Revit`, with order number `10`, and a simple Push Buttons in this panel, named `BIM` with order number `05`. Startup script will use the order numbers to sort the panels and buttons and later to create them in order. The startup script will expect to find only one script with name pattern similar to Method 1, and will assign it to this push button.
+
+Example:
+`BIM_getCentralPath.py` will be assigned to the push button described above. The button name will be `getCentralPath`.
+
+
+####Method 5 (Link Buttons):
+This button creates a link to another command of any other addin.
+
+Step 1: Create a `.png` file, with name pattern as below:
+
+`<00 Panel Order><00 Button Order>_<Panel Name>_PushButton_<Button Name>_<Assembly Name>_<C# Class Name>.png`
+
+Example:
+
+`0000_RPS_PushButton_pyShell_RevitPythonShell_IronPythonConsoleCommand` defines a subpanel under `pyRevit`, named `RPS`, with order number `00`, and a simple Push Buttons in this panel, named `pyShell` with order number `00`. But then the startup script will use the assembly name and class name and will assign them to the button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin. Another example of this method is `0005_RLookup_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
+
+I hope I have explained everything clearly and you find it simple to use. It might seem a complicated system but in actual use, I hope you find that it is very simple.
+
+If you added scripts or panels while Revit is running, use the reloadScripts button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
+
 And please feel free to fork, modify and add your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
 
 ## Documentation:
