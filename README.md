@@ -31,9 +31,9 @@ Example:
 
 Step 2: All `.py` script under the home directory should have the below name pattern:
 
-`<Button Group Name>_scriptCommandName.py`
+`<Button Group Name>_<Script Command Name>.py`
 
-Scripts be organized under the group button specified in the source file name. For example a script file named `Filter_filterGroupedElements.py` will be placed under group button Filter (defined by the png above) and its command name will be `filterGroupedElements`. The `.png` file defining the Pulldown Button will be used as the default icon.
+Scripts be organized under the group button specified in the source file name. For example a script file named `Filter_filterGroupedElements.py` will be placed under group button `Filter` (defined by the `.png` above) and its command name will be `filterGroupedElements`. The `.png` file defining the Pulldown Button will be used as the default icon.
 
 ####Method 2 (SplitButton):
 Same as Method 1 except it will create Split Buttons (The last selected sub-item will be the default active item)
@@ -80,11 +80,11 @@ Step 1: Create a `.png` file, with name pattern as below:
 
 Example:
 
-`0000_RPS_PushButton_pyShell_RevitPythonShell_IronPythonConsoleCommand` defines a subpanel under `pyRevit`, named `RPS`, with order number `00`, and a simple Push Buttons in this panel, named `pyShell` with order number `00`. But then the startup script will use the assembly name and class name and will assign them to the button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin. Another example of this method is `0005_RLookup_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
+`0000_RPS_PushButton_pyShell_RevitPythonShell_IronPythonConsoleCommand.png` defines a subpanel under `pyRevit`, named `RPS`, with order number `00`, and a simple Push Buttons in this panel, named `pyShell` with order number `00`. But then the startup script will use the assembly name and class name and will assign them to the button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin. Another example of this method is `0005_RLookup_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
 
-I hope I have explained everything clearly and you find it simple to use. It might seem a complicated system but in actual use, I hope you find that it is very simple.
+I hope I have explained everything clearly and you find it simple to use.
 
-If you added scripts or panels while Revit is running, use the reloadScripts button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
+If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
 
 And please feel free to fork, modify and add your own scripts, and send me pull requests. I'd be thrilled to add more tools and scripts to this for everyone to use.
 
