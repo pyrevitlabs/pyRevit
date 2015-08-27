@@ -1,4 +1,4 @@
-# pyRevit for Autodesk Revit
+# pyRevit for Autodesk Revit®
 
 pyRevit has two goals:
 - It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts. Creating a button is as easy as adding a `.py` script to the pyRevit folder.
