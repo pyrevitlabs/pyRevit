@@ -88,7 +88,8 @@ If you added scripts or panels while Revit is running, use the `reloadScripts` b
 
 ## Documentation:
 
-I'll figure out a system for the documentation soon ([ReadTheDocs](https://readthedocs.org/) seems to be a good option). But for now please refer to tooltips for every script. These tooltips are included inside each script source file. I'm open to comments and suggestions :)
+I'll figure out a system for the documentation soon ([ReadTheDocs](https://readthedocs.org/) seems to be a good option). But for now please refer to tooltips for every script button. The text for the tooltips are included inside each script source file, defined as `__doc__` parameter.
+I'm open to comments and suggestions :)
 
 ## Contribute
 
