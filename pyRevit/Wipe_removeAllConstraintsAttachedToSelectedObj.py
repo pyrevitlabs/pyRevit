@@ -1,11 +1,8 @@
-from Autodesk.Revit.DB import *
-# from Autodesk.Revit.DB.Architecture import *
-# from Autodesk.Revit.DB.Analysis import *
-# import Autodesk.Revit.UI
+from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 delConst = True
 
@@ -31,7 +28,8 @@ def listConsts( el, clconst ):
 			print('\n')
 	print('\n')
 
-for el in uidoc.Selection.Elements:
+for elId in uidoc.Selection.GetElementIds():
+	el = doc.GetElement( elId )
 	listConsts(el, clconst)
 
 if delConst:

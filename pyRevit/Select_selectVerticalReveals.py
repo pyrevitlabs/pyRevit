@@ -1,14 +1,17 @@
-import Autodesk.Revit.DB
-import Autodesk.Revit.UI
-from Autodesk.Revit.UI.Selection import SelElementSet
+__window__.Close()
+from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory
+from System.Collections.Generic import List
+
+uidoc = __revit__.ActiveUIDocument
+doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
-list = cl.OfCategory(BuiltInCategory.OST_Reveals).WhereElementIsNotElementType().ToElements()
+list = cl.OfCategory( BuiltInCategory.OST_Reveals ).WhereElementIsNotElementType().ToElements()
 
-selSet = SelElementSet.Create()
+selSet = []
 
 for el in list:
 	if el.GetWallSweepInfo().IsVertical:
-		selSet.Add(el)
+		selSet.append( el.Id )
 
-uidoc.Selection.Elements = selSet
+uidoc.Selection.SetElementIds( List[ElementId]( selSet ) )

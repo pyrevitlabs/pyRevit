@@ -1,14 +1,10 @@
-from Autodesk.Revit.DB import *
-# from Autodesk.Revit.DB.Architecture import *
-# from Autodesk.Revit.DB.Analysis import *
-# import Autodesk.Revit.UI
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
 
 cl = FilteredElementCollector(doc)
-clconst = cl.OfCategory(BuiltInCategory.OST_Constraints).WhereElementIsNotElementType()
+clconst = cl.OfCategory( BuiltInCategory.OST_Constraints ).WhereElementIsNotElementType()
 
 constlst = set()
 
@@ -25,9 +21,12 @@ def listConsts( el, clconst ):
 				elid = t[0]
 				if elid == el.Id:
 					elid = str(elid) + ' (this)'
-				print("     {0} LINKED OBJ CATEGORY: {1} ID: {2}".format( ref.ElementReferenceType.ToString().ljust(35), doc.GetElement( ref.ElementId ).Category.Name.ljust(20), elid))
+				print("     {0} LINKED OBJ CATEGORY: {1} ID: {2}".format(	ref.ElementReferenceType.ToString().ljust(35),
+																			doc.GetElement( ref.ElementId ).Category.Name.ljust(20),
+																			elid ))
 			print('\n')
 	print('\n')
 
-for el in uidoc.Selection.Elements:
+for elId in uidoc.Selection.GetElementIds():
+	el = doc.GetElement( elId )
 	listConsts(el, clconst)

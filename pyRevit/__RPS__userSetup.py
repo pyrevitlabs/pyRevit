@@ -515,6 +515,7 @@ class pyRevitUISession():
 
 
 #MAIN
+__window__.Width = 1100
 thisSession = pyRevitUISession( findHomeDirectory(), pyRevitUISettings() )
 
 #FINAL REPORT

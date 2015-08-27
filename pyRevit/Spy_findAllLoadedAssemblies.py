@@ -1,5 +1,7 @@
 from System import AppDomain
 
+__window__.Width = 1500
+
 userScriptsAssemblies = []
 for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
 	loc = ''

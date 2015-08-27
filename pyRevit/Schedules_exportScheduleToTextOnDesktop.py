@@ -13,7 +13,8 @@ vseop = ViewScheduleExportOptions()
 # vseop.FieldDelimiter = ','
 # vseop.Title = False
 
-for el in uidoc.Selection.Elements:
+for elId in uidoc.Selection.GetElementIds():
+	el = doc.GetElement( elId )
 	fname = "".join(x for x in el.ViewName if x not in ['*']) + '.txt'
 	el.Export( desktop, fname , vseop )
 	print('EXPORTED: {0}\n      TO: {1}\n'.format( el.ViewName, fname))

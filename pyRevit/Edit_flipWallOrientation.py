@@ -2,7 +2,7 @@ __window__.Close()
 from Autodesk.Revit.DB import Transaction, Wall
 
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 t = Transaction( doc, 'Flip Selected Walls')
 t.Start()

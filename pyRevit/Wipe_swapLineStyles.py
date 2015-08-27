@@ -1,5 +1,4 @@
-from Autodesk.Revit.DB import *
-import Autodesk.Revit.UI
+from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory, ElementId
 from Autodesk.Revit.UI.Selection import ObjectType
 
 uidoc = __revit__.ActiveUIDocument
@@ -20,7 +19,7 @@ with Transaction(doc, 'Swap Line Styles') as t:
 	linelist = []
 
 	cl = FilteredElementCollector(doc)
-	cllines = cl.OfCategory(BuiltInCategory.OST_Lines or BuiltInCategory.OST_SketchLines).WhereElementIsNotElementType()
+	cllines = cl.OfCategory( BuiltInCategory.OST_Lines or BuiltInCategory.OST_SketchLines ).WhereElementIsNotElementType()
 	for c in cllines:
 		if c.LineStyle.Name == fromStyle.Name:
 			linelist.append(c)
@@ -31,11 +30,11 @@ with Transaction(doc, 'Swap Line Styles') as t:
 	for line in linelist:
 		if line.Category.Name != '<Sketch>' and line.GroupId < ElementId(0):
 			if verbose:
-				print( 'OK:\t{0:<10} {1:<25}{2:<8} {3:<15}'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name) )
+				print( 'LINE FOUND:\t{0:<10} {1:<25}{2:<8} {3:<15}'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name) )
 			line.LineStyle = toStyle
 		elif line.Category.Name == '<Sketch>':
-			print( 'SKIPPED: <Sketch> Line ----:\n\t{0:<10} {1:<25}{2:<8} {3:<15}'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name) )
+			print( 'SKIPPED <Sketch> Line ----:\n           \t{0:<10} {1:<25}{2:<8} {3:<15}\n'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name) )
 		elif line.GroupId > ElementId(0):
-			print( 'SKIPPED: Grouped Line ----:\n\t{0:<10} {1:<25}{2:<8} {3:<15} {4:<10}'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name, doc.GetElement(line.GroupId).Name ))
+			print( 'SKIPPED Grouped Line ----:\n           \t{0:<10} {1:<25}{2:<8} {3:<15} {4:<10}\n'.format(line.Id, line.GetType().Name, line.LineStyle.Id, line.LineStyle.Name, doc.GetElement(line.GroupId).Name ))
 
 	t.Commit()

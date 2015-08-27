@@ -1,23 +1,30 @@
 #Select a filled region first and run this.
 #this script will select all elements matching the type of the selected filled region
 from Autodesk.Revit.DB import FilteredElementCollector
-from Autodesk.Revit.UI.Selection import SelElementSet
+from Autodesk.Revit.DB import ElementId
+from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 CID = selection[0].Category.Id
 TID = selection[0].GetTypeId()
 
 cl = FilteredElementCollector(doc)
-list = cl.OfCategoryId(CID).WhereElementIsNotElementType().ToElements()
+list = cl.OfCategoryId( CID ).WhereElementIsNotElementType().ToElements()
 
-set = SelElementSet.Create()
+set = []
 
 for r in list:
 	if r.GetTypeId() == TID:
-		set.Add(r)
-		print("ID: {0}\t{1}\nOWNER VIEW: {2}\n".format(r.Id, r, doc.GetElement(r.OwnerViewId).ViewName ))
+		set.append( r.Id )
+		try:
+			print('ID: {0}\t{1}OWNER VIEW: {2}'.format( r.Id,
+														r.GetType().Name.ljust(20),
+														doc.GetElement( r.OwnerViewId ).ViewName ))
+		except:
+			print('ID: {0}\t{1}'.format(	r.Id,
+											r.GetType().Name.ljust(20) ))
 
-uidoc.Selection.Elements = set
+uidoc.Selection.SetElementIds( List[ElementId]( set ) )

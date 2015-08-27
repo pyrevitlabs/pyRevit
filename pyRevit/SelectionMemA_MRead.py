@@ -1,6 +1,6 @@
 __window__.Hide()
 from Autodesk.Revit.DB import ElementId
-from Autodesk.Revit.UI.Selection import SelElementSet
+from System.Collections.Generic import List
 
 import os
 import os.path as op
@@ -17,12 +17,11 @@ try:
 	cursel = pl.load(f)
 	f.close()
 
-	set = SelElementSet.Create()
+	set = []
+	for elId in cursel:
+		set.append( ElementId( int( elId )))
 
-	for elid in cursel:
-		set.Add( doc.GetElement( ElementId(int(elid)) ))
-
-	uidoc.Selection.Elements = set
+	uidoc.Selection.SetElementIds( List[ElementId]( set ) )
 
 except:
 	__window__.Show()

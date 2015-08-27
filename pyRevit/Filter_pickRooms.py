@@ -26,4 +26,4 @@ def pickByCategory(catName):
 		set.append( el.Id )
 	uidoc.Selection.SetElementIds( List[ElementId]( set ) )
 
-pickByCategory( "Grid" )
+pickByCategory( "Rooms" )

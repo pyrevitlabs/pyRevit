@@ -11,7 +11,7 @@ usertemp = os.getenv('Temp')
 prjname = op.splitext( op.basename( doc.PathName ) )[0]
 datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.sel'
 
-selection = { el.Id.ToString() for el in uidoc.Selection.Elements }
+selection = { elId.ToString() for elId in uidoc.Selection.GetElementIds() }
 
 f = open(datafile, 'w')
 pl.dump( selection, f)

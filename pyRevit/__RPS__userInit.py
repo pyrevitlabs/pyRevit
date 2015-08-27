@@ -8,7 +8,7 @@ from Autodesk.Revit.UI import UIApplication
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 def alert(msg):
 	TaskDialog.Show('RevitPythonShell', msg)

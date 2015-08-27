@@ -1,9 +1,8 @@
-from Autodesk.Revit.DB import *
-import Autodesk.Revit.UI
+from Autodesk.Revit.DB import Transaction, TransactionGroup
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = __revit__.ActiveUIDocument.Selection.GetElementIds()
 
 tg = TransactionGroup( doc, "Search for linked elements")
 tg.Start()
@@ -12,14 +11,16 @@ t.Start()
 
 list = []
 
-for el in uidoc.Selection.Elements:
-	print("Searching for all objects tied to ELEMENT ID: {0}...".format(el.Id) )
-	list = doc.Delete(el.Id)
+for elId in selection:
+	print("Searching for all objects tied to ELEMENT ID: {0}...".format( elId ))
+	list = doc.Delete( elId )
 
 t.Commit()
 tg.RollBack()
 
-for i in list:
-	el = doc.GetElement(i)
-	if el:
-		print("ID: {0}\t\tTYPE: {1}".format(i, el) )
+for elId in list:
+	el = doc.GetElement( elId )
+	if el and elId in selection:
+		print("ID: {0}\t\tTYPE: {1} ( selected object )".format( elId, el.GetType().Name ) )
+	elif el:
+		print("ID: {0}\t\tTYPE: {1}".format( elId, el.GetType().Name ) )

@@ -1,12 +1,10 @@
+__window__.Close()
+from Autodesk.Revit.DB import Group, ElementId
+from Autodesk.Revit.UI.Selection import ISelectionFilter
+from System.Collections.Generic import List
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-
-from Autodesk.Revit.DB import Group
-from Autodesk.Revit.UI.Selection import ISelectionFilter
-from Autodesk.Revit.UI.Selection import ObjectType
-from Autodesk.Revit.UI.Selection import SelElementSet
-
-__window__.Close()
 
 parentGroups = set()
 
@@ -23,16 +21,11 @@ class MassSelectionFilter(ISelectionFilter):
 		return False
 
 sel = MassSelectionFilter()
-
 list = uidoc.Selection.PickElementsByRectangle(sel)
 
-set = SelElementSet.Create()
-
+set = []
 for el in list:
-	set.Add(el)
+	set.append( el.Id )
 
-# for g in parentGroups:
-	# set.Add(g)
-
-uidoc.Selection.Elements = set
+uidoc.Selection.SetElementIds( List[ElementId]( set ) )
 uidoc.RefreshActiveView()

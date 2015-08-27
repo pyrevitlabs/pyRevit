@@ -1,7 +1,15 @@
+__window__.Close()
+from Autodesk.Revit.DB import Transaction
 from Autodesk.Revit.DB import DetailElementOrderUtils as eo
 
-with Transaction(doc,"Bring Selected To Front") as t:
+uidoc = __revit__.ActiveUIDocument
+doc = __revit__.ActiveUIDocument.Document
+
+with Transaction( doc, 'Bring Selected To Front' ) as t:
 	t.Start()
-	for el in selection:
-		eo.BringForward(doc, doc.ActiveView, el.Id)
+	for elId in uidoc.Selection.GetElementIds():
+		try:
+			eo.BringForward( doc, doc.ActiveView, elId )
+		except:
+			continue
 	t.Commit()

@@ -1,13 +1,11 @@
-from Autodesk.Revit.DB import Transaction
-from Autodesk.Revit.DB import OverrideGraphicSettings
-from Autodesk.Revit.DB import Group
+__window__.Close()
+from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, Group
 
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
-__window__.Close()
 
-with Transaction(doc,"Set Element Override") as t:
+with Transaction(doc, 'Halftone Elements in View' ) as t:
 	t.Start()
 	for el in selection:
 		if isinstance(el, Group):

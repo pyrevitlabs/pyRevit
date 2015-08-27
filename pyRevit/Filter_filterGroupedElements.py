@@ -1,13 +1,15 @@
+__window__.Close()
+from Autodesk.Revit.DB import ElementId, Group
+from System.Collections.Generic import List
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-from Autodesk.Revit.UI.Selection import SelElementSet
 
-__window__.Close()
+set = []
+for elId in uidoc.Selection.GetElementIds():
+	el = doc.GetElement( elId )
+	if el.GroupId == ElementId.InvalidElementId and not isinstance( el, Group ):
+		set.append( elId )
 
-pinset = SelElementSet.Create()
-for i in uidoc.Selection.Elements:
-	if None == doc.GetElement(i.GroupId):
-		pinset.Add(i)
-
-uidoc.Selection.Elements = pinset
+uidoc.Selection.SetElementIds( List[ElementId]( set ) )
 uidoc.RefreshActiveView()

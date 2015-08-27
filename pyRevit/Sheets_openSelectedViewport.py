@@ -1,11 +1,10 @@
 __window__.Close()
-
 from Autodesk.Revit.DB import Viewport
 from Autodesk.Revit.UI import TaskDialog
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = list(__revit__.ActiveUIDocument.Selection.Elements)
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 #Opens the associated view with the selected viewport on a sheet.
 if len(selection) > 0 and isinstance(selection[0],Viewport):
