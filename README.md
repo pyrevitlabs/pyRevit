@@ -80,7 +80,7 @@ Step 1: Create a `.png` file, with name pattern as below:
 
 Example:
 
-`0000_RPS_PushButton_pyShell_RevitPythonShell_IronPythonConsoleCommand.png` defines a subpanel under `pyRevit`, named `RPS`, with order number `00`, and a simple Push Buttons in this panel, named `pyShell` with order number `00`. But then the startup script will use the assembly name and class name and will assign them to the button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin. Another example of this method is `0005_RLookup_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
+`0000_RPS_PushButton_RPS_RevitPythonShell_IronPythonConsoleCommand.png` defines a subpanel under `pyRevit`, named `RPS`, with order number `00`, and a simple Push Buttons in this panel, named `RPS` with order number `00`. But then the startup script will use the assembly name and class name and will assign them to the button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin. Another example of this method is `0005_RL_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
 
 I hope I have explained everything clearly and you find it simple to use.
 
