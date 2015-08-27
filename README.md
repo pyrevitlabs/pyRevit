@@ -2,7 +2,7 @@
 
 pyRevit has two goals:
 - It is a script `__RPS__userSetup.py` that automates the process of creating user interface for your IronPython scripts. Creating a button is as easy as adding a `.py` script to the pyRevit folder.
-- It is also hoping to be an IronPython package e.g `import pyRevit` that will provide easier access to Revit's API, through a command-prompt-style object-oriented framework acting on the current document database. e.g `Sheet['A201'].Rename('A202')`
+- It is also hoping to be an IronPython package e.g `import pyrevit` that will provide easier access to Revit's API, through a command-prompt-style object-oriented framework acting on the current document database. e.g `Sheet['A201'].Rename('A202')`
 
 ## Setup process
 
