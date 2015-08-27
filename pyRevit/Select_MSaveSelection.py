@@ -1,3 +1,5 @@
+__doc__ = 'Saves current selection memory as a Selection Filter.'
+
 __window__.Close()
 from Autodesk.Revit.DB import Transaction
 from Autodesk.Revit.DB import ElementId

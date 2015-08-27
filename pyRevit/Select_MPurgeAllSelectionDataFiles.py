@@ -1,3 +1,5 @@
+__doc__ = 'Deletes all the temporary selection data files from user temp folder. This will clear all selection memories. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.sel files.'
+
 __window__.Close()
 
 import os

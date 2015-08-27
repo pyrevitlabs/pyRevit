@@ -1,3 +1,5 @@
+__doc__ = 'Deducts selection from memory keeping the rest.\nWorks like the M- button in a calculator.\nThis is a project-dependent (Revit *.rvt) memory. Every project has its own memory save in user temp folder as *.sel files.'
+
 __window__.Close()
 # from Autodesk.Revit.DB import ElementId
 import os

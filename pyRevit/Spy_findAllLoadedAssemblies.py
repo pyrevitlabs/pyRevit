@@ -1,3 +1,5 @@
+__doc__ = 'List all currently loaded assemblies'
+
 from System import AppDomain
 
 __window__.Width = 1500

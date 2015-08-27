@@ -1,3 +1,5 @@
+__doc__ = 'Site Designer has a bug that duplicates its standard line styles. This script will disable the Add-in.'
+
 import os
 import os.path as op
 from System import AppDomain

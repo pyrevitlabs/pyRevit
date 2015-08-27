@@ -1,3 +1,5 @@
+__doc__ = 'Append current selection to memory. Works like the M+ button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.sel files.'
+
 __window__.Close()
 # from Autodesk.Revit.DB import ElementId
 import os

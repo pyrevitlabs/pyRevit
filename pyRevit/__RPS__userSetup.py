@@ -66,6 +66,7 @@ class pyRevitUISettings():
 	pulldownButtonTypeName = 'PulldownButton'
 	stackedThreeTypeName = 'Stack3'
 	splitButtonTypeName = 'SplitButton'
+	tooltipParameter = '__doc__'
 
 class buttonGraphics():
 	def __init__( self, fileDir, fileName ):
@@ -155,7 +156,7 @@ class ScriptGroup():
 class ScriptCommand():
 	def __init__( self, fileDir, f ):
 		fname, fext = op.splitext( op.basename( f ))
-		self.tooltip = fname + ' ' + fext.lower()
+		settings = pyRevitUISettings()
 
 		# custom name adjustments
 		if fname == '__RPS__userSetup':
@@ -166,6 +167,10 @@ class ScriptCommand():
 		if '_' != fname[0] and '.py' == fext.lower():
 			self.filePath = fileDir
 			self.fileName = f
+			self.tooltip = fname + ' ' + fext.lower()
+			docString = ScriptCommand.extractParameter( settings.tooltipParameter, self.getFullScriptAddress() )
+			if docString != None:
+				self.tooltip = self.tooltip + '\n' + docString
 			namePieces = fname.rsplit('_')
 			namePiecesLength = len( namePieces )
 			if namePiecesLength == 2:
@@ -183,6 +188,16 @@ class ScriptCommand():
 
 	def getFullScriptAddress( self ):
 		return op.join( self.filePath, self.fileName )
+
+	@staticmethod
+	def extractParameter( param, file ):
+		finder = re.compile( param + "\s*\=\s*\'*\"*(.+?)[\'\"]", flags = re.DOTALL | re.IGNORECASE )
+		with open( file, 'r') as f:
+			values = finder.findall( f.read() )
+			if values:
+				return values[0]
+			else:
+				return None
 
 class pyRevitUISession():
 	def __init__( self, homeDirectory, settingsClass ):

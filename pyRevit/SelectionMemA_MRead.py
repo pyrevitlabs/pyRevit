@@ -1,3 +1,5 @@
+__doc__ = 'Read selection from memory. Works like the MR button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.sel files.'
+
 __window__.Hide()
 from Autodesk.Revit.DB import ElementId
 from System.Collections.Generic import List
