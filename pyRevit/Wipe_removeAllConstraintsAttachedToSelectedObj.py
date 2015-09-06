@@ -33,14 +33,17 @@ for elId in uidoc.Selection.GetElementIds():
 	listConsts(el, clconst)
 
 if delConst:
-	t = Transaction(doc, 'Remove associated constraints')
-	t.Start()
-	for cnst in constlst:
-		try:
-			print("REMOVING CONST TYPE: {0} # OF REFs: {1} CONST ID: {2}".format(cnst.GetType().Name.ljust(28), str(cnst.References.Size).ljust(24), cnst.Id)) 
-			doc.Delete(cnst.Id)
-			print('CONST REMOVED')
-		except:
-			print('FAILED')
-			continue
-	t.Commit()
+	if constlst:
+		with Transaction(doc, 'Remove associated constraints') as t:
+			t.Start()
+			for cnst in constlst:
+				try:
+					print("REMOVING CONST TYPE: {0} # OF REFs: {1} CONST ID: {2}".format(cnst.GetType().Name.ljust(28), str(cnst.References.Size).ljust(24), cnst.Id)) 
+					doc.Delete(cnst.Id)
+					print('CONST REMOVED')
+				except:
+					print('FAILED')
+					continue
+			t.Commit()
+	else:
+		print('NO CONSTRAINTS FOUND.')

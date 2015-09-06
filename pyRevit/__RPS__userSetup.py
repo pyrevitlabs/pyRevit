@@ -195,7 +195,7 @@ class ScriptCommand():
 		with open( file, 'r') as f:
 			values = finder.findall( f.read() )
 			if values:
-				return values[0]
+				return values[0].replace('\\n', '\n')
 			else:
 				return None
 

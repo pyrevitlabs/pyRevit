@@ -13,14 +13,14 @@ def report(message):
 
 
 #COLLECT CATS - METHOD 1
-print('Finding Line Styles using Method 1...')
+report('Finding Line Styles using Method 1...')
 linesCat = doc.Settings.Categories.get_Item("Lines")
 for cat in linesCat.SubCategories:
 	if 'SW' == cat.Name[:2]:
 		catsToDelete.append( cat )
 
 #COLLECT CATS - METHOD 2
-print('Finding Line Styles using Method 2...')
+report('Finding Line Styles using Method 2...')
 from Autodesk.Revit.DB import ElementMulticategoryFilter, FilteredElementCollector, BuiltInCategory
 from System.Collections.Generic import List
 filter = ElementMulticategoryFilter( List[BuiltInCategory]([BuiltInCategory.OST_Lines]))
@@ -36,7 +36,7 @@ for styleId in styleIds:
 
 #DELETE CATS
 total = len( catsToDelete )
-print('Deleting {0} Line Styles...'.format( total))
+report('Deleting {0} Line Styles...'.format( total))
 report('Deleted Line Styles:')
 step = 1/ 50.0
 threshold = step
@@ -47,11 +47,11 @@ for i, cat in enumerate(catsToDelete):
 		report('ID: {0}\tNAME: {1}'.format(cat.Id, cat.Name) )
 		doc.Delete( cat.Id )
 		if i / float(total) >= threshold:
-			print('|', end='')
+			report('|', end='')
 			threshold += step
 	except:
 		continue
 t.Commit()
 
-print( '\n\n' )
+report( '\n\n' )
 print( outputs.getvalue() )

@@ -4,7 +4,7 @@ print('Home directory of this script:\n{0}\n'.format( folder ))
 
 sys.path.append(folder)
 
-import pyRevit
+import pyrevit
 print('pyRevit import successful\n')
 
 print('Printing sys.path addresses:')
