@@ -91,6 +91,15 @@ If you added scripts or panels while Revit is running, use the `reloadScripts` b
 I'll figure out a system for the documentation soon ([ReadTheDocs](https://readthedocs.org/) seems to be a good option). But for now please refer to tooltips for every script button. The text for the tooltips are included inside each script source file, defined as `__doc__` parameter.
 I'm open to comments and suggestions :)
 
+#### Versioning:
+I'm using semantic versioning with MAJOR.MINOR.PATCH format:
+
+  MAJOR: incompatible API changes
+  
+  MINOR: add functionality and scripts in a backwards-compatible manner
+  
+  PATCH: backwards-compatible bug fixes
+
 ## Contribute
 
 - Issue Tracker: https://github.com/eirannejad/pyRevit/issues
