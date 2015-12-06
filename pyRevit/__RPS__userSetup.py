@@ -180,8 +180,10 @@ class ScriptCommand():
 																				self.scriptGroupName.ljust(20),
 																				self.cmdName ))
 				if op.exists( op.join( fileDir, fname + '.png' )):
-					self.buttonGraphics = buttonGraphics( fileDir, fname + '.png' )
+					self.iconFileName = fname + '.png'
+					self.buttonGraphics = buttonGraphics( fileDir, self.iconFileName )
 				else:
+					self.iconFileName = None
 					self.buttonGraphics = None
 		else:
 			raise unknownFileNameFormat()
@@ -315,8 +317,12 @@ class pyRevitUISession():
 					if scriptPanel.panelName not in self.scriptPanelsDict:
 						self.scriptPanelsDict[ scriptPanel.panelName ] = scriptPanel
 				except unknownFileNameFormat:
-					report('Can not recognize name pattern. skipping: {0}'.format( f ))
-					continue
+					if f in [x.iconFileName for x in self.pyRevitCommands ]:
+						report('Skipping script icon file: {0}'.format( f ))
+						continue
+					else:
+						report('Can not recognize name pattern. skipping: {0}'.format( f ))
+						continue
 
 				try:
 					scriptGroup = ScriptGroup( self.homeDir, f )
@@ -326,8 +332,12 @@ class pyRevitUISession():
 					else:
 						self.scriptGroupsByPanelDict[ scriptGroup.panelName ].append( scriptGroup )
 				except unknownFileNameFormat:
-					report('Can not recognize name pattern. skipping: {0}'.format( f ))
-					continue
+					if f in [x.iconFileName for x in self.pyRevitCommands ]:
+						report('Skipping script icon file: {0}'.format( f ))
+						continue
+					else:
+						report('Can not recognize name pattern. skipping: {0}'.format( f ))
+						continue
 				except unknownAssembly:
 					report('Unknown assembly error. Skipping: {0}'.format( f ))
 					continue
