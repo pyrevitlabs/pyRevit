@@ -155,6 +155,15 @@ class ScriptGroup():
 
 class ScriptCommand():
 	def __init__( self, fileDir, f ):
+		self.filePath = ''
+		self.fileName = ''
+		self.tooltip = ''
+		self.cmdName = ''
+		self.scriptGroupName = ''
+		self.className = ''
+		self.iconFileName = ''
+		self.buttonGraphics = ''
+		
 		fname, fext = op.splitext( op.basename( f ))
 		settings = pyRevitUISettings()
 
@@ -185,6 +194,8 @@ class ScriptCommand():
 				else:
 					self.iconFileName = None
 					self.buttonGraphics = None
+			else:
+				raise unknownFileNameFormat()
 		else:
 			raise unknownFileNameFormat()
 
@@ -296,10 +307,13 @@ class pyRevitUISession():
 			if '.py' == fext.lower():
 				try:
 					cmd = ScriptCommand( self.homeDir, f )
+					self.pyRevitCommands.append( cmd )
 				except unknownFileNameFormat:
 					report('Can not recognize name pattern. skipping: {0}'.format( f ))
 					continue
-				self.pyRevitCommands.append( cmd )
+				except:
+					report('Something is wrong. skipping: {0}'.format( f ))
+					continue
 
 		if not len( self.pyRevitCommands ) > 0:
 			report('No Scripts found...')
@@ -353,6 +367,9 @@ class pyRevitUISession():
 		dllName = generatedAssemblyName + ".dll"
 		# create assembly
 		windowsAssemblyName = AssemblyName( Name = generatedAssemblyName, Version = Version(1,0,0,0))
+		report('Generated assembly name for this session: {0}'.format( generatedAssemblyName ))
+		report('Generated windows assembly name for this session: {0}'.format( windowsAssemblyName ))
+		report('Generated DLL name for this session: {0}'.format( dllName ))
 		assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly( windowsAssemblyName, AssemblyBuilderAccess.RunAndSave, dllFolder)
 		moduleBuilder = assemblyBuilder.DefineDynamicModule( generatedAssemblyName , dllName )
 		
