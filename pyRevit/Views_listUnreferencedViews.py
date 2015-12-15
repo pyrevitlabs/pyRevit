@@ -30,13 +30,15 @@ for v in dviews:
 	refviewport = v.LookupParameter('Referencing Detail')
 	if refsheet and refviewport and refsheet.HasValue and refviewport.HasValue:
 		underlayp = v.LookupParameter('Underlay')
-		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}'.format(
+		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}\nPLACED ON DETAIL/SHEET: {7} / {6}\n'.format(
 				v.ViewName,
 				str( v.ViewType ).ljust(20),
 				str(v.Id).ljust(10),
 				str(v.IsTemplate).ljust(10),
 				phasep.AsValueString().ljust(25) if phasep else '---'.ljust(25),
-				underlayp.AsValueString().ljust(25) if underlayp else '---'.ljust(25)
+				underlayp.AsValueString().ljust(25) if underlayp else '---'.ljust(25),
+				v.LookupParameter('Sheet Number').AsString(),
+				v.LookupParameter('Detail Number').AsString()
 			))
 
 print('\n\n\nUNREFERENCED MODEL VIEWS-----------------------------------------------------------------------------------')
@@ -46,11 +48,13 @@ for v in views:
 	refviewport = v.LookupParameter('Referencing Detail')
 	if refsheet and refviewport and refsheet.HasValue and refviewport.HasValue:
 		underlayp = v.LookupParameter('Underlay')
-		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}'.format(
+		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}\nPLACED ON DETAIL/SHEET: {7} / {6}\n'.format(
 				v.ViewName,
 				str( v.ViewType ).ljust(20),
 				str(v.Id).ljust(10),
 				str(v.IsTemplate).ljust(10),
 				phasep.AsValueString().ljust(25) if phasep else '---'.ljust(25),
-				underlayp.AsValueString().ljust(25) if underlayp else '---'.ljust(25)
+				underlayp.AsValueString().ljust(25) if underlayp else '---'.ljust(25),
+				v.LookupParameter('Sheet Number').AsString(),
+				v.LookupParameter('Detail Number').AsString()
 			))
