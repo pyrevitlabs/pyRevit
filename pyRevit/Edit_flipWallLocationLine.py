@@ -25,7 +25,7 @@ for el in selection:
 		with Transaction( doc, 'Flip Selected Wall') as t:
 			t.Start()
 			el.Flip()
-			param.Set( locLineValues[ 'Core Face: Interior' ] )
+			param.Set( locLineValues[ 'Core Face: Exterior' ] )
 			t.Commit()
 tg.Commit()
 
