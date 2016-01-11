@@ -2,10 +2,11 @@ __window__.Close()
 import clr
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Group, GroupType, Transaction, BuiltInParameter
 
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-t = Transaction( doc, 'Explode and Purge Model Groups' )
+t = Transaction( doc, 'Explode and Purge All Groups' )
 t.Start()
 
 cl = FilteredElementCollector( doc )
