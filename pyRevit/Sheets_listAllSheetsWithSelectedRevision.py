@@ -1,0 +1,39 @@
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud
+doc = __revit__.ActiveUIDocument.Document
+
+uidoc = __revit__.ActiveUIDocument
+doc = __revit__.ActiveUIDocument.Document
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+
+selectedrevs = []
+hasSelectedRevision = False
+multipleRevs = False
+
+for s in selection:
+	if isinstance( s, RevisionCloud):
+		selectedrevs.append( s.RevisionId.IntegerValue )
+
+if len( selectedrevs ) > 1:
+	multipleRevs = True
+
+print('REVISED SHEETS:')
+cl_sheets = FilteredElementCollector(doc)
+sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
+
+for s in sheets:
+	hasSelectedRevision = False
+	revs = s.GetAllRevisionIds()
+	revIds = [x.IntegerValue for x in revs]
+	for sr in selectedrevs:
+		if sr in revIds:
+			hasSelectedRevision = True
+	if hasSelectedRevision:
+		print('NUMBER: {0}   NAME:{1}'
+			.format(	s.Parameter['Sheet Number'].AsString().rjust(10),
+						s.Parameter['Sheet Name'].AsString().ljust(50),
+			))
+		if multipleRevs:
+			for rev in revs:
+				rev = doc.GetElement(rev)
+				print('\tREV#: {0}\t\tDATE: {1}\t\tDESC:{2}'.format( rev.RevisionNumber, rev.RevisionDate, rev.Description ))
