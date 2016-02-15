@@ -1,6 +1,6 @@
 __doc__ = 'Open source sheet. Select ONE other sheet in Project Browser. Run this script (Keep focus on Project Browser otherwise the current selection will not show the selected sheets). Select Viewports and push Finish button on the properties bar. The selected views will be MOVED to the selected sheet.'
 
-__window__.Close()
+# __window__.Close()
 from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, ScheduleSheetInstance
 from Autodesk.Revit.UI import TaskDialog
 from Autodesk.Revit.UI.Selection import ObjectType
@@ -45,6 +45,10 @@ if 0 < len(selSheets) <= 2:
 						cursheet.DeleteViewport(vp)
 						nvp = Viewport.Create( doc, sht.Id, viewId, vpCenter)
 						nvp.ChangeTypeId( vpTypeId )
+					elif isinstance( vp, ScheduleSheetInstance ):
+						nvp = ScheduleSheetInstance.Create( doc, sht.Id, vp.ScheduleId, vp.Point )
+						doc.Delete( vp.Id )
+
 			t.Commit()
 	else:
 		TaskDialog.Show('RevitPythonShell', 'At least one viewport must be selected.')
