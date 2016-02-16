@@ -7,7 +7,7 @@ revs = cl.OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType
 for rev in revs:
 	print('{0}\tREV#: {1}\t\tDATE: {2}\t\tTYPE:{3}\t\tDESC: {4}'.format( rev.SequenceNumber, rev.RevisionNumber, rev.RevisionDate, rev.NumberType.ToString(), rev.Description))
 
-print('REVISED SHEETS:\n\nNAME\tNUMBER\n--------------------------------------------------------------------------')
+print('\n\nREVISED SHEETS:\n\nNAME\tNUMBER\n--------------------------------------------------------------------------')
 cl_sheets = FilteredElementCollector(doc)
 sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
