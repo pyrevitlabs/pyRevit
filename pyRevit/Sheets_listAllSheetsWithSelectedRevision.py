@@ -16,7 +16,7 @@ for s in selection:
 if len( selectedrevs ) > 1:
 	multipleRevs = True
 
-print('REVISED SHEETS:')
+print('REVISED SHEETS:\n\nNAME\tNUMBER\n--------------------------------------------------------------------------')
 cl_sheets = FilteredElementCollector(doc)
 sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
@@ -29,9 +29,9 @@ for s in sheets:
 		if sr in revIds:
 			hasSelectedRevision = True
 	if hasSelectedRevision:
-		print('NUMBER: {0}   NAME:{1}'
-			.format(	s.Parameter['Sheet Number'].AsString().rjust(10),
-						s.Parameter['Sheet Name'].AsString().ljust(50),
+		print('{0}\t{1}'
+			.format(	s.Parameter['Sheet Number'].AsString(),
+						s.Parameter['Sheet Name'].AsString(),
 			))
 		if multipleRevs:
 			for rev in revs:
