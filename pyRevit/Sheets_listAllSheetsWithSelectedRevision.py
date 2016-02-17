@@ -29,13 +29,16 @@ for s in sheets:
 		if sr in revIds:
 			hasSelectedRevision = True
 	if hasSelectedRevision:
-		revcloudids = FilteredElementCollector( doc, s.Id ).OfClass( RevisionCloud ).WhereElementIsNotElementType().ToElementIds()
-		lastcloud = max( [ x.IntegerValue for x in revcloudids ] )
-		lastowner = doc.GetElement( ElementId( lastcloud )).LookupParameter( 'Edited by' ).AsString()
+		# revcloudids = list( FilteredElementCollector( doc, s.Id ).OfClass( RevisionCloud ).WhereElementIsNotElementType().ToElementIds() )
+		# if len( revcloudids ) > 0:
+			# lastcloud = max( [ x.IntegerValue for x in revcloudids ] )
+			# lastowner = doc.GetElement( ElementId( lastcloud )).LookupParameter( 'Edited by' ).AsString()
+		# else:
+			# lastowner = ''
 		print('{0}\t{1}\t{2}'
 			.format(	s.Parameter['Sheet Number'].AsString(),
 						s.Parameter['Sheet Name'].AsString(),
-						lastowner,
+						# lastowner,
 			))
 		if multipleRevs:
 			for rev in revs:
