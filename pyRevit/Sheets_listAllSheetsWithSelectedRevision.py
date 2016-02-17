@@ -16,7 +16,8 @@ for s in selection:
 if len( selectedrevs ) > 1:
 	multipleRevs = True
 
-print('REVISED SHEETS:\n\nNAME\tNUMBER\t\t\t\tLast Revision Created by\n--------------------------------------------------------------------------')
+print('REVISED SHEETS:\n\nNAME\tNUMBER\n--------------------------------------------------------------------------')
+# print('REVISED SHEETS:\n\nNAME\tNUMBER\t\t\t\tLast Revision Created by\n--------------------------------------------------------------------------')
 cl_sheets = FilteredElementCollector(doc)
 sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
@@ -29,16 +30,15 @@ for s in sheets:
 		if sr in revIds:
 			hasSelectedRevision = True
 	if hasSelectedRevision:
+		lastowner = ''
 		# revcloudids = list( FilteredElementCollector( doc, s.Id ).OfClass( RevisionCloud ).WhereElementIsNotElementType().ToElementIds() )
 		# if len( revcloudids ) > 0:
 			# lastcloud = max( [ x.IntegerValue for x in revcloudids ] )
 			# lastowner = doc.GetElement( ElementId( lastcloud )).LookupParameter( 'Edited by' ).AsString()
-		# else:
-			# lastowner = ''
 		print('{0}\t{1}\t{2}'
 			.format(	s.Parameter['Sheet Number'].AsString(),
 						s.Parameter['Sheet Name'].AsString(),
-						# lastowner,
+						lastowner,
 			))
 		if multipleRevs:
 			for rev in revs:
