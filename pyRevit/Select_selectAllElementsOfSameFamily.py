@@ -15,7 +15,10 @@ for elId in uidoc.Selection.GetElementIds():
 	famSymbolList.add( doc.GetElement( el.GetTypeId()))
 
 for fsym in famSymbolList:
-	family = fsym.Family
+	try:
+		family = fsym.Family
+	except:
+		continue
 	symbolSet = family.Symbols
 	for sym in symbolSet:
 		cl = FilteredElementCollector(doc).WherePasses( FamilyInstanceFilter( doc, sym.Id )).ToElements()
