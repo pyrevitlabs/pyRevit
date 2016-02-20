@@ -44,7 +44,6 @@ for el in list:
 	listConsts(el, clconst)
 
 report( '\n\n' )
-print( outputs.getvalue() )
 
 if delConst:
 	if constlst:
@@ -52,12 +51,14 @@ if delConst:
 			t.Start()
 			for cnst in constlst:
 				try:
-					print("REMOVING CONST TYPE: {0} # OF REFs: {1} CONST ID: {2}".format(cnst.GetType().Name.ljust(28), str(cnst.References.Size).ljust(24), cnst.Id)) 
+					report("REMOVING CONST TYPE: {0} # OF REFs: {1} CONST ID: {2}".format(cnst.GetType().Name.ljust(28), str(cnst.References.Size).ljust(24), cnst.Id)) 
 					doc.Delete(cnst.Id)
-					print('CONST REMOVED')
+					report('CONST REMOVED')
 				except:
-					print('FAILED')
+					report('FAILED')
 					continue
 			t.Commit()
 	else:
-		print('NO CONSTRAINTS FOUND.')
+		report('NO CONSTRAINTS FOUND.')
+
+print( outputs.getvalue() )
