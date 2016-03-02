@@ -21,7 +21,8 @@ for elId in uidoc.Selection.GetElementIds():
 for elid in cl:
 	el = doc.GetElement( elid )
 	try:
-		if el.ViewSpecific and ( el.Category.Name in selCatList):
+		# if el.ViewSpecific and ( el.Category.Name in selCatList):
+		if el.Category.Name in selCatList:
 			matchlist.append( elid )
 	except:
 		continue
