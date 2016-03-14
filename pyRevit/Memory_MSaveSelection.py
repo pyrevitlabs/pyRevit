@@ -15,7 +15,7 @@ doc = __revit__.ActiveUIDocument.Document
 
 usertemp = os.getenv('Temp')
 prjname = op.splitext( op.basename( doc.PathName ) )[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.sel'
+datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
 f = open(datafile, 'r')
 
 cursel = pl.load(f)

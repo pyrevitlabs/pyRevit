@@ -1,4 +1,4 @@
-__doc__ = 'Read selection from memory. Works like the MR button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.sel files.'
+__doc__ = 'Read selection from memory. Works like the MR button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
 
 __window__.Hide()
 from Autodesk.Revit.DB import ElementId
@@ -13,7 +13,7 @@ doc = __revit__.ActiveUIDocument.Document
 
 usertemp = os.getenv('Temp')
 prjname = op.splitext( op.basename( doc.PathName ) )[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.sel'
+datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
 try:
 	f = open(datafile, 'r')
 	cursel = pl.load(f)
@@ -24,7 +24,7 @@ try:
 		set.append( ElementId( int( elId )))
 
 	uidoc.Selection.SetElementIds( List[ElementId]( set ) )
-
+	__window__.Close()
 except:
 	__window__.Show()
 	print('CAN NOT FIND SELECTION FILE:\n{0}'.format(datafile))

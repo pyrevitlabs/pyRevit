@@ -1,4 +1,4 @@
-__doc__ = 'Clears selection from memory. Works like the MC button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.sel files.'
+__doc__ = 'Clears selection from memory. Works like the MC button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
 
 __window__.Close()
 #from Autodesk.Revit.DB import *
@@ -13,7 +13,7 @@ doc = __revit__.ActiveUIDocument.Document
 
 usertemp = os.getenv('Temp')
 prjname = op.splitext( op.basename( doc.PathName ) )[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.sel'
+datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
 f = open(datafile, 'wb')
 prevsel = set([])
 pl.dump( prevsel, f)
