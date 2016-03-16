@@ -61,9 +61,9 @@ try:
 			av.SetSectionBox( sb )
 			av.SetOrientation( vor )
 			t.Commit()
+		avui.ZoomToFit()
 	else:
 		TaskDialog.Show('RevitPythonShell', 'You must be on a 3D view to paste Section Box settings.')
-	avui.ZoomToFit()
 	__window__.Close()
 except:
 	__window__.Show()
