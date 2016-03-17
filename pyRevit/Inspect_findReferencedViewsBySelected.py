@@ -25,12 +25,15 @@ selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Sele
 
 el = selection[0]
 
-for i in range(0, el.CurrentViewCount):
+cvc = el.CurrentViewCount
+
+for i in range(0, 4):
 	v = doc.GetElement( el.GetViewId(i) )
-	print('DETAIL #: {4}\tTYPE: {1}ID: {2}TEMPLATE: {3}  {0}'.format(
-			v.ViewName.ljust(100),
-			str(v.ViewType).ljust(15),
-			str(v.Id).ljust(10),
-			str(v.IsTemplate).ljust(10),
-			v.LookupParameter('Detail Number').AsString()
-		))
+	if v:
+		print('DETAIL #: {4}\tTYPE: {1}ID: {2}TEMPLATE: {3}  {0}'.format(
+				v.ViewName.ljust(100),
+				str(v.ViewType).ljust(15),
+				str(v.Id).ljust(10),
+				str(v.IsTemplate).ljust(10),
+				v.LookupParameter('Detail Number').AsString()
+			))

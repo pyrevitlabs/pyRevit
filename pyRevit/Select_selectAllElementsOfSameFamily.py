@@ -27,22 +27,18 @@ doc = __revit__.ActiveUIDocument.Document
 curview = uidoc.ActiveGraphicalView
 
 matchlist = []
-famSymbolList = set()
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	famSymbolList.add( doc.GetElement( el.GetTypeId()))
-
-for fsym in famSymbolList:
 	try:
-		family = fsym.Family
+		el = doc.GetElement( elId )
+		family = el.Symbol.Family
+		symbolIdSet = family.GetFamilySymbolIds()
+		for symid in symbolIdSet:
+			cl = FilteredElementCollector(doc).WherePasses( FamilyInstanceFilter( doc, symid )).ToElements()
+			for el in cl:
+				matchlist.append( el.Id )
 	except:
 		continue
-	symbolSet = family.Symbols
-	for sym in symbolSet:
-		cl = FilteredElementCollector(doc).WherePasses( FamilyInstanceFilter( doc, sym.Id )).ToElements()
-		for el in cl:
-			matchlist.append( el.Id )
 
 set = []
 for elid in matchlist:
