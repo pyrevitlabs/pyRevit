@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-__doc__ = 'This script removes all custom parameters that have not been used in dimensions as labels and also resets the value for the other parametes to zero or null.'
+__doc__ = 'This script removes all custom parameters that has not been used in dimensions as labels and also resets the value for the other parameters to zero or null.'
 
 import clr
 from Autodesk.Revit.DB import Transaction, ElementId, StorageType, FilteredElementCollector, Dimension, FamilyParameter
