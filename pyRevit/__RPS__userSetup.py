@@ -124,6 +124,19 @@ class ScriptPanel():
 class ScriptGroup():
 	def __init__( self, fileDir, f ):
 		self.commands = []
+		self.sourceDir = ''
+		self.sourceFile = ''
+		self.sourceFileName = '' 
+		self.sourceFileExt = '.png'
+		self.groupOrder = 0
+		self.panelName = ''
+		self.groupType = None
+		self.groupName = ''
+		self.buttonGraphics = None
+		self.assemblyName = None
+		self.assemblyClassName = None
+		self.assemblyLocation = None
+		
 		fname, fext = op.splitext( op.basename( f ))
 		if ScriptGroup.isScriptGroupDescriptorFile( fname, fext ):
 			self.sourceDir = fileDir
@@ -148,9 +161,6 @@ class ScriptGroup():
 					report('                    Assembly.Class: {0}.{1}'.format(	self.assemblyName,
 																					self.assemblyClassName ))
 				except unknownAssembly:
-					self.assemblyName = None
-					self.assemblyLocation = None
-					self.assemblyClassName = None
 					raise
 		else:
 			raise unknownFileNameFormat()
@@ -535,7 +545,7 @@ class pyRevitUISession():
 						cmd = scriptGroup.commands.pop()
 						if cmd.className not in pyRevitRibbonItemsDict:
 							report('\tCreating push button: {0}'.format( cmd.className ))
-							ribbonItem = pyRevitRibbonPanel.AddItem( PushButtonData( cmd.className, cmd.cmdName, self.newAssemblyLocation , cmd.className ))
+							ribbonItem = pyRevitRibbonPanel.AddItem( PushButtonData( cmd.className, scriptGroup.groupName, self.newAssemblyLocation , cmd.className ))
 							newButtonCount += 1
 						else:
 							report('\tUpdating push button: {0}'.format( cmd.className ))
