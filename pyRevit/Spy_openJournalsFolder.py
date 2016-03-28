@@ -18,17 +18,9 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
-from Autodesk.Revit.DB import Transaction
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-
-t = Transaction(doc, 'VWM dimensions')
-t.Start()
-
-for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Suffix = 'R.O.'
-	el.Below = 'VERIFY W/ MFR'
-
-t.Commit()
+import os, subprocess
+import os.path as op
+appdataFolder = os.getenv('localappdata')
+journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
+os.chdir(journalsFolder)
+subprocess.Popen(r'explorer "{0}"'.format( journalsFolder ))

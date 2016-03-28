@@ -18,16 +18,21 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
-from Autodesk.Revit.DB import Transaction
+from Autodesk.Revit.DB import Transaction, Dimension
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-t = Transaction(doc, 'EQ dimensions')
+t = Transaction(doc, 'VIF dimensions')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
 	el = doc.GetElement( elId )
-	el.ValueOverride = 'EQ'
+	if isinstance( el, Dimension ):
+		if len( list( el.Segments )) > 0:
+			for seg in el.Segments:
+				seg.Below = 'VIF'
+		else:
+			el.Below = 'VIF'
 
 t.Commit()

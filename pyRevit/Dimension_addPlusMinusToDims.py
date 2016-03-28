@@ -18,16 +18,21 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
-from Autodesk.Revit.DB import Transaction
+from Autodesk.Revit.DB import Transaction, Dimension
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-t = Transaction(doc, 'VIF dimensions')
+t = Transaction(doc, 'add plusMinus to dims')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
 	el = doc.GetElement( elId )
-	el.Below = 'VIF'
+	if isinstance( el, Dimension ):
+		if len( list( el.Segments )) > 0:
+			for seg in el.Segments:
+				seg.Prefix = u'\xb1'
+		else:
+			el.Prefix = u'\xb1'
 
 t.Commit()
