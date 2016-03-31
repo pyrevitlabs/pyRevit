@@ -30,7 +30,7 @@ class CopyUseDestination( IDuplicateTypeNamesHandler ):
 		return DuplicateTypeAction.UseDestinationTypes
 
 def error(msg):
-	TaskDialog.Show('RevitPythonShell', msg)
+	TaskDialog.Show('pyRevit', msg)
 	sys.exit(0)
 
 #get a list of selected drafting views

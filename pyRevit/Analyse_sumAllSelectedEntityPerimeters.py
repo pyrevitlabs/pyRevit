@@ -22,6 +22,10 @@ doc = __revit__.ActiveUIDocument.Document
 selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 total = 0.0
-for i in selection:
-	total += i.LookupParameter('Perimeter').AsDouble()
+for el in selection:
+	param = el.LookupParameter('Perimeter')
+	if param:
+		total += el.LookupParameter('Perimeter').AsDouble()
+	else:
+		print('Elemend with ID: {0} does not have Perimeter parameter.'.format( el.Id ))
 print("TOTAL PERIMETER OF ALL SELECTED ELEMENTS IS: {0}".format(total))

@@ -22,9 +22,18 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
+from Autodesk.Revit.DB import CurveElement
+
+def isline( line ):
+	return isinstance( line, CurveElement )
+
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	# print( el.GeometryCurve.EndPoint[0][2] )
-	# print( el.GeometryCurve.EndPoint[1][2] )
-	print( el.GeometryCurve.GetEndPoint(0) )
-	print( el.GeometryCurve.GetEndPoint(1) )
+	# if 'Lines' == el.Category.Name:
+	if isline(el):
+		el = doc.GetElement( elId )
+		# print( el.GeometryCurve.EndPoint[0][2] )
+		# print( el.GeometryCurve.EndPoint[1][2] )
+		print( el.GeometryCurve.GetEndPoint(0) )
+		print( el.GeometryCurve.GetEndPoint(1) )
+	else:
+		print('Elemend with ID: {0} is a not a line.'.format( el.Id ))

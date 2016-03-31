@@ -82,7 +82,7 @@ try:
 			t.Commit()
 		avui.ZoomToFit()
 	else:
-		TaskDialog.Show('RevitPythonShell', 'You must be on a 3D view to paste Section Box settings.')
+		TaskDialog.Show('pyRevit', 'You must be on a 3D view to paste Section Box settings.')
 	__window__.Close()
 except:
 	__window__.Show()

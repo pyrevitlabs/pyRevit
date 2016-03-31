@@ -23,5 +23,9 @@ selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Sele
 
 total = 0.0
 for i in selection:
-	total += i.LookupParameter('Area').AsDouble()
+	param = el.LookupParameter('Area')
+	if param:
+		total += i.LookupParameter('Area').AsDouble()
+	else:
+		print('Elemend with ID: {0} does not have Area parameter.'.format( el.Id ))
 print("TOTAL AREA OF ALL SELECTED ELEMENTS IS: {0}".format(total))

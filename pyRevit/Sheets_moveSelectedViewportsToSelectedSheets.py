@@ -70,8 +70,8 @@ if 0 < len(selSheets) <= 2:
 
 			t.Commit()
 	else:
-		TaskDialog.Show('RevitPythonShell', 'At least one viewport must be selected.')
+		TaskDialog.Show('pyRevit', 'At least one viewport must be selected.')
 elif len(selSheets) == 0:
-	TaskDialog.Show('RevitPythonShell', 'You must select at least one sheet to add the selected viewports to.')
+	TaskDialog.Show('pyRevit', 'You must select at least one sheet to add the selected viewports to.')
 elif len(selSheets) > 2:
-	TaskDialog.Show('RevitPythonShell', 'Maximum of two sheets can only be selected.')
+	TaskDialog.Show('pyRevit', 'Maximum of two sheets can only be selected.')

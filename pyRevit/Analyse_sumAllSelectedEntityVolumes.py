@@ -23,5 +23,9 @@ selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Sele
 
 total = 0.0
 for i in selection:
-	total += i.LookupParameter('Volume').AsDouble()
+	param = el.LookupParameter('Volume')
+	if param:
+		total += i.LookupParameter('Volume').AsDouble()
+	else:
+		print('Elemend with ID: {0} does not have Volume parameter.'.format( el.Id ))
 print("TOTAL VOLUME OF ALL SELECTED ELEMENTS IS: {0}".format(total))

@@ -85,4 +85,4 @@ if isinstance( av, View3D ):
 	pl.dump( vo , f)
 	f.close()
 else:
-	TaskDialog.Show('RevitPythonShell', 'You must be on a 3D view to copy Section Box settings.')
+	TaskDialog.Show('pyRevit', 'You must be on a 3D view to copy Section Box settings.')

@@ -31,7 +31,7 @@ basefolder = op.expandvars('%userprofile%\\desktop')
 sheetcount = 0
 
 def alert(msg):
-	TaskDialog.Show('RevitPythonShell', msg)
+	TaskDialog.Show('pyRevit', msg)
 
 def renamePDF( file ):
 	import re

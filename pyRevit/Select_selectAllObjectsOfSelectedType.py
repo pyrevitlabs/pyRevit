@@ -69,4 +69,4 @@ if len(selection) > 0:
 	uidoc.Selection.SetElementIds( List[ElementId]( set ) )
 else:
 	__window__.Close()
-	TaskDialog.Show('RevitPythonShell', 'At least one object must be selected.')
+	TaskDialog.Show('pyRevit', 'At least one object must be selected.')

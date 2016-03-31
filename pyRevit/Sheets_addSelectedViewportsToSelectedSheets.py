@@ -63,9 +63,9 @@ if len(selSheets) > 0:
 						ScheduleSheetInstance.Create( doc, sht.Id, vp.ScheduleId, vp.Point )
 			t.Commit()
 	else:
-		TaskDialog.Show('RevitPythonShell', 'At least one viewport must be selected.')
+		TaskDialog.Show('pyRevit', 'At least one viewport must be selected.')
 else:
-	TaskDialog.Show('RevitPythonShell', 'At least one sheet must be selected.')
+	TaskDialog.Show('pyRevit', 'At least one sheet must be selected.')
 
 
 
