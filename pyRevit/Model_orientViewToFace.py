@@ -26,18 +26,17 @@ doc = __revit__.ActiveUIDocument.Document
 selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 curview = uidoc.ActiveView
-ref = uidoc.Selection.PickObject( ObjectType.Face )
-el = doc.GetElement( ref.ElementId )
-face = el.GetGeometryObjectFromReference( ref )
-
-if isinstance( curview, View3D):
-	t = Transaction( doc, 'Orient to Selected Face')
-	t.Start()
-	sp = SketchPlane.Create( doc, Plane( face.Normal, face.Origin ))
-	curview.OrientTo( face.Normal.Negate() )
-	uidoc.ActiveView.SketchPlane = sp
-	uidoc.RefreshActiveView()
-	t.Commit()
-
-# __window__.Show()
-# print( ref.ElementReferenceType )
+try:
+	ref = uidoc.Selection.PickObject( ObjectType.Face )
+	el = doc.GetElement( ref.ElementId )
+	face = el.GetGeometryObjectFromReference( ref )
+	if isinstance( curview, View3D):
+		t = Transaction( doc, 'Orient to Selected Face')
+		t.Start()
+		sp = SketchPlane.Create( doc, Plane( face.Normal, face.Origin ))
+		curview.OrientTo( face.Normal.Negate() )
+		uidoc.ActiveView.SketchPlane = sp
+		uidoc.RefreshActiveView()
+		t.Commit()
+except:
+	pass

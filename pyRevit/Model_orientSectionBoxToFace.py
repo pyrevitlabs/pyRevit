@@ -31,25 +31,28 @@ doc = __revit__.ActiveUIDocument.Document
 curview = doc.ActiveView
 
 if isinstance( curview, View3D ) and curview.IsSectionBoxActive:
-	ref = uidoc.Selection.PickObject( ObjectType.Face )
-	el = doc.GetElement( ref.ElementId )
-	face = el.GetGeometryObjectFromReference( ref )
-	box = curview.GetSectionBox()
-	norm = face.ComputeNormal( UV(0,0) ).Normalize()
-	boxNormal = box.Transform.Basis[0].Normalize()
-	angle = norm.AngleTo( boxNormal )
-	axis = XYZ( 0, 0, 1.0 )
-	origin = XYZ( box.Min.X + (box.Max.X - box.Min.X)/2 , box.Min.Y + (box.Max.Y - box.Min.Y)/2 , 0.0 )
-	if norm.Y < boxNormal.X:
-		rotate = Transform.CreateRotationAtPoint( axis, Math.PI/2 - angle, origin)
-	else:
-		rotate = Transform.CreateRotationAtPoint( axis, angle, origin)
-	box.Transform  = box.Transform.Multiply( rotate )
-	t = Transaction( doc, 'Orient Section Box to Face')
-	t.Start()
-	curview.SetSectionBox( box )
-	uidoc.RefreshActiveView()
-	t.Commit()
+	try:
+		ref = uidoc.Selection.PickObject( ObjectType.Face )
+		el = doc.GetElement( ref.ElementId )
+		face = el.GetGeometryObjectFromReference( ref )
+		box = curview.GetSectionBox()
+		norm = face.ComputeNormal( UV(0,0) ).Normalize()
+		boxNormal = box.Transform.Basis[0].Normalize()
+		angle = norm.AngleTo( boxNormal )
+		axis = XYZ( 0, 0, 1.0 )
+		origin = XYZ( box.Min.X + (box.Max.X - box.Min.X)/2 , box.Min.Y + (box.Max.Y - box.Min.Y)/2 , 0.0 )
+		if norm.Y * boxNormal.X < 0:
+			rotate = Transform.CreateRotationAtPoint( axis, Math.PI/2 - angle, origin)
+		else:
+			rotate = Transform.CreateRotationAtPoint( axis, angle, origin)
+		box.Transform  = box.Transform.Multiply( rotate )
+		t = Transaction( doc, 'Orient Section Box to Face')
+		t.Start()
+		curview.SetSectionBox( box )
+		uidoc.RefreshActiveView()
+		t.Commit()
+	except:
+		pass
 elif isinstance( curview, View3D ) and not curview.IsSectionBoxActive:
 	TaskDialog.Show("pyRevit","The section box for View3D isn't active.")
 else:
