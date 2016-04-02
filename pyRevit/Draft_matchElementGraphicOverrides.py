@@ -36,6 +36,7 @@ fromStyle = curview.GetElementOverrides( sourceElement.Id )
 while True:
 	try:
 		destElement = doc.GetElement( uidoc.Selection.PickObject(ObjectType.Element, 'Pick objects to change their graphic overrides.') )
+		curview = doc.ActiveView
 		with Transaction(doc, 'Match Graphics Overrides') as t:
 			t.Start()
 			curview.SetElementOverrides( destElement.Id, fromStyle)
