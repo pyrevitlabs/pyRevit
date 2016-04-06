@@ -16,7 +16,7 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
-__doc__ = 'pick the source object that has the element GRAPHICS OVERRIDE you like to match to, and then pick the destination objects one by one and this toll will match the graphics.'
+__doc__ = 'pick the source object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics.'
 
 from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory, ElementId
 from Autodesk.Revit.UI.Selection import ObjectType
