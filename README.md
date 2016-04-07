@@ -19,6 +19,8 @@ Now the setup process:
 
 The `__RPS__userSetup.py` startup script will setup a ribbon panel named 'pyRevit'. There are 5 ways to add buttons to this ribbon panel and categorize them under sub-panels.
 
+#####Each step requires a 32x32 `.png` image file that will be used as the icon for the button or button group.
+
 ####Method 1 (PullDown Buttons):
 Step 1: Create a `.png` file, with name pattern as below:
 
