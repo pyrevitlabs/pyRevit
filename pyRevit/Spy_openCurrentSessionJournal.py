@@ -18,16 +18,29 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
+
 import os, subprocess
 import os.path as op
-appdataFolder = os.getenv('localappdata')
-journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
-os.chdir(journalsFolder)
-journalFiles = [x for x in os.listdir( journalsFolder ) if op.splitext(x)[1].lower() == '.txt']
-newest = max( journalFiles, key=op.getctime )
-pfFolder = os.getenv('ProgramFiles(x86)')
-nppExists = op.isfile( op.join( pfFolder, 'Notepad++\\Notepad++.EXE' ))
-if nppExists:
-	os.system('start notepad++ -lvb -n9999999999 "{0}"'.format( newest ))
+
+# Checks to see if notepad++ program is installed and available.
+def NPPExists():
+	pfFolder = os.getenv('ProgramFiles(x86)')
+	return op.isfile( op.join( pfFolder, 'Notepad++\\Notepad++.EXE' ))
+
+# def getCurrentJournalFile():
+	# appdataFolder = os.getenv('localappdata')
+	# journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
+	# os.chdir(journalsFolder)
+	# journalFiles = [x for x in os.listdir( journalsFolder ) if op.splitext(x)[1].lower() == '.txt']
+	# currentJournal = max( journalFiles, key=op.getctime )
+	# return currentJournal
+
+def getCurrentJournalFile():
+	return __revit__.Application.RecordingJournalFilename
+
+currentJournal = getCurrentJournalFile()
+
+if NPPExists():
+	os.system('start notepad++ -lvb -n9999999999 "{0}"'.format( currentJournal ))
 else:
-	os.system('start notepad "{0}"'.format( newest ))
+	os.system('start notepad "{0}"'.format( currentJournal ))

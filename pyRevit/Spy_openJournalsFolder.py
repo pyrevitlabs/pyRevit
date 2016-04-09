@@ -18,9 +18,20 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
+
 import os, subprocess
 import os.path as op
-appdataFolder = os.getenv('localappdata')
-journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
-os.chdir(journalsFolder)
+
+# def getJournalsFolder():
+	# appdataFolder = os.getenv('localappdata')
+	# journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
+	# os.chdir(journalsFolder)
+	# return journalsFolder
+
+def getJournalsFolder():
+	journalsFolder = op.dirname( __revit__.Application.RecordingJournalFilename )
+	os.chdir(journalsFolder)
+	return journalsFolder
+
+journalsFolder = getJournalsFolder()
 subprocess.Popen(r'explorer "{0}"'.format( journalsFolder ))
