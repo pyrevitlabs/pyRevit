@@ -17,14 +17,16 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-from Autodesk.Revit.DB import Element, FilteredElementCollector, ImportInstance, ModelPathUtils,TransmissionData, Transaction, CADLinkType, RevitLinkType
+from Autodesk.Revit.DB import Element, FilteredElementCollector, ImportInstance, ModelPathUtils, TransmissionData, Transaction, CADLinkType, RevitLinkType, ElementId
 import clr
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-# selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
-location = doc.PathName
+tobeDeleted = set()
+
 try:
+	location = doc.PathName
 	modelPath = ModelPathUtils.ConvertUserVisiblePathToModelPath( location )
 	transData = TransmissionData.ReadTransmissionData( modelPath )
 	externalReferences = transData.GetAllExternalFileReferenceIds()
@@ -32,34 +34,33 @@ try:
 	cl = FilteredElementCollector( doc )
 	impInstances = list( cl.OfClass( clr.GetClrType( ImportInstance )).ToElements() )
 
-	imported = []
-
-	t = Transaction( doc, 'Remove All External Links' )
-	t.Start()
-
 	for refId in externalReferences:
 		lnk = doc.GetElement( refId )
 		extRef = transData.GetLastSavedReferenceData( refId )
 		path = ModelPathUtils.ConvertModelPathToUserVisiblePath( extRef.GetPath() )
 		if isinstance( lnk, RevitLinkType):
-			print('REMOVED REF TO:{0}'.format( path ))
-			doc.Delete( refId )
+			print('REMOVING REVIT LINK\nID: {1}\tADDRESS: {0}\n'.format( path, refId ))
+			# tobeDeleted.append( refId )
+			tobeDeleted.add( lnk.Id.IntegerValue )
 		elif isinstance( lnk, CADLinkType ):
 			for inst in impInstances:
-				if inst.IsLinked and inst.GetTypeId() == refId:
-					print('REMOVED REF TO:{0}'.format( path ))
-					doc.Delete( inst.Id )
-				else:
-					imported.append( inst )
+				if inst.GetTypeId() == refId and not inst.IsLinked:
+					impType = doc.GetElement( inst.GetTypeId() )
+					print('--- SKIPPING IMPORTED INSTANCE ---\n{0}'.format( Element.Name.GetValue( impType )))
+				elif inst.GetTypeId() == refId and inst.IsLinked:
+					print('REMOVING CAD LINK\nID: {1}\tADDRESS: {0}\n'.format( path, refId ))
+					tobeDeleted.add( lnk.Id.IntegerValue )
 		else:
-			print('-SKIPPED: {0}'.format( path ))
-
-	for inst in imported:
-		if not inst.IsLinked:
-			impType = doc.GetElement( inst.GetTypeId() )
-			print('-SKIPPED IMPORTED: {0}'.format( Element.Name.GetValue( impType )))
-
-
-	t.Commit()
+			print('--- SKIPPING NON REVIT OR CAD LINK ---\nTYPE: {1} ADDRESS: {0}\n'.format( path, str(extRef.ExternalFileReferenceType).ljust(20) ))
 except:
 	print('Model is not saved yet. Can not aquire location.')
+
+t = Transaction( doc, 'Remove All External Links' )
+t.Start()
+for elid in tobeDeleted:
+	try:
+		doc.Delete( ElementId( elid ))
+	except Exception as e:
+		print(e)
+t.Commit()
+print('ALL DONE............')

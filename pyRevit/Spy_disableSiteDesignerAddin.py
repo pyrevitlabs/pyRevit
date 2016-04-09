@@ -63,7 +63,7 @@ if len(assmList) > 1:
 elif len(assmList) == 1:
 	assm = assmList[0]
 	if not assm.IsDynamic:
-		print('Site Designer assembly found:\n{0}\nAttemping disabling...'.format( assm.GetName().Name ))
+		print('Assembly found:\n{0}\nAttemping disabling...'.format( assm.GetName().Name ))
 		disableAddin( assm )
 	else:
 		print('Can not disable dynamic assembly...')
