@@ -28,6 +28,6 @@ newest = max( journalFiles, key=op.getctime )
 pfFolder = os.getenv('ProgramFiles(x86)')
 nppExists = op.isfile( op.join( pfFolder, 'Notepad++\\Notepad++.EXE' ))
 if nppExists:
-	os.system('start notepad++ "{0}"'.format( newest ))
+	os.system('start notepad++ -lvb -n9999999999 "{0}"'.format( newest ))
 else:
 	os.system('start notepad "{0}"'.format( newest ))
