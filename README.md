@@ -13,7 +13,7 @@ I have tried to explain everything clearly on this page. Let me know if you'd li
 ## Installation:
 [**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
 
-- Download the setup package and extract to your machine and place under a folder of your choice.
+- Download the setup package, extract to your machine and place under a folder of your choice.
 - Run `Setup.bat` and all scripts will be downloaded to this folder.
 - Setup script will create the necessary `.addin` file for Revit 2015 and 2016 to load the scripts at Revit startup.
 
@@ -26,7 +26,7 @@ Just click on the pyRevit tab and click on the command you'd like run. Most comm
 
 The `__init__.py` startup script will setup a ribbon panel named 'pyRevit' (After the folder name that contains the scripts). There are 5 ways to add buttons to this ribbon panel and categorize them under sub-panels.
 
-####All the methods listed below, require a 32x32 `.png` image file that will be used as the icon for the button or button group.
+####All the methods listed below, require a 32x32 pixel `.png` image file that will be used as the icon for the button or button group.
 
 ####Method 1 (PullDown Buttons):
 
