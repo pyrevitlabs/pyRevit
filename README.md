@@ -11,8 +11,11 @@ I have tried to explain everything clearly on this page. Let me know if you'd li
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes)
 
 ## Installation:
+[**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
+
 - Download the setup package and extract to your machine and place under a folder of your choice.
 - Run `Setup.bat` and all scripts will be downloaded to this folder.
+- Setup script will create the necessary `.addin` file for Revit 2015 and 2016 to load the scripts at Revit startup.
 
 ## Using the scripts:
 After you installed pyRevit and launched Revit, the startup script will find all the individual scripts and creates the necessary UI buttons for the commands.
