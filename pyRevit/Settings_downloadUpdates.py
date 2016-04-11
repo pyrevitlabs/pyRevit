@@ -30,7 +30,13 @@ print('Parent directory is: {0}'.format( cloneDir ))
 print('git package is located at: {0}'.format( gitDir ))
 print('\nUpdating pyRevit from github repository...')
 if op.exists( '{0}\git\cmd\git.exe'.format( gitDir ) ):
-	output = sp.check_output(r'{0}\git\cmd\git.exe pull'.format( gitDir ), cwd = cloneDir, shell=True )
-	print( output )
+	output = sp.Popen(r'{0}\git\cmd\git.exe fetch --all'.format( gitDir ), stdout = sp.PIPE, stderr = sp.PIPE, cwd = cloneDir, shell=True )
+	print( output.communicate()[0] )
+	r1 = output.returncode
+	output = sp.Popen(r'{0}\git\cmd\git.exe reset --hard origin/master'.format( gitDir ), stdout = sp.PIPE, stderr = sp.PIPE, cwd = cloneDir, shell=True )
+	print( output.communicate()[0] )
+	r2 = output.returncode
+	if r1 == r2 == 0:
+		print('pyRevit successfully updated...You can close this window now.')
 else:
 	print('Can not find portable git package.')
