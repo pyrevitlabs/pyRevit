@@ -3,7 +3,7 @@
 ##What is pyRevit:
 
 - It is an IronPython script `__init__.py` that automates the process of creating UI buttons for your IronPython scripts. Creating a button is as easy as adding a python script file to the pyRevit folder and reloading pyRevit. See below on how to add your scripts.
-- Scripts are only tested under WINDOWS OS (8,10) and REVIT 2015-2016. Some of the scripts use newly added API routines in Revit 2015 or 2016 and might not use on previous versions. Use at your own risk.
+- Scripts are only tested under WINDOWS OS (8 and 10) and REVIT 2015-2016. Some of the scripts use newly added API routines in Revit 2015 or 2016 and might not use on previous versions. Use at your own risk.
 
 ## Getting started:
 I have tried to explain everything clearly on this page. Let me know if you'd like to see more information on this page.
