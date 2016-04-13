@@ -2,13 +2,8 @@
 
 ##What is pyRevit:
 
-- It is an IronPython script `__init__.py` that automates the process of creating UI buttons for your IronPython scripts. Creating a button is as easy as adding a python script file to the pyRevit folder and reloading pyRevit. See below on how to add your scripts.
-- Scripts are only tested under WINDOWS OS (8 and 10) and REVIT 2015-2016. Some of the scripts use newly added API routines in Revit 2015 or 2016 and might not use on previous versions. Use at your own risk.
-
-## Getting started:
-I have tried to explain everything clearly on this page. Let me know if you'd like to see more information on this page.
-
-**About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes)
+- In it's simplest form, it's a folder filled with `.py` IronPython scripts for Revit.
+- There is also an IronPython script `__init__.py` that creates UI buttons for your IronPython scripts at Revit startup. Creating a button is as easy as adding a python script file to the pyRevit folder and reloading pyRevit. See below on how to add your scripts.
 
 ## Installation:
 [**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
@@ -18,8 +13,12 @@ I have tried to explain everything clearly on this page. Let me know if you'd li
 - Setup script will create the necessary `.addin` file for Revit 2015 and 2016 to load the scripts at Revit startup.
 - Run Revit and pyRevit will automatically load.
 
+This package installs a tiny addon on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addon is named RevitPythonLoader and is a fork of RevitPythonShell. How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
+
+**About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
+
 ## Using the scripts:
-After you installed pyRevit and launched Revit, the startup script will find all the individual scripts and creates the necessary UI buttons for the commands.
+After you installed pyRevit and launched Revit, the startup script will find all the individual scripts and creates the UI buttons for the commands.
 
 Just click on the pyRevit tab and click on the command you'd like run. Most command names are self-explanatory but there is a tooltip on the more complicated commands that describes the function. This tooltip is created from `__doc__` string inside each `.py` file.
 
@@ -83,7 +82,7 @@ This defines a subpanel under `pyRevit`, named `RPS`, and a simple Push Buttons 
 Another example of this method is `0005_RL_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the RevitLookup addin. This type of button does not need any external scripts. This single `.png` file has all the necessary information for this link button.
 
 ## Reloading the scripts library:
-pyRevit commands only keep a link to the IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modifed script file.
+pyRevit commands only keep a link to the actual IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modifed script file.
 
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
 
@@ -107,9 +106,10 @@ See [this](http://choosealicense.com/) page for more help on licensing your work
 ## Credits
 
 I'd like to thank people listed here for their great contributions:
-  * [Daren Thomas](https://github.com/daren-thomas) (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS that this package is heavily relying on and helping me through out this process.
-  * [Jeremy Tammik](https://github.com/jeremytammik) (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
-  * [Icons8](https://icons8.com/) for the beautiful icons.
-  * [ThubanPDX](https://github.com/ThubanPDX). Testing and new ideas for tools and scripts.
+
+- [Daren Thomas](https://github.com/daren-thomas) (original version, maintainer of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell)) for creating RPS and helping me.
+- [Jeremy Tammik](https://github.com/jeremytammik) (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
+- [Icons8](https://icons8.com/) for the beautiful icons.
+- [ThubanPDX](https://github.com/ThubanPDX). For testing and new ideas for tools and scripts.
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
