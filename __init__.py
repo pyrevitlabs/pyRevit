@@ -243,7 +243,7 @@ class ScriptCommand():
 			namePiecesLength = len( namePieces )
 			if namePiecesLength == 2:
 				self.scriptGroupName, self.cmdName = namePieces
-				self.className = tabName + self.cmdName
+				self.className = tabName + self.scriptGroupName + self.cmdName
 				reportv('Script found: {0} Group: {1} CommandName: {2}'.format(	f.ljust(50),
 																				self.scriptGroupName.ljust(20),
 																				self.cmdName ))
