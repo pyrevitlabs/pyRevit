@@ -13,7 +13,7 @@
 - Setup script will create the necessary `.addin` file for Revit 2015 and 2016 to load the scripts at Revit startup.
 - Run Revit and pyRevit will automatically load.
 
-This package installs a tiny addon on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addon is named RevitPythonLoader and is a fork of RevitPythonShell. How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
+This package installs a tiny addon on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addon is named [RevitPythonLoader](https://github.com/eirannejad/revitpythonloader) and is a fork of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell). How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
 
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
 
@@ -85,6 +85,11 @@ Another example of this method is `0005_RL_PushButton_Lookup_RevitLookup_CmdSnoo
 pyRevit commands only keep a link to the actual IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modifed script file.
 
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
+
+## Reinstall / Uninstall:
+- Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and reclones the github repositories just like a fresh install. If you answer No, It'll ask you if you want to uninstall the tool.
+- The setup script will remove the `.addin` files and `%pyrevit%` environment variable when uninstalling pyRevit.
+
 
 ## Contribute
 
