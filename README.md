@@ -19,7 +19,7 @@ This package installs a tiny addon on your Revit that its sole purpose in life i
 ##Documentation:
 I have tried to document everything about this libray here on this home page. Click on sections below to read more about each:
 
-- [Using the Scripts](#using-the-scripts)
+- [Using the Scripts](https://github.com/eirannejad/pyRevit#using-the-scripts)
 
 
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
