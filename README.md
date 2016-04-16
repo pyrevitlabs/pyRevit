@@ -6,7 +6,8 @@
 - There is also an IronPython script `__init__.py` that creates UI buttons for your IronPython scripts at Revit startup. Creating a button is as easy as adding a python script file to the pyRevit folder and reloading pyRevit. See below on how to add your scripts.
 
 ## Installation:
-[**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
+[![package](http://eirannejad.github.io/pyRevit/images/Software%20Box-48.png)  
+**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
 
 - Download the setup package, extract to your machine and place under a folder of your choice.
 - Run `Setup.bat` and all scripts will be downloaded to this folder.
