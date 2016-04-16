@@ -16,12 +16,6 @@
 
 This package installs a tiny addon on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addon is named [RevitPythonLoader](https://github.com/eirannejad/revitpythonloader) and is a fork of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell). How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
 
-##Documentation:
-I have tried to document everything about this libray here on this home page. Click on sections below to read more about each:
-
-- [Using the Scripts](https://github.com/eirannejad/pyRevit#using-the-scripts)
-
-
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
 
 ## Using the scripts:
