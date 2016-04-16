@@ -7,7 +7,7 @@
 
 ## Installation:
 [![package](http://eirannejad.github.io/pyRevit/images/Software%20Box-48.png)  
-**SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
+**DOWNLOAD SETUP PACKAGE**](https://github.com/eirannejad/pyRevit/releases/download/Setup/pyRevitPackage.zip)
 
 - Download the setup package, extract to your machine and place under a folder of your choice.
 - Run `Setup.bat` and all scripts will be downloaded to this folder.
@@ -101,9 +101,21 @@ In this example the 3 scripts below will be used to create 3 buttons in this sta
 
 
 ## Reloading the scripts library:
+![ReloadScripts](http://eirannejad.github.io/pyRevit/images/reloadScripts.png)
+
 pyRevit commands only keep a link to the actual IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modifed script file.
 
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
+
+## Keeping your library up to date:
+Use the download updates button under the `Settings` pull down to fetch all the recent changes from the github repository.
+
+![DownloadUpdates](http://eirannejad.github.io/pyRevit/images/downloadUpdates.png)
+
+**pyRevit** will open a window and will fetch the most recent changes from the github repository. Keep in mind that the changes you have made to the original scripts included in the library will be overwritten. Any extra scripts and file will remain intact. After the update, click on Reload Scripts to get buttons for any newly added script.
+
+![FetchingUpdates](http://eirannejad.github.io/pyRevit/images/fetchingupdates.png)
+
 
 ## Reinstall / Uninstall:
 - Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and reclones the github repositories just like a fresh install. If you answer No, It'll ask you if you want to uninstall the tool.
