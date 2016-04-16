@@ -30,6 +30,7 @@ The `__init__.py` startup script will setup a ribbon panel named 'pyRevit' (Afte
 ####All the methods listed below, require a 32x32 pixel `.png` image file that will be used as the icon for the button or button group.
 
 ####Method 1 (PullDown Buttons):
+![PulldownDemo](http://eirannejad.github.io/pyRevit/images/pulldownbuttondemo.png)  
 
 - Step 1: Create a `.png` file, with this naming pattern:
 `<00 Panel Order><00 Button Order>_<Panel Name>_PulldownButton_<Button Group Name>.png`
@@ -46,9 +47,12 @@ Scripts be organized under the group button specified in the source file name. F
 ####Method 2 (SplitButton):
 Same as Method 1 except it will create Split Buttons (The last selected sub-item will be the default active item)
 
+![SplitDemo](http://eirannejad.github.io/pyRevit/images/splitbuttondemo.png)  
+
 ####Method 3 (Stack3):
+![Stack3Demo](http://eirannejad.github.io/pyRevit/images/stackthreedemo.png)  
 Create a `.png` file, with this naming pattern:
-`<00 Panel Order><00 Button Order>_<Panel Name>_Stack3_<Stack Name>.png`
+`<00 Panel Order><00 Button Order>_<Panel Name>_Stack3_<Stack Name>.png`  
 
 Example:  
 `1005_Selection_Stack3_Inspect.png` defines a subpanel under `pyRevit`named `Selection`, and 3 Stacked Buttons in this panel. For a Stack3 button group, the startup script will expect to find exactly 3 scripts to be categorized under this stack. The actual stack name will be ignored since the stack doesn't have any visual representation other then the 3 buttons stacked in 3 rows.
@@ -60,9 +64,10 @@ In this example the 3 scripts below will be used to create 3 buttons in this sta
 
 Notice that the scripts use the same naming pattern as Method 1.  
 
-####Method 4 (PushButton):
+####Method 4 (PushButton):  
+![PushbuttonDemo](http://eirannejad.github.io/pyRevit/images/pushbuttondemo.png)  
 Create a `.png` file, with this naming pattern:
-`<00 Panel Order><00 Button Order>_<Panel Name>_PushButton_<Button Name>.png`
+`<00 Panel Order><00 Button Order>_<Panel Name>_PushButton_<Button Name>.png`  
 
 Example:
 
@@ -73,7 +78,8 @@ Example:
 
 
 ####Method 5 (Link Buttons):
-This button creates a link to another command of any other addin. Create a `.png` file, with the same naming pattern as Method 1, but also add `<Assembly Name>` and `<C# Class Name>` to the filename separated by `_`.
+This button is very similar to a PushButton except that it creates a link to a command of any other addin.  
+Create a `.png` file, with the same naming pattern as Method 1, but also add `<Assembly Name>` and `<C# Class Name>` to the filename separated by `_`.
 
 Example:  
 `0000_RPS_PushButton_RPS_RevitPythonShell_IronPythonConsoleCommand.png`
