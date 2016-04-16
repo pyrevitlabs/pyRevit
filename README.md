@@ -108,7 +108,7 @@ pyRevit commands only keep a link to the actual IronPython script file. Revit re
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
 
 ## Keeping your library up to date:
-Use the download updates button under the `Settings` pull down to fetch all the recent changes from the github repository.
+Use the `downloadUpdates` button under the `Settings` pull down to fetch all the recent changes from the github repository.
 
 ![DownloadUpdates](http://eirannejad.github.io/pyRevit/images/downloadUpdates.png)
 
@@ -118,8 +118,13 @@ Use the download updates button under the `Settings` pull down to fetch all the 
 
 
 ## Reinstall / Uninstall:
-- Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and reclones the github repositories just like a fresh install. If you answer No, It'll ask you if you want to uninstall the tool.
-- The setup script will remove the `.addin` files and `%pyrevit%` environment variable when uninstalling pyRevit.
+Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and reclones the github repositories just like a fresh install.
+ 
+![Reinstall](http://eirannejad.github.io/pyRevit/images/reinstall.png)
+
+If you answer No, It'll ask you if you want to uninstall the tool. The setup script will remove the `.addin` files and `%pyrevit%` environment variable when uninstalling pyRevit.
+
+![Reinstall](http://eirannejad.github.io/pyRevit/images/uninstallComplete.png)
 
 
 ## Contribute
