@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Sums up the values of VOLUME parameter on selected elements. Elements with no VOLUME parameter will be skipped.'
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]

@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all Grids in the model.'
+
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
 uidoc = __revit__.ActiveUIDocument

@@ -17,9 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-'''	Rename Revit output PDFs on user desktop to remove the project name from file name.'''
-
-__doc__ = 'Renames PDF sheets printed from Revit and removed the Central model name from the PDF names. The PDF files must be on desktop.'
+__doc__ = 'Renames PDF sheets printed from Revit and removes the Central model name from the PDF names. The PDF files must be on desktop.'
 
 import os, sys
 import os.path as op

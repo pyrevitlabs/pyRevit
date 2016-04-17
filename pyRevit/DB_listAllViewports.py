@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all viewports and their types.'
+
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
 
 uidoc = __revit__.ActiveUIDocument

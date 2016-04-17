@@ -17,13 +17,19 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-from Autodesk.Revit.DB import FilteredElementCollector, Family
+__doc__ = 'Flips the facing for the selected doors.'
+
+__window__.Close()
+from Autodesk.Revit.DB import Transaction
+
 doc = __revit__.ActiveUIDocument.Document
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
-cl = FilteredElementCollector(doc)
-list = [i for i in cl.OfClass(Family).ToElements()]
+t = Transaction( doc, 'Flip Facing Selected Doors')
+t.Start()
 
-for family in list:
-	print('NAME: {0} CATEGORY: {1}'.format(	family.Name.ljust(50),
-								family.FamilyCategory.Name.ljust(15)
-	))
+for el in selection:
+	if el.Category.Name == 'Doors':
+		el.flipFacing()
+
+t.Commit()

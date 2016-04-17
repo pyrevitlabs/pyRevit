@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Exports the current view to a 600DPI PNG image.'
+
 __window__.Close()
 import clr
 clr.AddReference('System.Windows.Forms')

@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Opens Revit API Developers Guide website.'
+
 __window__.Close()
 import os
 os.system('start http://help.autodesk.com/view/RVT/2016/ENU/?guid=GUID-F0A122E0-E556-4D0D-9D0F-7E72A9315A42') 

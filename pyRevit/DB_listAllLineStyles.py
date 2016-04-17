@@ -16,6 +16,7 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
+__doc__ = 'Lists all line styles in the model.'
 
 from Autodesk.Revit.DB import *
 doc = __revit__.ActiveUIDocument.Document

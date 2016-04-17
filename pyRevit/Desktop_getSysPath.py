@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Prints the IronPython sys.path paths.'
+
 import sys, os
 folder = os.path.dirname(__file__)
 print('Home directory of this script:\n{0}\n'.format( folder ))

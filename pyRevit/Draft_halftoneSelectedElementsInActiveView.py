@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Sets element graphic override to halftone on the selected elements. If any of the elements is a group, the script will apply the override to all its members.'
+
 __window__.Close()
 from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, Group
 

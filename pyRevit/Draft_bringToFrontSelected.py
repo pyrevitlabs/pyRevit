@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Brings selected object to Front of the current view. This only works on elements that support this option.'
+
 __window__.Close()
 from Autodesk.Revit.DB import Transaction
 from Autodesk.Revit.DB import DetailElementOrderUtils as eo

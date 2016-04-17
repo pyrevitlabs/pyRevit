@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Opens RegExr website that is used to create and test regular expressions.'
+
 __window__.Close()
 import os
 os.system('start http://regexr.com/') 

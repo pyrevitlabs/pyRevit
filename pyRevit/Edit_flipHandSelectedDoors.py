@@ -17,11 +17,19 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-from Autodesk.Revit.DB import FilteredElementCollector, FamilySymbol, Element, ElementType
+__doc__ = 'Flips hand on the selected doors.'
+
+__window__.Close()
+from Autodesk.Revit.DB import Transaction
+
 doc = __revit__.ActiveUIDocument.Document
+selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
-cl = FilteredElementCollector( doc )
-list = cl.OfClass( ElementType )
+t = Transaction( doc, 'Flip Hand Selected Doors')
+t.Start()
 
-for f in list:
-	print( Element.Name.GetValue( f ), ElementType.FamilyName.GetValue( f ))
+for el in selection:
+	if el.Category.Name == 'Doors':
+		el.flipHand()
+
+t.Commit()

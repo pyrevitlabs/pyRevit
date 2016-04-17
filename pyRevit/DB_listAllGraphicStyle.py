@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all graphic styles in the model.'
+
 from Autodesk.Revit.DB import FilteredElementCollector, GraphicsStyle, Transaction
 doc = __revit__.ActiveUIDocument.Document
 

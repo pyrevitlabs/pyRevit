@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all Model Lines, Sketch Lines, and Detail Lines.'
+
 from Autodesk.Revit.DB import ElementMulticategoryFilter, FilteredElementCollector, BuiltInCategory
 from System.Collections.Generic import List
 

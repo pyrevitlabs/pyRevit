@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all sketch planes in this model.'
+
 from Autodesk.Revit.DB import FilteredElementCollector, SketchPlane, Transaction
 doc = __revit__.ActiveUIDocument.Document
 

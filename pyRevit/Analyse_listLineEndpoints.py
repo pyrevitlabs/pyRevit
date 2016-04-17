@@ -19,6 +19,8 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 # from Autodesk.Revit.DB import *
 
+__doc__ = 'Lists coordinates of line endpoints.'
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 

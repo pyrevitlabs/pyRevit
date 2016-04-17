@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Resets element graphic override for the selected elements.'
+
 __window__.Close()
 from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings
 

@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Flips the selected walls along their core axis and changes their location lines to Core Face Exterior.'
+
 __window__.Close()
 from Autodesk.Revit.DB import TransactionGroup, Transaction, Wall
 

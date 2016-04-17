@@ -17,6 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
+__doc__ = 'Lists all revision clouds in this model. It also prints the sheet number for any revision cloud on sheet views.'
+
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ViewSheet
 doc = __revit__.ActiveUIDocument.Document
 
