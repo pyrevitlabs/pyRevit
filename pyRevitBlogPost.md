@@ -25,7 +25,7 @@ You can look into them and learn how to use IronPython for Revit to perform diff
 Please refer to the [pyRevit](https://github.com/eirannejad/pyRevit) GitHub repository for links and instructions on how to install on your machine.
 
 
-## Quick Look at pyRevit
+## Quick Look at Some pyRevit Scripts
 
 Let's take a quick look at some of the more useful scripts in this library:
 
@@ -65,7 +65,7 @@ This one is pretty obvious. Run the script, select your source object to pick up
 ![DesktopPallete](http://eirannejad.github.io/pyRevit/images/desktoppallete.png)
 
 
-## An Even Quicker but Deeper Look
+## An Even Quicker but Deeper Look at Setting up pyRevit
 
 Now let's take an even quicker and slightly deeper look at [pyRevit](https://github.com/eirannejad/pyRevit):
 
