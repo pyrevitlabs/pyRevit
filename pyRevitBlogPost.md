@@ -96,14 +96,14 @@ This means that you can change a script on the fly while Revit is running, and t
 
 But how do you tell Revit to run this script during start-up?
 
-There are two ways to do this:
+There are two ways to achieve this:
 
 - The easy way:
-[RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) has an option under `Configuration` to run an IronPython script at Revit startup. Just download the [pyRevit](https://github.com/eirannejad/pyRevit) repository, set the ***RevitPythonShell*** startup script address to the file address of the `__init__.py` script, and restart Revit. Voila, ***pyRevit*** tab is there.
+[RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) has an option under `Configuration` to run an IronPython script at Revit startup. Just download the [pyRevit](https://github.com/eirannejad/pyRevit) repository, set the ***RevitPythonShell*** startup script address to the file address of the `__init__.py` script, and restart Revit. Voila, the ***pyRevit*** tab appears.
 
 - The even easier way:
-Download the setup package from the [pyRevit](https://github.com/eirannejad/pyRevit) github page and install. Done! Launch your Revit and ***pyRevit*** will be there.
+Download the setup package from the [pyRevit](https://github.com/eirannejad/pyRevit) GitHub repository and install. Done! Launch your Revit and ***pyRevit*** will be there.
 
-If you'd like to know more about ***pyRevit*** and how to add your own scripts, go to its github home page and there you'll find everything you want to know about it.
+If you'd like to find out more about ***pyRevit*** and how to add your own scripts, go to its GitHub home page and everything you want to know about it is provided.
 
-Happy scripting.
+Happy scripting!
