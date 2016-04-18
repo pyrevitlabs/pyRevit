@@ -65,28 +65,36 @@ This one is pretty obvious. Run the script, select your source object to pick up
 ![DesktopPallete](http://eirannejad.github.io/pyRevit/images/desktoppallete.png)
 
 
-##An even quicker but deeper look:
+## An Even Quicker but Deeper Look
+
 Now let's take an even quicker and slightly deeper look at [pyRevit](https://github.com/eirannejad/pyRevit):
 
 In it's simplest form, it's a folder filled with `.py` IronPython scripts for Revit.
 
 ![pyrevitFolder](http://eirannejad.github.io/pyRevit/images/pyrevitfolder.png)
 
-But to use them, you'd need to run them under [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) since Revit doesn't have an IronPython prompt by itself.
+Since Revit itself does not provide an IronPython console, you
+need [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) to
+run them.
 
 ![RPSconsole](http://eirannejad.github.io/pyRevit/images/revitpythonshellconsole.png)
 
-But let's say you have written a script that automatically designs amazing buildings and creates the Revit model and construction documents for it and let's say you want to run this script as fast as you can and make a whole buncha money really quickly but it takes time to open the command prompt every time, browse to the script file, open it and run it so you naturally want something faster!
+Let's say you have written a script that automatically designs amazing buildings and creates the Revit model and construction documents for it, and let's say you want to run this script as fast as you can and make a whole buncha money really quickly, but it takes time to open the command prompt every time, browse to the script file, open it and run it, so you naturally want something faster!
 
-So in order to make [pyRevit](https://github.com/eirannejad/pyRevit) more user friendly, another script has been added to the library that finds all the other scripts and creates buttons inside Revit's user interface. This way you can just click on the buttons instead of using the command prompt.
+In order to make [pyRevit](https://github.com/eirannejad/pyRevit) more user friendly, it includes a helper script that finds all the other scripts and creates buttons for them in the Revit user interface.
+This way. you can just click on the buttons instead of using the command prompt.
 
-This script is appropriately called `__init__.py` and lives in the roof folder or [pyRevit](https://github.com/eirannejad/pyRevit) library.
+This script is appropriately called `__init__.py` and lives in
+the [pyRevit](https://github.com/eirannejad/pyRevit) library root folder.
 
-What's neat about this is that these user interface buttons only memorize the address to the script and load and run the script file every time the user clicks on the button. This means that you can change the scripts on the fly while your Revit is running and the next time you click on the button, Revit will run the modified script.
+What's neat about this is that the user interface buttons only store the address to each script.
+The script is reloaded and run every time the user clicks on the button.
+
+This means that you can change a script on the fly while Revit is running, and the next time you click on the button, Revit will run the modified script.
 
 ![initscript](http://eirannejad.github.io/pyRevit/images/initscript.png)
 
-But how do you tell Revit to run this script when its starting up?
+But how do you tell Revit to run this script during start-up?
 
 There are two ways to do this:
 
