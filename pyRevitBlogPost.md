@@ -29,10 +29,11 @@ Please refer to the [pyRevit](https://github.com/eirannejad/pyRevit) GitHub repo
 
 Let's take a quick look at some of the more useful scripts in this library:
 
-### Selection Memory:
-There are a couple of scripts that help you select object more efficiently in Revit. They are similar to the M+, M-, buttons on calculators where you can add or deduct values from memory and read the final value using the MR button.
+### Selection Memory
 
-Under ***pyRevit*** tab, you'll find MAppend, MAppendOverwrite, MRead, MDeduct, and MClear buttons that add, add and overwite, read, deduct, and clear the contents of the selection memory. Using these tools, you can navigate between multiple views and select objects, add them to the memory and when you're done, recall the selection. These tools work really well in combination with other selection tools under ***pyRevit*** tab. See images here for the tools and tooltips.
+A couple of scripts help you select object more efficiently in Revit. They are similar to the M+, M-, buttons on calculators where you can add or deduct values from memory and read the final value using the MR button.
+
+Under the ***pyRevit*** tab, you'll find MAppend, MAppendOverwrite, MRead, MDeduct, and MClear buttons that add, add and overwite, read, deduct, and clear the contents of the selection memory. Using these tools, you can navigate between multiple views and select objects, add them to the memory and when you're done, recall the selection. These tools work really well in combination with other selection tools under ***pyRevit*** tab. See images here for the tools and tooltips.
 
 Each tooltip shows the button name, the script that the button is assciated with and a description of what the script does.
 
@@ -40,21 +41,24 @@ Each tooltip shows the button name, the script that the button is assciated with
 ![MRead](http://eirannejad.github.io/pyRevit/images/mread.png)
 ![OtherMemory](http://eirannejad.github.io/pyRevit/images/othermemory.png)
 
-###Copy and Convert Legend Views:
-These are a set of scripts that help you copy Legend Views to all other project open within a Revit session. You can copy the Legends as Legend views or as Drafting views.
+### Copy and Convert Legend Views
+
+This set of scripts help you copy Legend Views to all other project open within a Revit session.
+You can copy the Legends as Legend views or as Drafting views.
 
 ![CopyLegends](http://eirannejad.github.io/pyRevit/images/copylegends.png)
 
-Also there are two more scripts that duplicate and convert Legend views to Drafting views and vice versa withing the same project.
+Two more scripts duplicate and convert Legend views to Drafting views and vice versa withing the same project.
 
 ![DuplicateLegends](http://eirannejad.github.io/pyRevit/images/convertlegends.png)
 
-###Matching Element Graphic Overrides:
+### Matching Element Graphic Overrides
+
 This one is pretty obvious. Run the script, select your source object to pick up the style, and then one by one, select the destination objects to apply the graphic overrides. You can also navigate to other views and apply to objects within that view.
 
 ![MatchGraphicOverrides](http://eirannejad.github.io/pyRevit/images/matchgraphicoverrides.png)
 
-There are a lot more scripts in this library and most of them are really useful in a production environment.
+pyRevit provides many other powerful scripts, and most of them are really useful in a production environment.
 
 ![AnalsisAndModifyPallete](http://eirannejad.github.io/pyRevit/images/analysisandmodifypallete.png)
 ![ProjectPallete](http://eirannejad.github.io/pyRevit/images/projectpallete.png)
