@@ -58,7 +58,7 @@ This one is pretty obvious. Run the script, select your source object to pick up
 
 ![MatchGraphicOverrides](http://eirannejad.github.io/pyRevit/images/matchgraphicoverrides.png)
 
-pyRevit provides many other powerful scripts, and most of them are really useful in a production environment.
+***pyRevit*** provides many other powerful scripts, and most of them are really useful in a production environment.
 
 ![AnalsisAndModifyPallete](http://eirannejad.github.io/pyRevit/images/analysisandmodifypallete.png)
 ![ProjectPallete](http://eirannejad.github.io/pyRevit/images/projectpallete.png)
