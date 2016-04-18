@@ -14,7 +14,7 @@
 - Setup script will create the necessary `.addin` file for Revit 2015 and 2016 to load the scripts at Revit startup.
 - Run Revit and pyRevit will automatically load.
 
-This package installs a tiny addon on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addon is named [RevitPythonLoader](https://github.com/eirannejad/revitpythonloader) and is a fork of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell). How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
+This package installs a tiny addin on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addin is named [RevitPythonLoader](https://github.com/eirannejad/revitpythonloader) and is a fork of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell). How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
 
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
 
@@ -38,7 +38,7 @@ The `__init__.py` startup script will setup a ribbon panel named 'pyRevit' (Afte
   
   **Example:**  
   `1003_Selection_PulldownButton_Filter.png`  
-  This `.png` file, defines a subpanel under `pyRevit` ribbon panel named `Selection`, and a `PulldownButton` named `Filter` under this panel. Startup script will use the order numbers to sort the panels and buttons and later to create them in order.
+  This `.png` file, defines a sub-panel under `pyRevit` ribbon panel named `Selection`, and a `PulldownButton` named `Filter` under this panel. Startup script will use the order numbers to sort the panels and buttons and later to create them in order.
 
 - **Step 2:** All `.py` script under the home directory should have the below name pattern:
 `<Button Group Name>_<Script Command Name>.py`.  
@@ -62,7 +62,7 @@ For a SplitButton, create a `.png` file, with this naming pattern:
 `<00 Panel Order><00 Button Order>_<Panel Name>_PushButton_<Button Name>.png`
 
 	**Example:**  
-	`1005_Revit_PushButton_BIM.png` defines a subpanel under `pyRevit` named `Revit`, and a simple Push Buttons in this panel named `BIM`. The startup script will expect to find only one script with name pattern similar to Method 1, and will assign it to this push button.
+	`1005_Revit_PushButton_BIM.png` defines a sub-panel under `pyRevit` named `Revit`, and a simple Push Buttons in this panel named `BIM`. The startup script will expect to find only one script with name pattern similar to Method 1, and will assign it to this push button.
 
 - **Step 2:** All `.py` script under the home directory should have the below name pattern:
 `<Button Group Name>_<Script Command Name>.py`.  
@@ -75,7 +75,7 @@ Create a `.png` file, with the same naming pattern as Method 1, but also add `<A
 **Example:**  
 `0000_RPS_PushButton_RPS_RevitPythonShell_IronPythonConsoleCommand.png`
 
-This defines a subpanel under `pyRevit`, named `RPS`, and a simple Push Buttons in this panel, named `RPS`. But then the startup script will use the `<Assembly Name>` and `<C# Class Name>` and will look for the referenced addin and class. If this addin has been already loaded into Revit, the startup script will assign the `<C# Class Name>` to this button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin.
+This defines a sub-panel under `pyRevit`, named `RPS`, and a simple Push Buttons in this panel, named `RPS`. But then the startup script will use the `<Assembly Name>` and `<C# Class Name>` and will look for the referenced addin and class. If this addin has been already loaded into Revit, the startup script will assign the `<C# Class Name>` to this button. In this example, startup script will create a button that opens the 'Interactive Python Shell' from RevitPythonShell addin.
 
 Another example of this method is `0005_RL_PushButton_Lookup_RevitLookup_CmdSnoopDb.png` that will create a button calling the 'Snoop DB' command of the [RevitLookup](https://github.com/jeremytammik/RevitLookup) addin.
 
@@ -89,7 +89,7 @@ Notice that this type of button does not need any external scripts. This single 
 `<00 Panel Order><00 Button Order>_<Panel Name>_Stack3_<Stack Name>.png`  
 
 	**Example:**  
-	`1005_Selection_Stack3_Inspect.png` defines a subpanel under `pyRevit`named `Selection`, and 3 Stacked Buttons in this panel. For a Stack3 button group, the startup script will expect to find exactly 3 scripts to be categorized under this stack. The actual stack name will be ignored since the stack doesn't have any visual representation other then the 3 buttons stacked in 3 rows.
+	`1005_Selection_Stack3_Inspect.png` defines a sub-panel under `pyRevit`named `Selection`, and 3 Stacked Buttons in this panel. For a Stack3 button group, the startup script will expect to find exactly 3 scripts to be categorized under this stack. The actual stack name will be ignored since the stack doesn't have any visual representation other then the 3 buttons stacked in 3 rows.
 
 - **Step 2:** All `.py` script under the home directory should have the below name pattern:
 `<Button Group Name>_<Script Command Name>.py`.  
@@ -103,7 +103,7 @@ In this example the 3 scripts below will be used to create 3 buttons in this sta
 ## Reloading the scripts library:
 ![ReloadScripts](http://eirannejad.github.io/pyRevit/images/reloadScripts.png)
 
-pyRevit commands only keep a link to the actual IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modifed script file.
+pyRevit commands only keep a link to the actual IronPython script file. Revit reads and runs the script file any time the user clicks on the corresponding button. This means you can edit any script while Revit is running and the next time you click on the corresponding script button, Revit will run the modified script file.
 
 If you added scripts or panels while Revit is running, use the `reloadScripts` button from the `Settings` group to reload the changes. It'll search for the scripts and will update the buttons, disabling the missing and adding the newly found.
 
@@ -118,7 +118,7 @@ Use the `downloadUpdates` button under the `Settings` pull down to fetch all the
 
 
 ## Reinstall / Uninstall:
-Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and reclones the github repositories just like a fresh install.
+Run `Setup.bat` and it'll prompt you that the pyRevit or RevitPythonLoader folders already exist and if you want to Reinstall pyRevit. If you answer yes, it'll delete the folders and re-clones the github repositories just like a fresh install.
  
 ![Reinstall](http://eirannejad.github.io/pyRevit/images/reinstall.png)
 
