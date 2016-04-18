@@ -48,7 +48,7 @@ You can copy the Legends as Legend views or as Drafting views.
 
 ![CopyLegends](http://eirannejad.github.io/pyRevit/images/copylegends.png)
 
-Two more scripts duplicate and convert Legend views to Drafting views and vice versa withing the same project.
+Two more scripts duplicate and convert Legend views to Drafting views and vice versa within the same project.
 
 ![DuplicateLegends](http://eirannejad.github.io/pyRevit/images/convertlegends.png)
 
