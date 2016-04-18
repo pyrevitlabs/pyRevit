@@ -67,7 +67,7 @@ This one is pretty obvious. Run the script, select your source object to pick up
 
 ## An Even Quicker but Deeper Look at Setting up pyRevit
 
-Now let's take an even quicker and slightly deeper look at [pyRevit](https://github.com/eirannejad/pyRevit):
+Now let's take an even quicker and slightly deeper look at setting up [pyRevit](https://github.com/eirannejad/pyRevit):
 
 In it's simplest form, it's a folder filled with `.py` IronPython scripts for Revit.
 
