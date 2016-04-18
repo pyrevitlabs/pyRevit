@@ -100,9 +100,9 @@ There are two ways to achieve this:
 
 - The easy way:
 [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell) has
-an option under `Configuration` to run an IronPython script at Revit startup. Just download
+an option under `Configuration` to run an IronPython script at Revit start-up. Just download
 the [pyRevit](https://github.com/eirannejad/pyRevit) repository,
-set the ***RevitPythonShell*** startup script address to the file address of the `__init__.py` script, and restart Revit.
+set the ***RevitPythonShell*** start-up script address to the file address of the `__init__.py` script, and restart Revit.
 Voila, the ***pyRevit*** tab appears.
 
 - The even easier way:
