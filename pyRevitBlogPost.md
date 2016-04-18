@@ -87,12 +87,12 @@ This way. you can just click on the buttons instead of using the command prompt.
 This script is appropriately called `__init__.py` and lives in
 the [pyRevit](https://github.com/eirannejad/pyRevit) library root folder.
 
+![initscript](http://eirannejad.github.io/pyRevit/images/initscript.png)
+
 What's neat about this is that the user interface buttons only store the address to each script.
 The script is reloaded and run every time the user clicks on the button.
 
 This means that you can change a script on the fly while Revit is running, and the next time you click on the button, Revit will run the modified script.
-
-![initscript](http://eirannejad.github.io/pyRevit/images/initscript.png)
 
 But how do you tell Revit to run this script during start-up?
 
