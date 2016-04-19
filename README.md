@@ -16,6 +16,10 @@
 
 This package installs a tiny addin on your Revit that its sole purpose in life is to run the `__init__.py` at Revit startup. This addin is named [RevitPythonLoader](https://github.com/eirannejad/revitpythonloader) and is a fork of [RevitPythonShell](https://github.com/architecture-building-systems/revitpythonshell). How does it find the `__init__.py` you ask? Through a windows environment variable called `%pyRevit%` that it also automatically creates at installation. This variable points to the folder containing the `__init__.py` file.
 
+Neil Reilly has prepared a handy video taking you through the installation and showing some of the more useful tools. Click here to go to his Youtube page and watch the video.
+
+[![NeilReillyVideo](http://img.youtube.com/vi/71rvCspWNHs/0.jpg)](https://www.youtube.com/watch?v=71rvCspWNHs)
+
 **About Versioning:** I'm using semantic versioning with MAJOR.MINOR.PATCH format. (MAJOR: incompatible API changes, MINOR: add functionality and scripts in a backwards-compatible manner, PATCH: backwards-compatible bug fixes). You can see your pyRevit version under `Settings -> aboutPyRevit`
 
 ## Using the scripts:
@@ -152,5 +156,6 @@ I'd like to thank people listed here for their great contributions:
 - [Jeremy Tammik](https://github.com/jeremytammik) (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
 - [Icons8](https://icons8.com/) for the beautiful icons.
 - [ThubanPDX](https://github.com/ThubanPDX). For testing and new ideas for tools and scripts.
+- [Neil Reilly](https://icons8.com/) for the handy introduction and installation [video](https://www.youtube.com/watch?v=71rvCspWNHs).
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
