@@ -17,17 +17,11 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-__window__.Close()
-from Autodesk.Revit.DB import Transaction
-
+from Autodesk.Revit.DB import FilteredElementCollector, FamilySymbol, Element, ElementType
 doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
- 
-t = Transaction(doc, 'to Sentence case')
-t.Start()
 
-for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Text = el.Text[0].upper() + el.Text[1:].lower()
+cl = FilteredElementCollector( doc )
+list = cl.OfClass( ElementType )
 
-t.Commit()
+for f in list:
+	print( Element.Name.GetValue( f ), ElementType.FamilyName.GetValue( f ))

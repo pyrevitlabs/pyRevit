@@ -18,16 +18,23 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
-from Autodesk.Revit.DB import Transaction
+from Autodesk.Revit.DB import ElementId
+from Autodesk.Revit.UI import PostableCommand as pc
+from Autodesk.Revit.UI import RevitCommandId as rcid
+import os
 
-doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
- 
-t = Transaction(doc, 'to Sentence case')
-t.Start()
+doc = __revit__.ActiveUIDocument.Document
+
+def addToClipBoard( text ):
+	command = 'echo ' + text.strip() + '| clip'
+	os.system( command )
+
+selectedIds = ''
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Text = el.Text[0].upper() + el.Text[1:].lower()
+	selectedIds = selectedIds + str( elId ) + ','
 
-t.Commit()
+cid_SelectById = rcid.LookupPostableCommandId( pc.SelectById )
+addToClipBoard( selectedIds )
+__revit__.PostCommand( cid_SelectById )

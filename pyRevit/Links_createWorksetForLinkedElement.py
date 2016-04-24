@@ -16,7 +16,7 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
-
+__doc__ = 'This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model.'
 __window__.Close()
 from Autodesk.Revit.DB import RevitLinkInstance, Transaction, Workset, ImportInstance, BuiltInParameter
 from Autodesk.Revit.UI import TaskDialog

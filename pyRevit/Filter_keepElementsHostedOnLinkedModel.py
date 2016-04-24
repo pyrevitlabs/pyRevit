@@ -18,16 +18,18 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 __window__.Close()
-from Autodesk.Revit.DB import Transaction
+from Autodesk.Revit.DB import ElementId, RevitLinkInstance
+from System.Collections.Generic import List
 
-doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
- 
-t = Transaction(doc, 'to Sentence case')
-t.Start()
+doc = __revit__.ActiveUIDocument.Document
 
+set = []
 for elId in uidoc.Selection.GetElementIds():
 	el = doc.GetElement( elId )
-	el.Text = el.Text[0].upper() + el.Text[1:].lower()
+	host = el.Host
+	if isinstance( host, RevitLinkInstance ):
+		set.append( elId )
 
-t.Commit()
+uidoc.Selection.SetElementIds( List[ElementId]( set ) )
+uidoc.RefreshActiveView()
