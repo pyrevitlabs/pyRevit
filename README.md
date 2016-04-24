@@ -156,6 +156,7 @@ I'd like to thank people listed here for their great contributions:
 - [Jeremy Tammik](https://github.com/jeremytammik) (creator and maintainer of [RevitLookup](https://github.com/jeremytammik/RevitLookup))
 - [Icons8](https://icons8.com/) for the beautiful icons.
 - [ThubanPDX](https://github.com/ThubanPDX). For testing and new ideas for tools and scripts.
-- [Neil Reilly](https://icons8.com/) for the handy introduction and installation [video](https://www.youtube.com/watch?v=71rvCspWNHs).
+- Neil Reilly for the handy introduction and installation [video](https://www.youtube.com/watch?v=71rvCspWNHs).
+- [git-scm](https://git-scm.com) for the open source, portable git for windows.
 
 **NOTE**: If you are not on this list, but believe you should be, please contact me!
