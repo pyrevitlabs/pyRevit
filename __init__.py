@@ -178,7 +178,7 @@ class ScriptGroup:
         self.groupType = None
         self.groupName = ''
         self.buttonIcons = None
-        self.assemblyname = None
+        self.assemblyName = None
         self.assemblyClassName = None
         self.assemblyLocation = None
         self.tabName = tabname
@@ -200,11 +200,11 @@ class ScriptGroup:
                 self.buttonIcons = ButtonIcons(filedir, f)
             # check to see if name has assembly information
             if len(namepieces) == 6:
-                self.assemblyname, self.assemblyClassName = namepieces[4:]
+                self.assemblyName, self.assemblyClassName = namepieces[4:]
                 try:
-                    self.assemblyname = ScriptGroup.findassembly(self.assemblyname).GetName().Name
-                    self.assemblyLocation = ScriptGroup.findassembly(self.assemblyname).Location
-                    reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyname,
+                    self.assemblyName = ScriptGroup.findassembly(self.assemblyName).GetName().Name
+                    self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
+                    reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyName,
                                                                                  self.assemblyClassName))
                 except UnknownAssembly:
                     raise
@@ -220,7 +220,7 @@ class ScriptGroup:
                     self.commands.append(cmd)
 
     def islinkbutton(self):
-        return self.assemblyname is not None
+        return self.assemblyName is not None
 
     @staticmethod
     def isdescriptorfile(fname, fext):
