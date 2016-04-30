@@ -30,5 +30,5 @@ cl = FilteredElementCollector(doc)
 list = cl.OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType()
 
 for i in list:
-	print('Level ID:\t{1}\t\t\tName:\t{0}'.format(i.Name, i.Id.IntegerValue))
+	print('Level ID:\t{1}\tELEVATION:{2}\t\tName:\t{0}'.format(i.Name, i.Id.IntegerValue, i.Elevation))
 	
