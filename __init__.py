@@ -98,6 +98,13 @@ class ButtonIcons:
         self.smallBitmap.DecodePixelHeight = 16
         self.smallBitmap.DecodePixelWidth = 16
         self.smallBitmap.EndInit()
+        self.mediumBitmap = BitmapImage()
+        self.mediumBitmap.BeginInit()
+        self.mediumBitmap.UriSource = uri
+        self.mediumBitmap.CacheOption = BitmapCacheOption.OnLoad
+        self.mediumBitmap.DecodePixelHeight = 24
+        self.mediumBitmap.DecodePixelWidth = 24
+        self.mediumBitmap.EndInit()
         self.largeBitmap = BitmapImage()
         self.largeBitmap.BeginInit()
         self.largeBitmap.UriSource = uri
@@ -609,9 +616,11 @@ class PyRevitUISession:
                                                             cmd.className)
                                 buttondata.ToolTip = cmd.tooltip
                                 if cmd.buttonIcons:
-                                    buttondata.LargeImage = cmd.buttonIcons.largeBitmap
+                                    buttondata.LargeImage = cmd.buttonIcons.mediumBitmap
+                                    # buttondata.LargeImage = cmd.buttonIcons.largeBitmap
                                 else:
-                                    buttondata.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    buttondata.LargeImage = scriptGroup.buttonIcons.mediumBitmap
+                                    # buttondata.LargeImage = scriptGroup.buttonIcons.largeBitmap
                                 ribbonitem.AddPushButton(buttondata)
                                 newbuttoncount += 1
                             else:
@@ -620,9 +629,11 @@ class PyRevitUISession:
                                 pushbutton.ToolTip = cmd.tooltip
                                 pushbutton.Enabled = True
                                 if cmd.buttonIcons:
-                                    pushbutton.LargeImage = cmd.buttonIcons.largeBitmap
+                                    pushbutton.LargeImage = cmd.buttonIcons.mediumBitmap
+                                    # pushbutton.LargeImage = cmd.buttonIcons.largeBitmap
                                 else:
-                                    pushbutton.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    pushbutton.LargeImage = scriptGroup.buttonIcons.mediumBitmap
+                                    # pushbutton.LargeImage = scriptGroup.buttonIcons.largeBitmap
                                 updatedbuttoncount += 1
                         for orphanedButtonName, orphanedButton in existingribbonitempushbuttonsdict.items():
                             reportv('\tDisabling orphaned button: {0}'.format(orphanedButtonName))
