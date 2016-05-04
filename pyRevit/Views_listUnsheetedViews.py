@@ -35,42 +35,38 @@ for v in views:
 	elif not v.IsTemplate:
 		mviews.append( v )
 
-print('UNREFERENCED DRAFTING VIEWS-----------------------------------------------------------------------------------')
+print('DRAFTING VIEWS NOT ON ANY SHEETS-----------------------------------------------------------------------------------')
 for v in dviews:
 	phasep = v.LookupParameter('Phase')
 	sheetnum = v.LookupParameter('Sheet Number')
 	detnum = v.LookupParameter('Detail Number')
 	refsheet = v.LookupParameter('Referencing Sheet')
 	refviewport = v.LookupParameter('Referencing Detail')
-	if refsheet and refviewport and refsheet.AsString() != '' and refviewport.AsString() != '':
+	if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
 		continue
 	else:
-		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}\nPLACED ON DETAIL/SHEET: {6} / {5}\n'.format(
+		print('TYPE: {1}ID: {2}PHASE:{4}  {0}'.format(
 				v.ViewName,
 				str( v.ViewType ).ljust(20),
 				str(v.Id).ljust(10),
 				str(v.IsTemplate).ljust(10),
 				phasep.AsValueString().ljust(25) if phasep else '---'.ljust(25),
-				sheetnum.AsString() if sheetnum else '-',
-				detnum.AsString() if detnum else '-',
 			))
 
-print('\n\n\nUNREFERENCED MODEL VIEWS-----------------------------------------------------------------------------------')
+print('\n\n\nMODEL VIEWS NOT ON ANY SHEETS-----------------------------------------------------------------------------------')
 for v in mviews:
 	phasep = v.LookupParameter('Phase')
 	sheetnum = v.LookupParameter('Sheet Number')
 	detnum = v.LookupParameter('Detail Number')
 	refsheet = v.LookupParameter('Referencing Sheet')
 	refviewport = v.LookupParameter('Referencing Detail')
-	if refsheet and refviewport and refsheet.AsString() != '' and refviewport.AsString() != '':
+	if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
 		continue
 	else:
-		print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4}  {0}\nPLACED ON DETAIL/SHEET: {6} / {5}\n'.format(
+		print('TYPE: {1}ID: {2}PHASE:{4}  {0}'.format(
 				v.ViewName,
 				str( v.ViewType ).ljust(20),
 				str(v.Id).ljust(10),
 				str(v.IsTemplate).ljust(10),
 				phasep.AsValueString().ljust(25) if phasep else '---'.ljust(25),
-				sheetnum.AsString() if sheetnum else '-',
-				detnum.AsString() if detnum else '-',
 			))
