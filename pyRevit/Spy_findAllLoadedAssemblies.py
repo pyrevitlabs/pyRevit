@@ -33,13 +33,23 @@ for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
 		loc = loadedAssembly.Location
 	except:
 		pass
-	print('{0}{1}{2}'.format(
+	print('\n{0}{1}{2}'.format(
 		loadedAssembly.GetName().Name.ljust(50),
 		str( loadedAssembly.GetName().Version ).ljust(20),
 		loc,
 		))
+	try: 
+		print('External Applications:')
+		print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalApplication") is not None])
+	except:
+		pass
+	try: 
+		print('External Commands:')
+		print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalCommand") is not None])
+	except:
+		pass
 
-print('\n\n')
+print('\n\nPYREVIT ASSEMBLIES:')
 for loadedAssembly in userScriptsAssemblies:
 	loc = ''
 	try:
@@ -51,3 +61,9 @@ for loadedAssembly in userScriptsAssemblies:
 			str( loadedAssembly.GetName().Version ).ljust(20),
 			loc,
 			))
+	try: 
+		print('External Commands:')
+		print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalCommand") is not None])
+		print('\n')
+	except:
+		pass

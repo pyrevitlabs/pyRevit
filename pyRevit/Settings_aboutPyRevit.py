@@ -21,7 +21,7 @@ import platform as pl
 
 print('''
 About pyRevit...
-Version 2.17.19
+Version 2.17.20
 This packages is prepared by Ehsan Iran-Nejad (eirannejad@gmail.com) and is licensed under GNU GENERAL PUBLIC LICENSE.
 See full license here: https://github.com/eirannejad/pyRevit/blob/master/LICENSE.
 
