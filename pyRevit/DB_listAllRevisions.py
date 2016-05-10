@@ -27,4 +27,4 @@ cl = FilteredElementCollector(doc)
 revs = cl.OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
 
 for rev in revs:
-	print('{0}\tREV#: {1}\t\tDATE: {2}\t\tTYPE:{3}\t\tDESC: {4}'.format( rev.SequenceNumber, rev.RevisionNumber, rev.RevisionDate, rev.NumberType.ToString(), rev.Description))
+	print('{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format( rev.SequenceNumber, str(rev.RevisionNumber).ljust(5), str(rev.RevisionDate).ljust(10), str(rev.NumberType.ToString()).ljust(15), rev.Description))
