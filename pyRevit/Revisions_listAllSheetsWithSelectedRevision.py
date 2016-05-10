@@ -48,7 +48,7 @@ for s in sheets:
 		if sr in revIds:
 			hasSelectedRevision = True
 	if hasSelectedRevision:
-		print('{0}\t{1}\t{2}'.format(s.LookupParameter('Sheet Number').AsString(), s.LookupParameter('Sheet Name').AsString()))
+		print('{0}\t{1}'.format(s.LookupParameter('Sheet Number').AsString(), s.LookupParameter('Sheet Name').AsString()))
 		if multipleRevs:
 			for rev in revs:
 				rev = doc.GetElement(rev)
