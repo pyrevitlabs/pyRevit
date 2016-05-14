@@ -18,9 +18,11 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
 from Autodesk.Revit.DB import ModelPathUtils
+from Autodesk.Revit.UI import TaskDialog
 doc = __revit__.ActiveUIDocument.Document
 
-if doc.GetWorksharingCentralModelPath():
+if doc.IsWorkshared:
 	print(ModelPathUtils.ConvertModelPathToUserVisiblePath(doc.GetWorksharingCentralModelPath()))
 else:
-	print("Model is not work-shared.")
+	__window__.Close()
+	TaskDialog.Show('pyRevit','Model is not workshared.')

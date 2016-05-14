@@ -27,5 +27,9 @@ doc = __revit__.ActiveUIDocument.Document
 cl = FilteredWorksetCollector(doc)
 list = cl.OfKind(WorksetKind.UserWorkset)
 
-for ws in list:
-		print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
+if doc.IsWorkshared:
+	for ws in list:
+			print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
+else:
+	__window__.Close()
+	TaskDialog.Show('pyRevit','Model is not workshared.')
