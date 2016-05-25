@@ -50,6 +50,7 @@ class purgeWindow:
         my_window.Title = 'Purge Model'
         my_window.Width = 400
         my_window.Height = 410
+        my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
 
         # Create StackPanel to Layout UI elements
         my_stack = StackPanel()

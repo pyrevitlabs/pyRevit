@@ -17,9 +17,9 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-__doc__ = 'Select a revision from the list of revisions and this script will create a print sheet set for the revised sheets under the selected revision, and will assign the new sheet set as the default print set.'
+__doc__ = 'Select a revision from the list of revisions and this script will remove that revision from all sheets if it has not been clouded on the sheet.'
 
-__window__.Close()
+__window__.Hide()
 
 import clr
 clr.AddReferenceByPartialName('PresentationCore')
@@ -28,6 +28,7 @@ clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Data')
 import System.Windows
 import System.Data
+from System.Collections.Generic import List
 import os.path as op
 from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory, ElementId, PrintRange, ViewSet, ViewSheetSet
 from Autodesk.Revit.UI import TaskDialog
@@ -54,7 +55,7 @@ class revisionSelectorWindow:
 		self.my_listView_revisionList.Height = 115
 
 		self.my_button_createSheetSet = System.Windows.Controls.Button()
-		self.my_button_createSheetSet.Content = 'Create Sheet Set'
+		self.my_button_createSheetSet.Content = 'Remove Revision from All Sheets'
 		self.my_button_createSheetSet.Margin = System.Windows.Thickness(30, 10, 30, 0)
 		self.my_button_createSheetSet.Click += self.createSheetSetAction
 
@@ -71,6 +72,7 @@ class revisionSelectorWindow:
 
 	def createSheetSetAction(self, sender, args):
 		self.my_window.Close()
+		__window__.Show()
 		# get selected revision
 		srindex = self.my_listView_revisionList.SelectedIndex
 		if srindex >= 0:
@@ -78,36 +80,40 @@ class revisionSelectorWindow:
 		else:
 			return
 		
-		# get printed printManager
-		printManager = doc.PrintManager
-		printManager.PrintRange = PrintRange.Select
-		viewSheetSetting = printManager.ViewSheetSetting
-
 		# collect data
-		sheetsnotsorted = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
-		sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
-		viewsheetsets = FilteredElementCollector(doc).OfClass(clr.GetClrType(ViewSheetSet)).WhereElementIsNotElementType().ToElements()
-		allviewsheetsets = {vss.Name:vss for vss in viewsheetsets}
-		sheetSetName = 'Rev {0}: {1}'.format(sr.RevisionNumber, sr.Description)
-
-		with Transaction(doc, 'Create Revision Sheet Set') as t:
+		sheets = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+		
+		cloudedsheets = []
+		affectedsheets = []
+		with Transaction(doc, 'Remove Revision from Sheets') as t:
 			t.Start()
-			if sheetSetName in allviewsheetsets.keys():
-				viewSheetSetting.CurrentViewSheetSet = allviewsheetsets[sheetSetName]
-				viewSheetSetting.Delete()
-
-			# find revised sheets
-			myViewSet = ViewSet()
 			for s in sheets:
-				revs = s.GetAllRevisionIds()
-				revIds = [x.IntegerValue for x in revs]
-				if sr.Id.IntegerValue in revIds:
-					myViewSet.Insert(s)
-			
-			# create new sheet set
-			viewSheetSetting.CurrentViewSheetSet.Views = myViewSet
-			viewSheetSetting.SaveAs(sheetSetName)
+				revs = set([x.IntegerValue for x in s.GetAllRevisionIds()])
+				addrevs = set([x.IntegerValue for x in s.GetAdditionalRevisionIds()])
+				cloudrevs = revs - addrevs
+				if sr.Id.IntegerValue in cloudrevs:
+					cloudedsheets.append(s)
+					continue
+				elif len(addrevs) > 0:
+					addrevs.remove(sr.Id.IntegerValue)
+					revelids = [ElementId(x) for x in addrevs]
+					s.SetAdditionalRevisionIds(List[ElementId](revelids))
+					affectedsheets.append(s)
 			t.Commit()
+		if len(affectedsheets) > 0:
+			print('SELECTED REVISION REMOVED FROM THESE SHEETS:')
+			print('-'*100)
+			for s in affectedsheets:
+				print('NUMBER: {0}   NAME:{1}'
+					.format(	s.LookupParameter('Sheet Number').AsString().rjust(10),
+								s.LookupParameter('Sheet Name').AsString().ljust(50)))
+		if len(cloudedsheets) > 0:
+			print('SELECTED REVISION IS CLOUDED ON THESE SHEETS AND CAN NOT BE REMOVED.')
+			print('-'*100)
+			for s in cloudedsheets:
+				print('NUMBER: {0}   NAME:{1}'
+					.format(	s.LookupParameter('Sheet Number').AsString().rjust(10),
+								s.LookupParameter('Sheet Name').AsString().ljust(50)))
 
 	def showWindow(self):
 		self.my_window.ShowDialog()
