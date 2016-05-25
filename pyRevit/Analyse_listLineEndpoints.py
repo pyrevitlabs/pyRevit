@@ -31,8 +31,8 @@ def isline( line ):
 
 for elId in uidoc.Selection.GetElementIds():
 	# if 'Lines' == el.Category.Name:
+	el = doc.GetElement( elId )
 	if isline(el):
-		el = doc.GetElement( elId )
 		# print( el.GeometryCurve.EndPoint[0][2] )
 		# print( el.GeometryCurve.EndPoint[1][2] )
 		print( el.GeometryCurve.GetEndPoint(0) )

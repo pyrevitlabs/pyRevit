@@ -47,7 +47,7 @@ class purgeWindow:
 
         # Create window
         my_window = Window()
-        my_window.Title = 'Purge Model'
+        my_window.Title = 'Wipe Model'
         my_window.Width = 400
         my_window.Height = 410
         my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
@@ -136,7 +136,7 @@ class purgeWindow:
         my_stack.Children.Add(my_button_checkNone)
 
         my_button_purge = Button()
-        my_button_purge.Content = 'Purge Model'
+        my_button_purge.Content = 'Wipe Model'
         my_button_purge.Margin = Thickness(0, 20, 0, 0)
         my_stack.Children.Add(my_button_purge)
 
