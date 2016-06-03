@@ -49,7 +49,7 @@ class purgeWindow:
         my_window = Window()
         my_window.Title = 'Wipe Model'
         my_window.Width = 400
-        my_window.Height = 410
+        my_window.Height = 430
         my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
 
         # Create StackPanel to Layout UI elements
@@ -87,6 +87,10 @@ class purgeWindow:
         self.removeAllScopeBoxesCheckBox.Content = 'Remove All Scope Boxes'
         self.removeAllScopeBoxesCheckBox.IsChecked = True
 
+        self.removeAllReferencePlanesCheckBox = Checkbox()
+        self.removeAllReferencePlanesCheckBox.Content = 'Remove All Reference Planes'
+        self.removeAllReferencePlanesCheckBox.IsChecked = True
+
         self.removeAllSheetsCheckBox = Checkbox()
         self.removeAllSheetsCheckBox.Content = 'Remove All Sheets (Except for sheets currently open)'
         self.removeAllSheetsCheckBox.IsChecked = True
@@ -118,6 +122,7 @@ class purgeWindow:
         my_stack.AddChild(self.removeAllRoomsCheckBox)
         my_stack.AddChild(self.removeAllAreasCheckBox)
         my_stack.AddChild(self.removeAllScopeBoxesCheckBox)
+        my_stack.AddChild(self.removeAllReferencePlanesCheckBox)
         my_stack.AddChild(self.removeAllSheetsCheckBox)
         my_stack.AddChild(self.removeAllViewsCheckBox)
         my_stack.AddChild(self.removeAllViewTemplatesCheckBox)
@@ -176,6 +181,8 @@ class purgeWindow:
             explodeAndRemoveAllGroups()
         if self.removeAllScopeBoxesCheckBox.IsChecked:
             removeAllScopeBoxes()
+        if self.removeAllReferencePlanesCheckBox.IsChecked:
+            removeAllReferencePlanes()
         if self.removeAllConstraintsCheckBox.IsChecked:
             removeAllConstraints()
         if self.removeAllSheetsCheckBox.IsChecked:
@@ -208,6 +215,7 @@ class purgeWindow:
         self.removeAllRoomsCheckBox.IsChecked = False
         self.removeAllAreasCheckBox.IsChecked = False
         self.removeAllScopeBoxesCheckBox.IsChecked = False
+        self.removeAllReferencePlanesCheckBox.IsChecked = False
         self.removeAllSheetsCheckBox.IsChecked = False
         self.removeAllViewsCheckBox.IsChecked = False
         self.removeAllViewTemplatesCheckBox.IsChecked = False
@@ -221,6 +229,7 @@ class purgeWindow:
         self.removeAllRoomsCheckBox.IsChecked = True
         self.removeAllAreasCheckBox.IsChecked = True
         self.removeAllScopeBoxesCheckBox.IsChecked = True
+        self.removeAllReferencePlanesCheckBox.IsChecked = True
         self.removeAllSheetsCheckBox.IsChecked = True
         self.removeAllViewsCheckBox.IsChecked = True
         self.removeAllViewTemplatesCheckBox.IsChecked = True
@@ -424,6 +433,22 @@ def removeAllScopeBoxes():
             doc.Delete(s.Id)
         except Exception as e:
             reportAndPrintError('Scope Box', s.Id)
+            continue
+    t.Commit()
+
+
+def removeAllReferencePlanes():
+    t = Transaction(doc, 'Remove All Reference Planes')
+    t.Start()
+    reportAndPrint('---------------------------- REMOVING REFERENCE PLANES ---------------------------------\n')
+    cl = FilteredElementCollector(doc)
+    refplanes = cl.OfCategory(BuiltInCategory.OST_CLines).WhereElementIsNotElementType().ToElements()
+    for s in refplanes:
+        try:
+            report('ID: {0}'.format(s.Id))
+            doc.Delete(s.Id)
+        except Exception as e:
+            reportAndPrintError('Reference Plane', s.Id)
             continue
     t.Commit()
 
