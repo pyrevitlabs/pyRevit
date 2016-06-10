@@ -17,23 +17,20 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
 
-__doc__ = 'Sets element graphic override to halftone on the selected elements. If any of the elements is a group, the script will apply the override to all its members.'
+__doc__ = 'Lists all revision clouds in this model that have been placed on a view and not on sheet.'
 
-__window__.Close()
-from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, Group
-
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ViewSheet
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
 
 
-with Transaction(doc, 'Halftone Elements in View' ) as t:
-	t.Start()
-	for el in selection:
-		if isinstance(el, Group):
-			for mem in el.GetMemberIds():
-				selection.append(doc.GetElement(mem))
-		ogs = OverrideGraphicSettings()
-		ogs.SetHalftone(True)
-		# ogs.SetProjectionFillPatternVisible(False)
-		doc.ActiveView.SetElementOverrides(el.Id, ogs);
-	t.Commit()
+cl = FilteredElementCollector(doc)
+revs = cl.OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
+
+for rev in revs:
+	parent = doc.GetElement( rev.OwnerViewId )
+	if isinstance(parent, ViewSheet):
+		continue
+	else:
+		print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'.format( doc.GetElement( rev.RevisionId ).RevisionNumber, parent.ViewName, rev.Id ))
+
+print('\nSEARCH COMPLETED.')

@@ -16,15 +16,31 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 '''
+__doc__ = 'Opens the sheet containing this view and zooms to the viewport.'
 
-__doc__ = 'Lists all revisions in this model.'
-
+__window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
+cl_views = FilteredElementCollector(doc)
+shts = cl_views.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+sheets = sorted(shts, key=lambda x: x.SheetNumber)
 
-cl = FilteredElementCollector(doc)
-revs = cl.OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
+curview = doc.ActiveView
+count = 0
 
-for rev in revs:
-	print('{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format( rev.SequenceNumber, str(rev.RevisionNumber).ljust(5), str(rev.RevisionDate).ljust(10), str(rev.NumberType.ToString()).ljust(15), str(rev.Description).replace('\n','').replace('\r','')))
+for s in sheets:
+	vpsIds = [doc.GetElement(x).ViewId for x in s.GetAllViewports()]
+	if curview.Id in vpsIds:
+		uidoc.ActiveView = s
+		vpids = s.GetAllViewports()
+		for vpid in vpids:
+			vp = doc.GetElement(vpid)
+			if curview.Id == vp.ViewId:
+				ol = vp.GetBoxOutline()
+				uidoc.RefreshActiveView()
+				avs = uidoc.GetOpenUIViews()
+				for uiv in avs:
+					if uiv.ViewId == s.Id:
+						uiv.ZoomAndCenterRectangle(ol.MinimumPoint, ol.MaximumPoint)
