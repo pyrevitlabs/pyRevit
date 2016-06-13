@@ -8,6 +8,7 @@ from datetime import datetime
 # import pickle as pl
 # import time
 
+# todo: this helper could be the main pyRevit module that other script can add and use the classes and functions
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
@@ -319,7 +320,8 @@ class PyRevitUISession:
         self.settings = settings
         self.revitVersion = __revit__.Application.VersionNumber
 
-        report('Home Directory is: {0}'.format(self.homeDir))
+        report('Running on:\n{0}'.format(sys.version))
+        report('\nHome Directory is: {0}'.format(self.homeDir))
 
         # collect information about previously loaded assemblies
         report('Initializing python script loader...')
