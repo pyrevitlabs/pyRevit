@@ -1,4 +1,4 @@
-"""
+'''
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,21 +15,23 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+'''
 
-__doc__ = 'Lists all Grids in the model.'
+__doc__ = 'List the new tools added under each revision.'
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
+import platform as pl
 
-cl = FilteredElementCollector(doc)
-list = cl.OfCategory(BuiltInCategory.OST_Grids).WhereElementIsNotElementType().ToElements()
+print('''
+Version 2.40.44
+-------------------------------------------------------------------------------
+-	Settings > What's New
+	Added a button to list all the tools added from now on.
 
-for el in list:
-    print('GRID: {0} ID: {1}'.format(
-        el.Name,
-        el.Id,
-    ))
+-	Sheets > setCropRegionToSelectedShape
+	Draw the desired crop boundary as a polygon on your sheet (using detail lines).
+	Then select the bounday and the destination viewport and run the script.
+	This script will apply the drafted boundary to the view of the selected viewport.
+
+-	Minor cleanups
+''')
