@@ -21,6 +21,9 @@ MAKELINES = False
 
 __doc__ = 'Draw the desired crop boundary as a closed polygon on your sheet (using detail lines). Then select the bounday and the destination viewport and run the script. This script will apply the drafted boundary to the view of the selected viewport.'
 
+# note: no needs to check for curves in polygon. currently it takes a straight line between the start and end point. (no errors so far)
+# todo: ask to delete polygon when done
+
 if not DEBUG: __window__.Close()
 from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, CurveElement, XYZ, Line, Curve, CurveLoop
 from Autodesk.Revit.UI import TaskDialog
@@ -98,6 +101,7 @@ selview = selvp = None
 vpboundaryoffset = 0.01
 selviewports = []
 selboundary = []
+activeSheet = uidoc.ActiveGraphicalView
 
 #pick viewport and line boundary from selection
 for elId in selection:
@@ -114,6 +118,13 @@ else:
 
 if len(selboundary) < 3:
 	TaskDialog.Show('pyRevit', 'At least one closed polygon must be selected (minimum 3 detail lines).')
+
+# making sure the cropbox is active.
+if not selview.CropBoxActive:
+	with Transaction(doc,'Activate Crop Box') as t:
+		t.Start()
+		selview.CropBoxActive = True
+		t.Commit()
 
 #get vp min max points in sheetUCS
 ol = selvp.GetBoxOutline()
@@ -136,7 +147,7 @@ for l in cl:
 cropmin = XYZ(min(modelucsx),min(modelucsy),0.0)
 cropmax = XYZ(max(modelucsx),max(modelucsy),0.0)
 if DEBUG: print('CROP MIN MAX: {0}\n              {1}\n'.format(cropmin, cropmax))
-
+if DEBUG: print('VIEW BOUNDING BOX ON THIS SHEET: {0}\n                                 {1}\n'.format(selview.BoundingBox[selview].Min,selview.BoundingBox[selview].Max))
 transmatrix.sourcemin = vpmin
 transmatrix.sourcemax = vpmax
 transmatrix.destmin = cropmin
