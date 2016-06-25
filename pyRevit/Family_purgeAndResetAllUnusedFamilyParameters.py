@@ -17,7 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'This script removes all custom parameters that has not been used in dimensions as labels and also resets the value for the other parameters to zero or null.'
+__doc__ = 'This script removes all custom parameters that has not been used in dimensions as labels and also ' \
+          'resets the value for the other parameters to zero or null.'
 
 import clr
 from Autodesk.Revit.DB import Transaction, ElementId, StorageType, FilteredElementCollector, Dimension, FamilyParameter
@@ -29,12 +30,24 @@ doc = __revit__.ActiveUIDocument.Document
 if doc.IsFamilyDocument:
     params = doc.FamilyManager.GetParameters()
     dims = FilteredElementCollector(doc).OfClass(Dimension).WhereElementIsNotElementType()
+    allelements = FilteredElementCollector(doc).WhereElementIsNotElementType()
 
     labelParams = set()
     for d in dims:
         try:
             if isinstance(d.FamilyLabel, FamilyParameter):
                 labelParams.add(d.FamilyLabel.Id.IntegerValue)
+        except:
+            continue
+
+    visibParams = set()
+    for el in allelements:
+        try:
+            visibparam = el.LookupParameter('Visible')
+            if visibparam is not None:
+                famvisibparam = doc.FamilyManager.GetAssociatedFamilyParameter(visibparam)
+                if famvisibparam is not None and isinstance(famvisibparam, FamilyParameter):
+                    visibParams.add(famvisibparam.Id.IntegerValue)
         except:
             continue
 
@@ -45,7 +58,7 @@ if doc.IsFamilyDocument:
     for param in params:
         try:
             print('\nREMOVING FAMILY PARAMETER:\nID: {0}\tNAME: {1}'.format(param.Id, param.Definition.Name))
-            if param.Id.IntegerValue not in labelParams:
+            if param.Id.IntegerValue not in labelParams and param.Id.IntegerValue not in visibParams:
                 doc.FamilyManager.RemoveParameter(param)
                 print('REMOVED.')
             else:
