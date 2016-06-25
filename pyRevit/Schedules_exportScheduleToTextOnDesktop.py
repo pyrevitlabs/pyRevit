@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Exports selected schedules to TXT files on user desktop'
 
 from Autodesk.Revit.DB import ViewSchedule, ViewScheduleExportOptions, ExportColumnHeaders, ExportTextQualifier
 import os
@@ -33,7 +35,7 @@ vseop = ViewScheduleExportOptions()
 # vseop.Title = False
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	fname = "".join(x for x in el.ViewName if x not in ['*']) + '.txt'
-	el.Export( desktop, fname , vseop )
-	print('EXPORTED: {0}\n      TO: {1}\n'.format( el.ViewName, fname))
+    el = doc.GetElement(elId)
+    fname = "".join(x for x in el.ViewName if x not in ['*']) + '.txt'
+    el.Export(desktop, fname, vseop)
+    print('EXPORTED: {0}\n      TO: {1}\n'.format(el.ViewName, fname))

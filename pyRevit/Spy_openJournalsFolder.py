@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,23 +15,27 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Opens the Revit journals folder for current user.'
 
 __window__.Close()
 
 import os, subprocess
 import os.path as op
 
-# def getJournalsFolder():
-	# appdataFolder = os.getenv('localappdata')
-	# journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
-	# os.chdir(journalsFolder)
-	# return journalsFolder
 
-def getJournalsFolder():
-	journalsFolder = op.dirname( __revit__.Application.RecordingJournalFilename )
-	os.chdir(journalsFolder)
-	return journalsFolder
+# def getjournalsfolder():
+# appdataFolder = os.getenv('localappdata')
+# journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
+# os.chdir(journalsFolder)
+# return journalsFolder
 
-journalsFolder = getJournalsFolder()
-subprocess.Popen(r'explorer "{0}"'.format( journalsFolder ))
+def getjournalsfolder():
+    journalsfolder = op.dirname(__revit__.Application.RecordingJournalFilename)
+    os.chdir(journalsfolder)
+    return journalsfolder
+
+
+journalsFolder = getjournalsfolder()
+subprocess.Popen(r'explorer "{0}"'.format(journalsFolder))

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Lists all the sheets in the project.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
@@ -27,7 +29,7 @@ sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementI
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
 for s in sheets:
-	print('NUMBER: {0}   NAME:{1}'
-		.format(	s.Parameter['Sheet Number'].AsString().rjust(10),
-					s.Parameter['Sheet Name'].AsString().ljust(50),
-		))
+    # todo: search for use of .Parameter[] indexer.
+    print('NUMBER: {0}   NAME:{1}'.format(s.LookupParameter('Sheet Number').AsString().rjust(10),
+                                          s.LookupParameter('Sheet Name').AsString().ljust(50)
+                                          ))

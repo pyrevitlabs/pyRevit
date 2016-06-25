@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all viewports and their types.'
 
@@ -24,14 +24,11 @@ from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-vps = []
-
-cl_views = FilteredElementCollector(doc)
-vps = cl_views.OfCategory( BuiltInCategory.OST_Viewports ).WhereElementIsNotElementType().ToElements()
+vps = FilteredElementCollector(doc).OfCategory(
+    BuiltInCategory.OST_Viewports).WhereElementIsNotElementType().ToElements()
 
 for v in vps:
-	print('ID: {1}TYPE: {0}VIEWNAME: {2}'.format(
-			v.Name.ljust(30),
-			str(v.Id).ljust(10),
-			doc.GetElement( v.ViewId ).ViewName
-		))
+    print('ID: {1}TYPE: {0}VIEWNAME: {2}'.format(v.Name.ljust(30),
+                                                 str(v.Id).ljust(10),
+                                                 doc.GetElement(v.ViewId).ViewName
+                                                 ))

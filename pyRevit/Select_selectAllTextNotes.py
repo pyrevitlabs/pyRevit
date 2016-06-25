@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Selects all Text Note elements in the model.'
 
 __window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, TextNote, Group
@@ -24,12 +26,11 @@ from System.Collections.Generic import List
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-cl = FilteredElementCollector(doc)
-list = cl.OfClass( TextNote ).WhereElementIsNotElementType().ToElements()
+textnotes = FilteredElementCollector(doc).OfClass(TextNote).WhereElementIsNotElementType().ToElements()
 
 selSet = []
 
-for el in list:
-	selSet.append( el.Id )
+for el in textnotes:
+    selSet.append(el.Id)
 
-uidoc.Selection.SetElementIds( List[ElementId]( selSet ) )
+uidoc.Selection.SetElementIds(List[ElementId](selSet))

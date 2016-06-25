@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Removes all newlines in the selected text note element.'
 
 __window__.Close()
 from Autodesk.Revit.DB import Transaction
@@ -23,11 +25,11 @@ from Autodesk.Revit.DB import Transaction
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
 
-t = Transaction(doc, 'Merge Single-Line Text') 
+t = Transaction(doc, 'Merge Single-Line Text')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Text = el.Text.Replace('\r\n', ' ')
+    el = doc.GetElement(elId)
+    el.Text = el.Text.Replace('\r\n', ' ')
 
 t.Commit()

@@ -17,6 +17,11 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
+__doc__ = 'Downloads updates from the github repository. This function works only when pyRevit was ' \
+          'installed using the setup package provided on the github repo. ' \
+          '(It needs the portable git tool to download the updates)'
+
+
 import os.path as op
 import subprocess as sp
 

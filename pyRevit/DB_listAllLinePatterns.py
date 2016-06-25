@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all line patterns in the model.'
 
@@ -23,6 +23,6 @@ from Autodesk.Revit.DB import FilteredElementCollector, LinePatternElement
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-cl = FilteredElementCollector(doc).OfClass( LinePatternElement )
+cl = FilteredElementCollector(doc).OfClass(LinePatternElement)
 for i in cl:
-	print( i.Name )
+    print(i.Name)

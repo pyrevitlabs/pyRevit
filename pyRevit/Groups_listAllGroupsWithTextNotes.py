@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,25 +15,28 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'List all detail groups that include a text element inside them. This is helpful for spell checking.'
 
 import clr
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Element, Group, GroupType, Transaction, BuiltInParameter, TextNote
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Element, Group, GroupType, Transaction, \
+    BuiltInParameter, TextNote
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-cl = FilteredElementCollector( doc )
-grps = list( cl.OfClass( clr.GetClrType( Group )).ToElements() )
+cl = FilteredElementCollector(doc)
+grps = list(cl.OfClass(clr.GetClrType(Group)).ToElements())
 
 grpTypes = set()
 
 for g in grps:
-	mems = g.GetMemberIds()
-	for el in mems:
-		mem = doc.GetElement( el )
-		if isinstance( mem, TextNote):
-			grpTypes.add( g.GroupType.Id )
+    mems = g.GetMemberIds()
+    for el in mems:
+        mem = doc.GetElement(el)
+        if isinstance(mem, TextNote):
+            grpTypes.add(g.GroupType.Id)
 
 for gtId in grpTypes:
-	print( Element.Name.GetValue( doc.GetElement( gtId ) ) )
+    print(Element.Name.GetValue(doc.GetElement(gtId)))

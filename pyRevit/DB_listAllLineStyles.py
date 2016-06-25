@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,14 +15,16 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
 __doc__ = 'Lists all line styles in the model.'
 
 from Autodesk.Revit.DB import *
+
 doc = __revit__.ActiveUIDocument.Document
 
-c = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Lines )
+c = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Lines)
 subcats = c.SubCategories
- 
+
 for lineStyle in subcats:
-    print("STYLE NAME: {0} ID: {1}".format(lineStyle.Name.ljust(40), lineStyle.Id.ToString() ) )
+    print("STYLE NAME: {0} ID: {1}".format(lineStyle.Name.ljust(40), lineStyle.Id.ToString()))

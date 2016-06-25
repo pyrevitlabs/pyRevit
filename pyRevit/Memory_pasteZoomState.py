@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,9 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
-__doc__ = '''Apply the copied zoom state to the active view.'''
+__doc__ = 'Applies the copied zoom state to the active view.'
 
 __window__.Hide()
 from Autodesk.Revit.DB import ElementId, XYZ
@@ -28,25 +28,28 @@ import os
 import os.path as op
 import pickle as pl
 
-class point:
-	x = 0
-	y = 0
+
+class BasePoint:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 usertemp = os.getenv('Temp')
-prjname = op.splitext( op.basename( doc.PathName ) )[0]
+prjname = op.splitext(op.basename(doc.PathName))[0]
 datafile = usertemp + '\\' + prjname + '_pySaveRevitActiveViewZoomState.pym'
 try:
-	f = open(datafile, 'r')
-	p2 = pl.load(f)
-	p1 = pl.load(f)
-	f.close()
-	vc1 = XYZ( p1.x, p1.y, 0 )
-	vc2 = XYZ( p2.x, p2.y, 0 )
-	av = uidoc.GetOpenUIViews()[0]
-	av.ZoomAndCenterRectangle(vc1, vc2)
+    f = open(datafile, 'r')
+    p2 = pl.load(f)
+    p1 = pl.load(f)
+    f.close()
+    vc1 = XYZ(p1.x, p1.y, 0)
+    vc2 = XYZ(p2.x, p2.y, 0)
+    av = uidoc.GetOpenUIViews()[0]
+    av.ZoomAndCenterRectangle(vc1, vc2)
 except:
-	__window__.Show()
-	print('CAN NOT FIND ZOOM STATE FILE:\n{0}'.format(datafile))
+    __window__.Show()
+    print('CAN NOT FIND ZOOM STATE FILE:\n{0}'.format(datafile))

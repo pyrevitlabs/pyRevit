@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,11 +15,13 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
 __doc__ = 'Opens the sheet containing this view and zooms to the viewport.'
 
 __window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
@@ -31,16 +33,16 @@ curview = doc.ActiveView
 count = 0
 
 for s in sheets:
-	vpsIds = [doc.GetElement(x).ViewId for x in s.GetAllViewports()]
-	if curview.Id in vpsIds:
-		uidoc.ActiveView = s
-		vpids = s.GetAllViewports()
-		for vpid in vpids:
-			vp = doc.GetElement(vpid)
-			if curview.Id == vp.ViewId:
-				ol = vp.GetBoxOutline()
-				uidoc.RefreshActiveView()
-				avs = uidoc.GetOpenUIViews()
-				for uiv in avs:
-					if uiv.ViewId == s.Id:
-						uiv.ZoomAndCenterRectangle(ol.MinimumPoint, ol.MaximumPoint)
+    vpsIds = [doc.GetElement(x).ViewId for x in s.GetAllViewports()]
+    if curview.Id in vpsIds:
+        uidoc.ActiveView = s
+        vpids = s.GetAllViewports()
+        for vpid in vpids:
+            vp = doc.GetElement(vpid)
+            if curview.Id == vp.ViewId:
+                ol = vp.GetBoxOutline()
+                uidoc.RefreshActiveView()
+                avs = uidoc.GetOpenUIViews()
+                for uiv in avs:
+                    if uiv.ViewId == s.Id:
+                        uiv.ZoomAndCenterRectangle(ol.MinimumPoint, ol.MaximumPoint)

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Renames all sheets to UPPERCASE.'
 
 from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory
 
@@ -26,13 +28,15 @@ cl_views = FilteredElementCollector(doc)
 views = cl_views.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
 sheets = sorted(views, key=lambda x: x.SheetNumber)
 
-t = Transaction(doc, 'Rename Sheets to Upper') 
+t = Transaction(doc, 'Rename Sheets to Upper')
 t.Start()
 
 for el in sheets:
-	name = el.Parameter['Sheet Name'].AsString()
-	name = name.upper()
-	print('RENAMING:\t{0}\n      to:\t{1}\n'.format(name, name.upper()))
-	el.Parameter['Sheet Name'].Set(name)
+    sheetnameparam = el.LookupParameter('Sheet Name')
+    name = sheetnameparam.AsString()
+    name = name.upper()
+    print('RENAMING:\t{0}\n'
+          '      to:\t{1}\n'.format(name, name.upper()))
+    sheetnameparam.Set(name)
 
 t.Commit()

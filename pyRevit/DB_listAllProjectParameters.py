@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all project parameters in this model.'
 
@@ -27,21 +27,21 @@ doc = __revit__.ActiveUIDocument.Document
 pm = doc.ParameterBindings
 it = pm.ForwardIterator()
 it.Reset()
-while( it.MoveNext() ):
-	p = it.Key
-	b = pm[ p ]
-	if isinstance(b, InstanceBinding):
-		bind = 'Instance'
-	elif isinstance(b, TypeBinding):
-		bind = 'Type'
-	else:
-		bind = 'Uknown'
-		
-	print('PARAM: {0:<10} UNIT: {1:<10} TYPE: {2:<10} GROUP: {3:<20} BINDING: {4}\nAPPLIED TO: {5}\n'.format(
-			p.Name,
-			str(p.UnitType),
-			str(p.ParameterType),
-			str(p.ParameterGroup),
-			bind,
-			[c.Name for c in b.Categories]
-			) )
+while it.MoveNext():
+    p = it.Key
+    b = pm[p]
+    if isinstance(b, InstanceBinding):
+        bind = 'Instance'
+    elif isinstance(b, TypeBinding):
+        bind = 'Type'
+    else:
+        bind = 'Uknown'
+
+    print('PARAM: {0:<10} UNIT: {1:<10} TYPE: {2:<10} GROUP: {3:<20} BINDING: {4}\nAPPLIED TO: {5}\n'.format(
+        p.Name,
+        str(p.UnitType),
+        str(p.ParameterType),
+        str(p.ParameterGroup),
+        bind,
+        [c.Name for c in b.Categories]
+    ))

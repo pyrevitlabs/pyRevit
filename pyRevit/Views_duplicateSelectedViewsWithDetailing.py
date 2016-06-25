@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Batch duplicates the selected views "with" detailing.'
 
 __window__.Close()
 from Autodesk.Revit.DB import Transaction, ViewDuplicateOption
@@ -23,11 +25,11 @@ from Autodesk.Revit.DB import Transaction, ViewDuplicateOption
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-t = Transaction(doc, 'Duplicate selected views') 
+t = Transaction(doc, 'Duplicate selected views')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Duplicate( ViewDuplicateOption.WithDetailing )
-	
+    el = doc.GetElement(elId)
+    el.Duplicate(ViewDuplicateOption.WithDetailing)
+
 t.Commit()

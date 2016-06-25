@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,19 +15,21 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Converts the select text note element into UPPERCASE text.'
 
 __window__.Close()
 from Autodesk.Revit.DB import Transaction
 
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
- 
+
 t = Transaction(doc, 'convert text')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	el.Text = el.Text.upper()
+    el = doc.GetElement(elId)
+    el.Text = el.Text.upper()
 
 t.Commit()

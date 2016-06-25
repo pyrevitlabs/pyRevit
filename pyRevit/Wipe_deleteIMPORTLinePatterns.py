@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Removes all line patters with "IMPORT" in their names (usually imported from CAD).'
 
 from Autodesk.Revit.DB import FilteredElementCollector, Transaction, LinePatternElement
 from Autodesk.Revit.UI import TaskDialog
@@ -29,9 +31,9 @@ t = Transaction(doc, 'Remove IMPORT Patterns')
 t.Start()
 
 for lp in cl:
-	if lp.Name.lower().startswith( 'import' ):
-		print('\nIMPORTED LINETYPE FOUND:\n{0}'.format( lp.Name ))
-		doc.Delete( lp.Id )
-		print('--- DELETED ---')
+    if lp.Name.lower().startswith('import'):
+        print('\nIMPORTED LINETYPE FOUND:\n{0}'.format(lp.Name))
+        doc.Delete(lp.Id)
+        print('--- DELETED ---')
 
 t.Commit()

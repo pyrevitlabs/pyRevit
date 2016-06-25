@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,20 +15,27 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all revision clouds in this model. It also prints the sheet number for any revision cloud on sheet views.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ViewSheet
-doc = __revit__.ActiveUIDocument.Document
 
+doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
 revs = cl.OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
 
 for rev in revs:
-	parent = doc.GetElement( rev.OwnerViewId )
-	if isinstance(parent, ViewSheet):
-		print('REV#: {0}\t\tID: {3}\t\tON SHEET: {1} {2}'.format( doc.GetElement( rev.RevisionId ).RevisionNumber, parent.SheetNumber, parent.Name, rev.Id ))
-	else:
-		print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'.format( doc.GetElement( rev.RevisionId ).RevisionNumber, parent.ViewName, rev.Id ))
+    parent = doc.GetElement(rev.OwnerViewId)
+    if isinstance(parent, ViewSheet):
+        print('REV#: {0}\t\tID: {3}\t\tON SHEET: {1} {2}'.format(doc.GetElement(rev.RevisionId).RevisionNumber,
+                                                                 parent.SheetNumber,
+                                                                 parent.Name,
+                                                                 rev.Id
+                                                                 ))
+    else:
+        print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'.format(doc.GetElement(rev.RevisionId).RevisionNumber,
+                                                            parent.ViewName,
+                                                            rev.Id
+                                                            ))

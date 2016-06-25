@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Deletes all the temporary selection data files from user temp folder. This will clear all selection memories. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
 
@@ -25,8 +25,8 @@ import os
 import os.path as op
 
 usertemp = os.getenv('Temp')
-files = os.listdir( usertemp )
-files = [ fi for fi in files if fi.endswith(".pym") ]
+files = os.listdir(usertemp)
+files = [fi for fi in files if fi.endswith(".pym")]
 for f in files:
-	print( f )
-	os.remove( op.join( usertemp, f) )
+    print(f)
+    os.remove(op.join(usertemp, f))

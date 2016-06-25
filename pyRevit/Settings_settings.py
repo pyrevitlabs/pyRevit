@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,8 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
-import platform as pl
+__doc__ = 'Shows the preferences window for pyRevit. You can customize how pyRevit loads and set some basic ' \
+          'parameters here.'
 
 print('WIP')

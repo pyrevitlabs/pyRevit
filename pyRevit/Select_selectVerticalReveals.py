@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,10 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Selects all vertical reveals in the project.'
+
 
 __window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory
@@ -25,12 +28,12 @@ uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
-list = cl.OfCategory( BuiltInCategory.OST_Reveals ).WhereElementIsNotElementType().ToElements()
+revealslist = cl.OfCategory(BuiltInCategory.OST_Reveals).WhereElementIsNotElementType().ToElements()
 
 selSet = []
 
-for el in list:
-	if el.GetWallSweepInfo().IsVertical:
-		selSet.append( el.Id )
+for el in revealslist:
+    if el.GetWallSweepInfo().IsVertical:
+        selSet.append(el.Id)
 
-uidoc.Selection.SetElementIds( List[ElementId]( selSet ) )
+uidoc.Selection.SetElementIds(List[ElementId](selSet))

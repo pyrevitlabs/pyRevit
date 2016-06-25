@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,15 +15,16 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all sketch planes in this model.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, SketchPlane, Transaction
+
 doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
-list = [i for i in cl.OfClass(SketchPlane).ToElements()]
+skechplanelist = [i for i in cl.OfClass(SketchPlane).ToElements()]
 
-for gs in list:
-	print('NAME: {0} ID: {1}'.format(	gs.Name.ljust(50), gs.Id ))
+for gs in skechplanelist:
+    print('NAME: {0} ID: {1}'.format(gs.Name.ljust(50), gs.Id))

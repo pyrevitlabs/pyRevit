@@ -1,4 +1,4 @@
-﻿'''
+﻿"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,14 +15,17 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Print the full path to the central model (if model is workshared).'
 
 from Autodesk.Revit.DB import ModelPathUtils
 from Autodesk.Revit.UI import TaskDialog
+
 doc = __revit__.ActiveUIDocument.Document
 
 if doc.IsWorkshared:
-	print(ModelPathUtils.ConvertModelPathToUserVisiblePath(doc.GetWorksharingCentralModelPath()))
+    print(ModelPathUtils.ConvertModelPathToUserVisiblePath(doc.GetWorksharingCentralModelPath()))
 else:
-	__window__.Close()
-	TaskDialog.Show('pyRevit','Model is not workshared.')
+    __window__.Close()
+    TaskDialog.Show('pyRevit', 'Model is not workshared.')

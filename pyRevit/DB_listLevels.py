@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all levels in this model.'
 
@@ -23,12 +23,9 @@ from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
 
+levelslist = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType()
 
-cl = FilteredElementCollector(doc)
-list = cl.OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType()
-
-for i in list:
-	print('Level ID:\t{1}\tELEVATION:{2}\t\tName:\t{0}'.format(i.Name, i.Id.IntegerValue, i.Elevation))
-	
+for i in levelslist:
+    print('Level ID:\t{1}\tELEVATION:{2}\t\tName:\t{0}'.format(i.Name, i.Id.IntegerValue, i.Elevation))

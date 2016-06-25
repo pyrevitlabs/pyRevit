@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Activates selection tool that picks only Door elements.'
 
 __window__.Close()
 from Autodesk.Revit.UI.Selection import ISelectionFilter
@@ -26,23 +28,29 @@ uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 
-class pickByCategorySelectionFilter(ISelectionFilter):
-	def __init__(self, catName):
-		self.category = catName
-	def AllowElement(self, element):
-		if self.category in element.Category.Name:
-			return True
-		else:
-			return False
-	def AllowReference(self, refer, point):
-		return false
+class PickByCategorySelectionFilter(ISelectionFilter):
+    def __init__(self, catname):
+        self.category = catname
 
-def pickByCategory(catName):
-	sel = pickByCategorySelectionFilter( catName )
-	list = uidoc.Selection.PickElementsByRectangle(sel)
-	set = []
-	for el in list:
-		set.append( el.Id )
-	uidoc.Selection.SetElementIds( List[ElementId]( set ) )
+    # standard API override function
+    def AllowElement(self, element):
+        if self.category in element.Category.Name:
+            return True
+        else:
+            return False
 
-pickByCategory( "Door" )
+    # standard API override function
+    def AllowReference(self, refer, point):
+        return False
+
+
+def pickbycategory(catname):
+    sel = PickByCategorySelectionFilter(catname)
+    sellist = uidoc.Selection.PickElementsByRectangle(sel)
+    filteredlist = []
+    for el in sellist:
+        filteredlist.append(el.Id)
+    uidoc.Selection.SetElementIds(List[ElementId](filteredlist))
+
+
+pickbycategory("Door")

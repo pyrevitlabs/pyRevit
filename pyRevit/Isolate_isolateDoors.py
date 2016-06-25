@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Isolates Doors in current view and put the view in isolate element mode.'
 
 __window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, Transaction, BuiltInCategory
@@ -25,11 +27,12 @@ uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 curview = uidoc.ActiveGraphicalView
-doors = FilteredElementCollector( doc, curview.Id ).OfCategory(BuiltInCategory.OST_Doors).WhereElementIsNotElementType().ToElementIds()
+doors = FilteredElementCollector(doc, curview.Id).OfCategory(
+    BuiltInCategory.OST_Doors).WhereElementIsNotElementType().ToElementIds()
 
-t = Transaction(doc, 'Isolate Doors') 
+t = Transaction(doc, 'Isolate Doors')
 t.Start()
 
-curview.IsolateElementsTemporary( doors )
+curview.IsolateElementsTemporary(doors)
 
 t.Commit()

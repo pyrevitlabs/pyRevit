@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,13 +15,16 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Lists all Family Symbols in this model.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, FamilySymbol, Element, ElementType
+
 doc = __revit__.ActiveUIDocument.Document
 
-cl = FilteredElementCollector( doc )
-list = cl.OfClass( ElementType )
+cl = FilteredElementCollector(doc)
+symbollist = cl.OfClass(ElementType)
 
-for f in list:
-	print( Element.Name.GetValue( f ), ElementType.FamilyName.GetValue( f ))
+for f in symbollist:
+    print(Element.Name.GetValue(f), ElementType.FamilyName.GetValue(f))

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Flips wall orientation on the selected walls.'
 
@@ -23,13 +23,13 @@ __window__.Close()
 from Autodesk.Revit.DB import Transaction, Wall
 
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
 
-t = Transaction( doc, 'Flip Selected Walls')
+t = Transaction(doc, 'Flip Selected Walls')
 t.Start()
 
 for el in selection:
-	if isinstance( el, Wall ):
-		el.Flip()
+    if isinstance(el, Wall):
+        el.Flip()
 
 t.Commit()

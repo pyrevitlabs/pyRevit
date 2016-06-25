@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,32 +15,38 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Increases the sheet number of the selected sheets by one.'
 
 __window__.Close()
 
 import os, subprocess
 import os.path as op
 
+
 # Checks to see if notepad++ program is installed and available.
-def NPPExists():
-	pfFolder = os.getenv('ProgramFiles(x86)')
-	return op.isfile( op.join( pfFolder, 'Notepad++\\Notepad++.EXE' ))
+def nplusplusexists():
+    pffolder = os.getenv('ProgramFiles(x86)')
+    return op.isfile(op.join(pffolder, 'Notepad++\\Notepad++.EXE'))
 
-# def getCurrentJournalFile():
-	# appdataFolder = os.getenv('localappdata')
-	# journalsFolder = op.join( appdataFolder, 'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format( __revit__.Application.VersionNumber ))
-	# os.chdir(journalsFolder)
-	# journalFiles = [x for x in os.listdir( journalsFolder ) if op.splitext(x)[1].lower() == '.txt']
-	# currentJournal = max( journalFiles, key=op.getctime )
-	# return currentJournal
 
-def getCurrentJournalFile():
-	return __revit__.Application.RecordingJournalFilename
+# def getcurrentjournalfile():
+#     appdataFolder = os.getenv('localappdata')
+#     journalsFolder = op.join(appdataFolder,
+#                             'Autodesk\\Revit\\Autodesk Revit {0}\\Journals'.format(__revit__.Application.VersionNumber))
+#     os.chdir(journalsFolder)
+#     journalFiles = [x for x in os.listdir(journalsFolder) if op.splitext(x)[1].lower() == '.txt']
+#     currentJournal = max(journalFiles, key=op.getctime)
+#     return currentJournal
 
-currentJournal = getCurrentJournalFile()
+def getcurrentjournalfile():
+    return __revit__.Application.RecordingJournalFilename
 
-if NPPExists():
-	os.system('start notepad++ -lvb -n9999999999 "{0}"'.format( currentJournal ))
+
+currentJournal = getcurrentjournalfile()
+
+if nplusplusexists():
+    os.system('start notepad++ -lvb -n9999999999 "{0}"'.format(currentJournal))
 else:
-	os.system('start notepad "{0}"'.format( currentJournal ))
+    os.system('start notepad "{0}"'.format(currentJournal))

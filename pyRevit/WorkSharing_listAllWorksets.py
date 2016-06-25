@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,21 +15,22 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
 __doc__ = 'List all worksets in the model.'
 
-from Autodesk.Revit.DB import Workset, FilteredWorksetCollector, WorksetKind 
+from Autodesk.Revit.DB import Workset, FilteredWorksetCollector, WorksetKind
 from Autodesk.Revit.UI import TaskDialog
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredWorksetCollector(doc)
-list = cl.OfKind(WorksetKind.UserWorkset)
+worksetlist = cl.OfKind(WorksetKind.UserWorkset)
 
 if doc.IsWorkshared:
-	for ws in list:
-			print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
+    for ws in worksetlist:
+        print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
 else:
-	__window__.Close()
-	TaskDialog.Show('pyRevit','Model is not workshared.')
+    __window__.Close()
+    TaskDialog.Show('pyRevit', 'Model is not workshared.')

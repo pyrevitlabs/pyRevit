@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,23 +15,25 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Exports all original imported images to user desktop.'
 
 import os.path as op
 from Autodesk.Revit.DB import FilteredElementCollector, Element, ImageType
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
 
 destDir = op.expandvars('%userprofile%\\desktop')
 
 cl = FilteredElementCollector(doc)
-list = cl.OfClass( ImageType ).ToElements()
+list = cl.OfClass(ImageType).ToElements()
 
 for el in list:
-	image = el.GetImage()
-	imageName = op.basename( el.Path )
-	# imageName = Element.Name.GetValue( el )
-	print('EXPORTING: {0}'.format( imageName ))
-	image.Save( op.join( destDir, imageName ))
+    image = el.GetImage()
+    imageName = op.basename(el.Path)
+    # imageName = Element.Name.GetValue( el )
+    print('EXPORTING: {0}'.format(imageName))
+    image.Save(op.join(destDir, imageName))

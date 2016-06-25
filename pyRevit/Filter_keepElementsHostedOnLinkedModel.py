@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,9 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Looks into the current selection elements and keeps the ones hosted on a linked model surface.'
 
 __window__.Close()
 from Autodesk.Revit.DB import ElementId, RevitLinkInstance
@@ -26,10 +28,10 @@ doc = __revit__.ActiveUIDocument.Document
 
 set = []
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	host = el.Host
-	if isinstance( host, RevitLinkInstance ):
-		set.append( elId )
+    el = doc.GetElement(elId)
+    host = el.Host
+    if isinstance(host, RevitLinkInstance):
+        set.append(elId)
 
-uidoc.Selection.SetElementIds( List[ElementId]( set ) )
+uidoc.Selection.SetElementIds(List[ElementId](set))
 uidoc.RefreshActiveView()

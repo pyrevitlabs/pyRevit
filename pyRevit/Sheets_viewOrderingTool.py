@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,10 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
+
+__doc__ = 'Run this tool in a sheet view and click on viewports one by one and this tool ' \
+          'will change the detail number sequencially.'
 
 __window__.Hide()
 from Autodesk.Revit.DB import Transaction, ViewSheet, Viewport
@@ -27,37 +30,38 @@ doc = __revit__.ActiveUIDocument.Document
 curview = doc.ActiveView
 
 if not isinstance(curview, ViewSheet):
-	TaskDialog.Show('pyRevit', 'You must be on a sheet to use this tool.')
-	__window__.Close()
+    TaskDialog.Show('pyRevit', 'You must be on a sheet to use this tool.')
+    __window__.Close()
 
 viewports = []
 for vpId in curview.GetAllViewports():
-	viewports.append( doc.GetElement( vpId ))
+    viewports.append(doc.GetElement(vpId))
 
-vports = { int(vp.LookupParameter('Detail Number').AsString()):vp for vp in viewports if vp.LookupParameter('Detail Number')}
-maxNum = max( vports.keys() )
+vports = {int(vp.LookupParameter('Detail Number').AsString()): vp for vp in viewports if
+          vp.LookupParameter('Detail Number')}
+maxNum = max(vports.keys())
 
 with Transaction(doc, 'Re-number Viewports') as t:
-	t.Start()
+    t.Start()
 
-	sel = []
-	while len(sel) < len(vports):
-		try:
-			el = doc.GetElement( uidoc.Selection.PickObject( ObjectType.Element ))
-			if isinstance(el,Viewport):
-				sel.append( doc.GetElement(el.ViewId) )
-		except:
-			break
+    sel = []
+    while len(sel) < len(vports):
+        try:
+            el = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element))
+            if isinstance(el, Viewport):
+                sel.append(doc.GetElement(el.ViewId))
+        except:
+            break
 
-	for i in range(1, len(sel)+1 ):
-		try:
-			vports[i].LookupParameter('Detail Number').Set( str(maxNum + i) )
-		except KeyError:
-			continue
+    for i in range(1, len(sel) + 1):
+        try:
+            vports[i].LookupParameter('Detail Number').Set(str(maxNum + i))
+        except KeyError:
+            continue
 
-	for i,el in enumerate(sel):
-		el.LookupParameter('Detail Number').Set( str(i+1) )
+    for i, el in enumerate(sel):
+        el.LookupParameter('Detail Number').Set(str(i + 1))
 
-	t.Commit()
+    t.Commit()
 
 __window__.Close()

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Resets element graphic override for the selected elements.'
 
@@ -27,8 +27,8 @@ doc = __revit__.ActiveUIDocument.Document
 selection = __revit__.ActiveUIDocument.Selection.GetElementIds()
 
 with Transaction(doc, 'Reset Element Override') as t:
-	t.Start()
-	for elId in selection:
-		ogs = OverrideGraphicSettings()
-		doc.ActiveView.SetElementOverrides( elId, ogs )
-	t.Commit()
+    t.Start()
+    for elId in selection:
+        ogs = OverrideGraphicSettings()
+        doc.ActiveView.SetElementOverrides(elId, ogs)
+    t.Commit()

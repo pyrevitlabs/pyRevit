@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Renames PDF sheets printed from Revit and removes the Central model name from the PDF names. The PDF files must be on desktop.'
 
@@ -28,27 +28,30 @@ __window__.Close()
 basefolder = op.expandvars('%userprofile%\\desktop')
 sheetcount = 0
 
-def alert(msg):
-	TaskDialog.Show('pyRevit', msg)
 
-def renamePDF( file ):
-	import re
-	r = re.compile('(?<=Sheet - )(.+)')
-	fname = r.findall(file)[0]
-	r = re.compile('(.+)\s-\s(.+)')
-	fnameList= r.findall(fname)
-	return fnameList[0][0] + ' - ' + fnameList[0][1].upper()
+def alert(msg):
+    TaskDialog.Show('pyRevit', msg)
+
+
+def renamePDF(pdffile):
+    import re
+    r = re.compile('(?<=Sheet - )(.+)')
+    fname = r.findall(pdffile)[0]
+    r = re.compile('(.+)\s-\s(.+)')
+    fnameList = r.findall(fname)
+    return fnameList[0][0] + ' - ' + fnameList[0][1].upper()
+
 
 # for dirname, dirnames, filenames in os.walk( basefolder ):
-filenames = os.listdir( basefolder )
-for file in filenames:
-	ext = op.splitext(file)[1].upper()
-	if ext == '.PDF' and ('Sheet' in file):
-		newfile = renamePDF(file)
-		try:
-			os.rename( op.join( basefolder, file ), op.join( basefolder, newfile ))
-			sheetcount+=1
-		except:
-			print("Unexpected error:", sys.exc_info()[0])
+filenames = os.listdir(basefolder)
+for pdffile in filenames:
+    ext = op.splitext(pdffile)[1].upper()
+    if ext == '.PDF' and ('Sheet' in pdffile):
+        newfile = renamePDF(pdffile)
+        try:
+            os.rename(op.join(basefolder, pdffile), op.join(basefolder, newfile))
+            sheetcount += 1
+        except Exception as e:
+            print("Unexpected error:", sys.exc_info()[0])
 
 alert('{0} FILES RENAMED.'.format(sheetcount))

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all scope boxes in this model.'
 
@@ -23,11 +23,10 @@ from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
 
-
-cl = FilteredElementCollector(doc)
-scopeboxes = cl.OfCategory(BuiltInCategory.OST_VolumeOfInterest).WhereElementIsNotElementType().ToElements()
+scopeboxes = FilteredElementCollector(doc).OfCategory(
+    BuiltInCategory.OST_VolumeOfInterest).WhereElementIsNotElementType().ToElements()
 
 for el in scopeboxes:
-	print('SCOPEBOX: {0}'.format( el.Name ) )
+    print('SCOPEBOX: {0}'.format(el.Name))

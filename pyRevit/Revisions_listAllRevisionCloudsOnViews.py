@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,22 +15,25 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all revision clouds in this model that have been placed on a view and not on sheet.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ViewSheet
-doc = __revit__.ActiveUIDocument.Document
 
+doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
 revs = cl.OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
 
 for rev in revs:
-	parent = doc.GetElement( rev.OwnerViewId )
-	if isinstance(parent, ViewSheet):
-		continue
-	else:
-		print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'.format( doc.GetElement( rev.RevisionId ).RevisionNumber, parent.ViewName, rev.Id ))
+    parent = doc.GetElement(rev.OwnerViewId)
+    if isinstance(parent, ViewSheet):
+        continue
+    else:
+        print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'.format(doc.GetElement(rev.RevisionId).RevisionNumber,
+                                                            parent.ViewName,
+                                                            rev.Id
+                                                            ))
 
 print('\nSEARCH COMPLETED.')

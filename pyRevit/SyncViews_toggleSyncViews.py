@@ -23,6 +23,7 @@ import os
 import os.path as op
 import pickle as pl
 import clr
+
 clr.AddReference('PresentationCore')
 
 from System import EventHandler
@@ -39,6 +40,7 @@ class Point:
     def __init__(self, x=0, y=0):
         self.x = x
         self.y = y
+
 
 # todo: sync views - 3D
 
@@ -78,7 +80,7 @@ def findribbonsubitem(ribbonitem, itemname):
 
 
 def getcommandbutton(__rvt__, scriptaddress):
-    scriptname= op.splitext(op.basename(scriptaddress))[0]
+    scriptname = op.splitext(op.basename(scriptaddress))[0]
     tabname = op.basename(op.dirname(scriptaddress))
     itemname = tabname + scriptname.split('_')[0] + scriptname.split('_')[1]
     ribbonpanels = __rvt__.GetRibbonPanels(tabname)
@@ -182,6 +184,7 @@ def selfInit(__rvt__, scriptaddress, commandbutton):
     icon = ToggleButtonIcons(scriptaddress)
     commandbutton.Image = icon.disabledIcon.smallIcon
     commandbutton.LargeImage = icon.disabledIcon.largeIcon
+
 
 if __name__ == '__main__':
     __window__.Close()

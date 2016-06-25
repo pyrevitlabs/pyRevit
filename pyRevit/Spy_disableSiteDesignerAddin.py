@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Site Designer has a bug that duplicates its standard line styles. This script will disable the Add-in.'
 
@@ -25,50 +25,49 @@ from System import AppDomain
 
 assmName = 'SiteDesigner'
 
-def findAssembly( assemblyName ):
-		alist = []
-		for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-			if assemblyName in loadedAssembly.FullName:
-				alist.append( loadedAssembly )
-		return alist
 
-def disableAddin( assm ):
-	assmLoc = op.dirname( assm.Location )
-	files = os.listdir( assmLoc )
-	atLeastOneDisabled = False
-	for f in files:
-		if f.endswith( '.addin' ):
-			fname = op.join( assmLoc, f )
-			newfname = op.join( assmLoc, f.replace( '.addin', '.addin.bak' ))
-			os.rename( fname, newfname )
-			print('Addin description file renamed:\n{0}'.format( newfname ))
-			atLeastOneDisabled = True
-	if atLeastOneDisabled:
-		print('ADDIN SUCCESSFULLY DISABLED.')
-	else:
-		print('--- Disabling unsuccessful for:\n{0}'.format( op.join( assmLoc, f )))
+def findassembly(assemblyname):
+    alist = []
+    for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
+        if assemblyname in loadedAssembly.FullName:
+            alist.append(loadedAssembly)
+    return alist
 
 
-assmList = findAssembly( assmName )
+def disableaddin(assemb):
+    assmloc = op.dirname(assemb.Location)
+    files = os.listdir(assmloc)
+    atleastonedisabled = False
+    for f in files:
+        if f.endswith('.addin'):
+            fname = op.join(assmloc, f)
+            newfname = op.join(assmloc, f.replace('.addin', '.addin.bak'))
+            os.rename(fname, newfname)
+            print('Addin description file renamed:\n{0}'.format(newfname))
+            atleastonedisabled = True
+    if atleastonedisabled:
+        print('ADDIN SUCCESSFULLY DISABLED.')
+    else:
+        print('--- Disabling unsuccessful ---')
+
+
+assmList = findassembly(assmName)
 
 if len(assmList) > 1:
-	print('Multiple assemblies found:\n{0}\n\nAttemping disabling all...'.format( assmList ))
-	for i, a in enumerate( assmList ):
-		print('\n\n{0}: {1}'.format( i, a.GetName().Name ))
-		if not a.IsDynamic:
-			disableAddin( a )
-		else:
-			print('Can not disable dynamic assembly...')
+    print('Multiple assemblies found:\n{0}\n\nAttemping disabling all...'.format(assmList))
+    for i, a in enumerate(assmList):
+        print('\n\n{0}: {1}'.format(i, a.GetName().Name))
+        if not a.IsDynamic:
+            disableaddin(a)
+        else:
+            print('Can not disable dynamic assembly...')
 
 elif len(assmList) == 1:
-	assm = assmList[0]
-	if not assm.IsDynamic:
-		print('Assembly found:\n{0}\nAttemping disabling...'.format( assm.GetName().Name ))
-		disableAddin( assm )
-	else:
-		print('Can not disable dynamic assembly...')
+    assm = assmList[0]
+    if not assm.IsDynamic:
+        print('Assembly found:\n{0}\nAttemping disabling...'.format(assm.GetName().Name))
+        disableaddin(assm)
+    else:
+        print('Can not disable dynamic assembly...')
 else:
-	print('Can not find addin: {0}'.format( assmName ))
-
-
-
+    print('Can not find addin: {0}'.format(assmName))

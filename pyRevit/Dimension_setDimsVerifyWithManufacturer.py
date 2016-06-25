@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Sets dimension value to VERIFY W MFR on selected dimensions.'
 
@@ -29,15 +29,14 @@ t = Transaction(doc, 'VWM dimensions')
 t.Start()
 
 for elId in uidoc.Selection.GetElementIds():
-	el = doc.GetElement( elId )
-	if isinstance( el, Dimension ):
-		if len( list( el.Segments )) > 0:
-			for seg in el.Segments:
-				seg.Suffix = 'R.O.'
-				seg.Below = 'VERIFY W/ MFR'
-		else:
-			el.Suffix = 'R.O.'
-			el.Below = 'VERIFY W/ MFR'
-
+    el = doc.GetElement(elId)
+    if isinstance(el, Dimension):
+        if len(list(el.Segments)) > 0:
+            for seg in el.Segments:
+                seg.Suffix = 'R.O.'
+                seg.Below = 'VERIFY W/ MFR'
+        else:
+            el.Suffix = 'R.O.'
+            el.Below = 'VERIFY W/ MFR'
 
 t.Commit()

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,13 +15,14 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
-import platform as pl
+__doc__ = 'About pyRevit. See version number, license, and credits here.'
+
 
 print('''
 About pyRevit...
-Version 2.40.45
+Version 2.43.46
 This packages is prepared by Ehsan Iran-Nejad (eirannejad@gmail.com) and is licensed under GNU GENERAL PUBLIC LICENSE.
 See full license here: https://github.com/eirannejad/pyRevit/blob/master/LICENSE.
 

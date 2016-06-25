@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists keynotes that have not been used in this model.'
 
@@ -26,16 +26,17 @@ uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
 usedkeynotes = set()
-keynotes = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_KeynoteTags).WhereElementIsNotElementType().ToElements()
-for kn in keynotes:
-	usedkeynotes.add(kn.TagText)
+keynotes = FilteredElementCollector(doc).OfCategory(
+    BuiltInCategory.OST_KeynoteTags).WhereElementIsNotElementType().ToElements()
+for knote in keynotes:
+    usedkeynotes.add(knote.TagText)
 
 allkeynotes = set()
 kt = KeynoteTable.GetKeynoteTable(doc)
-for kn in kt.GetKeyBasedTreeEntries():
-	allkeynotes.add(kn.Key)
+for knote in kt.GetKeyBasedTreeEntries():
+    allkeynotes.add(knote.Key)
 
 unusedkeynotes = allkeynotes - usedkeynotes
 
-for kn in sorted(unusedkeynotes):
-	print(kn)
+for knote in sorted(unusedkeynotes):
+    print(knote)

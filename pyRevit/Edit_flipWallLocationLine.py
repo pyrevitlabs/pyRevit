@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Flips the selected walls along their core axis and changes their location lines to Core Face Exterior.'
 
@@ -23,30 +23,29 @@ __window__.Close()
 from Autodesk.Revit.DB import TransactionGroup, Transaction, Wall
 
 doc = __revit__.ActiveUIDocument.Document
-selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
 
-tg = TransactionGroup( doc, "Search for linked elements")
+tg = TransactionGroup(doc, "Search for linked elements")
 tg.Start()
 
-locLineValues = {	'Wall Centerline':0,
-					'Core Centerline':1,
-					'Finish Face: Exterior':2,
-					'Finish Face: Interior':3,
-					'Core Face: Exterior':4,
-					'Core Face: Interior':5,
-					}
+locLineValues = {'Wall Centerline': 0,
+                 'Core Centerline': 1,
+                 'Finish Face: Exterior': 2,
+                 'Finish Face: Interior': 3,
+                 'Core Face: Exterior': 4,
+                 'Core Face: Interior': 5,
+                 }
 
 for el in selection:
-	if isinstance( el, Wall ):
-		param = el.LookupParameter('Location Line')
-		with Transaction( doc, 'Change Wall Location Line') as t:
-			t.Start()
-			param.Set( locLineValues[ 'Core Centerline' ] )
-			t.Commit()
-		with Transaction( doc, 'Flip Selected Wall') as t:
-			t.Start()
-			el.Flip()
-			param.Set( locLineValues[ 'Core Face: Exterior' ] )
-			t.Commit()
+    if isinstance(el, Wall):
+        param = el.LookupParameter('Location Line')
+        with Transaction(doc, 'Change Wall Location Line') as t:
+            t.Start()
+            param.Set(locLineValues['Core Centerline'])
+            t.Commit()
+        with Transaction(doc, 'Flip Selected Wall') as t:
+            t.Start()
+            el.Flip()
+            param.Set(locLineValues['Core Face: Exterior'])
+            t.Commit()
 tg.Commit()
-

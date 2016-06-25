@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,16 +15,20 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Lists all revisions in this model.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
-doc = __revit__.ActiveUIDocument.Document
 
+doc = __revit__.ActiveUIDocument.Document
 
 cl = FilteredElementCollector(doc)
 revs = cl.OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
 
 for rev in revs:
-	print('{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format( rev.SequenceNumber, str(rev.RevisionNumber).ljust(5), str(rev.RevisionDate).ljust(10), str(rev.NumberType.ToString()).ljust(15), str(rev.Description).replace('\n','').replace('\r','')))
+    print('{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format(rev.SequenceNumber, str(rev.RevisionNumber).ljust(5),
+                                                            str(rev.RevisionDate).ljust(10),
+                                                            str(rev.NumberType.ToString()).ljust(15),
+                                                            str(rev.Description).replace('\n', '').replace('\r', '')
+                                                            ))

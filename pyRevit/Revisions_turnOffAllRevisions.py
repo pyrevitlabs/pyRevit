@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
@@ -15,20 +15,19 @@ GNU General Public License for more details.
 
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
+"""
 
 __doc__ = 'Sets the revision visibility parameter to None for all revisions.'
 
 __window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, RevisionVisibility
+
 doc = __revit__.ActiveUIDocument.Document
 
+revs = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
 
-cl = FilteredElementCollector(doc)
-revs = cl.OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
-
-with Transaction(doc,'Turn off Revisions') as t:
-	t.Start()
-	for rev in revs:
-		rev.Visibility = RevisionVisibility.Hidden
-	t.Commit()
+with Transaction(doc, 'Turn off Revisions') as t:
+    t.Start()
+    for rev in revs:
+        rev.Visibility = RevisionVisibility.Hidden
+    t.Commit()

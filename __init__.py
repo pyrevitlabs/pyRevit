@@ -1,9 +1,11 @@
 import clr
 import sys
 import os
+import shutil
 import re
 import os.path as op
 from datetime import datetime
+
 # import random as rnd
 # import pickle as pl
 # import time
@@ -81,8 +83,11 @@ class PyRevitUISettings:
     splitButtonTypeName = 'SplitButton'
     tooltipParameter = '__doc__'
     userSetupKeyword = '__init__'
-    reloadScriptsOverrideName = 'Settings_reloadScripts'
+    reloadScriptsOverrideGroupName = 'Settings'
+    reloadScriptsOverrideName = 'reloadScripts'
     masterTabName = 'master'
+    logScriptUsage = True
+    archivelogfolder = 'T:\[logs]'
 
     def __init__(self):
         """Loads settings from settigns file."""
@@ -259,15 +264,11 @@ class ScriptCommand:
 
         # custom name adjustments
         if settings.userSetupKeyword.lower() in fname.lower():
-            fname = settings.reloadScriptsOverrideName
+            fname = settings.reloadScriptsOverrideGroupName + '_' + settings.reloadScriptsOverrideName
 
         if '_' != fname[0] and '.py' == fext.lower():
             self.filePath = filedir
             self.fileName = f
-            self.tooltip = fname + ' ' + fext.lower()
-            docstring = ScriptCommand.extractparameter(settings.tooltipParameter, self.getfullscriptaddress())
-            if docstring is not None:
-                self.tooltip = self.tooltip + '\n' + docstring
             namepieces = fname.rsplit('_')
             namepieceslength = len(namepieces)
             if namepieceslength == 2:
@@ -284,6 +285,10 @@ class ScriptCommand:
                     self.buttonIcons = None
             else:
                 raise UnknownFileNameFormat()
+            
+            docstring = ScriptCommand.extractparameter(settings.tooltipParameter, self.getfullscriptaddress())
+            if docstring is not None:
+                self.tooltip = '{0}\n\nScript Name:\n{1}'.format(docstring, fname + ' ' + fext.lower())
         else:
             raise UnknownFileNameFormat()
 
@@ -294,14 +299,27 @@ class ScriptCommand:
         return self.scriptGroupName + '_' + self.cmdName
 
     @staticmethod
-    def extractparameter(param, fileaddress):
-        finder = re.compile(param + '\s*=\s*\'*\"*(.+?)[\'\"]', flags=re.DOTALL | re.IGNORECASE)
+    def extractparameter(docparam, fileaddress):
+        docstringfound = False
+        docstring = ''
+        docfinder = re.compile(docparam + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+        docfinderex = re.compile('\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
         with open(fileaddress, 'r') as f:
-            values = finder.findall(f.read())
-            if values:
-                return values[0].replace('\\n', '\n')
-            else:
-                return None
+            for thisline in f.readlines():
+                if not docstringfound:
+                    values = docfinder.findall(thisline)
+                    if values:
+                        docstring = values[0]
+                        docstringfound = True
+                    continue
+                elif docstringfound:
+                    values = docfinderex.findall(thisline)
+                    if values:
+                        docstring += values[0]
+                        continue
+                    break
+
+        return docstring.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
 
 
 class PyRevitUISession:
@@ -312,13 +330,22 @@ class PyRevitUISession:
         self.pyRevitScriptGroups = []
         self.pyRevitScriptCommands = []
         self.pyRevitScriptTabs = []
+        self.sessionname = None
         self.homeDir = homedir
-        self.userTempFolder = find_user_temp_directory()
         self.commandLoaderClass = None
         self.commandLoaderAssembly = None
         self.newAssemblyLocation = None
+        self.isrplfound = False
+        self.isrplloggerfound = False
+
         self.settings = settings
+        self.userTempFolder = find_user_temp_directory()
         self.revitVersion = __revit__.Application.VersionNumber
+        self.username = __revit__.Application.Username
+        self.assemblyidentifier = self.settings.pyRevitAssemblyName
+        self.sessionidentifier = "{0}{1}".format(self.settings.pyRevitAssemblyName,
+                                                 self.revitVersion)
+        self.archivelogfolder = self.settings.archivelogfolder
 
         report('Running on:\n{0}'.format(sys.version))
         report('\nHome Directory is: {0}'.format(self.homeDir))
@@ -328,7 +355,11 @@ class PyRevitUISession:
         res = self.findcommandloaderclass()
         if res:
             self.findloadedpyrevitassemblies()
-            self.cleanup()
+            if not self.isreloading():
+                self.cleanup()
+                self.archivelogs()
+            else:
+                reportv('pyRevit is reloading. Skipping DLL and log cleanup.')
 
             # find commands, script groups and assign commands
             self.createreloadbutton(self.homeDir)
@@ -337,7 +368,7 @@ class PyRevitUISession:
 
             # create assembly dll
             report('Building script executer assembly...')
-            self.createassmebly()
+            self.createassembly()
 
             # setting up UI
             report('Executer assembly saved. Creating pyRevit UI.')
@@ -347,25 +378,39 @@ class PyRevitUISession:
 
     def cleanup(self):
         revitinstances = list(Process.GetProcessesByName('Revit'))
-        revitversionstr = self.getrevitversionstr()
         if len(revitinstances) > 1:
             reportv('Multiple Revit instance are running...Skipping DLL Cleanup')
         elif len(revitinstances) == 1 and not self.isreloading():
             reportv('Cleaning up old DLL files...')
             files = os.listdir(self.userTempFolder)
             for f in files:
-                if f.startswith(self.settings.pyRevitAssemblyName + revitversionstr):
+                if f.startswith(self.sessionidentifier) and f.endswith('dll'):
                     try:
                         os.remove(op.join(self.userTempFolder, f))
                         reportv('Existing .Dll Removed: {0}'.format(f))
                     except:
                         reportv('Error deleting .DLL file: {0}'.format(f))
 
+    def archivelogs(self):
+        revitinstances = list(Process.GetProcessesByName('Revit'))
+        if len(revitinstances) > 1:
+            reportv('Multiple Revit instance are running...Skipping archiving old log files.')
+        elif len(revitinstances) == 1 and not self.isreloading():
+            reportv('Archiving old log files...')
+            files = os.listdir(self.userTempFolder)
+            for f in files:
+                if f.startswith(self.assemblyidentifier) and f.endswith('log'):
+                    try:
+                        currentfileloc = op.join(self.userTempFolder, f)
+                        newloc = op.join(self.archivelogfolder, f)
+                        shutil.move(currentfileloc, newloc)
+                        # os.remove(op.join(self.userTempFolder, f))
+                        reportv('Existing log file archived to: {0}'.format(newloc))
+                    except:
+                        reportv('Error archiving log file: {0}'.format(f))
+
     def isreloading(self):
         return len(self.loadedPyRevitAssemblies) > 0
-
-    def getrevitversionstr(self):
-        return str(self.revitVersion)
 
     def findcommandloaderclass(self):
         # tries to find the revitpythonloader assembly first
@@ -374,7 +419,19 @@ class PyRevitUISession:
             if 'RevitPythonLoader' in loadedAssembly.FullName:
                 reportv('RPL Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
                 self.commandLoaderClass = loadedAssembly.GetType('RevitPythonLoader.CommandLoaderBase')
+                if self.settings.logScriptUsage:
+                    loaderclass = loadedAssembly.GetType('RevitPythonLoader.CommandLoaderBaseWithLogger')
+                    if loaderclass is not None:
+                        self.commandLoaderClass = loaderclass
+                        reportv('RPL script usage logging is Enabled.')
+                        self.isrplloggerfound = True
+                    else:
+                        self.isrplloggerfound = False
+                        reportv('RPL script usage logging is Enabled but can not find base class with logger.')
+                else:
+                    reportv('RPL script usage logging is Disabled.')
                 self.commandLoaderAssembly = loadedAssembly
+                self.isrplfound = True
                 return True
 
         # if revitpythonloader doesn't exist tries to find the revitpythonshell assembly
@@ -384,6 +441,7 @@ class PyRevitUISession:
                 reportv('RPS Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
                 self.commandLoaderClass = loadedAssembly.GetType('RevitPythonShell.CommandLoaderBase')
                 self.commandLoaderAssembly = loadedAssembly
+                self.isrplfound = False
                 return True
 
         reportv('Can not find RevitPythonShell either. Aborting load...')
@@ -495,24 +553,29 @@ class PyRevitUISession:
                     reportv('\nCould not create reload command.\n')
                     continue
 
-    def createassmebly(self):
+    def createassembly(self):
         # create DLL folder
         # dllfolder = Path.Combine( self.homeDir, self.settings.pyRevitAssemblyName )
         # if not os.path.exists( dllfolder ):
         # os.mkdir( dllfolder )
         dllfolder = self.userTempFolder
         # make assembly name
-        generatedassemblyname = self.settings.pyRevitAssemblyName + self.getrevitversionstr() + datetime.now().strftime(
-            '_%y%m%d%H%M%S')
-        dllname = generatedassemblyname + '.dll'
+        self.sessionname = "{0}{1}{2}".format(self.sessionidentifier,
+                                              "_" + datetime.now().strftime('%y%m%d%H%M%S'),
+                                              "_" + self.username
+                                              )
+        dllname = self.sessionname + '.dll'
+        logfilename = self.sessionname + '.log'
+
         # create assembly
-        windowsassemblyname = AssemblyName(Name=generatedassemblyname, Version=Version(1, 0, 0, 0))
-        reportv('Generated assembly name for this session: {0}'.format(generatedassemblyname))
+        windowsassemblyname = AssemblyName(Name=self.sessionname, Version=Version(1, 0, 0, 0))
+        reportv('Generated assembly name for this session: {0}'.format(self.sessionname))
         reportv('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
         reportv('Generated DLL name for this session: {0}'.format(dllname))
+        reportv('Generated log name for this session: {0}'.format(logfilename))
         assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(windowsassemblyname,
                                                                         AssemblyBuilderAccess.RunAndSave, dllfolder)
-        modulebuilder = assemblybuilder.DefineDynamicModule(generatedassemblyname, dllname)
+        modulebuilder = assemblybuilder.DefineDynamicModule(self.sessionname, dllname)
 
         # create command classes
         for cmd in self.pyRevitScriptCommands:
@@ -534,12 +597,22 @@ class PyRevitUISession:
             typebuilder.SetCustomAttribute(transactionattributebuilder)
 
             # call base constructor with script path
-            ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
+            ci = None
+            if not self.settings.logScriptUsage:
+                ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
+            elif self.isrplfound and self.settings.logScriptUsage:
+                if self.isrplloggerfound:
+                    ci = self.commandLoaderClass.GetConstructor(Array[Type]((str, str)))
+                else:
+                    ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
+
             constructorbuilder = typebuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
                                                                Array[Type](()))
             gen = constructorbuilder.GetILGenerator()
             gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
             gen.Emit(OpCodes.Ldstr, cmd.getfullscriptaddress())  # Load the path to the command as a string onto stack
+            if self.isrplfound and self.settings.logScriptUsage and self.isrplloggerfound:
+                gen.Emit(OpCodes.Ldstr, logfilename)  # Load log file name into stack
             gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the string)
             gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
             gen.Emit(OpCodes.Nop)
@@ -586,7 +659,9 @@ class PyRevitUISession:
                 reportv('Creating\\Updating ribbon items for panel: {0}'.format(scriptPanel.panelName))
                 for scriptGroup in scriptPanel.getsortedscriptgroups():
                     # PulldownButton or SplitButton
-                    if scriptGroup.groupType == self.settings.pulldownButtonTypeName or scriptGroup.groupType == self.settings.splitButtonTypeName:
+                    groupispulldownbutton = scriptGroup.groupType == self.settings.pulldownButtonTypeName
+                    groupissplitbutton = scriptGroup.groupType == self.settings.splitButtonTypeName
+                    if groupispulldownbutton or groupissplitbutton:
                         # PulldownButton
                         if scriptGroup.groupType == self.settings.pulldownButtonTypeName:
                             if scriptGroup.groupName not in pyrevitribbonitemsdict:
@@ -617,6 +692,9 @@ class PyRevitUISession:
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
                                                             cmd.className)
                                 buttondata.ToolTip = cmd.tooltip
+                                ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
+                                                                                         self.sessionname)
+                                buttondata.LongDescription = ldesc
                                 if cmd.buttonIcons:
                                     buttondata.LargeImage = cmd.buttonIcons.mediumBitmap
                                     # buttondata.LargeImage = cmd.buttonIcons.largeBitmap
@@ -629,7 +707,12 @@ class PyRevitUISession:
                                 reportv('\t\tUpdating push button: {0}'.format(cmd.className))
                                 pushbutton = existingribbonitempushbuttonsdict.pop(cmd.className)
                                 pushbutton.ToolTip = cmd.tooltip
+                                ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
+                                                                                         self.sessionname)
+                                pushbutton.LongDescription = ldesc
                                 pushbutton.Enabled = True
+                                if self.settings.reloadScriptsOverrideName not in pushbutton.Name:
+                                    pushbutton.AssemblyName = self.newAssemblyLocation
                                 if cmd.buttonIcons:
                                     pushbutton.LargeImage = cmd.buttonIcons.mediumBitmap
                                     # pushbutton.LargeImage = cmd.buttonIcons.largeBitmap
@@ -651,6 +734,9 @@ class PyRevitUISession:
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
                                                             cmd.className)
                                 buttondata.ToolTip = cmd.tooltip
+                                ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
+                                                                                         self.sessionname)
+                                buttondata.LongDescription = ldesc
                                 if cmd.buttonIcons:
                                     buttondata.Image = cmd.buttonIcons.smallBitmap
                                 else:
@@ -689,6 +775,9 @@ class PyRevitUISession:
                                 ribbonitem.Enabled = True
                                 updatedbuttoncount += 1
                             ribbonitem.ToolTip = cmd.tooltip
+                            ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
+                                                                                     self.sessionname)
+                            ribbonitem.LongDescription = ldesc
                             ribbonitem.Image = scriptGroup.buttonIcons.smallBitmap
                             ribbonitem.LargeImage = scriptGroup.buttonIcons.largeBitmap
                         except:
@@ -714,6 +803,9 @@ class PyRevitUISession:
                                 ribbonitem.Enabled = True
                                 updatedbuttoncount += 1
                             ribbonitem.ToolTip = cmd.tooltip
+                            ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
+                                                                                     self.sessionname)
+                            ribbonitem.LongDescription = ldesc
                             importedscript = __import__(cmd.getscriptbasename())
                             importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
                         except:
