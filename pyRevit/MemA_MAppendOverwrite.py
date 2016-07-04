@@ -17,8 +17,9 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = '''Clear memory and Append current selection. Works like the M+ button in a calculator.
-This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'''
+__doc__ = 'Clear memory and Append current selection. Works like the M+ button in a calculator. ' \
+          'This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in ' \
+          'user temp folder as *.pym files.'
 
 __window__.Close()
 # from Autodesk.Revit.DB import ElementId

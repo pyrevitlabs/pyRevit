@@ -17,8 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Genrally if all elevations creates by an elevation tag are deleted from the model, the empty' \
-          'elevation tag still remains in its location. This script will delete all empty elevation' \
+__doc__ = 'Genrally if all elevations creates by an elevation tag are deleted from the model, the empty ' \
+          'elevation tag still remains in its location. This script will delete all empty elevation ' \
           'tags from the model.'
 
 from Autodesk.Revit.DB import View, FilteredElementCollector, Transaction, ElevationMarker, Element

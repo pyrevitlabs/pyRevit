@@ -17,6 +17,9 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
+__doc__ = 'Reorients the current 3D view camera, perpendicular to the selected face. ' \
+          'This tool will set a sketch plane over the selected face for 3d drawing.'
+
 __window__.Close()
 from Autodesk.Revit.DB import Transaction, View3D, SketchPlane, Plane
 from Autodesk.Revit.UI.Selection import ObjectType

@@ -19,7 +19,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Find all sheets referencing the current view. Especially useful for finding legends.'
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ScheduleSheetInstance
 
 doc = __revit__.ActiveUIDocument.Document
 
@@ -33,6 +33,10 @@ count = 0
 print('Searching All Sheets for {0} ID:{1}\n'.format(curview.Name, curview.Id))
 for s in sheets:
     vpsIds = [doc.GetElement(x).ViewId for x in s.GetAllViewports()]
+    curviewelements = FilteredElementCollector(doc).OwnedByView(s.Id).WhereElementIsNotElementType().ToElements()
+    for el in curviewelements:
+        if isinstance(el, ScheduleSheetInstance):
+            vpsIds.append(el.ScheduleId)
     if curview.Id in vpsIds:
         count += 1
         print('NUMBER: {0}   NAME:{1}'.format(s.LookupParameter('Sheet Number').AsString().rjust(10),

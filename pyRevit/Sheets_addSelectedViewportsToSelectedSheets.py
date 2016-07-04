@@ -22,9 +22,9 @@ __doc__ = 'Open source sheet. Select other sheets in Project Browser. Run this s
           'Select Viewports and push Finish button on the properties bar. ' \
           'The selected views will be added to the selected sheets.'
 
-__window__.Close()
+# __window__.Close()
 
-from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, ScheduleSheetInstance
+from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, ScheduleSheetInstance, ViewType
 from Autodesk.Revit.UI import TaskDialog
 from Autodesk.Revit.UI.Selection import ObjectType
 
@@ -34,7 +34,7 @@ doc = __revit__.ActiveUIDocument.Document
 selSheets = []
 selViewports = []
 
-# pick sheets from selection
+curview = uidoc.ActiveView
 for elId in uidoc.Selection.GetElementIds():
     el = doc.GetElement(elId)
     if isinstance(el, ViewSheet):

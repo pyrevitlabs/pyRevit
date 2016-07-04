@@ -36,7 +36,7 @@ Version 2.40.4
 
 -   Minor cleanups
 
-Version 2.43.46 (current)
+Version 2.43.46
 -------------------------------------------------------------------------------
 -   WorkSharing > listSheetsWithElementsOwnedByMe
         Lists all sheets containing elements currently "owned" by the user.
@@ -54,4 +54,17 @@ Version 2.43.46 (current)
 
 -   Added extended tooltip notes to buttons listing class and assembly name.
 -   Minor cleanups
+
+Version 2.45.51 (current)
+-------------------------------------------------------------------------------
+-   Revised findReferencingSheets to find referencing sheets for schedules as well.
+
+-   Select > selectAllMirroredDoors
+        Selects all mirrored doors in the model.
+
+-   Views > removeUnderlayFromSelectedViews
+        Removes Underlay from selected views.
+
+-   Misc changes
+
 ''')

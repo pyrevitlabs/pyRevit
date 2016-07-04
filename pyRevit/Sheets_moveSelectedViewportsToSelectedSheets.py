@@ -34,7 +34,7 @@ doc = __revit__.ActiveUIDocument.Document
 selSheets = []
 selViewports = []
 
-curview = doc.ActiveView
+curview = uidoc.ActiveView
 
 for elId in uidoc.Selection.GetElementIds():
     el = doc.GetElement(elId)

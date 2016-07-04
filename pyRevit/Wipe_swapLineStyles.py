@@ -19,8 +19,8 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'This is a tool to swap line styles. Run the tool, select a line with the style to be replaced, and then ' \
           'select a line with the source style. The script will correct the line styles in the model. ' \
-          'HOWEVER the lines that are part of a group of a filled region will not be affected. ' \
-          'Yeah I know. What\'s the point...But event his helps sometimes.'
+          'HOWEVER the lines that are part of a group or a filled region will not be affected. ' \
+          'Yeah I know. What\'s the point...But even this helps sometimes.'
 
 from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory, ElementId
 from Autodesk.Revit.UI.Selection import ObjectType
