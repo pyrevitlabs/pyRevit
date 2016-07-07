@@ -59,6 +59,13 @@ def find_user_temp_directory():
     return tempfolder
 
 
+def get_username():
+    uname = __revit__.Application.Username
+    uname = uname.split('@')[0]
+    uname = uname.replace('.','')
+    return uname
+
+
 # EXCEPTIONS
 class PyRevitException(Exception):
     pass
@@ -341,7 +348,7 @@ class PyRevitUISession:
         self.settings = settings
         self.userTempFolder = find_user_temp_directory()
         self.revitVersion = __revit__.Application.VersionNumber
-        self.username = __revit__.Application.Username
+        self.username = get_username()
         self.assemblyidentifier = self.settings.pyRevitAssemblyName
         self.sessionidentifier = "{0}{1}".format(self.settings.pyRevitAssemblyName,
                                                  self.revitVersion)
@@ -375,7 +382,7 @@ class PyRevitUISession:
             self.createpyrevitui()
         else:
             report('pyRevit load failed...')
-
+    
     def cleanup(self):
         revitinstances = list(Process.GetProcessesByName('Revit'))
         if len(revitinstances) > 1:
