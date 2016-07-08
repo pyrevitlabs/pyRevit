@@ -93,7 +93,7 @@ class PyRevitUISettings:
     reloadScriptsOverrideGroupName = 'Settings'
     reloadScriptsOverrideName = 'reloadScripts'
     masterTabName = 'master'
-    logScriptUsage = True
+    logScriptUsage = False
     archivelogfolder = 'T:\[logs]'
 
     def __init__(self):
