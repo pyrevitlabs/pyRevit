@@ -131,6 +131,10 @@ In this example the 3 scripts below will be used to create 3 buttons in this sta
 	`Inspect_findListOfViewsShowingElement.py`  
 	`Inspect_findPaintedSurfacesOnSelected.py`  
 
+## Adding your own tabs:
+By default, the `__init__.py` script will load all the scripts inside the `pyRevit` folder provided in this repository. But the `__init__.py` script, will also look for other folders in its directory. This means that you can create other folders alongside the `__init__.py` and `pyRevit` and place your custom scripts under those. The `__init__.py` script will create a dedicated tab (with the folder name) for each of the folders that contains scripts, in Revit ribbon after `pyRevit` tab.
+
+This is the preferred method for adding your custom scripts and categories to the pyRevit library. This way, the original pyRevit library can remain intact and always be updated from the github repository to the latest version.
 
 ## Reloading the scripts library:
 ![ReloadScripts](http://eirannejad.github.io/pyRevit/images/reloadScripts.png)
