@@ -95,6 +95,23 @@ class PyRevitUISettings:
     masterTabName = 'master'
     logScriptUsage = False
     archivelogfolder = 'T:\[logs]'
+    specialcharacters = {' ': '', '~': '',
+                         '!': 'EXCLAM',
+                         '@': 'AT',
+                         '#': 'NUM',
+                         '$': 'DOLLAR',
+                         '%': 'PERCENT',
+                         '^': '',
+                         '&': 'AND',
+                         '*': 'STAR',
+                         '\(': '', '\)': '',
+                         '+': 'PLUS',
+                         ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '',
+                         '-': 'MINUS',
+                         '=': 'EQUALS',
+                         '<': '', '>': '',
+                         '?': 'QMARK',
+                         '\/': '', '\\': ''}
 
     def __init__(self):
         """Loads settings from settigns file."""
@@ -281,6 +298,8 @@ class ScriptCommand:
             if namepieceslength == 2:
                 self.scriptGroupName, self.cmdName = namepieces
                 self.className = tabname + self.scriptGroupName + self.cmdName
+                for char, repl in settings.specialcharacters.items():
+                    self.className = self.className.replace(char, repl)
                 reportv('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
                                                                                self.scriptGroupName.ljust(20),
                                                                                self.cmdName))
