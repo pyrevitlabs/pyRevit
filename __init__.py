@@ -133,13 +133,13 @@ class ScriptTab:
         self.pyRevitUIPanels = {}
         self.pyRevitUIButtons = {}
 
-    def adoptpanels(self, pyrevitscriptpanels):
+    def adopt_panels(self, pyrevitscriptpanels):
         for panel in pyrevitscriptpanels:
             if panel.tabName == self.tabName:
                 reportv('\tcontains: {0}'.format(panel.panelName))
                 self.scriptPanels.append(panel)
 
-    def getsortedscriptpanels(self):
+    def get_sorted_scriptpanels(self):
         return sorted(self.scriptPanels, key=lambda x: x.panelOrder)
 
     def hascommands(self):
@@ -182,7 +182,7 @@ class ScriptPanel:
                 reportv('\tcontains: {0}'.format(group.groupName))
                 self.scriptGroups.append(group)
 
-    def getsortedscriptgroups(self):
+    def get_sorted_scriptgroups(self):
         return sorted(self.scriptGroups, key=lambda x: x.groupOrder)
 
 
@@ -359,9 +359,9 @@ class PyRevitUISession:
 
         # collect information about previously loaded assemblies
         report('Initializing python script loader...')
-        res = self.findcommandloaderclass()
+        res = self.find_commandloader_class()
         if res:
-            self.findloadedpyrevitassemblies()
+            self.find_loaded_pyrevit_assemblies()
             if not self.isreloading():
                 self.cleanup()
                 self.archivelogs()
@@ -369,9 +369,9 @@ class PyRevitUISession:
                 reportv('pyRevit is reloading. Skipping DLL and log cleanup.')
 
             # find commands, script groups and assign commands
-            self.createreloadbutton(self.homeDir)
+            self.create_reload_button(self.homeDir)
             report('Searching for tabs, panels, groups, and scripts...')
-            self.findscripttabs(self.homeDir)
+            self.find_scripttabs(self.homeDir)
 
             # create assembly dll
             report('Building script executer assembly...')
@@ -419,7 +419,7 @@ class PyRevitUISession:
     def isreloading(self):
         return len(self.loadedPyRevitAssemblies) > 0
 
-    def findcommandloaderclass(self):
+    def find_commandloader_class(self):
         # tries to find the revitpythonloader assembly first
         reportv('Asking Revit for RevitPythonLoader Command Loader class...')
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
@@ -456,7 +456,7 @@ class PyRevitUISession:
         self.commandLoaderAssembly = None
         return None
 
-    def findloadedpyrevitassemblies(self):
+    def find_loaded_pyrevit_assemblies(self):
         reportv('Asking Revit for previously loaded pyRevit assemblies...')
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if self.settings.pyRevitAssemblyName in loadedAssembly.FullName:
@@ -464,7 +464,7 @@ class PyRevitUISession:
                 self.loadedPyRevitAssemblies.append(loadedAssembly)
                 self.loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
 
-    def findscriptcommands(self, tabdir, tabname):
+    def find_scriptcommands(self, tabdir, tabname):
         reportv('Searching tab folder for scripts...')
         files = sorted(os.listdir(tabdir))
         for f in files:
@@ -484,9 +484,9 @@ class PyRevitUISession:
         if not len(self.pyRevitScriptCommands) > 0:
             report('No Scripts found...')
 
-    def findscriptgroups(self, tabdir, tabname):
+    def find_scriptgroups(self, tabdir, tabname):
         reportv('Searching content folder for script groups ...')
-        self.findscriptcommands(tabdir, tabname)
+        self.find_scriptcommands(tabdir, tabname)
         files = os.listdir(tabdir)
         for f in files:
             # creating ScriptGroup list and adopting ScriptCommands
@@ -507,9 +507,9 @@ class PyRevitUISession:
                     reportv('Unknown assembly error. Skipping: {0}'.format(f))
                     continue
 
-    def findscriptpanels(self, tabdir, tabname):
+    def find_scriptpanels(self, tabdir, tabname):
         reportv('Searching content folder for script panels ...')
-        self.findscriptgroups(tabdir, tabname)
+        self.find_scriptgroups(tabdir, tabname)
         files = os.listdir(tabdir)
         for f in files:
             # creating ScriptPanel list and adopting ScriptGroups
@@ -529,7 +529,7 @@ class PyRevitUISession:
                         reportv('Can not recognize name pattern. skipping: {0}'.format(f))
                         continue
 
-    def findscripttabs(self, rootdir):
+    def find_scripttabs(self, rootdir):
         for dirName in os.listdir(rootdir):
             fulltabpath = op.join(rootdir, dirName)
             if op.isdir(fulltabpath) and ('_' not in dirName):
@@ -538,16 +538,16 @@ class PyRevitUISession:
                 tabnames = [x.tabName for x in self.pyRevitScriptTabs]
                 if dirName not in tabnames:
                     scripttab = ScriptTab(dirName, fulltabpath)
-                    self.findscriptpanels(fulltabpath, scripttab.tabName)
+                    self.find_scriptpanels(fulltabpath, scripttab.tabName)
                     reportv('\nTab found: {0}'.format(scripttab.tabName))
-                    scripttab.adoptpanels(self.pyRevitScriptPanels)
+                    scripttab.adopt_panels(self.pyRevitScriptPanels)
                     self.pyRevitScriptTabs.append(scripttab)
                     sys.path.append(fulltabpath)
                     reportv('\n')
             else:
                 continue
 
-    def createreloadbutton(self, rootdir):
+    def create_reload_button(self, rootdir):
         reportv('Creating "Reload Scripts" button...')
         for fname in os.listdir(rootdir):
             fulltabpath = op.join(rootdir, fname)
@@ -631,7 +631,7 @@ class PyRevitUISession:
         assemblybuilder.Save(dllname)
         self.newAssemblyLocation = Path.Combine(dllfolder, dllname)
 
-    def createorfindpyrevitpanels(self):
+    def create_or_find_pyrevit_panels(self):
         reportv('Searching for existing pyRevit panels...')
         for scriptTab in self.pyRevitScriptTabs:
             # creates pyrevitribbonpanels for existing or newly created panels
@@ -646,7 +646,7 @@ class PyRevitUISession:
                     reportv('pyRevit ribbon found but does not include any scripts. Skipping: {0}'.format(
                         scriptTab.tabName))
             reportv('Searching for panels...')
-            for panel in scriptTab.getsortedscriptpanels():
+            for panel in scriptTab.get_sorted_scriptpanels():
                 if panel.panelName in pyrevitribbonpanels.keys():
                     reportv('Existing panel found: {0}'.format(panel.panelName))
                     scriptTab.pyRevitUIPanels[panel.panelName] = pyrevitribbonpanels[panel.panelName]
@@ -660,14 +660,14 @@ class PyRevitUISession:
     def createui(self):
         newbuttoncount = updatedbuttoncount = 0
         for scriptTab in self.pyRevitScriptTabs:
-            for scriptPanel in scriptTab.getsortedscriptpanels():
+            for scriptPanel in scriptTab.get_sorted_scriptpanels():
                 pyrevitribbonpanel = scriptTab.pyRevitUIPanels[scriptPanel.panelName]
                 pyrevitribbonitemsdict = {b.Name: b for b in scriptTab.pyRevitUIButtons[scriptPanel.panelName]}
                 reportv('Creating\\Updating ribbon items for panel: {0}'.format(scriptPanel.panelName))
-                for scriptGroup in scriptPanel.getsortedscriptgroups():
+                for scriptGroup in scriptPanel.get_sorted_scriptgroups():
                     # PulldownButton or SplitButton
-                    groupispulldownbutton = scriptGroup.groupType == self.settings.pulldownButtonTypeName
-                    groupissplitbutton = scriptGroup.groupType == self.settings.splitButtonTypeName
+                    groupispulldownbutton = (scriptGroup.groupType == self.settings.pulldownButtonTypeName)
+                    groupissplitbutton = (scriptGroup.groupType == self.settings.splitButtonTypeName)
                     if groupispulldownbutton or groupissplitbutton:
                         # PulldownButton
                         if scriptGroup.groupType == self.settings.pulldownButtonTypeName:
@@ -703,11 +703,15 @@ class PyRevitUISession:
                                                                                          self.sessionname)
                                 buttondata.LongDescription = ldesc
                                 if cmd.buttonIcons:
-                                    buttondata.LargeImage = cmd.buttonIcons.mediumBitmap
-                                    # buttondata.LargeImage = cmd.buttonIcons.largeBitmap
+                                    if groupissplitbutton:
+                                        buttondata.LargeImage = cmd.buttonIcons.largeBitmap
+                                    else:
+                                        buttondata.LargeImage = cmd.buttonIcons.mediumBitmap
                                 else:
-                                    buttondata.LargeImage = scriptGroup.buttonIcons.mediumBitmap
-                                    # buttondata.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    if groupissplitbutton:
+                                        buttondata.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    else:
+                                        buttondata.LargeImage = scriptGroup.buttonIcons.mediumBitmap
                                 ribbonitem.AddPushButton(buttondata)
                                 newbuttoncount += 1
                             else:
@@ -721,11 +725,15 @@ class PyRevitUISession:
                                 if self.settings.reloadScriptsOverrideName not in pushbutton.Name:
                                     pushbutton.AssemblyName = self.newAssemblyLocation
                                 if cmd.buttonIcons:
-                                    pushbutton.LargeImage = cmd.buttonIcons.mediumBitmap
-                                    # pushbutton.LargeImage = cmd.buttonIcons.largeBitmap
+                                    if groupissplitbutton:
+                                        pushbutton.LargeImage = cmd.buttonIcons.largeBitmap
+                                    else:
+                                        pushbutton.LargeImage = cmd.buttonIcons.mediumBitmap
                                 else:
-                                    pushbutton.LargeImage = scriptGroup.buttonIcons.mediumBitmap
-                                    # pushbutton.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    if groupissplitbutton:
+                                        pushbutton.LargeImage = scriptGroup.buttonIcons.largeBitmap
+                                    else:
+                                        pushbutton.LargeImage = scriptGroup.buttonIcons.mediumBitmap
                                 updatedbuttoncount += 1
                         for orphanedButtonName, orphanedButton in existingribbonitempushbuttonsdict.items():
                             reportv('\tDisabling orphaned button: {0}'.format(orphanedButtonName))
@@ -851,7 +859,7 @@ class PyRevitUISession:
     def createpyrevitui(self):
         # setting up UI
         reportv('Now setting up ribbon, panels, and buttons...')
-        self.createorfindpyrevitpanels()
+        self.create_or_find_pyrevit_panels()
         reportv('Ribbon tab and panels are ready. Creating script groups and command buttons...')
         self.createui()
         reportv('All UI items have been added...')
