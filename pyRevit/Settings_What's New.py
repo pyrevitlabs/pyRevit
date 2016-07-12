@@ -55,7 +55,7 @@ Version 2.43.46
 -   Added extended tooltip notes to buttons listing class and assembly name.
 -   Minor cleanups
 
-Version 2.45.51 (current)
+Version 2.45.51
 -------------------------------------------------------------------------------
 -   Revised findReferencingSheets to find referencing sheets for schedules as well.
 
@@ -64,6 +64,13 @@ Version 2.45.51 (current)
 
 -   Views > removeUnderlayFromSelectedViews
         Removes Underlay from selected views.
+
+-   Misc changes
+
+Version 2.46.51 (current)
+-------------------------------------------------------------------------------
+-   Analyse > Analyse_calculateAverageArea.py
+        Find all Rooms//Areas//Spaces with identical names and calcualts the average area of that space type.
 
 -   Misc changes
 
