@@ -26,22 +26,29 @@ from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
 from System.Diagnostics import Process
 
-verbose = True
-
+verbose = False
+last_report_type = ''
+verbose_disabled_char = '|'
 
 def report(message, title=False):
+    global last_report_type
     if title:
-        print('-' * 100 + '\n' + message + '\n' + '-' * 100)
-    else:
-        print(message)
+        message = '-' * 100 + '\n' + message + '\n' + '-' * 100
+    if last_report_type == 'verbose':
+        message = '\n' + message
+    print(message)
+    last_report_type = 'normal'
 
 
 def reportv(message, title=False):
     global verbose
+    global last_report_type
+    global verbose_disabled_char
     if verbose:
         report(message, title)
-        # else:
-        # time.sleep(.01)
+    else:
+        sys.stdout.write(verbose_disabled_char)
+    last_report_type = 'verbose'
 
 
 def find_home_directory():
@@ -397,7 +404,7 @@ class PyRevitUISession:
             self.createassembly()
 
             # setting up UI
-            report('Executer assembly saved. Creating pyRevit UI.')
+            reportv('Executer assembly saved. Creating pyRevit UI.')
             self.createpyrevitui()
         else:
             report('pyRevit load failed...')
@@ -553,7 +560,7 @@ class PyRevitUISession:
             fulltabpath = op.join(rootdir, dirName)
             if op.isdir(fulltabpath) and ('_' not in dirName):
                 reportv('\n')
-                reportv('Searching fo scripts under: {0}'.format(fulltabpath), title=True)
+                report('Searching fo scripts under: {0}'.format(fulltabpath), title=True)
                 tabnames = [x.tabName for x in self.pyRevitScriptTabs]
                 if dirName not in tabnames:
                     scripttab = ScriptTab(dirName, fulltabpath)
@@ -877,11 +884,11 @@ class PyRevitUISession:
 
     def createpyrevitui(self):
         # setting up UI
-        reportv('Now setting up ribbon, panels, and buttons...')
+        report('Now setting up ribbon, panels, and buttons...')
         self.create_or_find_pyrevit_panels()
-        reportv('Ribbon tab and panels are ready. Creating script groups and command buttons...')
+        report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
         self.createui()
-        reportv('All UI items have been added...')
+        report('All UI items have been added...')
 
 
 # MAIN
