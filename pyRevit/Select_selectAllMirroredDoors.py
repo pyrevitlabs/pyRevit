@@ -1,6 +1,7 @@
 """
 Copyright (c) 2014-2016 gtalarico@gmail.com
 Python scripts for Autodesk Revit
+TESTED API: 2015 | 2016
 
 This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
@@ -17,47 +18,45 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Selects all mirrored doors in the model.'
-
-# gtalarico@gmail.com
-
-# TODO: Improve Task Dialog Stats
-# Add Prompt: Select Doors?
+__doc__ = "Selects All Door Instances that have been Mirrored."
 
 import clr
+
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
+clr.AddReference("System")
 
-from Autodesk.Revit.DB import FilteredElementCollector
-from Autodesk.Revit.DB import BuiltInCategory
 from Autodesk.Revit.UI import TaskDialog
+from Autodesk.Revit.DB import FilteredElementCollector
+from Autodesk.Revit.DB import BuiltInCategory, ElementId
+from System.Collections.Generic import List
+# Required for collection
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__window__.Close()
 
 collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors)
 doors = collector.ToElements()
 
 mir_doors = []
-all_doors = []
 
-for i in doors:
+for door in doors:
     try:
-        all_doors.append(i)
-        if i.Mirrored:
-            mir_doors.append(i)
-    except:
-        pass
+        if door.Mirrored:
+            mir_doors.append(door)
+    except AttributeError:
+        pass  # foor Symbols that don't have Mirrored attribute.
 
-qty_mir_doors = len(mir_doors)
-qty_doors = len(all_doors)
+TaskDialog.Show("Mirrored Doors", "Mirrored: {} of {} Doors".format(
+                len(mir_doors), len(doors)))
 
-selection = uidoc.Selection.Elements
+# SELECT MIRRORED DOORS                 | 2015 + 2016 API
+selection = uidoc.Selection
+collection = List[ElementId]([door.Id for door in mir_doors])
+selection.SetElementIds(collection)
 
-__window__.Close()
-
-TaskDialog.Show("Mirrored doors Have been selected.", \
-                "Mirrored Doors: {} of {}".format(str(qty_mir_doors), str(qty_doors)))
-
-for door in mir_doors:
-    selection.Add(door)
+# selection = uidoc.Selection.Elements  | 2015 API
+# for door in mir_doors:                | 2015 API
+    # selection.Add(door)               | 2015 API
