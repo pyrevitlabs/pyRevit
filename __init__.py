@@ -336,7 +336,7 @@ class ScriptCommand:
         docstringfound = False
         docstring = ''
         docfinder = re.compile(docparam + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-        docfinderex = re.compile('\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+        docfinderex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
         with open(fileaddress, 'r') as f:
             for thisline in f.readlines():
                 if not docstringfound:
