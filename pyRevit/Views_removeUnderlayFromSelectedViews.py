@@ -1,5 +1,9 @@
 """
-Copyright (c) 2014-2016 gtalarico@gmail.com
+Copyright (c) 2014-2016 Gui Talarico
+Written for pyRevit
+TESTED API: 2015 | 2016
+
+Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 TESTED API: 2015 | 2016
 
@@ -26,6 +30,10 @@ __doc__ = 'Removes Underlay From Selected Views.'
 import clr
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5e99f123481aa5eb62a4b3b9f562b035ceddd3fa
 from Autodesk.Revit.UI import TaskDialog
 from Autodesk.Revit.DB import Transaction
 from Autodesk.Revit.DB import ElementId
