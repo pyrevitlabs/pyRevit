@@ -30,10 +30,8 @@ __doc__ = 'Removes Underlay From Selected Views.'
 import clr
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
-<<<<<<< HEAD
-=======
 
->>>>>>> 5e99f123481aa5eb62a4b3b9f562b035ceddd3fa
+
 from Autodesk.Revit.UI import TaskDialog
 from Autodesk.Revit.DB import Transaction
 from Autodesk.Revit.DB import ElementId
