@@ -20,8 +20,6 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Clears selection from memory. Works like the MC button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
 
 __window__.Close()
-# from Autodesk.Revit.DB import *
-from Autodesk.Revit.UI.Selection import SelElementSet
 
 import os
 import os.path as op

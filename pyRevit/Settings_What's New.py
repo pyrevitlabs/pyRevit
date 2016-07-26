@@ -67,10 +67,20 @@ Version 2.45.51
 
 -   Misc changes
 
-Version 2.46.51 (current)
+Version 2.46.51
 -------------------------------------------------------------------------------
 -   Analyse > Analyse_calculateAverageArea.py
         Find all Rooms//Areas//Spaces with identical names and calcualts the average area of that space type.
+
+-   Misc changes
+
+Version 2.47.51 (current)
+-------------------------------------------------------------------------------
+-   Revisions > Revisions_listAllSheetsNotShowingRevisionCloudsOnViews.py
+            Sometimes when a revision cloud is placed inside a view (instead of a sheet) and the view is
+            placed on a sheet, the revision schedule on the sheet does not get updated with the revision
+            number of the cloud inside the sheeted view. This script verifies that the sheet revision
+            schedule is actually listing all the revisions shown inside the views of that sheet.
 
 -   Misc changes
 
