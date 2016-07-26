@@ -4,6 +4,7 @@ import os
 import shutil
 import re
 import os.path as op
+import ConfigParser as settingsParser
 from datetime import datetime
 
 # import random as rnd
@@ -30,13 +31,17 @@ verbose = False
 last_report_type = ''
 verbose_disabled_char = '|'
 
-def report(message, title=False):
+
+def report(message, title=False, newline=True):
     global last_report_type
     if title:
         message = '-' * 100 + '\n' + message + '\n' + '-' * 100
-    if last_report_type == 'verbose':
+    if newline and  last_report_type == 'disabledverbose':
         message = '\n' + message
-    print(message)
+    if newline:
+        print(message)
+    else:
+        sys.stdout.write(message)
     last_report_type = 'normal'
 
 
@@ -46,9 +51,10 @@ def reportv(message, title=False):
     global verbose_disabled_char
     if verbose:
         report(message, title)
+        last_report_type = 'verbose'
     else:
-        sys.stdout.write(verbose_disabled_char)
-    last_report_type = 'verbose'
+        report(verbose_disabled_char, newline = False)
+        last_report_type = 'disabledverbose'
 
 
 def find_home_directory():
@@ -59,6 +65,10 @@ def find_home_directory():
         folder = os.path.dirname(folder)
     sys.path.append(folder)
     return folder
+
+
+def find_init_script_name():
+    return op.splitext(op.basename("t://pyrevit//__init__.py"))[0]
 
 
 def find_user_temp_directory():
@@ -94,9 +104,10 @@ class PyRevitUISettings:
     smartButtonTypeName = 'SmartButton'
     pulldownButtonTypeName = 'PulldownButton'
     stackedThreeTypeName = 'Stack3'
+    stackedTwoTypeName = 'Stack2'
     splitButtonTypeName = 'SplitButton'
     tooltipParameter = '__doc__'
-    userSetupKeyword = '__init__'
+    pyRevitInitScriptName = '__init__'
     reloadScriptsOverrideGroupName = 'Settings'
     reloadScriptsOverrideName = 'reloadScripts'
     masterTabName = 'master'
@@ -121,8 +132,39 @@ class PyRevitUISettings:
                          '\/': '', '\\': ''}
 
     def __init__(self):
-        """Loads settings from settigns file."""
-        pass
+        """Loads settings from settings file."""
+        global verbose
+        appdatafolder = os.getenv('appdata')
+        pyrevitappdatafolder = op.join(appdatafolder, "pyRevit")
+        configfile = op.join(pyrevitappdatafolder, "userdefaults.ini")
+        if op.exists(op.join(find_home_directory(), self.pyRevitInitScriptName + ".ini")):
+            configfile = op.join(find_home_directory(), self.pyRevitInitScriptName + ".ini")
+        initsectionname = 'init'
+        globalsectionname = 'global'
+        if op.exists(configfile):        # read file and reapply settings
+            try:
+                with open(configfile,'r') as udfile:
+                    cparser = settingsParser.ConfigParser()          
+                    cparser.readfp(udfile)
+                    logScriptUsageConfigValue = cparser.get(initsectionname, "logScriptUsage")
+                    self.logScriptUsage = True if logScriptUsageConfigValue.lower() == "true" else False
+                    self.archivelogfolder = cparser.get(initsectionname, "archivelogfolder")
+                    verbose = True if cparser.get(globalsectionname, "verbose").lower() == "true" else False
+            except:
+                reportv("Can not access config file folder. Skipping saving config file.")
+        else:                                      # make the settings file and save the default settings
+            try:
+                os.makedirs(pyrevitappdatafolder)
+                with open(configfile,'w') as udfile:
+                    cparser = settingsParser.ConfigParser()
+                    cparser.add_section(globalsectionname)
+                    cparser.set(globalsectionname, "verbose", "true" if verbose else "false")
+                    cparser.add_section(initsectionname)
+                    cparser.set(initsectionname, "logScriptUsage", "true" if self.logScriptUsage else "false")
+                    cparser.set(initsectionname, "archivelogfolder", self.archivelogfolder)
+                    cparser.write(udfile)   
+            except:
+                reportv("Can not access config file folder. Skipping saving config file.")
 
 
 class ButtonIcons:
@@ -255,11 +297,10 @@ class ScriptGroup:
         else:
             raise UnknownFileNameFormat()
 
-    def adoptcommands(self, pyrevitscriptcommands):
-        settings = PyRevitUISettings()
+    def adoptcommands(self, pyrevitscriptcommands, masterTabName):
         for cmd in pyrevitscriptcommands:
             if cmd.scriptGroupName == self.groupName:
-                if cmd.tabName == self.tabName or cmd.tabName == settings.masterTabName:
+                if cmd.tabName == self.tabName or cmd.tabName == masterTabName:
                     reportv('\tcontains: {0}'.format(cmd.fileName))
                     self.commands.append(cmd)
 
@@ -279,7 +320,7 @@ class ScriptGroup:
 
 
 class ScriptCommand:
-    def __init__(self, filedir, f, tabname):
+    def __init__(self, filedir, f, tabname, settings):
         self.filePath = ''
         self.fileName = ''
         self.tooltip = ''
@@ -291,10 +332,9 @@ class ScriptCommand:
         self.tabName = tabname
 
         fname, fext = op.splitext(op.basename(f))
-        settings = PyRevitUISettings()
 
         # custom name adjustments
-        if settings.userSetupKeyword.lower() in fname.lower():
+        if settings.pyRevitInitScriptName.lower() in fname.lower():
             fname = settings.reloadScriptsOverrideGroupName + '_' + settings.reloadScriptsOverrideName
 
         if '_' != fname[0] and '.py' == fext.lower():
@@ -356,7 +396,8 @@ class ScriptCommand:
 
 
 class PyRevitUISession:
-    def __init__(self, homedir, settings):
+    def __init__(self, homedir):
+        report('Running on:\n{0}'.format(sys.version))
         self.loadedPyRevitScripts = []
         self.loadedPyRevitAssemblies = []
         self.pyRevitScriptPanels = []
@@ -364,14 +405,17 @@ class PyRevitUISession:
         self.pyRevitScriptCommands = []
         self.pyRevitScriptTabs = []
         self.sessionname = None
+
         self.homeDir = homedir
+        report('\nHome Directory is: {0}'.format(self.homeDir))
+
         self.commandLoaderClass = None
         self.commandLoaderAssembly = None
         self.newAssemblyLocation = None
         self.isrplfound = False
         self.isrplloggerfound = False
 
-        self.settings = settings
+        self.settings = PyRevitUISettings()
         self.userTempFolder = find_user_temp_directory()
         self.revitVersion = __revit__.Application.VersionNumber
         self.username = get_username()
@@ -380,11 +424,8 @@ class PyRevitUISession:
                                                  self.revitVersion)
         self.archivelogfolder = self.settings.archivelogfolder
 
-        report('Running on:\n{0}'.format(sys.version))
-        report('\nHome Directory is: {0}'.format(self.homeDir))
-
         # collect information about previously loaded assemblies
-        report('Initializing python script loader...')
+        report('\nInitializing python script loader...')
         res = self.find_commandloader_class()
         if res:
             self.find_loaded_pyrevit_assemblies()
@@ -498,7 +539,7 @@ class PyRevitUISession:
             fname, fext = op.splitext(op.basename(f))
             if '.py' == fext.lower():
                 try:
-                    cmd = ScriptCommand(tabdir, f, tabname)
+                    cmd = ScriptCommand(tabdir, f, tabname, self.settings)
                     self.pyRevitScriptCommands.append(cmd)
                 except UnknownFileNameFormat:
                     reportv('Can not recognize name pattern. skipping: {0}'.format(f))
@@ -520,7 +561,7 @@ class PyRevitUISession:
             if '.png' == fext.lower():
                 try:
                     scriptgroup = ScriptGroup(tabdir, f, tabname)
-                    scriptgroup.adoptcommands(self.pyRevitScriptCommands)
+                    scriptgroup.adoptcommands(self.pyRevitScriptCommands, self.settings.masterTabName)
                     self.pyRevitScriptGroups.append(scriptgroup)
                 except UnknownFileNameFormat:
                     if f in [x.iconFileName for x in self.pyRevitScriptCommands]:
@@ -560,7 +601,7 @@ class PyRevitUISession:
             fulltabpath = op.join(rootdir, dirName)
             if op.isdir(fulltabpath) and ('_' not in dirName):
                 reportv('\n')
-                report('Searching fo scripts under: {0}'.format(fulltabpath), title=True)
+                report('Searching for scripts under: {0}'.format(fulltabpath), title=True)
                 tabnames = [x.tabName for x in self.pyRevitScriptTabs]
                 if dirName not in tabnames:
                     scripttab = ScriptTab(dirName, fulltabpath)
@@ -577,9 +618,9 @@ class PyRevitUISession:
         reportv('Creating "Reload Scripts" button...')
         for fname in os.listdir(rootdir):
             fulltabpath = op.join(rootdir, fname)
-            if not op.isdir(fulltabpath) and self.settings.userSetupKeyword in fname:
+            if not op.isdir(fulltabpath) and self.settings.pyRevitInitScriptName in fname:
                 try:
-                    cmd = ScriptCommand(rootdir, fname, self.settings.masterTabName)
+                    cmd = ScriptCommand(rootdir, fname, self.settings.masterTabName, self.settings)
                     self.pyRevitScriptCommands.append(cmd)
                     reportv('Reload button added.\n')
                 except:
@@ -893,5 +934,6 @@ class PyRevitUISession:
 
 # MAIN
 __window__.Width = 1100
+# __window__.Close()
 # find pyRevit home directory and initialize current session
-thisSession = PyRevitUISession(find_home_directory(), PyRevitUISettings())
+thisSession = PyRevitUISession(find_home_directory())
