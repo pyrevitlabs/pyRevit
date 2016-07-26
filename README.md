@@ -1,13 +1,9 @@
 # pyRevit for Autodesk Revit®
 
-## What is pyRevit:
+[Browse to pyRevit blog to learn more and download the installation.](http://eirannejad.github.io/pyRevit/)
 
 - In it's simplest form, it's a folder of IronPython `.py` scripts for Autodesk Revit.
 - There is also an IronPython helper script, named `__init__.py`, that creates a ribbon tab and creates UI buttons for the IronPython scripts at Revit startup. Adding a button to this tab is as easy as adding a IronPython script file to the pyRevit folder and reloading pyRevit. 
-
-## Website/blog:
-
-[Browse to pyRevit blog to learn more and download the installation.](http://eirannejad.github.io/pyRevit/)
 
 ## License
 
