@@ -22,7 +22,7 @@ __doc__ = 'Open source sheet. Select ONE other sheet in Project Browser. ' \
           'show the selected sheets). Select Viewports and push Finish button on the properties bar. ' \
           'The selected views will be MOVED to the selected sheet.'
 
-# __window__.Close()
+__window__.Close()
 
 from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, ScheduleSheetInstance
 from Autodesk.Revit.UI import TaskDialog

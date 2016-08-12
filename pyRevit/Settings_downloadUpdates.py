@@ -31,17 +31,17 @@ def get_parent_directory(path):
 
 
 cloneDir = get_parent_directory(__file__)
-gitDir = op.join(op.dirname(cloneDir),"PortableGit")
+gitDir = op.dirname(cloneDir)
 
 print('Parent directory is: {0}'.format(cloneDir))
 print('git package is located at: {0}'.format(gitDir))
 print('\nUpdating pyRevit from github repository...')
-if op.exists('{0}\cmd\git.exe'.format(gitDir)):
-    output = sp.Popen(r'{0}\cmd\git.exe fetch --all'.format(gitDir), stdout=sp.PIPE, stderr=sp.PIPE, cwd=cloneDir,
+if op.exists('{0}\git\cmd\git.exe'.format(gitDir)):
+    output = sp.Popen(r'{0}\git\cmd\git.exe fetch --all'.format(gitDir), stdout=sp.PIPE, stderr=sp.PIPE, cwd=cloneDir,
                       shell=True)
     print(output.communicate()[0])
     r1 = output.returncode
-    output = sp.Popen(r'{0}\cmd\git.exe reset --hard origin/master'.format(gitDir), stdout=sp.PIPE, stderr=sp.PIPE,
+    output = sp.Popen(r'{0}\git\cmd\git.exe reset --hard origin/master'.format(gitDir), stdout=sp.PIPE, stderr=sp.PIPE,
                       cwd=cloneDir, shell=True)
     print(output.communicate()[0])
     r2 = output.returncode
