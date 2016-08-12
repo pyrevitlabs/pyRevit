@@ -12,7 +12,9 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 __window__.Close()
 
-__doc__ = 'Paste a Viewport Placement from memory'
+__doc__ = 'Paste the location of a viewport from memory onto the selected viewport. This relocates the selected ' \
+          'to the exact location of the original viewport.'
+
 __author__ = 'Gui Talarico | gtalarico@gmail.com\nEhsan Iran-Nejad | eirannejad@gmail.com'
 __version__ = '0.1.0'
 
@@ -21,11 +23,22 @@ import os.path as op
 import pickle
 from collections import namedtuple
 
-from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, XYZ
+from Autodesk.Revit.DB import TransactionGroup, Transaction, Viewport, ViewPlan, ViewSheet, ViewDrafting, XYZ
 from Autodesk.Revit.UI import TaskDialog
+
+PINAFTERSET = False
+
 
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
+
+
+class OriginalIsViewDrafting(Exception):
+    pass
+
+
+class OriginalIsViewPlan(Exception):
+    pass
 
 
 class TransformationMatrix:
@@ -37,6 +50,7 @@ class TransformationMatrix:
 
 
 Point = namedtuple('Point', ['X', 'Y','Z'])
+originalviewtype = ''
 
 selview = selvp = None
 vpboundaryoffset = 0.01
@@ -67,43 +81,45 @@ def view_to_sheet_transform(modelcoord):
 
 
 def set_tansform_matrix(selvp, selview):
-    global transmatrix
-    global revtransmatrix
     # making sure the cropbox is active.
-    if not selview.CropBoxActive:
-        with Transaction(doc, 'Activate Crop Box') as t:
-            t.Start()
-            selview.CropBoxActive = True
-            t.Commit()
+    cboxactive = selview.CropBoxActive
+    cboxvisible = selview.CropBoxVisible
+    with Transaction(doc, 'Activate and Read Cropbox Boundary') as t:
+        t.Start()
+        selview.CropBoxActive = True
+        selview.CropBoxVisible = False
 
-    # get vp min max points in sheetUCS
-    ol = selvp.GetBoxOutline()
-    vptempmin = ol.MinimumPoint
-    vpmin = XYZ(vptempmin.X + vpboundaryoffset, vptempmin.Y + vpboundaryoffset, 0.0)
-    vptempmax = ol.MaximumPoint
-    vpmax = XYZ(vptempmax.X - vpboundaryoffset, vptempmax.Y - vpboundaryoffset, 0.0)
+        # get view min max points in modelUCS.
+        modelucsx = []
+        modelucsy = []
+        crsm = selview.GetCropRegionShapeManager()
+        cl = crsm.GetCropShape()[0]
+        for l in cl:
+            modelucsx.append(l.GetEndPoint(0).X)
+            modelucsy.append(l.GetEndPoint(0).Y)
+        cropmin = XYZ(min(modelucsx), min(modelucsy), 0.0)
+        cropmax = XYZ(max(modelucsx), max(modelucsy), 0.0)
+        
+        # get vp min max points in sheetUCS
+        ol = selvp.GetBoxOutline()
+        vptempmin = ol.MinimumPoint
+        vpmin = XYZ(vptempmin.X + vpboundaryoffset, vptempmin.Y + vpboundaryoffset, 0.0)
+        vptempmax = ol.MaximumPoint
+        vpmax = XYZ(vptempmax.X - vpboundaryoffset, vptempmax.Y - vpboundaryoffset, 0.0)
 
-    # get view min max points in modelUCS.
-    modelucsx = []
-    modelucsy = []
-    crsm = selview.GetCropRegionShapeManager()
-    cl = crsm.GetCropShape()[0]
-    for l in cl:
-        modelucsx.append(l.GetEndPoint(0).X)
-        modelucsy.append(l.GetEndPoint(0).Y)
+        transmatrix.sourcemin = vpmin
+        transmatrix.sourcemax = vpmax
+        transmatrix.destmin = cropmin
+        transmatrix.destmax = cropmax
 
-    cropmin = XYZ(min(modelucsx), min(modelucsy), 0.0)
-    cropmax = XYZ(max(modelucsx), max(modelucsy), 0.0)
-
-    transmatrix.sourcemin = vpmin
-    transmatrix.sourcemax = vpmax
-    transmatrix.destmin = cropmin
-    transmatrix.destmax = cropmax
-
-    revtransmatrix.sourcemin = cropmin
-    revtransmatrix.sourcemax = cropmax
-    revtransmatrix.destmin = vpmin
-    revtransmatrix.destmax = vpmax
+        revtransmatrix.sourcemin = cropmin
+        revtransmatrix.sourcemax = cropmax
+        revtransmatrix.destmin = vpmin
+        revtransmatrix.destmax = vpmax
+    
+        selview.CropBoxActive = cboxactive
+        selview.CropBoxVisible = cboxvisible
+        t.Commit()
 
 usertemp = os.getenv('Temp')
 prjname = op.splitext(op.basename(doc.PathName))[0]
@@ -112,27 +128,66 @@ datafile = usertemp + '\\' + prjname + '_pySaveViewportLocation.pym'
 selected_ids = uidoc.Selection.GetElementIds()
 
 if selected_ids.Count == 1:
-    for element_id in selected_ids:
-        vport = doc.GetElement(element_id)
+    vport_id = selected_ids[0]
+    try:
+        vport = doc.GetElement(vport_id)
+    except:
+        TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
+    if isinstance(vport, Viewport):
         view = doc.GetElement(vport.ViewId)
-        if isinstance(vport, Viewport):
-            set_tansform_matrix(vport, view)
+        if view is not None and isinstance(view, ViewPlan):
+            with TransactionGroup(doc, 'Paste Viewport Location') as tg:
+                tg.Start()
+                set_tansform_matrix(vport, view)
+                try:
+                    with open(datafile, 'rb') as fp:
+                        originalviewtype = pickle.load(fp)
+                        if originalviewtype == 'ViewPlan':
+                            savedcen_pt = pickle.load(fp)
+                            savedmdl_pt = pickle.load(fp)
+                        else:
+                            raise OriginalIsViewDrafting
+                except IOError:
+                    TaskDialog.Show('pyRevit',
+                                    'Could not find saved viewport placement.\nCopy a Viewport Placement first.')
+                except OriginalIsViewDrafting:
+                    TaskDialog.Show('pyRevit',
+                                    'Viewport placement info is from a drafting view and can not be applied here.')
+                else:
+                    savedcenter_pt = XYZ(savedcen_pt.X, savedcen_pt.Y, savedcen_pt.Z)
+                    savedmodel_pt = XYZ(savedmdl_pt.X, savedmdl_pt.Y, savedmdl_pt.Z)
+                    with Transaction(doc, 'Apply Viewport Placement') as t:
+                        t.Start()
+                        center = vport.GetBoxCenter()
+                        centerdiff = view_to_sheet_transform(savedmodel_pt) - center
+                        vport.SetBoxCenter(savedcenter_pt - centerdiff)
+                        if PINAFTERSET:
+                            vport.Pinned = True
+                        t.Commit()
+                tg.Assimilate()
+        elif view is not None and isinstance(view, ViewDrafting):
             try:
                 with open(datafile, 'rb') as fp:
-                    savedcen_pt = pickle.load(fp)
-                    savedmdl_pt = pickle.load(fp)
+                    originalviewtype = pickle.load(fp)
+                    if originalviewtype == 'ViewDrafting':
+                        savedcen_pt = pickle.load(fp)
+                    else:
+                        raise OriginalIsViewPlan
             except IOError:
-                TaskDialog.Show('pyRevit', 'Could not find saved viewport placement.\nCopy a Viewport Placement first.')
+                TaskDialog.Show('pyRevit',
+                                'Could not find saved viewport placement.\nCopy a Viewport Placement first.')
+            except OriginalIsViewPlan:
+                TaskDialog.Show('pyRevit',
+                                'Viewport placement info is from a model view and can not be applied here.')
             else:
                 savedcenter_pt = XYZ(savedcen_pt.X, savedcen_pt.Y, savedcen_pt.Z)
-                savedmodel_pt = XYZ(savedmdl_pt.X, savedmdl_pt.Y, savedmdl_pt.Z)
-                t = Transaction(doc, 'Paste Viewport Placement')
-                t.Start()
-                center = vport.GetBoxCenter()
-                centerdiff = view_to_sheet_transform(savedmodel_pt) - center
-                vport.SetBoxCenter(savedcenter_pt - centerdiff)
-                # vport.Pinned = True
-                t.Commit()
-
+                with Transaction(doc, 'Apply Viewport Placement') as t:
+                    t.Start()
+                    vport.SetBoxCenter(savedcenter_pt)
+                    if PINAFTERSET:
+                        vport.Pinned = True
+                    t.Commit()
+        else:
+            TaskDialog.Show('pyRevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
 else:
     TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
