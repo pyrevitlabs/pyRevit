@@ -107,6 +107,7 @@ class PyRevitUISettings:
     stackedTwoTypeName = 'Stack2'
     splitButtonTypeName = 'SplitButton'
     tooltipParameter = '__doc__'
+    authorParameter = '__author__'
     pyRevitInitScriptName = '__init__'
     reloadScriptsOverrideGroupName = 'Settings'
     reloadScriptsOverrideName = 'reloadScripts'
@@ -360,8 +361,14 @@ class ScriptCommand:
                 raise UnknownFileNameFormat()
             
             docstring = ScriptCommand.extractparameter(settings.tooltipParameter, self.getfullscriptaddress())
+            author = ScriptCommand.extractparameter(settings.authorParameter, self.getfullscriptaddress())
             if docstring is not None:
-                self.tooltip = '{0}\n\nScript Name:\n{1}'.format(docstring, fname + ' ' + fext.lower())
+                self.tooltip = '{0}'.format(docstring)
+            else:
+                self.tooltip = ''
+            self.tooltip += '\n\nScript Name:\n{0}'.format(fname + ' ' + fext.lower())
+            if author is not None and author != '':
+                self.tooltip += '\n\nAuthor:\n{0}'.format(author)
         else:
             raise UnknownFileNameFormat()
 
@@ -372,27 +379,27 @@ class ScriptCommand:
         return self.scriptGroupName + '_' + self.cmdName
 
     @staticmethod
-    def extractparameter(docparam, fileaddress):
-        docstringfound = False
-        docstring = ''
-        docfinder = re.compile(docparam + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-        docfinderex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+    def extractparameter(param, fileaddress):
+        paramstringfound = False
+        paramstring = ''
+        paramfinder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+        paramfinderex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
         with open(fileaddress, 'r') as f:
             for thisline in f.readlines():
-                if not docstringfound:
-                    values = docfinder.findall(thisline)
+                if not paramstringfound:
+                    values = paramfinder.findall(thisline)
                     if values:
-                        docstring = values[0]
-                        docstringfound = True
+                        paramstring = values[0]
+                        paramstringfound = True
                     continue
-                elif docstringfound:
-                    values = docfinderex.findall(thisline)
+                elif paramstringfound:
+                    values = paramfinderex.findall(thisline)
                     if values:
-                        docstring += values[0]
+                        paramstring += values[0]
                         continue
                     break
 
-        return docstring.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
+        return paramstring.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
 
 
 class PyRevitUISession:
