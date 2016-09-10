@@ -24,6 +24,13 @@ __doc__ = 'Downloads updates from the github repository. This function works onl
 
 import os.path as op
 import subprocess as sp
+import re
+
+from Autodesk.Revit.UI import TaskDialog
+
+
+class ErrorFindingBranch(Exception):
+    pass
 
 
 def get_parent_directory(path):
@@ -41,6 +48,43 @@ def get_loader_clone_dir():
 def get_git_dir():
     return op.join(get_install_dir(), '__git__\cmd')
 
+def git_get_current_branch(cloneDir):
+    global gitDir
+    bfinder = re.compile('\*\s(.+)')
+    output = sp.Popen(r'{0}\git.exe branch'.format(gitDir), \
+                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=cloneDir, shell=True)
+    res = bfinder.findall(output.communicate()[0])
+    if len(res) >0:
+        print('Current branch is {}'.format(res[0]))
+        return res[0]
+    else:
+        raise ErrorFindingBranch()
+
+def git_pull_overwrite(cloneDir):
+    global gitDir
+    report = ''
+    r1 = r2 = False
+    
+    # Fetch changes
+    output = sp.Popen(r'{0}\git.exe fetch --all'.format(gitDir), \
+                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=cloneDir, shell=True)
+    print(output.communicate()[0])
+    # print(output.returncode)
+    r1 = output.returncode
+    
+    # Hard reset current branch to origin/branch
+    try:
+        output = sp.Popen(r'{0}\git.exe reset --hard origin/{1}'.format(gitDir, git_get_current_branch(cloneDir)), \
+                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=cloneDir, shell=True)
+        print(output.communicate()[0])
+        # print(output.returncode)
+        r2 = output.returncode
+    except ErrorFindingBranch as err:
+        print('Error finding current git branch...Skipping update...')
+        raise err
+
+    if (r1 == r2 == 0):
+        print('Successfully updated repository...')
 
 installDir = get_install_dir()
 pyrevitCloneDir = get_pyrevit_clone_dir()
@@ -51,37 +95,20 @@ print('Installation directory is: {0}'.format(installDir))
 print('Portable git package is located at: {0}'.format(gitDir))
 
 if op.exists('{0}\git.exe'.format(gitDir)):
-    print('\nUPDATING PYTHON LOADER '.ljust(100,'-'))
-    print('    pyRevit loader has been cloned to: {0}'.format(loaderCloneDir))
-    output = sp.Popen(r'{0}\git.exe fetch --all'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=loaderCloneDir, shell=True)
-    print(output.communicate()[0])
-    r1 = output.returncode
-    
-    output = sp.Popen(r'{0}\git.exe reset --hard'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=loaderCloneDir, shell=True)
-    print(output.communicate()[0])
-    r2 = output.returncode
-    if r1 == r2 == 0:
-        rr1 = True
-        print('pyRevit loader successfully updated...')
+    try:
+        print('\nUPDATING PYTHON LOADER '.ljust(100,'-'))
+        print('pyRevit loader has been cloned to: {0}\n'.format(loaderCloneDir))
+        git_pull_overwrite(loaderCloneDir)
 
-    print('\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100,'-'))
-    print('    pyRevit has been cloned to: {0}'.format(pyrevitCloneDir))
-    output = sp.Popen(r'{0}\git.exe fetch --all'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=pyrevitCloneDir, shell=True)
-    print(output.communicate()[0])
-    r1 = output.returncode
-    
-    output = sp.Popen(r'{0}\git.exe reset --hard'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=pyrevitCloneDir, shell=True)
-    print(output.communicate()[0])
-    r2 = output.returncode
-    if r1 == r2 == 0:
-        rr2 = True
-        print('pyRevit scripts successfully updated...')
-        
-    if rr1 == rr2 == True:
-        print('\n\npyRevit successfully updated...')
+        print('\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100,'-'))
+        print('pyRevit has been cloned to: {0}\n'.format(pyrevitCloneDir))
+        git_pull_overwrite(pyrevitCloneDir)
+
+        TaskDialog.Show('pyRevit', 'Update completed. reload pyRevit now to see changes...')
+        __window__.Close()
+    except:
+        __window__.Close()
+        TaskDialog.Show('pyRevit', 'Error Updating repository...Please check your internet connection. ' \
+                                   'If the updater still did not work please contact the developers...' )
 else:
     print('Can not find portable git package.')
