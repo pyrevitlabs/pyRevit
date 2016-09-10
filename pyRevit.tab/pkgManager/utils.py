@@ -129,7 +129,7 @@ def get_remote_pgk_version(url):
     raise NotImplemented
     # logger.debug('Getting latest tag for url {}'.format(url))
     # process, out, errmsg = subprocess_cmd(
-    #     '{GIT} ls-remote --tags {url}'\
+    #     '"{GIT}" ls-remote --tags {url}'\
     #                             .format(GIT=GIT_EXE,url=url))
     #
     # failed = process.returncode
@@ -146,8 +146,8 @@ def get_local_pkg_ref(package_name):
     """
     logger.info('Getting REF for local package: {}'.format(package_name))
     process, out, errmsg = subprocess_cmd(
-        '{GIT} -C {submodule} rev-parse HEAD'.format(GIT=GIT_EXE,
-                                                     submodule=package_name))
+        '"{GIT}" -C "{package_name}" rev-parse HEAD'.format(GIT=GIT_EXE,
+                                                            package_name=package_name))
 
     failed = process.returncode
     if not failed:
@@ -162,7 +162,7 @@ def get_remote_pkg_ref(url):
     """
     logger.debug('Getting REF for remote package: {}'.format(url))
     process, out, errmsg = subprocess_cmd(
-        '{GIT} ls-remote {url} refs/heads/master'.format(GIT=GIT_EXE, url=url))
+        '"{GIT}" ls-remote {url} refs/heads/master'.format(GIT=GIT_EXE, url=url))
 
     failed = process.returncode
     if not failed:
@@ -181,17 +181,17 @@ def clone_pkg_from_remote(package_name, package_url):
         logger.debug('Package does not exists. Will Clone.')
         logger.info('Clonning Package from Repository...')
         process, out, errmsg = subprocess_cmd(
-            '{GIT} clone --progress --depth=1 {url}'.format(GIT=GIT_EXE, url=package_url))
+            '"{GIT}" clone --progress --depth=1 {url}'.format(GIT=GIT_EXE, url=package_url))
 
     else:
         # If directory exists but git folder is not there, will fail.
         logger.debug('Package Exists. Will merge')
         logger.info('Updating Package from Repository...')
 
-        subprocess_cmd('{GIT} -C {name} fetch origin'.format(GIT=GIT_EXE,
+        subprocess_cmd('"{GIT}" -C "{name}" fetch origin'.format(GIT=GIT_EXE,
                                                              name=package_name))
         process, out, errmsg = subprocess_cmd(
-            '{GIT} -C {name} checkout -f origin/master'.format(GIT=GIT_EXE,
+            '"{GIT}" -C "{name}" checkout -f origin/master'.format(GIT=GIT_EXE,
                                                              name=package_name))
 
     failed = process.returncode

@@ -27,7 +27,8 @@ ROOT_DIR = os.path.dirname(PYREVIT_DIR)
 
 #  Get Git Location
 # PYREVIT_ROOT_DIR = os.path.dirname(PYREVIT_DIR)
-GIT_EXE = os.path.join(ROOT_DIR, '__git__', 'cmd', 'git.exe')
+# GIT_EXE = os.path.join(ROOT'__git__', 'cmd', 'git.exe')
+GIT_EXE = os.path.join('__git__', 'cmd', 'git.exe')
 
 # Changes to directory to root pyrevit dir, so cloned scripts will land there
 os.chdir(ROOT_DIR)
