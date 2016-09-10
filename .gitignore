@@ -2,3 +2,4 @@ _gsdata_/
 *.db
 *.txt
 *-.*
+.idea
