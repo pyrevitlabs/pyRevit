@@ -189,21 +189,35 @@ class PyRevitUISettings:
                     self.archivelogfolder = cparser.get(initsectionname, "archivelogfolder")
                     verbose = True if cparser.get(globalsectionname, "verbose").lower() == "true" else False
             except:
-                reportv("Can not access config file folder. Skipping saving config file.")
+                reportv("Can not access existing config file. Skipping saving config file.")
         # else if the config file is not master config then create a user config and fill with default
-        elif not configfileismaster:                            # make the settings file and save the default settings
+        elif not configfileismaster:
+            if self.verify_config_folder(pyrevituserappdatafolder):
+                try:
+                    with open(configfile,'w') as udfile:
+                        cparser = settingsParser.ConfigParser()
+                        cparser.add_section(globalsectionname)
+                        cparser.set(globalsectionname, "verbose", "true" if verbose else "false")
+                        cparser.add_section(initsectionname)
+                        cparser.set(initsectionname, "logScriptUsage", "true" if self.logScriptUsage else "false")
+                        cparser.set(initsectionname, "archivelogfolder", self.archivelogfolder)
+                        cparser.write(udfile)   
+                        report('Config file saved under: {}\n' \
+                               'with default settings.'.format(pyrevituserappdatafolder))
+                except:
+                    report('Can not create config file under: {}.\n' \
+                           'Skipping saving config file.'.format(pyrevituserappdatafolder))
+            else:
+                report('Can not create config file folder under: {}.\n' \
+                       'Skipping saving config file.'.format(pyrevituserappdatafolder))
+
+    def verify_config_folder(self, folder):
+        if not op.exists(folder):
             try:
-                os.makedirs(pyrevituserappdatafolder)
-                with open(configfile,'w') as udfile:
-                    cparser = settingsParser.ConfigParser()
-                    cparser.add_section(globalsectionname)
-                    cparser.set(globalsectionname, "verbose", "true" if verbose else "false")
-                    cparser.add_section(initsectionname)
-                    cparser.set(initsectionname, "logScriptUsage", "true" if self.logScriptUsage else "false")
-                    cparser.set(initsectionname, "archivelogfolder", self.archivelogfolder)
-                    cparser.write(udfile)   
+                os.makedirs(folder)
             except:
-                reportv("Can not access config file folder. Skipping saving config file.")
+                return False
+        return True
 
 
 class ButtonIcons:
@@ -536,22 +550,24 @@ class PyRevitUISession:
                         reportv('Error deleting .DLL file: {0}'.format(f))
 
     def archivelogs(self):
-        revitinstances = list(Process.GetProcessesByName('Revit'))
-        if len(revitinstances) > 1:
-            reportv('Multiple Revit instance are running...Skipping archiving old log files.')
-        elif len(revitinstances) == 1 and not self.isreloading():
-            reportv('Archiving old log files...')
-            files = os.listdir(self.userTempFolder)
-            for f in files:
-                if f.startswith(self.assemblyidentifier) and f.endswith('log'):
-                    try:
-                        currentfileloc = op.join(self.userTempFolder, f)
-                        newloc = op.join(self.archivelogfolder, f)
-                        shutil.move(currentfileloc, newloc)
-                        # os.remove(op.join(self.userTempFolder, f))
-                        reportv('Existing log file archived to: {0}'.format(newloc))
-                    except:
-                        reportv('Error archiving log file: {0}'.format(f))
+        if op.exists(self.archivelogfolder):
+            revitinstances = list(Process.GetProcessesByName('Revit'))
+            if len(revitinstances) > 1:
+                reportv('Multiple Revit instance are running...Skipping archiving old log files.')
+            elif len(revitinstances) == 1 and not self.isreloading():
+                reportv('Archiving old log files...')
+                files = os.listdir(self.userTempFolder)
+                for f in files:
+                    if f.startswith(self.assemblyidentifier) and f.endswith('log'):
+                        try:
+                            currentfileloc = op.join(self.userTempFolder, f)
+                            newloc = op.join(self.archivelogfolder, f)
+                            shutil.move(currentfileloc, newloc)
+                            reportv('Existing log file archived to: {0}'.format(newloc))
+                        except:
+                            reportv('Error archiving log file: {0}'.format(f))
+        else:
+            reportv('Archive log folder does not exist: {0}. Skipping...'.format(self.archivelogfolder))
 
     def isreloading(self):
         return len(self.loadedPyRevitAssemblies) > 0
