@@ -48,12 +48,11 @@ loaderCloneDir = get_loader_clone_dir()
 gitDir = get_git_dir()
 
 print('Installation directory is: {0}'.format(installDir))
-print('    pyRevit is cloned to: {0}'.format(pyrevitCloneDir))
-print('    pyRevit loader is cloned to: {0}'.format(loaderCloneDir))
-print('    git package is located at: {0}'.format(gitDir))
+print('Portable git package is located at: {0}'.format(gitDir))
 
 if op.exists('{0}\git.exe'.format(gitDir)):
     print('\nUPDATING PYTHON LOADER '.ljust(100,'-'))
+    print('    pyRevit loader has been cloned to: {0}'.format(loaderCloneDir))
     output = sp.Popen(r'{0}\git.exe fetch --all'.format(gitDir), \
                       stdout=sp.PIPE, stderr=sp.PIPE, cwd=loaderCloneDir, shell=True)
     print(output.communicate()[0])
@@ -68,13 +67,14 @@ if op.exists('{0}\git.exe'.format(gitDir)):
         print('pyRevit loader successfully updated...')
 
     print('\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100,'-'))
+    print('    pyRevit has been cloned to: {0}'.format(pyrevitCloneDir))
     output = sp.Popen(r'{0}\git.exe fetch --all'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=loaderCloneDir, shell=True)
+                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=pyrevitCloneDir, shell=True)
     print(output.communicate()[0])
     r1 = output.returncode
     
     output = sp.Popen(r'{0}\git.exe reset --hard'.format(gitDir), \
-                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=loaderCloneDir, shell=True)
+                      stdout=sp.PIPE, stderr=sp.PIPE, cwd=pyrevitCloneDir, shell=True)
     print(output.communicate()[0])
     r2 = output.returncode
     if r1 == r2 == 0:
