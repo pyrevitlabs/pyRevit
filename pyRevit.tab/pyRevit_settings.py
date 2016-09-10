@@ -91,11 +91,11 @@ class settingsWindow:
                                               'each script run\nin a log under user temporary folder.\n'     \
                                               'pyRevit will create a log for every session and will '        \
                                               'copy\nthe previous session logs into the archive folder\n'    \
-                                              'at Revit startup'
+                                              'specified below, at each Revit startup.'
         self.logScriptUsageCheckBox.IsChecked = logScriptUsage
         self.logScriptUsageCheckBox.Margin = System.Windows.Thickness(30, 10, 30, 0)
         self.my_stack.Children.Add(self.logScriptUsageCheckBox)
-        self.logScriptUsageCheckBox.Click += self.disablearchivefoldertextbox
+        self.logScriptUsageCheckBox.Click += self.togglearchivefoldertextbox
 
         label = System.Windows.Controls.Label()
         label.Content = 'Archive log files to this folder:'
@@ -104,6 +104,7 @@ class settingsWindow:
         self.my_textbox_archivelogfolder.MaxLines = 1
         self.my_textbox_archivelogfolder.Text = archivelogfolder
         self.my_textbox_archivelogfolder.Margin = System.Windows.Thickness(30, 0, 30, 0)
+        self.my_textbox_archivelogfolder.IsEnabled = True if logScriptUsage else False
         self.my_stack.Children.Add(label)
         self.my_stack.Children.Add(self.my_textbox_archivelogfolder)
 
@@ -114,7 +115,7 @@ class settingsWindow:
         self.my_stack.Children.Add(self.my_button_savesettings)
 
 
-    def disablearchivefoldertextbox(self, sender, args):
+    def togglearchivefoldertextbox(self, sender, args):
         if self.logScriptUsageCheckBox.IsChecked:
             self.my_textbox_archivelogfolder.IsEnabled = True
         else:
