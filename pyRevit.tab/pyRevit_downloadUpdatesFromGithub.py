@@ -100,15 +100,16 @@ if op.exists('{0}\git.exe'.format(gitDir)):
         print('pyRevit loader has been cloned to: {0}\n'.format(loaderCloneDir))
         git_pull_overwrite(loaderCloneDir)
 
-        print('\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100,'-'))
+        print('\n\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100,'-'))
         print('pyRevit has been cloned to: {0}\n'.format(pyrevitCloneDir))
         git_pull_overwrite(pyrevitCloneDir)
 
         TaskDialog.Show('pyRevit', 'Update completed. reload pyRevit now to see changes...')
-        __window__.Close()
+        __window__.Focus()
     except:
-        __window__.Close()
-        TaskDialog.Show('pyRevit', 'Error Updating repository...Please check your internet connection. ' \
-                                   'If the updater still did not work please contact the developers...' )
+        TaskDialog.Show('pyRevit', 'Error Updating repository...Please check your internet connection. '    \
+                                   'If the updater still did not work please copy the printed report and '  \
+                                   'contact the developers...' )
+        __window__.Focus()
 else:
     print('Can not find portable git package.')
