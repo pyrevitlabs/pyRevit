@@ -17,8 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Copies the Elements Ids of the selected elements into the clipboard memory. You can then use' \
-          'Revit\'s own "Select By Id" tool, paste the Ids into the textbox from clipboard and' \
+__doc__ = 'Copies the Elements Ids of the selected elements into the clipboard memory. You can then use ' \
+          'Revit\'s own "Select By Id" tool, paste the Ids into the textbox from clipboard and ' \
           'click on the show button. For convenience this tool will call the "Select By Id" tool after copying.'
 
 

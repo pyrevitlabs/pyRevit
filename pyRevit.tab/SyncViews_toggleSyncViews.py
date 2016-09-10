@@ -17,7 +17,9 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Keep views synchronized.'
+__doc__ = 'Keep views synchronized. This means that as you pan and zoom and switch between Plan and RCP views, this ' \
+          'tool will keep the views in the same zoomed area so you can keep working in the same area without '        \
+          'the need to zoom and pan again.\n This tool works best when the views are maximized.'
 
 import os
 import os.path as op

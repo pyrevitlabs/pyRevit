@@ -17,7 +17,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Find all Rooms/Areas/Spaces with identical names and calcualts the average area of that space type.'
+__doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select room, area or space and calculates ' \
+          'the average area of that space type.'
 
 from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area
 from Autodesk.Revit.DB.Architecture import Room
