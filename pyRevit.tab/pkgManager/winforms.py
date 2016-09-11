@@ -24,7 +24,8 @@ from System.Windows.Forms import (DataGridView,
                                   DataGridViewColumnHeadersHeightSizeMode,
                                   DataGridViewRowHeadersWidthSizeMode,
                                   DockStyle,
-                                  BorderStyle
+                                  BorderStyle,
+                                  FormStartPosition
                                   # DataGridViewCellEventHandler,
                                   )
 
@@ -44,7 +45,7 @@ class PackageManagerForm(Form):
         self.MaximizeBox = False
         self.BackgroundColor = Color.White
         self.FormBorderStyle = FormBorderStyle.FixedSingle
-
+        self.StartPosition = FormStartPosition.CenterScreen
         #  Data Grid - DG
         dg = DataGridView()
         dg.Location = Point(0,0)
