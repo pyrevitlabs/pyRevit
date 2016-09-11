@@ -153,7 +153,7 @@ def get_local_pkg_ref(package_name):
     if not failed:
         ref = out
         logger.info('Local ref is: {}'.format(ref))
-        return ref.strip()
+        return ref.strip()[:5]
 
 
 def get_remote_pkg_ref(url):
@@ -168,7 +168,7 @@ def get_remote_pkg_ref(url):
     if not failed:
         ref = out.split()[0]
         logger.debug('Remote ref is: {}'.format(ref))
-        return ref.strip()
+        return ref.strip()[:5]
 
 
 def clone_pkg_from_remote(package_name, package_url):
@@ -188,11 +188,10 @@ def clone_pkg_from_remote(package_name, package_url):
         logger.debug('Package Exists. Will merge')
         logger.info('Updating Package from Repository...')
 
-        subprocess_cmd('"{GIT}" -C "{name}" fetch origin'.format(GIT=GIT_EXE,
-                                                             name=package_name))
         process, out, errmsg = subprocess_cmd(
-            '"{GIT}" -C "{name}" checkout -f origin/master'.format(GIT=GIT_EXE,
+            '"{GIT}" -C "{name}" pull -f origin'.format(GIT=GIT_EXE,
                                                              name=package_name))
+
 
     failed = process.returncode
     # returncode is zero if completed, 1 if failed.

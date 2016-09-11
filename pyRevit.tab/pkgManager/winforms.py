@@ -72,13 +72,18 @@ class PackageManagerForm(Form):
         for n, header in enumerate(headers):
             if not header:
                 col = DataGridViewButtonColumn()
+                col.Width = 100
             else:
                 col = DataGridViewTextBoxColumn()
+                # col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                if header == 'Description':
+                    col.Width = 250
+
             dg.Columns.Add(col)
             dg.Columns[n].Name = header
-            dg.Columns[n].Width = 120
             cols_width += col.Width
-            # dg.Columns[n].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+
+
 
         # Create Rows + Cells
         rows_height = 0
@@ -91,18 +96,23 @@ class PackageManagerForm(Form):
             local_ref = package['local_ref']
             description = package['description']
 
-            action_button = 'Clone Remote'
-            remove_button = 'Remove Local'
+            # Default Labels
+            action_button = 'Install'
+            remove_button = 'Uninstall'
 
-            is_latest_intalled = repo_ref == local_ref
-            if is_latest_intalled:
+            # Latest is Installed
+            latest_installed = repo_ref == local_ref
+            if latest_installed:
                 action_button = '-'
+
+            if local_ref and not latest_installed:
+                action_button = 'Update'
 
             # Package is not installed so it cannot be removed.
             if not local_ref:
                 remove_button = '-'
 
-            # If could not reach repo ref is ''
+            # Remote Ref not found
             if not repo_ref:
                 action_button = '-'
 
@@ -135,8 +145,8 @@ class PackageManagerForm(Form):
         package_url = package['url']
 
         success = None
-        install = 'Clone' in clicked_cell.Value
-        remove = 'Remove' in clicked_cell.Value
+        install = 'Install' in clicked_cell.Value or 'Update' in clicked_cell.Value
+        remove = 'Uninstall' in clicked_cell.Value
         if remove:
             logger.debug('Remove Called: {}'.format(package_name))
             success = remove_local_pkg(package_name)
@@ -167,15 +177,15 @@ class PackageManagerForm(Form):
         repo_ref = row.Cells[1]
         local_ref = row.Cells[2]
 
-        if 'Clone' in cell.Value:
+        if 'Install' in cell.Value or 'Update' in cell.Value:
             local_ref.Value = repo_ref.Value
             remove_cell = row.Cells[cell.ColumnIndex + 1]
-            remove_cell.Value = 'Remove Local'
-        if 'Remove' in cell.Value:
+            remove_cell.Value = 'Uninstall'
+        if 'Uninstall' in cell.Value:
             local_ref.Value = ''
             action_cell = row.Cells[cell.ColumnIndex - 1]
             # If a remote repo ref is not found, button should not be on.
             if repo_ref.Value:
-                action_cell.Value = 'Clone Remote'
+                action_cell.Value = 'Install'
 
         cell.Value = '-'

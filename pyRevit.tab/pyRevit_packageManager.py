@@ -67,8 +67,6 @@ local_folders = get_local_folders()
 # get_remote_pkg_ref('https://github.com/gtalarico/pyrevitplus.git')
 # get_remote_pgk_version('https://github.com/gtalarico/pyrevitplus.git')
 
-
-
 for package in packages:
     name = package['name']
 
