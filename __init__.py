@@ -252,6 +252,10 @@ class ScriptTab:
         self.scriptPanels = []
         self.pyRevitUIPanels = {}
         self.pyRevitUIButtons = {}
+        self.tabHashFileName = '{}.zip'.format(self.tabName)
+        self.tabHashFullFileName = op.join(find_user_temp_directory(), self.tabHashFileName)
+        self.tabHash = None
+        self.calculate_hash()
 
     def adopt_panels(self, pyrevitscriptpanels):
         already_adopted_panels = [x.panelName for x in self.scriptPanels]
@@ -269,6 +273,25 @@ class ScriptTab:
                 if len(g.commands) > 0:
                     return True
         return False
+    
+    def calculate_hash(self):
+        import zipfile
+        import hashlib
+
+        t0 = time.time()
+
+        zipf = zipfile.ZipFile(self.tabHashFullFileName, 'w', zipfile.ZIP_DEFLATED)
+        reportv('Calculating md5 hash for this tab...')
+        for root, dirs, files in os.walk(self.tabFolder):
+            if '.git' not in root:
+                for file in files:
+                    zipf.write(os.path.join(root, file))
+        zipf.close()
+
+        self.tabHash =  hashlib.md5(open(self.tabHashFullFileName, 'rb').read()).hexdigest()
+
+        t1 = time.time()
+        reportv('Calculated hash for {} in {}: {}'.format(self.tabName, t1-t0, self.tabHash))
 
 
 class ScriptPanel:
@@ -1056,6 +1079,8 @@ class PyRevitUISession:
         report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
         self.createui()
         report('All UI items have been added...')
+        if not verbose:
+            __window__.Close()
 
 
 # MAIN
