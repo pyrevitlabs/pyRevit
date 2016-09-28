@@ -544,6 +544,7 @@ class PyRevitUISession:
 
             # find commands, script groups and assign commands
             self.create_reload_button(self.loaderDir)
+            
             report('Searching for tabs, panels, groups, and scripts...')
             self.find_scripttabs(self.homeDir)
 
@@ -555,7 +556,7 @@ class PyRevitUISession:
             reportv('Executer assembly saved. Creating pyRevit UI.')
             self.createpyrevitui()
         else:
-            report('pyRevit load failed...')
+            report('pyRevit load failed...Can not find necessary RevitPythonLoader class.')
     
     def cleanup(self):
         revitinstances = list(Process.GetProcessesByName('Revit'))
@@ -726,8 +727,16 @@ class PyRevitUISession:
                 if dirName not in tabnames.keys():
                     sys.path.append(fulltabpath)
                     scripttab = ScriptTab(dirName, fulltabpath)
-                    self.find_scriptpanels(fulltabpath, scripttab.tabName)
                     reportv('\nTab found: {0}'.format(scripttab.tabName))
+                    # I am using a function outside the ScriptTab class to find the panels defined under tab folder
+                    # The reason is consistency with how ScriptPanel and ScriptGroup work.
+                    # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
+                    # and then ask each Panel or Group to adopt their associated groups and scripts respectively.
+                    # Otherwise for every discovered panel or group, each class would need to look into the directory
+                    # to find groups and scripts. This would increase file operation considerably.
+                    # ScriptTab follows the same system for consistency although all panels under the tab folder belong
+                    # to that tab.
+                    self.find_scriptpanels(fulltabpath, scripttab.tabName)
                     scripttab.adopt_panels(self.pyRevitScriptPanels)
                     self.pyRevitScriptTabs.append(scripttab)
                     
