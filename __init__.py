@@ -680,7 +680,7 @@ class PyRevitUISession:
                 reportv('pyRevit is reloading. Skipping DLL and log cleanup.')
 
             # get previous session cache
-            self.prevSessionCache = self.get_prev_session_cache()
+            self.sessionCache = self.get_prev_session_cache()
             
             # find commands, script groups and assign commands
             self.create_reload_button(self.loaderDir)
@@ -689,7 +689,7 @@ class PyRevitUISession:
             self.find_scripttabs(self.homeDir)
             
             # update session cache
-            self.prevSessionCache.update_cache(self.pyRevitScriptTabs)
+            self.sessionCache.update_cache(self.pyRevitScriptTabs)
 
             # create assembly dll
             report('Building script executer assembly...')
@@ -875,7 +875,7 @@ class PyRevitUISession:
                     sys.path.append(full_path)
                     script_tab = ScriptTab(dirname, full_path)
                     try:
-                        self.prevSessionCache.load_tab(script_tab)
+                        self.sessionCache.load_tab(script_tab)
                     except CacheError:
                         # I am using a function outside the ScriptTab class to find the panels defined under tab folder
                         # The reason is consistency with how ScriptPanel and ScriptGroup work.
@@ -1244,8 +1244,8 @@ class PyRevitUISession:
             report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
             self.createui()
             report('All UI items have been added...')
-            # if not verbose:
-                # __window__.Close()
+            if not verbose:
+                __window__.Close()
         else:
             reportv('Test run. Skipping UI creation...')
 
