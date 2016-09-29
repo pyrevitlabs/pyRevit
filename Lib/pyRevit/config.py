@@ -16,9 +16,6 @@ PKGSJSON_FILEPATH = os.path.join(PKGMGR_DIR, 'packages.json')
 # CHANGE TO PYREVIT REPO
 PKGSJSON_WEB = 'https://raw.githubusercontent.com/gtalarico/pyRevit/pyrevitv3/pyRevit/pyRevit.tab/pkgManager/packages.json'
 
-# .Ico path
-ICO_FILEPATH = os.path.join(PKGMGR_DIR, 'pkgManager.ico')
-
 #  Very unecessary
 BREAKLINE = '=' * 40
 
