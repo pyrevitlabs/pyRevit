@@ -13,7 +13,6 @@ import ConfigParser as settingsParser
 from datetime import datetime
 
 
-
 # todo: this helper could be the main pyRevit module that other script can add and use the classes and functions
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
@@ -36,6 +35,13 @@ last_report_type = ''
 verbose_disabled_char = '|'
 
 __doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
+
+
+class pyRevitVersion:
+    major = '3'
+    minor = '0'
+    patch = '0'
+
 
 def report(message, title=False, newline=True):
     global last_report_type
@@ -642,7 +648,7 @@ class PyRevitSessionCache:
 
     @staticmethod
     def get_version():
-        return "3.0.0"
+        return "{}.{}.{}".format(pyRevitVersion.major, pyRevitVersion.minor, pyRevitVersion.patch)
 
 
 class PyRevitUISession:
@@ -934,7 +940,9 @@ class PyRevitUISession:
         logfilename = self.sessionname + '.log'
 
         # create assembly
-        windowsassemblyname = AssemblyName(Name=self.sessionname, Version=Version(1, 0, 0, 0))
+        windowsassemblyname = AssemblyName(Name=self.sessionname, Version=Version(int(pyRevitVersion.major),
+                                                                                  int(pyRevitVersion.minor),
+                                                                                  int(pyRevitVersion.patch), 0))
         reportv('Generated assembly name for this session: {0}'.format(self.sessionname))
         reportv('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
         reportv('Generated DLL name for this session: {0}'.format(dllname))
