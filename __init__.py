@@ -600,7 +600,8 @@ class PyRevitSessionCache:
         reportv('Current hash is: {}'.format(script_tab.tabHash))
         cached_tab_dict = self.read_cache_for(script_tab)
         try:
-            if cached_tab_dict['tabHash'] == script_tab.tabHash:
+            if cached_tab_dict['tabHash'] == script_tab.tabHash         \
+            and cached_tab_dict['cacheVersion'] == PyRevitSessionCache.get_version():
                 reportv('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
                 reportv('Loading from cache...')
                 script_tab.load_from_cache(cached_tab_dict)
@@ -636,7 +637,12 @@ class PyRevitSessionCache:
             cache_file.write(self.serialize(script_tab))
 
     def serialize(self, obj):
-        return json.dumps(obj, default=lambda o: o.get_clean_dict(), sort_keys=True, indent=4)
+        cache_dict_str = json.dumps(obj, default=lambda o: o.get_clean_dict(), sort_keys=True, indent=4)
+        return  '{\n' + '    "cacheVersion": "{}", '.format(PyRevitSessionCache.get_version()) + cache_dict_str[1:]
+
+    @staticmethod
+    def get_version():
+        return "3.0.0"
 
 
 class PyRevitUISession:
