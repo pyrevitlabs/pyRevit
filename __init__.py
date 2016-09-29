@@ -121,11 +121,11 @@ class PyRevitException(Exception):
     pass
 
 
-class UnknownAssembly(PyRevitException):
+class UnknownAssemblyError(PyRevitException):
     pass
 
 
-class UnknownFileNameFormat(PyRevitException):
+class UnknownFileNameFormatError(PyRevitException):
     pass
 
 
@@ -137,7 +137,7 @@ class CacheReadError(CacheError):
     pass
 
 
-class CacheExpired(CacheError):
+class CacheExpiredError(CacheError):
     pass
 
 
@@ -357,9 +357,9 @@ class ScriptPanel:
                         self.panelOrder = int(self.panelOrder[:2])
                         reportv('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
                     else:
-                        raise UnknownFileNameFormat()
+                        raise UnknownFileNameFormatError()
                 else:
-                    raise UnknownFileNameFormat()
+                    raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
 
@@ -441,10 +441,10 @@ class ScriptGroup:
                             self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
                             reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyName,
                                                                                          self.assemblyClassName))
-                        except UnknownAssembly:
+                        except UnknownAssemblyError:
                             raise
             else:
-                raise UnknownFileNameFormat()
+                raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
 
@@ -469,7 +469,7 @@ class ScriptGroup:
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if assemblyname in loadedAssembly.FullName:
                 return loadedAssembly
-        raise UnknownAssembly()
+        raise UnknownAssemblyError()
 
     def get_clean_dict(self):
         return self.__dict__.copy()
@@ -555,7 +555,7 @@ class ScriptCommand:
                         self.iconFileName = None
                         self.buttonIcons = None
                 else:
-                    raise UnknownFileNameFormat()
+                    raise UnknownFileNameFormatError()
                 
                 scriptContents = ScriptFileContents(self.getfullscriptaddress())
                 docstring = scriptContents.extractparameter(sessionSettings.tooltipParameter)
@@ -568,7 +568,7 @@ class ScriptCommand:
                 if author is not None and author != '':
                     self.tooltip += '\n\nAuthor:\n{0}'.format(author)
             else:
-                raise UnknownFileNameFormat()
+                raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
     
@@ -614,7 +614,7 @@ class PyRevitSessionCache:
                 reportv('Load successful...')
             else:
                 reportv('Cache is expired...')
-                raise CacheExpired()
+                raise CacheExpiredError()
         except:
             reportv('Error reading cache...')
             raise CacheError()
@@ -809,7 +809,7 @@ class PyRevitUISession:
                 try:
                     cmd = ScriptCommand(searchdir, fullfilename, tabname)
                     self.pyRevitScriptCommands.append(cmd)
-                except UnknownFileNameFormat:
+                except UnknownFileNameFormatError:
                     reportv('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
                     continue
                 except:
@@ -831,14 +831,14 @@ class PyRevitUISession:
                     scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundledPanelName)
                     scriptgroup.adoptcommands(self.pyRevitScriptCommands, sessionSettings.masterTabName)
                     self.pyRevitScriptGroups.append(scriptgroup)
-                except UnknownFileNameFormat:
+                except UnknownFileNameFormatError:
                     if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
                         reportv('Skipping script icon file: {0}'.format(fullfilename))
                         continue
                     else:
                         reportv('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
                         continue
-                except UnknownAssembly:
+                except UnknownAssemblyError:
                     reportv('Unknown assembly error. Skipping: {0}'.format(fullfilename))
                     continue
 
@@ -865,7 +865,7 @@ class PyRevitUISession:
                         self.pyRevitScriptPanels.append(scriptpanel)
                     else:
                         reportv('\tpanel already created and adopted groups.')
-                except UnknownFileNameFormat:
+                except UnknownFileNameFormatError:
                     if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
                         reportv('Skipping script panel file: {0}'.format(fullfilename))
                         continue
