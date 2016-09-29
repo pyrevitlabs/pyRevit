@@ -735,7 +735,7 @@ class PyRevitUISession:
                     # Otherwise for every discovered panel or group, each class would need to look into the directory
                     # to find groups and scripts. This would increase file operation considerably.
                     # ScriptTab follows the same system for consistency although all panels under the tab folder belong
-                    # to that tab.
+                    # to that tab. This also allows other developes to add panels to each others tabs.
                     self.find_scriptpanels(fulltabpath, scripttab.tabName)
                     scripttab.adopt_panels(self.pyRevitScriptPanels)
                     self.pyRevitScriptTabs.append(scripttab)
