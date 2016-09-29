@@ -4,6 +4,7 @@ import os
 import shutil
 import re
 import time
+import json
 # import timeit
 # import random as rnd
 # import pickle as pl
@@ -544,6 +545,7 @@ class PyRevitUISession:
 
             # find commands, script groups and assign commands
             self.create_reload_button(self.loaderDir)
+            
             report('Searching for tabs, panels, groups, and scripts...')
             self.find_scripttabs(self.homeDir)
 
@@ -555,7 +557,7 @@ class PyRevitUISession:
             reportv('Executer assembly saved. Creating pyRevit UI.')
             self.createpyrevitui()
         else:
-            report('pyRevit load failed...')
+            report('pyRevit load failed...Can not find necessary RevitPythonLoader class.')
     
     def cleanup(self):
         revitinstances = list(Process.GetProcessesByName('Revit'))
@@ -714,32 +716,45 @@ class PyRevitUISession:
                         reportv('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
                         continue
 
-    def find_scripttabs(self, homeDir):
-        for dirName in os.listdir(homeDir):
-            fulltabpath = op.join(homeDir, dirName)
-            if op.isdir(fulltabpath) \
-            and not dirName.startswith(('.','_')) \
-            and dirName.endswith(sessionSettings.tabPostfix):
+    def find_scripttabs(self, home_dir):
+        for dirname in os.listdir(home_dir):
+            full_path = op.join(home_dir, dirname)
+            dir_is_tab = op.isdir(full_path)                              \
+                         and not dirname.startswith(('.', '_'))             \
+                         and dirname.endswith(sessionSettings.tabPostfix)
+            if dir_is_tab:
                 reportv('\n')
-                report('Searching for scripts under: {0}'.format(fulltabpath), title=True)
-                tabnames = {x.tabDirName:x for x in self.pyRevitScriptTabs}
-                if dirName not in tabnames.keys():
-                    sys.path.append(fulltabpath)
-                    scripttab = ScriptTab(dirName, fulltabpath)
-                    self.find_scriptpanels(fulltabpath, scripttab.tabName)
-                    reportv('\nTab found: {0}'.format(scripttab.tabName))
-                    scripttab.adopt_panels(self.pyRevitScriptPanels)
-                    self.pyRevitScriptTabs.append(scripttab)
+                report('Searching for scripts under: {0}'.format(full_path), title=True)
+                discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
+                if dirname not in discovered_tabs_names.keys():
+                    sys.path.append(full_path)
+                    if self.prevSessionCache.is_tab_cache_valid(full_path):
+                        reportv('Reading cache for: {}'.format(full_path))
+                        script_tab = self.prevSessionCache.get_scriptTab(full_path)
+                    else:
+                        script_tab = ScriptTab(dirname, full_path)
+                    reportv('\nTab found: {0}'.format(script_tab.tabName))
+                    # I am using a function outside the ScriptTab class to find the panels defined under tab folder
+                    # The reason is consistency with how ScriptPanel and ScriptGroup work.
+                    # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
+                    # and then ask each Panel or Group to adopt their associated groups and scripts respectively.
+                    # Otherwise for every discovered panel or group, each class would need to look into the directory
+                    # to find groups and scripts. This would increase file operation considerably.
+                    # ScriptTab follows the same system for consistency although all panels under the tab folder belong
+                    # to that tab. This also allows other develops to add panels to each others tabs.
+                    self.find_scriptpanels(full_path, script_tab.tabName)
+                    script_tab.adopt_panels(self.pyRevitScriptPanels)
+                    self.pyRevitScriptTabs.append(script_tab)
                     
                     reportv('\n')
                 else:
-                    sys.path.append(fulltabpath)
-                    scripttab = tabnames[dirName]
-                    self.find_scriptpanels(fulltabpath, scripttab.tabName)
-                    reportv('\nTab extension found: {0}'.format(scripttab.tabName))
-                    scripttab.adopt_panels(self.pyRevitScriptPanels)
-            elif op.isdir(fulltabpath) and not dirName.startswith(('.','_')):
-                self.find_scripttabs(fulltabpath)
+                    sys.path.append(full_path)
+                    script_tab = discovered_tabs_names[dirname]
+                    self.find_scriptpanels(full_path, script_tab.tabName)
+                    reportv('\nTab extension found: {0}'.format(script_tab.tabName))
+                    script_tab.adopt_panels(self.pyRevitScriptPanels)
+            elif op.isdir(full_path) and not dirname.startswith(('.','_')):
+                self.find_scripttabs(full_path)
             else:
                 continue
 
