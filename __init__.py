@@ -31,6 +31,7 @@ from Autodesk.Revit.Attributes import *
 from System.Diagnostics import Process
 
 verbose = False
+test_run = False
 last_report_type = ''
 verbose_disabled_char = '|'
 
@@ -96,6 +97,7 @@ def get_username():
     uname = uname.replace('.','')
     return uname
 
+
 # AUXILIARY CLASSES
 class Timer:
     def __init__(self):
@@ -121,6 +123,18 @@ class UnknownFileNameFormat(PyRevitException):
     pass
 
 
+class CacheError(PyRevitException):
+    pass
+
+
+class CacheReadError(CacheError):
+    pass
+
+
+class CacheExpired(CacheError):
+    pass
+
+
 # SOOP CLASSES
 class PyRevitUISettings:
     pyRevitAssemblyName = 'pyRevit'
@@ -140,6 +154,7 @@ class PyRevitUISettings:
     pyRevitInitScriptName = '__init__'
     reloadScriptsOverrideGroupName = 'pyRevit'
     reloadScriptsOverrideName = 'reloadScripts'
+    cpfx = 'CACHE >>>> '
     masterTabName = 'master'
     logScriptUsage = False
     archivelogfolder = 'T:\[logs]'
@@ -223,6 +238,8 @@ class PyRevitUISettings:
 
 class ButtonIcons:
     def __init__(self, filedir, filename):
+        self.imagefile_dir = filedir
+        self.imagefile_name = filename
         uri = Uri(op.join(filedir, filename))
         self.smallBitmap = BitmapImage()
         self.smallBitmap.BeginInit()
@@ -244,6 +261,13 @@ class ButtonIcons:
         self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
         self.largeBitmap.EndInit()
 
+    def get_clean_dict(self):
+        d = self.__dict__.copy()
+        for key in ['smallBitmap', 'mediumBitmap', 'largeBitmap']:
+            if key in d.keys():
+                d.pop(key)
+        return d
+
 
 class ScriptTab:
     def __init__(self, tname, tfolder):
@@ -253,10 +277,8 @@ class ScriptTab:
         self.scriptPanels = []
         self.pyRevitUIPanels = {}
         self.pyRevitUIButtons = {}
-        self.tabHashFileName = '{}.zip'.format(self.tabName)
-        self.tabHashFullFileName = op.join(find_user_temp_directory(), self.tabHashFileName)
-        self.tabHash = None
-        self.calculate_hash()
+        self.loaded_from_cache = False
+        self.tabHash = self.calculate_hash()
 
     def adopt_panels(self, pyrevitscriptpanels):
         already_adopted_panels = [x.panelName for x in self.scriptPanels]
@@ -271,54 +293,69 @@ class ScriptTab:
     def hascommands(self):
         for p in self.scriptPanels:
             for g in p.scriptGroups:
-                if len(g.commands) > 0:
+                if len(g.scriptCommands) > 0:
                     return True
         return False
     
     def calculate_hash(self):
-        import zipfile
         import hashlib
-
-        t0 = time.time()
-
-        zipf = zipfile.ZipFile(self.tabHashFullFileName, 'w', zipfile.ZIP_DEFLATED)
-        reportv('Calculating md5 hash for this tab...')
+        "Creates a unique hash # to represent state of directory."
+        # logger.info('Generating Hash of directory')
+        pat = r'(\.panel)|(\.tab)|(\.png)|(\.py)'
+        hash_sum = 0
         for root, dirs, files in os.walk(self.tabFolder):
-            if '.git' not in root:
-                for file in files:
-                    zipf.write(os.path.join(root, file))
-        zipf.close()
+            if re.search(pat, root, flags=re.IGNORECASE):
+                hash_sum += op.getmtime(root)
+                for filename in files:
+                    modtime = op.getmtime(op.join(root, filename))
+                    hash_sum += modtime
+        return hashlib.md5(str(hash_sum)).hexdigest()
 
-        self.tabHash =  hashlib.md5(open(self.tabHashFullFileName, 'rb').read()).hexdigest()
+    def get_clean_dict(self):
+        d = self.__dict__.copy()
+        for key in ['pyRevitUIPanels', 'pyRevitUIButtons']:
+            if key in d.keys():
+                d.pop(key)
+        return d
 
-        t1 = time.time()
-        reportv('Calculated hash for {} in {}: {}'.format(self.tabName, t1-t0, self.tabHash))
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptPanels" == k:
+                for cached_panel_dict in v:
+                    reportv('{}Loading script panel: {}'.format(sessionSettings.cpfx, cached_panel_dict['panelName']))
+                    self.scriptPanels.append(ScriptPanel('','','','',cached_panel_dict))
+            else:
+                self.__dict__[k] = v
+        self.loaded_from_cache = True
 
 
 class ScriptPanel:
-    def __init__(self, tabdir, fullpanelfilename, tabname, bundledpanel):
+    def __init__(self, tabdir, fullpanelfilename, tabname, bundledpanel, cache = None):
         self.panelOrder = 0
         self.panelName = ''
         self.scriptGroups = []
         self.tabName = tabname
         self.tabDir = tabdir
         self.isBundled = bundledpanel
-
-        if self.isBundled:
-            self.panelName = fullpanelfilename.replace(sessionSettings.panelBundlePostfix, '')
-        else:
-            fname, fext = op.splitext(op.basename(fullpanelfilename))
-            if ScriptPanel.isdescriptorfile(fname, fext):
-                namepieces = fname.rsplit('_')
-                namepieceslength = len(namepieces)
-                if namepieceslength == 4 or namepieceslength == 6:
-                    self.panelOrder, self.panelName = namepieces[0:2]
-                    self.panelOrder = int(self.panelOrder[:2])
-                    reportv('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
+        
+        if not cache:
+            if self.isBundled:
+                self.panelName = fullpanelfilename.replace(sessionSettings.panelBundlePostfix, '')
+            else:
+                fname, fext = op.splitext(op.basename(fullpanelfilename))
+                if ScriptPanel.isdescriptorfile(fname, fext):
+                    namepieces = fname.rsplit('_')
+                    namepieceslength = len(namepieces)
+                    if namepieceslength == 4 or namepieceslength == 6:
+                        self.panelOrder, self.panelName = namepieces[0:2]
+                        self.panelOrder = int(self.panelOrder[:2])
+                        reportv('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
+                    else:
+                        raise UnknownFileNameFormat()
                 else:
                     raise UnknownFileNameFormat()
-            else:
-                raise UnknownFileNameFormat()
+        else:
+            self.load_from_cache(cache)
 
     @staticmethod
     def isdescriptorfile(fname, fext):
@@ -335,10 +372,22 @@ class ScriptPanel:
     def get_sorted_scriptgroups(self):
         return sorted(self.scriptGroups, key=lambda x: x.groupOrder)
 
+    def get_clean_dict(self):
+        return self.__dict__.copy()
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptGroups" == k:
+                for cached_group_dict in v:
+                    reportv('{}Loading script group: {}'.format(sessionSettings.cpfx, cached_group_dict['groupName']))
+                    self.scriptGroups.append(ScriptGroup('','','','',cached_group_dict))
+            else:
+                self.__dict__[k] = v
+
 
 class ScriptGroup:
-    def __init__(self, filedir, f, tabname, bundledPanelName):
-        self.commands = []
+    def __init__(self, filedir, f, tabname, bundledPanelName, cache = None):
+        self.scriptCommands= []
         self.sourceDir = ''
         self.sourceFile = ''
         self.sourceFileName = ''
@@ -353,51 +402,54 @@ class ScriptGroup:
         self.assemblyLocation = None
         self.tabName = tabname
 
-        fname, fext = op.splitext(op.basename(f))
-        if ScriptGroup.isdescriptorfile(fname, fext):
-            self.sourceDir = filedir
-            self.sourceFile = f
-            self.sourceFileName = fname
-            self.sourceFileExt = fext
-            namepieces = fname.rsplit('_')
-            namepieceslength = len(namepieces)
-            if namepieces[0].isdigit():
-                if namepieceslength == 4 or namepieceslength == 6:
-                    self.groupOrder, self.panelName, self.groupType, self.groupName = namepieces[0:4]
-                    self.groupOrder = int(self.groupOrder[2:])
-                    reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
-                                                                                               self.groupName.ljust(20),
-                                                                                               self.panelName))
-                    self.buttonIcons = ButtonIcons(filedir, f)
-                elif namepieceslength == 3:
-                    self.groupOrder, self.groupType, self.groupName = namepieces
-                    self.groupOrder = int(self.groupOrder)
-                    reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
-                                                                                               self.groupName.ljust(20),
-                                                                                               self.panelName))
-                    self.buttonIcons = ButtonIcons(filedir, f)
+        if not cache:
+            fname, fext = op.splitext(op.basename(f))
+            if ScriptGroup.isdescriptorfile(fname, fext):
+                self.sourceDir = filedir
+                self.sourceFile = f
+                self.sourceFileName = fname
+                self.sourceFileExt = fext
+                namepieces = fname.rsplit('_')
+                namepieceslength = len(namepieces)
+                if namepieces[0].isdigit():
+                    if namepieceslength == 4 or namepieceslength == 6:
+                        self.groupOrder, self.panelName, self.groupType, self.groupName = namepieces[0:4]
+                        self.groupOrder = int(self.groupOrder[2:])
+                        reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                                                                                                   self.groupName.ljust(20),
+                                                                                                   self.panelName))
+                        self.buttonIcons = ButtonIcons(filedir, f)
+                    elif namepieceslength == 3:
+                        self.groupOrder, self.groupType, self.groupName = namepieces
+                        self.groupOrder = int(self.groupOrder)
+                        reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                                                                                                   self.groupName.ljust(20),
+                                                                                                   self.panelName))
+                        self.buttonIcons = ButtonIcons(filedir, f)
 
-                # check to see if name has assembly information
-                if namepieceslength == 6:
-                    self.assemblyName, self.assemblyClassName = namepieces[4:]
-                    try:
-                        self.assemblyName = ScriptGroup.findassembly(self.assemblyName).GetName().Name
-                        self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
-                        reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyName,
-                                                                                     self.assemblyClassName))
-                    except UnknownAssembly:
-                        raise
+                    # check to see if name has assembly information
+                    if namepieceslength == 6:
+                        self.assemblyName, self.assemblyClassName = namepieces[4:]
+                        try:
+                            self.assemblyName = ScriptGroup.findassembly(self.assemblyName).GetName().Name
+                            self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
+                            reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyName,
+                                                                                         self.assemblyClassName))
+                        except UnknownAssembly:
+                            raise
+            else:
+                raise UnknownFileNameFormat()
         else:
-            raise UnknownFileNameFormat()
+            self.load_from_cache(cache)
 
     def adoptcommands(self, pyrevitscriptcommands, masterTabName):
-        already_adopted_commands = [x.fileName for x in self.commands]
+        already_adopted_commands = [x.fileName for x in self.scriptCommands]
         for cmd in pyrevitscriptcommands:
             if cmd.scriptGroupName == self.groupName \
             and (cmd.tabName == self.tabName or cmd.tabName == masterTabName) \
             and cmd.fileName not in already_adopted_commands:
                     reportv('\tcontains: {0}'.format(cmd.fileName))
-                    self.commands.append(cmd)
+                    self.scriptCommands.append(cmd)
 
     def islinkbutton(self):
         return self.assemblyName is not None
@@ -412,6 +464,21 @@ class ScriptGroup:
             if assemblyname in loadedAssembly.FullName:
                 return loadedAssembly
         raise UnknownAssembly()
+
+    def get_clean_dict(self):
+        return self.__dict__.copy()
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptCommands" == k:
+                for cached_cmd_dict in v:
+                    reportv('{}Loading script command: {}'.format(sessionSettings.cpfx, cached_cmd_dict['cmdName']))
+                    self.scriptCommands.append(ScriptCommand('','','',cached_cmd_dict))
+            elif "buttonIcons" == k:
+                if v:
+                    self.buttonIcons = ButtonIcons(v["imagefile_dir"], v["imagefile_name"])
+            else:
+                self.__dict__[k] = v
 
 
 class ScriptFileContents:
@@ -442,7 +509,7 @@ class ScriptFileContents:
 
 
 class ScriptCommand:
-    def __init__(self, filedir, f, tabname):
+    def __init__(self, filedir, f, tabname, cache = None):
         self.filePath = ''
         self.fileName = ''
         self.tooltip = ''
@@ -454,53 +521,122 @@ class ScriptCommand:
         self.tabName = tabname
         filecontents = ''
 
-        fname, fext = op.splitext(op.basename(f))
+        if not cache:
+            fname, fext = op.splitext(op.basename(f))
 
-        # custom name adjustments
-        if sessionSettings.pyRevitInitScriptName.lower() in fname.lower() and tabname == sessionSettings.masterTabName:
-            fname = sessionSettings.reloadScriptsOverrideGroupName + '_' + sessionSettings.reloadScriptsOverrideName
+            # custom name adjustments
+            if sessionSettings.pyRevitInitScriptName.lower() in fname.lower() and tabname == sessionSettings.masterTabName:
+                fname = sessionSettings.reloadScriptsOverrideGroupName + '_' + sessionSettings.reloadScriptsOverrideName
 
-        if not fname.startswith('_') and '.py' == fext.lower():
-            self.filePath = filedir
-            self.fileName = f
+            if not fname.startswith('_') and '.py' == fext.lower():
+                self.filePath = filedir
+                self.fileName = f
 
-            namepieces = fname.rsplit('_')
-            namepieceslength = len(namepieces)
-            if namepieceslength == 2:
-                self.scriptGroupName, self.cmdName = namepieces
-                self.className = tabname + self.scriptGroupName + self.cmdName
-                for char, repl in sessionSettings.specialcharacters.items():
-                    self.className = self.className.replace(char, repl)
-                reportv('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
-                                                                               self.scriptGroupName.ljust(20),
-                                                                               self.cmdName))
-                if op.exists(op.join(filedir, fname + sessionSettings.iconFileFormat)):
-                    self.iconFileName = fname + sessionSettings.iconFileFormat
-                    self.buttonIcons = ButtonIcons(filedir, self.iconFileName)
+                namepieces = fname.rsplit('_')
+                namepieceslength = len(namepieces)
+                if namepieceslength == 2:
+                    self.scriptGroupName, self.cmdName = namepieces
+                    self.className = tabname + self.scriptGroupName + self.cmdName
+                    for char, repl in sessionSettings.specialcharacters.items():
+                        self.className = self.className.replace(char, repl)
+                    reportv('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
+                                                                                   self.scriptGroupName.ljust(20),
+                                                                                   self.cmdName))
+                    if op.exists(op.join(filedir, fname + sessionSettings.iconFileFormat)):
+                        self.iconFileName = fname + sessionSettings.iconFileFormat
+                        self.buttonIcons = ButtonIcons(filedir, self.iconFileName)
+                    else:
+                        self.iconFileName = None
+                        self.buttonIcons = None
                 else:
-                    self.iconFileName = None
-                    self.buttonIcons = None
+                    raise UnknownFileNameFormat()
+                
+                scriptContents = ScriptFileContents(self.getfullscriptaddress())
+                docstring = scriptContents.extractparameter(sessionSettings.tooltipParameter)
+                author = scriptContents.extractparameter(sessionSettings.authorParameter)
+                if docstring is not None:
+                    self.tooltip = '{0}'.format(docstring)
+                else:
+                    self.tooltip = ''
+                self.tooltip += '\n\nScript Name:\n{0}'.format(fname + ' ' + fext.lower())
+                if author is not None and author != '':
+                    self.tooltip += '\n\nAuthor:\n{0}'.format(author)
             else:
                 raise UnknownFileNameFormat()
-            
-            scriptContents = ScriptFileContents(self.getfullscriptaddress())
-            docstring = scriptContents.extractparameter(sessionSettings.tooltipParameter)
-            author = scriptContents.extractparameter(sessionSettings.authorParameter)
-            if docstring is not None:
-                self.tooltip = '{0}'.format(docstring)
-            else:
-                self.tooltip = ''
-            self.tooltip += '\n\nScript Name:\n{0}'.format(fname + ' ' + fext.lower())
-            if author is not None and author != '':
-                self.tooltip += '\n\nAuthor:\n{0}'.format(author)
         else:
-            raise UnknownFileNameFormat()
-
+            self.load_from_cache(cache)
+    
     def getfullscriptaddress(self):
         return op.join(self.filePath, self.fileName)
 
     def getscriptbasename(self):
         return self.scriptGroupName + '_' + self.cmdName
+
+    def get_clean_dict(self):
+        return self.__dict__.copy()
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "buttonIcons" == k:
+                if v:
+                    self.buttonIcons = ButtonIcons(v["imagefile_dir"], v["imagefile_name"])
+            else:
+                self.__dict__[k] = v
+
+
+class PyRevitSessionCache:
+    def __init__(self):
+        pass
+
+    def get_cache_file(self, script_tab):
+        return op.join(find_user_temp_directory(),'{}_cache_{}.json'.format(sessionSettings.pyRevitAssemblyName, \
+                                                                            script_tab.tabName))
+
+    def cleanup_cache_files(self):
+        pass
+    
+    def load_tab(self, script_tab):
+        reportv('Checking if tab directory has any changes, otherwise loading from cache...')
+        reportv('Current hash is: {}'.format(script_tab.tabHash))
+        cached_tab_dict = self.read_cache_for(script_tab)
+        try:
+            if cached_tab_dict['tabHash'] == script_tab.tabHash:
+                reportv('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
+                reportv('Loading from cache...')
+                script_tab.load_from_cache(cached_tab_dict)
+                reportv('Load successful...')
+            else:
+                reportv('Cache is expired...')
+                raise CacheExpired()
+        except:
+            reportv('Error reading cache...')
+            raise CacheError()
+    
+    def update_cache(self, script_tabs):
+        reportv('\nUpdating cache for {} tabs...'.format(len(script_tabs)))
+        for script_tab in script_tabs:
+            if not script_tab.loaded_from_cache:
+                reportv('Writing cache for tab: {}'.format(script_tab.tabName))
+                self.write_cache_for(script_tab)
+                print('Cache updated for tab: {}'.format(script_tab.tabName))
+            else:
+                print('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
+        reportv('\n')
+    
+    def read_cache_for(self, script_tab):
+        try:
+            with open(self.get_cache_file(script_tab), 'r') as cache_file:
+                cached_tab_dict = json.load(cache_file)
+            return cached_tab_dict
+        except:
+            raise CacheReadError()
+    
+    def write_cache_for(self, script_tab):
+        with open(self.get_cache_file(script_tab), 'w') as cache_file:
+            cache_file.write(self.serialize(script_tab))
+
+    def serialize(self, obj):
+        return json.dumps(obj, default=lambda o: o.get_clean_dict(), sort_keys=True, indent=4)
 
 
 class PyRevitUISession:
@@ -543,11 +679,17 @@ class PyRevitUISession:
             else:
                 reportv('pyRevit is reloading. Skipping DLL and log cleanup.')
 
+            # get previous session cache
+            self.prevSessionCache = self.get_prev_session_cache()
+            
             # find commands, script groups and assign commands
             self.create_reload_button(self.loaderDir)
             
             report('Searching for tabs, panels, groups, and scripts...')
             self.find_scripttabs(self.homeDir)
+            
+            # update session cache
+            self.prevSessionCache.update_cache(self.pyRevitScriptTabs)
 
             # create assembly dll
             report('Building script executer assembly...')
@@ -642,6 +784,9 @@ class PyRevitUISession:
                 self.loadedPyRevitAssemblies.append(loadedAssembly)
                 self.loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
 
+    def get_prev_session_cache(self):
+        return PyRevitSessionCache()
+
     def find_scriptcommands(self, searchdir, tabname):
         reportv('Searching tab folder for scripts...')
         files = sorted(os.listdir(searchdir))
@@ -719,7 +864,7 @@ class PyRevitUISession:
     def find_scripttabs(self, home_dir):
         for dirname in os.listdir(home_dir):
             full_path = op.join(home_dir, dirname)
-            dir_is_tab = op.isdir(full_path)                              \
+            dir_is_tab = op.isdir(full_path)                                \
                          and not dirname.startswith(('.', '_'))             \
                          and dirname.endswith(sessionSettings.tabPostfix)
             if dir_is_tab:
@@ -728,25 +873,22 @@ class PyRevitUISession:
                 discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
                 if dirname not in discovered_tabs_names.keys():
                     sys.path.append(full_path)
-                    if self.prevSessionCache.is_tab_cache_valid(full_path):
-                        reportv('Reading cache for: {}'.format(full_path))
-                        script_tab = self.prevSessionCache.get_scriptTab(full_path)
-                    else:
-                        script_tab = ScriptTab(dirname, full_path)
+                    script_tab = ScriptTab(dirname, full_path)
+                    try:
+                        self.prevSessionCache.load_tab(script_tab)
+                    except CacheError:
+                        # I am using a function outside the ScriptTab class to find the panels defined under tab folder
+                        # The reason is consistency with how ScriptPanel and ScriptGroup work.
+                        # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
+                        # and then ask each Panel or Group to adopt their associated groups and scripts respectively.
+                        # Otherwise for every discovered panel or group, each class would need to look into the directory
+                        # to find groups and scripts. This would increase file operation considerably.
+                        # ScriptTab follows the same system for consistency although all panels under the tab folder belong
+                        # to that tab. This also allows other develops to add panels to each others tabs.
+                        self.find_scriptpanels(full_path, script_tab.tabName)
+                        script_tab.adopt_panels(self.pyRevitScriptPanels)
                     reportv('\nTab found: {0}'.format(script_tab.tabName))
-                    # I am using a function outside the ScriptTab class to find the panels defined under tab folder
-                    # The reason is consistency with how ScriptPanel and ScriptGroup work.
-                    # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
-                    # and then ask each Panel or Group to adopt their associated groups and scripts respectively.
-                    # Otherwise for every discovered panel or group, each class would need to look into the directory
-                    # to find groups and scripts. This would increase file operation considerably.
-                    # ScriptTab follows the same system for consistency although all panels under the tab folder belong
-                    # to that tab. This also allows other develops to add panels to each others tabs.
-                    self.find_scriptpanels(full_path, script_tab.tabName)
-                    script_tab.adopt_panels(self.pyRevitScriptPanels)
                     self.pyRevitScriptTabs.append(script_tab)
-                    
-                    reportv('\n')
                 else:
                     sys.path.append(full_path)
                     script_tab = discovered_tabs_names[dirname]
@@ -796,47 +938,54 @@ class PyRevitUISession:
         modulebuilder = assemblybuilder.DefineDynamicModule(self.sessionname, dllname)
 
         # create command classes
-        for cmd in self.pyRevitScriptCommands:
-            typebuilder = modulebuilder.DefineType(cmd.className, TypeAttributes.Class | TypeAttributes.Public,
-                                                   self.commandLoaderClass)
+        # for cmd in self.pyRevitScriptCommands:
+        for scriptTab in self.pyRevitScriptTabs:
+            for scriptPanel in scriptTab.get_sorted_scriptpanels():
+                for scriptGroup in scriptPanel.get_sorted_scriptgroups():
+                    for cmd in scriptGroup.scriptCommands:
+                        typebuilder = modulebuilder.DefineType(cmd.className,                                       \
+                                                               TypeAttributes.Class | TypeAttributes.Public,        \
+                                                               self.commandLoaderClass)
 
-            # add RegenerationAttribute to type
-            regenerationconstrutorinfo = clr.GetClrType(RegenerationAttribute).GetConstructor(
-                Array[Type]((RegenerationOption,)))
-            regenerationattributebuilder = CustomAttributeBuilder(regenerationconstrutorinfo,
-                                                                  Array[object]((RegenerationOption.Manual,)))
-            typebuilder.SetCustomAttribute(regenerationattributebuilder)
+                        # add RegenerationAttribute to type
+                        regenerationconstrutorinfo = clr.GetClrType(RegenerationAttribute).GetConstructor(
+                            Array[Type]((RegenerationOption,)))
+                        regenerationattributebuilder = CustomAttributeBuilder(regenerationconstrutorinfo,
+                                                                            Array[object]((RegenerationOption.Manual,)))
+                        typebuilder.SetCustomAttribute(regenerationattributebuilder)
 
-            # add TransactionAttribute to type
-            transactionconstructorinfo = clr.GetClrType(TransactionAttribute).GetConstructor(
-                Array[Type]((TransactionMode,)))
-            transactionattributebuilder = CustomAttributeBuilder(transactionconstructorinfo,
-                                                                 Array[object]((TransactionMode.Manual,)))
-            typebuilder.SetCustomAttribute(transactionattributebuilder)
+                        # add TransactionAttribute to type
+                        transactionconstructorinfo = clr.GetClrType(TransactionAttribute).GetConstructor(
+                            Array[Type]((TransactionMode,)))
+                        transactionattributebuilder = CustomAttributeBuilder(transactionconstructorinfo,
+                                                                             Array[object]((TransactionMode.Manual,)))
+                        typebuilder.SetCustomAttribute(transactionattributebuilder)
 
-            # call base constructor with script path
-            ci = None
-            if not sessionSettings.logScriptUsage:
-                ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
-            elif self.isrplfound and sessionSettings.logScriptUsage:
-                if self.isrplloggerfound:
-                    ci = self.commandLoaderClass.GetConstructor(Array[Type]((str, str)))
-                else:
-                    ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
+                        # call base constructor with script path
+                        ci = None
+                        if not sessionSettings.logScriptUsage:
+                            ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
+                        elif self.isrplfound and sessionSettings.logScriptUsage:
+                            if self.isrplloggerfound:
+                                ci = self.commandLoaderClass.GetConstructor(Array[Type]((str, str)))
+                            else:
+                                ci = self.commandLoaderClass.GetConstructor(Array[Type]((str,)))
 
-            constructorbuilder = typebuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard,
-                                                               Array[Type](()))
-            gen = constructorbuilder.GetILGenerator()
-            gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
-            gen.Emit(OpCodes.Ldstr, cmd.getfullscriptaddress())  # Load the path to the command as a string onto stack
-            if self.isrplfound and sessionSettings.logScriptUsage and self.isrplloggerfound:
-                gen.Emit(OpCodes.Ldstr, logfilename)  # Load log file name into stack
-            gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the string)
-            gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
-            gen.Emit(OpCodes.Nop)
-            gen.Emit(OpCodes.Nop)
-            gen.Emit(OpCodes.Ret)
-            typebuilder.CreateType()
+                        constructorbuilder = typebuilder.DefineConstructor(MethodAttributes.Public,         \
+                                                                           CallingConventions.Standard,     \
+                                                                           Array[Type](()))
+                        gen = constructorbuilder.GetILGenerator()
+                        gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+                        # Load the path to the command as a string onto stack
+                        gen.Emit(OpCodes.Ldstr, cmd.getfullscriptaddress())
+                        if self.isrplfound and sessionSettings.logScriptUsage and self.isrplloggerfound:
+                            gen.Emit(OpCodes.Ldstr, logfilename)  # Load log file name into stack
+                        gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the string)
+                        gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+                        gen.Emit(OpCodes.Nop)
+                        gen.Emit(OpCodes.Nop)
+                        gen.Emit(OpCodes.Ret)
+                        typebuilder.CreateType()
 
         # save final assembly
         assemblybuilder.Save(dllname)
@@ -921,7 +1070,7 @@ class PyRevitUISession:
                         ribbonitem.LargeImage = scriptGroup.buttonIcons.largeBitmap
                         existingribbonitempushbuttonsdict = {b.ClassName: b for b in ribbonitem.GetItems()}
 
-                        for cmd in scriptGroup.commands:
+                        for cmd in scriptGroup.scriptCommands:
                             if cmd.className not in existingribbonitempushbuttonsdict:
                                 reportv('\t\tCreating push button: {0}'.format(cmd.className))
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
@@ -971,7 +1120,7 @@ class PyRevitUISession:
                     elif scriptGroup.groupType == sessionSettings.stackedThreeTypeName:
                         reportv('\tCreating\\Updating 3 stacked buttons: {0}'.format(scriptGroup.groupType))
                         stackcommands = []
-                        for cmd in scriptGroup.commands:
+                        for cmd in scriptGroup.scriptCommands:
                             if cmd.className not in pyrevitribbonitemsdict:
                                 reportv('\t\tCreating stacked button: {0}'.format(cmd.className))
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
@@ -1003,7 +1152,7 @@ class PyRevitUISession:
                     # PushButton
                     elif scriptGroup.groupType == sessionSettings.pushButtonTypeName and not scriptGroup.islinkbutton():
                         try:
-                            cmd = scriptGroup.commands.pop()
+                            cmd = scriptGroup.scriptCommands.pop()
                             if cmd.className not in pyrevitribbonitemsdict:
                                 reportv('\tCreating push button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
@@ -1032,7 +1181,7 @@ class PyRevitUISession:
                     elif scriptGroup.groupType == sessionSettings.smartButtonTypeName \
                     and not scriptGroup.islinkbutton():
                         try:
-                            cmd = scriptGroup.commands.pop()
+                            cmd = scriptGroup.scriptCommands.pop()
                             if cmd.className not in pyrevitribbonitemsdict:
                                 reportv('\tCreating smart button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
@@ -1089,13 +1238,16 @@ class PyRevitUISession:
 
     def createpyrevitui(self):
         # setting up UI
-        report('Now setting up ribbon, panels, and buttons...')
-        self.create_or_find_pyrevit_panels()
-        report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
-        self.createui()
-        report('All UI items have been added...')
-        if not verbose:
-            __window__.Close()
+        if not test_run:
+            report('Now setting up ribbon, panels, and buttons...')
+            self.create_or_find_pyrevit_panels()
+            report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
+            self.createui()
+            report('All UI items have been added...')
+            # if not verbose:
+                # __window__.Close()
+        else:
+            reportv('Test run. Skipping UI creation...')
 
 
 # MAIN
