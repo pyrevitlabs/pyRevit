@@ -3,3 +3,4 @@ _gsdata_/
 *.txt
 .idea
 *.ini
+__py*
