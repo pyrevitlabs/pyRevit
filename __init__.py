@@ -5,6 +5,7 @@ import shutil
 import re
 import time
 import json
+import hashlib
 # import timeit
 # import random as rnd
 # import pickle as pl
@@ -304,18 +305,24 @@ class ScriptTab:
         return False
     
     def calculate_hash(self):
-        import hashlib
         "Creates a unique hash # to represent state of directory."
         # logger.info('Generating Hash of directory')
-        pat = r'(\.panel)|(\.tab)|(\.png)|(\.py)'
-        hash_sum = 0
+        # search does not include png files:
+        #   if png files are added the parent folder mtime gets affected
+        #   cache only saves the png address and not the contents so they'll get loaded everytime
+        # todo: improve speed by pruning dir: dirs[:] = [d for d in dirs if d not in excludes] 
+        #       see http://stackoverflow.com/a/5141710/2350244
+        pat = r'(\.panel)|(\.tab)'
+        patfile = r'(\.py)'
+        mtime_sum = 0
         for root, dirs, files in os.walk(self.tabFolder):
             if re.search(pat, root, flags=re.IGNORECASE):
-                hash_sum += op.getmtime(root)
+                mtime_sum += op.getmtime(root)
                 for filename in files:
-                    modtime = op.getmtime(op.join(root, filename))
-                    hash_sum += modtime
-        return hashlib.md5(str(hash_sum)).hexdigest()
+                    if re.search(patfile, filename, flags=re.IGNORECASE):
+                        modtime = op.getmtime(op.join(root, filename))
+                        mtime_sum += modtime
+        return hashlib.md5(str(mtime_sum)).hexdigest()
 
     def get_clean_dict(self):
         d = self.__dict__.copy()
@@ -1258,8 +1265,8 @@ class PyRevitUISession:
             report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
             self.createui()
             report('All UI items have been added...')
-            if not verbose:
-                __window__.Close()
+            # if not verbose:
+                # __window__.Close()
         else:
             reportv('Test run. Skipping UI creation...')
 
