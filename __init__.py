@@ -1265,8 +1265,8 @@ class PyRevitUISession:
             report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
             self.createui()
             report('All UI items have been added...')
-            # if not verbose:
-                # __window__.Close()
+            if not verbose:
+                __window__.Close()
         else:
             reportv('Test run. Skipping UI creation...')
 
