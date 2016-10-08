@@ -1,5 +1,5 @@
-# __window__.Width = 1100
-__window__.Close()
+__window__.Width = 1100
+# __window__.Close()
 
 #temp: will take care of this part in RPL
 import sys
@@ -13,7 +13,7 @@ from pyRevit.loader import PyRevitUISession
 
 from pyRevit.logger import logger
 logger.setLevel(logging.INFO)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 __doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
 

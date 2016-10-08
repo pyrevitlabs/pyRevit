@@ -1,21 +1,19 @@
-import os
+import clr
 import sys
-import os.path as op
+import os
 import shutil
 import re
+import time
 import json
-import hashlib
+# import timeit
+# import random as rnd
+# import pickle as pl
+import os.path as op
 import ConfigParser as settingsParser
 from datetime import datetime
 
-# pyrevit module imports
-from pyRevit import pyRevitVersion
-import pyRevit.utils as prutils
-from pyRevit.exceptions import *
-from pyRevit.logger import logger
 
-# dot net imports
-import clr
+# todo: this helper could be the main pyRevit module that other script can add and use the classes and functions
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
@@ -26,18 +24,125 @@ from System.IO import *
 from System.Reflection import *
 from System.Reflection.Emit import *
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-from System.Diagnostics import Process
+from System.Collections.Generic import List
 
 from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
+from System.Diagnostics import Process
 
-
-# global variables
 verbose = False
 test_run = False
+last_report_type = ''
+verbose_disabled_char = '|'
+
+__doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
 
 
-# settings
+class pyRevitVersion:
+    major = '3'
+    minor = '0'
+    patch = '0'
+
+
+def report(message, title=False, newline=True):
+    global last_report_type
+    if title:
+        message = '-' * 100 + '\n' + message + '\n' + '-' * 100
+    if newline and  last_report_type == 'disabledverbose':
+        message = '\n' + message
+    if newline:
+        print(message)
+    else:
+        sys.stdout.write(message)
+    last_report_type = 'normal'
+
+
+def reportv(message, title=False):
+    global verbose
+    global last_report_type
+    global verbose_disabled_char
+    if verbose:
+        report(message, title)
+        last_report_type = 'verbose'
+    else:
+        report(verbose_disabled_char, newline = False)
+        last_report_type = 'disabledverbose'
+
+
+def find_loader_directory():
+    # getting home directory from __file__ provided by RPL
+    folder = os.path.dirname(__file__)
+    if folder.lower().endswith('.dll'):
+        # nope - RplAddin
+        folder = os.path.dirname(folder)
+    sys.path.append(folder)
+    return folder
+
+
+def find_home_directory():
+    # getting home directory from __file__ provided by RPL
+    folder = os.path.dirname(os.path.dirname(__file__))
+    if folder.lower().endswith('.dll'):
+        # nope - RplAddin
+        folder = os.path.dirname(folder)
+    sys.path.append(folder)
+    return folder
+
+
+def find_init_script_name():
+    return op.splitext(op.basename("t://pyrevit//__init__.py"))[0]
+
+
+def find_user_temp_directory():
+    tempfolder = os.getenv('Temp')
+    return tempfolder
+
+
+def get_username():
+    uname = __revit__.Application.Username
+    uname = uname.split('@')[0]
+    uname = uname.replace('.','')
+    return uname
+
+
+# AUXILIARY CLASSES
+class Timer:
+    def __init__(self):
+        self.start = time.time()
+
+    def restart(self):
+        self.start = time.time()
+
+    def get_time_hhmmss(self):
+        return "%02.2f seconds" % (time.time() - self.start)
+
+
+# EXCEPTIONS
+class PyRevitException(Exception):
+    pass
+
+
+class UnknownAssemblyError(PyRevitException):
+    pass
+
+
+class UnknownFileNameFormatError(PyRevitException):
+    pass
+
+
+class CacheError(PyRevitException):
+    pass
+
+
+class CacheReadError(CacheError):
+    pass
+
+
+class CacheExpiredError(CacheError):
+    pass
+
+
+# SOOP CLASSES
 class PyRevitUISettings:
     pyRevitAssemblyName = 'pyRevit'
     tabPostfix = '.tab'
@@ -92,22 +197,22 @@ class PyRevitUISettings:
         configfileismaster = False
 
         # if a config file exits along side the script loader, this would be used instead.
-        if op.exists(op.join(prutils.find_loader_directory(), self.pyRevitInitScriptName + ".ini")):
-            configfile = op.join(prutils.find_loader_directory(), self.pyRevitInitScriptName + ".ini")
+        if op.exists(op.join(find_loader_directory(), self.pyRevitInitScriptName + ".ini")):
+            configfile = op.join(find_loader_directory(), self.pyRevitInitScriptName + ".ini")
             configfileismaster = True
 
         # if the config file exists then read values and apply
         if op.exists(configfile):        # read file and reapply settings
             try:
                 with open(configfile,'r') as udfile:
-                    cparser = settingsParser.ConfigParser()
+                    cparser = settingsParser.ConfigParser()          
                     cparser.readfp(udfile)
                     logScriptUsageConfigValue = cparser.get(initsectionname, "logScriptUsage")
                     self.logScriptUsage = True if logScriptUsageConfigValue.lower() == "true" else False
                     self.archivelogfolder = cparser.get(initsectionname, "archivelogfolder")
                     verbose = True if cparser.get(globalsectionname, "verbose").lower() == "true" else False
             except:
-                logger.debug("Can not access existing config file. Skipping saving config file.")
+                reportv("Can not access existing config file. Skipping saving config file.")
         # else if the config file is not master config then create a user config and fill with default
         elif not configfileismaster:
             if self.verify_config_folder(pyrevituserappdatafolder):
@@ -119,14 +224,14 @@ class PyRevitUISettings:
                         cparser.add_section(initsectionname)
                         cparser.set(initsectionname, "logScriptUsage", "true" if self.logScriptUsage else "false")
                         cparser.set(initsectionname, "archivelogfolder", self.archivelogfolder)
-                        cparser.write(udfile)
-                        logger.debug('Config file saved under: {} ' \
+                        cparser.write(udfile)   
+                        report('Config file saved under: {}\n' \
                                'with default settings.'.format(pyrevituserappdatafolder))
                 except:
-                    logger.debug('Can not create config file under: {} ' \
+                    report('Can not create config file under: {}.\n' \
                            'Skipping saving config file.'.format(pyrevituserappdatafolder))
             else:
-                logger.debug('Can not create config file folder under: {} ' \
+                report('Can not create config file folder under: {}.\n' \
                        'Skipping saving config file.'.format(pyrevituserappdatafolder))
 
     def verify_config_folder(self, folder):
@@ -136,9 +241,6 @@ class PyRevitUISettings:
             except:
                 return False
         return True
-
-
-sessionSettings = PyRevitUISettings()
 
 
 class ButtonIcons:
@@ -189,7 +291,7 @@ class ScriptTab:
         already_adopted_panels = [x.panelName for x in self.scriptPanels]
         for panel in pyrevitscriptpanels:
             if panel.tabName == self.tabName and panel.panelName not in already_adopted_panels:
-                logger.debug('contains: {0}'.format(panel.panelName))
+                reportv('\tcontains: {0}'.format(panel.panelName))
                 self.scriptPanels.append(panel)
 
     def get_sorted_scriptpanels(self):
@@ -201,26 +303,20 @@ class ScriptTab:
                 if len(g.scriptCommands) > 0:
                     return True
         return False
-
+    
     def calculate_hash(self):
+        import hashlib
         "Creates a unique hash # to represent state of directory."
         # logger.info('Generating Hash of directory')
-        # search does not include png files:
-        #   if png files are added the parent folder mtime gets affected
-        #   cache only saves the png address and not the contents so they'll get loaded everytime
-        # todo: improve speed by pruning dir: dirs[:] = [d for d in dirs if d not in excludes]
-        #       see http://stackoverflow.com/a/5141710/2350244
-        pat = r'(\.panel)|(\.tab)'
-        patfile = r'(\.py)'
-        mtime_sum = 0
+        pat = r'(\.panel)|(\.tab)|(\.png)|(\.py)'
+        hash_sum = 0
         for root, dirs, files in os.walk(self.tabFolder):
             if re.search(pat, root, flags=re.IGNORECASE):
-                mtime_sum += op.getmtime(root)
+                hash_sum += op.getmtime(root)
                 for filename in files:
-                    if re.search(patfile, filename, flags=re.IGNORECASE):
-                        modtime = op.getmtime(op.join(root, filename))
-                        mtime_sum += modtime
-        return hashlib.md5(str(mtime_sum)).hexdigest()
+                    modtime = op.getmtime(op.join(root, filename))
+                    hash_sum += modtime
+        return hashlib.md5(str(hash_sum)).hexdigest()
 
     def get_clean_dict(self):
         d = self.__dict__.copy()
@@ -233,7 +329,7 @@ class ScriptTab:
         for k,v in cached_dict.items():
             if "scriptPanels" == k:
                 for cached_panel_dict in v:
-                    logger.debug('{}Loading script panel: {}'.format(sessionSettings.cpfx, cached_panel_dict['panelName']))
+                    reportv('{}Loading script panel: {}'.format(sessionSettings.cpfx, cached_panel_dict['panelName']))
                     self.scriptPanels.append(ScriptPanel('','','','',cached_panel_dict))
             else:
                 self.__dict__[k] = v
@@ -248,7 +344,7 @@ class ScriptPanel:
         self.tabName = tabname
         self.tabDir = tabdir
         self.isBundled = bundledpanel
-
+        
         if not cache:
             if self.isBundled:
                 self.panelName = fullpanelfilename.replace(sessionSettings.panelBundlePostfix, '')
@@ -260,11 +356,11 @@ class ScriptPanel:
                     if namepieceslength == 4 or namepieceslength == 6:
                         self.panelOrder, self.panelName = namepieces[0:2]
                         self.panelOrder = int(self.panelOrder[:2])
-                        logger.debug('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
+                        reportv('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
                     else:
-                        raise PyRevitUnknownFileNameFormatError()
+                        raise UnknownFileNameFormatError()
                 else:
-                    raise PyRevitUnknownFileNameFormatError()
+                    raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
 
@@ -277,7 +373,7 @@ class ScriptPanel:
         for group in pyrevitscriptgroups:
             if group.panelName == self.panelName and group.tabName == self.tabName \
             and group.groupName not in already_adopted_groups:
-                logger.debug('contains: {0}'.format(group.groupName))
+                reportv('\tcontains: {0}'.format(group.groupName))
                 self.scriptGroups.append(group)
 
     def get_sorted_scriptgroups(self):
@@ -290,7 +386,7 @@ class ScriptPanel:
         for k,v in cached_dict.items():
             if "scriptGroups" == k:
                 for cached_group_dict in v:
-                    logger.debug('{}Loading script group: {}'.format(sessionSettings.cpfx, cached_group_dict['groupName']))
+                    reportv('{}Loading script group: {}'.format(sessionSettings.cpfx, cached_group_dict['groupName']))
                     self.scriptGroups.append(ScriptGroup('','','','',cached_group_dict))
             else:
                 self.__dict__[k] = v
@@ -326,14 +422,14 @@ class ScriptGroup:
                     if namepieceslength == 4 or namepieceslength == 6:
                         self.groupOrder, self.panelName, self.groupType, self.groupName = namepieces[0:4]
                         self.groupOrder = int(self.groupOrder[2:])
-                        logger.debug('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                        reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
                                                                                                    self.groupName.ljust(20),
                                                                                                    self.panelName))
                         self.buttonIcons = ButtonIcons(filedir, f)
                     elif namepieceslength == 3:
                         self.groupOrder, self.groupType, self.groupName = namepieces
                         self.groupOrder = int(self.groupOrder)
-                        logger.debug('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                        reportv('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
                                                                                                    self.groupName.ljust(20),
                                                                                                    self.panelName))
                         self.buttonIcons = ButtonIcons(filedir, f)
@@ -344,11 +440,12 @@ class ScriptGroup:
                         try:
                             self.assemblyName = ScriptGroup.findassembly(self.assemblyName).GetName().Name
                             self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
-                            logger.debug('Assembly.Class: {0}.{1}'.format(self.assemblyName, self.assemblyClassName))
-                        except PyRevitUnknownAssemblyError:
+                            reportv('                    Assembly.Class: {0}.{1}'.format(self.assemblyName,
+                                                                                         self.assemblyClassName))
+                        except UnknownAssemblyError:
                             raise
             else:
-                raise PyRevitUnknownFileNameFormatError()
+                raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
 
@@ -358,7 +455,7 @@ class ScriptGroup:
             if cmd.scriptGroupName == self.groupName \
             and (cmd.tabName == self.tabName or cmd.tabName == masterTabName) \
             and cmd.fileName not in already_adopted_commands:
-                    logger.debug('contains: {0}'.format(cmd.fileName))
+                    reportv('\tcontains: {0}'.format(cmd.fileName))
                     self.scriptCommands.append(cmd)
 
     def islinkbutton(self):
@@ -373,7 +470,7 @@ class ScriptGroup:
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if assemblyname in loadedAssembly.FullName:
                 return loadedAssembly
-        raise PyRevitUnknownAssemblyError()
+        raise UnknownAssemblyError()
 
     def get_clean_dict(self):
         return self.__dict__.copy()
@@ -382,7 +479,7 @@ class ScriptGroup:
         for k,v in cached_dict.items():
             if "scriptCommands" == k:
                 for cached_cmd_dict in v:
-                    logger.debug('{}Loading script command: {}'.format(sessionSettings.cpfx, cached_cmd_dict['cmdName']))
+                    reportv('{}Loading script command: {}'.format(sessionSettings.cpfx, cached_cmd_dict['cmdName']))
                     self.scriptCommands.append(ScriptCommand('','','',cached_cmd_dict))
             elif "buttonIcons" == k:
                 if v:
@@ -449,7 +546,7 @@ class ScriptCommand:
                     self.className = tabname + self.scriptGroupName + self.cmdName
                     for char, repl in sessionSettings.specialcharacters.items():
                         self.className = self.className.replace(char, repl)
-                    logger.debug('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
+                    reportv('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
                                                                                    self.scriptGroupName.ljust(20),
                                                                                    self.cmdName))
                     if op.exists(op.join(filedir, fname + sessionSettings.iconFileFormat)):
@@ -459,8 +556,8 @@ class ScriptCommand:
                         self.iconFileName = None
                         self.buttonIcons = None
                 else:
-                    raise PyRevitUnknownFileNameFormatError()
-
+                    raise UnknownFileNameFormatError()
+                
                 scriptContents = ScriptFileContents(self.getfullscriptaddress())
                 docstring = scriptContents.extractparameter(sessionSettings.tooltipParameter)
                 author = scriptContents.extractparameter(sessionSettings.authorParameter)
@@ -472,10 +569,10 @@ class ScriptCommand:
                 if author is not None and author != '':
                     self.tooltip += '\n\nAuthor:\n{0}'.format(author)
             else:
-                raise PyRevitUnknownFileNameFormatError()
+                raise UnknownFileNameFormatError()
         else:
             self.load_from_cache(cache)
-
+    
     def getfullscriptaddress(self):
         return op.join(self.filePath, self.fileName)
 
@@ -499,48 +596,49 @@ class PyRevitSessionCache:
         pass
 
     def get_cache_file(self, script_tab):
-        return op.join(prutils.find_user_temp_directory(),'{}_cache_{}.json'.format(sessionSettings.pyRevitAssemblyName, \
+        return op.join(find_user_temp_directory(),'{}_cache_{}.json'.format(sessionSettings.pyRevitAssemblyName, \
                                                                             script_tab.tabName))
 
     def cleanup_cache_files(self):
         pass
-
+    
     def load_tab(self, script_tab):
-        logger.debug('Checking if tab directory has any changes, otherwise loading from cache...')
-        logger.debug('Current hash is: {}'.format(script_tab.tabHash))
+        reportv('Checking if tab directory has any changes, otherwise loading from cache...')
+        reportv('Current hash is: {}'.format(script_tab.tabHash))
         cached_tab_dict = self.read_cache_for(script_tab)
         try:
             if cached_tab_dict['tabHash'] == script_tab.tabHash         \
             and cached_tab_dict['cacheVersion'] == PyRevitSessionCache.get_version():
-                logger.debug('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
-                logger.debug('Loading from cache...')
+                reportv('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
+                reportv('Loading from cache...')
                 script_tab.load_from_cache(cached_tab_dict)
-                logger.debug('Load successful...')
+                reportv('Load successful...')
             else:
-                logger.debug('Cache is expired...')
-                raise PyRevitCacheExpiredError()
+                reportv('Cache is expired...')
+                raise CacheExpiredError()
         except:
-            logger.debug('Error reading cache...')
-            raise PyRevitCacheError()
-
+            reportv('Error reading cache...')
+            raise CacheError()
+    
     def update_cache(self, script_tabs):
-        logger.debug('Updating cache for {} tabs...'.format(len(script_tabs)))
+        reportv('\nUpdating cache for {} tabs...'.format(len(script_tabs)))
         for script_tab in script_tabs:
             if not script_tab.loaded_from_cache:
-                logger.debug('Writing cache for tab: {}'.format(script_tab.tabName))
+                reportv('Writing cache for tab: {}'.format(script_tab.tabName))
                 self.write_cache_for(script_tab)
-                logger.debug('Cache updated for tab: {}'.format(script_tab.tabName))
+                print('Cache updated for tab: {}'.format(script_tab.tabName))
             else:
-                logger.debug('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
-
+                print('Cache is up-to-date for tab: {}'.format(script_tab.tabName))
+        reportv('\n')
+    
     def read_cache_for(self, script_tab):
         try:
             with open(self.get_cache_file(script_tab), 'r') as cache_file:
                 cached_tab_dict = json.load(cache_file)
             return cached_tab_dict
         except:
-            raise PyRevitCacheReadError()
-
+            raise CacheReadError()
+    
     def write_cache_for(self, script_tab):
         with open(self.get_cache_file(script_tab), 'w') as cache_file:
             cache_file.write(self.serialize(script_tab))
@@ -551,12 +649,12 @@ class PyRevitSessionCache:
 
     @staticmethod
     def get_version():
-        return pyRevitVersion.full_version_as_str()
+        return "{}.{}.{}".format(pyRevitVersion.major, pyRevitVersion.minor, pyRevitVersion.patch)
 
 
 class PyRevitUISession:
     def __init__(self):
-        logger.debug('Running on: {0}'.format(sys.version))
+        report('Running on:\n{0}'.format(sys.version))
         self.loadedPyRevitScripts = []
         self.loadedPyRevitAssemblies = []
         self.pyRevitScriptPanels = []
@@ -565,9 +663,9 @@ class PyRevitUISession:
         self.pyRevitScriptTabs = []
         self.sessionname = None
 
-        self.loaderDir = prutils.find_loader_directory()
-        self.homeDir = prutils.find_home_directory()
-        logger.debug('Home Directory is: {0}'.format(self.homeDir))
+        self.loaderDir = find_loader_directory()
+        self.homeDir = find_home_directory()
+        report('\nHome Directory is: {0}'.format(self.homeDir))
 
         self.commandLoaderClass = None
         self.commandLoaderAssembly = None
@@ -575,16 +673,16 @@ class PyRevitUISession:
         self.isrplfound = False
         self.isrplloggerfound = False
 
-        self.userTempFolder = prutils.find_user_temp_directory()
+        self.userTempFolder = find_user_temp_directory()
         self.revitVersion = __revit__.Application.VersionNumber
-        self.username = prutils.get_username()
+        self.username = get_username()
         self.assemblyidentifier = sessionSettings.pyRevitAssemblyName
         self.sessionidentifier = "{0}{1}".format(sessionSettings.pyRevitAssemblyName,
                                                  self.revitVersion)
         self.archivelogfolder = sessionSettings.archivelogfolder
 
         # collect information about previously loaded assemblies
-        logger.debug('Initializing python script loader...')
+        report('\nInitializing python script loader...')
         res = self.find_commandloader_class()
         if res:
             self.find_loaded_pyrevit_assemblies()
@@ -592,52 +690,52 @@ class PyRevitUISession:
                 self.cleanup()
                 self.archivelogs()
             else:
-                logger.debug('pyRevit is reloading. Skipping DLL and log cleanup.')
+                reportv('pyRevit is reloading. Skipping DLL and log cleanup.')
 
             # get previous session cache
             self.sessionCache = self.get_prev_session_cache()
-
+            
             # find commands, script groups and assign commands
             self.create_reload_button(self.loaderDir)
-
-            logger.debug('Searching for tabs, panels, groups, and scripts...')
+            
+            report('Searching for tabs, panels, groups, and scripts...')
             self.find_scripttabs(self.homeDir)
-
+            
             # update session cache
             self.sessionCache.update_cache(self.pyRevitScriptTabs)
 
             # create assembly dll
-            logger.debug('Building script executer assembly...')
+            report('Building script executer assembly...')
             self.createassembly()
 
             # setting up UI
-            logger.debug('Executer assembly saved. Creating pyRevit UI.')
+            reportv('Executer assembly saved. Creating pyRevit UI.')
             self.createpyrevitui()
         else:
-            logger.debug('pyRevit load failed...Can not find necessary RevitPythonLoader class.')
-
+            report('pyRevit load failed...Can not find necessary RevitPythonLoader class.')
+    
     def cleanup(self):
         revitinstances = list(Process.GetProcessesByName('Revit'))
         if len(revitinstances) > 1:
-            logger.debug('Multiple Revit instance are running...Skipping DLL Cleanup')
+            reportv('Multiple Revit instance are running...Skipping DLL Cleanup')
         elif len(revitinstances) == 1 and not self.isreloading():
-            logger.debug('Cleaning up old DLL files...')
+            reportv('Cleaning up old DLL files...')
             files = os.listdir(self.userTempFolder)
             for f in files:
                 if f.startswith(self.sessionidentifier) and f.endswith('dll'):
                     try:
                         os.remove(op.join(self.userTempFolder, f))
-                        logger.debug('Existing .Dll Removed: {0}'.format(f))
+                        reportv('Existing .Dll Removed: {0}'.format(f))
                     except:
-                        logger.debug('Error deleting .DLL file: {0}'.format(f))
+                        reportv('Error deleting .DLL file: {0}'.format(f))
 
     def archivelogs(self):
         if op.exists(self.archivelogfolder):
             revitinstances = list(Process.GetProcessesByName('Revit'))
             if len(revitinstances) > 1:
-                logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
+                reportv('Multiple Revit instance are running...Skipping archiving old log files.')
             elif len(revitinstances) == 1 and not self.isreloading():
-                logger.debug('Archiving old log files...')
+                reportv('Archiving old log files...')
                 files = os.listdir(self.userTempFolder)
                 for f in files:
                     if f.startswith(self.assemblyidentifier) and f.endswith('log'):
@@ -645,57 +743,57 @@ class PyRevitUISession:
                             currentfileloc = op.join(self.userTempFolder, f)
                             newloc = op.join(self.archivelogfolder, f)
                             shutil.move(currentfileloc, newloc)
-                            logger.debug('Existing log file archived to: {0}'.format(newloc))
+                            reportv('Existing log file archived to: {0}'.format(newloc))
                         except:
-                            logger.debug('Error archiving log file: {0}'.format(f))
+                            reportv('Error archiving log file: {0}'.format(f))
         else:
-            logger.debug('Archive log folder does not exist: {0}. Skipping...'.format(self.archivelogfolder))
+            reportv('Archive log folder does not exist: {0}. Skipping...'.format(self.archivelogfolder))
 
     def isreloading(self):
         return len(self.loadedPyRevitAssemblies) > 0
 
     def find_commandloader_class(self):
         # tries to find the revitpythonloader assembly first
-        logger.debug('Asking Revit for RevitPythonLoader Command Loader class...')
+        reportv('Asking Revit for RevitPythonLoader Command Loader class...')
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if 'RevitPythonLoader' in loadedAssembly.FullName:
-                logger.debug('RPL Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
+                reportv('RPL Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
                 self.commandLoaderClass = loadedAssembly.GetType('RevitPythonLoader.CommandLoaderBase')
                 if sessionSettings.logScriptUsage:
                     loaderclass = loadedAssembly.GetType('RevitPythonLoader.CommandLoaderBaseExtended')
                     if loaderclass is not None:
                         self.commandLoaderClass = loaderclass
-                        logger.debug('RPL script usage logging is Enabled.')
+                        reportv('RPL script usage logging is Enabled.')
                         self.isrplloggerfound = True
                     else:
                         self.isrplloggerfound = False
-                        logger.debug('RPL script usage logging is Enabled but can not find base class with logger.')
+                        reportv('RPL script usage logging is Enabled but can not find base class with logger.')
                 else:
-                    logger.debug('RPL script usage logging is Disabled.')
+                    reportv('RPL script usage logging is Disabled.')
                 self.commandLoaderAssembly = loadedAssembly
                 self.isrplfound = True
                 return True
 
         # if revitpythonloader doesn't exist tries to find the revitpythonshell assembly
-        logger.debug('Can not find RevitPythonLoader. Asking Revit for RevitPythonShell Command Loader class instead...')
+        reportv('Can not find RevitPythonLoader. Asking Revit for RevitPythonShell Command Loader class instead...')
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if 'RevitPythonShell' in loadedAssembly.FullName:
-                logger.debug('RPS Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
+                reportv('RPS Assembly found: {0}'.format(loadedAssembly.GetName().FullName))
                 self.commandLoaderClass = loadedAssembly.GetType('RevitPythonShell.CommandLoaderBase')
                 self.commandLoaderAssembly = loadedAssembly
                 self.isrplfound = False
                 return True
 
-        logger.debug('Can not find RevitPythonShell either. Aborting load...')
+        reportv('Can not find RevitPythonShell either. Aborting load...')
         self.commandLoaderClass = None
         self.commandLoaderAssembly = None
         return None
 
     def find_loaded_pyrevit_assemblies(self):
-        logger.debug('Asking Revit for previously loaded pyRevit assemblies...')
+        reportv('Asking Revit for previously loaded pyRevit assemblies...')
         for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
             if sessionSettings.pyRevitAssemblyName in loadedAssembly.FullName:
-                logger.debug('Existing assembly found: {0}'.format(loadedAssembly.FullName))
+                reportv('Existing assembly found: {0}'.format(loadedAssembly.FullName))
                 self.loadedPyRevitAssemblies.append(loadedAssembly)
                 self.loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
 
@@ -703,7 +801,7 @@ class PyRevitUISession:
         return PyRevitSessionCache()
 
     def find_scriptcommands(self, searchdir, tabname):
-        logger.debug('Searching tab folder for scripts...')
+        reportv('Searching tab folder for scripts...')
         files = sorted(os.listdir(searchdir))
         for fullfilename in files:
             fullfilepath = op.join(searchdir, fullfilename)
@@ -712,18 +810,18 @@ class PyRevitUISession:
                 try:
                     cmd = ScriptCommand(searchdir, fullfilename, tabname)
                     self.pyRevitScriptCommands.append(cmd)
-                except PyRevitUnknownFileNameFormatError:
-                    logger.debug('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
+                except UnknownFileNameFormatError:
+                    reportv('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
                     continue
                 except:
-                    logger.debug('Something is wrong. skipping: {0}'.format(fullfilename))
+                    reportv('Something is wrong. skipping: {0}'.format(fullfilename))
                     continue
 
         if not len(self.pyRevitScriptCommands) > 0:
-            logger.debug('No Scripts found...')
+            report('No Scripts found...')
 
     def find_scriptgroups(self, searchdir, tabname, bundledPanelName = ''):
-        logger.debug('Searching content folder for script groups ...')
+        reportv('Searching content folder for script groups ...')
         self.find_scriptcommands(searchdir, tabname)
         files = os.listdir(searchdir)
         for fullfilename in files:
@@ -734,19 +832,19 @@ class PyRevitUISession:
                     scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundledPanelName)
                     scriptgroup.adoptcommands(self.pyRevitScriptCommands, sessionSettings.masterTabName)
                     self.pyRevitScriptGroups.append(scriptgroup)
-                except PyRevitUnknownFileNameFormatError:
+                except UnknownFileNameFormatError:
                     if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
-                        logger.debug('Skipping script icon file: {0}'.format(fullfilename))
+                        reportv('Skipping script icon file: {0}'.format(fullfilename))
                         continue
                     else:
-                        logger.debug('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
+                        reportv('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
                         continue
-                except PyRevitUnknownAssemblyError:
-                    logger.debug('Unknown assembly error. Skipping: {0}'.format(fullfilename))
+                except UnknownAssemblyError:
+                    reportv('Unknown assembly error. Skipping: {0}'.format(fullfilename))
                     continue
 
     def find_scriptpanels(self, tabdir, tabname):
-        logger.debug('Searching content folder for script panels ...')
+        reportv('Searching content folder for script panels ...')
         self.find_scriptgroups(tabdir, tabname)
         files = os.listdir(tabdir)
         for fullfilename in files:
@@ -767,13 +865,13 @@ class PyRevitUISession:
                         scriptpanel.adoptgroups(self.pyRevitScriptGroups)
                         self.pyRevitScriptPanels.append(scriptpanel)
                     else:
-                        logger.debug('panel already created and adopted groups.')
-                except PyRevitUnknownFileNameFormatError:
+                        reportv('\tpanel already created and adopted groups.')
+                except UnknownFileNameFormatError:
                     if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
-                        logger.debug('Skipping script panel file: {0}'.format(fullfilename))
+                        reportv('Skipping script panel file: {0}'.format(fullfilename))
                         continue
                     else:
-                        logger.debug('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
+                        reportv('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
                         continue
 
     def find_scripttabs(self, home_dir):
@@ -783,14 +881,15 @@ class PyRevitUISession:
                          and not dirname.startswith(('.', '_'))             \
                          and dirname.endswith(sessionSettings.tabPostfix)
             if dir_is_tab:
-                logger.debug('Searching for scripts under: {0}'.format(full_path))
+                reportv('\n')
+                report('Searching for scripts under: {0}'.format(full_path), title=True)
                 discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
                 if dirname not in discovered_tabs_names.keys():
                     sys.path.append(full_path)
                     script_tab = ScriptTab(dirname, full_path)
                     try:
                         self.sessionCache.load_tab(script_tab)
-                    except PyRevitCacheError:
+                    except CacheError:
                         # I am using a function outside the ScriptTab class to find the panels defined under tab folder
                         # The reason is consistency with how ScriptPanel and ScriptGroup work.
                         # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
@@ -801,13 +900,13 @@ class PyRevitUISession:
                         # to that tab. This also allows other develops to add panels to each others tabs.
                         self.find_scriptpanels(full_path, script_tab.tabName)
                         script_tab.adopt_panels(self.pyRevitScriptPanels)
-                    logger.debug('Tab found: {0}'.format(script_tab.tabName))
+                    reportv('\nTab found: {0}'.format(script_tab.tabName))
                     self.pyRevitScriptTabs.append(script_tab)
                 else:
                     sys.path.append(full_path)
                     script_tab = discovered_tabs_names[dirname]
                     self.find_scriptpanels(full_path, script_tab.tabName)
-                    logger.debug('Tab extension found: {0}'.format(script_tab.tabName))
+                    reportv('\nTab extension found: {0}'.format(script_tab.tabName))
                     script_tab.adopt_panels(self.pyRevitScriptPanels)
             elif op.isdir(full_path) and not dirname.startswith(('.','_')):
                 self.find_scripttabs(full_path)
@@ -815,16 +914,16 @@ class PyRevitUISession:
                 continue
 
     def create_reload_button(self, loaderDir):
-        logger.debug('Creating "Reload Scripts" button...')
+        reportv('Creating "Reload Scripts" button...')
         for fname in os.listdir(loaderDir):
             fulltabpath = op.join(loaderDir, fname)
             if not op.isdir(fulltabpath) and sessionSettings.pyRevitInitScriptName in fname:
                 try:
                     cmd = ScriptCommand(loaderDir, fname, sessionSettings.masterTabName)
                     self.pyRevitScriptCommands.append(cmd)
-                    logger.debug('Reload button added.')
+                    reportv('Reload button added.\n')
                 except:
-                    logger.debug('Could not create reload command.')
+                    reportv('\nCould not create reload command.\n')
                     continue
 
     def createassembly(self):
@@ -842,13 +941,13 @@ class PyRevitUISession:
         logfilename = self.sessionname + '.log'
 
         # create assembly
-        windowsassemblyname = AssemblyName(Name=self.sessionname, Version=Version(pyRevitVersion.major,                \
-                                                                                  pyRevitVersion.minor,                \
-                                                                                  pyRevitVersion.patch, 0))
-        logger.debug('Generated assembly name for this session: {0}'.format(self.sessionname))
-        logger.debug('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
-        logger.debug('Generated DLL name for this session: {0}'.format(dllname))
-        logger.debug('Generated log name for this session: {0}'.format(logfilename))
+        windowsassemblyname = AssemblyName(Name=self.sessionname, Version=Version(int(pyRevitVersion.major),
+                                                                                  int(pyRevitVersion.minor),
+                                                                                  int(pyRevitVersion.patch), 0))
+        reportv('Generated assembly name for this session: {0}'.format(self.sessionname))
+        reportv('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
+        reportv('Generated DLL name for this session: {0}'.format(dllname))
+        reportv('Generated log name for this session: {0}'.format(logfilename))
         assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(windowsassemblyname,
                                                                         AssemblyBuilderAccess.RunAndSave, dllfolder)
         modulebuilder = assemblybuilder.DefineDynamicModule(self.sessionname, dllname)
@@ -859,8 +958,8 @@ class PyRevitUISession:
             for scriptPanel in scriptTab.get_sorted_scriptpanels():
                 for scriptGroup in scriptPanel.get_sorted_scriptgroups():
                     for cmd in scriptGroup.scriptCommands:
-                        typebuilder = modulebuilder.DefineType(cmd.className,                                       \
-                                                               TypeAttributes.Class | TypeAttributes.Public,        \
+                        typebuilder = modulebuilder.DefineType(cmd.className,
+                                                               TypeAttributes.Class | TypeAttributes.Public,
                                                                self.commandLoaderClass)
 
                         # add RegenerationAttribute to type
@@ -912,34 +1011,34 @@ class PyRevitUISession:
         self.newAssemblyLocation = Path.Combine(dllfolder, dllname)
 
     def create_or_find_pyrevit_panels(self):
-        logger.debug('Searching for existing pyRevit panels...')
+        reportv('Searching for existing pyRevit panels...')
         for scriptTab in self.pyRevitScriptTabs:
             # creates pyrevitribbonpanels for existing or newly created panels
             pyrevitribbonpanels = dict()
             if scriptTab.hascommands():
                 try:
                     #try creating the ribbon tab
-                    logger.debug('Creating {0} ribbon tab...'.format(scriptTab.tabName))
+                    reportv('Creating {0} ribbon tab...'.format(scriptTab.tabName))
                     __revit__.CreateRibbonTab(scriptTab.tabName)
                 except:
                     #if fails, the tab already exits so let's gather panel info
-                    logger.debug('{0} ribbon tab already created...'.format(scriptTab.tabName))
+                    reportv('{0} ribbon tab already created...'.format(scriptTab.tabName))
                     pyrevitribbonpanels = {p.Name: p for p in __revit__.GetRibbonPanels(scriptTab.tabName)}
 
                 #by this point the ribbon tab has either been created or found if existing.
-                logger.debug('Searching for panels...')
+                reportv('Searching for panels...')
                 for panel in scriptTab.get_sorted_scriptpanels():
                     if panel.panelName in pyrevitribbonpanels.keys():
-                        logger.debug('Existing panel found: {0}'.format(panel.panelName))
+                        reportv('Existing panel found: {0}'.format(panel.panelName))
                         scriptTab.pyRevitUIPanels[panel.panelName] = pyrevitribbonpanels[panel.panelName]
                         scriptTab.pyRevitUIButtons[panel.panelName] = list(pyrevitribbonpanels[panel.panelName].GetItems())
                     else:
-                        logger.debug('Creating panel: {0}'.format(panel.panelName))
+                        reportv('Creating panel: {0}'.format(panel.panelName))
                         newpanel = __revit__.CreateRibbonPanel(scriptTab.tabName, panel.panelName)
                         scriptTab.pyRevitUIPanels[panel.panelName] = newpanel
                         scriptTab.pyRevitUIButtons[panel.panelName] = []
             else:
-                logger.debug('{0} ribbon tab found but does not include any scripts. ' \
+                reportv('{0} ribbon tab found but does not include any scripts. ' \
                         'Skipping this tab.'.format(scriptTab.tabName))
 
     def createui(self):
@@ -948,7 +1047,7 @@ class PyRevitUISession:
             for scriptPanel in scriptTab.get_sorted_scriptpanels():
                 pyrevitribbonpanel = scriptTab.pyRevitUIPanels[scriptPanel.panelName]
                 pyrevitribbonitemsdict = {b.Name: b for b in scriptTab.pyRevitUIButtons[scriptPanel.panelName]}
-                logger.debug('Creating\\Updating ribbon items for panel: {0}'.format(scriptPanel.panelName))
+                reportv('Creating\\Updating ribbon items for panel: {0}'.format(scriptPanel.panelName))
                 for scriptGroup in scriptPanel.get_sorted_scriptgroups():
                     # PulldownButton or SplitButton
                     groupispulldownbutton = (scriptGroup.groupType == sessionSettings.pulldownButtonTypeName)
@@ -958,31 +1057,31 @@ class PyRevitUISession:
                         # PulldownButton
                         if scriptGroup.groupType == sessionSettings.pulldownButtonTypeName:
                             if scriptGroup.groupName not in pyrevitribbonitemsdict:
-                                logger.debug('Creating pulldown button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tCreating pulldown button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
                                     PulldownButtonData(scriptGroup.groupName, scriptGroup.groupName))
                             else:
-                                logger.debug('Updating pulldown button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tUpdating pulldown button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonitemsdict.pop(scriptGroup.groupName)
 
                         # SplitButton
                         elif scriptGroup.groupType == sessionSettings.splitButtonTypeName:
                             if scriptGroup.groupName not in pyrevitribbonitemsdict.keys():
-                                logger.debug('Creating split button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tCreating split button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
                                     SplitButtonData(scriptGroup.groupName, scriptGroup.groupName))
                             else:
-                                logger.debug('Updating split button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tUpdating split button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonitemsdict.pop(scriptGroup.groupName)
 
                         # SplitPushButton
                         elif scriptGroup.groupType == sessionSettings.splitPushButtonTypeName:
                             if scriptGroup.groupName not in pyrevitribbonitemsdict.keys():
-                                logger.debug('Creating split button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tCreating split button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
                                     SplitButtonData(scriptGroup.groupName, scriptGroup.groupName))
                             else:
-                                logger.debug('Updating split button group: {0}'.format(scriptGroup.groupName))
+                                reportv('\tUpdating split button group: {0}'.format(scriptGroup.groupName))
                                 ribbonitem = pyrevitribbonitemsdict.pop(scriptGroup.groupName)
                             ribbonitem.IsSynchronizedWithCurrentItem = False
 
@@ -992,7 +1091,7 @@ class PyRevitUISession:
 
                         for cmd in scriptGroup.scriptCommands:
                             if cmd.className not in existingribbonitempushbuttonsdict:
-                                logger.debug('Creating push button: {0}'.format(cmd.className))
+                                reportv('\t\tCreating push button: {0}'.format(cmd.className))
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
                                                             cmd.className)
                                 buttondata.ToolTip = cmd.tooltip
@@ -1012,7 +1111,7 @@ class PyRevitUISession:
                                 ribbonitem.AddPushButton(buttondata)
                                 newbuttoncount += 1
                             else:
-                                logger.debug('Updating push button: {0}'.format(cmd.className))
+                                reportv('\t\tUpdating push button: {0}'.format(cmd.className))
                                 pushbutton = existingribbonitempushbuttonsdict.pop(cmd.className)
                                 pushbutton.ToolTip = cmd.tooltip
                                 ldesc = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'.format(cmd.className,
@@ -1033,16 +1132,16 @@ class PyRevitUISession:
                                         pushbutton.LargeImage = scriptGroup.buttonIcons.mediumBitmap
                                 updatedbuttoncount += 1
                         for orphanedButtonName, orphanedButton in existingribbonitempushbuttonsdict.items():
-                            logger.debug('Disabling orphaned button: {0}'.format(orphanedButtonName))
+                            reportv('\tDisabling orphaned button: {0}'.format(orphanedButtonName))
                             orphanedButton.Enabled = False
 
                     # StackedButtons
                     elif scriptGroup.groupType == sessionSettings.stackedThreeTypeName:
-                        logger.debug('Creating\\Updating 3 stacked buttons: {0}'.format(scriptGroup.groupType))
+                        reportv('\tCreating\\Updating 3 stacked buttons: {0}'.format(scriptGroup.groupType))
                         stackcommands = []
                         for cmd in scriptGroup.scriptCommands:
                             if cmd.className not in pyrevitribbonitemsdict:
-                                logger.debug('Creating stacked button: {0}'.format(cmd.className))
+                                reportv('\t\tCreating stacked button: {0}'.format(cmd.className))
                                 buttondata = PushButtonData(cmd.className, cmd.cmdName, self.newAssemblyLocation,
                                                             cmd.className)
                                 buttondata.ToolTip = cmd.tooltip
@@ -1056,7 +1155,7 @@ class PyRevitUISession:
                                 stackcommands.append(buttondata)
                                 newbuttoncount += 1
                             else:
-                                logger.debug('Updating stacked button: {0}'.format(cmd.className))
+                                reportv('\t\tUpdating stacked button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonitemsdict.pop(cmd.className)
                                 ribbonitem.AssemblyName = self.newAssemblyLocation
                                 ribbonitem.ClassName = cmd.className
@@ -1074,13 +1173,13 @@ class PyRevitUISession:
                         try:
                             cmd = scriptGroup.scriptCommands.pop()
                             if cmd.className not in pyrevitribbonitemsdict:
-                                logger.debug('Creating push button: {0}'.format(cmd.className))
+                                reportv('\tCreating push button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
                                     PushButtonData(cmd.className, scriptGroup.groupName, self.newAssemblyLocation,
                                                    cmd.className))
                                 newbuttoncount += 1
                             else:
-                                logger.debug('Updating push button: {0}'.format(cmd.className))
+                                reportv('\tUpdating push button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonitemsdict.pop(cmd.className)
                                 ribbonitem.AssemblyName = self.newAssemblyLocation
                                 ribbonitem.ClassName = cmd.className
@@ -1093,7 +1192,8 @@ class PyRevitUISession:
                             ribbonitem.Image = scriptGroup.buttonIcons.smallBitmap
                             ribbonitem.LargeImage = scriptGroup.buttonIcons.largeBitmap
                         except:
-                            logger.debug('Pushbutton has no associated scripts. Skipping {0}'.format(scriptGroup.sourceFile))
+                            reportv(
+                                '\tPushbutton has no associated scripts. Skipping {0}'.format(scriptGroup.sourceFile))
                             continue
 
                     # SmartButton
@@ -1102,14 +1202,14 @@ class PyRevitUISession:
                         try:
                             cmd = scriptGroup.scriptCommands.pop()
                             if cmd.className not in pyrevitribbonitemsdict:
-                                logger.debug('Creating smart button: {0}'.format(cmd.className))
+                                reportv('\tCreating smart button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonpanel.AddItem(
                                     PushButtonData(cmd.className, scriptGroup.groupName, self.newAssemblyLocation,
                                                    cmd.className))
-                                logger.debug('Smart button created.')
+                                reportv('\tSmart button created.')
                                 newbuttoncount += 1
                             else:
-                                logger.debug('Updating push button: {0}'.format(cmd.className))
+                                reportv('\tUpdating push button: {0}'.format(cmd.className))
                                 ribbonitem = pyrevitribbonitemsdict.pop(cmd.className)
                                 ribbonitem.AssemblyName = self.newAssemblyLocation
                                 ribbonitem.ClassName = cmd.className
@@ -1121,22 +1221,23 @@ class PyRevitUISession:
                             ribbonitem.LongDescription = ldesc
                             importedscript = __import__(cmd.getscriptbasename())
                             importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
-                            logger.debug('Smart button initialized.')
+                            reportv('\tSmart button initialized.')
                         except:
-                            logger.debug('Smart button has no associated scripts. Skipping {0}'.format(scriptGroup.sourceFile))
+                            reportv(
+                                '\tSmart button has no associated scripts. Skipping {0}'.format(scriptGroup.sourceFile))
                             continue
 
                     # LinkButton
                     elif scriptGroup.groupType == sessionSettings.linkButtonTypeName and scriptGroup.islinkbutton():
                         if scriptGroup.groupName not in pyrevitribbonitemsdict:
-                            logger.debug('Creating push button link to other assembly: {0}'.format(scriptGroup.groupName))
+                            reportv('\tCreating push button link to other assembly: {0}'.format(scriptGroup.groupName))
                             ribbonitem = pyrevitribbonpanel.AddItem(
                                 PushButtonData(scriptGroup.groupName, scriptGroup.groupName,
                                                scriptGroup.assemblyLocation,
                                                scriptGroup.assemblyName + '.' + scriptGroup.assemblyClassName))
                             newbuttoncount += 1
                         else:
-                            logger.debug('Updating push button link to other assembly: {0}'.format(scriptGroup.groupName))
+                            reportv('\tUpdating push button link to other assembly: {0}'.format(scriptGroup.groupName))
                             ribbonitem = pyrevitribbonitemsdict.pop(scriptGroup.groupName)
                             ribbonitem.AssemblyName = scriptGroup.assemblyLocation
                             ribbonitem.ClassName = scriptGroup.assemblyName + '.' + scriptGroup.assemblyClassName
@@ -1147,19 +1248,32 @@ class PyRevitUISession:
 
                 # now disable all orphaned buttons in this panel
                 for orphanedRibbonItemName, orphanedRibbonItem in pyrevitribbonitemsdict.items():
-                    logger.debug('Disabling orphaned ribbon item: {0}'.format(orphanedRibbonItemName))
+                    reportv('\tDisabling orphaned ribbon item: {0}'.format(orphanedRibbonItemName))
                     orphanedRibbonItem.Enabled = False
 
         # final report
-        logger.debug('{0} buttons created... {1} buttons updated...'.format(newbuttoncount, updatedbuttoncount))
+        reportv('\n\n')
+        report('{0} buttons created...\n{1} buttons updated...\n\n'.format(newbuttoncount, updatedbuttoncount))
 
     def createpyrevitui(self):
         # setting up UI
         if not test_run:
-            logger.debug('Now setting up ribbon, panels, and buttons...')
+            report('Now setting up ribbon, panels, and buttons...')
             self.create_or_find_pyrevit_panels()
-            logger.debug('Ribbon tab and panels are ready. Creating script groups and command buttons...')
+            report('Ribbon tab and panels are ready. Creating script groups and command buttons...')
             self.createui()
-            logger.debug('All UI items have been added...')
+            report('All UI items have been added...')
+            # if not verbose:
+                # __window__.Close()
         else:
-            logger.debug('Test run. Skipping UI creation...')
+            reportv('Test run. Skipping UI creation...')
+
+
+# MAIN
+__window__.Width = 1100
+# __window__.Close()
+# find pyRevit home directory and initialize current session
+t = Timer()
+sessionSettings = PyRevitUISettings()
+session = PyRevitUISession()
+report('Load time: {}'.format(t.get_time_hhmmss()))
