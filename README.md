@@ -5,6 +5,29 @@
 - In it's simplest form, it's a folder of IronPython `.py` scripts for Autodesk Revit.
 - There is also an IronPython helper script, named `__init__.py`, that creates a ribbon tab and creates UI buttons for the IronPython scripts at Revit startup. Adding a button to this tab is as easy as adding a IronPython script file to the pyRevit folder and reloading pyRevit. 
 
+## Branches
+
+Branches in this repository are used for features, development, and different components of the pyRevit library. Here is a quick explanation on the purpose for each branch:
+
+####Master Branches:
+
+The setup program clones these two branches into your machine at installation.
+
+-	`master` : Master branch holds the main published repository. It also includes this Readme file that provides a link to the [pyRevit blog](http://eirannejad.github.io/pyRevit/).
+- `loader` : This is the master branch for the loader script that creates UI buttons for the scripts. It also includes the compiled `.dll` binaries for `RevitPythonLoader` that is needed to create the buttons.
+
+####Develop Branches:
+
+- `loaderDev` : This is the develop branch for the python loader script and the pyRevit module.
+- `loaderBinaryDev` : This branch has the visual studio project and is the develop branch for `RevitPythonLoader` which is the addon required to load the loader and create `IExternalCommand` interfaces for Revit.
+- `verThreeDev` : This is the beta version code for the pyRevit library. The current beta installer, clones this branch to your machine. This will be pulled to master for the final version.
+
+####Misc Branches:
+
+- `verTwoBackup` : Backup branch for easy access to version two scripts.
+- `gh-pages` : The source for [pyRevit blog](http://eirannejad.github.io/pyRevit/).
+
+
 ## License
 
 This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
