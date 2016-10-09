@@ -1,4 +1,142 @@
-# import os
+import os
+import os.path as op
+
+PYREVIT_ASSEMBLY_NAME = 'pyRevit'
+PYREVIT_INIT_SCRIPT_NAME = '__init__'
+
+LOADER_ADDIN = 'RevitPythonLoader'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS = 'RevitPythonLoader.CommandLoaderBase'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = 'RevitPythonLoader.CommandLoaderBaseExtended'
+
+TAB_POSTFIX = '.tab'
+PACKAGE_POSTFIX= '.pkg'
+PANEL_BUNDLE_POSTFIX = '.panel'
+
+ICON_FILE_FORMAT = '.png'
+
+LINK_BUTTON_TYPE_NAME = 'PushButton'
+PUSH_BUTTON_TYPE_NAME = 'PushButton'
+SMART_BUTTON_TYPE_NAME = 'SmartButton'
+PULLDOWN_BUTTON_TYPE_NAME = 'PulldownButton'
+STACKTHREE_BUTTON_TYPE_NAME = 'Stack3'
+STACKTWO_BUTTON_TYPE_NAME = 'Stack2'
+SPLIT_BUTTON_TYPE_NAME = 'SplitButton'
+SPLITPUSH_BUTTON_TYPE_NAME = 'SplitPushButton'
+
+TOOLTIP_PARAM = '__doc__'
+AUTHOR_PARAMR = '__author__'
+RELOAD_SCRIPTS_OVERRIDE_GROUP_NAME = 'pyRevit'
+RELOAD_SCRIPTS_OVERRIDE_SCRIPT_NAME = 'reloadScripts'
+MASTER_TAB_NAME = 'master'
+SPECIAL_CHARS = {' ': '', '~': '',
+                 '!': 'EXCLAM',
+                 '@': 'AT',
+                 '#': 'NUM',
+                 '$': 'DOLLAR',
+                 '%': 'PERCENT',
+                 '^': '',
+                 '&': 'AND',
+                 '*': 'STAR',
+                 '\(': '', '\)': '',
+                 '+': 'PLUS',
+                 ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '',
+                 '-': 'MINUS',
+                 '=': 'EQUALS',
+                 '<': '', '>': '',
+                 '?': 'QMARK',
+                 '.': 'DOT',
+                 '\/': '', '\\': ''}
+
+
+# settings for external settings file:
+USER_DEFAULT_SETTINGS_FILENAME = "userdefaults.ini"
+
+
+def _find_LOADER_DIRectory():
+    """Return the __init__ full directory address"""
+    folder = op.dirname(op.dirname(op.dirname(__file__)))  # three steps back for /__init__/Lib/pyRevit
+    return folder
+
+
+def _find_HOME_DIRectory():
+    """Return the pyRevit home directory address. This is the
+       directory that contains the portable git, __init__, pyRevit, and other packages"""
+    folder = op.dirname(_find_LOADER_DIRectory())
+    return folder
+
+
+def _find_USER_TEMP_DIRectory():
+    """Return the user temp directory %temp%"""
+    return os.getenv('Temp')
+
+
+def _get_username():
+    """Return the username from Revit API (Application.Username)"""
+    uname = __revit__.Application.Username
+    uname = uname.split('@')[0]         # if username is email
+    uname = uname.replace('.','')       # removing dots since username will be used in file naming
+    return uname
+
+
+def _get_user_roamingappdata():
+    """Return %appdata% directory address"""
+    return os.getenv('appdata')
+
+
+def _get_user_roamingappdata_pyrevit():
+    """Return %appdata%/pyRevit directory address"""
+    return op.join(_get_user_roamingappdata(), "pyRevit")
+
+
+def _get_host_revit_version():
+    return __revit__.Application.VersionNumber
+
+
+LOADER_DIR = _find_LOADER_DIRectory()
+HOME_DIR = _find_HOME_DIRectory()
+USER_TEMP_DIR = _find_USER_TEMP_DIRectory()
+REVIT_UNAME = _get_username()
+USER_ROAMING_DIR = _get_user_roamingappdata()
+USER_SETTINGS_DIR = _get_user_roamingappdata_pyrevit()
+REVIT_VERSION = _get_host_revit_version()
+
+SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # from os import path
 # from tempfile import gettempdir
 

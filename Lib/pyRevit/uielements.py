@@ -1,375 +1,41 @@
-"""
-Revit UI Element wrappers
+import os
+import sys
+import os.path as op
+import shutil
+import re
+import json
+import hashlib
+from datetime import datetime
 
-"""
+# pyrevit module imports
+import pyRevit.config as cfg
+import pyRevit.utils as prutils
+from pyRevit.exceptions import *
+from pyRevit.logger import logger
 
+# dot net imports
 import clr
-from collections import OrderedDict
-
-clr.AddReference('System')
 clr.AddReference('PresentationCore')
-from System import Uri
+clr.AddReference('RevitAPI')
+clr.AddReference('RevitAPIUI')
+clr.AddReference('System.Xml.Linq')
+from System import *
+from System.IO import *
+from System.Reflection import *
+from System.Reflection.Emit import *
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-
-clr.AddReference('AdWindows')
-from Autodesk.Windows import ComponentManager
-
-from Autodesk.Revit.UI import PushButtonData, PulldownButtonData
-from Autodesk.Revit.Exceptions import ApplicationException, ArgumentException
-
-from loader.logger import logger
-from loader.exceptions import PyRevitException
-from loader.config import SCRIPTS_DIR, SCRIPTS_DLL_BASENAME
-
-
-class Ribbon(object):
-    """
-    Ribbon Wrapper.
-    Usage:
-    ribbon = Ribbon()
-
-    Atributes:
-    :ribbon.tabs dict: {'tabname2': Tab(), 'tabname2': Tab(), ... }
-    :ribbon.revit_panel = UIFramework.RevitRibbonControl [AdWindows.dll]
-
-    Methods:
-    :ribbon.create():
-
-    Attributes:
-    :ribbon.commands: List of all nested commands in ribbon.
-    :ribbon.dll_path: File path fo assembly puttons will reference
-    :is_reloading: flag: ribbon is reloading (triggers purge and enable)
-
-    Internal Methods:
-    :ribbon._purge_tabs():
-    :ribbon._enable_all_tabs():
-
-    """
-
-    def __init__(self):
-        self.tabs = OrderedDict()
-        self.revit_ribbon = None
-        logger.debug('Session instantiated.')
-
-    def create(self, dll_path, is_reloading=False):
-        """ Creates UI Objects.
-        :param dll_path: Full path to scrips DLL
-        """
-        self.revit_ribbon = ComponentManager.Ribbon
-        self.dll_path = dll_path
-        self.is_reloading = is_reloading
-
-        logger.info('Creating UI...')
-        for tab in self.tabs.values():
-            tab.create()
-
-        if self.is_reloading:
-            logger.info('Cleaning Up Ribbon...')
-            self._purge_tabs()
-            self._enable_all_tabs()
-
-    def _enable_all_tabs(self):
-        "Enables all tabs in Ribbon().tabs"
-        logger.debug('Enabling all tabs')
-        for tab in self.tabs.values():
-            tab.enable()
-            logger.debug('Tab Enabled: {}'.format(tab.name))
-
-    def _purge_tabs(self):
-        """Disable all tabs that are not in session.
-        Description field is used to store a variable, allowing
-        loader to identify if tab was created by script"""
-        logger.debug('Purging unused tabs')
-        for revit_tab in self.revit_ribbon.Tabs:
-            if revit_tab.Description == SCRIPTS_DLL_BASENAME and \
-               revit_tab.Title not in self.tabs.keys():
-                    Tab.disable_unreferenced_tab(revit_tab)
-
-    @property
-    def commands(self):
-        """ List of Commands added to session.
-        This gathers all commands within all
-        Tabs, Panels, and Ribbon Items.
-        This is to create all the classes in the dll assembly
-        :returns: list of Commands objects. Used to create DLL from commands.
-        """
-        commands = []
-        logger.debug('Gathering all Session commands...')
-        for tab in self.tabs.values():
-            for panel in tab.panels.values():
-                logger.debug('Getting Commands from Panel: {}'.format(panel))
-                commands.extend(panel.commands)
-        return commands
-
-    def __repr__(self):
-        return '<RIBBON: tabs:{}>'.format(self.tabs.keys())
-
-
-class Tab(object):
-    """Revit UI Tab Object."""
-
-    identifier = '.tab'
-
-    def __init__(self, ribbon=None, tab_name=None):
-        """
-        Usage:
-        tab = Tab(ribbon, tab_name)
-        :ribbon Ribbon(): Ribbon object Tab belongs to.
-        :tab_name string: name of the tab. Revit uses "Title"
-
-        Atributes:
-        tab.panels = {'Panel1': Panel(), 'Panel2': Panel(), ... }
-        tab.revit_tab = UIFramework.RvtRibbonTab [AdWindows.dll]
-
-        Methods:
-        tab.create(): Creates tab in parent Ribbon
-        tab.enable(): sets Visible and Enable to True
-        tab.disable(): sets Visible and Enable to True
-
-        """
-        if not isinstance(ribbon, Ribbon) and not isinstance(tab_name, str):
-            raise PyRevitException("Wrong arg types to Tab(): {},{}".format(
-                                   type(ribbon), type(tab_name)))
-        self.ribbon = ribbon
-        self.name = tab_name
-
-        self.panels = OrderedDict()
-        self.revit_tab = None
-
-        logger.debug('Tab instantiated: {}'.format(self.name))
-
-    def create(self):
-        try:
-            __revit__.CreateRibbonTab(self.name)
-        except ArgumentException:
-            logger.debug('Tab already exists: {}'.format(self.name))
-        self._set_revit_tab()
-
-        for panel in self.panels.values():
-            panel.create()
-
-        if self.ribbon.is_reloading:
-            self._purge_panels()
-            self._enable_all_panels()
-
-    def _set_revit_tab(self):
-        "CreateRibbonTab does not return intance, so must be found manually."
-        for revit_tab in self.ribbon.revit_ribbon.Tabs:
-            if revit_tab.Title == self.name:
-                self.revit_tab = revit_tab
-                revit_tab.Description = SCRIPTS_DLL_BASENAME
-                break
-        else:
-            logger.warning('Failed to get Revit Tab Object: {}'.format(self.name))
-
-    def _enable_all_panels(self):
-        logger.debug('Enabling all Panels')
-        for panel in self.panels.values():
-            if panel.ribbon_buttons:
-                panel.enable()
-                logger.debug('Panel Re-Enabled: {}'.format(panel.name))
-
-    def _purge_panels(self):
-        "Hides empty panels"
-        revit_panels = __revit__.GetRibbonPanels(self.name)
-        for revit_panel in revit_panels:
-            buttons_in_panel = revit_panel.GetItems()
-            if revit_panel.Name not in self.panels.keys():
-                Panel.disable_unreferenced_panel(revit_panel)
-                logger.info('Panel Disabled: [{}] (No Folder)'.format(self.name))
-                continue
-            elif not any([True if Button.Visible else False for Button in buttons_in_panel]):
-                Panel.disable_unreferenced_panel(revit_panel)
-                logger.info('Panel Disabled: [{}] (No Buttons)'.format(self.name))
-
-    def enable(self):
-        self.revit_tab.IsVisible = True
-        self.revit_tab.IsEnabled = True
-
-    def disable(self):
-        self.revit_tab.IsVisible = False
-        self.revit_tab.IsEnabled = False
-
-    @staticmethod
-    def disable_unreferenced_tab(revit_tab):
-        "This Method used to apply disabled settings directly to revit Objects"
-        revit_tab.IsVisible = False
-        revit_tab.IsEnabled = False
-
-    def __repr__(self):
-        return '<TAB: {}>'.format(self.name)
-
-
-class Panel(object):
-    """
-    Panel Wrapper
-    Usage:
-    panel = Panel(tab, panel_name)
-    :tab Tab(): Tab object panel belongs to.
-    :panel_name string: name of the panel. Same as visible to user
-
-    Atributes:
-    :panel.name string: name of panel
-    :panel.revit_panel = Autodesk.Revit.UI.RibbonPanel Object
-
-    Methods:
-    """
-
-    identifier = '.panel'
-
-    def __init__(self, tab=None, panel_name=None):
-        """
-        :param tab: Tab panel will belong to.
-        :type tab: Tab()
-        :param panel_name: Name of the panel.
-        :type tab: string
-        """
-        if not isinstance(tab, Tab) and not isinstance(panel_name, str):
-            raise PyRevitException("Malformed Panel(): {},{}".format(
-                                   type(tab), type(panel_name)))
-
-        self.tab = tab
-        self.name = panel_name
-
-        self.ribbon_buttons = []
-        self.revit_panel = None
-        logger.debug('Panel instantiated: {}:{}'.format(tab.name, panel_name))
-
-    def create(self):
-        "Creates panel"
-        try:
-            #  Returns Revit Instance
-            self.revit_panel = __revit__.CreateRibbonPanel(self.tab.name,
-                                                           self.name)
-        except ArgumentException:
-            logger.debug('Panel already exists: {}'.format(self.name))
-            #  Because creation failed, manually acquire revit instance
-            self._set_revit_panel()
-
-        for ribbon_button in self.ribbon_buttons:
-            self._add_button(ribbon_button)
-
-        if self.tab.ribbon.is_reloading:
-            self._purge_buttons()
-
-    def _add_button(self, ribbon_button):
-        """ Adds button to panel.
-        :param ribbon_button: Data required to create RibbonButton
-        :param type: PushButtonData, or equivalent
-        Tries creating first, if it fails, will try to retrieve existing panel.
-        """
-
-        # PUSH BUTTON AND PULL DOWN AT ROOT RIBBON LEVEL #
-        dll_path = self.tab.ribbon.dll_path
-        try:
-            ribbon_button.revit_button = self.revit_panel.AddItem(ribbon_button.data(dll_path))
-        except ArgumentException as errmsg:
-            if 'already exists' in errmsg.Message:
-                logger.debug('Button already exists: {}'.format(ribbon_button.name))
-                ribbon_button.set_revit_button()
-                self._ensure_enabled(ribbon_button)
-            else:
-                raise Exception(errmsg.Message)
-        ribbon_button.set_icon()
-
-        # IF PULL DOWN BUTTON, ITERATE THROUGH CHILD PUSH BUTTONS #
-        if isinstance(ribbon_button, PullDown):
-            pulldown_button = ribbon_button
-            for push_button in pulldown_button.push_buttons:
-                try:
-                    push_button.revit_button = ribbon_button.revit_button.AddPushButton(push_button.data(dll_path))
-                except ArgumentException as errmsg:
-                    if 'already exists' in errmsg.Message:
-                        logger.debug('Pulldown Push already exists: {}'.format(ribbon_button.name))
-                        push_button.set_revit_button()
-                    else:
-                        raise Exception(errmsg.Message)
-                push_button.set_icon()
-
-    def _purge_buttons(self):
-        """ Hides a Button that is no longed in Ribbon """
-        logger.debug('Purging Unused Buttons from panel: {}'.format(self.name))
-        ribbon_buttons = self.ribbon_buttons
-        for revit_button in self.revit_panel.GetItems():
-            if revit_button.Name not in [button.name for button in ribbon_buttons]:
-                RibbonButton.disable_unreferenced_panel(revit_button)
-                logger.info('[{}] revit_button removed.'.format(revit_button.Name))
-
-            # Since it's iterating over revit object, this is a hacky method
-            # to check if it's a pulldown.
-            if hasattr(revit_button, 'AddPushButton'):
-                for revit_pushbutton in revit_button.GetItems():
-                    if revit_pushbutton.ClassName not in [cmd.class_name for cmd in self.commands]:
-                        RibbonButton.disable_unreferenced_panel(revit_pushbutton)
-                        logger.info('[{}] pullpush removed.'.format(revit_pushbutton.Name))
-
-
-    def _ensure_enabled(self, button):
-        """ If button exists, and it's being added, ensure it's enabled """
-        button.enable()
-        if isinstance(button, PullDown):
-            for pushbutton in button.push_buttons:
-                pushbutton.set_revit_button()
-                self._ensure_enabled(pushbutton)
-        else:
-            try:
-                button.revit_button.AssemblyName = self.tab.ribbon.dll_path
-                button.revit_button.ClassName = button.class_name
-            except Exception as errmsg:
-                logger.warning('Could not Reload: {}'.format(button.name))
-            logger.debug('Reactivated Button: {}'.format(button.name))
-
-    def _set_revit_panel(self):
-        """"Used to retrieve the panel object if it's already been created.
-        :returns: the actual RibbonPanel object from Revit.
-        """
-        if self.revit_panel:
-            return
-        else:
-            revit_panels = __revit__.GetRibbonPanels(self.tab.name)
-        for revit_panel in revit_panels:
-            if self.name == revit_panel.Name:
-                self.revit_panel = revit_panel
-                break
-        else:
-            logger.warning('Could not get panel: {}'.format(self.name))
-
-    def enable(self):
-        self.revit_panel.Visible = True
-        self.revit_panel.Enabled = True
-
-    def disable(self):
-        self.revit_panel.Visible = False
-        self.revit_panel.Enabled = False
-
-    @staticmethod
-    def disable_unreferenced_panel(revit_panel):
-        revit_panel.Visible = False
-        revit_panel.Enabled = False
-
-    @property
-    def commands(self):
-        """:returns: All commands in ribbon items"""
-        commands = []
-        for ribbon_button in self.ribbon_buttons:
-            if isinstance(ribbon_button, PushButton):
-                commands.append(ribbon_button.command)
-            if isinstance(ribbon_button, PullDown):
-                commands.extend(ribbon_button.commands)
-        return commands
-
-    def __repr__(self):
-        return '<PANEL: {}>'.format(self.name)
-
-
-class RibbonButton(object):
-    """Icon
-    May need to separate icon logic and PushButton Data to enable pickling.
-    """
-
-    def register_icon(self, filepath):
-        "Inherited from pyrevit loader. Not sure if all are needed"
-        uri = Uri(filepath)
+from System.Diagnostics import Process
+
+# revit api imports
+from Autodesk.Revit.UI import *
+from Autodesk.Revit.Attributes import *
+
+# utility classes
+class ButtonIcons:
+    def __init__(self, filedir, filename):
+        self.imagefile_dir = filedir
+        self.imagefile_name = filename
+        uri = Uri(op.join(filedir, filename))
         self.smallBitmap = BitmapImage()
         self.smallBitmap.BeginInit()
         self.smallBitmap.UriSource = uri
@@ -390,148 +56,330 @@ class RibbonButton(object):
         self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
         self.largeBitmap.EndInit()
 
-    def set_icon(self):
-        self.register_icon(self.png_path)
-        self.revit_button.Image = self.smallBitmap
-        self.revit_button.LargeImage = self.largeBitmap
+    def get_clean_dict(self):
+        d = self.__dict__.copy()
+        for key in ['smallBitmap', 'mediumBitmap', 'largeBitmap']:
+            if key in d.keys():
+                d.pop(key)
+        return d
 
-    def enable(self):
-        self.revit_button.Visible = True
-        self.revit_button.Enabled = True
 
-    def disable(self):
-        self.revit_button.Visible = False
-        self.revit_button.Enabled = False
+class ScriptFileContents:
+    def __init__(self, fileaddress):
+        self.filecontents = ''
+        with open(fileaddress, 'r') as f:
+            self.filecontents = f.readlines()
+
+    def extractparameter(self, param):
+        paramstringfound = False
+        paramstring = ''
+        paramfinder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+        paramfinderex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+        for thisline in self.filecontents:
+            if not paramstringfound:
+                values = paramfinder.findall(thisline)
+                if values:
+                    paramstring = values[0]
+                    paramstringfound = True
+                continue
+            elif paramstringfound:
+                values = paramfinderex.findall(thisline)
+                if values:
+                    paramstring += values[0]
+                    continue
+                break
+        return paramstring.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
+
+
+# ribbon item wrapper classes
+class ScriptTab:
+    def __init__(self, tname, tfolder):
+        self.tabName = tname.replace(cfg.TAB_POSTFIX, '')
+        self.tabDirName = tname
+        self.tabFolder = tfolder
+        self.scriptPanels = []
+        self.pyRevitUIPanels = {}
+        self.pyRevitUIButtons = {}
+        self.loaded_from_cache = False
+        self.tabHash = self.calculate_hash()
+
+    def adopt_panels(self, pyrevitscriptpanels):
+        already_adopted_panels = [x.panelName for x in self.scriptPanels]
+        for panel in pyrevitscriptpanels:
+            if panel.tabName == self.tabName and panel.panelName not in already_adopted_panels:
+                logger.debug('contains: {0}'.format(panel.panelName))
+                self.scriptPanels.append(panel)
+
+    def get_sorted_scriptpanels(self):
+        return sorted(self.scriptPanels, key=lambda x: x.panelOrder)
+
+    def hascommands(self):
+        for p in self.scriptPanels:
+            for g in p.scriptGroups:
+                if len(g.scriptCommands) > 0:
+                    return True
+        return False
+
+    def calculate_hash(self):
+        "Creates a unique hash # to represent state of directory."
+        # logger.info('Generating Hash of directory')
+        # search does not include png files:
+        #   if png files are added the parent folder mtime gets affected
+        #   cache only saves the png address and not the contents so they'll get loaded everytime
+        # todo: improve speed by pruning dir: dirs[:] = [d for d in dirs if d not in excludes]
+        #       see http://stackoverflow.com/a/5141710/2350244
+        pat = r'(\.panel)|(\.tab)'
+        patfile = r'(\.py)'
+        mtime_sum = 0
+        for root, dirs, files in os.walk(self.tabFolder):
+            if re.search(pat, root, flags=re.IGNORECASE):
+                mtime_sum += op.getmtime(root)
+                for filename in files:
+                    if re.search(patfile, filename, flags=re.IGNORECASE):
+                        modtime = op.getmtime(op.join(root, filename))
+                        mtime_sum += modtime
+        return hashlib.md5(str(mtime_sum)).hexdigest()
+
+    def get_clean_dict(self):
+        d = self.__dict__.copy()
+        for key in ['pyRevitUIPanels', 'pyRevitUIButtons']:
+            if key in d.keys():
+                d.pop(key)
+        return d
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptPanels" == k:
+                for cached_panel_dict in v:
+                    logger.debug('Cache: Loading script panel: {}'.format(cached_panel_dict['panelName']))
+                    self.scriptPanels.append(ScriptPanel('','','','',cached_panel_dict))
+            else:
+                self.__dict__[k] = v
+        self.loaded_from_cache = True
+
+
+class ScriptPanel:
+    def __init__(self, tabdir, fullpanelfilename, tabname, bundledpanel, cache = None):
+        self.panelOrder = 0
+        self.panelName = ''
+        self.scriptGroups = []
+        self.tabName = tabname
+        self.tabDir = tabdir
+        self.isBundled = bundledpanel
+
+        if not cache:
+            if self.isBundled:
+                self.panelName = fullpanelfilename.replace(cfg.PANEL_BUNDLE_POSTFIX, '')
+            else:
+                fname, fext = op.splitext(op.basename(fullpanelfilename))
+                if ScriptPanel.isdescriptorfile(fname, fext):
+                    namepieces = fname.rsplit('_')
+                    namepieceslength = len(namepieces)
+                    if namepieceslength == 4 or namepieceslength == 6:
+                        self.panelOrder, self.panelName = namepieces[0:2]
+                        self.panelOrder = int(self.panelOrder[:2])
+                        logger.debug('Panel found: Type: {0}'.format(self.panelName.ljust(20)))
+                    else:
+                        raise PyRevitUnknownFileNameFormatError()
+                else:
+                    raise PyRevitUnknownFileNameFormatError()
+        else:
+            self.load_from_cache(cache)
 
     @staticmethod
-    def disable_unreferenced_panel(revit_button):
-        revit_button.Visible = False
-        revit_button.Enabled = False
+    def isdescriptorfile(fname, fext):
+        return cfg.ICON_FILE_FORMAT == fext.lower() and fname[0:3].isdigit()
 
-    def set_revit_button(self):
-        """ Helper Function to set revit_ attribute of RibbonButoon or derived
-        to actual revit object. This is only used when updating.
-        If it's the first time loading, button is returned byt AddButton
-        """
-        # It's already Set, early return
-        if self.revit_button:
-            return self.revit_button
+    def adoptgroups(self, pyrevitscriptgroups):
+        already_adopted_groups = [x.groupName for x in self.scriptGroups]
+        for group in pyrevitscriptgroups:
+            if group.panelName == self.panelName and group.tabName == self.tabName \
+            and group.groupName not in already_adopted_groups:
+                logger.debug('contains: {0}'.format(group.groupName))
+                self.scriptGroups.append(group)
 
-        # It's a pull down, or a push button at root level of ribbon
-        if not getattr(self, 'pulldown_parent', None):
-            logger.debug('Setting revit_button for root: {}'.format(self.name))
-            for revit_button in self.panel.revit_panel.GetItems():
-                if revit_button.Name == self.name:
-                    self.revit_button = revit_button
-                    break
+    def get_sorted_scriptgroups(self):
+        return sorted(self.scriptGroups, key=lambda x: x.groupOrder)
+
+    def get_clean_dict(self):
+        return self.__dict__.copy()
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptGroups" == k:
+                for cached_group_dict in v:
+                    logger.debug('Cache: Loading script group: {}'.format(cached_group_dict['groupName']))
+                    self.scriptGroups.append(ScriptGroup('','','','',cached_group_dict))
             else:
-                logger.warning(revit_button)
-                logger.warning(self)
-                raise PyRevitException('Could Not Set Revit Button')
+                self.__dict__[k] = v
 
-        # It's a pushbutton inside a pulldown
-        else:
-            logger.debug('Setting revit_button for pullpush: {}'.format(self.name))
-            for revit_button in self.pulldown_parent.revit_button.GetItems():
-                if revit_button.Name == self.name:
-                    self.revit_button = revit_button
-                    break
+
+class ScriptGroup:
+    def __init__(self, filedir, f, tabname, bundledPanelName, cache = None):
+        self.scriptCommands= []
+        self.sourceDir = ''
+        self.sourceFile = ''
+        self.sourceFileName = ''
+        self.sourceFileExt = cfg.ICON_FILE_FORMAT
+        self.groupOrder = 0
+        self.panelName = bundledPanelName
+        self.groupType = None
+        self.groupName = ''
+        self.buttonIcons = None
+        self.assemblyName = None
+        self.assemblyClassName = None
+        self.assemblyLocation = None
+        self.tabName = tabname
+
+        if not cache:
+            fname, fext = op.splitext(op.basename(f))
+            if ScriptGroup.isdescriptorfile(fname, fext):
+                self.sourceDir = filedir
+                self.sourceFile = f
+                self.sourceFileName = fname
+                self.sourceFileExt = fext
+                namepieces = fname.rsplit('_')
+                namepieceslength = len(namepieces)
+                if namepieces[0].isdigit():
+                    if namepieceslength == 4 or namepieceslength == 6:
+                        self.groupOrder, self.panelName, self.groupType, self.groupName = namepieces[0:4]
+                        self.groupOrder = int(self.groupOrder[2:])
+                        logger.debug('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                                                                                                   self.groupName.ljust(20),
+                                                                                                   self.panelName))
+                        self.buttonIcons = ButtonIcons(filedir, f)
+                    elif namepieceslength == 3:
+                        self.groupOrder, self.groupType, self.groupName = namepieces
+                        self.groupOrder = int(self.groupOrder)
+                        logger.debug('Script group found: Type: {0} Name: {1} Parent Panel: {2}'.format(self.groupType.ljust(20),
+                                                                                                   self.groupName.ljust(20),
+                                                                                                   self.panelName))
+                        self.buttonIcons = ButtonIcons(filedir, f)
+
+                    # check to see if name has assembly information
+                    if namepieceslength == 6:
+                        self.assemblyName, self.assemblyClassName = namepieces[4:]
+                        try:
+                            self.assemblyName = ScriptGroup.findassembly(self.assemblyName).GetName().Name
+                            self.assemblyLocation = ScriptGroup.findassembly(self.assemblyName).Location
+                            logger.debug('Assembly.Class: {0}.{1}'.format(self.assemblyName, self.assemblyClassName))
+                        except PyRevitUnknownAssemblyError:
+                            raise
             else:
-                logger.warning(revit_button)
-                logger.warning('@' + str(revit_button.Name))
-                logger.warning(self.name)
-                raise PyRevitException('Could Not Set PushPull  Button')
-
-
-class PushButton(RibbonButton):
-    """PushButton Wrapper.
-    Usage:
-    pushbutton = PushButton(panel=Panel(), command=Command(),
-                            png_path=png_path,
-                            [pulldown_parent=PullDown()]
-                            )
-    """
-    identifier = 'pushbutton'
-
-    def __init__(self, panel=None, command=None,
-                 png_path=None, pulldown_parent=None):
-        if not all([panel, command, png_path]):
-            raise PyRevitException('Malformed PushButton')
-        self.panel = panel
-        self.command = command
-        self.class_name = command.class_name
-        self.png_path = png_path
-        self.name = command.name
-        self.pulldown_parent = pulldown_parent
-        # self.register_icon(png_path)
-
-        self.revit_button = None
-        logger.debug('PushButton instantiated: {}'.format(self.name))
-
-    def data(self, dll_path):
-        """ API Constructor:
-        public PushButtonData(string name ,string text, string assemblyName,
-                              string className)"""
-        return PushButtonData(self.name, self.name, dll_path,
-                              self.class_name)
-
-    def is_in_pulldown(self):
-        return bool(self.pulldown_parent)
-
-    def __repr__(self):
-        if not self.is_in_pulldown:
-            return '<PUSHBUTTON_CHILD: {}-{}>'.format(self.pulldown_parent,
-                                                      self.name)
+                raise PyRevitUnknownFileNameFormatError()
         else:
-            return '<PUSHBUTTON: {}>'.format(self.name)
+            self.load_from_cache(cache)
+
+    def adoptcommands(self, pyrevitscriptcommands, MASTER_TAB_NAME):
+        already_adopted_commands = [x.fileName for x in self.scriptCommands]
+        for cmd in pyrevitscriptcommands:
+            if cmd.scriptGroupName == self.groupName \
+            and (cmd.tabName == self.tabName or cmd.tabName == MASTER_TAB_NAME) \
+            and cmd.fileName not in already_adopted_commands:
+                    logger.debug('contains: {0}'.format(cmd.fileName))
+                    self.scriptCommands.append(cmd)
+
+    def islinkbutton(self):
+        return self.assemblyName is not None
+
+    @staticmethod
+    def isdescriptorfile(fname, fext):
+        return cfg.ICON_FILE_FORMAT == fext.lower() and fname[0:2].isdigit()
+
+    @staticmethod
+    def findassembly(assemblyname):
+        for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
+            if assemblyname in loadedAssembly.FullName:
+                return loadedAssembly
+        raise PyRevitUnknownAssemblyError()
+
+    def get_clean_dict(self):
+        return self.__dict__.copy()
+
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "scriptCommands" == k:
+                for cached_cmd_dict in v:
+                    logger.debug('Cache: Loading script command: {}'.format(cached_cmd_dict['cmdName']))
+                    self.scriptCommands.append(ScriptCommand('','','',cached_cmd_dict))
+            elif "buttonIcons" == k:
+                if v:
+                    self.buttonIcons = ButtonIcons(v["imagefile_dir"], v["imagefile_name"])
+            else:
+                self.__dict__[k] = v
 
 
-class PullDown(RibbonButton):
-    """PushButton Wrapper.
-    """
-    identifier = 'pulldownbutton'
+class ScriptCommand:
+    def __init__(self, filedir, f, tabname, cache = None):
+        self.filePath = ''
+        self.fileName = ''
+        self.tooltip = ''
+        self.cmdName = ''
+        self.scriptGroupName = ''
+        self.className = ''
+        self.iconFileName = ''
+        self.buttonIcons = None
+        self.tabName = tabname
+        filecontents = ''
 
-    def __init__(self, panel=None, cmd_name=None, png_path=None):
-        self.panel = panel
-        self.png_path = png_path
-        # self.register_icon(png_path)
-        self.name = cmd_name
-        self.push_buttons = []  # Called Manually
+        if not cache:
+            fname, fext = op.splitext(op.basename(f))
 
-        self.revit_button = None
-        logger.debug('PullDown instantiated: {}'.format(self.name))
+            # custom name adjustments
+            if cfg.PYREVIT_INIT_SCRIPT_NAME.lower() in fname.lower() and tabname == cfg.MASTER_TAB_NAME:
+                fname = cfg.RELOAD_SCRIPTS_OVERRIDE_GROUP_NAME + '_' + cfg.RELOAD_SCRIPTS_OVERRIDE_SCRIPT_NAME
 
-    def data(self, dll_path):
-        return PulldownButtonData(self.name, self.name)
+            if not fname.startswith('_') and '.py' == fext.lower():
+                self.filePath = filedir
+                self.fileName = f
 
-    @property
-    def commands(self):
-        "Returns all commands embeded within pull down"
-        commands = []
-        for pushbutton in self.push_buttons:
-            commands.append(pushbutton.command)
-        return commands
+                namepieces = fname.rsplit('_')
+                namepieceslength = len(namepieces)
+                if namepieceslength == 2:
+                    self.scriptGroupName, self.cmdName = namepieces
+                    self.className = tabname + self.scriptGroupName + self.cmdName
+                    for char, repl in cfg.SPECIAL_CHARS.items():
+                        self.className = self.className.replace(char, repl)
+                    logger.debug('Script found: {0} Group: {1} CommandName: {2}'.format(f.ljust(50),
+                                                                                   self.scriptGroupName.ljust(20),
+                                                                                   self.cmdName))
+                    if op.exists(op.join(filedir, fname + cfg.ICON_FILE_FORMAT)):
+                        self.iconFileName = fname + cfg.ICON_FILE_FORMAT
+                        self.buttonIcons = ButtonIcons(filedir, self.iconFileName)
+                    else:
+                        self.iconFileName = None
+                        self.buttonIcons = None
+                else:
+                    raise PyRevitUnknownFileNameFormatError()
 
-    def __repr__(self):
-        return '<PULLDOWN: {}>'.format(self.name)
+                scriptContents = ScriptFileContents(self.getfullscriptaddress())
+                docstring = scriptContents.extractparameter(cfg.TOOLTIP_PARAM)
+                author = scriptContents.extractparameter(cfg.AUTHOR_PARAMR)
+                if docstring is not None:
+                    self.tooltip = '{0}'.format(docstring)
+                else:
+                    self.tooltip = ''
+                self.tooltip += '\n\nScript Name:\n{0}'.format(fname + ' ' + fext.lower())
+                if author is not None and author != '':
+                    self.tooltip += '\n\nAuthor:\n{0}'.format(author)
+            else:
+                raise PyRevitUnknownFileNameFormatError()
+        else:
+            self.load_from_cache(cache)
 
+    def getfullscriptaddress(self):
+        return op.join(self.filePath, self.fileName)
 
-class Command(object):
-    """Revit Command Object. Could be any RibbonButton Type
-    :param name: Internal Revit name
-    :type name: string
-    :param text: User Visible Component name
-    :type text: string
-    :param filepath: file path to python script the command will call
-    :type filepath: string
-    """
+    def getscriptbasename(self):
+        return self.scriptGroupName + '_' + self.cmdName
 
-    def __init__(self, panel=None, cmd_name=None, py_filepath=None):
-        self.name = cmd_name
-        self.py_filepath = py_filepath
-        self.panel = panel
-        self.class_name = '{}{}{}'.format(panel.tab.name, panel.name, self.name)
-        logger.debug('Command instantiated: {}'.format(self.name))
+    def get_clean_dict(self):
+        return self.__dict__.copy()
 
-    def __repr__(self):
-        return '<CMD: {}>'.format(self.class_name)
+    def load_from_cache(self, cached_dict):
+        for k,v in cached_dict.items():
+            if "buttonIcons" == k:
+                if v:
+                    self.buttonIcons = ButtonIcons(v["imagefile_dir"], v["imagefile_name"])
+            else:
+                self.__dict__[k] = v

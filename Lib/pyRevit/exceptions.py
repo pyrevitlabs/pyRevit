@@ -10,6 +10,10 @@ class PyRevitUnknownFileNameFormatError(PyRevitException):
     pass
 
 
+class PyRevitLoaderNotFoundError(PyRevitException):
+    pass
+
+
 # Cache specific exceptions
 class PyRevitCacheError(PyRevitException):
     pass

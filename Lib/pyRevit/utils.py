@@ -1,31 +1,37 @@
 import os
-import sys
 import os.path as op
 
-def find_loader_directory():
-    """Return the __init__ full directory address"""
-    folder = op.dirname(op.dirname(op.dirname(__file__)))  # three steps back for /__init__/Lib/pyRevit
-    return folder
+def assert_folder(folder):
+    if not op.exists(folder):
+        try:
+            os.makedirs(folder)
+        except:
+            return False
+    return True
 
 
-def find_home_directory():
-    """Return the pyRevit home directory address. This is the
-       directory that contains the portable git, __init__, pyRevit, and other packages"""
-    folder = op.dirname(find_loader_directory())
-    return folder
 
 
-def find_user_temp_directory():
-    """Return the user temp directory %temp%"""
-    return os.getenv('Temp')
 
 
-def get_username():
-    """Return the username from Revit API (Application.Username)"""
-    uname = __revit__.Application.Username
-    uname = uname.split('@')[0]         # if username is email
-    uname = uname.replace('.','')       # removing dots since username will be used in file naming
-    return uname
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # import pickle
