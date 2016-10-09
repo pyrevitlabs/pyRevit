@@ -9,7 +9,8 @@ import pyRevit.utils as prutils
 from pyRevit.uielements import *
 from pyRevit.cache import PyRevitCache
 
-class PyRevitCommandsTree():
+
+class PyRevitCommandsTree(object):
     def __init__(self):
         self.pyRevitScriptPanels = []
         self.pyRevitScriptGroups = []

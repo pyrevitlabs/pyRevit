@@ -1,5 +1,6 @@
 import time
 
+
 class Timer:
     """Timer class using python native time module."""
     def __init__(self):

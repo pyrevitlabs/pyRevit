@@ -1,4 +1,4 @@
-__window__.Close()
+# __window__.Close()
 
 import sys
 import os.path as op

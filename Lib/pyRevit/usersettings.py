@@ -48,7 +48,7 @@ class _pyrevit_user_settings:
                 logger.error("Can not access existing config file. Skipping saving config file.")
         # else if the config file is not master config then create a user config and fill with default
         elif not configfileismaster:
-            if self.assert_config_folder(cfg.USER_SETTINGS_DIR):
+            if prutils.assert_folder(cfg.USER_SETTINGS_DIR):
                 try:
                     with open(configfile,'w') as udfile:
                         cparser = settingsParser.ConfigParser()
@@ -67,8 +67,4 @@ class _pyrevit_user_settings:
                 logger.error('Can not create config file folder under: {}'.format(cfg.USER_SETTINGS_DIR))
                 logger.error('Skipping saving config file.')
 
-    def assert_config_folder(self, folder):
-        return prutils.assert_folder(folder)
-
-
-usersettings = _pyrevit_user_settings()
+user_settings = _pyrevit_user_settings()

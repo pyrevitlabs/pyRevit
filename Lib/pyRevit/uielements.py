@@ -320,7 +320,7 @@ class ScriptCommand:
         self.iconFileName = ''
         self.buttonIcons = None
         self.tabName = tabname
-        filecontents = ''
+        self.search_paths = self.filePath
 
         if not cache:
             fname, fext = op.splitext(op.basename(f))
@@ -352,9 +352,9 @@ class ScriptCommand:
                 else:
                     raise PyRevitUnknownFileNameFormatError()
 
-                scriptContents = ScriptFileContents(self.getfullscriptaddress())
-                docstring = scriptContents.extractparameter(cfg.TOOLTIP_PARAM)
-                author = scriptContents.extractparameter(cfg.AUTHOR_PARAMR)
+                script_contents = ScriptFileContents(self.getfullscriptaddress())
+                docstring = script_contents.extractparameter(cfg.TOOLTIP_PARAM)
+                author = script_contents.extractparameter(cfg.AUTHOR_PARAM)
                 if docstring is not None:
                     self.tooltip = '{0}'.format(docstring)
                 else:

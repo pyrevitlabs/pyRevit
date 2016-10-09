@@ -12,7 +12,6 @@ import pyRevit.config as cfg
 import pyRevit.utils as prutils
 from pyRevit.exceptions import *
 from pyRevit.logger import logger
-from pyRevit import pyRevitVersion
 from pyRevit.uielements import *
 
 # dot net imports
@@ -89,4 +88,4 @@ class PyRevitCache:
 
     @staticmethod
     def get_version():
-        return pyRevitVersion.full_version_as_str()
+        return cfg.PyRevitVersion.full_version_as_str()
