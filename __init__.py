@@ -1,4 +1,4 @@
-# __window__.Close()
+__window__.Close()
 
 import sys
 import os.path as op
@@ -17,7 +17,7 @@ from pyRevit.ui import PyRevitUI
 
 __doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
 
-# __window__.Width = 1100
+#__window__.Width = 1100
 
 t = Timer()
 logger.debug('Running on: {0}'.format(sys.version))
