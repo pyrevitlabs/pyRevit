@@ -1,3 +1,5 @@
+__window__.Close()
+
 import sys
 import os.path as op
 
@@ -6,37 +8,16 @@ sys.path.append(op.join(op.dirname(__file__), 'Lib'))
 
 # pyrevit module imports
 import pyRevit.config as cfg
-import pyRevit.utils as prutils
-from pyRevit.exceptions import *
 from pyRevit.logger import logger
-from pyRevit import pyRevitVersion
 from pyRevit.timer import Timer
 
-from pyRevit.usersettings import usersettings
 from pyRevit.assemblies import PyRevitCommandsAssembly
 from pyRevit.db import PyRevitCommandsTree
 from pyRevit.ui import PyRevitUI
 
-# dot net imports
-import clr
-clr.AddReference('PresentationCore')
-clr.AddReference('RevitAPI')
-clr.AddReference('RevitAPIUI')
-clr.AddReference('System.Xml.Linq')
-from System import *
-from System.IO import *
-from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-from System.Diagnostics import Process
-
-# revit api imports
-from Autodesk.Revit.UI import *
-from Autodesk.Revit.Attributes import *
-
-
 __doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
 
-
-__window__.Width = 1100
+# __window__.Width = 1100
 
 t = Timer()
 logger.debug('Running on: {0}'.format(sys.version))

@@ -45,7 +45,7 @@ class LoggerWrapper():
 
         logger = logging.getLogger('pyrevitloader')
         logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
         handler_title = logging.StreamHandler(sys.stdout)
         formatter_title = logging.Formatter("%(message)s")
