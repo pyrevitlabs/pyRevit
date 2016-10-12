@@ -38,6 +38,25 @@ class GitRepository(object):
         else:
             raise GitError(self.repo_dir, 'Error finding branch.')
 
+    def fetch_from_origin(self):
+        try:
+            utils.run_process(r'{0} fetch --all'.format(cfg.GIT_EXE), cwd=self.repo_dir)
+        except Exception as err:
+            raise GitError(self.repo_dir, 'Error fetching from origin.')
+
+    def git_hard_reset_to_origin(self):
+        # Fetch changes
+        utils.run_process(r'{0} fetch --all'.format(cfg.GIT_EXE), cwd=self.repo_dir)
+        # Could get results and return: output.communicate()[0]; output.returncode
+
+        # Hard reset current branch to origin/branch
+        try:
+            utils.run_process(r'{0} reset --hard origin/{1}'.format(cfg.GIT_EXE, self.find_current_branch()), cwd=self.repo_dir)
+            # Could get results and return: output.communicate()[0]; output.returncode
+        except GitError as err:
+            logger.debug(err.msg)
+            raise err
+
 
 def get_repo(repo_dir):
     """Public function to create an instance of GitRepository for provided folder.
