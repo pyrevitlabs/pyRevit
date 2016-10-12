@@ -12,6 +12,7 @@ INIT_SETTINGS_SECTION_NAME = 'init'
 GLOBAL_SETTINGS_SECTION_NAME = 'global'
 LOG_SCRIPT_USAGE_KEY = "logScriptUsage"
 ARCHIVE_LOG_FOLDER_KEY = "archivelogfolder"
+ARCHIVE_LOG_FOLDER_DEFAULT = 'c:\\'
 VERBOSE_KEY = "verbose"
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
@@ -19,7 +20,7 @@ KEY_VALUE_FALSE = "false"
 class _pyrevit_user_settings:
     def __init__(self):
         self.logScriptUsage = False
-        self.archivelogfolder = False
+        self.archivelogfolder = ARCHIVE_LOG_FOLDER_DEFAULT
         
         self.load_settings()
 
