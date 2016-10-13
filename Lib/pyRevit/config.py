@@ -131,3 +131,5 @@ REVIT_VERSION = _get_host_revit_version()
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 
 GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
+GIT_SUB_FOLDER = '.git'
+GIT_LIB = 'LibGit2Sharp'
