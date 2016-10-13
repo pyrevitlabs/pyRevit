@@ -2,6 +2,7 @@ from pyRevit.uielements import *
 from pyRevit.cache import PyRevitCache
 
 
+# todo rename db to something more appropriate. This is the module that will be imported in scripts to access script data
 class PyRevitCommandsTree(object):
     def __init__(self):
         self.pyRevitScriptPanels = []
@@ -103,25 +104,39 @@ class PyRevitCommandsTree(object):
                         logger.debug('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
                         continue
 
+    # todo create new ui object for pyRevit_Addin and this function should live there
     def _find_scripttabs(self, search_dir):
         logger.debug('Searching for tabs, panels, groups, and scripts...')
+        # searching subdirs for .tab directories.
         for dirname in os.listdir(search_dir):
             full_path = op.join(search_dir, dirname)
+            # dir is a dir, its name does not start with . or _, and ends with .tab
             dir_is_tab = (op.isdir(full_path)
                           and not dirname.startswith(('.', '_'))
                           and dirname.endswith(cfg.TAB_POSTFIX))
             if dir_is_tab:
                 logger.debug('Searching for scripts under: {0}'.format(full_path))
+                # creating a dict of tab name:tab object. Contents of any other tab folder that matches an already
+                # discovered tab, will be added to the discovered tab to avoid duplication. This feature will also
+                # allow the extension developers to add panels and scripts to other pyRevit tabs without modifying
+                # their associated repositories.
                 discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
+                # Creates a tab if tab is not already created
                 if dirname not in discovered_tabs_names.keys():
+                    # appends tab address to sys.path, to allow imports for SmartButtons
                     sys.path.append(full_path)
+                    # creating tab object.
                     script_tab = ScriptTab(dirname, full_path)
+                    # todo: section below (cache test + panel search) should be inside the tab object
                     try:
+                        # asking cache to load the tab
                         self.sessionCache.load_tab(script_tab)
                     except PyRevitCacheError:
+                        # if tab is not caches lets search the tab for panels
                         self._find_scriptpanels(full_path, script_tab.tabName)
                         script_tab.adopt_panels(self.pyRevitScriptPanels)
                     logger.debug('Tab found: {0}'.format(script_tab.tabName))
+                    # add to list of discovered tab names.
                     self.pyRevitScriptTabs.append(script_tab)
                 else:
                     sys.path.append(full_path)

@@ -24,6 +24,7 @@ if user_settings.verbose:
     # set level to debug if user setting VERBOSE if active
     logger.set_level(logging.DEBUG)
     # and make the output window larger
+    # todo move window operations to a module
     __window__.Width = 1100
 else:
     # load silently
@@ -32,10 +33,12 @@ else:
 logger.debug('Running on: {0}'.format(sys.version))
 logger.debug('Home Directory is: {0}'.format(cfg.HOME_DIR))
 
+# todo manage exceptions
 pyrevit_assembly = PyRevitCommandsAssembly()                                # initiate assembly
 db_cmd_tree = PyRevitCommandsTree()                                         # find scripts and populate db
-dll_location = pyrevit_assembly.create_dll_assembly(db_cmd_tree)            # create dll for given db
-pyrevit_ui = PyRevitUI(db_cmd_tree, dll_location, pyrevit_assembly.name)    # initiate ui
+dll_location = pyrevit_assembly.create_dll_assembly(db_cmd_tree)            # create dll for given db of scripts
+# todo send the assembly. dllname should be an assembly property
+pyrevit_ui = PyRevitUI(db_cmd_tree, dll_location, pyrevit_assembly.name)    # initiate ui for given dll and scripts
 
 if pyrevit_assembly.is_pyrevit_already_loaded():                            # if user is reloading:
     pyrevit_ui.update_ui()                                                     # update ui for given db
