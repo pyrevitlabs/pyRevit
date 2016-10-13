@@ -12,60 +12,69 @@ INIT_SETTINGS_SECTION_NAME = 'init'
 GLOBAL_SETTINGS_SECTION_NAME = 'global'
 LOG_SCRIPT_USAGE_KEY = "logScriptUsage"
 ARCHIVE_LOG_FOLDER_KEY = "archivelogfolder"
-ARCHIVE_LOG_FOLDER_DEFAULT = 'c:\\'
+ARCHIVE_LOG_FOLDER_DEFAULT = 'C:\\'
 VERBOSE_KEY = "verbose"
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
 class _pyrevit_user_settings:
     def __init__(self):
+        self.verbose = False
         self.logScriptUsage = False
         self.archivelogfolder = ARCHIVE_LOG_FOLDER_DEFAULT
-        
+
         self.load_settings()
 
     def load_settings(self):
         """Loads settings from settings file."""
-        # find the user config file
-        configfile = op.join(cfg.USER_SETTINGS_DIR, cfg.USER_DEFAULT_SETTINGS_FILENAME)
         configfileismaster = False
+        read_successful = False
 
-        # if a config file exits along side the script loader, this would be used instead.
-        if op.exists(op.join(cfg.LOADER_DIR, cfg.PYREVIT_INIT_SCRIPT_NAME + ".ini")):
-            configfile = op.join(cfg.LOADER_DIR, cfg.PYREVIT_INIT_SCRIPT_NAME + ".ini")
-            configfileismaster = True
+        # prepare user config file address
+        userconfigfile = op.join(cfg.USER_SETTINGS_DIR, cfg.USER_DEFAULT_SETTINGS_FILENAME)
 
-        # if the config file exists then read values and apply
-        if op.exists(configfile):        # read file and reapply settings
+        # prepare admin config file address
+        adminconfigfile = op.join(cfg.LOADER_DIR, cfg.ADMIN_DEFAULT_SETTINGS_FILENAME)
+
+        # try opening and reading config file in order.
+        for configfile in [userconfigfile, adminconfigfile]:
             try:
                 with open(configfile,'r') as udfile:
-                    cparser = settingsParser.ConfigParser()          
+                    cparser = settingsParser.ConfigParser()
                     cparser.readfp(udfile)
                     logScriptUsageConfigValue = cparser.get(INIT_SETTINGS_SECTION_NAME, LOG_SCRIPT_USAGE_KEY)
                     self.logScriptUsage = True if logScriptUsageConfigValue.lower() == KEY_VALUE_TRUE else False
                     self.archivelogfolder = cparser.get(INIT_SETTINGS_SECTION_NAME, ARCHIVE_LOG_FOLDER_KEY)
-                    verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME, VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
+                    self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME, VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
+                    # set to true and break if read successful.
+                    logger.debug("Successfully read configfile: {}".format(configfile))
+                    read_successful = True
+                    break
             except:
-                logger.error("Can not access existing config file. Skipping saving config file.")
-        # else if the config file is not master config then create a user config and fill with default
-        elif not configfileismaster:
+                logger.debug("Can not access config file: {}".format(configfile))
+                continue
+
+        # if can not read any settings file then create a user config and fill with default
+        if not read_successful:
             if prutils.assert_folder(cfg.USER_SETTINGS_DIR):
                 try:
-                    with open(configfile,'w') as udfile:
+                    with open(userconfigfile,'w') as udfile:
                         cparser = settingsParser.ConfigParser()
                         cparser.add_section(GLOBAL_SETTINGS_SECTION_NAME)
-                        cparser.set(GLOBAL_SETTINGS_SECTION_NAME, VERBOSE_KEY, KEY_VALUE_TRUE if verbose else KEY_VALUE_FALSE)
+                        cparser.set(GLOBAL_SETTINGS_SECTION_NAME, VERBOSE_KEY, KEY_VALUE_TRUE if self.verbose else KEY_VALUE_FALSE)
                         cparser.add_section(INIT_SETTINGS_SECTION_NAME)
-                        cparser.set(INIT_SETTINGS_SECTION_NAME, LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
+                        cparser.set(INIT_SETTINGS_SECTION_NAME, LOG_SCRIPT_USAGE_KEY,
+                                    KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
                         cparser.set(INIT_SETTINGS_SECTION_NAME, ARCHIVE_LOG_FOLDER_KEY, self.archivelogfolder)
                         cparser.write(udfile)
                         logger.debug('Config file saved under with default settings.')
                         logger.debug('Config file saved under: {}'.format(cfg.USER_SETTINGS_DIR))
                 except:
-                    logger.error('Can not create config file under: {}'.format(cfg.USER_SETTINGS_DIR))
-                    logger.error('Skipping saving config file.')
+                    logger.debug('Can not create config file under: {}'.format(cfg.USER_SETTINGS_DIR))
+                    logger.debug('Skipping saving config file.')
             else:
-                logger.error('Can not create config file folder under: {}'.format(cfg.USER_SETTINGS_DIR))
-                logger.error('Skipping saving config file.')
+                logger.debug('Can not create config file folder under: {}'.format(cfg.USER_SETTINGS_DIR))
+                logger.debug('Skipping saving config file.')
+                logger.debug('Continuing with default hard-coded settings.')
 
 user_settings = _pyrevit_user_settings()
