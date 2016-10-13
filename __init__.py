@@ -8,7 +8,7 @@ sys.path.append(op.join(op.dirname(__file__), 'Lib'))
 # now pyrevit module imports
 import pyRevit.config as cfg
 from pyRevit.logger import logger
-from pyRevit.timer import Timer
+from pyRevit.utils import Timer
 
 from pyRevit.usersettings import user_settings
 from pyRevit.assemblies import PyRevitCommandsAssembly
@@ -22,7 +22,7 @@ t = Timer()
 
 if user_settings.verbose:
     # set level to debug if user setting VERBOSE if active
-    logger.setLevel(logging.DEBUG)
+    logger.set_level(logging.DEBUG)
     # and make the output window larger
     __window__.Width = 1100
 else:
@@ -34,13 +34,12 @@ logger.debug('Home Directory is: {0}'.format(cfg.HOME_DIR))
 
 pyrevit_assembly = PyRevitCommandsAssembly()                                # initiate assembly
 db_cmd_tree = PyRevitCommandsTree()                                         # find scripts and populate db
-pyrevit_ui = PyRevitUI()                                                    # initiate ui
-
 dll_location = pyrevit_assembly.create_dll_assembly(db_cmd_tree)            # create dll for given db
+pyrevit_ui = PyRevitUI(db_cmd_tree, dll_location, pyrevit_assembly.name)    # initiate ui
 
 if pyrevit_assembly.is_pyrevit_already_loaded():                            # if user is reloading:
-    pyrevit_ui.update(db_cmd_tree, dll_location, pyrevit_assembly.name)     #   update ui for given db
+    pyrevit_ui.update_ui()                                                     # update ui for given db
 else:                                                                       # else:
-    pyrevit_ui.create(db_cmd_tree, dll_location, pyrevit_assembly.name)     #   create ui for given db
+    pyrevit_ui.create_ui()                                                     # create ui for given db
 
 logger.debug('Load time: {}'.format(t.get_time_hhmmss()))

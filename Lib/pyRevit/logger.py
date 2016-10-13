@@ -1,7 +1,8 @@
 import logging
 import sys
 
-class LoggerWrapper():
+
+class LoggerWrapper:
     """ Logger Wrapper to extend loggers functionality.
     Usage:
      from logger import LoggerWrapper
@@ -44,7 +45,7 @@ class LoggerWrapper():
 
         logger = logging.getLogger('pyrevitloader')
         logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+        logger.set_level(logging.INFO)
 
         handler_title = logging.StreamHandler(sys.stdout)
         formatter_title = logging.Formatter("%(message)s")
@@ -52,7 +53,7 @@ class LoggerWrapper():
 
         logger_title = logging.getLogger('pyrevitloader_title')
         logger_title.addHandler(handler_title)
-        logger_title.setLevel(logging.INFO)
+        logger_title.set_level(logging.INFO)
 
         self._logger = logger
         self._logger_title = logger_title
@@ -60,9 +61,9 @@ class LoggerWrapper():
 
     def verbose(self, verbose):
         if verbose:
-            self._logger.setLevel(logging.DEBUG)
+            self._logger.set_level(logging.DEBUG)
         else:
-            self._logger.setLevel(logging.INFO)
+            self._logger.set_level(logging.INFO)
 
     def title(self, msg):
         print('='*100)
@@ -85,7 +86,7 @@ class LoggerWrapper():
     def critical(self, msg):
         self._logger.critical(msg)
 
-    def setLevel(self, level):
-        self._logger.setLevel(level)
+    def set_level(self, level):
+        self._logger.set_level(level)
 
 logger = LoggerWrapper()

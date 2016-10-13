@@ -1,15 +1,8 @@
-import os
-import sys
-import os.path as op
-import shutil
 import re
-import json
 import hashlib
-from datetime import datetime
 
 # pyrevit module imports
 import pyRevit.config as cfg
-import pyRevit.utils as prutils
 from pyRevit.exceptions import *
 from pyRevit.logger import logger
 
@@ -29,6 +22,7 @@ from System.Diagnostics import Process
 # revit api imports
 from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
+
 
 # utility classes
 class ButtonIcons:
@@ -121,7 +115,7 @@ class ScriptTab:
         return False
 
     def calculate_hash(self):
-        "Creates a unique hash # to represent state of directory."
+        """Creates a unique hash # to represent state of directory."""
         # logger.info('Generating Hash of directory')
         # search does not include png files:
         #   if png files are added the parent folder mtime gets affected
@@ -148,18 +142,18 @@ class ScriptTab:
         return d
 
     def load_from_cache(self, cached_dict):
-        for k,v in cached_dict.items():
+        for k, v in cached_dict.items():
             if "scriptPanels" == k:
                 for cached_panel_dict in v:
                     logger.debug('Cache: Loading script panel: {}'.format(cached_panel_dict['panelName']))
-                    self.scriptPanels.append(ScriptPanel('','','','',cached_panel_dict))
+                    self.scriptPanels.append(ScriptPanel('', '', '', '', cached_panel_dict))
             else:
                 self.__dict__[k] = v
         self.loaded_from_cache = True
 
 
 class ScriptPanel:
-    def __init__(self, tabdir, fullpanelfilename, tabname, bundledpanel, cache = None):
+    def __init__(self, tabdir, fullpanelfilename, tabname, bundledpanel, cache=None):
         self.panelOrder = 0
         self.panelName = ''
         self.scriptGroups = []
@@ -193,8 +187,9 @@ class ScriptPanel:
     def adoptgroups(self, pyrevitscriptgroups):
         already_adopted_groups = [x.groupName for x in self.scriptGroups]
         for group in pyrevitscriptgroups:
-            if group.panelName == self.panelName and group.tabName == self.tabName \
-            and group.groupName not in already_adopted_groups:
+            if group.panelName == self.panelName \
+                    and group.tabName == self.tabName \
+                    and group.groupName not in already_adopted_groups:
                 logger.debug('contains: {0}'.format(group.groupName))
                 self.scriptGroups.append(group)
 
@@ -205,11 +200,11 @@ class ScriptPanel:
         return self.__dict__.copy()
 
     def load_from_cache(self, cached_dict):
-        for k,v in cached_dict.items():
+        for k, v in cached_dict.items():
             if "scriptGroups" == k:
                 for cached_group_dict in v:
                     logger.debug('Cache: Loading script group: {}'.format(cached_group_dict['groupName']))
-                    self.scriptGroups.append(ScriptGroup('','','','',cached_group_dict))
+                    self.scriptGroups.append(ScriptGroup('', '', '', '', cached_group_dict))
             else:
                 self.__dict__[k] = v
 

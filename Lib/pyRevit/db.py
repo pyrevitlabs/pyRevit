@@ -1,11 +1,3 @@
-import os
-import os.path as op
-
-from pyRevit.logger import logger
-from pyRevit.exceptions import *
-import pyRevit.config as cfg
-import pyRevit.utils as prutils
-
 from pyRevit.uielements import *
 from pyRevit.cache import PyRevitCache
 
@@ -17,23 +9,20 @@ class PyRevitCommandsTree(object):
         self.pyRevitScriptCommands = []
         self.pyRevitScriptTabs = []
 
-        self.sessionCache = self._get_prev_session_cache()
-        
+        self.sessionCache = PyRevitCache()
+
         self._find_scripttabs(cfg.HOME_DIR)
         self._create_reload_button(cfg.LOADER_DIR)
 
         self.sessionCache.update_cache(self.pyRevitScriptTabs)
 
-    def _get_prev_session_cache(self):
-        return PyRevitCache()
-
-    def _create_reload_button(self, loaderDir):
+    def _create_reload_button(self, loader_dir):
         logger.debug('Creating "Reload Scripts" button...')
-        for fname in os.listdir(loaderDir):
-            fulltabpath = op.join(loaderDir, fname)
+        for fname in os.listdir(loader_dir):
+            fulltabpath = op.join(loader_dir, fname)
             if not op.isdir(fulltabpath) and cfg.PYREVIT_INIT_SCRIPT_NAME in fname:
                 try:
-                    cmd = ScriptCommand(loaderDir, fname, cfg.MASTER_TAB_NAME)
+                    cmd = ScriptCommand(loader_dir, fname, cfg.MASTER_TAB_NAME)
                     self.pyRevitScriptCommands.append(cmd)
                     logger.debug('Reload button added.')
                 except:
@@ -60,7 +49,7 @@ class PyRevitCommandsTree(object):
         if not len(self.pyRevitScriptCommands) > 0:
             logger.debug('No Scripts found...')
 
-    def _find_scriptgroups(self, searchdir, tabname, bundledPanelName = ''):
+    def _find_scriptgroups(self, searchdir, tabname, bundled_panel_name=''):
         logger.debug('Searching content folder for script groups ...')
         self._find_scriptcommands(searchdir, tabname)
         files = os.listdir(searchdir)
@@ -69,7 +58,7 @@ class PyRevitCommandsTree(object):
             fname, fext = op.splitext(op.basename(fullfilename))
             if not op.isdir(fullfilepath) and cfg.ICON_FILE_FORMAT == fext.lower():
                 try:
-                    scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundledPanelName)
+                    scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundled_panel_name)
                     scriptgroup.adoptcommands(self.pyRevitScriptCommands, cfg.MASTER_TAB_NAME)
                     self.pyRevitScriptGroups.append(scriptgroup)
                 except PyRevitUnknownFileNameFormatError:
@@ -90,15 +79,15 @@ class PyRevitCommandsTree(object):
         for fullfilename in files:
             fullfilepath = op.join(tabdir, fullfilename)
             fname, fext = op.splitext(op.basename(fullfilename))
-            is_panel_bundled = (op.isdir(fullfilepath) \
-                              and not fullfilename.startswith(('.','_')) \
-                              and fullfilename.endswith(cfg.PANEL_BUNDLE_POSTFIX))
+            is_panel_bundled = (op.isdir(fullfilepath)
+                                and not fullfilename.startswith(('.', '_'))
+                                and fullfilename.endswith(cfg.PANEL_BUNDLE_POSTFIX))
             is_panel_defined_by_png = cfg.ICON_FILE_FORMAT == fext.lower()
             if is_panel_bundled or is_panel_defined_by_png:
                 try:
                     scriptpanel = ScriptPanel(tabdir, fullfilename, tabname, is_panel_bundled)
                     if is_panel_bundled:
-                        self._find_scriptgroups(fullfilepath, tabname, bundledPanelName = scriptpanel.panelName)
+                        self._find_scriptgroups(fullfilepath, tabname, bundled_panel_name=scriptpanel.panelName)
 
                     collectedscriptpanels = [(x.panelName, x.tabName) for x in self.pyRevitScriptPanels]
                     if (scriptpanel.panelName, scriptpanel.tabName) not in collectedscriptpanels:
@@ -114,13 +103,13 @@ class PyRevitCommandsTree(object):
                         logger.debug('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
                         continue
 
-    def _find_scripttabs(self, HOME_DIR):
+    def _find_scripttabs(self, search_dir):
         logger.debug('Searching for tabs, panels, groups, and scripts...')
-        for dirname in os.listdir(HOME_DIR):
-            full_path = op.join(HOME_DIR, dirname)
-            dir_is_tab = op.isdir(full_path)                                \
-                         and not dirname.startswith(('.', '_'))             \
-                         and dirname.endswith(cfg.TAB_POSTFIX)
+        for dirname in os.listdir(search_dir):
+            full_path = op.join(search_dir, dirname)
+            dir_is_tab = (op.isdir(full_path)
+                          and not dirname.startswith(('.', '_'))
+                          and dirname.endswith(cfg.TAB_POSTFIX))
             if dir_is_tab:
                 logger.debug('Searching for scripts under: {0}'.format(full_path))
                 discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
@@ -130,14 +119,6 @@ class PyRevitCommandsTree(object):
                     try:
                         self.sessionCache.load_tab(script_tab)
                     except PyRevitCacheError:
-                        # I am using a function outside the ScriptTab class to find the panels defined under tab folder
-                        # The reason is consistency with how ScriptPanel and ScriptGroup work.
-                        # I wanted to perform one file search pass over the tab directory to find all groups and scripts,
-                        # and then ask each Panel or Group to adopt their associated groups and scripts respectively.
-                        # Otherwise for every discovered panel or group, each class would need to look into the directory
-                        # to find groups and scripts. This would increase file operation considerably.
-                        # ScriptTab follows the same system for consistency although all panels under the tab folder belong
-                        # to that tab. This also allows other develops to add panels to each others tabs.
                         self._find_scriptpanels(full_path, script_tab.tabName)
                         script_tab.adopt_panels(self.pyRevitScriptPanels)
                     logger.debug('Tab found: {0}'.format(script_tab.tabName))
@@ -148,8 +129,7 @@ class PyRevitCommandsTree(object):
                     self._find_scriptpanels(full_path, script_tab.tabName)
                     logger.debug('Tab extension found: {0}'.format(script_tab.tabName))
                     script_tab.adopt_panels(self.pyRevitScriptPanels)
-            elif op.isdir(full_path) and not dirname.startswith(('.','_')):
+            elif op.isdir(full_path) and not dirname.startswith(('.', '_')):
                 self._find_scripttabs(full_path)
             else:
                 continue
-

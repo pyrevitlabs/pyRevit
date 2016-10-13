@@ -41,7 +41,7 @@ class GitRepository(object):
     def fetch_from_origin(self):
         try:
             utils.run_process(r'{0} fetch --all'.format(cfg.GIT_EXE), cwd=self.repo_dir)
-        except Exception as err:
+        except:
             raise GitError(self.repo_dir, 'Error fetching from origin.')
 
     def git_hard_reset_to_origin(self):
@@ -51,7 +51,8 @@ class GitRepository(object):
 
         # Hard reset current branch to origin/branch
         try:
-            utils.run_process(r'{0} reset --hard origin/{1}'.format(cfg.GIT_EXE, self.find_current_branch()), cwd=self.repo_dir)
+            utils.run_process(r'{0} reset --hard origin/{1}'.format(cfg.GIT_EXE,
+                                                                    self.find_current_branch()), cwd=self.repo_dir)
             # Could get results and return: output.communicate()[0]; output.returncode
         except GitError as err:
             logger.debug(err.msg)

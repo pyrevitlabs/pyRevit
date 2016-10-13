@@ -1,18 +1,3 @@
-import os
-import sys
-import os.path as op
-import shutil
-import re
-import json
-import hashlib
-from datetime import datetime
-
-# pyrevit module imports
-import pyRevit.config as cfg
-import pyRevit.utils as prutils
-from pyRevit.exceptions import *
-from pyRevit.logger import logger
-
 from pyRevit.uielements import *
 
 # dot net imports
@@ -34,6 +19,13 @@ from Autodesk.Revit.Attributes import *
 
 
 class PyRevitUI:
+    def __init__(self, cmd_tree, dll_location, assembly_name):
+        # setting up UI
+        logger.debug('Creating pyRevit UI.')
+        self.cmd_tree = cmd_tree
+        self.dll_location = dll_location
+        self.assembly_name = assembly_name
+
     def _create_or_find_pyrevit_panels(self):
         logger.debug('Searching for existing pyRevit panels...')
         for scriptTab in self.cmd_tree.pyRevitScriptTabs:
@@ -65,7 +57,7 @@ class PyRevitUI:
                 logger.debug('{0} ribbon tab found but does not include any scripts. ' \
                         'Skipping this tab.'.format(scriptTab.tabName))
 
-    def _createui(self):
+    def _create_ui(self):
         newbuttoncount = updatedbuttoncount = 0
         for scriptTab in self.cmd_tree.pyRevitScriptTabs:
             for scriptPanel in scriptTab.get_sorted_scriptpanels():
@@ -276,14 +268,12 @@ class PyRevitUI:
         # final report
         logger.debug('{0} buttons created... {1} buttons updated...'.format(newbuttoncount, updatedbuttoncount))
 
-    def create(self, cmd_tree, dll_location, assembly_name):
-        # setting up UI
-        logger.debug('Creating pyRevit UI.')
-        self.cmd_tree = cmd_tree
-        self.dll_location = dll_location
-        self.assembly_name = assembly_name
+    def create_ui(self):
         logger.debug('Now setting up ribbon, panels, and buttons...')
         self._create_or_find_pyrevit_panels()
         logger.debug('Ribbon tab and panels are ready. Creating script groups and command buttons...')
-        self._createui()
+        self._create_ui()
         logger.debug('All UI items have been added...')
+
+    def update_ui(self):
+        pass
