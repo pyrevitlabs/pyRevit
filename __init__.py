@@ -1,25 +1,34 @@
-__window__.Close()
-
 import sys
 import os.path as op
+import logging
 
-#temp: will take care of this part in RPL
+# Add library path
 sys.path.append(op.join(op.dirname(__file__), 'Lib'))
 
-# pyrevit module imports
+# now pyrevit module imports
 import pyRevit.config as cfg
 from pyRevit.logger import logger
 from pyRevit.timer import Timer
 
+from pyRevit.usersettings import user_settings
 from pyRevit.assemblies import PyRevitCommandsAssembly
 from pyRevit.db import PyRevitCommandsTree
 from pyRevit.ui import PyRevitUI
 
 __doc__ = 'Searches the script folders and create buttons for the new script or newly installed extensions.'
 
-#__window__.Width = 1100
 
 t = Timer()
+
+if user_settings.verbose:
+    # set level to debug if user setting VERBOSE if active
+    logger.setLevel(logging.DEBUG)
+    # and make the output window larger
+    __window__.Width = 1100
+else:
+    # load silently
+    __window__.Close()
+
 logger.debug('Running on: {0}'.format(sys.version))
 logger.debug('Home Directory is: {0}'.format(cfg.HOME_DIR))
 

@@ -34,7 +34,6 @@ class LoggerWrapper():
     # Hides windows if not errors have occured.
      if not logger.errors:
         __window__.Close()
-
     """
 
     def __init__(self):
