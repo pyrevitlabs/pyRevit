@@ -24,6 +24,7 @@ from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
 
 
+# todo rename this module to a better name. These aren't the UI objects really. UI objects are used from RevitAPI and there is no need to recreate them. These elements are database classes that represent data that is associated with each UI element.
 # utility classes
 class ButtonIcons:
     def __init__(self, filedir, filename):
