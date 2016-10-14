@@ -90,3 +90,14 @@ class _LoggerWrapper:
 
 
 logger = _LoggerWrapper()
+#
+# # new handler
+# filehandler = logging.FileHandler('pyrevit.log')
+#
+# #custom log level for file
+# filehandler.setLevel(logging.DEBUG)
+# # Custom formater for file
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# filehandler.setFormatter(formatter)
+#
+# logger.addHandler(filehandler)
