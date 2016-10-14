@@ -15,6 +15,7 @@ clr.AddReference('RevitAPIUI')
 clr.AddReference("System.Core")
 
 import System
+# todo figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime.
 clr.ImportExtensions(System.Linq)
 
 clr.AddReferenceByName(GIT_LIB)
