@@ -90,7 +90,8 @@ class _LoggerWrapper:
 
 
 logger = _LoggerWrapper()
-#
+
+# todo add file logging
 # # new handler
 # filehandler = logging.FileHandler('pyrevit.log')
 #

@@ -4,11 +4,10 @@ import os.path as op
 import re
 import importlib
 
-import .utils as utils
-import .config as cfg
+from .config import LOADER_DIR, GIT_LIB
 from .logger import logger
 
-sys.path.append(op.join(cfg.LOADER_DIR, cfg.GIT_LIB))
+sys.path.append(op.join(LOADER_DIR, GIT_LIB))
 
 import clr
 clr.AddReference('RevitAPI')
@@ -18,8 +17,10 @@ clr.AddReference("System.Core")
 import System
 clr.ImportExtensions(System.Linq)
 
-clr.AddReferenceByName(cfg.GIT_LIB)
-git = importlib.import_module(cfg.GIT_LIB)
+clr.AddReferenceByName(GIT_LIB)
+git = importlib.import_module(GIT_LIB)
+
+# todo rewrite update mechanism to use this to update all(?) extensions
 
 # from pyRevit.git import git
 # repo = git.Repository(r'C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevitDev')

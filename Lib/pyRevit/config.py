@@ -99,21 +99,21 @@ USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
 REVIT_VERSION = _get_host_revit_version()
 
-# todo session id needs to be uniqe for this revit session so every tool running under that session would get the same result.
+# todo session id needs to be unique for this revit session so every tool running under that session would get the same result.
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 TAB_POSTFIX = '.tab'
 PACKAGE_POSTFIX = '.pkg'
 PANEL_BUNDLE_POSTFIX = '.panel'
-LINK_BUTTON_TYPE_NAME = '.pushbutton'
-PUSH_BUTTON_TYPE_NAME = '.pushbutton'
-TOGGLE_BUTTON_TYPE_NAME = '.toggle'
-PULLDOWN_BUTTON_TYPE_NAME = '.pulldown'
-STACKTHREE_BUTTON_TYPE_NAME = '.stack3'
-STACKTWO_BUTTON_TYPE_NAME = '.stack2'
-SPLIT_BUTTON_TYPE_NAME = '.splitbutton'
-SPLITPUSH_BUTTON_TYPE_NAME = '.splitpushbutton'
+LINK_BUTTON_POSTFIX = '.pushbutton'
+PUSH_BUTTON_POSTFIX = '.pushbutton'
+TOGGLE_BUTTON_POSTFIX = '.toggle'
+PULLDOWN_BUTTON_POSTFIX = '.pulldown'
+STACKTHREE_BUTTON_POSTFIX = '.stack3'
+STACKTWO_BUTTON_POSTFIX = '.stack2'
+SPLIT_BUTTON_POSTFIX = '.splitbutton'
+SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
 
 ICON_FILE_FORMAT = '.png'
 SCRIPT_FILE_FORMAT = '.py'
@@ -124,6 +124,7 @@ DEFAULT_SCRIPT_NAME = 'script' + SCRIPT_FILE_FORMAT
 
 TOOLTIP_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
+# character replacement list for cleaning up file names
 SPECIAL_CHARS = {' ': '', '~': '',
                  '!': 'EXCLAM',
                  '@': 'AT',

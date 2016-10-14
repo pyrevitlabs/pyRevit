@@ -1,7 +1,3 @@
-import os
-import os.path as op
-
-
 class PyRevitException(Exception):
     pass
 
