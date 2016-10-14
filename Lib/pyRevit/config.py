@@ -103,9 +103,9 @@ REVIT_VERSION = _get_host_revit_version()
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
-TAB_POSTFIX = '.tab'
 PACKAGE_POSTFIX = '.pkg'
-PANEL_BUNDLE_POSTFIX = '.panel'
+TAB_POSTFIX = '.tab'
+PANEL_POSTFIX = '.panel'
 LINK_BUTTON_POSTFIX = '.pushbutton'
 PUSH_BUTTON_POSTFIX = '.pushbutton'
 TOGGLE_BUTTON_POSTFIX = '.toggle'
