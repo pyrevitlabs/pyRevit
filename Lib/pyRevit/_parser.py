@@ -2,16 +2,16 @@ import os
 import os.path as op
 import sys
 
-from pyRevit.uielements import *
-from pyRevit.exceptions import *
-from pyRevit.cache import PyRevitCache
-from pyRevit.logger import logger
-import pyRevit.config as cfg
+from ._uielements import *
+from .exceptions import *
+from ._cache import PyRevitCache
+from .logger import logger
+from .config import ICON_FILE_FORMAT, MASTER_TAB_NAME, PANEL_BUNDLE_POSTFIX, TAB_POSTFIX
 
 
 # todo rename db to something more appropriate. This is the module that will be imported in scripts to access script data
 class PyRevitCommandsTree(object):
-    def __init__(self):
+    def __init__(self, home_dir):
         self.pyRevitScriptPanels = []
         self.pyRevitScriptGroups = []
         self.pyRevitScriptCommands = []
@@ -19,23 +19,22 @@ class PyRevitCommandsTree(object):
 
         self.sessionCache = PyRevitCache()
 
-        self._find_scripttabs(cfg.HOME_DIR)
-        self._create_reload_button(cfg.LOADER_DIR)
+        self._find_scripttabs(home_dir)
 
         self.sessionCache.update_cache(self.pyRevitScriptTabs)
 
-    def _create_reload_button(self, loader_dir):
-        logger.debug('Creating "Reload Scripts" button...')
-        for fname in os.listdir(loader_dir):
-            fulltabpath = op.join(loader_dir, fname)
-            if not op.isdir(fulltabpath) and cfg.PYREVIT_INIT_SCRIPT_NAME in fname:
-                try:
-                    cmd = ScriptCommand(loader_dir, fname, cfg.MASTER_TAB_NAME)
-                    self.pyRevitScriptCommands.append(cmd)
-                    logger.debug('Reload button added.')
-                except:
-                    logger.debug('Could not create reload command.')
-                    continue
+    # def _create_reload_button(self, loader_dir):
+    #     logger.debug('Creating "Reload Scripts" button...')
+    #     for fname in os.listdir(loader_dir):
+    #         fulltabpath = op.join(loader_dir, fname)
+    #         if not op.isdir(fulltabpath) and PYREVIT_INIT_SCRIPT_NAME in fname:
+    #             try:
+    #                 cmd = ScriptCommand(loader_dir, fname, MASTER_TAB_NAME)
+    #                 self.pyRevitScriptCommands.append(cmd)
+    #                 logger.debug('Reload button added.')
+    #             except:
+    #                 logger.debug('Could not create reload command.')
+    #                 continue
 
     def _find_scriptcommands(self, searchdir, tabname):
         logger.debug('Searching tab folder for scripts...')
@@ -64,10 +63,10 @@ class PyRevitCommandsTree(object):
         for fullfilename in files:
             fullfilepath = op.join(searchdir, fullfilename)
             fname, fext = op.splitext(op.basename(fullfilename))
-            if not op.isdir(fullfilepath) and cfg.ICON_FILE_FORMAT == fext.lower():
+            if not op.isdir(fullfilepath) and ICON_FILE_FORMAT == fext.lower():
                 try:
                     scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundled_panel_name)
-                    scriptgroup.adoptcommands(self.pyRevitScriptCommands, cfg.MASTER_TAB_NAME)
+                    scriptgroup.adoptcommands(self.pyRevitScriptCommands, MASTER_TAB_NAME)
                     self.pyRevitScriptGroups.append(scriptgroup)
                 except PyRevitUnknownFileNameFormatError:
                     if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
@@ -89,8 +88,8 @@ class PyRevitCommandsTree(object):
             fname, fext = op.splitext(op.basename(fullfilename))
             is_panel_bundled = (op.isdir(fullfilepath)
                                 and not fullfilename.startswith(('.', '_'))
-                                and fullfilename.endswith(cfg.PANEL_BUNDLE_POSTFIX))
-            is_panel_defined_by_png = cfg.ICON_FILE_FORMAT == fext.lower()
+                                and fullfilename.endswith(PANEL_BUNDLE_POSTFIX))
+            is_panel_defined_by_png = ICON_FILE_FORMAT == fext.lower()
             if is_panel_bundled or is_panel_defined_by_png:
                 try:
                     scriptpanel = ScriptPanel(tabdir, fullfilename, tabname, is_panel_bundled)
@@ -120,7 +119,7 @@ class PyRevitCommandsTree(object):
             # dir is a dir, its name does not start with . or _, and ends with .tab
             dir_is_tab = (op.isdir(full_path)
                           and not dirname.startswith(('.', '_'))
-                          and dirname.endswith(cfg.TAB_POSTFIX))
+                          and dirname.endswith(TAB_POSTFIX))
             if dir_is_tab:
                 logger.debug('Searching for scripts under: {0}'.format(full_path))
                 # creating a dict of tab name:tab object. Contents of any other tab folder that matches an already
@@ -155,3 +154,6 @@ class PyRevitCommandsTree(object):
                 self._find_scripttabs(full_path)
             else:
                 continue
+
+    def get_commands(self):
+        return self.pyRevitScriptCommands

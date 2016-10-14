@@ -1,4 +1,7 @@
-from pyRevit.uielements import *
+from ._assemblies import PyRevitCommandsAssembly
+from ._parser import PyRevitCommandsTree
+from .uielements import *
+import .config as cfg
 
 # dot net imports
 import clr
@@ -277,3 +280,30 @@ class PyRevitUI:
 
     def update_ui(self):
         pass
+
+
+class PyRevitSession():
+    def __init__(self, home_dir):
+        self.home_dir = home_dir
+
+    def load(self):
+        # todo manage exceptions
+        # parse home directory and create a tree of tabs, panels, and buttons and button groups
+        db_cmd_tree = PyRevitCommandsTree(cfg.HOME_DIR)
+        # and create assembly for the discovered commands
+        pyrevit_assembly = PyRevitCommandsAssembly(db_cmd_tree.get_commands())
+
+        if pyrevit_assembly.is_pyrevit_already_loaded():
+            # if user is reloading: update ui for the discovered tree
+            # PyRevitUI(db_cmd_tree).update_ui()
+            pass
+        else:
+            # otherwise, create ui for the discovered tree
+            PyRevitUI(db_cmd_tree, pyrevit_assembly.dll_location, pyrevit_assembly.name).create_ui()
+
+def update_ui(self):
+    pass
+
+
+
+current_session = PyRevitSession(cfg.HOME_DIR)

@@ -29,13 +29,3 @@ class PyRevitCacheReadError(PyRevitCacheError):
 
 class PyRevitCacheExpiredError(PyRevitCacheError):
     pass
-
-
-# Git specific exceptions
-class GitError(PyRevitException):
-    """Base class for git exceptions."""
-
-    def __init__(self, repo_dir, msg):
-        self.repo_dir = repo_dir
-        self.repo_name = op.basename(self.repo_dir)
-        self.msg = msg

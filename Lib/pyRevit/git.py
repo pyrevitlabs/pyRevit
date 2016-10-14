@@ -4,10 +4,9 @@ import os.path as op
 import re
 import importlib
 
-import pyRevit.utils as utils
-import pyRevit.config as cfg
-from pyRevit.exceptions import GitError
-from pyRevit.logger import logger
+import .utils as utils
+import .config as cfg
+from .logger import logger
 
 sys.path.append(op.join(cfg.LOADER_DIR, cfg.GIT_LIB))
 

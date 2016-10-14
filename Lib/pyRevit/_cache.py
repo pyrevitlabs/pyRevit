@@ -8,11 +8,10 @@ import hashlib
 from datetime import datetime
 
 # pyrevit module imports
-import pyRevit.config as cfg
-import pyRevit.utils as prutils
-from pyRevit.exceptions import *
-from pyRevit.logger import logger
-from pyRevit.uielements import *
+from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, PyRevitVersion
+from .exceptions import *
+from .logger import logger
+from .uielements import *
 
 # dot net imports
 import clr
@@ -36,8 +35,7 @@ class PyRevitCache:
         pass
 
     def get_cache_file(self, script_tab):
-        return op.join(cfg.USER_TEMP_DIR,'{}_cache_{}.json'.format(cfg.PYREVIT_ASSEMBLY_NAME, \
-                                                                            script_tab.tabName))
+        return op.join(USER_TEMP_DIR,'{}_cache_{}.json'.format(PYREVIT_ASSEMBLY_NAME, script_tab.tabName))
 
     def cleanup_cache_files(self):
         pass
@@ -88,4 +86,4 @@ class PyRevitCache:
 
     @staticmethod
     def get_version():
-        return cfg.PyRevitVersion.full_version_as_str()
+        return PyRevitVersion.full_version_as_str()

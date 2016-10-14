@@ -3,11 +3,12 @@ import os.path as op
 import shutil
 from datetime import datetime
 
-import pyRevit.config as cfg
-from pyRevit.exceptions import *
-from pyRevit.logger import logger
+from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT, PYREVIT_ASSEMBLY_NAME
+from .config import USER_TEMP_DIR, PyRevitVersion
+from .exceptions import *
+from .logger import logger
 
-from pyRevit.usersettings import user_settings
+from .usersettings import user_settings
 
 # dot net imports
 import clr
@@ -27,30 +28,34 @@ from Autodesk.Revit.Attributes import *
 
 class PyRevitCommandsAssembly():
     """Wrapper for all interactions with existing and new pyRevit assemblies and associated dll files."""
-    def __init__(self):
+    def __init__(self, commands):
         self._session_label = "{}_{}".format(cfg.SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
         self._log_filename = self._session_label + '.log'
         self._loadedPyRevitAssemblies = []
-        
+
         self.name = self._session_label
         self.loader_available = False
         self.extended_loader_available = False
         self.commandLoaderClass = None
         self.commandLoaderAssembly = None
-        
+
+        self.command_list = commands
+
         logger.debug('Initializing python script loader...')
 
         if not self._find_commandloader_class():
             logger.critical('pyRevit load failed...Can not find necessary command loader class.')
             raise PyRevitLoaderNotFoundError()
-        
+
         self._find_loaded_pyrevit_assemblies()
-        
+
         if not self.is_pyrevit_already_loaded():
             self._cleanup_existing_dlls()
             self._archivelogs()
         else:
             logger.debug('pyRevit is reloading. Skipping DLL and log cleanup.')
+
+        self.dll_location = self._create_dll_assembly()
 
     def _find_commandloader_class(self):
         """PRIVATE: Finds the loader assembly adding and command interface class."""
@@ -60,7 +65,7 @@ class PyRevitCommandsAssembly():
                 # Loader assembly is found
                 logger.debug('Command loader assembly found: {0}'.format(loadedAssembly.GetName().FullName))
                 self.commandLoaderAssembly = loadedAssembly
-                
+
                 # Getting the base command loader class
                 loader_class = loadedAssembly.GetType(cfg.LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
                 if loader_class is not None:
@@ -122,7 +127,7 @@ class PyRevitCommandsAssembly():
         """Returns true if any pyrevit module is loaded in current Revit session."""
         return len(self._loadedPyRevitAssemblies) > 0
 
-    def create_dll_assembly(self, cmd_tree):
+    def _create_dll_assembly(self):
         logger.debug('Building script executer assembly...')
         # make assembly dll name
         dllname = self._session_label + '.dll'
@@ -140,52 +145,49 @@ class PyRevitCommandsAssembly():
         modulebuilder = assemblybuilder.DefineDynamicModule(self._session_label, dllname)
 
         # create command classes
-        for scriptTab in cmd_tree.pyRevitScriptTabs:
-            for scriptPanel in scriptTab.get_sorted_scriptpanels():
-                for scriptGroup in scriptPanel.get_sorted_scriptgroups():
-                    for cmd in scriptGroup.scriptCommands:
-                        type_builder = modulebuilder.DefineType(cmd.className,
-                                                               TypeAttributes.Class | TypeAttributes.Public,
-                                                               self.commandLoaderClass)
+        for cmd in self.command_list:
+            type_builder = modulebuilder.DefineType(cmd.className,
+                                                   TypeAttributes.Class | TypeAttributes.Public,
+                                                   self.commandLoaderClass)
 
-                        # add RegenerationAttribute to type
-                        regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(
-                            Array[Type]((RegenerationOption,)))
-                        regen_attr_builder = CustomAttributeBuilder(regen_const_info,
-                                                                            Array[object]((RegenerationOption.Manual,)))
-                        type_builder.SetCustomAttribute(regen_attr_builder)
+            # add RegenerationAttribute to type
+            regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(
+                Array[Type]((RegenerationOption,)))
+            regen_attr_builder = CustomAttributeBuilder(regen_const_info,
+                                                                Array[object]((RegenerationOption.Manual,)))
+            type_builder.SetCustomAttribute(regen_attr_builder)
 
-                        # add TransactionAttribute to type
-                        transactionconstructorinfo = clr.GetClrType(TransactionAttribute).GetConstructor(
-                            Array[Type]((TransactionMode,)))
-                        transactionattributebuilder = CustomAttributeBuilder(transactionconstructorinfo,
-                                                                             Array[object]((TransactionMode.Manual,)))
-                        type_builder.SetCustomAttribute(transactionattributebuilder)
+            # add TransactionAttribute to type
+            transactionconstructorinfo = clr.GetClrType(TransactionAttribute).GetConstructor(
+                Array[Type]((TransactionMode,)))
+            transactionattributebuilder = CustomAttributeBuilder(transactionconstructorinfo,
+                                                                 Array[object]((TransactionMode.Manual,)))
+            type_builder.SetCustomAttribute(transactionattributebuilder)
 
-                        # call base constructor with script path
-                        ci = None
-                        if self.loader_available:
-                            ci = self.commandLoaderClass.GetConstructor(Array[Type]((str, str, str,)))
-                        else:
-                            raise PyRevitLoaderNotFoundError()
+            # call base constructor with script path
+            ci = None
+            if self.loader_available:
+                ci = self.commandLoaderClass.GetConstructor(Array[Type]((str, str, str,)))
+            else:
+                raise PyRevitLoaderNotFoundError()
 
-                        const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
-                                                                       CallingConventions.Standard,
-                                                                       Array[Type](()))
-                        gen = const_builder.GetILGenerator()
-                        gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
-                        # Load the path to the command as a string onto stack
-                        gen.Emit(OpCodes.Ldstr, cmd.getfullscriptaddress())
-                        # Load log file name into stack
-                        gen.Emit(OpCodes.Ldstr, self._log_filename)
-                        # Adding search paths to the stack
-                        gen.Emit(OpCodes.Ldstr, cmd.search_paths)
-                        gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
-                        gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
-                        gen.Emit(OpCodes.Nop)
-                        gen.Emit(OpCodes.Nop)
-                        gen.Emit(OpCodes.Ret)
-                        type_builder.CreateType()
+            const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
+                                                           CallingConventions.Standard,
+                                                           Array[Type](()))
+            gen = const_builder.GetILGenerator()
+            gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+            # Load the path to the command as a string onto stack
+            gen.Emit(OpCodes.Ldstr, cmd.getfullscriptaddress())
+            # Load log file name into stack
+            gen.Emit(OpCodes.Ldstr, self._log_filename)
+            # Adding search paths to the stack
+            gen.Emit(OpCodes.Ldstr, cmd.search_paths)
+            gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
+            gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+            gen.Emit(OpCodes.Nop)
+            gen.Emit(OpCodes.Nop)
+            gen.Emit(OpCodes.Ret)
+            type_builder.CreateType()
 
         # save final assembly
         assemblybuilder.Save(dllname)

@@ -1,37 +1,33 @@
+import os.path as op
+import logging
 import ConfigParser
 
-from pyRevit.exceptions import *
-from pyRevit.logger import logger
-import pyRevit.config as cfg
-import pyRevit.utils as prutils
-
-INIT_SETTINGS_SECTION_NAME = 'init'
-GLOBAL_SETTINGS_SECTION_NAME = 'global'
-LOG_SCRIPT_USAGE_KEY = "logScriptUsage"
-ARCHIVE_LOG_FOLDER_KEY = "archivelogfolder"
-ARCHIVE_LOG_FOLDER_DEFAULT = 'C:\\'
-VERBOSE_KEY = "verbose"
-KEY_VALUE_TRUE = "true"
-KEY_VALUE_FALSE = "false"
+from .exceptions import *
+from .logger import logger
+from .config import LOADER_DIR, USER_SETTINGS_DIR, ARCHIVE_LOG_FOLDER_DEFAULT
+from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
+from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME
+from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY
+from .utils import assert_folder
 
 
-class _PyrevitUserSettings(object):
+class _PyRevitUserSettings:
     def __init__(self):
         self.verbose = False
         self.logScriptUsage = False
         self.archivelogfolder = ARCHIVE_LOG_FOLDER_DEFAULT
 
-        self.load_settings()
+        self._load_settings()
 
-    def load_settings(self):
+    def _load_settings(self):
         """Loads settings from settings file."""
         read_successful = False
 
         # prepare user config file address
-        user_config_file = op.join(cfg.USER_SETTINGS_DIR, cfg.USER_DEFAULT_SETTINGS_FILENAME)
+        user_config_file = op.join(USER_SETTINGS_DIR, USER_DEFAULT_SETTINGS_FILENAME)
 
         # prepare admin config file address
-        admin_config_file = op.join(cfg.LOADER_DIR, cfg.ADMIN_DEFAULT_SETTINGS_FILENAME)
+        admin_config_file = op.join(LOADER_DIR, ADMIN_DEFAULT_SETTINGS_FILENAME)
 
         # try opening and reading config file in order.
         for config_file in [user_config_file, admin_config_file]:
@@ -56,7 +52,7 @@ class _PyrevitUserSettings(object):
 
         # if can not read any settings file then create a user config and fill with default
         if not read_successful:
-            if prutils.assert_folder(cfg.USER_SETTINGS_DIR):
+            if assert_folder(USER_SETTINGS_DIR):
                 try:
                     with open(user_config_file, 'w') as udfile:
                         cparser = ConfigParser.ConfigParser()
@@ -70,14 +66,14 @@ class _PyrevitUserSettings(object):
                                     ARCHIVE_LOG_FOLDER_KEY, self.archivelogfolder)
                         cparser.write(udfile)
                         logger.debug('Config file saved under with default settings.')
-                        logger.debug('Config file saved under: {}'.format(cfg.USER_SETTINGS_DIR))
+                        logger.debug('Config file saved under: {}'.format(USER_SETTINGS_DIR))
                 except:
                     # todo: too broad exception
-                    logger.debug('Can not create config file under: {}'.format(cfg.USER_SETTINGS_DIR))
+                    logger.debug('Can not create config file under: {}'.format(USER_SETTINGS_DIR))
                     logger.debug('Skipping saving config file.')
             else:
-                logger.debug('Can not create config file folder under: {}'.format(cfg.USER_SETTINGS_DIR))
+                logger.debug('Can not create config file folder under: {}'.format(USER_SETTINGS_DIR))
                 logger.debug('Skipping saving config file.')
                 logger.debug('Continuing with default hard-coded settings.')
 
-user_settings = _PyrevitUserSettings()
+user_settings = _PyRevitUserSettings()

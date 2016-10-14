@@ -1,7 +1,7 @@
 import sys
 import logging
 
-class LoggerWrapper:
+class _LoggerWrapper:
     """ Logger Wrapper to extend loggers functionality.
     Usage:
      from logger import LoggerWrapper
@@ -44,7 +44,7 @@ class LoggerWrapper:
 
         logger = logging.getLogger('pyrevitloader')
         logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
 
         handler_title = logging.StreamHandler(sys.stdout)
         formatter_title = logging.Formatter("%(message)s")
@@ -88,4 +88,5 @@ class LoggerWrapper:
     def set_level(self, level):
         self._logger.setLevel(level)
 
-logger = LoggerWrapper()
+
+logger = _LoggerWrapper()
