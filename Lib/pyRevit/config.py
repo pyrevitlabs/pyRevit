@@ -75,7 +75,7 @@ def _find_git_dir():
     return op.join(_find_home_directory(), '__git__', 'cmd')
 
 
-def calling_scope_variable(name):
+def _calling_scope_variable(name):
   frame = inspect.stack()[1][0]
   while name not in frame.f_locals:
     frame = frame.f_back
@@ -163,4 +163,4 @@ KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
 # getting output window handle -----------------------------------------------------------------------------------------
-OUTPUT_WINDOW = calling_scope_variable('__window__')
+OUTPUT_WINDOW = _calling_scope_variable('__window__')
