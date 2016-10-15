@@ -1,159 +1,99 @@
 import os
 import os.path as op
-import sys
 
-from ._uielements import *
-from .exceptions import *
-from ._cache import PyRevitCache
+from .exceptions import PyRevitUnknownFormatError
 from .logger import logger
-from .config import ICON_FILE_FORMAT, MASTER_TAB_NAME, PANEL_BUNDLE_POSTFIX, TAB_POSTFIX
+from .config import HOME_DIR
+from ._commandtree import Package, Panel, Tab, GenericCommandGroup, GenericCommand
+from ._cache import is_cache_valid, get_cached_package, update_cache
 
 
-# todo rename db to something more appropriate. This is the module that will be imported in scripts to access script data
-class PyRevitCommandsTree(object):
-    def __init__(self, home_dir):
-        self.pyRevitScriptPanels = []
-        self.pyRevitScriptGroups = []
-        self.pyRevitScriptCommands = []
-        self.pyRevitScriptTabs = []
+def _get_sub_dirs(parent_dir):
+    # todo revise to return directories only?
+    return os.listdir(parent_dir)
 
-        self.sessionCache = PyRevitCache()
 
-        self._find_scripttabs(home_dir)
+def _find_subcomponents(search_dir, component_class):
+    """Parses the provided directory and returns a list of objects of the type component_class.
+    Arguments:
+        search_dir: directory to parse
+        component_class: If a subfolder name ends with component_class.type_id, (or .type_id of any sub-class)
+        this method creates the component_class (or sub-class) object and adds to the list to be returned.
+        This ensures that of any new type of sub-class is added, this method does not need to be updated as
+         the new sub-class will be listed by .__subclasses__() method of the parent class.
+    Example:
+        _find_subcomponents(search_dir, GenericCommand)
+        GenericCommand.__subclasses__() will return [LinkButton, PushButton, or ToggleButton] and thus
+        this method creates LinkButton, PushButton, or ToggleButton for the parsed sub-directories under search_dir
+        with matching .type_id identifiers in folder names. (e.g. "folder.LINK_BUTTON_POSTFIX")
+    Returns:
+        list of created classes of type component_class or sub-classes of component_class
+    """
+    sub_cmp_list = []
 
-        self.sessionCache.update_cache(self.pyRevitScriptTabs)
+    # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
+    try:
+        cmp_classes = component_class.__subclasses__()
+    except AttributeError:
+        cmp_classes = list(component_class)
 
-    # def _create_reload_button(self, loader_dir):
-    #     logger.debug('Creating "Reload Scripts" button...')
-    #     for fname in os.listdir(loader_dir):
-    #         fulltabpath = op.join(loader_dir, fname)
-    #         if not op.isdir(fulltabpath) and PYREVIT_INIT_SCRIPT_NAME in fname:
-    #             try:
-    #                 cmd = ScriptCommand(loader_dir, fname, MASTER_TAB_NAME)
-    #                 self.pyRevitScriptCommands.append(cmd)
-    #                 logger.debug('Reload button added.')
-    #             except:
-    #                 logger.debug('Could not create reload command.')
-    #                 continue
-
-    def _find_scriptcommands(self, searchdir, tabname):
-        logger.debug('Searching tab folder for scripts...')
-        files = sorted(os.listdir(searchdir))
-        for fullfilename in files:
-            fullfilepath = op.join(searchdir, fullfilename)
-            fname, fext = op.splitext(op.basename(fullfilename))
-            if not op.isdir(fullfilepath) and '.py' == fext.lower():
+    for dirname in os.listdir(search_dir):
+        full_path = op.join(search_dir, dirname)
+        # full_path is a dir, its name does not start with . or _:
+        if op.isdir(full_path) and not dirname.startswith(('.', '_')):
+            for cmp_class in cmp_classes:
                 try:
-                    cmd = ScriptCommand(searchdir, fullfilename, tabname)
-                    self.pyRevitScriptCommands.append(cmd)
-                except PyRevitUnknownFileNameFormatError:
-                    logger.debug('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
+                    # if cmp_class can be created for this sub-dir, the add to list
+                    sub_cmp_list.append(cmp_class(full_path))
+                except PyRevitUnknownFormatError:
+                    # else, try next class
                     continue
-                except:
-                    logger.debug('Something is wrong. skipping: {0}'.format(fullfilename))
-                    continue
+                # todo: log skipping over dirs that dont match anthing
 
-        if not len(self.pyRevitScriptCommands) > 0:
-            logger.debug('No Scripts found...')
+    return sub_cmp_list
 
-    def _find_scriptgroups(self, searchdir, tabname, bundled_panel_name=''):
-        logger.debug('Searching content folder for script groups ...')
-        self._find_scriptcommands(searchdir, tabname)
-        files = os.listdir(searchdir)
-        for fullfilename in files:
-            fullfilepath = op.join(searchdir, fullfilename)
-            fname, fext = op.splitext(op.basename(fullfilename))
-            if not op.isdir(fullfilepath) and ICON_FILE_FORMAT == fext.lower():
-                try:
-                    scriptgroup = ScriptGroup(searchdir, fullfilename, tabname, bundled_panel_name)
-                    scriptgroup.adoptcommands(self.pyRevitScriptCommands, MASTER_TAB_NAME)
-                    self.pyRevitScriptGroups.append(scriptgroup)
-                except PyRevitUnknownFileNameFormatError:
-                    if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
-                        logger.debug('Skipping script icon file: {0}'.format(fullfilename))
-                        continue
-                    else:
-                        logger.debug('Can not recognize name pattern. skipping: {0}'.format(fullfilename))
-                        continue
-                except PyRevitUnknownAssemblyError:
-                    logger.debug('Unknown assembly error. Skipping: {0}'.format(fullfilename))
-                    continue
 
-    def _find_scriptpanels(self, tabdir, tabname):
-        logger.debug('Searching content folder for script panels ...')
-        self._find_scriptgroups(tabdir, tabname)
-        files = os.listdir(tabdir)
-        for fullfilename in files:
-            fullfilepath = op.join(tabdir, fullfilename)
-            fname, fext = op.splitext(op.basename(fullfilename))
-            is_panel_bundled = (op.isdir(fullfilepath)
-                                and not fullfilename.startswith(('.', '_'))
-                                and fullfilename.endswith(PANEL_BUNDLE_POSTFIX))
-            is_panel_defined_by_png = ICON_FILE_FORMAT == fext.lower()
-            if is_panel_bundled or is_panel_defined_by_png:
-                try:
-                    scriptpanel = ScriptPanel(tabdir, fullfilename, tabname, is_panel_bundled)
-                    if is_panel_bundled:
-                        self._find_scriptgroups(fullfilepath, tabname, bundled_panel_name=scriptpanel.panelName)
+def _find_cmd(search_dir):
+    return _find_subcomponents(search_dir, GenericCommand)
 
-                    collectedscriptpanels = [(x.panelName, x.tabName) for x in self.pyRevitScriptPanels]
-                    if (scriptpanel.panelName, scriptpanel.tabName) not in collectedscriptpanels:
-                        scriptpanel.adoptgroups(self.pyRevitScriptGroups)
-                        self.pyRevitScriptPanels.append(scriptpanel)
-                    else:
-                        logger.debug('panel already created and adopted groups.')
-                except PyRevitUnknownFileNameFormatError:
-                    if fullfilename in [x.iconFileName for x in self.pyRevitScriptCommands]:
-                        logger.debug('Skipping script panel file: {0}'.format(fullfilename))
-                        continue
-                    else:
-                        logger.debug('Can not recognize panel name pattern. skipping: {0}'.format(fullfilename))
-                        continue
 
-    # todo create new ui object for pyRevit_Addin and this function should live there
-    def _find_scripttabs(self, search_dir):
-        logger.debug('Searching for tabs, panels, groups, and scripts...')
-        # searching subdirs for .tab directories.
-        for dirname in os.listdir(search_dir):
-            full_path = op.join(search_dir, dirname)
-            # dir is a dir, its name does not start with . or _, and ends with .tab
-            dir_is_tab = (op.isdir(full_path)
-                          and not dirname.startswith(('.', '_'))
-                          and dirname.endswith(TAB_POSTFIX))
-            if dir_is_tab:
-                logger.debug('Searching for scripts under: {0}'.format(full_path))
-                # creating a dict of tab name:tab object. Contents of any other tab folder that matches an already
-                # discovered tab, will be added to the discovered tab to avoid duplication. This feature will also
-                # allow the extension developers to add panels and scripts to other pyRevit tabs without modifying
-                # their associated repositories.
-                discovered_tabs_names = {x.tabDirName: x for x in self.pyRevitScriptTabs}
-                # Creates a tab if tab is not already created
-                if dirname not in discovered_tabs_names.keys():
-                    # appends tab address to sys.path, to allow imports for SmartButtons
-                    sys.path.append(full_path)
-                    # creating tab object.
-                    script_tab = ScriptTab(dirname, full_path)
-                    # todo: section below (cache test + panel search) should be inside the tab object
-                    try:
-                        # asking cache to load the tab
-                        self.sessionCache.load_tab(script_tab)
-                    except PyRevitCacheError:
-                        # if tab is not caches lets search the tab for panels
-                        self._find_scriptpanels(full_path, script_tab.tabName)
-                        script_tab.adopt_panels(self.pyRevitScriptPanels)
-                    logger.debug('Tab found: {0}'.format(script_tab.tabName))
-                    # add to list of discovered tab names.
-                    self.pyRevitScriptTabs.append(script_tab)
-                else:
-                    sys.path.append(full_path)
-                    script_tab = discovered_tabs_names[dirname]
-                    self._find_scriptpanels(full_path, script_tab.tabName)
-                    logger.debug('Tab extension found: {0}'.format(script_tab.tabName))
-                    script_tab.adopt_panels(self.pyRevitScriptPanels)
-            elif op.isdir(full_path) and not dirname.startswith(('.', '_')):
-                self._find_scripttabs(full_path)
-            else:
-                continue
+def _find_cmd_groups(search_dir):
+    return _find_subcomponents(search_dir, GenericCommandGroup)
 
-    def get_commands(self):
-        return self.pyRevitScriptCommands
+
+def _find_panels(search_dir):
+    return _find_subcomponents(search_dir, Panel)
+
+
+def _find_tabs(search_dir):
+    return _find_subcomponents(search_dir, Tab)
+
+
+def get_installed_packages():
+    """Parses home directory and return a list of Package objects for installed packages."""
+    pkgs = []
+    for dirname in _get_sub_dirs(HOME_DIR):
+        full_path = op.join(HOME_DIR, dirname)
+        try:
+            # try creating a package
+            new_pkg = Package(full_path)
+
+            for new_tab in _find_tabs(new_pkg.directory):
+                new_pkg.add_component(new_tab)
+                # todo: try reading tab from cache before parsing for it
+                for new_panel in _find_panels(new_tab.directory):
+                    new_tab.add_panel(new_panel)
+                    for new_cmd_group in _find_cmd_groups(new_panel.directory):
+                        new_panel.add_component(new_cmd_group)
+                        for new_cmd in _find_cmd(new_cmd_group.group_dir):
+                            new_cmd_group.add_cmd(new_cmd)
+                    for new_cmd in _find_cmd(new_panel.directory):
+                        new_panel.add_component(new_cmd)
+
+            pkgs.append(new_pkg)
+
+        except PyRevitUnknownFormatError:
+            # todo log failure
+            pass
+
+    return pkgs

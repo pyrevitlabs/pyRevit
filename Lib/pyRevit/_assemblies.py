@@ -29,7 +29,7 @@ from Autodesk.Revit.Attributes import *
 class PyRevitCommandsAssembly():
     """Wrapper for all interactions with existing and new pyRevit assemblies and associated dll files."""
     def __init__(self, commands):
-        self._session_label = "{}_{}".format(cfg.SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
+        self._session_label = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
         self._log_filename = self._session_label + '.log'
         self._loadedPyRevitAssemblies = []
 
@@ -193,3 +193,8 @@ class PyRevitCommandsAssembly():
         assemblybuilder.Save(dllname)
         logger.debug('Executer assembly saved.')
         return Path.Combine(cfg.USER_TEMP_DIR, dllname)
+
+
+def create_assembly():
+    pass
+

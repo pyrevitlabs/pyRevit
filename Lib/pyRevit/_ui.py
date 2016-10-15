@@ -268,12 +268,15 @@ class PyRevitUI:
         # final report
         logger.debug('{0} buttons created... {1} buttons updated...'.format(newbuttoncount, updatedbuttoncount))
 
-    def create_ui(self):
-        logger.debug('Now setting up ribbon, panels, and buttons...')
-        self._create_or_find_pyrevit_panels()
-        logger.debug('Ribbon tab and panels are ready. Creating script groups and command buttons...')
-        self._create_ui()
-        logger.debug('All UI items have been added...')
 
-    def update_ui(self):
-        pass
+def create_ui():
+    logger.debug('Now setting up ribbon, panels, and buttons...')
+    self._create_or_find_pyrevit_panels()
+    logger.debug('Ribbon tab and panels are ready. Creating script groups and command buttons...')
+    self._create_ui()
+    logger.debug('All UI items have been added...')
+
+
+def update_ui():
+    pass
+

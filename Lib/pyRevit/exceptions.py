@@ -1,3 +1,6 @@
+from .logger import logger
+
+
 class PyRevitException(Exception):
     pass
 
@@ -6,7 +9,7 @@ class PyRevitUnknownAssemblyError(PyRevitException):
     pass
 
 
-class PyRevitUnknownFileNameFormatError(PyRevitException):
+class PyRevitUnknownFormatError(PyRevitException):
     pass
 
 
@@ -20,6 +23,10 @@ class PyRevitCacheError(PyRevitException):
 
 
 class PyRevitCacheReadError(PyRevitCacheError):
+    pass
+
+
+class PyRevitCacheWriteError(PyRevitCacheError):
     pass
 
 

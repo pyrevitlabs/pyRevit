@@ -38,7 +38,7 @@ def _find_loader_directory():
 
 def _find_home_directory():
     """Return the pyRevit home directory address. This is the
-       directory that contains the portable git, __init__, pyRevit, and other packages"""
+       directory that contains the portable git, __init__, pyRevit, and other package_list"""
     folder = op.dirname(_find_loader_directory())
     return folder
 
