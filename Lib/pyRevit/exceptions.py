@@ -18,19 +18,6 @@ class PyRevitLoaderNotFoundError(PyRevitException):
     pass
 
 
-# UI -Specific Exceptions
-class RevitRibbonTabExists(PyRevitException):
-    pass
-
-
-class RevitRibbonPanelExists(PyRevitException):
-    pass
-
-
-class RevitRibbonItemExists(PyRevitException):
-    pass
-
-
 # Cache-Specific Exceptions
 class PyRevitCacheError(PyRevitException):
     pass

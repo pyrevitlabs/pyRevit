@@ -11,6 +11,7 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
 
 # tree branch classes (package, tab, panel) ----------------------------------------------------------------------------
 # superclass for all tree branches that contain sub-branches
+# todo: populate info
 class GenericContainer(object):
     def __init__(self, branch_dir):
         self.directory = branch_dir
@@ -72,6 +73,7 @@ class Panel(GenericContainer):
 
 
 # single command classes (link, push button, toggle button) ------------------------------------------------------------
+# todo: populate info
 class GenericCommand(object):
     """Superclass for all single commands.
     The information provided by these classes will be used to create a
@@ -112,6 +114,7 @@ class ToggleButton(GenericCommand):
 
 # command group classes (puu down, split, split pull down, stack2 and stack3) ------------------------------------------
 # superclass for all groups of commands.
+# todo: populate info
 class GenericCommandGroup(object):
     def __init__(self, group_dir):
         self.group_dir = group_dir

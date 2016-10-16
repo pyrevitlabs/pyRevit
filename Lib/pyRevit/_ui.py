@@ -16,35 +16,72 @@ from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
 
 
+# todo
 class _ExistingPyRevitRibbonElement(object):
     def __init__(self):
         self.name = None
         self.children = []
 
 
+# todo
 class _ExistingPyRevitPanel(_ExistingPyRevitRibbonElement):
     def retrieve_ribbon_item(self, item):
         pass
 
 
+# todo
 class _ExistingPyRevitTab(_ExistingPyRevitRibbonElement):
     def retrieve_ribbon_panel(self, panel):
         pass
 
 
+# todo
 class ExistingPyRevitUI(_ExistingPyRevitRibbonElement):
     def retrieve_ribbon_tab(self, tab):
         pass
 
 
+# todo
+def _update_button(button, ribbon_item):
+    pass
+
+
+# todo
+def _update_ribbon_item(item, ribbon_panel):
+    pass
+
+
+# todo
+def _remove_button(button, ribbon_item):
+    pass
+
+
+# todo
+def _remove_ribbon_item(item, ribbon_panel):
+    pass
+
+
+# todo
+def _remove_ribbon_panel(panel, ribbon_tab):
+    pass
+
+
+# todo
+def _remove_ribbon_tab(tab):
+    pass
+
+
+# todo
 def _create_button(button, panel_item, pkg_asm_location):
     pass
 
 
+# todo
 def _create_ribbon_item(item, ribbon_panel, pkg_asm_location):
     pass
 
 
+# todo
 def _create_ribbon_panel(panel, ribbon_tab):
     pass
 
@@ -69,7 +106,7 @@ def update_revit_ui(parsed_pkg, pkg_asm_location):
             if current_ui.contains(tab):
                 ribbon_tab = current_ui.retrieve_ribbon_tab(tab)
             else:
-                ribbon_tab = _create_ribbon_tab(tab)
+                ribbon_tab = current_ui.create_ribbon_tab(tab)
 
             # Level 2: Panels (under tabs) -----------------------------------------------------------------------------
             for panel in tab:
@@ -79,25 +116,26 @@ def update_revit_ui(parsed_pkg, pkg_asm_location):
                     ribbon_panel = _create_ribbon_panel(panel, ribbon_tab)
 
                 # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
-                for ribbon_item in panel:
-                    if current_ui.panel(panel).contains(ribbon_item):
+                for item in panel:
+                    if current_ui.panel(panel).contains(item):
                         # update the ribbon button itself first (mostly to update icon)
-                        current_ui.panel(panel).update_ribbon_item(ribbon_item)
+                        _update_ribbon_item(item, ribbon_panel)
 
                         # then update/create the sub items if any
                         # Level 4: Ribbon items that include other push buttons (e.g. PullDownButton) ------------------
-                        if ribbon_item.is_group():
-                            for button in ribbon_item:
-                                if current_ui.ribbon_item(ribbon_item).contains(button):
-                                    current_ui.ribbon_item(ribbon_item).update_button(button)
+                        if item.is_group():
+                            for button in item:
+                                if current_ui.ribbon_item(item).contains(button):
+                                    ribbon_item = current_ui.ribbon_item(item)
+                                    _update_button(button, ribbon_item)
                                 else:
-                                    _create_button(button, ribbon_item, pkg_asm_location)
+                                    _create_button(button, item, pkg_asm_location)
                     else:
-                        _create_ribbon_item(ribbon_item, ribbon_panel, pkg_asm_location)
+                        _create_ribbon_item(item, ribbon_panel, pkg_asm_location)
         else:
             logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
 
     # any existing ui elements that hasn't been updated, doesn't exist in the package anymore and
     # should be removed from revit ui.
-    current_ui.cleanup_obsolete_items()
+    # todo: how to collect the remaining exisitng items to be removed?
 
