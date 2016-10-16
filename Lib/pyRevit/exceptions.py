@@ -1,6 +1,7 @@
 from .logger import logger
 
 
+# General Exceptions
 class PyRevitException(Exception):
     pass
 
@@ -17,7 +18,20 @@ class PyRevitLoaderNotFoundError(PyRevitException):
     pass
 
 
-# Cache specific exceptions
+# UI -Specific Exceptions
+class RevitRibbonTabExists(PyRevitException):
+    pass
+
+
+class RevitRibbonPanelExists(PyRevitException):
+    pass
+
+
+class RevitRibbonItemExists(PyRevitException):
+    pass
+
+
+# Cache-Specific Exceptions
 class PyRevitCacheError(PyRevitException):
     pass
 

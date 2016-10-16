@@ -11,13 +11,14 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
 
 # tree branch classes (package, tab, panel) ----------------------------------------------------------------------------
 # superclass for all tree branches that contain sub-branches
-class GenericTreeBranch(object):
+class GenericContainer(object):
     def __init__(self, branch_dir):
         self.directory = branch_dir
         if not self._is_valid_dir():
             raise PyRevitUnknownFormatError()
 
         self.name = None
+        self.search_path_list = None
         self._sub_components = []
 
     def _is_valid_dir(self):
@@ -31,36 +32,53 @@ class GenericTreeBranch(object):
 
 
 # root class for each package. might contain multiple tabs
-class Package(GenericTreeBranch):
+class Package(GenericContainer):
     type_id = PACKAGE_POSTFIX
 
     def __init__(self, package_dir):
-        GenericTreeBranch.__init__(self, package_dir)
+        GenericContainer.__init__(self, package_dir)
         self.author = None
         self.version = None
 
+    def get_all_commands(self):
+        pass
+
 
 # class for each tab. might contain multiple panels
-class Tab(GenericTreeBranch):
+class Tab(GenericContainer):
     type_id = TAB_POSTFIX
 
     def __init__(self, tab_dir):
-        GenericTreeBranch.__init__(self, tab_dir)
+        GenericContainer.__init__(self, tab_dir)
         self.sort_level = 0
+
+    def has_commands(self):
+        pass
 
 
 # class for each panel. might contain commands or command groups
-class Panel(GenericTreeBranch):
+class Panel(GenericContainer):
     type_id = PANEL_POSTFIX
 
     def __init__(self, panel_dir):
-        GenericTreeBranch.__init__(self, panel_dir)
+        GenericContainer.__init__(self, panel_dir)
         self.sort_level = 0
+
+    def get_commands(self):
+        return [x for x in self._sub_components if isinstance(x, GenericCommand)]
+
+    def get_command_groups(self):
+        return [x for x in self._sub_components if isinstance(x, GenericCommandGroup)]
 
 
 # single command classes (link, push button, toggle button) ------------------------------------------------------------
-# superclass for all single commands.
 class GenericCommand(object):
+    """Superclass for all single commands.
+    The information provided by these classes will be used to create a
+    push button under Revit UI. However, pyRevit expands the capabilities of push button beyond what is provided by
+    Revit UI. (e.g. Toggle button changes it's icon based on its on/off status)
+    See LinkButton and ToggleButton classes.
+    """
     def __init__(self, cmd_dir):
         self.cmd_dir = cmd_dir
         if not self._is_valid_dir():
@@ -69,9 +87,15 @@ class GenericCommand(object):
         self.cmd_name = None
         self.icon_file = None
         self.script_file = None
+        self.script_file_address = None
+        self.search_path_list = None
 
     def _is_valid_dir(self):
         return self.cmd_dir.endswith(self.type_id)
+
+    @staticmethod
+    def is_group():
+        return False
 
 
 class LinkButton(GenericCommand):
@@ -97,7 +121,7 @@ class GenericCommandGroup(object):
         self.group_name = None
         self.sort_level = 0
         self.icon_file = None
-
+        self.search_path_list = None
         self._sub_commands = []
 
     def _is_valid_dir(self):
@@ -108,6 +132,10 @@ class GenericCommandGroup(object):
 
     def add_cmd(self, cmd):
         self._sub_commands.append(cmd)
+
+    @staticmethod
+    def is_group():
+        return True
 
 
 class PullDownButtonGroup(GenericCommandGroup):

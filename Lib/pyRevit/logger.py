@@ -102,3 +102,24 @@ logger = _LoggerWrapper()
 # filehandler.setFormatter(formatter)
 #
 # logger.addHandler(filehandler)
+
+# todo archive old logs?
+# def _archivelogs(self):
+#     if op.exists(user_settings.archivelogfolder):
+#         revitinstances = list(Process.GetProcessesByName('Revit'))
+#         if len(revitinstances) > 1:
+#             logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
+#         elif len(revitinstances) == 1:
+#             logger.debug('Archiving old log files...')
+#             files = os.listdir(cfg.USER_TEMP_DIR)
+#             for f in files:
+#                 if f.startswith(cfg.PYREVIT_ASSEMBLY_NAME) and f.endswith('log'):
+#                     try:
+#                         currentfileloc = op.join(cfg.USER_TEMP_DIR, f)
+#                         newloc = op.join(user_settings.archivelogfolder, f)
+#                         shutil.move(currentfileloc, newloc)
+#                         logger.debug('Existing log file archived to: {0}'.format(newloc))
+#                     except:
+#                         logger.debug('Error archiving log file: {0}'.format(f))
+#     else:
+#         logger.debug('Archive log folder does not exist: {0}. Skipping...'.format(user_settings.archivelogfolder))

@@ -1,10 +1,13 @@
 import os
 import os.path as op
 import inspect
+from datetime import datetime
+
 
 _VER_MAJOR = 4
 _VER_MINOR = 0
 _VER_PATCH = 0
+
 
 class PyRevitVersion(object):
     """Contains current pyRevit version"""
@@ -99,8 +102,11 @@ USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
 REVIT_VERSION = _get_host_revit_version()
 
-# todo session id needs to be unique for this revit session so every tool running under that session would get the same result.
+# new session defaults -------------------------------------------------------------------------------------------------
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
+SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
+SESSION_DLL_NAME = SESSION_STAMPED_ID + '.dll'
+SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.pkg'
