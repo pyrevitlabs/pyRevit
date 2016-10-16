@@ -9,7 +9,6 @@ from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, SESSION_DLL_NAME, SESSION
 from .exceptions import PyRevitLoaderNotFoundError
 from .logger import logger
 
-from .usersettings import user_settings
 
 # dot net imports
 import clr
