@@ -13,14 +13,15 @@ Branches in this repository are used for features, development, and different co
 
 The setup program clones these two branches into your machine at installation.
 
--	`master` : Master branch holds the main published repository. It also includes this Readme file that provides a link to the [pyRevit blog](http://eirannejad.github.io/pyRevit/).
-- `loader` : This is the master branch for the loader script that creates UI buttons for the scripts. It also includes the compiled `.dll` binaries for `RevitPythonLoader` that is needed to create the buttons.
+-	`master` : Master branch holds the main published repository. (It's currently empty but will hold the library scripts for final release of version 3.) It also includes this Readme file that provides a link to the [pyRevit blog](http://eirannejad.github.io/pyRevit/).
+- `loader` : This is the main branch for the loader script that creates UI buttons for the library scripts. It also includes the compiled `.dll` binaries for `RevitPythonLoader` that is needed to create the buttons.
 
 ####Develop Branches:
 
 - `loaderDev` : This is the develop branch for the python loader script and the pyRevit module.
 - `loaderBinaryDev` : This branch has the visual studio project and is the develop branch for `RevitPythonLoader` which is the addon required to load the loader and create `IExternalCommand` interfaces for Revit.
 - `verThreeDev` : This is the beta version code for the pyRevit library. The current beta installer, clones this branch to your machine. This will be pulled to master for the final version.
+- `verThreeFR` : Work-in-progress folder for final release of version 3.
 
 ####Misc Branches:
 
