@@ -5,11 +5,13 @@ import time
 
 
 def assert_folder(folder):
+    """Checks if the folder exists and if not creates the folder.
+    Returns OSError on folder making errors."""
     if not op.exists(folder):
         try:
             os.makedirs(folder)
-        except OSError:
-            return False
+        except OSError as err:
+            raise err
     return True
 
 
