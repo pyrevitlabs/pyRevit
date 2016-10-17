@@ -31,7 +31,7 @@ import pyRevit.config as cfg                        # import basic configuration
 from pyRevit.logger import logger                   # import logger to log messages to pyRevit log.
 from pyRevit.utils import Timer                     # import Timer from standard utils to log the load  time.
 
-import pyRevit.output as output_window              # handles output termina window
+from pyRevit.output import output_window              # handles output termina window
 from pyRevit.usersettings import user_settings      # handles user settings
 
 import pyRevit.session as this_session              # import session to start loading pyRvit.

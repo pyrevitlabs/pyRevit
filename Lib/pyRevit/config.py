@@ -1,6 +1,5 @@
 import os
 import os.path as op
-import inspect
 from datetime import datetime
 
 
@@ -76,15 +75,6 @@ def _get_host_revit_version():
 
 def _find_git_dir():
     return op.join(_find_home_directory(), '__git__', 'cmd')
-
-
-def _calling_scope_variable(name):
-  frame = inspect.stack()[1][0]
-  while name not in frame.f_locals:
-    frame = frame.f_back
-    if frame is None:
-      return None
-  return frame.f_locals[name]
 
 
 # general defaults -----------------------------------------------------------------------------------------------------
@@ -168,6 +158,3 @@ ARCHIVE_LOG_FOLDER_DEFAULT = 'C:\\'
 VERBOSE_KEY = "verbose"
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
-
-# getting output window handle -----------------------------------------------------------------------------------------
-OUTPUT_WINDOW = _calling_scope_variable('__window__')
