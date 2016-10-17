@@ -65,7 +65,14 @@ class _PyRevitUserSettings:
         # try reading user or admin config files
         if not self._load_settings():
             # if failed, create a user config file with default values
-            self._create_default_config_file()
+            logger.debug('No config file is found.')
+            logger.debug('Saving default config file under {}'.format(USER_SETTINGS_DIR))
+            try:
+                self._create_default_config_file()
+            except ConfigFileError as err:
+                logger.error(err.message)
+                logger.debug('Skipping saving config file.')
+                logger.debug('Continuing with default hard-coded settings.')
 
     def _load_settings(self):
         """Loads settings from settings file."""
@@ -103,38 +110,38 @@ class _PyRevitUserSettings:
         return read_successful
 
     def _create_default_config_file(self):
-        # if can not read any settings file then create a user config and fill with default
-        logger.debug('No config file is found.')
-        logger.debug('Saving default config file under {}'.format(USER_SETTINGS_DIR))
-        if assert_folder(USER_SETTINGS_DIR):
-            try:
-                with open(self.user_config_file, 'w') as udfile:
-                    cparser = ConfigParser.ConfigParser()
-                    cparser.add_section(GLOBAL_SETTINGS_SECTION_NAME)
-                    cparser.set(GLOBAL_SETTINGS_SECTION_NAME,
-                                VERBOSE_KEY, KEY_VALUE_TRUE if self.verbose else KEY_VALUE_FALSE)
-                    cparser.add_section(INIT_SETTINGS_SECTION_NAME)
-                    cparser.set(INIT_SETTINGS_SECTION_NAME,
-                                LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
-                    cparser.set(INIT_SETTINGS_SECTION_NAME,
-                                ARCHIVE_LOG_FOLDER_KEY, self.archivelogfolder)
-                    cparser.write(udfile)
-                    logger.debug('Config file saved under with default settings.')
-                    logger.debug('Config file saved under: {}'.format(USER_SETTINGS_DIR))
-                    self.config_file = self.user_config_file
-
-            except OSError:
-                # handling file open/save errors
-                logger.debug('Can not create config file under: {}'.format(USER_SETTINGS_DIR))
-                logger.debug('Skipping saving config file.')
-            except ConfigParser.Error as err:
-                # handling ConfigParser errors
-                logger.error(err.message)
-        else:
+        """Creates a user settings file under USER_SETTINGS_DIR with default hard-coded values."""
+        try:
+            # make sure folder exists or can be created if not
+            assert_folder(USER_SETTINGS_DIR)
+        except OSError as err:
             # can not create defaule USER_SETTINGS_DIR under USER_TEMP_DIR
             logger.debug('Can not create config file folder under: {}'.format(USER_SETTINGS_DIR))
+            raise ConfigFileError(err.message)
+
+        try:
+            with open(self.user_config_file, 'w') as udfile:
+                cparser = ConfigParser.ConfigParser()
+                cparser.add_section(GLOBAL_SETTINGS_SECTION_NAME)
+                cparser.set(GLOBAL_SETTINGS_SECTION_NAME,
+                            VERBOSE_KEY, KEY_VALUE_TRUE if self.verbose else KEY_VALUE_FALSE)
+                cparser.add_section(INIT_SETTINGS_SECTION_NAME)
+                cparser.set(INIT_SETTINGS_SECTION_NAME,
+                            LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
+                cparser.set(INIT_SETTINGS_SECTION_NAME,
+                            ARCHIVE_LOG_FOLDER_KEY, self.archivelogfolder)
+                cparser.write(udfile)
+                logger.debug('Config file saved under with default settings.')
+                logger.debug('Config file saved under: {}'.format(USER_SETTINGS_DIR))
+                self.config_file = self.user_config_file
+
+        except OSError:
+            # handling file open/save errors
+            logger.debug('Can not create config file under: {}'.format(USER_SETTINGS_DIR))
             logger.debug('Skipping saving config file.')
-            logger.debug('Continuing with default hard-coded settings.')
+        except ConfigParser.Error as err:
+            # handling ConfigParser errors
+            logger.error(err.message)
 
     def save_setting(self,  param_name, param_value):
         # todo: not implemented, read will be handled by _load_settings and class param will be added
