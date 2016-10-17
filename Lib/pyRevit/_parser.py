@@ -1,15 +1,42 @@
+""" Module name = _parser.py
+Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Python scripts for Autodesk Revit
+
+This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+
+pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3, as published by
+the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+See this link for a copy of the GNU General Public License protecting this package.
+https://github.com/eirannejad/pyRevit/blob/master/LICENSE
+
+
+~~~
+This module provides necessary functionality for parsing folders and creating a tree of
+discovered packages, their tabs, panels, and different button types.
+"""
+
 import os
 import os.path as op
 
 from .exceptions import PyRevitUnknownFormatError
+# todo add debug messages
 from .logger import logger
 from .config import HOME_DIR
 from ._commandtree import Package, Panel, Tab, GenericCommandGroup, GenericCommand
+# todo implement cache
 from ._cache import is_cache_valid, get_cached_package, update_cache
 
 
 def _get_sub_dirs(parent_dir):
     # todo revise to return directories only?
+    logger.debug('Listing directories for {}'.format(parent_dir))
     return os.listdir(parent_dir)
 
 
@@ -74,6 +101,7 @@ def get_installed_packages():
     pkgs = []
     for dirname in _get_sub_dirs(HOME_DIR):
         full_path = op.join(HOME_DIR, dirname)
+        logger.debug('Parsing {}'.format(full_path))
         try:
             # try creating a package
             new_pkg = Package(full_path)
@@ -94,6 +122,7 @@ def get_installed_packages():
 
         except PyRevitUnknownFormatError:
             # todo log failure
+            logger.debug('Directory: {}\nis not a package.'.format(full_path))
             pass
 
     return pkgs

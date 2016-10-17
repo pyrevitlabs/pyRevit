@@ -1,22 +1,18 @@
 import sys
 import logging
 
+
 class _LoggerWrapper:
     """ Logger Wrapper to extend loggers functionality.
     Usage:
-     from logger import LoggerWrapper
-
-     logger = LoggerWrapper()  #  Initialized loger
+     from logger import logger
 
     Same calls as regular logger:
-     logger.info('Message')
-     >> [INFO]  Message
-
-     logger.debug('Message')
-     >> [DEBUG]  Message
+     logger.info('Message')             # [INFO]  Message
+     logger.debug('Message')            # [DEBUG]  Message
 
     Set Logging Level/Debug:
-     logger.verbose(True)  # Set to Info or higher as default
+     logger.verbose(True)               # Set to Info or higher as default
 
     Additional Features:
      logger.title('Message'): Outputs lines above and below, uses clean format
@@ -37,7 +33,6 @@ class _LoggerWrapper:
     """
 
     def __init__(self):
-
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)

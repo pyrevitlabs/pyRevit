@@ -1,3 +1,28 @@
+""" Module name: session.py
+Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Python scripts for Autodesk Revit
+
+This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+
+pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3, as published by
+the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+See this link for a copy of the GNU General Public License protecting this package.
+https://github.com/eirannejad/pyRevit/blob/master/LICENSE
+
+
+~~~
+This module provide a series of functions to create and manage a pyRevit session under Revit.
+Each time Revit is run, pyRevit creates a session and will create buttons in Revit ui.
+Each pyRevit session will have its own .dll and log file.
+"""
+
 from .exceptions import PyRevitUnknownAssemblyError
 from ._parser import get_installed_packages             # get_installed_packages() handles parsing the script libraries
 from ._assemblies import create_assembly                # create_assembly() creates the dll assembly for given commands

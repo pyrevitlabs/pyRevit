@@ -3,6 +3,9 @@ from .logger import logger
 
 # General Exceptions
 class PyRevitException(Exception):
+    """Base class for all pyRevit Exceptions.
+    Parameters args and message are derived from Exception class.
+    """
     pass
 
 
@@ -32,4 +35,9 @@ class PyRevitCacheWriteError(PyRevitCacheError):
 
 
 class PyRevitCacheExpiredError(PyRevitCacheError):
+    pass
+
+
+# Config file parsing exeptions
+class ConfigFileError(PyRevitException):
     pass
