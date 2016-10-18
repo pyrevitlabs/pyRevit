@@ -35,6 +35,8 @@ from .utils import assert_folder
 
 
 # todo: add Debug mode parameter
+# todo: add output window open settings
+# todo: add command name alias system
 class _PyRevitUserSettings:
     """Private class for handling all functions related to user settings.
      This module reads and writes settings using python native ConfigParser.
