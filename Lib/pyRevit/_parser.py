@@ -71,29 +71,34 @@ def _find_subcomponents(search_dir, component_class):
             for cmp_class in cmp_classes:
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
+                    # cmp_class will raise error if full_path is not of cmp_class type.
                     sub_cmp_list.append(cmp_class(full_path))
                 except PyRevitUnknownFormatError:
-                    # else, try next class
+                    # cmp_class can not init with full_path, try next class
                     continue
                 # todo: log skipping over dirs that dont match anthing
 
     return sub_cmp_list
 
 
-def _find_cmd(search_dir):
+def _create_cmds(search_dir):
     return _find_subcomponents(search_dir, GenericCommand)
 
 
-def _find_cmd_groups(search_dir):
+def _create_cmd_groups(search_dir):
     return _find_subcomponents(search_dir, GenericCommandGroup)
 
 
-def _find_panels(search_dir):
+def _create_panels(search_dir):
     return _find_subcomponents(search_dir, Panel)
 
 
-def _find_tabs(search_dir):
+def _create_tabs(search_dir):
     return _find_subcomponents(search_dir, Tab)
+
+
+def _create_pkg(search_dir):
+    return _find_subcomponents(search_dir, Package)
 
 
 def get_installed_packages():
@@ -104,18 +109,24 @@ def get_installed_packages():
         logger.debug('Parsing {}'.format(full_path))
         try:
             # try creating a package
-            new_pkg = Package(full_path)
+            new_pkg = _create_pkg(full_path)
 
-            for new_tab in _find_tabs(new_pkg.directory):
+            # try creating tabs for new_pkg
+            for new_tab in _create_tabs(new_pkg.directory):
                 new_pkg.add_component(new_tab)
                 # todo: try reading tab from cache before parsing for it
-                for new_panel in _find_panels(new_tab.directory):
+                # try creating panels for new_tab
+                for new_panel in _create_panels(new_tab.directory):
                     new_tab.add_panel(new_panel)
-                    for new_cmd_group in _find_cmd_groups(new_panel.directory):
+                    # panles can hold both single commands and command groups
+                    # try creating command groups for new_panel
+                    for new_cmd_group in _create_cmd_groups(new_panel.directory):
                         new_panel.add_component(new_cmd_group)
-                        for new_cmd in _find_cmd(new_cmd_group.group_dir):
+                        # try creating commands for new_cmd_gorup
+                        for new_cmd in _create_cmds(new_cmd_group.directory):
                             new_cmd_group.add_cmd(new_cmd)
-                    for new_cmd in _find_cmd(new_panel.directory):
+                    # try creating commands for new_panel
+                    for new_cmd in _create_cmds(new_panel.directory):
                         new_panel.add_component(new_cmd)
 
             pkgs.append(new_pkg)

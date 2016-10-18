@@ -22,6 +22,10 @@ This is pyRevit's main loader script.
 Its purpose is to create an instance of pyRevit.session and call its .load() method.
 That would in return start parsing the folders for scripts, create a dll for the commands and
 lastly create the pyRevit ui in Revit.
+
+The main reason why this loader script has been kept outside the pyRevit library is to demonstrate how a third-party
+script can tap into the pyRevit library to read configurations, user settings, access logging system and also
+start and interact with pyRevit.session
 """
 
 import sys
@@ -45,10 +49,11 @@ t = Timer()
 # set output window size.
 output_window.set_width(1100)
 
-# log python version and home directory info.
+# log python version, home directory, config file and loader script location.
 logger.debug('Running on: {0}'.format(sys.version))
 logger.debug('Home Directory is: {0}'.format(cfg.HOME_DIR))
 logger.debug('Config file is: {}'.format(user_settings.config_file))
+logger.debug('Loader files is: {}'.format(this_session.get_this_command().script_file_address))
 
 # load pyRevit session.
 this_session.load()

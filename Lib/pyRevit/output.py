@@ -1,4 +1,4 @@
-""" Filename = output.py
+""" Module name = output.py
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 

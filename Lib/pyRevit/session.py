@@ -39,10 +39,10 @@ def load():
         import pyRevit.session as current_session
         current_session.load()
     """
-    # for every package of installed packages
+    # for every package of installed packages, create an assembly, and create a ui
     # get_installed_packages() will read from cache and handles caches internally. viva Law of Demeter.
-    # parser, assembly maker, and ui creator all understand ._commandtree classes.
-    # this function only moderates the communication and handles errors.
+    # parser, assembly maker, and ui creator all understand ._commandtree classes. (They speak the same language)
+    # the session.load() function (this function) only moderates the communication and handles errors.
     for parsed_pkg in get_installed_packages():
         try:
             # create a dll assembly

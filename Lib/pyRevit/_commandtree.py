@@ -19,6 +19,7 @@ class GenericContainer(object):
             raise PyRevitUnknownFormatError()
 
         self.name = None
+        self.original_name = self.name
         self.search_path_list = None
         self._sub_components = []
 
@@ -82,18 +83,19 @@ class GenericCommand(object):
     See LinkButton and ToggleButton classes.
     """
     def __init__(self, cmd_dir):
-        self.cmd_dir = cmd_dir
+        self.directory = cmd_dir
         if not self._is_valid_dir():
             raise PyRevitUnknownFormatError()
 
-        self.cmd_name = None
+        self.name = None
+        self.original_name = self.name
         self.icon_file = None
         self.script_file = None
         self.script_file_address = None
         self.search_path_list = None
 
     def _is_valid_dir(self):
-        return self.cmd_dir.endswith(self.type_id)
+        return self.directory.endswith(self.type_id)
 
     @staticmethod
     def is_group():
@@ -117,18 +119,19 @@ class ToggleButton(GenericCommand):
 # todo: populate info
 class GenericCommandGroup(object):
     def __init__(self, group_dir):
-        self.group_dir = group_dir
+        self.directory = group_dir
         if not self._is_valid_dir():
             raise PyRevitUnknownFormatError()
 
-        self.group_name = None
+        self.name = None
+        self.original_name = self.name
         self.sort_level = 0
         self.icon_file = None
         self.search_path_list = None
         self._sub_commands = []
 
     def _is_valid_dir(self):
-        return self.group_dir.endswith(self.type_id)
+        return self.directory.endswith(self.type_id)
 
     def __iter__(self):
         return iter(self._sub_commands)
