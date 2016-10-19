@@ -122,7 +122,7 @@ SESSION_DLL_NAME = SESSION_STAMPED_ID + '.dll'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
-PACKAGE_POSTFIX = '.pkg'
+PACKAGE_POSTFIX = '.package'
 TAB_POSTFIX = '.tab'
 PANEL_POSTFIX = '.panel'
 LINK_BUTTON_POSTFIX = '.pushbutton'
