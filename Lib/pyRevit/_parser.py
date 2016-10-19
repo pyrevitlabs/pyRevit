@@ -35,19 +35,11 @@ All these four modules can understand the component tree. (_basecomponents modul
 import os
 import os.path as op
 
-from .exceptions import PyRevitUnknownFormatError
-# todo add debug messages
+from .exceptions import PyRevitException
 from .logger import logger
 from .config import HOME_DIR
 from ._basecomponents import Package, Panel, Tab, GenericCommandGroup, GenericCommand
-# todo implement cache
 from ._cache import is_cache_valid, get_cached_package, update_cache
-
-
-def _get_sub_dirs(parent_dir):
-    # todo revise to return directories only?
-    logger.debug('Listing directories for {}'.format(parent_dir))
-    return os.listdir(parent_dir)
 
 
 def _create_subcomponents(search_dir, component_class):
@@ -73,24 +65,23 @@ def _create_subcomponents(search_dir, component_class):
     try:
         cmp_classes = component_class.__subclasses__()
     except AttributeError:
-        cmp_classes = list(component_class)
+        cmp_classes = [component_class]
 
-    for dirname in os.listdir(search_dir):
-        full_path = op.join(search_dir, dirname)
-        # full_path is a dir, its name does not start with . or _:
-        if op.isdir(full_path) and not dirname.startswith(('.', '_')):
+    for file_or_dir in os.listdir(search_dir):
+        full_path = op.join(search_dir, file_or_dir)
+        # full_path might be a file or a dir, but its name should not start with . or _:
+        if not file_or_dir.startswith(('.', '_')):
             for cmp_class in cmp_classes:
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
-                    cmp = cmp_class(full_path)
-                    sub_cmp_list.append(cmp)
-                    logger.debug('Successfuly created component of type {}\nfrom: {}'.format(cmp.type_id, full_path))
-                except PyRevitUnknownFormatError:
-                    logger.debug('Can not create component from: {}'.format(full_path))
-                    # cmp_class can not init with full_path, try next class
-                    continue
-                # todo: log skipping over dirs that dont match anthing
+                    component = cmp_class(full_path)
+                    logger.debug('Successfuly created component:\n{}'.format(component))
+                    sub_cmp_list.append(component)
+                except PyRevitException:
+                    logger.debug('Can not create component from:\n{}'.format(full_path))
+        else:
+            logger.debug('Excluding directories with . or _ in name: {}'.format(full_path))
 
     return sub_cmp_list
 
@@ -111,42 +102,61 @@ def _create_tabs(search_dir):
     return _create_subcomponents(search_dir, Tab)
 
 
-def _create_pkg(search_dir):
+def _create_pkgs(search_dir):
     return _create_subcomponents(search_dir, Package)
 
 
 def get_installed_packages():
-    """Parses home directory and return a list of Package objects for installed packages."""
-    pkgs = []
-    for dirname in _get_sub_dirs(HOME_DIR):
-        full_path = op.join(HOME_DIR, dirname)
-        logger.debug('Parsing {}'.format(full_path))
-        try:
-            # try creating a package
-            new_pkg = _create_pkg(full_path)
+    """Parses home directory and return a list of Package objects for installed packages.
+    Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
+    sub components of package can be accessed from pkg.sub_components list.
+    See _basecomponents for types.
+    """
 
+    # errors are handled internally by the _create_* functions.
+    # component creation errors are not critical. Each component that fails, will simply not be created.
+    # all errors will be logged to debug for troubleshooting
+
+    # try creating packages
+    pkg_list = []
+    for new_pkg in _create_pkgs(HOME_DIR):
+
+        # test if cache is valid for this package
+        # it might seem unusual to create a package and then re-load it from cache but minimum information
+        # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
+        # Also package object is very small and its creation doesn't add much overhead.
+        if is_cache_valid(new_pkg):
+            # if yes, load the cached package and add the cached tabs to the new package
+            for new_tab in get_cached_package(new_pkg).get_components():
+                new_pkg.add_component(new_tab)
+
+        # if load from cache failed or cache is obsolete (due to folder changes, new pyRevit version, etc.)
+        # parse the folders and create sub-components for the package
+        else:
             # try creating tabs for new_pkg
             for new_tab in _create_tabs(new_pkg.directory):
                 new_pkg.add_component(new_tab)
-                # todo: try reading tab from cache before parsing for it
+
                 # try creating panels for new_tab
                 for new_panel in _create_panels(new_tab.directory):
                     new_tab.add_panel(new_panel)
-                    # panles can hold both single commands and command groups
+
+                    # panels can hold both single commands and command groups
                     # try creating command groups for new_panel
                     for new_cmd_group in _create_cmd_groups(new_panel.directory):
                         new_panel.add_component(new_cmd_group)
                         # try creating commands for new_cmd_gorup
                         for new_cmd in _create_cmds(new_cmd_group.directory):
                             new_cmd_group.add_cmd(new_cmd)
+
                     # try creating commands for new_panel
                     for new_cmd in _create_cmds(new_panel.directory):
                         new_panel.add_component(new_cmd)
 
-            pkgs.append(new_pkg)
+            # update cache with newly parsed package and its components
+            update_cache(new_pkg)
 
-        except PyRevitUnknownFormatError:
-            logger.debug('Directory: {}\nis not a package.'.format(full_path))
-            pass
+        # add the newly parsed package to the return list
+        pkg_list.append(new_pkg)
 
-    return pkgs
+    return pkg_list

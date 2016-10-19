@@ -52,6 +52,12 @@ from .usersettings import user_settings
 # superclass for all tree branches that contain sub-branches
 # todo: populate info
 class GenericContainer(object):
+    """
+
+    """
+
+    type_id = ''
+
     def __init__(self, branch_dir):
         self.directory = branch_dir
         if not self._is_valid_dir():
@@ -71,6 +77,9 @@ class GenericContainer(object):
     def add_component(self, comp):
         self._sub_components.append(comp)
 
+    def get_components(self):
+        return self._sub_components
+
 
 # root class for each package. might contain multiple tabs
 class Package(GenericContainer):
@@ -80,9 +89,6 @@ class Package(GenericContainer):
         GenericContainer.__init__(self, package_dir)
         self.author = None
         self.version = None
-
-    def get_all_commands(self):
-        pass
 
 
 # class for each tab. might contain multiple panels
@@ -116,6 +122,12 @@ class Panel(GenericContainer):
 # superclass for all groups of commands.
 # todo: populate info
 class GenericCommandGroup(object):
+    """
+
+    """
+
+    type_id = ''
+
     def __init__(self, group_dir):
         self.directory = group_dir
         if not self._is_valid_dir():
@@ -171,6 +183,8 @@ class GenericCommand(object):
     Revit UI. (e.g. Toggle button changes it's icon based on its on/off status)
     See LinkButton and ToggleButton classes.
     """
+    type_id = ''
+
     def __init__(self, cmd_dir):
         self.directory = cmd_dir
         if not self._is_valid_dir():
@@ -194,6 +208,9 @@ class GenericCommand(object):
     @staticmethod
     def is_group():
         return False
+
+    def __repr__(self):
+        return 'Type Id: {} Directory: {} Name: {}'.format(self.type_id, self.directory, self.original_name)
 
     def _is_valid_dir(self):
         return self.directory.endswith(self.type_id)
