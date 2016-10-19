@@ -18,15 +18,18 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 
 ~~~
-This module provide a series of functions to create and manage a pyRevit session under Revit.
-Each time Revit is run, pyRevit creates a session and will create buttons in Revit ui.
+Description:
+pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
+This module provide a series of functions to create and manage a pyRevit session under Revit (using the 4 modules).
+Each time Revit is run, the loader script imports pyRevit.session and creates a session. The session (this module)
+then calls the parser, assembly maker, and lastly ui maker to create the buttons in Revit.
 Each pyRevit session will have its own .dll and log file.
 """
 
 from .exceptions import PyRevitUnknownAssemblyError
 from ._parser import get_installed_packages             # get_installed_packages() handles parsing the script libraries
 from ._assemblies import create_assembly                # create_assembly() creates the dll assembly for given commands
-from ._ui import update_revit_ui, PyRevitUI     # update_revit_ui() handles ui creation for given commands
+from ._ui import update_revit_ui, PyRevitUI             # update_revit_ui() handles ui creation for given commands
 
 
 # ----------------------------------------------------------------------------------------------------------------------

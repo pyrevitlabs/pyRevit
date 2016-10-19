@@ -18,6 +18,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 
 ~~~
+Description:
 This is pyRevit's main loader script.
 Its purpose is to create an instance of pyRevit.session and call its .load() method.
 That would in return start parsing the folders for scripts, create a dll for the commands and
@@ -25,7 +26,7 @@ lastly create the pyRevit ui in Revit.
 
 The main reason why this loader script has been kept outside the pyRevit library is to demonstrate how a third-party
 script can tap into the pyRevit library to read configurations, user settings, access logging system and also
-start and interact with pyRevit.session
+start and interact with a pyRevit.session
 """
 
 import sys
