@@ -26,7 +26,7 @@ Each pyRevit session will have its own .dll and log file.
 from .exceptions import PyRevitUnknownAssemblyError
 from ._parser import get_installed_packages             # get_installed_packages() handles parsing the script libraries
 from ._assemblies import create_assembly                # create_assembly() creates the dll assembly for given commands
-from ._ui import update_revit_ui, ExistingPyRevitUI     # update_revit_ui() handles ui creation for given commands
+from ._ui import update_revit_ui, PyRevitUI     # update_revit_ui() handles ui creation for given commands
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -77,4 +77,4 @@ def current_ui():
         this_script = pyRevit.session.get_this_command()
         current_ui.update_button_icon(this_script, new_icon)
     """
-    return ExistingPyRevitUI()
+    return PyRevitUI()

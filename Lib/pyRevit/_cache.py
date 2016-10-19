@@ -1,11 +1,10 @@
-import os
-import sys
-import os.path as op
+
+
+
 import shutil
 import re
 import json
 import hashlib
-from datetime import datetime
 
 # pyrevit module imports
 from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, PyRevitVersion
@@ -13,22 +12,29 @@ from .exceptions import *
 from .logger import logger
 from .uielements import *
 
-# dot net imports
-import clr
-clr.AddReference('PresentationCore')
-clr.AddReference('RevitAPI')
-clr.AddReference('RevitAPIUI')
-clr.AddReference('System.Xml.Linq')
-from System import *
-from System.IO import *
-from System.Reflection import *
-from System.Reflection.Emit import *
-from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-from System.Diagnostics import Process
+# todo cache can store cached dll info as well
+# todo cache needs to save home directory address in cache and cross check later
 
-# revit api imports
-from Autodesk.Revit.UI import *
-from Autodesk.Revit.Attributes import *
+
+def calculate_hash(self):
+    """Creates a unique hash # to represent state of directory."""
+    # logger.info('Generating Hash of directory')
+    # search does not include png files:
+    #   if png files are added the parent folder mtime gets affected
+    #   cache only saves the png address and not the contents so they'll get loaded everytime
+    # todo: improve speed by pruning dir: dirs[:] = [d for d in dirs if d not in excludes]
+    #       see http://stackoverflow.com/a/5141710/2350244
+    pat = r'(\.panel)|(\.tab)'
+    patfile = r'(\.py)'
+    mtime_sum = 0
+    for root, dirs, files in os.walk(self.tabFolder):
+        if re.search(pat, root, flags=re.IGNORECASE):
+            mtime_sum += op.getmtime(root)
+            for filename in files:
+                if re.search(patfile, filename, flags=re.IGNORECASE):
+                    modtime = op.getmtime(op.join(root, filename))
+                    mtime_sum += modtime
+    return hashlib.md5(str(mtime_sum)).hexdigest()
 
 
 def get_cache_file(cached_tab):

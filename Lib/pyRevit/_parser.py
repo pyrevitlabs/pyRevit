@@ -18,8 +18,9 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 
 ~~~
-This module provides necessary functionality for parsing folders and creating a tree of
-discovered packages, their tabs, panels, and different button types.
+PURPOSE:
+Provide all directory parsing functionality.
+
 """
 
 import os
@@ -29,7 +30,7 @@ from .exceptions import PyRevitUnknownFormatError
 # todo add debug messages
 from .logger import logger
 from .config import HOME_DIR
-from ._commandtree import Package, Panel, Tab, GenericCommandGroup, GenericCommand
+from ._basicelements import Package, Panel, Tab, GenericCommandGroup, GenericCommand
 # todo implement cache
 from ._cache import is_cache_valid, get_cached_package, update_cache
 
@@ -40,7 +41,7 @@ def _get_sub_dirs(parent_dir):
     return os.listdir(parent_dir)
 
 
-def _find_subcomponents(search_dir, component_class):
+def _create_subcomponents(search_dir, component_class):
     """Parses the provided directory and returns a list of objects of the type component_class.
     Arguments:
         search_dir: directory to parse
@@ -49,7 +50,7 @@ def _find_subcomponents(search_dir, component_class):
         This ensures that of any new type of sub-class is added, this method does not need to be updated as
          the new sub-class will be listed by .__subclasses__() method of the parent class.
     Example:
-        _find_subcomponents(search_dir, GenericCommand)
+        _create_subcomponents(search_dir, GenericCommand)
         GenericCommand.__subclasses__() will return [LinkButton, PushButton, or ToggleButton] and thus
         this method creates LinkButton, PushButton, or ToggleButton for the parsed sub-directories under search_dir
         with matching .type_id identifiers in folder names. (e.g. "folder.LINK_BUTTON_POSTFIX")
@@ -82,23 +83,23 @@ def _find_subcomponents(search_dir, component_class):
 
 
 def _create_cmds(search_dir):
-    return _find_subcomponents(search_dir, GenericCommand)
+    return _create_subcomponents(search_dir, GenericCommand)
 
 
 def _create_cmd_groups(search_dir):
-    return _find_subcomponents(search_dir, GenericCommandGroup)
+    return _create_subcomponents(search_dir, GenericCommandGroup)
 
 
 def _create_panels(search_dir):
-    return _find_subcomponents(search_dir, Panel)
+    return _create_subcomponents(search_dir, Panel)
 
 
 def _create_tabs(search_dir):
-    return _find_subcomponents(search_dir, Tab)
+    return _create_subcomponents(search_dir, Tab)
 
 
 def _create_pkg(search_dir):
-    return _find_subcomponents(search_dir, Package)
+    return _create_subcomponents(search_dir, Package)
 
 
 def get_installed_packages():
@@ -132,7 +133,6 @@ def get_installed_packages():
             pkgs.append(new_pkg)
 
         except PyRevitUnknownFormatError:
-            # todo log failure
             logger.debug('Directory: {}\nis not a package.'.format(full_path))
             pass
 

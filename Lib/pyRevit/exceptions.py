@@ -21,6 +21,10 @@ class PyRevitLoaderNotFoundError(PyRevitException):
     pass
 
 
+class PyRevitNoScriptFileError(PyRevitException):
+    pass
+
+
 # Cache-Specific Exceptions
 class PyRevitCacheError(PyRevitException):
     pass

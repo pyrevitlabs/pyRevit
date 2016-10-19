@@ -1,5 +1,5 @@
+from .config import SCRIPT_FILE_FORMAT
 from .logger import logger
-from .exceptions import RevitRibbonItemExists, RevitRibbonPanelExists, RevitRibbonTabExists
 
 # dotnet imports
 import clr
@@ -16,27 +16,61 @@ from Autodesk.Revit.UI import *
 from Autodesk.Revit.Attributes import *
 
 
+class ButtonIcons:
+    def __init__(self, file_address):
+        uri = Uri(file_address)
+
+        self.smallBitmap = BitmapImage()
+        self.smallBitmap.BeginInit()
+        self.smallBitmap.UriSource = uri
+        self.smallBitmap.CacheOption = BitmapCacheOption.OnLoad
+        self.smallBitmap.DecodePixelHeight = 16
+        self.smallBitmap.DecodePixelWidth = 16
+        self.smallBitmap.EndInit()
+
+        self.mediumBitmap = BitmapImage()
+        self.mediumBitmap.BeginInit()
+        self.mediumBitmap.UriSource = uri
+        self.mediumBitmap.CacheOption = BitmapCacheOption.OnLoad
+        self.mediumBitmap.DecodePixelHeight = 24
+        self.mediumBitmap.DecodePixelWidth = 24
+        self.mediumBitmap.EndInit()
+
+        self.largeBitmap = BitmapImage()
+        self.largeBitmap.BeginInit()
+        self.largeBitmap.UriSource = uri
+        self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
+        self.largeBitmap.EndInit()
+
+
 # todo
-class _ExistingPyRevitRibbonElement(object):
+class _PyRevitRibbonElement(object):
     def __init__(self):
         self.name = None
         self.children = []
 
+    @staticmethod
+    def make_tooltip(cmd):
+        tooltip = cmd.doc_string
+        tooltip += '\n\nScript Name:\n{0}'.format(cmd.name + ' ' + SCRIPT_FILE_FORMAT)
+        tooltip += '\n\nAuthor:\n{0}'.format(cmd.author)
+        return tooltip
+
 
 # todo
-class _ExistingPyRevitPanel(_ExistingPyRevitRibbonElement):
+class _PyRevitPanel(_PyRevitRibbonElement):
     def retrieve_ribbon_item(self, item):
         pass
 
 
 # todo
-class _ExistingPyRevitTab(_ExistingPyRevitRibbonElement):
+class _PyRevitTab(_PyRevitRibbonElement):
     def retrieve_ribbon_panel(self, panel):
         pass
 
 
 # todo
-class ExistingPyRevitUI(_ExistingPyRevitRibbonElement):
+class PyRevitUI(_PyRevitRibbonElement):
     def retrieve_ribbon_tab(self, tab):
         pass
 
@@ -52,13 +86,15 @@ class ExistingPyRevitUI(_ExistingPyRevitRibbonElement):
 
 def update_revit_ui(parsed_pkg, pkg_asm_location):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
-    This functions has been kept outside the ExistingPyRevitUI class since it'll only be used
+    This functions has been kept outside the PyRevitUI class since it'll only be used
     at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
     See pyRevit.session.load() for requesting load/reload of the pyRevit package.
     """
 
     # Collect exising ui elements and update/create
-    current_ui = ExistingPyRevitUI()
+    current_ui = PyRevitUI()
+
+    # Traverse thru the package and create necessary ui elements
     for tab in parsed_pkg:
         # creates pyrevit ribbon-panels for given tab data
         # A package might contain many tabs. Some tabs might not temporarily include any commands

@@ -145,8 +145,8 @@ class _PyRevitUserSettings:
             # handling ConfigParser errors
             logger.error(err.message)
 
-    def save_setting(self,  param_name, param_value):
-        # todo: not implemented, read will be handled by _load_settings and class param will be added
+    def save_parameter(self,  param_name, param_value):
+        # todo: implement
         try:
             with open(self.user_config_file, 'w') as udfile:
                 cparser = ConfigParser.ConfigParser()
@@ -155,6 +155,15 @@ class _PyRevitUserSettings:
             raise ConfigFileError('Error reading file.')
         except ConfigParser.Error as err:
             raise ConfigFileError(err.message)
+
+    def load_parameter(self, param_name, param_value):
+        # todo: implement
+        pass
+
+    def get_alias(self, original_cmd_name):
+        # todo: implement
+        return original_cmd_name
+
 
 # creating an instance of _PyRevitUserSettings().
 # this pushes reading settings at first import of this module.

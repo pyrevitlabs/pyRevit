@@ -27,22 +27,24 @@ from Autodesk.Revit.Attributes import *
 
 
 # Generic named tuple for returning assembly information.
-GenericAssemblyInfo = namedtuple('GenericAssemblyInfo', ['assembly', 'cmd_loader_class'])
+PyRevitCommandLoaderAssemblyInfo = namedtuple('PyRevitCommandLoaderAssemblyInfo', ['assembly', 'cmd_loader_class'])
 
 
 def _find_commandloader_class():
     """Private func: Finds the loader assembly addin and command interface class."""
     logger.debug('Asking Revit for command loader assembly...')
-    for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-        if LOADER_ADDIN in loadedAssembly.FullName:
+    for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
+        if LOADER_ADDIN in loaded_assembly.FullName:
             # Loader assembly is found
             # Getting the base command loader class
-            logger.debug('Command loader assembly found: {0}'.format(loadedAssembly.GetName().FullName))
-            loader_class = loadedAssembly.GetType(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
+            logger.debug('Command loader assembly found: {0}'.format(loaded_assembly.GetName().FullName))
+            loader_class = loaded_assembly.GetType(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
             if loader_class is not None:
-                return GenericAssemblyInfo(loadedAssembly, loader_class)
+                return PyRevitCommandLoaderAssemblyInfo(loaded_assembly, loader_class)
+            else:
+                logger.critical('Can not find command loader class type.')
 
-    logger.critical('pyRevit load failed...Can not find necessary command loader class.')
+    logger.critical('Can not find necessary command loader assembly.')
     raise PyRevitLoaderNotFoundError()
 
 
@@ -97,7 +99,9 @@ def _create_dll_assembly(command_list, loader_class):
     modulebuilder = assemblybuilder.DefineDynamicModule(SESSION_STAMPED_ID, SESSION_DLL_NAME)
 
     # create command classes
+    # todo travere the tree instead of commands
     for cmd in command_list:
+        # todo build the classname for cmd
         type_builder = modulebuilder.DefineType(cmd.className,
                                                 TypeAttributes.Class | TypeAttributes.Public,
                                                 loader_class)
@@ -121,10 +125,11 @@ def _create_dll_assembly(command_list, loader_class):
         gen = const_builder.GetILGenerator()
         gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
         # Load the path to the command as a string onto stack
-        gen.Emit(OpCodes.Ldstr, cmd.script_file_address)
+        gen.Emit(OpCodes.Ldstr, cmd.get_full_script_address())
         # Load log file name into stack
         gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
         # Adding search paths to the stack. to simplify, concatenate using ; as separator
+        # todo build search paths from tree component.directory params
         gen.Emit(OpCodes.Ldstr, ';'.join(cmd.search_path_list))
         gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
         gen.Emit(OpCodes.Nop)       # Fill some space - this is how it is generated for equivalent C# code
@@ -148,4 +153,4 @@ def create_assembly(parsed_pkg):
         logger.debug('pyRevit is reloading. Skipping DLL and log cleanup.')
 
     # create dll and return assembly path to be used in UI creation
-    return _create_dll_assembly(parsed_pkg.get_all_commands(), _find_commandloader_class())
+    return _create_dll_assembly(parsed_pkg.get_all_commands(), _find_commandloader_class().cmd_loader_class)
