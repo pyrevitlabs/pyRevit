@@ -1,3 +1,35 @@
+""" Module name = _basecomponents.py
+Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Python scripts for Autodesk Revit
+
+This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+
+pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3, as published by
+the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+See this link for a copy of the GNU General Public License protecting this package.
+https://github.com/eirannejad/pyRevit/blob/master/LICENSE
+
+
+~~~
+Description:
+pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
+This module provides the base component classes that is understood by these four modules.
+It is the language the these four modules can understand (_basecomponents module)
+ _parser parses the folders and creates a tree of components provided by _basecomponents
+ _assemblies make a dll from the tree.
+ _ui creates the ui using the information provided by the tree.
+ _cache will save and restore the tree to increase loading performance.
+
+This module only uses the base modules (.config, .logger, .exceptions, .output, .utils)
+"""
+
 import os
 import os.path as op
 import sys

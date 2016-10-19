@@ -18,9 +18,18 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 
 ~~~
-PURPOSE:
-Provide all directory parsing functionality.
+Description:
+pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
+This is the module responsible for parsing folders and creating components (Buttons, Tabs, ...)
+The assembly, ui, and cache module will later use this information to to their job.
 
+All these four modules are private and handled by pyRevit.session
+These modules do not import each other and mainly use base modules (.config, .logger, .exceptions, .output, .utils)
+All these four modules can understand the component tree. (_basecomponents module)
+ _parser parses the folders and creates a tree of components provided by _basecomponents
+ _assemblies make a dll from the tree.
+ _ui creates the ui using the information provided by the tree.
+ _cache will save and restore the tree to increase loading performance.
 """
 
 import os
@@ -30,7 +39,7 @@ from .exceptions import PyRevitUnknownFormatError
 # todo add debug messages
 from .logger import logger
 from .config import HOME_DIR
-from ._basicelements import Package, Panel, Tab, GenericCommandGroup, GenericCommand
+from ._basecomponents import Package, Panel, Tab, GenericCommandGroup, GenericCommand
 # todo implement cache
 from ._cache import is_cache_valid, get_cached_package, update_cache
 
@@ -46,14 +55,15 @@ def _create_subcomponents(search_dir, component_class):
     Arguments:
         search_dir: directory to parse
         component_class: If a subfolder name ends with component_class.type_id, (or .type_id of any sub-class)
-        this method creates the component_class (or sub-class) object and adds to the list to be returned.
-        This ensures that of any new type of sub-class is added, this method does not need to be updated as
-         the new sub-class will be listed by .__subclasses__() method of the parent class.
+         this method creates an object of type component_class and adds to the list to be returned.
+        This ensures that if any new type of component_class is added later, this method does not need to be updated as
+         the new sub-class will be listed by .__subclasses__() method of the parent class and this method will check
+         the directory for its .type_id
     Example:
         _create_subcomponents(search_dir, GenericCommand)
         GenericCommand.__subclasses__() will return [LinkButton, PushButton, or ToggleButton] and thus
         this method creates LinkButton, PushButton, or ToggleButton for the parsed sub-directories under search_dir
-        with matching .type_id identifiers in folder names. (e.g. "folder.LINK_BUTTON_POSTFIX")
+        with matching .type_id identifiers in their names. (e.g. "folder.LINK_BUTTON_POSTFIX")
     Returns:
         list of created classes of type component_class or sub-classes of component_class
     """
@@ -73,8 +83,11 @@ def _create_subcomponents(search_dir, component_class):
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
-                    sub_cmp_list.append(cmp_class(full_path))
+                    cmp = cmp_class(full_path)
+                    sub_cmp_list.append(cmp)
+                    logger.debug('Successfuly created component of type {}\nfrom: {}'.format(cmp.type_id, full_path))
                 except PyRevitUnknownFormatError:
+                    logger.debug('Can not create component from: {}'.format(full_path))
                     # cmp_class can not init with full_path, try next class
                     continue
                 # todo: log skipping over dirs that dont match anthing
