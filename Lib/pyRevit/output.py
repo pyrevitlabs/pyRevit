@@ -61,7 +61,6 @@ class PyRevitConsoleWindow(object):
         self.win_handle.Hide()
 
     def show(self):
-        # todo
         self.win_handle.Show()
 
 
