@@ -2,6 +2,9 @@ import os
 import os.path as op
 import subprocess as sp
 import time
+import re
+
+from .config import SPECIAL_CHARS
 
 
 class Timer:
@@ -64,3 +67,15 @@ def get_parent_directory(path):
 
 def run_process(proc, cwd=''):
     return sp.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
+
+
+def join_paths(path_list):
+    return ';'.join(path_list)
+
+
+def cleanup_string(input_str):
+    # remove spaces and special characters from strings
+    for char, repl in SPECIAL_CHARS.items():
+        input_str = input_str.replace(char, repl)
+
+    return input_str

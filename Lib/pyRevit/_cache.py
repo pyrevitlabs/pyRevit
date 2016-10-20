@@ -117,6 +117,7 @@ def _get_cached_tab(cached_tab):
 
 
 def update_cache(parsed_tab):
+    return True
     logger.debug('Updating cache for tab: {} ...'.format(parsed_tab.name))
     if not parsed_tab.loaded_from_cache:
         logger.debug('Writing cache for tab: {}'.format(parsed_tab.name))

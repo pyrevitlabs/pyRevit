@@ -117,9 +117,12 @@ REVIT_VERSION = _get_host_revit_version()
 
 # new session defaults -------------------------------------------------------------------------------------------------
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
+# todo need a new way to generate dll name. name must be the same for every session and can not be tied to time
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
 SESSION_DLL_NAME = SESSION_STAMPED_ID + '.dll'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
+
+FULL_ASSEMBLY_PATH = op.join(USER_TEMP_DIR, SESSION_DLL_NAME)
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.package'
@@ -145,8 +148,12 @@ DEFAULT_ALIAS_FILE_NAME = 'alias'
 
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
+
+COMPONENT_LIB_NAME = 'Lib'
+
 # character replacement list for cleaning up file names
-SPECIAL_CHARS = {' ': '', '~': '',
+SPECIAL_CHARS = {' ': '',
+                 '~': '',
                  '!': 'EXCLAM',
                  '@': 'AT',
                  '#': 'NUM',
@@ -155,9 +162,8 @@ SPECIAL_CHARS = {' ': '', '~': '',
                  '^': '',
                  '&': 'AND',
                  '*': 'STAR',
-                 '\(': '', '\)': '',
                  '+': 'PLUS',
-                 ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '',
+                 ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
                  '-': 'MINUS',
                  '=': 'EQUALS',
                  '<': '', '>': '',

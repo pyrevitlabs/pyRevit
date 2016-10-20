@@ -32,17 +32,18 @@ start and interact with a pyRevit.session
 import sys
 import os.path as op
 
+# todo: move to RPL
+sys.path.append(op.join(op.dirname(__file__), 'Lib'))
+
 import pyRevit.config as cfg                        # import basic configurations.
 from pyRevit.logger import logger                   # import logger to log messages to pyRevit log.
 from pyRevit.utils import Timer                     # import Timer from standard utils to log the load  time.
 
-from pyRevit.output import output_window              # handles output termina window
+from pyRevit.output import output_window            # handles output terminal window
 from pyRevit.usersettings import user_settings      # handles user settings
 
 import pyRevit.session as this_session              # import session to start loading pyRvit.
 
-# todo: move to RPL
-sys.path.append(op.join(op.dirname(__file__), 'Lib'))
 
 # initialize timer
 t = Timer()
@@ -51,13 +52,12 @@ t = Timer()
 output_window.set_width(1100)
 
 # log python version, home directory, config file and loader script location.
-logger.debug('Running on: {0}'.format(sys.version))
-logger.debug('Home Directory is: {0}'.format(cfg.HOME_DIR))
-logger.debug('Config file is: {}'.format(user_settings.config_file))
-logger.debug('Loader files is: {}'.format(this_session.get_this_command().script_file_address))
+logger.info('Running on: {0}'.format(sys.version))
+logger.info('Home Directory is: {0}'.format(cfg.HOME_DIR))
+logger.info('Config file is: {}'.format(user_settings.config_file))
 
 # load pyRevit session.
-this_session.load()
+this_session.load(cfg.HOME_DIR)
 
 # log load time
-logger.debug('Load time: {}'.format(t.get_time_hhmmss()))
+logger.info('Load time: {}'.format(t.get_time_hhmmss()))

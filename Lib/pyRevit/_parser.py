@@ -37,9 +37,7 @@ import os.path as op
 
 from .exceptions import PyRevitException
 from .logger import logger
-from .config import HOME_DIR
 from ._basecomponents import Package, Panel, Tab, GenericCommandGroup, GenericCommand
-from ._cache import is_cache_valid, get_cached_package, update_cache
 
 
 def _create_subcomponents(search_dir, component_class):
@@ -61,27 +59,34 @@ def _create_subcomponents(search_dir, component_class):
     """
     sub_cmp_list = []
 
+    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_class))
     # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
     try:
         cmp_classes = component_class.__subclasses__()
+        if len(cmp_classes) == 0:
+            cmp_classes = [component_class]
+
     except AttributeError:
         cmp_classes = [component_class]
 
     for file_or_dir in os.listdir(search_dir):
         full_path = op.join(search_dir, file_or_dir)
+        logger.debug('Testing component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
+            logger.debug('Testing directory for {}'.format(cmp_classes))
             for cmp_class in cmp_classes:
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
                     component = cmp_class(full_path)
-                    logger.debug('Successfuly created component:\n{}'.format(component))
+                    logger.debug('Successfuly created component: {} from: {}'.format(cmp_class, full_path))
                     sub_cmp_list.append(component)
+                    break
                 except PyRevitException:
-                    logger.debug('Can not create component from:\n{}'.format(full_path))
+                    logger.debug('Can not create component: {} from: {}'.format(cmp_class, full_path))
         else:
-            logger.debug('Excluding directories with . or _ in name: {}'.format(full_path))
+            logger.debug('Skipping component. Name can not start with . or _: {}'.format(full_path))
 
     return sub_cmp_list
 
@@ -106,8 +111,8 @@ def _create_pkgs(search_dir):
     return _create_subcomponents(search_dir, Package)
 
 
-def get_installed_packages():
-    """Parses home directory and return a list of Package objects for installed packages.
+def get_parsed_package(pkg):
+    """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed from pkg.sub_components list.
     See _basecomponents for types.
@@ -117,46 +122,46 @@ def get_installed_packages():
     # component creation errors are not critical. Each component that fails, will simply not be created.
     # all errors will be logged to debug for troubleshooting
 
-    # try creating packages
+    # try creating tabs for new_pkg
+    logger.debug('Parsing package for tabs...')
+    for new_tab in _create_tabs(pkg.directory):
+        pkg.add_component(new_tab)
+        logger.debug('Tab added: {}'.format(new_tab))
+
+        # try creating panels for new_tab
+        logger.debug('Parsing tab for panels...')
+        for new_panel in _create_panels(new_tab.directory):
+            new_tab.add_component(new_panel)
+            logger.debug('Panel added: {}'.format(new_panel))
+
+            # panels can hold both single commands and command groups
+            # try creating command groups for new_panel
+            logger.debug('Parsing panel for command groups...')
+            for new_cmd_group in _create_cmd_groups(new_panel.directory):
+                new_panel.add_component(new_cmd_group)
+                logger.debug('Command group added: {}'.format(new_cmd_group))
+                # try creating commands for new_cmd_gorup
+                for new_cmd in _create_cmds(new_cmd_group.directory):
+                    new_cmd_group.add_component(new_cmd)
+
+            # try creating commands for new_panel
+            logger.debug('Parsing panel for single commands...')
+            for new_cmd in _create_cmds(new_panel.directory):
+                new_panel.add_component(new_cmd)
+                logger.debug('Command added: {}'.format(new_cmd))
+
+    return pkg
+
+
+def get_installed_packages(root_dir):
+    """Parses home directory and return a list of Package objects for installed packages."""
+
+    # try creating packages in given directory
     pkg_list = []
-    for new_pkg in _create_pkgs(HOME_DIR):
 
-        # test if cache is valid for this package
-        # it might seem unusual to create a package and then re-load it from cache but minimum information
-        # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
-        # Also package object is very small and its creation doesn't add much overhead.
-        if is_cache_valid(new_pkg):
-            # if yes, load the cached package and add the cached tabs to the new package
-            for new_tab in get_cached_package(new_pkg).get_components():
-                new_pkg.add_component(new_tab)
-
-        # if load from cache failed or cache is obsolete (due to folder changes, new pyRevit version, etc.)
-        # parse the folders and create sub-components for the package
-        else:
-            # try creating tabs for new_pkg
-            for new_tab in _create_tabs(new_pkg.directory):
-                new_pkg.add_component(new_tab)
-
-                # try creating panels for new_tab
-                for new_panel in _create_panels(new_tab.directory):
-                    new_tab.add_panel(new_panel)
-
-                    # panels can hold both single commands and command groups
-                    # try creating command groups for new_panel
-                    for new_cmd_group in _create_cmd_groups(new_panel.directory):
-                        new_panel.add_component(new_cmd_group)
-                        # try creating commands for new_cmd_gorup
-                        for new_cmd in _create_cmds(new_cmd_group.directory):
-                            new_cmd_group.add_cmd(new_cmd)
-
-                    # try creating commands for new_panel
-                    for new_cmd in _create_cmds(new_panel.directory):
-                        new_panel.add_component(new_cmd)
-
-            # update cache with newly parsed package and its components
-            update_cache(new_pkg)
-
-        # add the newly parsed package to the return list
+    logger.debug('Parsing directory for packages...')
+    for new_pkg in _create_pkgs(root_dir):
+        logger.debug('Package directory found: {}'.format(new_pkg))
         pkg_list.append(new_pkg)
 
     return pkg_list

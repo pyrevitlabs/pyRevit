@@ -42,8 +42,8 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
                     SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ALIAS_FILE_NAME, DEFAULT_ON_ICON_FILE,             \
                     DEFAULT_OFF_ICON_FILE
-from .config import DOCSTRING_PARAM, AUTHOR_PARAM
-from .utils import ScriptFileContents
+from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, SPECIAL_CHARS
+from .utils import ScriptFileContents, cleanup_string
 
 from .usersettings import user_settings
 
@@ -63,16 +63,34 @@ class GenericContainer(object):
         if not self._is_valid_dir():
             raise PyRevitUnknownFormatError()
 
-        self.name = None
-        self.original_name = self.name
-        self.search_path_list = None
+        self.original_name = self._get_name()
+        self.name = user_settings.get_alias(self.original_name)
+
+        self.library_path = self._get_library()
+
         self._sub_components = []
+
+    @staticmethod
+    def is_group():
+        return True
 
     def _is_valid_dir(self):
         return self.directory.endswith(self.type_id)
 
     def __iter__(self):
         return iter(self._sub_components)
+
+    def __repr__(self):
+        return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
+
+    def _get_name(self):
+        return op.splitext(op.basename(self.directory))[0]
+
+    def _get_library(self):
+        return op.join(self.directory, COMPONENT_LIB_NAME)
+
+    def _verify_file(self, file_name):
+        return file_name if op.exists(op.join(self.directory, file_name)) else None
 
     def add_component(self, comp):
         self._sub_components.append(comp)
@@ -90,6 +108,19 @@ class Package(GenericContainer):
         self.author = None
         self.version = None
 
+    def get_all_commands(self):
+        all_cmds = []
+        for tab in self:
+            for panel in tab:
+                for item in panel:
+                    if item.is_group():
+                        for sub_item in item:
+                            all_cmds.append(sub_item)
+                    else:
+                        all_cmds.append(item)
+
+        return all_cmds
+
 
 # class for each tab. might contain multiple panels
 class Tab(GenericContainer):
@@ -98,9 +129,6 @@ class Tab(GenericContainer):
     def __init__(self, tab_dir):
         GenericContainer.__init__(self, tab_dir)
         self.sort_level = 0
-
-    def has_commands(self):
-        pass
 
 
 # class for each panel. might contain commands or command groups
@@ -121,7 +149,7 @@ class Panel(GenericContainer):
 # command group classes (puu down, split, split pull down, stack2 and stack3) ------------------------------------------
 # superclass for all groups of commands.
 # todo: populate info
-class GenericCommandGroup(object):
+class GenericCommandGroup(GenericContainer):
     """
 
     """
@@ -129,29 +157,11 @@ class GenericCommandGroup(object):
     type_id = ''
 
     def __init__(self, group_dir):
-        self.directory = group_dir
-        if not self._is_valid_dir():
-            raise PyRevitUnknownFormatError()
+        GenericContainer.__init__(self, group_dir)
 
-        self.name = None
-        self.original_name = self.name
         self.sort_level = 0
-        self.icon_file = None
-        self.search_path_list = None
-        self._sub_commands = []
-
-    def _is_valid_dir(self):
-        return self.directory.endswith(self.type_id)
-
-    def __iter__(self):
-        return iter(self._sub_commands)
-
-    def add_cmd(self, cmd):
-        self._sub_commands.append(cmd)
-
-    @staticmethod
-    def is_group():
-        return True
+        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        logger.debug('Command group {}: Icon file is: {}'.format(self.original_name, self.icon_file))
 
 
 class PullDownButtonGroup(GenericCommandGroup):
@@ -175,7 +185,6 @@ class StackTwoButtonGroup(GenericCommandGroup):
 
 
 # single command classes (link, push button, toggle button) ------------------------------------------------------------
-# todo: populate info
 class GenericCommand(object):
     """Superclass for all single commands.
     The information provided by these classes will be used to create a
@@ -194,7 +203,7 @@ class GenericCommand(object):
         self.name = user_settings.get_alias(self.original_name)
 
         self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
-        logger.debug('Command {}: Icon file is {}'.format(self.original_name, self.icon_file))
+        logger.debug('Command {}: Icon file is: {}'.format(self.original_name, self.icon_file))
 
         self.script_file = self._verify_file(DEFAULT_SCRIPT_FILE)
         if self.script_file is None:
@@ -204,6 +213,15 @@ class GenericCommand(object):
         script_content = ScriptFileContents(self.get_full_script_address())
         self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
         self.author = script_content.extract_param(AUTHOR_PARAM)
+
+        # setting up a unique name for command. This name is especially useful for creating dll assembly
+        self.unique_name = self._get_unique_name()
+
+        # each command can store custom libraries under /Lib inside the command folder
+        self.library_path = self._get_library()
+        # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
+        self.search_paths = []
+        self.search_paths.append(self.library_path)
 
     @staticmethod
     def is_group():
@@ -224,16 +242,41 @@ class GenericCommand(object):
     def _verify_file(self, file_name):
         return file_name if op.exists(op.join(self.directory, file_name)) else None
 
+    def _get_library(self):
+        return op.join(self.directory, COMPONENT_LIB_NAME)
+
+    def _get_unique_name(self):
+        """Creates a unique name for the command. This is used to uniquely identify this command and also
+        to create the class in pyRevit dll assembly.
+        Current method create a unique name based on the command full directory address.
+        """
+        uname = ''
+        dir_str = self.directory
+        for dname in dir_str.split(op.sep):
+            name, ext = op.splitext(dname)
+            if ext != '':
+                uname += name
+            else:
+                continue
+
+        return cleanup_string(uname)
+
+    # def _get_clean_dict(self):
+    #     return self.__dict__.copy()
+    #
+    # # todo: how to load from cache?
+    # def _load_from_cache(self, cached_dict):
+    #     for k,v in cached_dict.items():
+    #         self.__dict__[k] = v
+
+    def get_search_paths(self):
+        return self.search_paths
+
     def get_full_script_address(self):
         return op.join(self.directory, self.script_file)
 
-    def _get_clean_dict(self):
-        return self.__dict__.copy()
-
-    # todo: how to load from cache?
-    def _load_from_cache(self, cached_dict):
-        for k,v in cached_dict.items():
-            self.__dict__[k] = v
+    def append_search_path(self, path):
+        self.search_paths.append(path)
 
 
 class LinkButton(GenericCommand):
@@ -251,7 +294,7 @@ class PushButton(GenericCommand):
 class ToggleButton(GenericCommand):
     type_id = TOGGLE_BUTTON_POSTFIX
 
-    def __init__(self):
-        GenericCommand.__init__(self)
+    def __init__(self, cmd_dir):
+        GenericCommand.__init__(self, cmd_dir)
         self.icon_on_file = self._verify_file(DEFAULT_ON_ICON_FILE)
         self.icon_off_file = self._verify_file(DEFAULT_OFF_ICON_FILE)
