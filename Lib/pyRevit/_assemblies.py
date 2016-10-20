@@ -74,7 +74,7 @@ def _find_commandloader_class():
     """Private func: Finds the loader assembly addin and command interface class."""
     logger.debug('Asking Revit for command loader assembly...')
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
-        if LOADER_ADDIN in loaded_assembly.FullName:
+        if LOADER_ADDIN.lower() in str(loaded_assembly.FullName).lower():
             # Loader assembly is found
             # Getting the base command loader class
             logger.debug('Command loader assembly found: {0}'.format(loaded_assembly.GetName().FullName))

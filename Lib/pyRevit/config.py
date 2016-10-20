@@ -104,8 +104,8 @@ def _find_git_dir():
 PYREVIT_ASSEMBLY_NAME = 'pyRevit'
 PYREVIT_INIT_SCRIPT_NAME = '__init__'
 
-LOADER_ADDIN = 'RevitPythonLoader'
-LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = 'RevitPythonLoader.CommandLoaderBaseExtended'
+LOADER_ADDIN = 'PyRevitLoader'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.CommandLoaderBaseExtended'
 
 LOADER_DIR = _find_loader_directory()
 HOME_DIR = _find_home_directory()
@@ -144,6 +144,7 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 DEFAULT_SCRIPT_FILE = 'script' + SCRIPT_FILE_FORMAT
+
 DEFAULT_ALIAS_FILE_NAME = 'alias'
 
 DOCSTRING_PARAM = '__doc__'

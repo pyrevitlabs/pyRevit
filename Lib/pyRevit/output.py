@@ -31,7 +31,7 @@ import inspect
 
 def _calling_scope_variable(name):
     """Traces back the stack to find the __window__ variable in the caller local stack.
-    RevitPythonLoader defines __revit__ in builtins and __window__ in locals. Thus, module have access to
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, module have access to
     __revit__ but not to __window__. This function finds __window__ in the caller stack.
     """
     frame = inspect.stack()[1][0]
@@ -62,7 +62,7 @@ class PyRevitConsoleWindow(object):
 
     def show(self):
         # todo
-        self.win_handle.Hide()
+        self.win_handle.Show()
 
 
 # creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.

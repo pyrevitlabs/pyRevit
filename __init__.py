@@ -50,6 +50,7 @@ t = Timer()
 
 # set output window size.
 output_window.set_width(1100)
+output_window.show()
 
 # log python version, home directory, config file and loader script location.
 logger.info('Running on: {0}'.format(sys.version))
