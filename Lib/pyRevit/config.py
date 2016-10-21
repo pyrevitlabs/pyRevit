@@ -105,7 +105,7 @@ PYREVIT_ASSEMBLY_NAME = 'pyRevit'
 PYREVIT_INIT_SCRIPT_NAME = '__init__'
 
 LOADER_ADDIN = 'PyRevitLoader'
-LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.CommandLoaderBaseExtended'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
 
 LOADER_DIR = _find_loader_directory()
 HOME_DIR = _find_home_directory()

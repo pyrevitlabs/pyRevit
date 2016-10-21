@@ -30,10 +30,6 @@ start and interact with a pyRevit.session
 """
 
 import sys
-import os.path as op
-
-# todo: move to RPL
-sys.path.append(op.join(op.dirname(__file__), 'Lib'))
 
 import pyRevit.config as cfg                        # import basic configurations.
 from pyRevit.logger import logger                   # import logger to log messages to pyRevit log.
