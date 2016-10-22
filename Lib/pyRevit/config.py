@@ -156,6 +156,8 @@ DEFAULT_ALIAS_FILE_NAME = 'alias'
 
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
+MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
+MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 
 COMPONENT_LIB_NAME = 'Lib'
 

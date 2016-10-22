@@ -22,6 +22,10 @@ class PyRevitNoScriptFileError(PyRevitException):
     pass
 
 
+class PyRevitScriptDependencyError(PyRevitException):
+    pass
+
+
 # Cache-Specific Exceptions
 class PyRevitCacheError(PyRevitException):
     pass

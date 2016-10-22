@@ -79,3 +79,11 @@ def cleanup_string(input_str):
         input_str = input_str.replace(char, repl)
 
     return input_str
+
+
+def get_temp_file():
+    """Returns a filename to be used by a user script to store temporary information.
+    Temporary files are saved in USER_TEMP_DIR.
+    """
+    # todo
+    pass

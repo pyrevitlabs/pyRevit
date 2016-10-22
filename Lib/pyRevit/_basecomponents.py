@@ -32,13 +32,15 @@ This module only uses the base modules (.config, .logger, .exceptions, .output, 
 
 import os.path as op
 
-from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError
+from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
 from .logger import logger
 from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,             \
                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
                     SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
-from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME
+from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
+                    MIN_PYREVIT_VERSION_PARAM
+from .config import REVIT_VERSION, PyRevitVersion
 from .utils import ScriptFileContents, cleanup_string
 
 from .usersettings import user_settings
@@ -204,7 +206,14 @@ class GenericCommand(object):
             logger.error('Command {}: Does not have script file.'.format(self.original_name))
             raise PyRevitNoScriptFileError()
 
+        # reading script file content to extract parameters
         script_content = ScriptFileContents(self.get_full_script_address())
+
+        # extracting min requried Revit and pyRevit versions
+        self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)
+        self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)
+        self._check_dependencies()
+
         self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
         self.author = script_content.extract_param(AUTHOR_PARAM)
 
@@ -239,10 +248,17 @@ class GenericCommand(object):
     def _get_library(self):
         return op.join(self.directory, COMPONENT_LIB_NAME)
 
+    def _check_dependencies(self):
+        # todo
+        pass
+
     def _get_unique_name(self):
         """Creates a unique name for the command. This is used to uniquely identify this command and also
         to create the class in pyRevit dll assembly.
         Current method create a unique name based on the command full directory address.
+        Example:
+            self.direcotry = '/pyRevit.package/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
+            unique name = pyRevitpyRevitEditFlipdoors
         """
         uname = ''
         dir_str = self.directory
@@ -252,7 +268,6 @@ class GenericCommand(object):
                 uname += name
             else:
                 continue
-
         return cleanup_string(uname)
 
     # def _get_clean_dict(self):
