@@ -40,6 +40,7 @@ def load(root_dir):
     from ._cache import _is_cache_valid, _get_cached_package, _update_cache
     from ._parser import _get_installed_packages, _get_parsed_package
     from ._assemblies import _create_assembly
+    from ._ui import _update_revit_ui
     # for every package of installed packages, create an assembly, and create a ui
     # parser, assembly maker, and ui creator all understand ._commandtree classes. (They speak the same language)
     # the session.load() function (this function) only moderates the communication and handles errors.
@@ -96,5 +97,5 @@ def get_current_ui():
         this_script = pyRevit.session.get_this_command()
         current_ui.update_button_icon(this_script, new_icon)
     """
-    from ._ui import _update_revit_ui, _PyRevitUI
+    from ._ui import _PyRevitUI
     return _PyRevitUI()
