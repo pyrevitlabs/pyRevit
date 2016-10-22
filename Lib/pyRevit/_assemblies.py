@@ -20,14 +20,14 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 ~~~
 Description:
 pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
-This is the module responsible for creating c# classes for commands and save them into a dll assembly.
+This is the module responsible for creating c# classes for commands and save them into an assembly file.
 The ui modules will later add the assembly and c# class information to the ui buttons.
 
 All these four modules are private and handled by pyRevit.session
 These modules do not import each other and mainly use base modules (.config, .logger, .exceptions, .output, .utils)
 All these four modules can understand the component tree. (_basecomponents module)
  _parser parses the folders and creates a tree of components provided by _basecomponents
- _assemblies make a dll from the tree.
+ _assemblies make an assembly from the tree.
  _ui creates the ui using the information provided by the tree.
  _cache will save and restore the tree to increase loading performance.
 """
@@ -37,7 +37,7 @@ import os.path as op
 from collections import namedtuple
 
 from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT, PYREVIT_ASSEMBLY_NAME
-from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, SESSION_DLL_NAME, SESSION_LOG_FILE_NAME, PyRevitVersion
+from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME, PyRevitVersion
 from .config import SPECIAL_CHARS
 from .exceptions import PyRevitLoaderNotFoundError
 from .logger import logger
@@ -60,6 +60,9 @@ from System.Diagnostics import Process
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
 
+# Generic named tuple for passing assembly information to other modules
+PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location'])
+
 # Generic named tuple for passing loader class parameters to the assembly maker
 LoaderClassParams = namedtuple('LoaderClassParams', ['class_name', 'script_file_address', 'search_paths_str'])
 
@@ -68,6 +71,18 @@ def _cleanup_class_name(name):
     for char, repl in SPECIAL_CHARS.items():
         name = name.replace(char, repl)
     return name
+
+
+def _make_pkg_asm_name(pkg):
+    return SESSION_STAMPED_ID + '_' + pkg.unique_name
+
+
+def _is_pkg_asm_file(pkg, file_name):
+    # if this is a pyRevit assembly file
+    if file_name.startswith(SESSION_ID) and file_name.endswith(ASSEMBLY_FILE_TYPE):
+        # return true if it belongs to this package
+        return (pkg.unique_name + ASSEMBLY_FILE_TYPE) in file_name
+    return False
 
 
 def _find_commandloader_class():
@@ -88,38 +103,38 @@ def _find_commandloader_class():
     raise PyRevitLoaderNotFoundError()
 
 
-def _find_loaded_pyrevit_assemblies():
+def _find_loaded_package_assemblies(pkg):
     """Private func: Collects information about previously loaded assemblies"""
-    logger.debug('Asking Revit for previously loaded pyRevit assemblies...')
-    loaded_py_revit_assemblies = []
+    logger.debug('Asking Revit for previously loaded package assemblies...: {}'.format(pkg))
+    loaded_pkg_assemblies = []
     for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-        if PYREVIT_ASSEMBLY_NAME in loadedAssembly.FullName:
+        if _make_pkg_asm_name(pkg) in loadedAssembly.FullName:
             logger.debug('Existing assembly found: {0}'.format(loadedAssembly.FullName))
             # loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
-            loaded_py_revit_assemblies.append(loadedAssembly)
+            loaded_pkg_assemblies.append(loadedAssembly)
 
-    return loaded_py_revit_assemblies
-
-
-def _is_pyrevit_already_loaded():
-    return len(_find_loaded_pyrevit_assemblies()) > 0
+    return loaded_pkg_assemblies
 
 
-def _cleanup_existing_dlls():
-    """Private func: Removes dlls from previous sessions from user temp directory."""
+def _is_package_already_loaded(pkg):
+    return len(_find_loaded_package_assemblies(pkg)) > 0
+
+
+def _cleanup_existing_package_asm_files(pkg):
+    """Private func: Removes assembly files from previous sessions from user temp directory."""
     revitinstances = list(Process.GetProcessesByName('Revit'))
     if len(revitinstances) > 1:
-        logger.debug('Multiple Revit instance are running...Skipping DLL Cleanup')
+        logger.debug('Multiple Revit instance are running...Skipping assembly files cleanup')
     elif len(revitinstances) == 1:
-        logger.debug('Cleaning up old DLL files...')
+        logger.debug('Cleaning up old package assembly files...: {}'.format(pkg))
         files = os.listdir(USER_TEMP_DIR)
-        for f in files:
-            if f.startswith(SESSION_ID) and f.endswith('dll'):
+        for file_name in files:
+            if _is_pkg_asm_file(pkg, file_name):
                 try:
-                    os.remove(op.join(USER_TEMP_DIR, f))
-                    logger.debug('Existing .Dll Removed: {0}'.format(f))
+                    os.remove(op.join(USER_TEMP_DIR, file_name))
+                    logger.debug('Existing assembly file removed: {0}'.format(file_name))
                 except OSError:
-                    logger.debug('Error deleting .DLL file: {0}'.format(f))
+                    logger.debug('Error deleting assembly file: {0}'.format(file_name))
 
 
 def _get_params_for_commands(parsed_pkg):
@@ -133,26 +148,27 @@ def _get_params_for_commands(parsed_pkg):
     return loader_params_for_all_cmds
 
 
-def _create_dll_assembly(parsed_pkg, loader_class):
+def _create_asm_file(pkg, loader_class):
     logger.debug('Building script executer assembly...')
-    # make assembly dll name
 
+    pkg_asm_name = _make_pkg_asm_name(pkg)                    # unique assembly name for this package
+    pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE     # unique assembly filename for this package
     # create assembly
-    windowsassemblyname = AssemblyName(Name=SESSION_STAMPED_ID, Version=Version(PyRevitVersion.major,
-                                                                                PyRevitVersion.minor,
-                                                                                PyRevitVersion.patch, 0))
-    logger.debug('Generated assembly name for this session: {0}'.format(SESSION_STAMPED_ID))
+    windowsassemblyname = AssemblyName(Name=pkg_asm_name, Version=Version(PyRevitVersion.major,
+                                                                      PyRevitVersion.minor,
+                                                                      PyRevitVersion.patch, 0))
+    logger.debug('Generated assembly name for this session: {0}'.format(pkg_asm_name))
     logger.debug('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
-    logger.debug('Generated DLL name for this session: {0}'.format(SESSION_DLL_NAME))
+    logger.debug('Generated assembly file name for this session: {0}'.format(pkg_asm_file_name))
     logger.debug('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
     assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(windowsassemblyname,
                                                                     AssemblyBuilderAccess.RunAndSave, USER_TEMP_DIR)
 
     # get module builder
-    modulebuilder = assemblybuilder.DefineDynamicModule(SESSION_STAMPED_ID, SESSION_DLL_NAME)
+    modulebuilder = assemblybuilder.DefineDynamicModule(pkg_asm_name, pkg_asm_file_name)
 
     # create command classes
-    for loader_class_params in _get_params_for_commands(parsed_pkg):
+    for loader_class_params in _get_params_for_commands(pkg):
         type_builder = modulebuilder.DefineType(loader_class_params.class_name,
                                                 TypeAttributes.Class | TypeAttributes.Public,
                                                 loader_class)
@@ -194,17 +210,19 @@ def _create_dll_assembly(parsed_pkg, loader_class):
         type_builder.CreateType()
 
     # save final assembly
-    assemblybuilder.Save(SESSION_DLL_NAME)
+    assemblybuilder.Save(pkg_asm_file_name)
     logger.debug('Executer assembly saved.')
+    return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name))
 
 
 def create_assembly(parsed_pkg):
     logger.debug('Initializing python script loader...')
 
-    if not _is_pyrevit_already_loaded():
-        _cleanup_existing_dlls()
+    if not _is_package_already_loaded(parsed_pkg):
+        _cleanup_existing_package_asm_files(parsed_pkg)
     else:
-        logger.debug('pyRevit is reloading. Skipping DLL and log cleanup.')
+        logger.debug('pyRevit is reloading. Skipping assembly file cleanup.')
 
-    # create dll and return assembly path to be used in UI creation
-    _create_dll_assembly(parsed_pkg, _find_commandloader_class())
+    # create assembly file and return assembly file path to be used in UI creation
+    pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class())
+    logger.debug('Assembly created: {}'.format(pkg_asm_info))

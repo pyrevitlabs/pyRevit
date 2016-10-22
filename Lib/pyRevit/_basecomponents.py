@@ -40,7 +40,7 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
 from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
                     MIN_PYREVIT_VERSION_PARAM
-from .config import REVIT_VERSION, PyRevitVersion
+from .config import REVIT_VERSION, SESSION_STAMPED_ID, PyRevitVersion
 from .utils import ScriptFileContents, cleanup_string
 
 from .usersettings import user_settings
@@ -62,6 +62,8 @@ class GenericContainer(object):
 
         self.original_name = self._get_name()
         self.name = user_settings.get_alias(self.original_name)
+
+        self.unique_name = self._get_unique_name()
 
         self.library_path = self._get_library()
 
@@ -85,6 +87,23 @@ class GenericContainer(object):
 
     def _get_library(self):
         return op.join(self.directory, COMPONENT_LIB_NAME)
+
+    def _get_unique_name(self):
+        """Creates a unique name for the container. This is used to uniquely identify this container and also
+        to create the dll assembly. Current method create a unique name based on the full directory address.
+        Example:
+            self.direcotry = '/pyRevit.package/pyRevit.tab/Edit.panel'
+            unique name = pyRevitpyRevitEdit
+        """
+        uname = ''
+        dir_str = self.directory
+        for dname in dir_str.split(op.sep):
+            name, ext = op.splitext(dname)
+            if ext != '':
+                uname += name
+            else:
+                continue
+        return cleanup_string(uname)
 
     def _verify_file(self, file_name):
         return file_name if op.exists(op.join(self.directory, file_name)) else None
@@ -130,7 +149,7 @@ class Tab(GenericContainer):
     def has_commands(self):
         # todo
         return True
-        
+
 
 # class for each panel. might contain commands or command groups
 class Panel(GenericContainer):

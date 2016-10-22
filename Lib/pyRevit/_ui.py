@@ -211,7 +211,7 @@ class PyRevitUI(object):
 
     def contains(self, tab_name):
         """Checks the existing ui for given tab_name. Returns True if already exists."""
-        return True if tab_name in self.current_ribbon_tabs.keys() else False
+        return tab_name in self.current_ribbon_tabs.keys()
 
     def ribbon_tab(self, tab_name):
         """Returns an instance of PyRevitRibbonTab for existing tab matching tab_name"""
@@ -238,7 +238,7 @@ class PyRevitUI(object):
         #         self.current_ribbon_tabs[tab.name].deactivate()
 
 
-def update_revit_ui(parsed_pkg):
+def update_revit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
     This functions has been kept outside the PyRevitUI class since it'll only be used
     at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.

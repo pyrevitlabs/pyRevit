@@ -125,11 +125,9 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
 
-# creating dll and log file name from stamped session id
-SESSION_DLL_NAME = SESSION_STAMPED_ID + '.dll'
+# creating log file name from stamped session id
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
-
-FULL_ASSEMBLY_PATH = op.join(USER_TEMP_DIR, SESSION_DLL_NAME)
+ASSEMBLY_FILE_TYPE = '.dll'
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.package'
