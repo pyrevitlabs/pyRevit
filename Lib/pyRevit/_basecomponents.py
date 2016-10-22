@@ -46,7 +46,6 @@ from .usersettings import user_settings
 
 # tree branch classes (package, tab, panel) ----------------------------------------------------------------------------
 # superclass for all tree branches that contain sub-branches
-# todo: populate info
 class GenericContainer(object):
     """
 
@@ -144,7 +143,6 @@ class Panel(GenericContainer):
 
 # command group classes (puu down, split, split pull down, stack2 and stack3) ------------------------------------------
 # superclass for all groups of commands.
-# todo: populate info
 class GenericCommandGroup(GenericContainer):
     """
 

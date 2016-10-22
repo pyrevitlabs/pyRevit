@@ -1,6 +1,3 @@
-from .logger import logger
-
-
 # General Exceptions
 class PyRevitException(Exception):
     """Base class for all pyRevit Exceptions.

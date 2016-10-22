@@ -30,9 +30,9 @@ import inspect
 
 
 def _calling_scope_variable(name):
-    """Traces back the stack to find the __window__ variable in the caller local stack.
-    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, module have access to
-    __revit__ but not to __window__. This function finds __window__ in the caller stack.
+    """Traces back the stack to find the variable in the caller local stack.
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
+    __revit__ but not to __window__. This function is used to finds __window__ in the caller stack.
     """
     frame = inspect.stack()[1][0]
     while name not in frame.f_locals:
@@ -44,24 +44,36 @@ def _calling_scope_variable(name):
 
 class PyRevitConsoleWindow(object):
     """Wrapper to interact with the output console window."""
+
     def __init__(self, window_handle):
-        self.win_handle = window_handle
+        self.__winhandle__ = window_handle
 
     def set_title(self):
         # todo
-        self.win_handle.Hide()
+        self.__winhandle__.Hide()
 
     def set_width(self, width):
-        self.win_handle.Width = width
+        self.__winhandle__.Width = width
 
-    def close(self):
-        self.win_handle.Close()
+    def set_height(self, height):
+        self.__winhandle__.Height = height
+
+    def resize(self, width, height):
+        self.set_width(width)
+        self.set_height(height)
+
+    # def close(self):
+    #     self.__winhandle__.Close()
 
     def hide(self):
-        self.win_handle.Hide()
+        self.__winhandle__.Hide()
 
     def show(self):
-        self.win_handle.Show()
+        self.__winhandle__.Show()
+
+    def clear(self):
+        """Clears the content in output window."""
+        self.__winhandle__.txtStdOut.Clear()
 
 
 # creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
