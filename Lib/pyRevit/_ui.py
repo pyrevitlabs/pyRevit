@@ -233,12 +233,12 @@ class PyRevitUI(object):
 
     def cleanup_orphaned_ribbon_tabs(self, pkg):
         """Removes all tabs that do not exist in the given package."""
-        for tab in pkg:
-            if tab.name not in self.current_ribbon_tabs.keys():
-                self.current_ribbon_tabs[tab.name].deactivate()
+        # for tab in pkg:
+        #     if tab.name not in self.current_ribbon_tabs.keys():
+        #         self.current_ribbon_tabs[tab.name].deactivate()
 
 
-def update_revit_ui(parsed_pkg, pkg_asm_location):
+def update_revit_ui(parsed_pkg):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
     This functions has been kept outside the PyRevitUI class since it'll only be used
     at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
@@ -246,59 +246,69 @@ def update_revit_ui(parsed_pkg, pkg_asm_location):
     """
 
     # Collect exising ui elements and update/create
+    logger.debug('Updating ui: {}'.format(parsed_pkg))
+    logger.debug('Capturing exiting ui state...')
     current_ui = PyRevitUI()
 
     # Traverse thru the package and create necessary ui elements
     for tab in parsed_pkg:
         # creates pyrevit ribbon-panels for given tab data
         # A package might contain many tabs. Some tabs might not temporarily include any commands
-        # So a ui tab is create only if it includes commands
+        # So a ui tab is create only if the tab includes commands
+        logger.debug('Processing tab: {}'.format(tab))
         #  Level 1: Tabs -----------------------------------------------------------------------------------------------
         if tab.has_commands():
+            logger.debug('Tabs has command: {}'.format(tab))
+            logger.debug('Updating ribbon tab: {}'.format(tab))
             if current_ui.contains(tab.name):
+                logger.debug('Ribbon tab already exists: {}'.format(tab))
                 current_ui.ribbon_tab(tab.name).update()
             else:
+                logger.debug('Ribbon tab does not exist in current ui: {}'.format(tab))
+                logger.debug('Creating ribbon tab: {}'.format(tab))
                 current_ui.create_ribbon_tab(tab.name)
 
+            logger.debug('Current tab is: {}'.format(tab))
             current_tab = current_ui.ribbon_tab(tab.name)
             # Level 2: Panels (under tabs) -----------------------------------------------------------------------------
-            for panel in tab:
-                if not current_tab.contains(panel):
-                    current_tab.create_ribbon_panel(panel)
+            # for panel in tab:
+            #     if not current_tab.contains(panel):
+            #         current_tab.create_ribbon_panel(panel)
+            #
+            #     current_panel = current_tab.ribbon_panel(panel)
+            #     # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
+            #     for item in panel:
+            #         if current_panel.contains(item):
+            #             # update the ribbon_item that are single buttons (e.g. PushButton) or
+            #             # updates the icon for ribbon_items that are groups of buttons  (e.g. PullDownButton)
+            #             current_panel.update_ribbon_item(item)
+            #
+            #             # then update/create the sub items if any
+            #             # Level 4: Ribbon items that include other push buttons (e.g. PullDownButton) ------------------
+            #             if item.is_group():
+            #                 for button in item:
+            #                     if current_panel.ribbon_item(item).contains(button):
+            #                         current_panel.ribbon_item(item).update_button(button)
+            #                     else:
+            #                         current_panel.ribbon_item(item).create_button(button)
+            #
+            #                 # current_ui.ribbon_item(item) now includes updated or new buttons.
+            #                 # so cleanup all the remaining existing buttons that are not in this package anymore.
+            #                 current_panel.ribbon_item(item).cleanup_orphaned_buttons()
+            #         else:
+            #             current_panel.create_ribbon_item(item)
+            #
+            #     # current_ui.panel(panel) now includes updated or new ribbon_items.
+            #     # so cleanup all the remaining existing items that are not in this package anymore.
+            #     current_panel.cleanup_orphaned_ribbon_items()
+        #
+        #     # current_ui.tab(tab) now includes updated or new ribbon_panels.
+        #     # so cleanup all the remaining existing panels that are not in this package anymore.
+        #     current_tab.cleanup_orphaned_ribbon_panels()
+        # else:
+        #     logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
+        logger.debug('Updated ui: {}'.format(tab))
 
-                current_panel = current_tab.ribbon_panel(panel)
-                # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
-                for item in panel:
-                    if current_panel.contains(item):
-                        # update the ribbon_item that are single buttons (e.g. PushButton) or
-                        # updates the icon for ribbon_items that are groups of buttons  (e.g. PullDownButton)
-                        current_panel.update_ribbon_item(item, pkg_asm_location)
-
-                        # then update/create the sub items if any
-                        # Level 4: Ribbon items that include other push buttons (e.g. PullDownButton) ------------------
-                        if item.is_group():
-                            for button in item:
-                                if current_panel.ribbon_item(item).contains(button):
-                                    current_panel.ribbon_item(item).update_button(button, pkg_asm_location)
-                                else:
-                                    current_panel.ribbon_item(item).create_button(button, pkg_asm_location)
-
-                            # current_ui.ribbon_item(item) now includes updated or new buttons.
-                            # so cleanup all the remaining existing buttons that are not in this package anymore.
-                            current_panel.ribbon_item(item).cleanup_orphaned_buttons()
-                    else:
-                        current_panel.create_ribbon_item(item, pkg_asm_location)
-
-                # current_ui.panel(panel) now includes updated or new ribbon_items.
-                # so cleanup all the remaining existing items that are not in this package anymore.
-                current_panel.cleanup_orphaned_ribbon_items()
-
-            # current_ui.tab(tab) now includes updated or new ribbon_panels.
-            # so cleanup all the remaining existing panels that are not in this package anymore.
-            current_tab.cleanup_orphaned_ribbon_panels()
-        else:
-            logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
-
-    # current_ui.tab(tab) now includes updated or new ribbon_tabs.
-    # so cleanup all the remaining existing tabs that are not available anymore.
-    current_ui.cleanup_orphaned_ribbon_tabs()
+    # # current_ui.tab(tab) now includes updated or new ribbon_tabs.
+    # # so cleanup all the remaining existing tabs that are not available anymore.
+    # current_ui.cleanup_orphaned_ribbon_tabs(parsed_pkg)

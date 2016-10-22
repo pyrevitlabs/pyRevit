@@ -129,8 +129,8 @@ class Tab(GenericContainer):
 
     def has_commands(self):
         # todo
-        pass
-
+        return True
+        
 
 # class for each panel. might contain commands or command groups
 class Panel(GenericContainer):
