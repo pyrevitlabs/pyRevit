@@ -26,6 +26,11 @@ class PyRevitScriptDependencyError(PyRevitException):
     pass
 
 
+# UI-Specific Exceptions
+class PyRevitUIError(PyRevitException):
+    pass
+
+
 # Cache-Specific Exceptions
 class PyRevitCacheError(PyRevitException):
     pass

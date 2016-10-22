@@ -127,6 +127,10 @@ class Tab(GenericContainer):
         GenericContainer.__init__(self, tab_dir)
         self.sort_level = 0
 
+    def has_commands(self):
+        # todo
+        pass
+
 
 # class for each panel. might contain commands or command groups
 class Panel(GenericContainer):

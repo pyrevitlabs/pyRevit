@@ -74,7 +74,7 @@ def load(root_dir):
         # create a dll assembly. parsed_pkg will be updated with assembly information
         create_assembly(package)
         # and update ui (needs the assembly to link button actions to commands saved in the dll)
-        # update_revit_ui(parsed_pkg)
+        update_revit_ui(package)
 
 
 # todo: session object will have all the functionality for the user to interact with the session
