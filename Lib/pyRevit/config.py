@@ -25,6 +25,8 @@ import os
 import os.path as op
 from datetime import datetime
 
+from System.Diagnostics import Process
+
 
 _VER_MAJOR = 4
 _VER_MINOR = 0
@@ -117,8 +119,13 @@ REVIT_VERSION = _get_host_revit_version()
 
 # new session defaults -------------------------------------------------------------------------------------------------
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
-# todo need a new way to generate dll name. name must be the same for every session and can not be tied to time
-SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
+# creating a session id that is stamped with the process id of the Revit session.
+# This id is unique for all python scripts running under this session.
+# Previously the session id was stamped by formatted time
+# SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
+SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
+
+# creating dll and log file name from stamped session id
 SESSION_DLL_NAME = SESSION_STAMPED_ID + '.dll'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
 
