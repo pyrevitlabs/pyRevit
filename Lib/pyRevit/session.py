@@ -44,9 +44,12 @@ def load(root_dir):
         current_session.load()
     """
     # for every package of installed packages, create an assembly, and create a ui
-    # get_installed_packages() will read from cache and handles caches internally. viva Law of Demeter.
     # parser, assembly maker, and ui creator all understand ._commandtree classes. (They speak the same language)
     # the session.load() function (this function) only moderates the communication and handles errors.
+    # Session, creates an independent dll and ui for every package. This isolates other packages from any errors that
+    # might occur when setting up a package.
+
+    # get_installed_packages() returns a list of discovered packages in root_dir
     for pkg_info in get_installed_packages(root_dir):
         # test if cache is valid for this package
         # it might seem unusual to create a package and then re-load it from cache but minimum information
