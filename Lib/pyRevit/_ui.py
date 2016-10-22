@@ -32,16 +32,16 @@ All these four modules can understand the component tree. (_basecomponents modul
  _cache will save and restore the tree to increase loading performance.
 
 update_revit_ui() is the only ui function that understands the _basecomponents since this is private to a session.
-PyRevitUI class and other auxiliary classes (e.g. PyRevitRibbonTab) do not understand _basecomponents and need raw
+_PyRevitUI class and other auxiliary classes (e.g. _PyRevitRibbonTab) do not understand _basecomponents and need raw
 information about the components they need to create or update. update_revit_ui() will read the necessary info from
-_basecomponents items and ask PyRevitUI to create or update the ui.
+_basecomponents items and ask _PyRevitUI to create or update the ui.
 
 The rationale is that _basecomponents classes expect a folder for each component and that's why they're internal to
-pyRevit.session. update_revit_ui() uses the functionality provided by PyRevitUI, however, PyRevitUI is also accessible
+pyRevit.session. update_revit_ui() uses the functionality provided by _PyRevitUI, however, _PyRevitUI is also accessible
 to user scripts (This helps scripts to be able to undate their own associated button (or other button) icons, title,
 or other misc info.)
 
-And because user script don't create components based on bundled folder (e.g. foldername.pushbutton) the PyRevitUI
+And because user script don't create components based on bundled folder (e.g. foldername.pushbutton) the _PyRevitUI
 interface doesn't need to understand that. Its main purpose is to capture the current state of ui and create or update
 components as requested through its methods.
 """
@@ -68,7 +68,7 @@ except Exception as err:
     raise err
 
 
-class ButtonIcons:
+class _ButtonIcons:
     def __init__(self, file_address):
         uri = Uri(file_address)
 
@@ -96,7 +96,7 @@ class ButtonIcons:
 
 
 # todo
-class PyRevitRibbonGroupItem(object):
+class _PyRevitRibbonGroupItem:
     def __init__(self):
         pass
 
@@ -132,7 +132,7 @@ class PyRevitRibbonGroupItem(object):
 
 
 # todo
-class PyRevitRibbonPanel(object):
+class _PyRevitRibbonPanel:
     def __init__(self):
         # todo
         pass
@@ -159,9 +159,10 @@ class PyRevitRibbonPanel(object):
 
 
 # todo
-class PyRevitRibbonTab(object):
+class _PyRevitRibbonTab:
     def __init__(self, tab_name):
         self.name = tab_name
+        self.ribbon_tab_ctrl = None
         self.is_dirty = True
 
     @classmethod
@@ -170,7 +171,9 @@ class PyRevitRibbonTab(object):
 
     @classmethod
     def from_ribbon_tab(cls, ribbon_tab):
-        return cls(ribbon_tab.Title)
+        tab = cls(ribbon_tab.Title)
+        tab.ribbon_tab_ctrl = ribbon_tab
+        return tab
 
     def contains(self, panel):
         #todo
@@ -193,8 +196,7 @@ class PyRevitRibbonTab(object):
         pass
 
 
-# todo
-class PyRevitUI(object):
+class _PyRevitUI:
     def __init__(self):
         """Captures the existing ui state and elements at creation."""
         self.current_ribbon_tabs = {}
@@ -205,42 +207,52 @@ class PyRevitUI(object):
         for exiting_tab in ComponentManager.Ribbon.Tabs:
             # todo how to handle previously deactivated tabs?
             if exiting_tab.IsVisible:
-                # feeding self.current_ribbon_tabs with an instance of PyRevitRibbonTab for each existing tab
-                # PyRevitRibbonTab will find its existing panels internally
-                self.current_ribbon_tabs[exiting_tab.Title] = PyRevitRibbonTab.from_ribbon_tab(exiting_tab)
+                # feeding self.current_ribbon_tabs with an instance of _PyRevitRibbonTab for each existing tab
+                # _PyRevitRibbonTab will find its existing panels internally
+                self.current_ribbon_tabs[exiting_tab.Title] = _PyRevitRibbonTab.from_ribbon_tab(exiting_tab)
 
     def contains(self, tab_name):
         """Checks the existing ui for given tab_name. Returns True if already exists."""
         return tab_name in self.current_ribbon_tabs.keys()
 
     def ribbon_tab(self, tab_name):
-        """Returns an instance of PyRevitRibbonTab for existing tab matching tab_name"""
+        """Returns an instance of _PyRevitRibbonTab for existing tab matching tab_name"""
         try:
             return self.current_ribbon_tabs[tab_name]
         except KeyError:
-            raise PyRevitUIError('Can not retrieve tab: {}'.format(tab_name))
+            raise PyRevitUIError('Can not retrieve tab')
+
+    def update_ribbon_tab(self, tab_name):
+        try:
+            exiting_tab = self.current_ribbon_tabs[tab_name]
+            exiting_tab.ribbon_tab_ctrl.Title = tab_name
+            exiting_tab.ribbon_tab_ctrl.IsVisible = True
+            exiting_tab.ribbon_tab_ctrl.IsEnabled = True
+        except KeyError:
+            raise PyRevitUIError('Can not update tab')
 
     def create_ribbon_tab(self, tab_name):
         """Create revit ribbon tab from tab_name.
-        Returns an instance of PyRevitRibbonTab for the created tab."""
+        Returns an instance of _PyRevitRibbonTab for the created tab."""
         try:
             __revit__.CreateRibbonTab(tab_name)
-            new_tab = PyRevitRibbonTab.from_data(tab_name)
+            new_tab = _PyRevitRibbonTab.from_data(tab_name)
             self.current_ribbon_tabs[tab_name] = new_tab
             return new_tab
         except Exception as err:
-            logger.debug('Can not create tab: {} | Revit Error: {}'.format(tab_name, err))
+            raise PyRevitUIError('Can not create tab')
 
     def cleanup_orphaned_ribbon_tabs(self, pkg):
         """Removes all tabs that do not exist in the given package."""
-        # for tab in pkg:
-        #     if tab.name not in self.current_ribbon_tabs.keys():
-        #         self.current_ribbon_tabs[tab.name].deactivate()
+        for exiting_tab in self.current_ribbon_tabs.keys():
+            if exiting_tab.name not in [tab.name for tab in pkg]:
+                    exiting_tab.ribbon_tab_ctrl.IsVisible = False
+                    exiting_tab.ribbon_tab_ctrl.IsEnabled = False
 
 
-def update_revit_ui(parsed_pkg, pkg_asm_info):
+def _update_revit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
-    This functions has been kept outside the PyRevitUI class since it'll only be used
+    This functions has been kept outside the _PyRevitUI class since it'll only be used
     at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
     See pyRevit.session.load() for requesting load/reload of the pyRevit package.
     """
@@ -248,7 +260,7 @@ def update_revit_ui(parsed_pkg, pkg_asm_info):
     # Collect exising ui elements and update/create
     logger.debug('Updating ui: {}'.format(parsed_pkg))
     logger.debug('Capturing exiting ui state...')
-    current_ui = PyRevitUI()
+    current_ui = _PyRevitUI()
 
     # Traverse thru the package and create necessary ui elements
     for tab in parsed_pkg:
@@ -262,7 +274,7 @@ def update_revit_ui(parsed_pkg, pkg_asm_info):
             logger.debug('Updating ribbon tab: {}'.format(tab))
             if current_ui.contains(tab.name):
                 logger.debug('Ribbon tab already exists: {}'.format(tab))
-                current_ui.ribbon_tab(tab.name).update()
+                current_ui.update_ribbon_tab(tab.name)
             else:
                 logger.debug('Ribbon tab does not exist in current ui: {}'.format(tab))
                 logger.debug('Creating ribbon tab: {}'.format(tab))

@@ -111,7 +111,7 @@ def _create_pkgs(search_dir):
     return _create_subcomponents(search_dir, Package)
 
 
-def get_parsed_package(pkg):
+def _get_parsed_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed from pkg.sub_components list.
@@ -153,7 +153,7 @@ def get_parsed_package(pkg):
     return pkg
 
 
-def get_installed_packages(root_dir):
+def _get_installed_packages(root_dir):
     """Parses home directory and return a list of Package objects for installed packages."""
 
     # try creating packages in given directory

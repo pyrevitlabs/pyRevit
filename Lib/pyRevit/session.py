@@ -26,14 +26,6 @@ then calls the parser, assembly maker, and lastly ui maker to create the buttons
 Each pyRevit session will have its own .dll and log file.
 """
 
-from .logger import logger
-
-from ._cache import is_cache_valid, get_cached_package, update_cache
-from ._parser import get_installed_packages, get_parsed_package
-from ._assemblies import create_assembly
-from ._ui import update_revit_ui, PyRevitUI
-
-
 def load(root_dir):
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
@@ -43,6 +35,11 @@ def load(root_dir):
         import pyRevit.session as current_session
         current_session.load()
     """
+    from .logger import logger
+
+    from ._cache import _is_cache_valid, _get_cached_package, _update_cache
+    from ._parser import _get_installed_packages, _get_parsed_package
+    from ._assemblies import _create_assembly
     # for every package of installed packages, create an assembly, and create a ui
     # parser, assembly maker, and ui creator all understand ._commandtree classes. (They speak the same language)
     # the session.load() function (this function) only moderates the communication and handles errors.
@@ -50,31 +47,31 @@ def load(root_dir):
     # might occur when setting up a package.
 
     # get_installed_packages() returns a list of discovered packages in root_dir
-    for pkg_info in get_installed_packages(root_dir):
+    for pkg_info in _get_installed_packages(root_dir):
         # test if cache is valid for this package
         # it might seem unusual to create a package and then re-load it from cache but minimum information
         # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
         # Also package object is very small and its creation doesn't add much overhead.
-        if is_cache_valid(pkg_info):
+        if _is_cache_valid(pkg_info):
             # if yes, load the cached package and add the cached tabs to the new package
             logger.debug('Cache is valid for: {}'.format(pkg_info))
             logger.debug('Loading package from cache...')
-            package = get_cached_package(pkg_info)
+            package = _get_cached_package(pkg_info)
 
         else:
             logger.debug('Cache is NOT valid for: {}'.format(pkg_info))
-            package = get_parsed_package(pkg_info)
+            package = _get_parsed_package(pkg_info)
 
             # update cache with newly parsed package and its components
             logger.debug('Updating cache for package: {}'.format(package))
-            update_cache(package)
+            _update_cache(package)
 
         logger.debug('Package successfuly added to this session: {}'.format(package))
 
         # create a dll assembly. parsed_pkg will be updated with assembly information
-        pkg_asm_info = create_assembly(package)
+        pkg_asm_info = _create_assembly(package)
         # and update ui (needs the assembly to link button actions to commands saved in the dll)
-        update_revit_ui(package, pkg_asm_info)
+        _update_revit_ui(package, pkg_asm_info)
 
 
 # todo: session object will have all the functionality for the user to interact with the session
@@ -91,7 +88,7 @@ def get_this_command():
     pass
 
 
-def current_ui():
+def get_current_ui():
     """Revit UI Wrapper class for interacting with current pyRevit UI.
     Returned class provides min required functionality for user interaction
     Example:
@@ -99,4 +96,5 @@ def current_ui():
         this_script = pyRevit.session.get_this_command()
         current_ui.update_button_icon(this_script, new_icon)
     """
-    return PyRevitUI()
+    from ._ui import _update_revit_ui, _PyRevitUI
+    return _PyRevitUI()

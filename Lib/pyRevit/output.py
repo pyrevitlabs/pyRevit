@@ -42,7 +42,7 @@ def _calling_scope_variable(name):
     return frame.f_locals[name]
 
 
-class PyRevitConsoleWindow(object):
+class PyRevitConsoleWindow:
     """Wrapper to interact with the output console window."""
 
     def __init__(self, window_handle):
@@ -77,4 +77,6 @@ class PyRevitConsoleWindow(object):
 
 
 # creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
-output_window = PyRevitConsoleWindow(_calling_scope_variable('__window__'))
+win_handler = _calling_scope_variable('__window__')
+if win_handler:
+    output_window = PyRevitConsoleWindow(win_handler)

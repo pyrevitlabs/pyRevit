@@ -114,7 +114,7 @@ def _get_cached_tab(cached_tab):
         raise PyRevitCacheError()
 
 
-def update_cache(parsed_tab):
+def _update_cache(parsed_tab):
     return True
     logger.debug('Updating cache for tab: {} ...'.format(parsed_tab.name))
     if not parsed_tab.loaded_from_cache:
@@ -125,9 +125,9 @@ def update_cache(parsed_tab):
         logger.debug('Cache is up-to-date for tab: {}'.format(parsed_tab.tabName))
 
 
-def get_cached_package(cached_pkg):
+def _get_cached_package(cached_pkg):
     pass
 
 
-def is_cache_valid(cached_pkg):
+def _is_cache_valid(cached_pkg):
     return False

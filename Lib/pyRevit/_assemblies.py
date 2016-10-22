@@ -215,7 +215,7 @@ def _create_asm_file(pkg, loader_class):
     return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name))
 
 
-def create_assembly(parsed_pkg):
+def _create_assembly(parsed_pkg):
     logger.debug('Initializing python script loader...')
 
     if not _is_package_already_loaded(parsed_pkg):

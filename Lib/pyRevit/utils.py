@@ -1,21 +1,15 @@
-import os
-import os.path as op
-import subprocess as sp
-import time
-import re
-
-from .config import SPECIAL_CHARS
-
-
 class Timer:
     """Timer class using python native time module."""
     def __init__(self):
+        import time
         self.start = time.time()
 
     def restart(self):
+        import time
         self.start = time.time()
 
     def get_time_hhmmss(self):
+        import time
         return "%02.2f seconds" % (time.time() - self.start)
 
 
@@ -26,6 +20,7 @@ class ScriptFileContents:
             self.filecontents = f.readlines()
 
     def extract_param(self, param):
+        import re
         param_str_found = False
         param_str = ''
         param_finder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
@@ -53,6 +48,7 @@ class ScriptFileContents:
 def assert_folder(folder):
     """Checks if the folder exists and if not creates the folder.
     Returns OSError on folder making errors."""
+    import os
     if not op.exists(folder):
         try:
             os.makedirs(folder)
@@ -62,11 +58,13 @@ def assert_folder(folder):
 
 
 def get_parent_directory(path):
+    import os.path as op
     return op.dirname(path)
 
 
 def run_process(proc, cwd=''):
-    return sp.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
+    import subprocess
+    return subprocess.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
 
 
 def join_paths(path_list):
@@ -75,6 +73,7 @@ def join_paths(path_list):
 
 def cleanup_string(input_str):
     # remove spaces and special characters from strings
+    from .config import SPECIAL_CHARS
     for char, repl in SPECIAL_CHARS.items():
         input_str = input_str.replace(char, repl)
 
