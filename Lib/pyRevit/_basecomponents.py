@@ -167,8 +167,10 @@ class Tab(GenericContainer):
         GenericContainer.__init__(self, tab_dir)
 
     def has_commands(self):
-        # todo
-        return True
+        for panel in self:
+            for item in panel:
+                return True
+        return False
 
 
 # class for each panel. might contain commands or command groups
