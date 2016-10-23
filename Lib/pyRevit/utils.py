@@ -88,4 +88,10 @@ def get_temp_file():
     # todo
     pass
 
+
+# todo script option manager (pyrevit will get a command prompt and users can provide switches and options to commands
+def get_options_dict():
+    pass
+
+
 # todo add transaction wrapper
