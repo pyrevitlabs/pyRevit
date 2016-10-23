@@ -37,7 +37,8 @@ from .logger import logger
 from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,             \
                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
                     SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
-from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
+from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,               \
+                    DEFAULT_LAYOUT_FILE_NAME
 from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
                     MIN_PYREVIT_VERSION_PARAM
 from .config import REVIT_VERSION, SESSION_STAMPED_ID, PyRevitVersion
@@ -69,6 +70,8 @@ class GenericContainer(object):
 
         self._sub_components = []
 
+        self.layout = self._read_layout_file()
+
     @staticmethod
     def is_group():
         return True
@@ -77,6 +80,7 @@ class GenericContainer(object):
         return self.directory.endswith(self.type_id)
 
     def __iter__(self):
+        self._layout_components()
         return iter(self._sub_components)
 
     def __repr__(self):
@@ -107,6 +111,15 @@ class GenericContainer(object):
 
     def _verify_file(self, file_name):
         return file_name if op.exists(op.join(self.directory, file_name)) else None
+
+    def _read_layout_file(self):
+        if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
+            layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
+            return layout_file.readlines()
+
+    def _layout_components(self):
+        # todo
+        pass
 
     def add_component(self, comp):
         self._sub_components.append(comp)
@@ -144,7 +157,6 @@ class Tab(GenericContainer):
 
     def __init__(self, tab_dir):
         GenericContainer.__init__(self, tab_dir)
-        self.sort_level = 0
 
     def has_commands(self):
         # todo
@@ -157,7 +169,6 @@ class Panel(GenericContainer):
 
     def __init__(self, panel_dir):
         GenericContainer.__init__(self, panel_dir)
-        self.sort_level = 0
 
     def get_commands(self):
         return [x for x in self._sub_components if isinstance(x, GenericCommand)]
@@ -178,7 +189,6 @@ class GenericCommandGroup(GenericContainer):
     def __init__(self, group_dir):
         GenericContainer.__init__(self, group_dir)
 
-        self.sort_level = 0
         self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
         logger.debug('Command group {}: Icon file is: {}'.format(self.original_name, self.icon_file))
 
