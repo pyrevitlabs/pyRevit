@@ -1,3 +1,5 @@
+# doc: https://github.com/libgit2/libgit2sharp/wiki
+
 import sys
 import os
 import os.path as op
@@ -10,8 +12,6 @@ from .logger import logger
 sys.path.append(op.join(LOADER_DIR, GIT_LIB))
 
 import clr
-clr.AddReference('RevitAPI')
-clr.AddReference('RevitAPIUI')
 clr.AddReference("System.Core")
 
 import System
