@@ -80,8 +80,7 @@ class GenericContainer(object):
         return self.directory.endswith(self.type_id)
 
     def __iter__(self):
-        self._layout_components()
-        return iter(self._sub_components)
+        return iter(self._get_ordered_components())
 
     def __repr__(self):
         return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
@@ -117,9 +116,8 @@ class GenericContainer(object):
             layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
             return layout_file.readlines()
 
-    def _layout_components(self):
-        # todo
-        pass
+    def _get_ordered_components(self):
+        return self._sub_components
 
     def add_component(self, comp):
         self._sub_components.append(comp)
