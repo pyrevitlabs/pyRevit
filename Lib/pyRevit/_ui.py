@@ -46,7 +46,7 @@ interface doesn't need to understand that. Its main purpose is to capture the cu
 components as requested through its methods.
 """
 
-from .config import SCRIPT_FILE_FORMAT
+from .config import SCRIPT_FILE_FORMAT, ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE
 from .logger import logger
 from .exceptions import PyRevitUIError
 
@@ -54,11 +54,12 @@ from .exceptions import PyRevitUIError
 import clr
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPIUI')
-from System import *
+from System import Uri
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
 
 # revit api imports
 from Autodesk.Revit.UI import PulldownButtonData
+from Autodesk.Revit.Exceptions import ArgumentException
 
 try:
     clr.AddReference('AdWindows')
@@ -76,22 +77,24 @@ class _ButtonIcons:
         self.smallBitmap.BeginInit()
         self.smallBitmap.UriSource = uri
         self.smallBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.smallBitmap.DecodePixelHeight = 16
-        self.smallBitmap.DecodePixelWidth = 16
+        self.smallBitmap.DecodePixelHeight = ICON_SMALL_SIZE
+        self.smallBitmap.DecodePixelWidth = ICON_SMALL_SIZE
         self.smallBitmap.EndInit()
 
         self.mediumBitmap = BitmapImage()
         self.mediumBitmap.BeginInit()
         self.mediumBitmap.UriSource = uri
         self.mediumBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.mediumBitmap.DecodePixelHeight = 24
-        self.mediumBitmap.DecodePixelWidth = 24
+        self.mediumBitmap.DecodePixelHeight = ICON_MEDIUM_SIZE
+        self.mediumBitmap.DecodePixelWidth = ICON_MEDIUM_SIZE
         self.mediumBitmap.EndInit()
 
         self.largeBitmap = BitmapImage()
         self.largeBitmap.BeginInit()
         self.largeBitmap.UriSource = uri
         self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
+        self.mediumBitmap.DecodePixelHeight = ICON_LARGE_SIZE
+        self.mediumBitmap.DecodePixelWidth = ICON_LARGE_SIZE
         self.largeBitmap.EndInit()
 
 
@@ -133,9 +136,19 @@ class _PyRevitRibbonGroupItem:
 
 # todo
 class _PyRevitRibbonPanel:
-    def __init__(self):
-        # todo
-        pass
+    def __init__(self, panel_name):
+        self.name = panel_name
+        self.ribbon_panel_ctrl = None
+
+    @classmethod
+    def from_data(cls, panel_name):
+        return cls(panel_name)
+
+    @classmethod
+    def from_ribbon_tab(cls, ribbon_panel):
+        panel = cls(ribbon_panel.Name)
+        panel.ribbon_panel_ctrl = ribbon_panel
+        return panel
 
     def contains(self, item):
         #todo
@@ -148,7 +161,6 @@ class _PyRevitRibbonPanel:
         # todo
         pass
 
-    # todo create and add to existing tabs
     def create_ribbon_item(self, item, pkg_asm_location):
         # todo
         pass
@@ -163,37 +175,73 @@ class _PyRevitRibbonTab:
     def __init__(self, tab_name):
         self.name = tab_name
         self.ribbon_tab_ctrl = None
-        self.is_dirty = True
+
+        self.current_ribbon_panels = {}
 
     @classmethod
     def from_data(cls, tab_name):
         return cls(tab_name)
 
     @classmethod
-    def from_ribbon_tab(cls, ribbon_tab):
-        tab = cls(ribbon_tab.Title)
-        tab.ribbon_tab_ctrl = ribbon_tab
+    def from_ribbon_tab(cls, existing_ribbon_tab):
+        tab = cls(existing_ribbon_tab.Title)
+        tab.ribbon_tab_ctrl = existing_ribbon_tab
+
+        # getting a list of existing panels under this tab
+        try:
+            existing_ribbon_panel_list = __revit__.GetRibbonPanels(existing_ribbon_tab.Title)
+            if existing_ribbon_panel_list:
+                for panel in existing_ribbon_panel_list:
+                    # todo how to handle previously deactivated panels?
+                    if panel.Visible:
+                        # feeding self.current_ribbon_panels with an instance of _PyRevitRibbonPanel for existing panels
+                        # _PyRevitRibbonPanel will find its existing ribbon items internally
+                        tab.current_ribbon_panels[panel.Name] = _PyRevitRibbonPanel.from_ribbon_tab(panel)
+        except ArgumentException:
+            raise PyRevitUIError('Can not get panels for this tab: {}'.format(existing_ribbon_tab))
+
         return tab
 
-    def contains(self, panel):
-        #todo
-        pass
+    def contains(self, panel_name):
+        """Checks the existing tab for given panel_name. Returns True if already exists."""
+        return panel_name in self.current_ribbon_panels.keys()
 
-    def ribbon_panel(self, panel):
-        pass
+    def ribbon_panel(self, panel_name):
+        """Returns an instance of _PyRevitRibbonPanel for existing panel matching panel_name"""
+        try:
+            return self.current_ribbon_panels[panel_name]
+        except KeyError:
+            raise PyRevitUIError('Can not retrieve panel.')
 
-    def update_ribbon_panel(self, panel):
+    def update_ribbon_panel(self, panel_name):
+        try:
+            exiting_panel = self.current_ribbon_panels[panel_name]
+            # exiting_panel.ribbon_panel_ctrl.Name = panel_name
+            exiting_panel.ribbon_panel_ctrl.Visible = True
+            exiting_panel.ribbon_panel_ctrl.Enabled = True
+        except KeyError:
+            raise PyRevitUIError('Can not update panel.')
+
+    def create_ribbon_panel(self, panel_name):
+        """Create revit ribbon panel_name from panel_name.
+        Returns an instance of _PyRevitRibbonPanel for the created tab."""
+        try:
+            # creating panel in tab
+            ribbon_panel = __revit__.CreateRibbonPanel(self.name, panel_name)
+            # creating _PyRevitRibbonPanel object
+            new_panel = _PyRevitRibbonPanel.from_data(panel_name)
+            # assign ribbon panle controller
+            new_panel.ribbon_panel_ctrl = ribbon_panel
+            # add new tab to list of current tabs
+            self.current_ribbon_panels[panel_name] = new_panel
+        except Exception as err:
+            raise PyRevitUIError('Can not create panel: {}'.format(err))
+
+    def cleanup_orphaned_ribbon_panels(self, tab):
+        """Removes all panels that do not exist in the given tab."""
         # todo
-        pass
-
-    # todo create and add to existing tabs
-    def create_ribbon_panel(self, panel):
-        # todo
-        pass
-
-    def cleanup_orphaned_ribbon_panels(self):
-        # todo
-        pass
+        for existing_panel_name, existing_panel in self.current_ribbon_panels.items():
+            pass
 
 
 class _PyRevitUI:
@@ -209,7 +257,10 @@ class _PyRevitUI:
             if exiting_tab.IsVisible:
                 # feeding self.current_ribbon_tabs with an instance of _PyRevitRibbonTab for each existing tab
                 # _PyRevitRibbonTab will find its existing panels internally
-                self.current_ribbon_tabs[exiting_tab.Title] = _PyRevitRibbonTab.from_ribbon_tab(exiting_tab)
+                try:
+                    self.current_ribbon_tabs[exiting_tab.Title] = _PyRevitRibbonTab.from_ribbon_tab(exiting_tab)
+                except PyRevitUIError:
+                    continue
 
     def contains(self, tab_name):
         """Checks the existing ui for given tab_name. Returns True if already exists."""
@@ -220,34 +271,40 @@ class _PyRevitUI:
         try:
             return self.current_ribbon_tabs[tab_name]
         except KeyError:
-            raise PyRevitUIError('Can not retrieve tab')
+            raise PyRevitUIError('Can not retrieve tab.')
 
     def update_ribbon_tab(self, tab_name):
         try:
             exiting_tab = self.current_ribbon_tabs[tab_name]
-            exiting_tab.ribbon_tab_ctrl.Title = tab_name
+            # exiting_tab.ribbon_tab_ctrl.Title = tab_name
             exiting_tab.ribbon_tab_ctrl.IsVisible = True
             exiting_tab.ribbon_tab_ctrl.IsEnabled = True
         except KeyError:
-            raise PyRevitUIError('Can not update tab')
+            raise PyRevitUIError('Can not update tab.')
 
     def create_ribbon_tab(self, tab_name):
         """Create revit ribbon tab from tab_name.
         Returns an instance of _PyRevitRibbonTab for the created tab."""
         try:
+            # creating tab in Revit ui
             __revit__.CreateRibbonTab(tab_name)
+            # creating _PyRevitRibbonTab object
             new_tab = _PyRevitRibbonTab.from_data(tab_name)
+            # __revit__.CreateRibbonTab() does not return the created tab object.
+            # so find the tab object in exiting ui and assign to new_tab controller.
+            for exiting_tab in ComponentManager.Ribbon.Tabs:
+                if exiting_tab.Title == new_tab.name:
+                    new_tab.ribbon_tab_ctrl = exiting_tab
+            # add new tab to list of current tabs
             self.current_ribbon_tabs[tab_name] = new_tab
-            return new_tab
         except Exception as err:
-            raise PyRevitUIError('Can not create tab')
+            raise PyRevitUIError('Can not create tab: {}'.format(err))
 
-    def cleanup_orphaned_ribbon_tabs(self, pkg):
+    def cleanup_orphaned_ui_items(self, pkg):
         """Removes all tabs that do not exist in the given package."""
-        for exiting_tab in self.current_ribbon_tabs.keys():
-            if exiting_tab.name not in [tab.name for tab in pkg]:
-                    exiting_tab.ribbon_tab_ctrl.IsVisible = False
-                    exiting_tab.ribbon_tab_ctrl.IsEnabled = False
+        # todo
+        for existing_tab_name, existing_tab in self.current_ribbon_tabs.items():
+            pass
 
 
 def _update_revit_ui(parsed_pkg, pkg_asm_info):
@@ -283,11 +340,18 @@ def _update_revit_ui(parsed_pkg, pkg_asm_info):
             logger.debug('Current tab is: {}'.format(tab))
             current_tab = current_ui.ribbon_tab(tab.name)
             # Level 2: Panels (under tabs) -----------------------------------------------------------------------------
-            # for panel in tab:
-            #     if not current_tab.contains(panel):
-            #         current_tab.create_ribbon_panel(panel)
-            #
-            #     current_panel = current_tab.ribbon_panel(panel)
+            for panel in tab:
+                logger.debug('Updating ribbon panel: {}'.format(panel))
+                if current_tab.contains(panel.name):
+                    logger.debug('Ribbon panel already exists: {}'.format(panel))
+                    current_tab.update_ribbon_panel(panel.name)
+                else:
+                    logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
+                    logger.debug('Creating ribbon panel: {}'.format(panel))
+                    current_tab.create_ribbon_panel(panel.name)
+
+                logger.debug('Current panel is: {}'.format(panel))
+                current_panel = current_tab.ribbon_panel(panel.name)
             #     # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
             #     for item in panel:
             #         if current_panel.contains(item):
@@ -309,18 +373,10 @@ def _update_revit_ui(parsed_pkg, pkg_asm_info):
             #                 current_panel.ribbon_item(item).cleanup_orphaned_buttons()
             #         else:
             #             current_panel.create_ribbon_item(item)
-            #
-            #     # current_ui.panel(panel) now includes updated or new ribbon_items.
-            #     # so cleanup all the remaining existing items that are not in this package anymore.
-            #     current_panel.cleanup_orphaned_ribbon_items()
-        #
-        #     # current_ui.tab(tab) now includes updated or new ribbon_panels.
-        #     # so cleanup all the remaining existing panels that are not in this package anymore.
-        #     current_tab.cleanup_orphaned_ribbon_panels()
-        # else:
-        #     logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
+        else:
+            logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
         logger.debug('Updated ui: {}'.format(tab))
 
-    # # current_ui.tab(tab) now includes updated or new ribbon_tabs.
-    # # so cleanup all the remaining existing tabs that are not available anymore.
-    # current_ui.cleanup_orphaned_ribbon_tabs(parsed_pkg)
+    # current_ui.tab(tab) now includes updated or new ribbon_tabs.
+    # so cleanup all the remaining existing tabs that are not available anymore.
+    current_ui.cleanup_orphaned_ui_items(parsed_pkg)
