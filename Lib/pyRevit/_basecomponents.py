@@ -63,14 +63,14 @@ class GenericContainer(object):
 
         self.original_name = self._get_name()
         self.name = user_settings.get_alias(self.original_name)
-
         self.unique_name = self._get_unique_name()
 
         self.library_path = self._get_library()
+        self.layout_list = self._read_layout_file()
+        logger.debug('Layout is: {}'.format(self.layout_list))
 
         self._sub_components = []
 
-        self.layout = self._read_layout_file()
 
     @staticmethod
     def is_group():
@@ -80,7 +80,8 @@ class GenericContainer(object):
         return self.directory.endswith(self.type_id)
 
     def __iter__(self):
-        return iter(self._get_ordered_components())
+        self._process_components_per_layout()
+        return iter(self._sub_components)
 
     def __repr__(self):
         return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
@@ -114,10 +115,19 @@ class GenericContainer(object):
     def _read_layout_file(self):
         if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
             layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
-            return layout_file.readlines()
+            return [x.replace('\n','') for x in layout_file.readlines()]
+        else:
+            logger.debug('Container does not have layout file defined: {}'.format(self))
 
-    def _get_ordered_components(self):
-        return self._sub_components
+    def _process_components_per_layout(self):
+        if self.layout_list and self._sub_components:
+            logger.debug('Reordering components per layout file...')
+            for i_index, item in enumerate(self.layout_list):
+                for cmp_index, cmp in enumerate(self._sub_components):
+                    if cmp.name == item:
+                        a, b = self._sub_components[i_index], self._sub_components[cmp_index]
+                        self._sub_components[i_index], self._sub_components[cmp_index] = b, a
+            logger.debug('Reordered sub-component list is: {}'.format(self._sub_components))
 
     def add_component(self, comp):
         self._sub_components.append(comp)
