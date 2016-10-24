@@ -25,14 +25,14 @@ Usage.
     output_window.show()
 """
 
-
 import inspect
 
 
 def _calling_scope_variable(name):
     """Traces back the stack to find the variable in the caller local stack.
+    Example:
     PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
-    __revit__ but not to __window__. This function is used to finds __window__ in the caller stack.
+    __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
     """
     frame = inspect.stack()[1][0]
     while name not in frame.f_locals:
@@ -46,11 +46,11 @@ class PyRevitConsoleWindow:
     """Wrapper to interact with the output console window."""
 
     def __init__(self, window_handle):
+        """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
 
-    def set_title(self):
-        # todo
-        self.__winhandle__.Hide()
+    def set_title(self, new_title):
+        self.__winhandle__.Title = new_title
 
     def set_width(self, width):
         self.__winhandle__.Width = width
@@ -62,6 +62,16 @@ class PyRevitConsoleWindow:
         self.set_width(width)
         self.set_height(height)
 
+    def get_title(self):
+        return self.__winhandle__.Title
+
+    def get_width(self):
+        return self.__winhandle__.Width
+
+    def get_height(self):
+        return self.__winhandle__.Height
+
+    # user is not supposed to completely close the window but can always hide it.
     # def close(self):
     #     self.__winhandle__.Close()
 
