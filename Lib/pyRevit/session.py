@@ -26,7 +26,7 @@ then calls the parser, assembly maker, and lastly ui maker to create the buttons
 Each pyRevit session will have its own .dll and log file.
 """
 
-from .logger import logger
+from ._logger import logger
 
 from ._cache import _is_cache_valid, _get_cached_package, _update_cache
 from ._parser import _get_installed_packages, _get_parsed_package
@@ -34,7 +34,7 @@ from ._assemblies import _create_assembly
 from ._ui import _update_revit_ui
 
 
-def load(root_dir):
+def load_from(root_dir):
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
     This function handles both tasks through private interactions with ._parser and ._ui
@@ -78,9 +78,10 @@ def load(root_dir):
         _update_revit_ui(package, pkg_asm_info)
 
 
-# todo: session object will have all the functionality for the user to interact with the session
-# todo: e.g. providing a list of installed packages, handling ui, and others
-# todo: user is not expected to use _cache, _parser, _commandtree, _assemblies, or _ui
+# session object will have all the functionality for the user to interact with the session
+# e.g. providing a list of installed packages, handling ui, and others
+# user is not expected to use _cache, _parser, _commandtree, _assemblies, or _ui
+# All interactions should be through session module.
 # ----------------------------------------------------------------------------------------------------------------------
 def get_this_command():
     """Returns read only info about the caller python script.

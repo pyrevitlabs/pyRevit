@@ -47,7 +47,7 @@ components as requested through its methods.
 """
 
 from .config import SCRIPT_FILE_FORMAT, ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE
-from .logger import logger
+from ._logger import logger
 from .exceptions import PyRevitUIError
 
 # dotnet imports
@@ -98,7 +98,6 @@ class _ButtonIcons:
         self.largeBitmap.EndInit()
 
 
-# todo
 class _PyRevitRibbonGroupItem:
     def __init__(self):
         pass
@@ -134,7 +133,6 @@ class _PyRevitRibbonGroupItem:
         pass
 
 
-# todo
 class _PyRevitRibbonPanel:
     def __init__(self, panel_name):
         self.name = panel_name
@@ -151,7 +149,7 @@ class _PyRevitRibbonPanel:
         return panel
 
     def contains(self, item):
-        #todo
+        # todo
         pass
 
     def ribbon_item(self, item):
@@ -170,7 +168,6 @@ class _PyRevitRibbonPanel:
         pass
 
 
-# todo
 class _PyRevitRibbonTab:
     def __init__(self, tab_name):
         self.name = tab_name
@@ -239,7 +236,7 @@ class _PyRevitRibbonTab:
 
     def cleanup_orphaned_ribbon_panels(self, tab):
         """Removes all panels that do not exist in the given tab."""
-        # todo
+        # todo cleanup panels
         for existing_panel_name, existing_panel in self.current_ribbon_panels.items():
             pass
 
@@ -302,7 +299,7 @@ class _PyRevitUI:
 
     def cleanup_orphaned_ui_items(self, pkg):
         """Removes all tabs that do not exist in the given package."""
-        # todo
+        # todo cleanup tabs
         for existing_tab_name, existing_tab in self.current_ribbon_tabs.items():
             pass
 

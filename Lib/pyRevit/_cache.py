@@ -38,10 +38,8 @@ import hashlib
 # pyrevit module imports
 from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, PyRevitVersion
 from .exceptions import *
-from .logger import logger
+from ._logger import logger
 from ._basecomponents import *
-
-# todo cache can store cached dll info as well
 
 
 def _calculate_hash(self):
@@ -50,7 +48,6 @@ def _calculate_hash(self):
     # search does not include png files:
     #   if png files are added the parent folder mtime gets affected
     #   cache only saves the png address and not the contents so they'll get loaded everytime
-    # todo: improve speed by pruning dir: dirs[:] = [d for d in dirs if d not in excludes]
     #       see http://stackoverflow.com/a/5141710/2350244
     pat = r'(\.panel)|(\.tab)'
     patfile = r'(\.py)'

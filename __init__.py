@@ -32,10 +32,9 @@ start and interact with a pyRevit.session
 import sys
 
 import pyRevit.config as cfg                        # import basic configurations.
-from pyRevit.logger import logger                   # import logger to log messages to pyRevit log.
+from pyRevit._logger import logger                   # import logger to log messages to pyRevit log.
 from pyRevit.utils import Timer                     # import Timer from standard utils to log the load  time.
 
-from pyRevit.output import output_window            # handles output terminal window
 from pyRevit.usersettings import user_settings      # handles user settings
 
 import pyRevit.session as this_session              # import session to start loading pyRvit.
@@ -44,17 +43,13 @@ import pyRevit.session as this_session              # import session to start lo
 # initialize timer
 t = Timer()
 
-# set output window size.
-output_window.set_width(1100)
-output_window.show()
-
 # log python version, home directory, config file and loader script location.
 logger.info('Running on: {0}'.format(sys.version))
 logger.info('Home Directory is: {0}'.format(cfg.HOME_DIR))
 logger.info('Config file is: {}'.format(user_settings.config_file))
 
 # load pyRevit session.
-this_session.load(cfg.HOME_DIR)
+this_session.load_from(cfg.HOME_DIR)
 
 # log load time
 logger.info('Load time: {}'.format(t.get_time_hhmmss()))

@@ -26,17 +26,28 @@ import os.path as op
 import ConfigParser
 
 from .exceptions import ConfigFileError
-from .logger import logger
-from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
-from .config import LOADER_DIR, USER_SETTINGS_DIR, ARCHIVE_LOG_FOLDER_DEFAULT
+from ._logger import logger
+from .config import LOADER_DIR, USER_SETTINGS_DIR
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
-from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY
+from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
+from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY
+from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT, ARCHIVE_LOG_FOLDER_KEY_DEFAULT
 from .utils import assert_folder
 
+from pyRevit.output import output_window            # handles output terminal window
 
-# todo: add Debug mode parameter
-# todo: add output window open settings
-# todo: add command name alias system
+
+class _CustomUserSettings:
+    """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to
+    previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
+    Example:
+        user_settings.save_parameter(param, value)
+        this_script_settings = user_settings.load_parameters()
+        print( this_script_settings.custom_param )
+    """
+    pass
+
+
 class _PyRevitUserSettings:
     """Private class for handling all functions related to user settings.
      This module reads and writes settings using python native ConfigParser.
@@ -46,11 +57,11 @@ class _PyRevitUserSettings:
     """
 
     def __init__(self):
-        self.verbose = False
-        logger.verbose(self.verbose)
+        self.verbose = VERBOSE_KEY_DEFAULT
 
-        self.logScriptUsage = True
-        self.archivelogfolder = ARCHIVE_LOG_FOLDER_DEFAULT
+        self.logScriptUsage = LOG_SCRIPT_USAGE_KEY_DEFAULT
+        self.archivelogfolder = ARCHIVE_LOG_FOLDER_KEY_DEFAULT
+        self.debug = DEBUG_KEY_DEFAULT
         self.alias_dict = {}
 
         # prepare user config file address
@@ -87,12 +98,25 @@ class _PyRevitUserSettings:
                 with open(config_file, 'r') as udfile:
                     cparser = ConfigParser.ConfigParser()
                     cparser.readfp(udfile)
+                    self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
+                                                       VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
+                    self.debug = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
+                                                     DEBUG_KEY).lower() == KEY_VALUE_TRUE else False
+
+                    # set output window based on
+                    if self.debug:
+                        logger.set_debug_mode()
+                        output_window.set_width(1100)
+                        output_window.show()
+                    elif self.verbose:
+                        logger.set_info_mode()
+                        output_window.set_width(1100)
+                        output_window.show()
+
                     self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
                                                               LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
                     self.archivelogfolder = cparser.get(INIT_SETTINGS_SECTION_NAME,
                                                         ARCHIVE_LOG_FOLDER_KEY)
-                    self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
-                                                       VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
 
                     # read command name alias section
                     alias_options = cparser.options(ALIAS_SECTION_NAME)
@@ -105,7 +129,6 @@ class _PyRevitUserSettings:
 
                     # set to true and break if read successful.
                     logger.debug("Successfully read config file: {}".format(config_file))
-                    logger.verbose(self.verbose)
                     read_successful = True
                     self.config_file = config_file
                     break
@@ -133,9 +156,15 @@ class _PyRevitUserSettings:
         try:
             with open(self.user_config_file, 'w') as udfile:
                 cparser = ConfigParser.ConfigParser()
+
+                # GLOBAL_SETTINGS_SECTION_NAME
                 cparser.add_section(GLOBAL_SETTINGS_SECTION_NAME)
                 cparser.set(GLOBAL_SETTINGS_SECTION_NAME,
                             VERBOSE_KEY, KEY_VALUE_TRUE if self.verbose else KEY_VALUE_FALSE)
+                cparser.set(GLOBAL_SETTINGS_SECTION_NAME,
+                            DEBUG_KEY_DEFAULT, self.debug)
+
+                # INIT_SETTINGS_SECTION_NAME
                 cparser.add_section(INIT_SETTINGS_SECTION_NAME)
                 cparser.set(INIT_SETTINGS_SECTION_NAME,
                             LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
@@ -155,7 +184,7 @@ class _PyRevitUserSettings:
             logger.error(err.message)
 
     def save_parameter(self,  param_name, param_value):
-        # todo: implement
+        # todo: save user param
         try:
             with open(self.user_config_file, 'w') as udfile:
                 cparser = ConfigParser.ConfigParser()
@@ -165,8 +194,8 @@ class _PyRevitUserSettings:
         except ConfigParser.Error as err:
             raise ConfigFileError(err.message)
 
-    def load_parameter(self, param_name, param_value):
-        # todo: implement
+    def load_parameters(self):
+        # todo: load user param
         pass
 
     def get_alias(self, original_name, type_id):

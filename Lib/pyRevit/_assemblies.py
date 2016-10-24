@@ -40,7 +40,7 @@ from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLA
 from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME, PyRevitVersion
 from .config import SPECIAL_CHARS
 from .exceptions import PyRevitLoaderNotFoundError
-from .logger import logger
+from ._logger import logger
 from .utils import join_paths
 
 import clr
@@ -226,3 +226,25 @@ def _create_assembly(parsed_pkg):
     # create assembly file and return assembly file path to be used in UI creation
     pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class())
     logger.debug('Assembly created: {}'.format(pkg_asm_info))
+
+
+# todo archive old logs
+# def _archivelogs(self):
+#     if op.exists(user_settings.archivelogfolder):
+#         revitinstances = list(Process.GetProcessesByName('Revit'))
+#         if len(revitinstances) > 1:
+#             logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
+#         elif len(revitinstances) == 1:
+#             logger.debug('Archiving old log files...')
+#             files = os.listdir(cfg.USER_TEMP_DIR)
+#             for f in files:
+#                 if f.startswith(cfg.PYREVIT_ASSEMBLY_NAME) and f.endswith('log'):
+#                     try:
+#                         currentfileloc = op.join(cfg.USER_TEMP_DIR, f)
+#                         newloc = op.join(user_settings.archivelogfolder, f)
+#                         shutil.move(currentfileloc, newloc)
+#                         logger.debug('Existing log file archived to: {0}'.format(newloc))
+#                     except:
+#                         logger.debug('Error archiving log file: {0}'.format(f))
+#     else:
+#         logger.debug('Archive log folder does not exist: {0}. Skipping...'.format(user_settings.archivelogfolder))
