@@ -27,9 +27,9 @@ import ConfigParser
 
 from .exceptions import ConfigFileError
 from .logger import logger
+from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
 from .config import LOADER_DIR, USER_SETTINGS_DIR, ARCHIVE_LOG_FOLDER_DEFAULT
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
-from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY
 from .utils import assert_folder
 
@@ -42,8 +42,7 @@ class _PyRevitUserSettings:
      This module reads and writes settings using python native ConfigParser.
      Usage:
      from pyRevit.usersettings import user_settings
-     if user_settings.verbose:
-        <statement>
+     print(user_settings.archivelogfolder)
     """
 
     def __init__(self):
@@ -52,6 +51,7 @@ class _PyRevitUserSettings:
 
         self.logScriptUsage = True
         self.archivelogfolder = ARCHIVE_LOG_FOLDER_DEFAULT
+        self.alias_dict = {}
 
         # prepare user config file address
         self.user_config_file = op.join(USER_SETTINGS_DIR, USER_DEFAULT_SETTINGS_FILENAME)
@@ -86,7 +86,6 @@ class _PyRevitUserSettings:
                 logger.debug('Try reading config setting from: {}'.format(config_file))
                 with open(config_file, 'r') as udfile:
                     cparser = ConfigParser.ConfigParser()
-                    # todo: rewrite this to read any param in the file and create class param
                     cparser.readfp(udfile)
                     self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
                                                               LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
@@ -94,6 +93,16 @@ class _PyRevitUserSettings:
                                                         ARCHIVE_LOG_FOLDER_KEY)
                     self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
                                                        VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
+
+                    # read command name alias section
+                    alias_options = cparser.options(ALIAS_SECTION_NAME)
+                    logger.debug('Alias is available for these names: {}'.format(alias_options))
+                    for cmd_name in alias_options:
+                        cmd_alias_name = cparser.get(ALIAS_SECTION_NAME, cmd_name)
+                        logger.debug('Found alias: {} | {}'.format(cmd_name, cmd_alias_name))
+                        self.alias_dict[cmd_name] = cmd_alias_name
+                        logger.debug('Alias dict is: {}'.format(self.alias_dict))
+
                     # set to true and break if read successful.
                     logger.debug("Successfully read config file: {}".format(config_file))
                     logger.verbose(self.verbose)
@@ -160,9 +169,11 @@ class _PyRevitUserSettings:
         # todo: implement
         pass
 
-    def get_alias(self, original_cmd_name):
-        # todo: implement
-        return original_cmd_name
+    def get_alias(self, original_name, type_id):
+        try:
+            return self.alias_dict[original_name.lower() + type_id.lower()]
+        except KeyError:
+            return original_name
 
 
 # creating an instance of _PyRevitUserSettings().

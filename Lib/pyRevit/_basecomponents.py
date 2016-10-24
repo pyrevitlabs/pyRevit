@@ -62,7 +62,9 @@ class GenericContainer(object):
             raise PyRevitUnknownFormatError()
 
         self.original_name = self._get_name()
-        self.name = user_settings.get_alias(self.original_name)
+        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        if self.name != self.original_name:
+            logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
 
         self.library_path = self._get_library()
@@ -70,7 +72,6 @@ class GenericContainer(object):
         logger.debug('Layout is: {}'.format(self.layout_list))
 
         self._sub_components = []
-
 
     @staticmethod
     def is_group():
@@ -115,7 +116,7 @@ class GenericContainer(object):
     def _read_layout_file(self):
         if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
             layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
-            return [x.replace('\n','') for x in layout_file.readlines()]
+            return [x.replace('\n', '') for x in layout_file.readlines()]
         else:
             logger.debug('Container does not have layout file defined: {}'.format(self))
 
@@ -123,10 +124,17 @@ class GenericContainer(object):
         if self.layout_list and self._sub_components:
             logger.debug('Reordering components per layout file...')
             for i_index, item in enumerate(self.layout_list):
-                for cmp_index, cmp in enumerate(self._sub_components):
-                    if cmp.name == item:
+                item_found = False
+                for cmp_index, component in enumerate(self._sub_components):
+                    if component.name == item:
                         a, b = self._sub_components[i_index], self._sub_components[cmp_index]
                         self._sub_components[i_index], self._sub_components[cmp_index] = b, a
+                        item_found = True
+                if not item_found:
+                    # todo if item is in layout and not in folder, it skips over that index
+                    # todo how to deal with components with aliases? user should not change internal layout file
+                    logger.debug('Item listed in layout file is not available: {}'.format(item))
+
             logger.debug('Reordered sub-component list is: {}'.format(self._sub_components))
 
     def add_component(self, comp):
@@ -168,7 +176,7 @@ class Tab(GenericContainer):
 
     def has_commands(self):
         for panel in self:
-            for item in panel:
+            if panel.has_commands():
                 return True
         return False
 
@@ -185,6 +193,9 @@ class Panel(GenericContainer):
 
     def get_command_groups(self):
         return [x for x in self._sub_components if isinstance(x, GenericCommandGroup)]
+
+    def has_commands(self):
+        return True if len(self._sub_components) > 0 else False
 
 
 # command group classes (puu down, split, split pull down, stack2 and stack3) ------------------------------------------
@@ -239,7 +250,9 @@ class GenericCommand(object):
             raise PyRevitUnknownFormatError()
 
         self.original_name = self._get_name()
-        self.name = user_settings.get_alias(self.original_name)
+        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        if self.name != self.original_name:
+            logger.debug('Alias name is: {}'.format(self.name))
 
         self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
         logger.debug('Command {}: Icon file is: {}'.format(self.original_name, self.icon_file))
