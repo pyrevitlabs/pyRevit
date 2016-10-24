@@ -72,9 +72,9 @@ def load(root_dir):
 
         logger.debug('Package successfuly added to this session: {}'.format(package))
 
-        # create a dll assembly. parsed_pkg will be updated with assembly information
+        # create a dll assembly and get assembly info
         pkg_asm_info = _create_assembly(package)
-        # and update ui (needs the assembly to link button actions to commands saved in the dll)
+        # update/create ui (needs the assembly to link button actions to commands saved in the dll)
         _update_revit_ui(package, pkg_asm_info)
 
 
