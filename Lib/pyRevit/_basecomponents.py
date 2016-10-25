@@ -47,8 +47,7 @@ from .utils import ScriptFileContents, cleanup_string
 from .usersettings import user_settings
 
 
-# tree branch classes (package, tab, panel) ----------------------------------------------------------------------------
-# superclass for all tree branches that contain sub-branches
+# superclass for all tree branches that contain sub-branches (containers)
 class GenericContainer(object):
     """
 
@@ -70,6 +69,10 @@ class GenericContainer(object):
         self.library_path = self._get_library()
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
+
+        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        if self.icon_file:
+            logger.debug('Icon file is: {}'.format(self.original_name, self.icon_file))
 
         self._sub_components = []
 
@@ -144,7 +147,9 @@ class GenericContainer(object):
         return self._sub_components
 
 
-# root class for each package. might contain multiple tabs
+# Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
+# Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
+
 class Package(GenericContainer):
     type_id = PACKAGE_POSTFIX
 
@@ -155,19 +160,10 @@ class Package(GenericContainer):
 
     def get_all_commands(self):
         all_cmds = []
-        for tab in self:
-            for panel in tab:
-                for item in panel:
-                    if item.is_group():
-                        for sub_item in item:
-                            all_cmds.append(sub_item)
-                    else:
-                        all_cmds.append(item)
-
+        # todo recursive search for GenericCommand
         return all_cmds
 
 
-# class for each tab. might contain multiple panels
 class Tab(GenericContainer):
     type_id = TAB_POSTFIX
 
@@ -181,37 +177,32 @@ class Tab(GenericContainer):
         return False
 
 
-# class for each panel. might contain commands or command groups
 class Panel(GenericContainer):
     type_id = PANEL_POSTFIX
 
     def __init__(self, panel_dir):
         GenericContainer.__init__(self, panel_dir)
 
-    def get_commands(self):
-        return [x for x in self._sub_components if isinstance(x, GenericCommand)]
-
-    def get_command_groups(self):
-        return [x for x in self._sub_components if isinstance(x, GenericCommandGroup)]
-
     def has_commands(self):
         return True if len(self._sub_components) > 0 else False
 
 
-# command group classes (puu down, split, split pull down, stack2 and stack3) ------------------------------------------
-# superclass for all groups of commands.
+# Stacks include Commands or Command groups
+class GenericStack(GenericContainer):
+    pass
+
+
+class StackThreeButtonGroup(GenericStack):
+    type_id = STACKTHREE_BUTTON_POSTFIX
+
+
+class StackTwoButtonGroup(GenericStack):
+    type_id = STACKTWO_BUTTON_POSTFIX
+
+
+# # Command groups only include commands. these classes can include GenericCommand as sub components
 class GenericCommandGroup(GenericContainer):
-    """
-
-    """
-
-    type_id = ''
-
-    def __init__(self, group_dir):
-        GenericContainer.__init__(self, group_dir)
-
-        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
-        logger.debug('Command group {}: Icon file is: {}'.format(self.original_name, self.icon_file))
+    pass
 
 
 class PullDownButtonGroup(GenericCommandGroup):
@@ -226,15 +217,8 @@ class SplitButtonGroup(GenericCommandGroup):
     type_id = SPLIT_BUTTON_POSTFIX
 
 
-class StackThreeButtonGroup(GenericCommandGroup):
-    type_id = STACKTHREE_BUTTON_POSTFIX
-
-
-class StackTwoButtonGroup(GenericCommandGroup):
-    type_id = STACKTWO_BUTTON_POSTFIX
-
-
 # single command classes (link, push button, toggle button) ------------------------------------------------------------
+# GenericCommand is not derived from GenericContainer since a command can not contain other elements
 class GenericCommand(object):
     """Superclass for all single commands.
     The information provided by these classes will be used to create a

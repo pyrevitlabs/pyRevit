@@ -37,10 +37,11 @@ import os.path as op
 
 from .exceptions import PyRevitException
 from ._logger import logger
-from ._basecomponents import Package, Panel, Tab, GenericCommandGroup, GenericCommand
+from ._basecomponents import Package, Panel, Tab, GenericStack, GenericCommandGroup, GenericCommand
+from .utils import get_all_subclasses
 
 
-def _create_subcomponents(search_dir, component_class):
+def _create_subcomponents(search_dir, *cmp_classes):
     """Parses the provided directory and returns a list of objects of the type component_class.
     Arguments:
         search_dir: directory to parse
@@ -57,31 +58,24 @@ def _create_subcomponents(search_dir, component_class):
     Returns:
         list of created classes of type component_class or sub-classes of component_class
     """
-    sub_cmp_list = []
+    sub_cmp_list = get_all_subclasses(cmp_classes)
 
-    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_class))
-    # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
-    try:
-        cmp_classes = component_class.__subclasses__()
-        if len(cmp_classes) == 0:
-            cmp_classes = [component_class]
-
-    except AttributeError:
-        cmp_classes = [component_class]
+    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, sub_cmp_list))
 
     for file_or_dir in os.listdir(search_dir):
         full_path = op.join(search_dir, file_or_dir)
         logger.debug('Testing component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
-            logger.debug('Testing directory for {}'.format(cmp_classes))
-            for cmp_class in cmp_classes:
+            for cmp_class in sub_cmp_list:
+                logger.debug('Testing sub_directory for {}'.format(cmp_class))
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
                     component = cmp_class(full_path)
-                    logger.debug('Successfuly created component: {} from: {}'.format(cmp_class, full_path))
                     sub_cmp_list.append(component)
+                    # todo make it recursive
+                    logger.debug('Successfuly created component: {} from: {}'.format(cmp_class, full_path))
                     break
                 except PyRevitException:
                     logger.debug('Can not create component: {} from: {}'.format(cmp_class, full_path))
@@ -91,12 +85,8 @@ def _create_subcomponents(search_dir, component_class):
     return sub_cmp_list
 
 
-def _create_cmds(search_dir):
-    return _create_subcomponents(search_dir, GenericCommand)
-
-
-def _create_cmd_groups(search_dir):
-    return _create_subcomponents(search_dir, GenericCommandGroup)
+def _create_ribbon_item(search_dir):
+    return _create_subcomponents(search_dir, GenericStack, GenericCommandGroup, GenericCommand)
 
 
 def _create_panels(search_dir):
@@ -122,6 +112,10 @@ def _get_parsed_package(pkg):
     # component creation errors are not critical. Each component that fails, will simply not be created.
     # all errors will be logged to debug for troubleshooting
 
+    # todo explain deterministic search for pks
+    # todo explain deterministic search for tabs and panels
+    # todo explain recursive search for stacks, command groups and commands
+
     # try creating tabs for new_pkg
     logger.debug('Parsing package for tabs...')
     for new_tab in _create_tabs(pkg.directory):
@@ -134,21 +128,7 @@ def _get_parsed_package(pkg):
             new_tab.add_component(new_panel)
             logger.debug('Panel added: {}'.format(new_panel))
 
-            # panels can hold both single commands and command groups
-            # try creating command groups for new_panel
-            logger.debug('Parsing panel for command groups...')
-            for new_cmd_group in _create_cmd_groups(new_panel.directory):
-                new_panel.add_component(new_cmd_group)
-                logger.debug('Command group added: {}'.format(new_cmd_group))
-                # try creating commands for new_cmd_gorup
-                for new_cmd in _create_cmds(new_cmd_group.directory):
-                    new_cmd_group.add_component(new_cmd)
-
-            # try creating commands for new_panel
-            logger.debug('Parsing panel for single commands...')
-            for new_cmd in _create_cmds(new_panel.directory):
-                new_panel.add_component(new_cmd)
-                logger.debug('Command added: {}'.format(new_cmd))
+            # todo implement recursive search for stacks, command groups and commands
 
     return pkg
 

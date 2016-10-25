@@ -45,6 +45,21 @@ class ScriptFileContents:
             return None
 
 
+def get_all_subclasses(parent_classes):
+    sub_classes = []
+    # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
+    for sub_class in parent_classes:
+        try:
+            derived_classes = sub_class.__subclasses__()
+            if len(derived_classes) == 0:
+                sub_classes.append(sub_class)
+            else:
+                sub_classes.extend(derived_classes)
+        except AttributeError:
+            sub_classes.append(sub_class)
+    return sub_classes
+
+
 def assert_folder(folder):
     """Checks if the folder exists and if not creates the folder.
     Returns OSError on folder making errors."""
