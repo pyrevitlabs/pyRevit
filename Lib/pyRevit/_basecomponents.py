@@ -184,6 +184,7 @@ class Panel(GenericContainer):
         GenericContainer.__init__(self, panel_dir)
 
     def has_commands(self):
+        # todo proper search for commands in button groups and stacks
         return True if len(self._sub_components) > 0 else False
 
 
