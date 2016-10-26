@@ -1,6 +1,8 @@
 import sys
 import logging
 
+from System.Threading import Mutex
+
 
 class _LoggerWrapper:
     """ Logger Wrapper to extend loggers functionality.
@@ -36,6 +38,9 @@ class _LoggerWrapper:
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
+
+        # TODO test mutex
+        # pyrevit_debug = Mutex.OpenExisting('pyrevit_debug')
 
         logger = logging.getLogger('pyrevitloader')
         logger.addHandler(handler)
