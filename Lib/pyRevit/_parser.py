@@ -58,34 +58,43 @@ def _create_subcomponents(search_dir, *cmp_classes):
     Returns:
         list of created classes of type component_class or sub-classes of component_class
     """
-    sub_cmp_list = get_all_subclasses(cmp_classes)
+    component_types = get_all_subclasses(cmp_classes)
 
-    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, sub_cmp_list))
+    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types))
+
+    sub_cmp_list = []
 
     for file_or_dir in os.listdir(search_dir):
         full_path = op.join(search_dir, file_or_dir)
         logger.debug('Testing component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
-            for cmp_class in sub_cmp_list:
-                logger.debug('Testing sub_directory for {}'.format(cmp_class))
+            for component_type in component_types:
+                logger.debug('Testing sub_directory for {}'.format(component_type))
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
-                    component = cmp_class(full_path)
+                    component = component_type(full_path)
                     sub_cmp_list.append(component)
-                    # todo make it recursive
-                    logger.debug('Successfuly created component: {} from: {}'.format(cmp_class, full_path))
+                    logger.debug('Successfuly created component: {} from: {}'.format(component_type, full_path))
                     break
                 except PyRevitException:
-                    logger.debug('Can not create component: {} from: {}'.format(cmp_class, full_path))
+                    logger.debug('Can not create component: {} from: {}'.format(component_type, full_path))
         else:
             logger.debug('Skipping component. Name can not start with . or _: {}'.format(full_path))
 
     return sub_cmp_list
 
 
-def _create_ribbon_item(search_dir):
+def _create_buttons(search_dir):
+    return _create_subcomponents(search_dir, GenericCommand)
+
+
+def _create_stack_items(search_dir):
+    return _create_subcomponents(search_dir, GenericCommandGroup, GenericCommand)
+
+
+def _create_ribbon_items(search_dir):
     return _create_subcomponents(search_dir, GenericStack, GenericCommandGroup, GenericCommand)
 
 
@@ -112,9 +121,7 @@ def _get_parsed_package(pkg):
     # component creation errors are not critical. Each component that fails, will simply not be created.
     # all errors will be logged to debug for troubleshooting
 
-    # todo explain deterministic search for pks
-    # todo explain deterministic search for tabs and panels
-    # todo explain recursive search for stacks, command groups and commands
+    # todo explain deterministic search for pks, tabs and panels, stacks, command groups and commands
 
     # try creating tabs for new_pkg
     logger.debug('Parsing package for tabs...')
@@ -128,7 +135,34 @@ def _get_parsed_package(pkg):
             new_tab.add_component(new_panel)
             logger.debug('Panel added: {}'.format(new_panel))
 
-            # todo implement recursive search for stacks, command groups and commands
+            # try creating ribbon items for new_panel
+            logger.debug('Parsing panel for ribbon items...')
+            for ribbon_item in _create_ribbon_items(new_panel.directory):
+                new_panel.add_component(ribbon_item)
+                logger.debug('Ribbon item added: {}'.format(ribbon_item))
+
+                # Panels can contain stacks, button groups and buttons.
+                # if ribbon_item is a stack, parse its folder for button groups and buttons
+                if isinstance(ribbon_item, GenericStack):
+                    logger.debug('Parsing stack for buttons and button groups...')
+                    for stack_item in _create_stack_items(ribbon_item.directory):
+                        ribbon_item.add_component(stack_item)
+                        logger.debug('Stack item added: {}'.format(stack_item))
+
+                        # Stacks can contain either button groups or buttons
+                        # if stack_item is a button group, parse its folder for buttons
+                        if isinstance(stack_item, GenericCommandGroup):
+                            logger.debug('Parsing button group for buttons...')
+                            for button in _create_buttons(stack_item.directory):
+                                stack_item.add_component(button)
+                                logger.debug('Button added: {}'.format(button))
+
+                # if ribbon_item is a button group, parse its folder for buttons
+                elif isinstance(ribbon_item, GenericCommandGroup):
+                    logger.debug('Parsing button group for buttons...')
+                    for button in _create_buttons(ribbon_item.directory):
+                        ribbon_item.add_component(button)
+                        logger.debug('Button added: {}'.format(button))
 
     return pkg
 
