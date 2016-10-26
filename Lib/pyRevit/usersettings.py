@@ -26,7 +26,7 @@ import os.path as op
 import ConfigParser
 
 from .exceptions import ConfigFileError
-from ._logger import logger
+from .logger import logger
 from .config import LOADER_DIR, USER_SETTINGS_DIR
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
@@ -45,6 +45,7 @@ class _CustomUserSettings:
         this_script_settings = user_settings.load_parameters()
         print( this_script_settings.custom_param )
     """
+    # todo custom user settings?
     pass
 
 

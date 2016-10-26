@@ -7,7 +7,7 @@ import re
 import importlib
 
 from .config import LOADER_DIR, GIT_LIB
-from ._logger import logger
+from .logger import logger
 
 sys.path.append(op.join(LOADER_DIR, GIT_LIB))
 

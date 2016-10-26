@@ -38,7 +38,7 @@ import hashlib
 # pyrevit module imports
 from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, PyRevitVersion
 from .exceptions import *
-from ._logger import logger
+from .logger import logger
 from ._basecomponents import *
 
 

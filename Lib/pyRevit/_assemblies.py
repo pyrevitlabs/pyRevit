@@ -40,7 +40,7 @@ from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLA
 from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME, PyRevitVersion
 from .config import SPECIAL_CHARS
 from .exceptions import PyRevitLoaderNotFoundError
-from ._logger import logger
+from .logger import logger
 from .utils import join_paths
 
 import clr

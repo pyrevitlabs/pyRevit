@@ -36,7 +36,7 @@ import os
 import os.path as op
 
 from .exceptions import PyRevitException
-from ._logger import logger
+from .logger import logger
 from ._basecomponents import Package, Panel, Tab, GenericStack, GenericCommandGroup, GenericCommand
 from .utils import get_all_subclasses
 

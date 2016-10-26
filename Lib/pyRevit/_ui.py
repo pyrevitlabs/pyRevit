@@ -47,7 +47,7 @@ components as requested through its methods.
 """
 
 from .config import SCRIPT_FILE_FORMAT, ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE
-from ._logger import logger
+from .logger import logger
 from .exceptions import PyRevitUIError
 
 # dotnet imports

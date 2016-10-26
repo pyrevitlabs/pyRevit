@@ -33,7 +33,7 @@ This module only uses the base modules (.config, .logger, .exceptions, .output, 
 import os.path as op
 
 from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
-from ._logger import logger
+from .logger import logger
 from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,             \
                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
                     SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
