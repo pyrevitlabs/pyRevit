@@ -103,6 +103,25 @@ def get_temp_file():
     pass
 
 
+def get_mutex(mutex_name):
+    from System.Threading import Mutex
+    stat = Mutex.TryOpenExisting(mutex_name)
+    return stat[1]
+
+
+def set_mutex(mutex_name, status):
+    from System.Threading import Mutex
+    if status:
+        print('setting {}'.format(mutex_name))
+        mtx = Mutex(False, mutex_name)
+        # mtx.WaitOne(0, False)
+        return mtx
+    else:
+        mtx = get_mutex(mutex_name)
+        if mtx:
+            mtx.Close()
+
+
 # todo script option manager (pyrevit will get a command prompt and users can provide switches and options to commands
 def get_options_dict():
     pass

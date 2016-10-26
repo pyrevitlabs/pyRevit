@@ -33,6 +33,14 @@ _VER_MINOR = 0
 _VER_PATCH = 0
 
 
+# Addon defaults -------------------------------------------------------------------------------------------------------
+PYREVIT_ASSEMBLY_NAME = 'pyRevit'
+PYREVIT_INIT_SCRIPT_NAME = '__init__'
+
+LOADER_ADDIN = 'PyRevitLoader'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
+
+
 class PyRevitVersion(object):
     """Contains current pyRevit version"""
     major = _VER_MAJOR
@@ -103,12 +111,6 @@ def _find_git_dir():
 
 
 # general defaults -----------------------------------------------------------------------------------------------------
-PYREVIT_ASSEMBLY_NAME = 'pyRevit'
-PYREVIT_INIT_SCRIPT_NAME = '__init__'
-
-LOADER_ADDIN = 'PyRevitLoader'
-LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
-
 LOADER_DIR = _find_loader_directory()
 HOME_DIR = _find_home_directory()
 USER_TEMP_DIR = _find_user_temp_directory()
@@ -211,3 +213,7 @@ ARCHIVE_LOG_FOLDER_KEY_DEFAULT = 'C:\\'
 
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
+
+# Logger defaults ------------------------------------------------------------------------------------------------------
+DEBUG_MUTEX_NAME = 'Global\\' + PYREVIT_ASSEMBLY_NAME + '_debugmutex'
+VERBOSE_MUTEX_NAME = 'Global\\' + PYREVIT_ASSEMBLY_NAME + '_verbosemutex'

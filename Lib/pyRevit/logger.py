@@ -1,7 +1,9 @@
 import sys
 import logging
 
-from System.Threading import Mutex
+from .config import DEBUG_MUTEX_NAME, VERBOSE_MUTEX_NAME
+from pyRevit.output import output_window
+from .utils import set_mutex, get_mutex
 
 
 class _LoggerWrapper:
@@ -39,12 +41,8 @@ class _LoggerWrapper:
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
 
-        # TODO test mutex
-        # pyrevit_debug = Mutex.OpenExisting('pyrevit_debug')
-
         logger = logging.getLogger('pyrevitloader')
         logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
 
         handler_title = logging.StreamHandler(sys.stdout)
         formatter_title = logging.Formatter("%(message)s")
@@ -52,41 +50,59 @@ class _LoggerWrapper:
 
         logger_title = logging.getLogger('pyrevitloader_title')
         logger_title.addHandler(handler_title)
-        logger_title.setLevel(logging.INFO)
 
         self._logger = logger
         self._logger_title = logger_title
         self.errors = []
 
-    def set_info_mode(self):
+        if get_mutex(DEBUG_MUTEX_NAME):
+            self.set_level(logging.DEBUG)
+        elif get_mutex(VERBOSE_MUTEX_NAME):
+            self.set_level(logging.INFO)
+        else:
+            self.set_level(logging.WARNING)
+
+    # log level methods ---------------------------------------------
+    def set_level(self, level):
+        self._logger.setLevel(level)
+        self._logger_title.setLevel(level)
+
+    def set_verbose_mode(self):
+        set_mutex(VERBOSE_MUTEX_NAME, True)
         self._logger.setLevel(logging.INFO)
+        self._logger_title.setLevel(logging.INFO)
 
     def set_debug_mode(self):
+        set_mutex(DEBUG_MUTEX_NAME, True)
         self._logger.setLevel(logging.DEBUG)
+        self._logger_title.setLevel(logging.DEBUG)
 
+    # output methods -----------------------------------------------
     def title(self, msg):
         print('='*100)
         self._logger_title.info(msg)
         print('='*100)
 
     def info(self, msg):
+        output_window.show()
         self._logger.info(msg)
 
     def debug(self, msg):
+        output_window.show()
         self._logger.debug(msg)
 
     def warning(self, msg):
+        output_window.show()
         self._logger.warning(msg)
 
     def error(self, msg):
+        output_window.show()
         self._logger.error(msg)
         self.errors.append(msg)
 
     def critical(self, msg):
+        output_window.show()
         self._logger.critical(msg)
-
-    def set_level(self, level):
-        self._logger.setLevel(level)
 
 
 logger = _LoggerWrapper()

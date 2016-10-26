@@ -32,9 +32,8 @@ from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILEN
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY
 from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT, ARCHIVE_LOG_FOLDER_KEY_DEFAULT
-from .utils import assert_folder
 
-from pyRevit.output import output_window            # handles output terminal window
+from .utils import assert_folder
 
 
 class _CustomUserSettings:
@@ -107,12 +106,8 @@ class _PyRevitUserSettings:
                     # set output window based on
                     if self.debug:
                         logger.set_debug_mode()
-                        output_window.set_width(1100)
-                        output_window.show()
                     elif self.verbose:
-                        logger.set_info_mode()
-                        output_window.set_width(1100)
-                        output_window.show()
+                        logger.set_verbose_mode()
 
                     self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
                                                               LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
