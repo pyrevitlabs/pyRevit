@@ -27,11 +27,11 @@ pyRevit assembly make will set the log file name inside each C# class created fo
 """
 
 
-import os as _os
-import os.path as _op
-import shutil as _shutil
+import os
+import os.path as op
+import shutil as shutil
 
-from .logger import logger as _logger
+from .logger import logger
 from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, USER_TEMP_DIR, SESSION_LOG_FILE_NAME
 
 from .usersettings import user_settings
@@ -41,30 +41,30 @@ from System.IO import IOException
 
 
 def _archive_script_usage_logs():
-    if _op.exists(user_settings.archivelogfolder):
+    if op.exists(user_settings.archivelogfolder):
         host_instances = list(Process.GetProcessesByName('Revit'))
         if len(host_instances) > 1:
-            _logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
+            logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
         elif len(host_instances) == 1:
-            _logger.debug('Archiving old log files...')
-            files = _os.listdir(USER_TEMP_DIR)
+            logger.debug('Archiving old log files...')
+            files = os.listdir(USER_TEMP_DIR)
             for f in files:
                 if f.startswith(PYREVIT_ASSEMBLY_NAME) and f.endswith(LOG_FILE_TYPE):
                     try:
-                        current_file_path = _op.join(USER_TEMP_DIR, f)
-                        newloc = _op.join(user_settings.archivelogfolder, f)
-                        _shutil.move(current_file_path, newloc)
-                        _logger.debug('Existing log file archived to: {}'.format(newloc))
+                        current_file_path = op.join(USER_TEMP_DIR, f)
+                        newloc = op.join(user_settings.archivelogfolder, f)
+                        shutil.move(current_file_path, newloc)
+                        logger.debug('Existing log file archived to: {}'.format(newloc))
                     except IOException as io_err:
-                        _logger.warning('Error archiving log file: {} | {}'.format(f, io_err.Message))
+                        logger.warning('Error archiving log file: {} | {}'.format(f, io_err.Message))
                     except Exception as err:
-                        _logger.warning('Error archiving log file: {} | {}'.format(f, err))
+                        logger.warning('Error archiving log file: {} | {}'.format(f, err))
     else:
-        _logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_settings.archivelogfolder))
+        logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_settings.archivelogfolder))
 
 
 def _get_log_file_path():
-    _op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
+    op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
 
 
 # data query functions -------------------------------------------------------------------------------------------------
