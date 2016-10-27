@@ -37,9 +37,10 @@ from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, USER_TEMP_DIR, SESSION
 from .usersettings import user_settings
 
 from System.Diagnostics import Process
+from System.IO import IOException
 
 
-def _archive_script_usage_logs(self):
+def _archive_script_usage_logs():
     if _op.exists(user_settings.archivelogfolder):
         host_instances = list(Process.GetProcessesByName('Revit'))
         if len(host_instances) > 1:
@@ -54,15 +55,17 @@ def _archive_script_usage_logs(self):
                         newloc = _op.join(user_settings.archivelogfolder, f)
                         _shutil.move(current_file_path, newloc)
                         _logger.debug('Existing log file archived to: {}'.format(newloc))
-                    except _shutil.Error:
-                        _logger.debug('Error archiving log file: {}'.format(f))
+                    except IOException as io_err:
+                        _logger.warning('Error archiving log file: {} | {}'.format(f, io_err.Message))
+                    except Exception as err:
+                        _logger.warning('Error archiving log file: {} | {}'.format(f, err))
     else:
         _logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_settings.archivelogfolder))
 
 
 def _get_log_file_path():
     _op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
-    
+
 
 # data query functions -------------------------------------------------------------------------------------------------
 # ...
