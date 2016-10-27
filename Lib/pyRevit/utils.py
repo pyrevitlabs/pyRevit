@@ -99,7 +99,7 @@ def get_temp_file():
     """Returns a filename to be used by a user script to store temporary information.
     Temporary files are saved in USER_TEMP_DIR.
     """
-    # todo
+    # todo temporary file
     pass
 
 
@@ -150,3 +150,5 @@ def get_options_dict():
 
 
 # todo add transaction wrapper
+def transaction_wrapper():
+    pass
