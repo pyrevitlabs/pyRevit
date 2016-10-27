@@ -133,8 +133,9 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
 
 # creating log file name from stamped session id
-SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
 ASSEMBLY_FILE_TYPE = '.dll'
+LOG_FILE_TYPE = '.log'
+SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.package'

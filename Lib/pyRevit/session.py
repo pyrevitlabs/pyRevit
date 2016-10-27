@@ -33,6 +33,7 @@ from ._parser import _get_installed_packages, _get_parsed_package
 from ._assemblies import _create_assembly
 from ._ui import _update_revit_ui
 
+from usagedata import _archive_script_usage_logs
 
 def load_from(root_dir):
     """Handles loading/reloading of the pyRevit addin and extension packages.
@@ -49,6 +50,9 @@ def load_from(root_dir):
     # the session.load() function (this function) only moderates the communication and handles errors.
     # Session, creates an independent dll and ui for every package. This isolates other packages from any errors that
     # might occur when setting up a package.
+
+    # archive previous sessions logs
+    _archive_script_usage_logs()
 
     # get_installed_packages() returns a list of discovered packages in root_dir
     for pkg_info in _get_installed_packages(root_dir):
@@ -83,15 +87,12 @@ def load_from(root_dir):
 # user is not expected to use _cache, _parser, _commandtree, _assemblies, or _ui
 # All interactions should be through session module.
 # ----------------------------------------------------------------------------------------------------------------------
-def get_this_command():
-    """Returns read only info about the caller python script.
-    Example:
-        this_script = pyRevit.session.get_this_command()
-        print(this_script.script_file_address)
-    """
-    # todo
-    pass
-
+# def get_command(script_address):
+#     """Returns read only info about the caller python script.
+#     Example:
+#         this_script = pyRevit.session.get_this_command()
+#         print(this_script.script_file_address)
+#     """
 
 def get_current_ui():
     """Revit UI Wrapper class for interacting with current pyRevit UI.
