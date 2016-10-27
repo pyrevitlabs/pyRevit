@@ -40,7 +40,7 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,               \
                     DEFAULT_LAYOUT_FILE_NAME
 from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
-                    MIN_PYREVIT_VERSION_PARAM
+                    MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
 from .config import REVIT_VERSION, SESSION_STAMPED_ID, PyRevitVersion
 from .utils import ScriptFileContents, cleanup_string
 
@@ -257,6 +257,7 @@ class GenericCommand(object):
 
         self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
         self.author = script_content.extract_param(AUTHOR_PARAM)
+        self.time_saved = script_content.extract_param(SCRIPT_TIME_SAVED_PARAM)
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()

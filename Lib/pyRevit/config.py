@@ -166,6 +166,7 @@ DEFAULT_LAYOUT_FILE_NAME = 'layout'
 
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
+SCRIPT_TIME_SAVED_PARAM = '__timesaved__'
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 
