@@ -21,12 +21,11 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 Provides default values for the pyRevit library.
 """
 
-import os
-import os.path as op
-from datetime import datetime
+import os as _os
+import os.path as _op
 
-from System.Diagnostics import Process
-from System import AppDomain
+from System.Diagnostics import Process as _Process
+from System import AppDomain as _Appdomain
 
 
 _VER_MAJOR = 4
@@ -68,20 +67,24 @@ class PyRevitVersion(object):
 
 def _find_loader_directory():
     """Return the __init__ full directory address"""
-    folder = op.dirname(op.dirname(op.dirname(__file__)))  # three steps back for /__init__/Lib/pyRevit
-    return folder
+    try:
+        current_file_path = __file__
+        folder = _op.dirname(_op.dirname(_op.dirname(current_file_path)))  # three steps back for /__init__/Lib/pyRevit
+        return folder
+    except NameError:
+        return None
 
 
 def _find_home_directory():
     """Return the pyRevit home directory address. This is the
        directory that contains the portable git, __init__, pyRevit, and other package_list"""
-    folder = op.dirname(_find_loader_directory())
+    folder = _op.dirname(_find_loader_directory())
     return folder
 
 
 def _find_user_temp_directory():
     """Return the user temp directory %temp%"""
-    return os.getenv('Temp')
+    return _os.getenv('Temp')
 
 
 def _get_username():
@@ -94,12 +97,12 @@ def _get_username():
 
 def _find_user_roaming_appdata():
     """Return %appdata% directory address"""
-    return os.getenv('appdata')
+    return _os.getenv('appdata')
 
 
 def _find_user_roaming_appdata_pyrevit():
     """Return %appdata%/pyRevit directory address"""
-    return op.join(_find_user_roaming_appdata(), "pyRevit")
+    return _op.join(_find_user_roaming_appdata(), "pyRevit")
 
 
 def _get_host_revit_version():
@@ -108,7 +111,8 @@ def _get_host_revit_version():
 
 
 def _find_git_dir():
-    return op.join(_find_home_directory(), '__git__', 'cmd')
+    # todo is this needed? (run a search for all mentions)
+    return _op.join(_find_home_directory(), '__git__', 'cmd')
 
 
 # general defaults -----------------------------------------------------------------------------------------------------
@@ -126,7 +130,7 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
 # This id is unique for all python scripts running under this session.
 # Previously the session id was stamped by formatted time
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
-SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
+SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
 
 # creating log file name from stamped session id
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + '.log'
@@ -189,7 +193,7 @@ SPECIAL_CHARS = {' ': '',
                  '\/': '', '\\': ''}
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
-GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
+GIT_EXE = '\"' + _op.join(_find_git_dir(), 'git.exe') + '\"'
 GIT_SUB_FOLDER = '.git'
 GIT_LIB = 'LibGit2Sharp'
 
@@ -217,7 +221,7 @@ KEY_VALUE_FALSE = "false"
 
 # InterScript Communication (ISC) defaults -----------------------------------------------------------------------------
 
-CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
+CURRENT_REVIT_APPDOMAIN = _Appdomain.CurrentDomain
 
 PYREVIT_ISC_DICT_NAME = PYREVIT_ASSEMBLY_NAME + '_dictISC'
 DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
