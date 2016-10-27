@@ -103,23 +103,45 @@ def get_temp_file():
     pass
 
 
-def get_mutex(mutex_name):
-    from System.Threading import Mutex
-    stat = Mutex.TryOpenExisting(mutex_name)
-    return stat[1]
-
-
-def set_mutex(mutex_name, status):
-    from System.Threading import Mutex
-    if status:
-        print('setting {}'.format(mutex_name))
-        mtx = Mutex(False, mutex_name)
-        # mtx.WaitOne(0, False)
-        return mtx
+def get_interscript_comm_data(param_name):
+    """Gets value of a parameter shared between all scripts. (Interscript communication ISC)
+    Some settings needs to be set for the current session and should affect the behaviour of all individual scripts
+    inside the packages. (e.g. If user activates the DEBUG mode, all scripts should follow and log the debug entries.)
+    The information is saved using AppDomain.GetData and SetData in a dictionary parameter (PYREVIT_ISC_DICT_NAME).
+    The dictionary is used to minimise the addition of named parameters to the AppDomain. The dictionary then includes
+    all the internal parameters and their associated value (e.g. DEBUG_ISC_NAME). This way each script does not need
+    to read the usersettings data which reduces file io and saves time.
+    """
+    # This function returns None if it can not find the parameter. Thus value of None should not be used for params
+    from .config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
+    if data_dict:
+        try:
+            return data_dict[param_name]
+        except KeyError:
+            return None
     else:
-        mtx = get_mutex(mutex_name)
-        if mtx:
-            mtx.Close()
+        return None
+
+
+def set_interscript_comm_data(param_name, param_value):
+    """Sets value of a parameter shared between all scripts. (Interscript communication ISC)
+    Some settings needs to be set for the current session and should affect the behaviour of all individual scripts
+    inside the packages. (e.g. If user activates the DEBUG mode, all scripts should follow and log the debug entries.)
+    The information is saved using AppDomain.GetData and SetData in a dictionary parameter (PYREVIT_ISC_DICT_NAME).
+    The dictionary is used to minimise the addition of named parameters to the AppDomain. The dictionary then includes
+    all the internal parameters and their associated value (e.g. DEBUG_ISC_NAME). This way each script does not need
+    to read the usersettings data which reduces file io and saves time.
+    """
+    # Get function returns None if it can not find the parameter. Thus value of None should not be used for params
+    from .config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
+    if data_dict:
+        data_dict[param_name] = param_value
+    else:
+        data_dict = {param_name: param_value}
+
+    CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ISC_DICT_NAME, data_dict)
 
 
 # todo script option manager (pyrevit will get a command prompt and users can provide switches and options to commands

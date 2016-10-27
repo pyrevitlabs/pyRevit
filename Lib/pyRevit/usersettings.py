@@ -103,7 +103,7 @@ class _PyRevitUserSettings:
                     self.debug = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
                                                      DEBUG_KEY).lower() == KEY_VALUE_TRUE else False
 
-                    # set output window based on
+                    # set log mode on the logger module based on user settings (overriding the defaults)
                     if self.debug:
                         logger.set_debug_mode()
                     elif self.verbose:

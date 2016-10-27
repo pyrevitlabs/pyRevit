@@ -1,9 +1,8 @@
 import sys
 import logging
 
-from .config import DEBUG_MUTEX_NAME, VERBOSE_MUTEX_NAME
-from pyRevit.output import output_window
-from .utils import set_mutex, get_mutex
+from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME
+from .utils import set_interscript_comm_data, get_interscript_comm_data
 
 
 class _LoggerWrapper:
@@ -31,9 +30,8 @@ class _LoggerWrapper:
      print(logger.errors)
      >> ['Message']
 
-    # Hides windows if not errors have occured.
-     if not logger.errors:
-        __window__.Close()
+    # Output graphical window will automatically pop up if any content is printed to it.
+    # By default (info.WARNING) output window will pop up to show errors, criticals, and warnings.
     """
 
     def __init__(self):
@@ -55,9 +53,10 @@ class _LoggerWrapper:
         self._logger_title = logger_title
         self.errors = []
 
-        if get_mutex(DEBUG_MUTEX_NAME):
+        # Setting session-wide debug/verbose status so other individual scripts know about it.
+        if get_interscript_comm_data(DEBUG_ISC_NAME):
             self.set_level(logging.DEBUG)
-        elif get_mutex(VERBOSE_MUTEX_NAME):
+        elif get_interscript_comm_data(VERBOSE_ISC_NAME):
             self.set_level(logging.INFO)
         else:
             self.set_level(logging.WARNING)
@@ -68,14 +67,17 @@ class _LoggerWrapper:
         self._logger_title.setLevel(level)
 
     def set_verbose_mode(self):
-        set_mutex(VERBOSE_MUTEX_NAME, True)
+        set_interscript_comm_data(VERBOSE_ISC_NAME, True)
         self._logger.setLevel(logging.INFO)
         self._logger_title.setLevel(logging.INFO)
 
     def set_debug_mode(self):
-        set_mutex(DEBUG_MUTEX_NAME, True)
+        set_interscript_comm_data(DEBUG_ISC_NAME, True)
         self._logger.setLevel(logging.DEBUG)
         self._logger_title.setLevel(logging.DEBUG)
+
+    def get_level(self):
+        return self._logger.level, self._logger_title.level
 
     # output methods -----------------------------------------------
     def title(self, msg):
@@ -84,24 +86,19 @@ class _LoggerWrapper:
         print('='*100)
 
     def info(self, msg):
-        output_window.show()
         self._logger.info(msg)
 
     def debug(self, msg):
-        output_window.show()
         self._logger.debug(msg)
 
     def warning(self, msg):
-        output_window.show()
         self._logger.warning(msg)
 
     def error(self, msg):
-        output_window.show()
         self._logger.error(msg)
         self.errors.append(msg)
 
     def critical(self, msg):
-        output_window.show()
         self._logger.critical(msg)
 
 

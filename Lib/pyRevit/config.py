@@ -26,6 +26,7 @@ import os.path as op
 from datetime import datetime
 
 from System.Diagnostics import Process
+from System import AppDomain
 
 
 _VER_MAJOR = 4
@@ -214,6 +215,10 @@ ARCHIVE_LOG_FOLDER_KEY_DEFAULT = 'C:\\'
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
-# Logger defaults ------------------------------------------------------------------------------------------------------
-DEBUG_MUTEX_NAME = 'Global\\' + PYREVIT_ASSEMBLY_NAME + '_debugmutex'
-VERBOSE_MUTEX_NAME = 'Global\\' + PYREVIT_ASSEMBLY_NAME + '_verbosemutex'
+# InterScript Communication (ISC) defaults -----------------------------------------------------------------------------
+
+CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
+
+PYREVIT_ISC_DICT_NAME = PYREVIT_ASSEMBLY_NAME + '_dictISC'
+DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
+VERBOSE_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_verboseISC'
