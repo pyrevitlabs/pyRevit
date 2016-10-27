@@ -111,7 +111,7 @@ def _get_host_revit_version():
 
 
 def _find_git_dir():
-    # todo is this needed? (run a search for all mentions)
+    # todo is portable git needed? (run a search for all mentions)
     return _op.join(_find_home_directory(), '__git__', 'cmd')
 
 

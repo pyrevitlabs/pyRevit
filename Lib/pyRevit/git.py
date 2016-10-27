@@ -21,7 +21,7 @@ clr.ImportExtensions(System.Linq)
 clr.AddReferenceByName(GIT_LIB)
 git = importlib.import_module(GIT_LIB)
 
-# todo rewrite update mechanism to use this to update all(?) extensions
+# fixme rewrite update mechanism to use this to update all(?) extensions
 
 # from pyRevit.git import git
 # repo = git.Repository(r'C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevitDev')

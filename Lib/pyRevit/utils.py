@@ -99,7 +99,7 @@ def get_temp_file():
     """Returns a filename to be used by a user script to store temporary information.
     Temporary files are saved in USER_TEMP_DIR.
     """
-    # todo temporary file
+    # fixme temporary file
     pass
 
 
@@ -144,11 +144,11 @@ def set_interscript_comm_data(param_name, param_value):
     CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ISC_DICT_NAME, data_dict)
 
 
-# todo script option manager (pyrevit will get a command prompt and users can provide switches and options to commands
+# todo script option manager - pyrevit will get a command prompt and users can provide switches and options to commands
 def get_options_dict():
     pass
 
 
-# todo add transaction wrapper
+# fixme add transaction wrapper
 def transaction_wrapper():
     pass

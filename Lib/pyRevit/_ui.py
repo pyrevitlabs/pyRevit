@@ -117,19 +117,19 @@ class _PyRevitRibbonGroupItem:
         return tooltip
 
     def contains(self, button):
-        # todo
+        # fixme
         pass
 
     def update_button(self, button, pkg_asm_location):
-        # todo
+        # fixme
         pass
 
     def create_button(self, button, pkg_asm_location):
-        # todo
+        # fixme
         pass
 
     def cleanup_orphaned_buttons(self):
-        # todo
+        # fixme
         pass
 
 
@@ -149,22 +149,22 @@ class _PyRevitRibbonPanel:
         return panel
 
     def contains(self, item):
-        # todo
+        # fixme
         pass
 
     def ribbon_item(self, item):
         pass
 
     def update_ribbon_item(self, item, pkg_asm_location):
-        # todo
+        # fixme
         pass
 
     def create_ribbon_item(self, item, pkg_asm_location):
-        # todo
+        # fixme
         pass
 
     def cleanup_orphaned_ribbon_items(self):
-        # todo
+        # fixme
         pass
 
 
@@ -189,7 +189,7 @@ class _PyRevitRibbonTab:
             existing_ribbon_panel_list = __revit__.GetRibbonPanels(existing_ribbon_tab.Title)
             if existing_ribbon_panel_list:
                 for panel in existing_ribbon_panel_list:
-                    # todo how to handle previously deactivated panels?
+                    # fixme how to handle previously deactivated panels?
                     if panel.Visible:
                         # feeding self.current_ribbon_panels with an instance of _PyRevitRibbonPanel for existing panels
                         # _PyRevitRibbonPanel will find its existing ribbon items internally
@@ -236,7 +236,7 @@ class _PyRevitRibbonTab:
 
     def cleanup_orphaned_ribbon_panels(self, tab):
         """Removes all panels that do not exist in the given tab."""
-        # todo cleanup panels
+        # fixme cleanup panels
         for existing_panel_name, existing_panel in self.current_ribbon_panels.items():
             pass
 
@@ -250,7 +250,7 @@ class _PyRevitUI:
         # Getting a list of current tabs using adwindows.dll methods
         # Iterating over tabs since ComponentManager.Ribbon.Tabs.FindTab(tab.name) does not return invisible tabs
         for exiting_tab in ComponentManager.Ribbon.Tabs:
-            # todo how to handle previously deactivated tabs?
+            # fixme how to handle previously deactivated tabs?
             if exiting_tab.IsVisible:
                 # feeding self.current_ribbon_tabs with an instance of _PyRevitRibbonTab for each existing tab
                 # _PyRevitRibbonTab will find its existing panels internally
@@ -299,7 +299,7 @@ class _PyRevitUI:
 
     def cleanup_orphaned_ui_items(self, pkg):
         """Removes all tabs that do not exist in the given package."""
-        # todo cleanup tabs
+        # fixme cleanup tabs
         for existing_tab_name, existing_tab in self.current_ribbon_tabs.items():
             pass
 

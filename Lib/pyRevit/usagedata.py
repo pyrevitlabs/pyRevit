@@ -70,5 +70,3 @@ def _get_log_file_path():
 # data query functions -------------------------------------------------------------------------------------------------
 # ...
 # todo learn about conventional database access methods in python (json maybe?)
-
-# todo how to log time_saved value of scripts?

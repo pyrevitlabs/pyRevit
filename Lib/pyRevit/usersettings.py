@@ -44,7 +44,7 @@ class _CustomUserSettings:
         this_script_settings = user_settings.load_parameters()
         print( this_script_settings.custom_param )
     """
-    # todo custom user settings?
+    # fixme custom user settings?
     pass
 
 
@@ -180,7 +180,7 @@ class _PyRevitUserSettings:
             logger.error(err.message)
 
     def save_parameter(self,  param_name, param_value):
-        # todo: save user param
+        # fixme: save user param
         try:
             with open(self.user_config_file, 'w') as udfile:
                 cparser = ConfigParser.ConfigParser()
@@ -191,7 +191,7 @@ class _PyRevitUserSettings:
             raise ConfigFileError(err.message)
 
     def load_parameters(self):
-        # todo: load user param
+        # fixme: load user param
         pass
 
     def get_alias(self, original_name, type_id):

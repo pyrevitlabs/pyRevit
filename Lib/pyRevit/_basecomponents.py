@@ -134,7 +134,7 @@ class GenericContainer(object):
                         self._sub_components[i_index], self._sub_components[cmp_index] = b, a
                         item_found = True
                 if not item_found:
-                    # todo if item is in layout and not in folder, it skips over that index
+                    # fixme if item is in layout and not in folder, it skips over that index
                     # todo how to deal with components with aliases? user should not change internal layout file
                     logger.debug('Item listed in layout file is not available: {}'.format(item))
 
@@ -160,7 +160,7 @@ class Package(GenericContainer):
 
     def get_all_commands(self):
         all_cmds = []
-        # todo recursive search for GenericCommand
+        # fixme recursive search for GenericCommand
         return all_cmds
 
 
@@ -291,7 +291,7 @@ class GenericCommand(object):
         return op.join(self.directory, COMPONENT_LIB_NAME)
 
     def _check_dependencies(self):
-        # todo
+        # todo implement host version / library version dependencies
         pass
 
     def _get_unique_name(self):
@@ -315,7 +315,7 @@ class GenericCommand(object):
     # def _get_clean_dict(self):
     #     return self.__dict__.copy()
     #
-    # # todo: how to load from cache?
+    # # fixme: how to load from cache?
     # def _load_from_cache(self, cached_dict):
     #     for k,v in cached_dict.items():
     #         self.__dict__[k] = v
