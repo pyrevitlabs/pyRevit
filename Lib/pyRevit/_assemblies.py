@@ -228,3 +228,4 @@ def _create_assembly(parsed_pkg):
     # create assembly file and return assembly file path to be used in UI creation
     pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class())
     logger.debug('Assembly created: {}'.format(pkg_asm_info))
+    return pkg_asm_info

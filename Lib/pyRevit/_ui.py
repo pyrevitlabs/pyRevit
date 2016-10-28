@@ -46,262 +46,8 @@ interface doesn't need to understand that. Its main purpose is to capture the cu
 components as requested through its methods.
 """
 
-from .config import SCRIPT_FILE_FORMAT, ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE
 from .logger import logger
-from .exceptions import PyRevitUIError
-
-# dotnet imports
-import clr
-clr.AddReference('PresentationCore')
-clr.AddReference('RevitAPIUI')
-from System import Uri
-from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-
-# revit api imports
-from Autodesk.Revit.UI import PulldownButtonData
-from Autodesk.Revit.Exceptions import ArgumentException
-
-try:
-    clr.AddReference('AdWindows')
-    from Autodesk.Windows import ComponentManager
-except Exception as err:
-    logger.critical('Can not establish ui module. Error importing AdWindow.dll')
-    raise err
-
-
-class _ButtonIcons:
-    def __init__(self, file_address):
-        uri = Uri(file_address)
-
-        self.smallBitmap = BitmapImage()
-        self.smallBitmap.BeginInit()
-        self.smallBitmap.UriSource = uri
-        self.smallBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.smallBitmap.DecodePixelHeight = ICON_SMALL_SIZE
-        self.smallBitmap.DecodePixelWidth = ICON_SMALL_SIZE
-        self.smallBitmap.EndInit()
-
-        self.mediumBitmap = BitmapImage()
-        self.mediumBitmap.BeginInit()
-        self.mediumBitmap.UriSource = uri
-        self.mediumBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.mediumBitmap.DecodePixelHeight = ICON_MEDIUM_SIZE
-        self.mediumBitmap.DecodePixelWidth = ICON_MEDIUM_SIZE
-        self.mediumBitmap.EndInit()
-
-        self.largeBitmap = BitmapImage()
-        self.largeBitmap.BeginInit()
-        self.largeBitmap.UriSource = uri
-        self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.mediumBitmap.DecodePixelHeight = ICON_LARGE_SIZE
-        self.mediumBitmap.DecodePixelWidth = ICON_LARGE_SIZE
-        self.largeBitmap.EndInit()
-
-
-class _PyRevitRibbonGroupItem:
-    def __init__(self):
-        pass
-
-    @classmethod
-    def from_component(cls, item):
-        pass
-
-    @classmethod
-    def from_ribbon_item(cls, ribbon_item):
-        pass
-
-    def _make_tooltip(self):
-        tooltip = self.item.doc_string
-        tooltip += '\n\nScript Name:\n{0}'.format(self.item.name + ' ' + SCRIPT_FILE_FORMAT)
-        tooltip += '\n\nAuthor:\n{0}'.format(self.item.author)
-        return tooltip
-
-    def contains(self, button):
-        # fixme
-        pass
-
-    def update_button(self, button, pkg_asm_location):
-        # fixme
-        pass
-
-    def create_button(self, button, pkg_asm_location):
-        # fixme
-        pass
-
-    def cleanup_orphaned_buttons(self):
-        # fixme
-        pass
-
-
-class _PyRevitRibbonPanel:
-    def __init__(self, panel_name):
-        self.name = panel_name
-        self.ribbon_panel_ctrl = None
-
-    @classmethod
-    def from_data(cls, panel_name):
-        return cls(panel_name)
-
-    @classmethod
-    def from_ribbon_tab(cls, ribbon_panel):
-        panel = cls(ribbon_panel.Name)
-        panel.ribbon_panel_ctrl = ribbon_panel
-        return panel
-
-    def contains(self, item):
-        # fixme
-        pass
-
-    def ribbon_item(self, item):
-        pass
-
-    def update_ribbon_item(self, item, pkg_asm_location):
-        # fixme
-        pass
-
-    def create_ribbon_item(self, item, pkg_asm_location):
-        # fixme
-        pass
-
-    def cleanup_orphaned_ribbon_items(self):
-        # fixme
-        pass
-
-
-class _PyRevitRibbonTab:
-    def __init__(self, tab_name):
-        self.name = tab_name
-        self.ribbon_tab_ctrl = None
-
-        self.current_ribbon_panels = {}
-
-    @classmethod
-    def from_data(cls, tab_name):
-        return cls(tab_name)
-
-    @classmethod
-    def from_ribbon_tab(cls, existing_ribbon_tab):
-        tab = cls(existing_ribbon_tab.Title)
-        tab.ribbon_tab_ctrl = existing_ribbon_tab
-
-        # getting a list of existing panels under this tab
-        try:
-            existing_ribbon_panel_list = __revit__.GetRibbonPanels(existing_ribbon_tab.Title)
-            if existing_ribbon_panel_list:
-                for panel in existing_ribbon_panel_list:
-                    # fixme how to handle previously deactivated panels?
-                    if panel.Visible:
-                        # feeding self.current_ribbon_panels with an instance of _PyRevitRibbonPanel for existing panels
-                        # _PyRevitRibbonPanel will find its existing ribbon items internally
-                        tab.current_ribbon_panels[panel.Name] = _PyRevitRibbonPanel.from_ribbon_tab(panel)
-        except ArgumentException:
-            raise PyRevitUIError('Can not get panels for this tab: {}'.format(existing_ribbon_tab))
-
-        return tab
-
-    def contains(self, panel_name):
-        """Checks the existing tab for given panel_name. Returns True if already exists."""
-        return panel_name in self.current_ribbon_panels.keys()
-
-    def ribbon_panel(self, panel_name):
-        """Returns an instance of _PyRevitRibbonPanel for existing panel matching panel_name"""
-        try:
-            return self.current_ribbon_panels[panel_name]
-        except KeyError:
-            raise PyRevitUIError('Can not retrieve panel.')
-
-    def update_ribbon_panel(self, panel_name):
-        try:
-            exiting_panel = self.current_ribbon_panels[panel_name]
-            # exiting_panel.ribbon_panel_ctrl.Name = panel_name
-            exiting_panel.ribbon_panel_ctrl.Visible = True
-            exiting_panel.ribbon_panel_ctrl.Enabled = True
-        except KeyError:
-            raise PyRevitUIError('Can not update panel.')
-
-    def create_ribbon_panel(self, panel_name):
-        """Create revit ribbon panel_name from panel_name.
-        Returns an instance of _PyRevitRibbonPanel for the created tab."""
-        try:
-            # creating panel in tab
-            ribbon_panel = __revit__.CreateRibbonPanel(self.name, panel_name)
-            # creating _PyRevitRibbonPanel object
-            new_panel = _PyRevitRibbonPanel.from_data(panel_name)
-            # assign ribbon panle controller
-            new_panel.ribbon_panel_ctrl = ribbon_panel
-            # add new tab to list of current tabs
-            self.current_ribbon_panels[panel_name] = new_panel
-        except Exception as err:
-            raise PyRevitUIError('Can not create panel: {}'.format(err))
-
-    def cleanup_orphaned_ribbon_panels(self, tab):
-        """Removes all panels that do not exist in the given tab."""
-        # fixme cleanup panels
-        for existing_panel_name, existing_panel in self.current_ribbon_panels.items():
-            pass
-
-
-class _PyRevitUI:
-    def __init__(self):
-        """Captures the existing ui state and elements at creation."""
-        self.current_ribbon_tabs = {}
-
-        # Revit does not have any method to get a list of current tabs.
-        # Getting a list of current tabs using adwindows.dll methods
-        # Iterating over tabs since ComponentManager.Ribbon.Tabs.FindTab(tab.name) does not return invisible tabs
-        for exiting_tab in ComponentManager.Ribbon.Tabs:
-            # fixme how to handle previously deactivated tabs?
-            if exiting_tab.IsVisible:
-                # feeding self.current_ribbon_tabs with an instance of _PyRevitRibbonTab for each existing tab
-                # _PyRevitRibbonTab will find its existing panels internally
-                try:
-                    self.current_ribbon_tabs[exiting_tab.Title] = _PyRevitRibbonTab.from_ribbon_tab(exiting_tab)
-                except PyRevitUIError:
-                    continue
-
-    def contains(self, tab_name):
-        """Checks the existing ui for given tab_name. Returns True if already exists."""
-        return tab_name in self.current_ribbon_tabs.keys()
-
-    def ribbon_tab(self, tab_name):
-        """Returns an instance of _PyRevitRibbonTab for existing tab matching tab_name"""
-        try:
-            return self.current_ribbon_tabs[tab_name]
-        except KeyError:
-            raise PyRevitUIError('Can not retrieve tab.')
-
-    def update_ribbon_tab(self, tab_name):
-        try:
-            exiting_tab = self.current_ribbon_tabs[tab_name]
-            # exiting_tab.ribbon_tab_ctrl.Title = tab_name
-            exiting_tab.ribbon_tab_ctrl.IsVisible = True
-            exiting_tab.ribbon_tab_ctrl.IsEnabled = True
-        except KeyError:
-            raise PyRevitUIError('Can not update tab.')
-
-    def create_ribbon_tab(self, tab_name):
-        """Create revit ribbon tab from tab_name.
-        Returns an instance of _PyRevitRibbonTab for the created tab."""
-        try:
-            # creating tab in Revit ui
-            __revit__.CreateRibbonTab(tab_name)
-            # creating _PyRevitRibbonTab object
-            new_tab = _PyRevitRibbonTab.from_data(tab_name)
-            # __revit__.CreateRibbonTab() does not return the created tab object.
-            # so find the tab object in exiting ui and assign to new_tab controller.
-            for exiting_tab in ComponentManager.Ribbon.Tabs:
-                if exiting_tab.Title == new_tab.name:
-                    new_tab.ribbon_tab_ctrl = exiting_tab
-            # add new tab to list of current tabs
-            self.current_ribbon_tabs[tab_name] = new_tab
-        except Exception as err:
-            raise PyRevitUIError('Can not create tab: {}'.format(err))
-
-    def cleanup_orphaned_ui_items(self, pkg):
-        """Removes all tabs that do not exist in the given package."""
-        # fixme cleanup tabs
-        for existing_tab_name, existing_tab in self.current_ribbon_tabs.items():
-            pass
+from .ui import _PyRevitUI
 
 
 def _update_revit_ui(parsed_pkg, pkg_asm_info):
@@ -349,27 +95,28 @@ def _update_revit_ui(parsed_pkg, pkg_asm_info):
 
                 logger.debug('Current panel is: {}'.format(panel))
                 current_panel = current_tab.ribbon_panel(panel.name)
-            #     # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
-            #     for item in panel:
-            #         if current_panel.contains(item):
-            #             # update the ribbon_item that are single buttons (e.g. PushButton) or
-            #             # updates the icon for ribbon_items that are groups of buttons  (e.g. PullDownButton)
-            #             current_panel.update_ribbon_item(item)
-            #
-            #             # then update/create the sub items if any
-            #             # Level 4: Ribbon items that include other push buttons (e.g. PullDownButton) ------------------
-            #             if item.is_group():
-            #                 for button in item:
-            #                     if current_panel.ribbon_item(item).contains(button):
-            #                         current_panel.ribbon_item(item).update_button(button)
-            #                     else:
-            #                         current_panel.ribbon_item(item).create_button(button)
-            #
-            #                 # current_ui.ribbon_item(item) now includes updated or new buttons.
-            #                 # so cleanup all the remaining existing buttons that are not in this package anymore.
-            #                 current_panel.ribbon_item(item).cleanup_orphaned_buttons()
-            #         else:
-            #             current_panel.create_ribbon_item(item)
+                # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
+                for item in panel:
+                    if item.is_group():
+                        if current_panel.contains(item.name):
+                            logger.debug('Ribbon item already exists: {}'.format(item))
+                            current_panel.update_ribbon_item(item.name, pkg_asm_info.location)
+                        else:
+                            logger.debug('Ribbon item does not exist in panel: {}'.format(item))
+                            logger.debug('Creating ribbon item: {}'.format(item))
+                            current_panel.create_pulldown_button(item.name, pkg_asm_info.location)
+
+                        logger.debug('Current ribbon group item is: {}'.format(item))
+                        current_group_item = current_panel.ribbon_item(item.name)
+                        # Level 4: Ribbon group items (simple push buttons under button groups) ------------------------
+                        for sub_item in item:
+                            if current_group_item.contains(sub_item.name):
+                                logger.debug('Button item already exists: {}'.format(item))
+                                current_group_item.update_button(item.name, item.unique_name, pkg_asm_info.location)
+                            else:
+                                logger.debug('Button does not exist in panel: {}'.format(item))
+                                logger.debug('Creating ribbon item: {}'.format(item))
+                                current_group_item.create_push_button(item.name, item.unique_name, pkg_asm_info.location)
         else:
             logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
         logger.debug('Updated ui: {}'.format(tab))

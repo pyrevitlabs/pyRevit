@@ -83,7 +83,7 @@ def load_from(root_dir):
 
 
 # session object will have all the functionality for the user to interact with the session
-# e.g. providing a list of installed packages, handling ui, and others
+# e.g. providing a list of installed packages, and others
 # user is not expected to use _cache, _parser, _commandtree, _assemblies, or _ui
 # All interactions should be through session module.
 # ----------------------------------------------------------------------------------------------------------------------
@@ -93,14 +93,3 @@ def load_from(root_dir):
 #         this_script = pyRevit.session.get_this_command()
 #         print(this_script.script_file_address)
 #     """
-
-def get_current_ui():
-    """Revit UI Wrapper class for interacting with current pyRevit UI.
-    Returned class provides min required functionality for user interaction
-    Example:
-        current_ui = pyRevit.session.current_ui()
-        this_script = pyRevit.session.get_this_command()
-        current_ui.update_button_icon(this_script, new_icon)
-    """
-    from ._ui import _PyRevitUI
-    return _PyRevitUI()
