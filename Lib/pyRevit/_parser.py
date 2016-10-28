@@ -121,7 +121,7 @@ def _get_parsed_package(pkg):
     # component creation errors are not critical. Each component that fails, will simply not be created.
     # all errors will be logged to debug for troubleshooting
 
-    # todo explain deterministic search for pks, tabs and panels, stacks, command groups and commands
+    # fixme break this function. use creation table like in _ui. basecomp should know its acceptable sub-comps.
 
     # try creating tabs for new_pkg
     logger.debug('Parsing package for tabs...')
@@ -138,17 +138,11 @@ def _get_parsed_package(pkg):
             # try creating ribbon items for new_panel
             logger.debug('Parsing panel for ribbon items...')
             for ribbon_item in _create_ribbon_items(new_panel.directory):
-                new_panel.add_component(ribbon_item)
-                logger.debug('Ribbon item added: {}'.format(ribbon_item))
-
                 # Panels can contain stacks, button groups and buttons.
                 # if ribbon_item is a stack, parse its folder for button groups and buttons
                 if isinstance(ribbon_item, GenericStack):
                     logger.debug('Parsing stack for buttons and button groups...')
                     for stack_item in _create_stack_items(ribbon_item.directory):
-                        ribbon_item.add_component(stack_item)
-                        logger.debug('Stack item added: {}'.format(stack_item))
-
                         # Stacks can contain either button groups or buttons
                         # if stack_item is a button group, parse its folder for buttons
                         if isinstance(stack_item, GenericCommandGroup):
@@ -157,12 +151,18 @@ def _get_parsed_package(pkg):
                                 stack_item.add_component(button)
                                 logger.debug('Button added: {}'.format(button))
 
+                        ribbon_item.add_component(stack_item)
+                        logger.debug('Stack item added: {}'.format(stack_item))
+
                 # if ribbon_item is a button group, parse its folder for buttons
                 elif isinstance(ribbon_item, GenericCommandGroup):
                     logger.debug('Parsing button group for buttons...')
                     for button in _create_buttons(ribbon_item.directory):
                         ribbon_item.add_component(button)
                         logger.debug('Button added: {}'.format(button))
+
+                new_panel.add_component(ribbon_item)
+                logger.debug('Ribbon item added: {}'.format(ribbon_item))
 
     return pkg
 

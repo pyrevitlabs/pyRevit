@@ -45,28 +45,99 @@ And because user script don't create components based on bundled folder (e.g. fo
 interface doesn't need to understand that. Its main purpose is to capture the current state of ui and create or update
 components as requested through its methods.
 """
-
+from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
+                    STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
 from .logger import logger
 from .ui import _PyRevitUI
 
 
-def _update_revit_ui(parsed_pkg, pkg_asm_info):
-    """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
-    This functions has been kept outside the _PyRevitUI class since it'll only be used
-    at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
-    See pyRevit.session.load() for requesting load/reload of the pyRevit package.
-    """
+def _update_pyrevit_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
+    pass
 
-    # Collect exising ui elements and update/create
-    logger.debug('Updating ui: {}'.format(parsed_pkg))
-    logger.debug('Capturing exiting ui state...')
-    current_ui = _PyRevitUI()
 
-    # Traverse thru the package and create necessary ui elements
-    for tab in parsed_pkg:
-        # creates pyrevit ribbon-panels for given tab data
-        # A package might contain many tabs. Some tabs might not temporarily include any commands
-        # So a ui tab is create only if the tab includes commands
+def _update_pyrevit_linkbutton(parent_ribbon_panel, linkbutton, pkg_asm_info):
+    pass
+
+
+def _update_pyrevit_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
+    if parent_ui_item.contains(pushbutton.name):
+        logger.debug('Push button item already exists: {}'.format(pushbutton))
+        parent_ui_item.update_button(pushbutton.name, pushbutton.unique_name, pkg_asm_info.location)
+    else:
+        logger.debug('Push button does not exist in panel: {}'.format(pushbutton))
+        logger.debug('Creating push button: {}'.format(pushbutton))
+        parent_ui_item.create_push_button(pushbutton.name, pushbutton.unique_name, pkg_asm_info.location)
+
+
+def _update_pyrevit_pulldown(parent_ribbon_panel, pulldown, pkg_asm_info):
+    if parent_ribbon_panel.contains(pulldown.name):
+        logger.debug('Pull down already exists: {}'.format(pulldown))
+        parent_ribbon_panel.update_ribbon_item(pulldown.name, pkg_asm_info.location)
+    else:
+        logger.debug('Pull down does not exist in panel: {}'.format(pulldown))
+        logger.debug('Creating Pull down: {}'.format(pulldown))
+        parent_ribbon_panel.create_pulldown_button(pulldown.name, pkg_asm_info.location)
+
+    logger.debug('Current pull down is: {}'.format(pulldown))
+
+    for button in pulldown:
+        _component_creation_dict[button.type_id](parent_ribbon_panel.ribbon_item(pulldown.name), button, pkg_asm_info)
+
+
+def _update_pyrevit_split(parent_ribbon_panel, split, pkg_asm_info):
+    pass
+
+
+def _update_pyrevit_splitpush(parent_ribbon_panel, splitpush, pkg_asm_info):
+    pass
+
+
+def _update_pyrevit_stacktwo(parent_ribbon_panel, stacktwo, pkg_asm_info):
+    pass
+
+
+def _update_pyrevit_stackthree(parent_ribbon_panel, stackthree, pkg_asm_info):
+    pass
+
+
+# fixme: add other comps to this table and add acceptable sub_comps to basecomp definition
+_component_creation_dict = {PULLDOWN_BUTTON_POSTFIX: _update_pyrevit_pulldown,
+                            SPLIT_BUTTON_POSTFIX: _update_pyrevit_split,
+                            SPLITPUSH_BUTTON_POSTFIX: _update_pyrevit_splitpush,
+                            STACKTWO_BUTTON_POSTFIX: _update_pyrevit_stacktwo,
+                            STACKTHREE_BUTTON_POSTFIX: _update_pyrevit_stackthree,
+                            PUSH_BUTTON_POSTFIX: _update_pyrevit_pushbutton,
+                            TOGGLE_BUTTON_POSTFIX: _update_pyrevit_togglebutton,
+                            LINK_BUTTON_POSTFIX: _update_pyrevit_linkbutton
+                            }
+
+
+def _update_pyrevit_panel_items(parent_ribbon_panel, panel, pkg_asm_info):
+    for item in panel:
+        _component_creation_dict[item.type_id](parent_ribbon_panel, item, pkg_asm_info)
+
+
+def _update_pyrevit_panels(parent_ribbon_tab, tab, pkg_asm_info):
+    for panel in tab:
+        logger.debug('Updating ribbon panel: {}'.format(panel))
+        if parent_ribbon_tab.contains(panel.name):
+            logger.debug('Ribbon panel already exists: {}'.format(panel))
+            parent_ribbon_tab.update_ribbon_panel(panel.name)
+        else:
+            logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
+            logger.debug('Creating ribbon panel: {}'.format(panel))
+            parent_ribbon_tab.create_ribbon_panel(panel.name)
+
+        logger.debug('Current panel is: {}'.format(panel))
+
+        _update_pyrevit_panel_items(parent_ribbon_tab.ribbon_panel(panel.name), panel, pkg_asm_info)
+
+
+def _update_pyrevit_tabs(current_ui, pkg, pkg_asm_info):
+    # updates/creates tab
+    # A package might contain many tabs. Some tabs might not temporarily include any commands
+    # So a ui tab is create only if the tab includes commands
+    for tab in pkg:
         logger.debug('Processing tab: {}'.format(tab))
         #  Level 1: Tabs -----------------------------------------------------------------------------------------------
         if tab.has_commands():
@@ -81,46 +152,24 @@ def _update_revit_ui(parsed_pkg, pkg_asm_info):
                 current_ui.create_ribbon_tab(tab.name)
 
             logger.debug('Current tab is: {}'.format(tab))
-            current_tab = current_ui.ribbon_tab(tab.name)
-            # Level 2: Panels (under tabs) -----------------------------------------------------------------------------
-            for panel in tab:
-                logger.debug('Updating ribbon panel: {}'.format(panel))
-                if current_tab.contains(panel.name):
-                    logger.debug('Ribbon panel already exists: {}'.format(panel))
-                    current_tab.update_ribbon_panel(panel.name)
-                else:
-                    logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
-                    logger.debug('Creating ribbon panel: {}'.format(panel))
-                    current_tab.create_ribbon_panel(panel.name)
 
-                logger.debug('Current panel is: {}'.format(panel))
-                current_panel = current_tab.ribbon_panel(panel.name)
-                # Level 3: Ribbon items (simple push buttons or more complex button groups) ----------------------------
-                for item in panel:
-                    if item.is_group():
-                        if current_panel.contains(item.name):
-                            logger.debug('Ribbon item already exists: {}'.format(item))
-                            current_panel.update_ribbon_item(item.name, pkg_asm_info.location)
-                        else:
-                            logger.debug('Ribbon item does not exist in panel: {}'.format(item))
-                            logger.debug('Creating ribbon item: {}'.format(item))
-                            current_panel.create_pulldown_button(item.name, pkg_asm_info.location)
+            _update_pyrevit_panels(current_ui.ribbon_tab(tab.name), tab, pkg_asm_info)
 
-                        logger.debug('Current ribbon group item is: {}'.format(item))
-                        current_group_item = current_panel.ribbon_item(item.name)
-                        # Level 4: Ribbon group items (simple push buttons under button groups) ------------------------
-                        for sub_item in item:
-                            if current_group_item.contains(sub_item.name):
-                                logger.debug('Button item already exists: {}'.format(item))
-                                current_group_item.update_button(item.name, item.unique_name, pkg_asm_info.location)
-                            else:
-                                logger.debug('Button does not exist in panel: {}'.format(item))
-                                logger.debug('Creating ribbon item: {}'.format(item))
-                                current_group_item.create_push_button(item.name, item.unique_name, pkg_asm_info.location)
         else:
             logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
         logger.debug('Updated ui: {}'.format(tab))
 
+
+def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
+    """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
+    This functions has been kept outside the _PyRevitUI class since it'll only be used
+    at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
+    See pyRevit.session.load() for requesting load/reload of the pyRevit package.
+    """
+    logger.debug('Updating ui: {}'.format(parsed_pkg))
+    current_ui = _PyRevitUI()
+    _update_pyrevit_tabs(current_ui, parsed_pkg, pkg_asm_info)
+
     # current_ui.tab(tab) now includes updated or new ribbon_tabs.
     # so cleanup all the remaining existing tabs that are not available anymore.
-    current_ui.cleanup_orphaned_ui_items(parsed_pkg)
+    # fixme current_ui.cleanup_orphaned_ui_items(parsed_pkg)
