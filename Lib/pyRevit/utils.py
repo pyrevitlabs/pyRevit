@@ -1,3 +1,6 @@
+import os
+import os.path as op
+
 class Timer:
     """Timer class using python native time module."""
     def __init__(self):
@@ -63,7 +66,6 @@ def get_all_subclasses(parent_classes):
 def assert_folder(folder):
     """Checks if the folder exists and if not creates the folder.
     Returns OSError on folder making errors."""
-    import os
     if not op.exists(folder):
         try:
             os.makedirs(folder)
@@ -73,7 +75,6 @@ def assert_folder(folder):
 
 
 def get_parent_directory(path):
-    import os.path as op
     return op.dirname(path)
 
 

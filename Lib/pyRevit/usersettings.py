@@ -35,6 +35,8 @@ from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY
 
 from .utils import assert_folder
 
+from System.IO import IOException
+
 
 class _CustomUserSettings:
     """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to
@@ -89,55 +91,61 @@ class _PyRevitUserSettings:
 
     def _load_settings(self):
         """Loads settings from settings file."""
-        read_successful = False
-
         # try opening and reading config file in order.
         for config_file in [self.user_config_file, self.admin_config_file]:
-            try:
-                logger.debug('Try reading config setting from: {}'.format(config_file))
-                with open(config_file, 'r') as udfile:
-                    cparser = ConfigParser.ConfigParser()
-                    cparser.readfp(udfile)
-                    self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
-                                                       VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
-                    self.debug = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
-                                                     DEBUG_KEY).lower() == KEY_VALUE_TRUE else False
+            if self._parse_config(config_file):
+                return True
+        return False
 
-                    # set log mode on the logger module based on user settings (overriding the defaults)
-                    if self.debug:
-                        logger.set_debug_mode()
-                    elif self.verbose:
-                        logger.set_verbose_mode()
+    def _parse_config(self, config_file):
+        """Parses the config file and reads parameters."""
+        try:
+            logger.debug('Try reading config setting from: {}'.format(config_file))
+            udfile = open(config_file, 'r')
+        except Exception:
+            logger.debug("Can not access config file: {}".format(config_file))
+            return False
 
-                    self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
-                                                              LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
-                    self.archivelogfolder = cparser.get(INIT_SETTINGS_SECTION_NAME,
-                                                        ARCHIVE_LOG_FOLDER_KEY)
+        cparser = ConfigParser.ConfigParser()
 
-                    # read command name alias section
-                    alias_options = cparser.options(ALIAS_SECTION_NAME)
-                    logger.debug('Alias is available for these names: {}'.format(alias_options))
-                    for cmd_name in alias_options:
-                        cmd_alias_name = cparser.get(ALIAS_SECTION_NAME, cmd_name)
-                        logger.debug('Found alias: {} | {}'.format(cmd_name, cmd_alias_name))
-                        self.alias_dict[cmd_name] = cmd_alias_name
-                        logger.debug('Alias dict is: {}'.format(self.alias_dict))
+        try:
+            cparser.readfp(udfile)
+            self.verbose = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
+                                               VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
+            self.debug = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
+                                             DEBUG_KEY).lower() == KEY_VALUE_TRUE else False
+            self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
+                                                      LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
+            self.archivelogfolder = cparser.get(INIT_SETTINGS_SECTION_NAME,
+                                                ARCHIVE_LOG_FOLDER_KEY)
+        except ConfigParser.Error as err:
+            # handling ConfigParser errors
+            logger.warning(err.message)
+            logger.warning('Continuing with settings that were successfully read and defaults for others.')
 
-                    # set to true and break if read successful.
-                    logger.debug("Successfully read config file: {}".format(config_file))
-                    read_successful = True
-                    self.config_file = config_file
-                    break
-            except OSError:
-                # handling file open/read errors
-                logger.debug("Can not access config file: {}".format(config_file))
-                continue
-            except ConfigParser.Error as err:
-                # handling ConfigParser errors
-                logger.warning(err.message)
-                continue
+        # set log mode on the logger module based on user settings (overriding the defaults)
+        if self.debug:
+            logger.set_debug_mode()
+        elif self.verbose:
+            logger.set_verbose_mode()
 
-        return read_successful
+        # read command name alias section
+        try:
+            alias_options = cparser.options(ALIAS_SECTION_NAME)
+            logger.debug('Alias is available for these names: {}'.format(alias_options))
+            for cmd_name in alias_options:
+                cmd_alias_name = cparser.get(ALIAS_SECTION_NAME, cmd_name)
+                logger.debug('Found alias: {} | {}'.format(cmd_name, cmd_alias_name))
+                self.alias_dict[cmd_name] = cmd_alias_name
+                logger.debug('Alias dict is: {}'.format(self.alias_dict))
+        except ConfigParser.Error as err:
+            # handling ConfigParser errors
+            logger.debug(err.message)
+
+        # set to true and break if read successful.
+        logger.debug("Successfully read config file: {}".format(config_file))
+        self.config_file = config_file
+        return True
 
     def _create_default_config_file(self):
         """Creates a user settings file under USER_SETTINGS_DIR with default hard-coded values."""
@@ -170,9 +178,11 @@ class _PyRevitUserSettings:
                 logger.debug('Config file saved under with default settings.')
                 logger.debug('Config file saved under: {}'.format(USER_SETTINGS_DIR))
                 self.config_file = self.user_config_file
-
         except OSError:
             # handling file open/save errors
+            logger.debug('Can not create config file under: {}'.format(USER_SETTINGS_DIR))
+            logger.debug('Skipping saving config file.')
+        except IOException:
             logger.debug('Can not create config file under: {}'.format(USER_SETTINGS_DIR))
             logger.debug('Skipping saving config file.')
         except ConfigParser.Error as err:
