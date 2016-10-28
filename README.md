@@ -21,7 +21,7 @@ The setup program clones these two branches into your machine at installation.
 - `loaderDev` : This is the develop branch for the python loader script and the pyRevit module.
 - `loaderBinaryDev` : This branch has the visual studio project and is the develop branch for `RevitPythonLoader` which is the addon required to load the loader and create `IExternalCommand` interfaces for Revit.
 - `verThreeDev` : This is the beta version code for the pyRevit library. The current beta installer, clones this branch to your machine. This will be pulled to master for the final version.
-- `verThreeFR` : Work-in-progress folder for final release of version 3.
+- `verThreeFR` : Work-in-progress branch for final release of version 3.
 
 ####Misc Branches:
 
