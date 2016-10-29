@@ -1,6 +1,7 @@
 import os
 import os.path as op
 
+
 class Timer:
     """Timer class using python native time module."""
     def __init__(self):
@@ -61,6 +62,14 @@ def get_all_subclasses(parent_classes):
         except AttributeError:
             sub_classes.append(sub_class)
     return sub_classes
+
+
+def get_sub_folders(search_folder):
+    sub_folders = []
+    for f in os.listdir(search_folder):
+        if op.isdir(op.join(search_folder,f)):
+            sub_folders.append(f)
+    return sub_folders
 
 
 def assert_folder(folder):
