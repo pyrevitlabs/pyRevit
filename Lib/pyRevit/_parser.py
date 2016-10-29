@@ -37,11 +37,12 @@ import os.path as op
 
 from .exceptions import PyRevitException
 from .logger import logger
-from ._basecomponents import Package, Panel, Tab, GenericStack, GenericCommandGroup, GenericCommand
 from .utils import get_all_subclasses
 
+from ._basecomponents import Package
 
-def _create_subcomponents(search_dir, *cmp_classes):
+
+def _create_subcomponents(search_dir, component_types_list):
     """Parses the provided directory and returns a list of objects of the type component_class.
     Arguments:
         search_dir: directory to parse
@@ -58,9 +59,7 @@ def _create_subcomponents(search_dir, *cmp_classes):
     Returns:
         list of created classes of type component_class or sub-classes of component_class
     """
-    component_types = get_all_subclasses(cmp_classes)
-
-    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types))
+    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types_list))
 
     sub_cmp_list = []
 
@@ -69,8 +68,9 @@ def _create_subcomponents(search_dir, *cmp_classes):
         logger.debug('Testing component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
-            for component_type in component_types:
+            for component_type in component_types_list:
                 logger.debug('Testing sub_directory for {}'.format(component_type))
+                # fixme check folder postfix against type_id and check performance
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
@@ -86,95 +86,29 @@ def _create_subcomponents(search_dir, *cmp_classes):
     return sub_cmp_list
 
 
-def _create_buttons(search_dir):
-    return _create_subcomponents(search_dir, GenericCommand)
+def _parse_for_components(component):
+    for new_cmp in _create_subcomponents(component.directory, get_all_subclasses(component.allowed_sub_cmps)):
+        component.add_component(new_cmp)
+        if new_cmp.is_container():
+            _parse_for_components(new_cmp)
 
 
-def _create_stack_items(search_dir):
-    return _create_subcomponents(search_dir, GenericCommandGroup, GenericCommand)
-
-
-def _create_ribbon_items(search_dir):
-    return _create_subcomponents(search_dir, GenericStack, GenericCommandGroup, GenericCommand)
-
-
-def _create_panels(search_dir):
-    return _create_subcomponents(search_dir, Panel)
-
-
-def _create_tabs(search_dir):
-    return _create_subcomponents(search_dir, Tab)
-
-
-def _create_pkgs(search_dir):
-    return _create_subcomponents(search_dir, Package)
-
-
-def _get_parsed_package(pkg):
+def _parse_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
-    sub components of package can be accessed from pkg.sub_components list.
-    See _basecomponents for types.
+    sub components of package can be accessed from pkg.sub_components list. See _basecomponents for types.
     """
-
-    # errors are handled internally by the _create_* functions.
-    # component creation errors are not critical. Each component that fails, will simply not be created.
-    # all errors will be logged to debug for troubleshooting
-
-    # fixme break this function. use creation table like in _ui. basecomp should know its acceptable sub-comps.
-
-    # try creating tabs for new_pkg
-    logger.debug('Parsing package for tabs...')
-    for new_tab in _create_tabs(pkg.directory):
-        pkg.add_component(new_tab)
-        logger.debug('Tab added: {}'.format(new_tab))
-
-        # try creating panels for new_tab
-        logger.debug('Parsing tab for panels...')
-        for new_panel in _create_panels(new_tab.directory):
-            new_tab.add_component(new_panel)
-            logger.debug('Panel added: {}'.format(new_panel))
-
-            # try creating ribbon items for new_panel
-            logger.debug('Parsing panel for ribbon items...')
-            for ribbon_item in _create_ribbon_items(new_panel.directory):
-                # Panels can contain stacks, button groups and buttons.
-                # if ribbon_item is a stack, parse its folder for button groups and buttons
-                if isinstance(ribbon_item, GenericStack):
-                    logger.debug('Parsing stack for buttons and button groups...')
-                    for stack_item in _create_stack_items(ribbon_item.directory):
-                        # Stacks can contain either button groups or buttons
-                        # if stack_item is a button group, parse its folder for buttons
-                        if isinstance(stack_item, GenericCommandGroup):
-                            logger.debug('Parsing button group for buttons...')
-                            for button in _create_buttons(stack_item.directory):
-                                stack_item.add_component(button)
-                                logger.debug('Button added: {}'.format(button))
-
-                        ribbon_item.add_component(stack_item)
-                        logger.debug('Stack item added: {}'.format(stack_item))
-
-                # if ribbon_item is a button group, parse its folder for buttons
-                elif isinstance(ribbon_item, GenericCommandGroup):
-                    logger.debug('Parsing button group for buttons...')
-                    for button in _create_buttons(ribbon_item.directory):
-                        ribbon_item.add_component(button)
-                        logger.debug('Button added: {}'.format(button))
-
-                new_panel.add_component(ribbon_item)
-                logger.debug('Ribbon item added: {}'.format(ribbon_item))
-
-    return pkg
+    _parse_for_components(pkg)
 
 
-def _get_installed_packages(root_dir):
+def _get_installed_package_data(root_dir):
     """Parses home directory and return a list of Package objects for installed packages."""
 
     # try creating packages in given directory
     pkg_list = []
 
     logger.debug('Parsing directory for packages...')
-    for new_pkg in _create_pkgs(root_dir):
+    for new_pkg in _create_subcomponents(root_dir, [Package]):
         logger.debug('Package directory found: {}'.format(new_pkg))
         pkg_list.append(new_pkg)
 

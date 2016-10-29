@@ -54,6 +54,7 @@ class GenericContainer(object):
     """
 
     type_id = ''
+    allowed_sub_cmps = []
 
     def __init__(self, branch_dir):
         self.directory = branch_dir
@@ -77,7 +78,7 @@ class GenericContainer(object):
         self._sub_components = []
 
     @staticmethod
-    def is_group():
+    def is_container():
         return True
 
     def _is_valid_dir(self):
@@ -147,78 +148,7 @@ class GenericContainer(object):
         return self._sub_components
 
 
-# Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
-# Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
-
-class Package(GenericContainer):
-    type_id = PACKAGE_POSTFIX
-
-    def __init__(self, package_dir):
-        GenericContainer.__init__(self, package_dir)
-        self.author = None
-        self.version = None
-
-    def get_all_commands(self):
-        all_cmds = []
-        # fixme recursive search for GenericCommand
-        return all_cmds
-
-
-class Tab(GenericContainer):
-    type_id = TAB_POSTFIX
-
-    def __init__(self, tab_dir):
-        GenericContainer.__init__(self, tab_dir)
-
-    def has_commands(self):
-        for panel in self:
-            if panel.has_commands():
-                return True
-        return False
-
-
-class Panel(GenericContainer):
-    type_id = PANEL_POSTFIX
-
-    def __init__(self, panel_dir):
-        GenericContainer.__init__(self, panel_dir)
-
-    def has_commands(self):
-        # todo proper search for commands in button groups and stacks
-        return True if len(self._sub_components) > 0 else False
-
-
-# Stacks include Commands or Command groups
-class GenericStack(GenericContainer):
-    pass
-
-
-class StackThreeButtonGroup(GenericStack):
-    type_id = STACKTHREE_BUTTON_POSTFIX
-
-
-class StackTwoButtonGroup(GenericStack):
-    type_id = STACKTWO_BUTTON_POSTFIX
-
-
-# # Command groups only include commands. these classes can include GenericCommand as sub components
-class GenericCommandGroup(GenericContainer):
-    pass
-
-
-class PullDownButtonGroup(GenericCommandGroup):
-    type_id = PULLDOWN_BUTTON_POSTFIX
-
-
-class SplitPushButtonGroup(GenericCommandGroup):
-    type_id = SPLITPUSH_BUTTON_POSTFIX
-
-
-class SplitButtonGroup(GenericCommandGroup):
-    type_id = SPLIT_BUTTON_POSTFIX
-
-
-# single command classes (link, push button, toggle button) ------------------------------------------------------------
+# superclass for all single command classes (link, push button, toggle button) -----------------------------------------
 # GenericCommand is not derived from GenericContainer since a command can not contain other elements
 class GenericCommand(object):
     """Superclass for all single commands.
@@ -269,7 +199,7 @@ class GenericCommand(object):
         self.search_paths.append(self.library_path)
 
     @staticmethod
-    def is_group():
+    def is_container():
         return False
 
     def __repr__(self):
@@ -330,6 +260,10 @@ class GenericCommand(object):
         self.search_paths.append(path)
 
 
+# Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
+# Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
+# ----------------------------------------------------------------------------------------------------------------------
+
 class LinkButton(GenericCommand):
     type_id = LINK_BUTTON_POSTFIX
 
@@ -349,3 +283,74 @@ class ToggleButton(GenericCommand):
         GenericCommand.__init__(self, cmd_dir)
         self.icon_on_file = self._verify_file(DEFAULT_ON_ICON_FILE)
         self.icon_off_file = self._verify_file(DEFAULT_OFF_ICON_FILE)
+
+
+# # Command groups only include commands. these classes can include GenericCommand as sub components
+class GenericCommandGroup(GenericContainer):
+    allowed_sub_cmps = [GenericCommand]
+
+
+class PullDownButtonGroup(GenericCommandGroup):
+    type_id = PULLDOWN_BUTTON_POSTFIX
+
+
+class SplitPushButtonGroup(GenericCommandGroup):
+    type_id = SPLITPUSH_BUTTON_POSTFIX
+
+
+class SplitButtonGroup(GenericCommandGroup):
+    type_id = SPLIT_BUTTON_POSTFIX
+
+
+# Stacks include Commands or Command groups
+class GenericStack(GenericContainer):
+    allowed_sub_cmps = [GenericCommandGroup, GenericCommand]
+
+
+class StackThreeButtonGroup(GenericStack):
+    type_id = STACKTHREE_BUTTON_POSTFIX
+
+
+class StackTwoButtonGroup(GenericStack):
+    type_id = STACKTWO_BUTTON_POSTFIX
+
+
+class Panel(GenericContainer):
+    type_id = PANEL_POSTFIX
+    allowed_sub_cmps = [GenericStack, GenericCommandGroup, GenericCommand]
+
+    def __init__(self, panel_dir):
+        GenericContainer.__init__(self, panel_dir)
+
+    def has_commands(self):
+        # todo proper search for commands in button groups and stacks
+        return True if len(self._sub_components) > 0 else False
+
+
+class Tab(GenericContainer):
+    type_id = TAB_POSTFIX
+    allowed_sub_cmps = [Panel]
+
+    def __init__(self, tab_dir):
+        GenericContainer.__init__(self, tab_dir)
+
+    def has_commands(self):
+        for panel in self:
+            if panel.has_commands():
+                return True
+        return False
+
+
+class Package(GenericContainer):
+    type_id = PACKAGE_POSTFIX
+    allowed_sub_cmps = [Tab]
+
+    def __init__(self, package_dir):
+        GenericContainer.__init__(self, package_dir)
+        self.author = None
+        self.version = None
+
+    def get_all_commands(self):
+        all_cmds = []
+        # fixme recursive search for GenericCommand
+        return all_cmds
