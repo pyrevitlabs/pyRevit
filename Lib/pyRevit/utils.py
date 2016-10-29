@@ -72,7 +72,7 @@ def get_sub_folders(search_folder):
     return sub_folders
 
 
-def assert_folder(folder):
+def promise_directory(folder):
     """Checks if the folder exists and if not creates the folder.
     Returns OSError on folder making errors."""
     if not op.exists(folder):
