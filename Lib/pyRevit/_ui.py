@@ -52,6 +52,9 @@ from .ui import _PyRevitUI
 
 
 def _update_pyrevit_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
+    # scratch pad:
+    # importedscript = __import__(cmd.getscriptbasename())
+    # importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
     pass
 
 

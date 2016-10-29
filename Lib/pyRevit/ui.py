@@ -44,6 +44,14 @@ except Exception as err:
     logger.critical('Can not establish ui module. Error importing AdWindow.dll')
     raise err
 
+#fixme create classes for each corresponding ribbon item type
+# scratch pad:
+# for splitpush buttons use .IsSynchronizedWithCurrentItem
+# icons .Image .LargeImage
+# button tooltip .ToolTip    .LongDescription = 'Class Name:\n{0}\n\nAssembly Name:\n{1}'
+# item state .Enabled
+# stack items .AddStackedItems
+
 
 class _ButtonIcons:
     def __init__(self, file_address):
