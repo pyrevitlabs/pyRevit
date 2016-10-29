@@ -37,27 +37,23 @@ import os.path as op
 
 from .exceptions import PyRevitException
 from .logger import logger
-from .utils import get_all_subclasses
+from .utils import get_all_subclasses, get_sub_folders
 
 from ._basecomponents import Package
 
 
 def _create_subcomponents(search_dir, component_types_list):
-    """Parses the provided directory and returns a list of objects of the type component_class.
+    """Parses the provided directory and returns a list of objects of the types in component_types_list.
     Arguments:
         search_dir: directory to parse
-        component_class: If a subfolder name ends with component_class.type_id, (or .type_id of any sub-class)
-         this method creates an object of type component_class and adds to the list to be returned.
-        This ensures that if any new type of component_class is added later, this method does not need to be updated as
-         the new sub-class will be listed by .__subclasses__() method of the parent class and this method will check
-         the directory for its .type_id
+        component_types_list: This methods checks the subfolders in search_dir against the component types provided
+        in this list.
     Example:
-        _create_subcomponents(search_dir, GenericCommand)
-        GenericCommand.__subclasses__() will return [LinkButton, PushButton, or ToggleButton] and thus
+        _create_subcomponents(search_dir, [LinkButton, PushButton, or ToggleButton])
         this method creates LinkButton, PushButton, or ToggleButton for the parsed sub-directories under search_dir
         with matching .type_id identifiers in their names. (e.g. "folder.LINK_BUTTON_POSTFIX")
     Returns:
-        list of created classes of type component_class or sub-classes of component_class
+        list of created classes of types provided in component_types_list
     """
     logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types_list))
 
@@ -69,8 +65,7 @@ def _create_subcomponents(search_dir, component_types_list):
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
             for component_type in component_types_list:
-                logger.debug('Testing sub_directory for {}'.format(component_type))
-                # fixme check folder postfix against type_id and check performance
+                logger.debug('Testing sub_directory {} for {}'.format(file_or_dir, component_type))
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
@@ -87,29 +82,40 @@ def _create_subcomponents(search_dir, component_types_list):
 
 
 def _parse_for_components(component):
+    """Recursively parses component.directory for components of type component.allowed_sub_cmps
+    This method uses get_all_subclasses() to get a list of all subclasses of component.allowed_sub_cmps type.
+    This ensures that if any new type of component_class is added later, this method does not need to be updated as
+    the new sub-class will be listed by .__subclasses__() method of the parent class and this method will check
+    the directory for its .type_id
+    """
     for new_cmp in _create_subcomponents(component.directory, get_all_subclasses(component.allowed_sub_cmps)):
+        # add the successfulyl created component to the parent component
         component.add_component(new_cmp)
         if new_cmp.is_container():
+            # Recursive part: parse each sub-component for its allowed sub-sub-components.
             _parse_for_components(new_cmp)
 
 
 def _parse_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
-    sub components of package can be accessed from pkg.sub_components list. See _basecomponents for types.
+    sub components of package can be accessed by iterating the component. See _basecomponents for types.
     """
     _parse_for_components(pkg)
 
 
 def _get_installed_package_data(root_dir):
-    """Parses home directory and return a list of Package objects for installed packages."""
+    """Parses home directory and return a list of Package objects for installed packages.
+    The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
+    packages so the session can check the cache for each package and decide if they need to be parsed or not.
+    """
 
     # try creating packages in given directory
-    pkg_list = []
+    pkg_data_list = []
 
     logger.debug('Parsing directory for packages...')
-    for new_pkg in _create_subcomponents(root_dir, [Package]):
-        logger.debug('Package directory found: {}'.format(new_pkg))
-        pkg_list.append(new_pkg)
+    for pkg_data in _create_subcomponents(root_dir, [Package]):
+        logger.debug('Package directory found: {}'.format(pkg_data))
+        pkg_data_list.append(pkg_data)
 
-    return pkg_list
+    return pkg_data_list
