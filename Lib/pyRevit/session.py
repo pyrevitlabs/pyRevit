@@ -31,7 +31,7 @@ from .logger import logger
 from ._cache import _is_cache_valid, _get_cached_package, _update_cache
 from ._parser import _get_installed_package_data, _parse_package
 from ._assemblies import _create_assembly
-# from ._ui import _update_pyrevit_ui
+from ._ui import _update_pyrevit_ui
 
 from usagedata import _archive_script_usage_logs
 
@@ -79,7 +79,7 @@ def load_from(root_dir):
         # create a dll assembly and get assembly info
         pkg_asm_info = _create_assembly(package)
         # update/create ui (needs the assembly to link button actions to commands saved in the dll)
-        # _update_pyrevit_ui(package, pkg_asm_info)
+        _update_pyrevit_ui(package, pkg_asm_info)
 
 
 # session object will have all the functionality for the user to interact with the session

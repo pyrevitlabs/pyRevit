@@ -46,9 +46,15 @@ interface doesn't need to understand that. Its main purpose is to capture the cu
 components as requested through its methods.
 """
 from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
-                    STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
+                    STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
+                    TAB_POSTFIX, PANEL_POSTFIX
 from .logger import logger
 from .ui import _PyRevitUI
+
+
+def _update_pyrevit_ui_item(parent_rvtui_item, component, pkg_asm_info):
+    for sub_cmp in component:
+        _component_creation_dict[sub_cmp.type_id](parent_rvtui_item, sub_cmp, pkg_asm_info)
 
 
 def _update_pyrevit_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
@@ -103,64 +109,58 @@ def _update_pyrevit_stackthree(parent_ribbon_panel, stackthree, pkg_asm_info):
     pass
 
 
-# fixme: add other comps to this table and add acceptable sub_comps to basecomp definition
-_component_creation_dict = {PULLDOWN_BUTTON_POSTFIX: _update_pyrevit_pulldown,
+def _update_pyrevit_panels(parent_rvtui_tab, panel, pkg_asm_info):
+    logger.debug('Updating ribbon panel: {}'.format(panel))
+    if parent_rvtui_tab.contains(panel.name):
+        logger.debug('Ribbon panel already exists: {}'.format(panel))
+        parent_rvtui_tab.update_ribbon_panel(panel.name)
+    else:
+        logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
+        logger.debug('Creating ribbon panel: {}'.format(panel))
+        parent_rvtui_tab.create_ribbon_panel(panel.name)
+
+    logger.debug('Current panel is: {}'.format(panel))
+
+    _update_pyrevit_ui_item(parent_rvtui_tab.ribbon_panel(panel.name), panel, pkg_asm_info)
+
+
+def _update_pyrevit_tabs(parent_rvtui, tab, pkg_asm_info):
+    # updates/creates tab
+    # A package might contain many tabs. Some tabs might not temporarily include any commands
+    # So a ui tab is create only if the tab includes commands
+    logger.debug('Processing tab: {}'.format(tab))
+    #  Level 1: Tabs -----------------------------------------------------------------------------------------------
+    if tab.has_commands():
+        logger.debug('Tabs has command: {}'.format(tab))
+        logger.debug('Updating ribbon tab: {}'.format(tab))
+        if parent_rvtui.contains(tab.name):
+            logger.debug('Ribbon tab already exists: {}'.format(tab))
+            parent_rvtui.update_ribbon_tab(tab.name)
+        else:
+            logger.debug('Ribbon tab does not exist in current ui: {}'.format(tab))
+            logger.debug('Creating ribbon tab: {}'.format(tab))
+            parent_rvtui.create_ribbon_tab(tab.name)
+
+        logger.debug('Current tab is: {}'.format(tab))
+
+        _update_pyrevit_ui_item(parent_rvtui.ribbon_tab(tab.name), tab, pkg_asm_info)
+
+    else:
+        logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
+    logger.debug('Updated ui: {}'.format(tab))
+
+
+_component_creation_dict = {TAB_POSTFIX: _update_pyrevit_tabs,
+                            PANEL_POSTFIX: _update_pyrevit_panels,
+                            PULLDOWN_BUTTON_POSTFIX: _update_pyrevit_pulldown,
                             SPLIT_BUTTON_POSTFIX: _update_pyrevit_split,
                             SPLITPUSH_BUTTON_POSTFIX: _update_pyrevit_splitpush,
                             STACKTWO_BUTTON_POSTFIX: _update_pyrevit_stacktwo,
                             STACKTHREE_BUTTON_POSTFIX: _update_pyrevit_stackthree,
                             PUSH_BUTTON_POSTFIX: _update_pyrevit_pushbutton,
                             TOGGLE_BUTTON_POSTFIX: _update_pyrevit_togglebutton,
-                            LINK_BUTTON_POSTFIX: _update_pyrevit_linkbutton
+                            LINK_BUTTON_POSTFIX: _update_pyrevit_linkbutton,
                             }
-
-
-def _update_pyrevit_panel_items(parent_ribbon_panel, panel, pkg_asm_info):
-    for item in panel:
-        _component_creation_dict[item.type_id](parent_ribbon_panel, item, pkg_asm_info)
-
-
-def _update_pyrevit_panels(parent_ribbon_tab, tab, pkg_asm_info):
-    for panel in tab:
-        logger.debug('Updating ribbon panel: {}'.format(panel))
-        if parent_ribbon_tab.contains(panel.name):
-            logger.debug('Ribbon panel already exists: {}'.format(panel))
-            parent_ribbon_tab.update_ribbon_panel(panel.name)
-        else:
-            logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
-            logger.debug('Creating ribbon panel: {}'.format(panel))
-            parent_ribbon_tab.create_ribbon_panel(panel.name)
-
-        logger.debug('Current panel is: {}'.format(panel))
-
-        _update_pyrevit_panel_items(parent_ribbon_tab.ribbon_panel(panel.name), panel, pkg_asm_info)
-
-
-def _update_pyrevit_tabs(current_ui, pkg, pkg_asm_info):
-    # updates/creates tab
-    # A package might contain many tabs. Some tabs might not temporarily include any commands
-    # So a ui tab is create only if the tab includes commands
-    for tab in pkg:
-        logger.debug('Processing tab: {}'.format(tab))
-        #  Level 1: Tabs -----------------------------------------------------------------------------------------------
-        if tab.has_commands():
-            logger.debug('Tabs has command: {}'.format(tab))
-            logger.debug('Updating ribbon tab: {}'.format(tab))
-            if current_ui.contains(tab.name):
-                logger.debug('Ribbon tab already exists: {}'.format(tab))
-                current_ui.update_ribbon_tab(tab.name)
-            else:
-                logger.debug('Ribbon tab does not exist in current ui: {}'.format(tab))
-                logger.debug('Creating ribbon tab: {}'.format(tab))
-                current_ui.create_ribbon_tab(tab.name)
-
-            logger.debug('Current tab is: {}'.format(tab))
-
-            _update_pyrevit_panels(current_ui.ribbon_tab(tab.name), tab, pkg_asm_info)
-
-        else:
-            logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
-        logger.debug('Updated ui: {}'.format(tab))
 
 
 def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
@@ -171,7 +171,7 @@ def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     """
     logger.debug('Updating ui: {}'.format(parsed_pkg))
     current_ui = _PyRevitUI()
-    _update_pyrevit_tabs(current_ui, parsed_pkg, pkg_asm_info)
+    _update_pyrevit_ui_item(current_ui, parsed_pkg, pkg_asm_info)
 
     # current_ui.tab(tab) now includes updated or new ribbon_tabs.
     # so cleanup all the remaining existing tabs that are not available anymore.
