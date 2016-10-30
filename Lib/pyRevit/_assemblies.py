@@ -69,12 +69,6 @@ PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location'])
 LoaderClassParams = namedtuple('LoaderClassParams', ['class_name', 'script_file_address', 'search_paths_str'])
 
 
-def _cleanup_class_name(name):
-    for char, repl in SPECIAL_CHARS.items():
-        name = name.replace(char, repl)
-    return name
-
-
 def _make_pkg_asm_name(pkg):
     return SESSION_STAMPED_ID + '_' + pkg.unique_name
 
@@ -139,13 +133,16 @@ def _cleanup_existing_package_asm_files(pkg):
                     logger.debug('Error deleting assembly file: {0}'.format(file_name))
 
 
-def _get_params_for_commands(parsed_pkg):
+def _get_params_for_commands(parent_cmp):
     loader_params_for_all_cmds = []
 
-    for cmd in parsed_pkg.get_all_commands():
-        loader_params_for_all_cmds.append(LoaderClassParams(cmd.unique_name,
-                                                            cmd.get_full_script_address(),
-                                                            join_paths(cmd.get_search_paths())))
+    for sub_cmp in parent_cmp:
+        if sub_cmp.is_container():
+            loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
+        else:
+            loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
+                                                                sub_cmp.get_full_script_address(),
+                                                                join_paths(sub_cmp.get_search_paths())))
 
     return loader_params_for_all_cmds
 
