@@ -115,7 +115,8 @@ class GenericContainer(object):
         return cleanup_string(uname)
 
     def _verify_file(self, file_name):
-        return file_name if op.exists(op.join(self.directory, file_name)) else None
+        full_file_path = op.join(self.directory, file_name)
+        return full_file_path if op.exists(full_file_path) else None
 
     def _read_layout_file(self):
         if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
@@ -215,7 +216,8 @@ class GenericCommand(object):
         return op.splitext(op.basename(self.directory))[0]
 
     def _verify_file(self, file_name):
-        return file_name if op.exists(op.join(self.directory, file_name)) else None
+        full_file_path = op.join(self.directory, file_name)
+        return full_file_path if op.exists(full_file_path) else None
 
     def _get_library(self):
         return op.join(self.directory, COMPONENT_LIB_NAME)
@@ -349,8 +351,3 @@ class Package(GenericContainer):
         GenericContainer.__init__(self, package_dir)
         self.author = None
         self.version = None
-
-    def get_all_commands(self):
-        all_cmds = []
-        # fixme recursive search for GenericCommand
-        return all_cmds
