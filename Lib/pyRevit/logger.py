@@ -35,6 +35,7 @@ class _LoggerWrapper:
     """
 
     def __init__(self):
+        # fixme add default to here
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
@@ -75,6 +76,12 @@ class _LoggerWrapper:
         set_interscript_comm_data(DEBUG_ISC_NAME, True)
         self._logger.setLevel(logging.DEBUG)
         self._logger_title.setLevel(logging.DEBUG)
+
+    def reset_level(self):
+        set_interscript_comm_data(VERBOSE_ISC_NAME, False)
+        set_interscript_comm_data(DEBUG_ISC_NAME, False)
+        self._logger.setLevel(logging.WARNING)
+        self._logger_title.setLevel(logging.WARNING)
 
     def get_level(self):
         return self._logger.level, self._logger_title.level
