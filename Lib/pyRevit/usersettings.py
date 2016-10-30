@@ -33,7 +33,7 @@ from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, AL
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY
 from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT, ARCHIVE_LOG_FOLDER_KEY_DEFAULT
 
-from .utils import promise_directory
+from .utils import verify_directory
 
 from System.IO import IOException
 
@@ -151,7 +151,7 @@ class _PyRevitUserSettings:
         """Creates a user settings file under USER_SETTINGS_DIR with default hard-coded values."""
         try:
             # make sure folder exists or can be created if not
-            promise_directory(USER_SETTINGS_DIR)
+            verify_directory(USER_SETTINGS_DIR)
         except OSError as err:
             # can not create defaule USER_SETTINGS_DIR under USER_TEMP_DIR
             logger.debug('Can not create config file folder under: {}'.format(USER_SETTINGS_DIR))
