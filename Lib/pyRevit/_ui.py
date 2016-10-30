@@ -47,131 +47,146 @@ components as requested through its methods.
 """
 from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                    TAB_POSTFIX, PANEL_POSTFIX
+                    TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT
 from .logger import logger
 from .ui import _PyRevitUI
+from .exceptions import PyRevitUIError
 
 
-def _update_pyrevit_ui_item(parent_rvtui_item, component, pkg_asm_info):
-    for sub_cmp in component:
-        _component_creation_dict[sub_cmp.type_id](parent_rvtui_item, sub_cmp, pkg_asm_info)
+def _make_button_tooltip(button):
+    tooltip = button.doc_string
+    tooltip += '\n\nScript Name:\n{0}'.format(button.name + ' ' + SCRIPT_FILE_FORMAT)
+    tooltip += '\n\nAuthor:\n{0}'.format(button.author)
+    return tooltip
 
 
-def _update_pyrevit_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
+def _make_button_tooltip_ext(button, asm_name):
+    return '\n\nClass Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
+
+
+def _promise_ui_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
     # scratch pad:
     # importedscript = __import__(cmd.getscriptbasename())
     # importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
     pass
 
 
-def _update_pyrevit_linkbutton(parent_ribbon_panel, linkbutton, pkg_asm_info):
+def _produce_ui_linkbutton(parent_ribbon_panel, linkbutton, pkg_asm_info):
     pass
 
 
-def _update_pyrevit_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
-    if parent_ui_item.contains(pushbutton.name):
-        logger.debug('Push button item already exists: {}'.format(pushbutton))
-        parent_ui_item.update_button(pushbutton.name, pushbutton.unique_name, pkg_asm_info.location)
-    else:
-        logger.debug('Push button does not exist in panel: {}'.format(pushbutton))
-        logger.debug('Creating push button: {}'.format(pushbutton))
-        parent_ui_item.create_push_button(pushbutton.name, pushbutton.unique_name, pkg_asm_info.location)
+def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
+    logger.debug('Producing button: {}'.format(pushbutton))
+    try:
+        parent_ui_item.create_push_button(pushbutton.name,
+                                          pkg_asm_info.location,
+                                          pushbutton.unique_name,
+                                          pushbutton.icon_file,
+                                          _make_button_tooltip(pushbutton),
+                                          _make_button_tooltip_ext(pushbutton, pkg_asm_info.name),
+                                          update_if_exists=True)
+        return parent_ui_item.button(pushbutton.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
-def _update_pyrevit_pulldown(parent_ribbon_panel, pulldown, pkg_asm_info):
-    if parent_ribbon_panel.contains(pulldown.name):
-        logger.debug('Pull down already exists: {}'.format(pulldown))
-        parent_ribbon_panel.update_ribbon_item(pulldown.name, pkg_asm_info.location)
-    else:
-        logger.debug('Pull down does not exist in panel: {}'.format(pulldown))
-        logger.debug('Creating Pull down: {}'.format(pulldown))
-        parent_ribbon_panel.create_pulldown_button(pulldown.name, pkg_asm_info.location)
-
-    logger.debug('Current pull down is: {}'.format(pulldown))
-
-    for button in pulldown:
-        _component_creation_dict[button.type_id](parent_ribbon_panel.ribbon_item(pulldown.name), button, pkg_asm_info)
+def _produce_ui_pulldown(parent_ribbon_panel, pulldown, pkg_asm_info):
+    logger.debug('Producing pulldown button: {}'.format(pulldown))
+    try:
+        parent_ribbon_panel.create_pulldown_button(pulldown.name, pulldown.icon_file, update_if_exists=True)
+        return parent_ribbon_panel.ribbon_item(pulldown.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
-def _update_pyrevit_split(parent_ribbon_panel, split, pkg_asm_info):
+def _produce_ui_split(parent_ribbon_panel, split, pkg_asm_info):
+    logger.debug('Producing split button: {}'.format(split))
+    try:
+        parent_ribbon_panel.create_split_button(split.name, split.icon_file, update_if_exists=True)
+        return parent_ribbon_panel.ribbon_item(split.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
+
+
+def _produce_ui_splitpush(parent_ribbon_panel, splitpush, pkg_asm_info):
+    logger.debug('Producing splitpush button: {}'.format(splitpush))
+    try:
+        parent_ribbon_panel.create_splitpush_button(splitpush.name, splitpush.icon_file, update_if_exists=True)
+        return parent_ribbon_panel.ribbon_item(splitpush.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
+
+
+def _produce_ui_stacktwo(parent_ribbon_panel, stacktwo, pkg_asm_info):
     pass
 
 
-def _update_pyrevit_splitpush(parent_ribbon_panel, splitpush, pkg_asm_info):
+def _produce_ui_stackthree(parent_ribbon_panel, stackthree, pkg_asm_info):
     pass
 
 
-def _update_pyrevit_stacktwo(parent_ribbon_panel, stacktwo, pkg_asm_info):
-    pass
+def _produce_ui_panels(parent_ui_tab, panel, pkg_asm_info):
+    logger.debug('Producing ribbon panel: {}'.format(panel))
+    try:
+        parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
+        return parent_ui_tab.ribbon_panel(panel.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
-def _update_pyrevit_stackthree(parent_ribbon_panel, stackthree, pkg_asm_info):
-    pass
-
-
-def _update_pyrevit_panels(parent_rvtui_tab, panel, pkg_asm_info):
-    logger.debug('Updating ribbon panel: {}'.format(panel))
-    if parent_rvtui_tab.contains(panel.name):
-        logger.debug('Ribbon panel already exists: {}'.format(panel))
-        parent_rvtui_tab.update_ribbon_panel(panel.name)
-    else:
-        logger.debug('Ribbon panel does not exist in tab: {}'.format(panel))
-        logger.debug('Creating ribbon panel: {}'.format(panel))
-        parent_rvtui_tab.create_ribbon_panel(panel.name)
-
-    logger.debug('Current panel is: {}'.format(panel))
-
-    _update_pyrevit_ui_item(parent_rvtui_tab.ribbon_panel(panel.name), panel, pkg_asm_info)
-
-
-def _update_pyrevit_tabs(parent_rvtui, tab, pkg_asm_info):
-    # updates/creates tab
-    # A package might contain many tabs. Some tabs might not temporarily include any commands
-    # So a ui tab is create only if the tab includes commands
-    logger.debug('Processing tab: {}'.format(tab))
-    #  Level 1: Tabs -----------------------------------------------------------------------------------------------
+def _produce_ui_tab(parent_ui, tab, pkg_asm_info):
+    logger.debug('Verifying tab: {}'.format(tab))
     if tab.has_commands():
         logger.debug('Tabs has command: {}'.format(tab))
-        logger.debug('Updating ribbon tab: {}'.format(tab))
-        if parent_rvtui.contains(tab.name):
-            logger.debug('Ribbon tab already exists: {}'.format(tab))
-            parent_rvtui.update_ribbon_tab(tab.name)
-        else:
-            logger.debug('Ribbon tab does not exist in current ui: {}'.format(tab))
-            logger.debug('Creating ribbon tab: {}'.format(tab))
-            parent_rvtui.create_ribbon_tab(tab.name)
-
-        logger.debug('Current tab is: {}'.format(tab))
-
-        _update_pyrevit_ui_item(parent_rvtui.ribbon_tab(tab.name), tab, pkg_asm_info)
-
+        logger.debug('Producing ribbon tab: {}'.format(tab))
+        try:
+            parent_ui.create_ribbon_tab(tab.name, update_if_exists=True)
+            return parent_ui.ribbon_tab(tab.name)
+        except PyRevitUIError as err:
+            logger.error('UI error: {}'.format(err.message))
+            return None
     else:
-        logger.debug('Tab {} does not have any commands. Skipping.'.format(tab.name))
-    logger.debug('Updated ui: {}'.format(tab))
+        logger.debug('Tab does not have any commands. Skipping: {}'.format(tab.name))
+        return None
 
 
-_component_creation_dict = {TAB_POSTFIX: _update_pyrevit_tabs,
-                            PANEL_POSTFIX: _update_pyrevit_panels,
-                            PULLDOWN_BUTTON_POSTFIX: _update_pyrevit_pulldown,
-                            SPLIT_BUTTON_POSTFIX: _update_pyrevit_split,
-                            SPLITPUSH_BUTTON_POSTFIX: _update_pyrevit_splitpush,
-                            STACKTWO_BUTTON_POSTFIX: _update_pyrevit_stacktwo,
-                            STACKTHREE_BUTTON_POSTFIX: _update_pyrevit_stackthree,
-                            PUSH_BUTTON_POSTFIX: _update_pyrevit_pushbutton,
-                            TOGGLE_BUTTON_POSTFIX: _update_pyrevit_togglebutton,
-                            LINK_BUTTON_POSTFIX: _update_pyrevit_linkbutton,
+_component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
+                            PANEL_POSTFIX: _produce_ui_panels,
+                            PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
+                            SPLIT_BUTTON_POSTFIX: _produce_ui_split,
+                            SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
+                            STACKTWO_BUTTON_POSTFIX: _produce_ui_stacktwo,
+                            STACKTHREE_BUTTON_POSTFIX: _produce_ui_stackthree,
+                            PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
+                            TOGGLE_BUTTON_POSTFIX: _promise_ui_togglebutton,
+                            LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
                             }
+
+
+def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
+    for sub_cmp in component:
+        logger.debug('Calling create function for: {}'.format(_component_creation_dict[sub_cmp.type_id]))
+        ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
+        logger.debug('UI item created by create func is: {}'.format(ui_item))
+        if ui_item:
+            logger.debug('Produced ui item: {}'.format(sub_cmp))
+            if sub_cmp.is_container():
+                _recursively_produce_ui_items(ui_item, sub_cmp, asm_info)
+        else:
+            logger.debug('Could not create ui item for: {}'.format(sub_cmp))
 
 
 def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
-    This functions has been kept outside the _PyRevitUI class since it'll only be used
-    at pyRevit startup and reloading, and more importantly it needs a properly created dll assembly.
-    See pyRevit.session.load() for requesting load/reload of the pyRevit package.
     """
     logger.debug('Updating ui: {}'.format(parsed_pkg))
     current_ui = _PyRevitUI()
-    _update_pyrevit_ui_item(current_ui, parsed_pkg, pkg_asm_info)
+    _recursively_produce_ui_items(current_ui, parsed_pkg, pkg_asm_info)
 
     # current_ui.tab(tab) now includes updated or new ribbon_tabs.
     # so cleanup all the remaining existing tabs that are not available anymore.
