@@ -32,6 +32,8 @@ All these four modules can understand the component tree. (_basecomponents modul
  _cache will save and restore the tree to increase loading performance.
 """
 
+import os
+import re
 import json
 import hashlib
 
