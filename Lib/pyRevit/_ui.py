@@ -49,7 +49,7 @@ from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POST
                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                     TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT
 from .logger import logger
-from .ui import _PyRevitUI
+from .ui import _PyRevitUI, _PyRevitRibbonStackItem
 from .exceptions import PyRevitUIError
 
 
@@ -64,7 +64,7 @@ def _make_button_tooltip_ext(button, asm_name):
     return '\n\nClass Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
 
 
-def _promise_ui_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
+def _produce_ui_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
     # scratch pad:
     # importedscript = __import__(cmd.getscriptbasename())
     # importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
@@ -121,14 +121,6 @@ def _produce_ui_splitpush(parent_ribbon_panel, splitpush, pkg_asm_info):
         return None
 
 
-def _produce_ui_stacktwo(parent_ribbon_panel, stacktwo, pkg_asm_info):
-    pass
-
-
-def _produce_ui_stackthree(parent_ribbon_panel, stackthree, pkg_asm_info):
-    pass
-
-
 def _produce_ui_panels(parent_ui_tab, panel, pkg_asm_info):
     logger.debug('Producing ribbon panel: {}'.format(panel))
     try:
@@ -160,25 +152,44 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
                             SPLIT_BUTTON_POSTFIX: _produce_ui_split,
                             SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
-                            STACKTWO_BUTTON_POSTFIX: _produce_ui_stacktwo,
-                            STACKTHREE_BUTTON_POSTFIX: _produce_ui_stackthree,
                             PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-                            TOGGLE_BUTTON_POSTFIX: _promise_ui_togglebutton,
+                            TOGGLE_BUTTON_POSTFIX: _produce_ui_togglebutton,
                             LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
                             }
 
 
 def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
     for sub_cmp in component:
-        logger.debug('Calling create function for: {}'.format(_component_creation_dict[sub_cmp.type_id]))
-        ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
-        logger.debug('UI item created by create func is: {}'.format(ui_item))
-        if ui_item:
-            logger.debug('Produced ui item: {}'.format(sub_cmp))
-            if sub_cmp.is_container():
-                _recursively_produce_ui_items(ui_item, sub_cmp, asm_info)
+        # if sub_cmp is a stack, ask parent_ui_item to open a stack (parent_ui_item.open_stack).
+        # All subsequent items will be placed under this stack.
+        # Close the stack (parent_ui_item.close_stack) to finish adding items to the stack.
+        if sub_cmp.type_id == STACKTWO_BUTTON_POSTFIX or sub_cmp.type_id == STACKTHREE_BUTTON_POSTFIX:
+            try:       # making sure parent_ui_item has open_stack()
+                parent_ui_item.open_stack()
+                logger.debug('Opened stack: {}'.format(sub_cmp.name))
+                for stack_item in sub_cmp:
+                    # capturing and logging any errors on stack item
+                    # (e.g when parent_ui_item's stack is full and can not add any more items it will raise an error)
+                    try:
+                        _recursively_produce_ui_items(parent_ui_item, stack_item, asm_info)
+                    except PyRevitUIError as err:
+                        logger.debug(err)
+                parent_ui_item.close_stack()
+                logger.debug('Closed stack: {}'.format(sub_cmp.name))
+            except Exception as err:
+                logger.debug('Can not create stack under this parent: {} | {}'.format(parent_ui_item, err))
+
+        # if sub_cmp is NOT a stack, create ui item for sub_cmp and continue creating its children (if any)
         else:
-            logger.debug('Could not create ui item for: {}'.format(sub_cmp))
+            logger.debug('Calling create function for: {}'.format(_component_creation_dict[sub_cmp.type_id]))
+            ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
+            logger.debug('UI item created by create func is: {}'.format(ui_item))
+            if ui_item:
+                logger.debug('Produced ui item: {}'.format(sub_cmp))
+                if sub_cmp.is_container():
+                    _recursively_produce_ui_items(ui_item, sub_cmp, asm_info)
+            else:
+                logger.debug('Could not create ui item for: {}'.format(sub_cmp))
 
 
 def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):

@@ -46,7 +46,7 @@ def _create_subcomponents(search_dir, component_types_list):
     """Parses the provided directory and returns a list of objects of the types in component_types_list.
     Arguments:
         search_dir: directory to parse
-        component_types_list: This methods checks the subfolders in search_dir against the component types provided
+        component_types_list: This methods checks the subfolders in search_dir against the _get_component types provided
         in this list.
     Example:
         _create_subcomponents(search_dir, [LinkButton, PushButton, or ToggleButton])
@@ -61,7 +61,7 @@ def _create_subcomponents(search_dir, component_types_list):
 
     for file_or_dir in os.listdir(search_dir):
         full_path = op.join(search_dir, file_or_dir)
-        logger.debug('Testing component(s) on: {} '.format(full_path))
+        logger.debug('Testing _get_component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
         if not file_or_dir.startswith(('.', '_')):
             for component_type in component_types_list:
@@ -71,35 +71,35 @@ def _create_subcomponents(search_dir, component_types_list):
                     # cmp_class will raise error if full_path is not of cmp_class type.
                     component = component_type(full_path)
                     sub_cmp_list.append(component)
-                    logger.debug('Successfuly created component: {} from: {}'.format(component_type, full_path))
+                    logger.debug('Successfuly created _get_component: {} from: {}'.format(component_type, full_path))
                     break
                 except PyRevitException:
-                    logger.debug('Can not create component: {} from: {}'.format(component_type, full_path))
+                    logger.debug('Can not create _get_component: {} from: {}'.format(component_type, full_path))
         else:
-            logger.debug('Skipping component. Name can not start with . or _: {}'.format(full_path))
+            logger.debug('Skipping _get_component. Name can not start with . or _: {}'.format(full_path))
 
     return sub_cmp_list
 
 
 def _parse_for_components(component):
-    """Recursively parses component.directory for components of type component.allowed_sub_cmps
-    This method uses get_all_subclasses() to get a list of all subclasses of component.allowed_sub_cmps type.
+    """Recursively parses _get_component.directory for components of type _get_component.allowed_sub_cmps
+    This method uses get_all_subclasses() to get a list of all subclasses of _get_component.allowed_sub_cmps type.
     This ensures that if any new type of component_class is added later, this method does not need to be updated as
     the new sub-class will be listed by .__subclasses__() method of the parent class and this method will check
     the directory for its .type_id
     """
     for new_cmp in _create_subcomponents(component.directory, get_all_subclasses(component.allowed_sub_cmps)):
-        # add the successfulyl created component to the parent component
+        # add the successfulyl created _get_component to the parent _get_component
         component.add_component(new_cmp)
         if new_cmp.is_container():
-            # Recursive part: parse each sub-component for its allowed sub-sub-components.
+            # Recursive part: parse each sub-_get_component for its allowed sub-sub-components.
             _parse_for_components(new_cmp)
 
 
 def _parse_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
-    sub components of package can be accessed by iterating the component. See _basecomponents for types.
+    sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
     """
     _parse_for_components(pkg)
 

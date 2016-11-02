@@ -140,7 +140,7 @@ class GenericContainer(object):
                     # todo how to deal with components with aliases? user should not change internal layout file
                     logger.debug('Item listed in layout file is not available: {}'.format(item))
 
-            logger.debug('Reordered sub-component list is: {}'.format(self._sub_components))
+            logger.debug('Reordered sub-_get_component list is: {}'.format(self._sub_components))
 
     def add_component(self, comp):
         self._sub_components.append(comp)
@@ -304,7 +304,7 @@ class SplitButtonGroup(GenericCommandGroup):
     type_id = SPLIT_BUTTON_POSTFIX
 
 
-# Stacks include Commands or Command groups
+# Stacks include GenericCommand, or GenericCommandGroup
 class GenericStack(GenericContainer):
     allowed_sub_cmps = [GenericCommandGroup, GenericCommand]
 
@@ -317,6 +317,7 @@ class StackTwoButtonGroup(GenericStack):
     type_id = STACKTWO_BUTTON_POSTFIX
 
 
+# Panels include GenericStack, GenericCommand, or GenericCommandGroup
 class Panel(GenericContainer):
     type_id = PANEL_POSTFIX
     allowed_sub_cmps = [GenericStack, GenericCommandGroup, GenericCommand]
@@ -329,6 +330,7 @@ class Panel(GenericContainer):
         return True if len(self._sub_components) > 0 else False
 
 
+# Tabs include Panels
 class Tab(GenericContainer):
     type_id = TAB_POSTFIX
     allowed_sub_cmps = [Panel]
