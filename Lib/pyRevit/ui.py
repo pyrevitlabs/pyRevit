@@ -45,7 +45,6 @@ except Exception as err:
     logger.critical('Can not establish ui module. Error importing AdWindow.dll')
     raise err
 
-#fixme create classes for each corresponding ribbon item type
 # scratch pad:
 # item state .Enabled
 # stack items .AddStackedItems

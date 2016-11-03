@@ -136,8 +136,8 @@ class GenericContainer(object):
                         self._sub_components[i_index], self._sub_components[cmp_index] = b, a
                         item_found = True
                 if not item_found:
-                    # fixme if item is in layout and not in folder, it skips over that index
-                    # todo how to deal with components with aliases? user should not change internal layout file
+                    # fixme: if item is in layout and not in folder, it skips over that index
+                    # todo: how to deal with components with aliases? user should not change internal layout file
                     logger.debug('Item listed in layout file is not available: {}'.format(item))
 
             logger.debug('Reordered sub-_get_component list is: {}'.format(self._sub_components))
