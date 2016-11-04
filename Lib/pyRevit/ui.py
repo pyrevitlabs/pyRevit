@@ -274,25 +274,25 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             if not self._itemdata_mode:
                 ribbon_button = self._get_rvt_item().AddPushButton(button_data)
                 new_button = _PyRevitRibbonButton(ribbon_button)
-                if not icon_path:
-                    logger.debug('Using parent item icon for {}'.format(new_button))
-                    parent_icon_path = self.get_icon()
-                    if parent_icon_path:
-                        new_button.set_icon(parent_icon_path)
-                    else:
-                        logger.debug('Can not get item icon from {}'.format(self))
-                else:
-                    logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
-                    try:
-                        new_button.set_icon(icon_path)
-                    except PyRevitUIError as iconerr:
-                        logger.debug('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
             else:
                 new_button = _PyRevitRibbonButton(button_data)
+
+            if not icon_path:
+                logger.debug('Using parent item icon for {}'.format(new_button))
+                parent_icon_path = self.get_icon()
+                if parent_icon_path:
+                    new_button.set_icon(parent_icon_path)
+                else:
+                    logger.debug('Can not get item icon from {}'.format(self))
+            else:
+                logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
                 try:
                     new_button.set_icon(icon_path)
                 except PyRevitUIError as iconerr:
                     logger.debug('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
+
+            new_button.set_tooltip(tooltip)
+            new_button.set_tooltip_ext(tooltip_ext)
 
             self._add_component(new_button)
 
@@ -374,21 +374,21 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 if not self._itemdata_mode:
                     ribbon_button = self._get_rvt_item().AddItem(button_data)
                     new_button = _PyRevitRibbonButton(ribbon_button)
-                    if not icon_path:
-                        logger.debug('Parent ui item is a panel and panels don\'t have icons.')
-                    else:
-                        logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
-                        try:
-                            new_button.set_icon(icon_path)
-                        except PyRevitUIError as iconerr:
-                            logger.error('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
                 else:
                     new_button = _PyRevitRibbonButton(button_data)
+                    self._pyrvt_item_cache.append(new_button)
+
+                if not icon_path:
+                    logger.debug('Parent ui item is a panel and panels don\'t have icons.')
+                else:
+                    logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
                     try:
                         new_button.set_icon(icon_path)
                     except PyRevitUIError as iconerr:
                         logger.error('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
-                    self._pyrvt_item_cache.append(new_button)
+
+                new_button.set_tooltip(tooltip)
+                new_button.set_tooltip_ext(tooltip_ext)
 
                 self._add_component(new_button)
 
@@ -438,6 +438,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._create_pulldown_button(SplitButtonData, item_name, icon_path, update_if_exists)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
+        # fixme: if split button use large icons for buttons
         self._create_pulldown_button(SplitButtonData, item_name, icon_path, update_if_exists)
         self.ribbon_item(item_name).first_item_is_last_used = False
         self.ribbon_item(item_name)._get_rvt_item().IsSynchronizedWithCurrentItem = False
