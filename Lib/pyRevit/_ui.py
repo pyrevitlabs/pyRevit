@@ -172,6 +172,7 @@ def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
                 try:
                     _recursively_produce_ui_items(parent_ui_item, sub_cmp, asm_info)
                 except PyRevitUIError as err:
+                    # fixme: implement stack count error check
                     logger.error('Stack is full | {}'.format(err))
                 parent_ui_item.close_stack()
                 logger.warning('Closed stack: {}'.format(sub_cmp.name))
