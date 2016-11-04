@@ -49,7 +49,7 @@ from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POST
                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                     TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT
 from .logger import logger
-from .ui import _PyRevitUI, _PyRevitRibbonStackItem
+from .ui import _PyRevitUI
 from .exceptions import PyRevitUIError
 
 
@@ -166,30 +166,27 @@ def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
         if sub_cmp.type_id == STACKTWO_BUTTON_POSTFIX or sub_cmp.type_id == STACKTHREE_BUTTON_POSTFIX:
             try:       # making sure parent_ui_item has open_stack()
                 parent_ui_item.open_stack()
-                logger.debug('Opened stack: {}'.format(sub_cmp.name))
-                for stack_item in sub_cmp:
-                    # capturing and logging any errors on stack item
-                    # (e.g when parent_ui_item's stack is full and can not add any more items it will raise an error)
-                    try:
-                        _recursively_produce_ui_items(parent_ui_item, stack_item, asm_info)
-                    except PyRevitUIError as err:
-                        logger.debug(err)
+                logger.warning('Opened stack: {}'.format(sub_cmp.name))
+                # capturing and logging any errors on stack item
+                # (e.g when parent_ui_item's stack is full and can not add any more items it will raise an error)
+                try:
+                    _recursively_produce_ui_items(parent_ui_item, sub_cmp, asm_info)
+                except PyRevitUIError as err:
+                    logger.error('Stack is full | {}'.format(err))
                 parent_ui_item.close_stack()
-                logger.debug('Closed stack: {}'.format(sub_cmp.name))
+                logger.warning('Closed stack: {}'.format(sub_cmp.name))
             except Exception as err:
-                logger.debug('Can not create stack under this parent: {} | {}'.format(parent_ui_item, err))
+                logger.error('Can not create stack under this parent: {} | {}'.format(parent_ui_item, err))
+                parent_ui_item.reset_stack()
 
         # if sub_cmp is NOT a stack, create ui item for sub_cmp and continue creating its children (if any)
         else:
-            logger.debug('Calling create function for: {}'.format(_component_creation_dict[sub_cmp.type_id]))
+            logger.debug('Calling create function {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
             ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
             logger.debug('UI item created by create func is: {}'.format(ui_item))
             if ui_item:
-                logger.debug('Produced ui item: {}'.format(sub_cmp))
                 if sub_cmp.is_container():
                     _recursively_produce_ui_items(ui_item, sub_cmp, asm_info)
-            else:
-                logger.debug('Could not create ui item for: {}'.format(sub_cmp))
 
 
 def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
