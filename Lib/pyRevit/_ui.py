@@ -61,7 +61,7 @@ def _make_button_tooltip(button):
 
 
 def _make_button_tooltip_ext(button, asm_name):
-    return '\n\nClass Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
+    return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
 
 
 def _produce_ui_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):

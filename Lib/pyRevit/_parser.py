@@ -63,6 +63,7 @@ def _create_subcomponents(search_dir, component_types_list):
         full_path = op.join(search_dir, file_or_dir)
         logger.debug('Testing _get_component(s) on: {} '.format(full_path))
         # full_path might be a file or a dir, but its name should not start with . or _:
+        # fixme: crashes if folder identifier is misspelled
         if not file_or_dir.startswith(('.', '_')):
             for component_type in component_types_list:
                 logger.debug('Testing sub_directory {} for {}'.format(file_or_dir, component_type))
