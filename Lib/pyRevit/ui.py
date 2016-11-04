@@ -188,7 +188,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
 
         try:
             self._get_rvt_item().Image = button_icon.smallBitmap
-            self._get_rvt_item().LargeImage = button_icon.largeBitmap
+            self._get_rvt_item().LargeImage = button_icon.mediumBitmap
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
 
