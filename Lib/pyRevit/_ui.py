@@ -81,7 +81,7 @@ def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
     #     logger.warning('Running self initializer: {}'.format(togglebutton))
     #     importedscript.selfInit(__revit__,
     #                             togglebutton.get_full_script_address(),
-    #                             parent_ui_item.button(togglebutton.name)._get_rvt_item())
+    #                             parent_ui_item.button(togglebutton.name)._get_rvtapi_object())
     #     return parent_ui_item.button(togglebutton.name)
     # except PyRevitUIError as err:
     #     logger.error('UI error: {}'.format(err.message))
