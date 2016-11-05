@@ -64,14 +64,45 @@ def _make_button_tooltip_ext(button, asm_name):
     return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
 
 
-def _produce_ui_togglebutton(parent_ribbon_panel, togglebutton, pkg_asm_info):
-    # scratch pad:
-    # importedscript = __import__(cmd.getscriptbasename())
-    # importedscript.selfInit(__revit__, cmd.getfullscriptaddress(), ribbonitem)
+def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
+    # logger.debug('Producing toggle button: {}'.format(togglebutton))
+    # try:
+    #     parent_ui_item.create_push_button(togglebutton.name,
+    #                                       pkg_asm_info.location,
+    #                                       togglebutton.unique_name,
+    #                                       togglebutton.icon_file,
+    #                                       _make_button_tooltip(togglebutton),
+    #                                       _make_button_tooltip_ext(togglebutton, pkg_asm_info.name),
+    #                                       update_if_exists=True)
+    #
+    #     logger.warning('Importing toggle button as module: {}'.format(togglebutton))
+    #     importedscript = __import__(togglebutton.get_full_script_address())
+    #     logger.warning('Import successful: {}'.format(importedscript))
+    #     logger.warning('Running self initializer: {}'.format(togglebutton))
+    #     importedscript.selfInit(__revit__,
+    #                             togglebutton.get_full_script_address(),
+    #                             parent_ui_item.button(togglebutton.name)._get_rvt_item())
+    #     return parent_ui_item.button(togglebutton.name)
+    # except PyRevitUIError as err:
+    #     logger.error('UI error: {}'.format(err.message))
+    #     return None
     pass
 
 
-def _produce_ui_linkbutton(parent_ribbon_panel, linkbutton, pkg_asm_info):
+def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
+    # logger.debug('Producing link button: {}'.format(linkbutton))
+    # try:
+    #     parent_ui_item.create_push_button(linkbutton.name,
+    #                                       linkbutton.assembly_name,
+    #                                       linkbutton.unique_name,
+    #                                       linkbutton.icon_file,
+    #                                       _make_button_tooltip(linkbutton),
+    #                                       _make_button_tooltip_ext(linkbutton, linkbutton.assembly_name),
+    #                                       update_if_exists=True)
+    #     return parent_ui_item.button(linkbutton.name)
+    # except PyRevitUIError as err:
+    #     logger.error('UI error: {}'.format(err.message))
+    #     return None
     pass
 
 
