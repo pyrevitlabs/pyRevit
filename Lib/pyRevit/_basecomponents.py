@@ -30,6 +30,9 @@ It is the language the these four modules can understand (_basecomponents module
 This module only uses the base modules (.config, .logger, .exceptions, .output, .utils)
 """
 
+import os
+import re
+import hashlib
 import os.path as op
 
 from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
@@ -38,10 +41,10 @@ from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POS
                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
                     SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,               \
-                    DEFAULT_LAYOUT_FILE_NAME
+                    DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
 from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
                     MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
-from .config import REVIT_VERSION, SESSION_STAMPED_ID, PyRevitVersion
+from .config import PyRevitVersion
 from .utils import ScriptFileContents, cleanup_string
 
 from .usersettings import user_settings
@@ -141,6 +144,15 @@ class GenericContainer(object):
                     logger.debug('Item listed in layout file is not available: {}'.format(item))
 
             logger.debug('Reordered sub-_get_component list is: {}'.format(self._sub_components))
+
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+    def _load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
 
     def add_component(self, comp):
         self._sub_components.append(comp)
@@ -244,13 +256,14 @@ class GenericCommand(object):
                 continue
         return cleanup_string(uname)
 
-    # def _get_clean_dict(self):
-    #     return self.__dict__.copy()
-    #
-    # # fixme: how to load from cache?
-    # def _load_from_cache(self, cached_dict):
-    #     for k,v in cached_dict.items():
-    #         self.__dict__[k] = v
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+    def _load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
 
     def get_search_paths(self):
         return self.search_paths
@@ -353,3 +366,25 @@ class Package(GenericContainer):
         GenericContainer.__init__(self, package_dir)
         self.author = None
         self.version = None
+
+        self.hash_value = self._calculate_hash()
+        self.has_version = PyRevitVersion.full_version_as_str()
+
+    def _calculate_hash(self):
+        """Creates a unique hash # to represent state of directory."""
+        # logger.info('Generating Hash of directory')
+        # search does not include png files:
+        #   if png files are added the parent folder mtime gets affected
+        #   cache only saves the png address and not the contents so they'll get loaded everytime
+        #       see http://stackoverflow.com/a/5141710/2350244
+        pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
+        mtime_sum = 0
+        for root, dirs, files in os.walk(self.directory):
+            if re.search(pat, root, flags=re.IGNORECASE):
+                mtime_sum += op.getmtime(root)
+                for filename in files:
+                    if re.search(patfile, filename, flags=re.IGNORECASE):
+                        modtime = op.getmtime(op.join(root, filename))
+                        mtime_sum += modtime
+        return hashlib.md5(str(mtime_sum)).hexdigest()

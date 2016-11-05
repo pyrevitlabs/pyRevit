@@ -32,101 +32,84 @@ All these four modules can understand the component tree. (_basecomponents modul
  _cache will save and restore the tree to increase loading performance.
 """
 
-import os
-import re
 import json
-import hashlib
 
 # pyrevit module imports
-from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, PyRevitVersion
+from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, HASH_VALUE_PARAM, HASH_VERSION_PARAM
 from .exceptions import *
 from .logger import logger
 from ._basecomponents import *
 
 
-def _calculate_hash(self):
-    """Creates a unique hash # to represent state of directory."""
-    # logger.info('Generating Hash of directory')
-    # search does not include png files:
-    #   if png files are added the parent folder mtime gets affected
-    #   cache only saves the png address and not the contents so they'll get loaded everytime
-    #       see http://stackoverflow.com/a/5141710/2350244
-    pat = r'(\.panel)|(\.tab)'
-    patfile = r'(\.py)'
-    mtime_sum = 0
-    for root, dirs, files in os.walk(self.tabFolder):
-        if re.search(pat, root, flags=re.IGNORECASE):
-            mtime_sum += op.getmtime(root)
-            for filename in files:
-                if re.search(patfile, filename, flags=re.IGNORECASE):
-                    modtime = op.getmtime(op.join(root, filename))
-                    mtime_sum += modtime
-    return hashlib.md5(str(mtime_sum)).hexdigest()
-
-
-def _get_cache_file(cached_tab):
-    return op.join(USER_TEMP_DIR,'{}_cache_{}.json'.format(PYREVIT_ASSEMBLY_NAME, cached_tab.tabName))
+def _get_cache_file(cached_pkg):
+    return op.join(USER_TEMP_DIR,'{}_cache_{}.json'.format(PYREVIT_ASSEMBLY_NAME, cached_pkg.name))
 
 
 def _serialize(obj):
-    cache_dict_str = json.dumps(obj, default=lambda o: o.get_clean_dict(), sort_keys=True, indent=4)
-    return '{\n' + '    "cacheVersion": "{}", '.format(PyRevitVersion.full_version_as_str()) + cache_dict_str[1:]
+    return json.dumps(obj, default=lambda o: o._get_cache_data(), sort_keys=True, indent=4)
 
 
 def _cleanup_cache_files():
     pass
 
 
-def _read_cache_for(cached_tab):
+def _read_cache_for(cached_pkg):
     try:
-        with open(_get_cache_file(cached_tab), 'r') as cache_file:
+        logger.debug('Reading cache for: {}'.format(cached_pkg))
+        cache_file = _get_cache_file(cached_pkg)
+        logger.debug('Cache file is: {}'.format(cache_file))
+        with open(_get_cache_file(cached_pkg), 'r') as cache_file:
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
     except:
         raise PyRevitCacheReadError()
 
 
-def _write_cache_for(parsed_tab):
+def _write_cache_for(parsed_pkg):
     try:
-        with open(_get_cache_file(parsed_tab), 'w') as cache_file:
-            cache_file.write(_serialize(parsed_tab))
+        logger.debug('Writing cache for: {}'.format(parsed_pkg))
+        cache_file = _get_cache_file(parsed_pkg)
+        logger.debug('Cache file is: {}'.format(cache_file))
+        with open(cache_file, 'w') as cache_file:
+            cache_file.write(_serialize(parsed_pkg))
     except:
         raise PyRevitCacheWriteError()
 
 
-def _get_cached_tab(cached_tab):
-    logger.debug('Checking if tab directory has any changes, otherwise loading from cache...')
-    logger.debug('Current hash is: {}'.format(cached_tab.tabHash))
-    cached_tab_dict = _read_cache_for(cached_tab)
+def _update_cache(parsed_pkg):
+    logger.debug('Updating cache for tab: {} ...'.format(parsed_pkg.name))
+    _write_cache_for(parsed_pkg)
+    logger.debug('Cache updated for tab: {}'.format(parsed_pkg.name))
+
+
+def _make_components_from_cache(parent_pkg, cached_tab_dict):
+    # fixme: complete load function
+    # parent_pkg._load_cache_data({})
+    pass
+
+
+def _get_cached_package(cached_pkg):
+    cached_tab_dict = _read_cache_for(cached_pkg)
     try:
-        if cached_tab_dict['tabHash'] == cached_tab.tabHash         \
-        and cached_tab_dict['cacheVersion'] == PyRevitVersion.full_version_as_str():
-            logger.debug('Cache is up-to-date for tab: {}'.format(cached_tab.tabName))
-            logger.debug('Loading from cache...')
-            cached_tab.load_from_cache(cached_tab_dict)
-            logger.debug('Load successful...')
-        else:
-            logger.debug('Cache is expired...')
-            raise PyRevitCacheExpiredError()
+        logger.debug('Constructing components from cache for: {}'.format(cached_pkg))
+        _make_components_from_cache(cached_pkg, cached_tab_dict)
+        logger.debug('Load successful...')
     except:
         logger.debug('Error reading cache...')
         raise PyRevitCacheError()
 
 
-def _update_cache(parsed_tab):
-    return True
-    logger.debug('Updating cache for tab: {} ...'.format(parsed_tab.name))
-    if not parsed_tab.loaded_from_cache:
-        logger.debug('Writing cache for tab: {}'.format(parsed_tab.name))
-        _write_cache_for(parsed_tab)
-        logger.debug('Cache updated for tab: {}'.format(parsed_tab.name))
-    else:
-        logger.debug('Cache is up-to-date for tab: {}'.format(parsed_tab.tabName))
+def _is_cache_valid(pkg):
+    try:
+        cached_tab_dict = _read_cache_for(pkg)
+        logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))
+        cache_version_valid = cached_tab_dict[HASH_VERSION_PARAM] == pkg.hash_version
 
+        logger.debug('Package hash value is: {} for: {}'.format(pkg.hash_value, pkg))
+        cache_hash_valid = cached_tab_dict[HASH_VALUE_PARAM] == pkg.hash_value
 
-def _get_cached_package(cached_pkg):
-    pass
+        # cache is valid if both version and hash value match
+        return cache_version_valid and cache_hash_valid
 
-
-def _is_cache_valid(cached_pkg):
-    return False
+    except Exception as err:
+        logger.debug('Can not read cache file for: {} | {}'.format(pkg, err))
