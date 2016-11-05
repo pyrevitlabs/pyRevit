@@ -35,6 +35,7 @@ from ._ui import _update_pyrevit_ui
 
 from usagedata import _archive_script_usage_logs
 
+
 def load_from(root_dir):
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
