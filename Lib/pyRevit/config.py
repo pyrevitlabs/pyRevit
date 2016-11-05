@@ -137,6 +137,10 @@ ASSEMBLY_FILE_TYPE = '.dll'
 LOG_FILE_TYPE = '.log'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
 
+# caching tabs, panels, buttons and button groups ----------------------------------------------------------------------
+HASH_VALUE_PARAM = 'hash_value'
+HASH_VERSION_PARAM = 'has_version'
+
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.package'
 TAB_POSTFIX = '.tab'
@@ -157,10 +161,6 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 DEFAULT_SCRIPT_FILE = 'script' + SCRIPT_FILE_FORMAT
-
-ICON_SMALL_SIZE = 16
-ICON_MEDIUM_SIZE = 24
-ICON_LARGE_SIZE = 32
 
 DEFAULT_LAYOUT_FILE_NAME = 'layout'
 
@@ -193,6 +193,13 @@ SPECIAL_CHARS = {' ': '',
                  '_': 'UNDERS',
                  '|': 'VERT',
                  '\/': '', '\\': ''}
+
+
+# creating ui for tabs, panels, buttons and button groups --------------------------------------------------------------
+ICON_SMALL_SIZE = 16
+ICON_MEDIUM_SIZE = 24
+ICON_LARGE_SIZE = 32
+SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
 GIT_EXE = '\"' + _op.join(_find_git_dir(), 'git.exe') + '\"'
