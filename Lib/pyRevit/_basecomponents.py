@@ -171,11 +171,11 @@ class GenericCommand(object):
             logger.debug('Alias name is: {}'.format(self.name))
 
         self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
-        logger.debug('Command {}: Icon file is: {}'.format(self.original_name, self.icon_file))
+        logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
 
         self.script_file = self._verify_file(DEFAULT_SCRIPT_FILE)
         if self.script_file is None:
-            logger.error('Command {}: Does not have script file.'.format(self.original_name))
+            logger.error('Command {}: Does not have script file.'.format(self))
             raise PyRevitNoScriptFileError()
 
         # reading script file content to extract parameters
