@@ -65,6 +65,7 @@ def _make_button_tooltip_ext(button, asm_name):
 
 
 def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
+    # fixme: create toggle button
     # logger.debug('Producing toggle button: {}'.format(togglebutton))
     # try:
     #     parent_ui_item.create_push_button(togglebutton.name,
@@ -90,6 +91,7 @@ def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
 
 
 def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
+    # fixme: create link button
     # logger.debug('Producing link button: {}'.format(linkbutton))
     # try:
     #     parent_ui_item.create_push_button(linkbutton.name,
