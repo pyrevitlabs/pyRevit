@@ -41,13 +41,11 @@ from Autodesk.Revit.Exceptions import ArgumentException
 try:
     clr.AddReference('AdWindows')
     from Autodesk.Windows import ComponentManager
+    from Autodesk.Windows import RibbonRowPanel, RibbonButton, RibbonFoldPanel, RibbonSplitButton, \
+                                 RibbonToggleButton, RibbonSeparator, RibbonPanelBreak, RibbonRowPanel, RibbonSeparator
 except Exception as err:
     logger.critical('Can not establish ui module. Error importing AdWindow.dll')
     raise err
-
-# scratch pad:
-# item state .Enabled
-# stack items .AddStackedItems
 
 
 # Helper classes and functions -----------------------------------------------------------------------------------------
@@ -94,6 +92,11 @@ class _GenericPyRevitUIContainer:
     def __iter__(self):
         return iter(self._sub_pyrvt_components.values())
 
+    def __repr__(self):
+        return 'Name: {} RevitAPIObject: {} Children: {}'.format(self.name,
+                                                                 self._rvtapi_object,
+                                                                 self._sub_pyrvt_components)
+
     def _get_component(self, cmp_name):
         try:
             return self._sub_pyrvt_components[cmp_name]
@@ -112,61 +115,111 @@ class _GenericPyRevitUIContainer:
     def contains(self, pyrvt_cmp_name):
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
 
-    def set_name(self, new_name):
-        self._rvtapi_object.Name = new_name
-
-    def get_name(self):
-        return self._rvtapi_object.Name
+    # def set_name(self, new_name):
+    #     if hasattr(self._rvtapi_object, 'Text'):
+    #         self._rvtapi_object.Text = new_name
+    #     elif hasattr(self._rvtapi_object, 'Title'):
+    #         self._rvtapi_object.Title = new_name
+    #     elif hasattr(self._rvtapi_object, 'Name'):
+    #         self._rvtapi_object.Name = new_name
+    #     else:
+    #         raise PyRevitUIError('Can not set name for: {}'.format(self))
 
     def activate(self):
-        self._rvtapi_object.Enabled = True
-        self._rvtapi_object.Visible = True
+        if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
+            self._rvtapi_object.Enabled = True
+            self._rvtapi_object.Visible = True
+        elif hasattr(self._rvtapi_object, 'IsEnabled') and hasattr(self._rvtapi_object, 'IsVisible'):
+            self._rvtapi_object.IsEnabled = True
+            self._rvtapi_object.IsVisible = True
+        else:
+            raise PyRevitUIError('Can not activate: {}'.format(self))
 
     def deactivate(self):
-        self._rvtapi_object.Enabled = False
-        self._rvtapi_object.Visible = False
+        if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
+            self._rvtapi_object.Enabled = False
+            self._rvtapi_object.Visible = False
+        elif hasattr(self._rvtapi_object, 'IsEnabled') and hasattr(self._rvtapi_object, 'IsVisible'):
+            self._rvtapi_object.IsEnabled = False
+            self._rvtapi_object.IsVisible = False
+        else:
+            raise PyRevitUIError('Can not deactivate: {}'.format(self))
 
 
 # Classes holding existing native ui elements (These elements are native and can not be modified) ----------------------
 class _RevitNativeRibbonButton(_GenericPyRevitUIContainer):
-    pass
+    def __init__(self, adskwnd_ribbon_button):
+        _GenericPyRevitUIContainer.__init__(self)
+
+        self.name = str(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
+        self._rvtapi_object = adskwnd_ribbon_button
 
 
 class _RevitNativeRibbonGroupItem(_GenericPyRevitUIContainer):
-    pass
+    def __init__(self, adskwnd_ribbon_item):
+        _GenericPyRevitUIContainer.__init__(self)
+
+        self.name = adskwnd_ribbon_item.Source.Title
+        self._rvtapi_object = adskwnd_ribbon_item
+
+        # finding children on this button group
+        for adskwnd_ribbon_button in adskwnd_ribbon_item.Items:
+            self._add_component(_RevitNativeRibbonButton(adskwnd_ribbon_button))
+
+    button = _GenericPyRevitUIContainer._get_component
 
 
 class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
-    def __init__(self, rvt_ribbon_panel):
+    def __init__(self, adskwnd_ribbon_panel):
         _GenericPyRevitUIContainer.__init__(self)
 
-        self.name = rvt_ribbon_panel.Source.Title
-        self._rvtapi_object = rvt_ribbon_panel
+        self.name = adskwnd_ribbon_panel.Source.Title
+        self._rvtapi_object = adskwnd_ribbon_panel
 
-        # getting a list of existing panels under this tab
-        for revit_ribbon_item in rvt_ribbon_panel.Source.Items:
-            if revit_ribbon_item.IsVisible:
-                item_name = str(revit_ribbon_item.AutomationName).replace('\n', ' ')
-                self._sub_pyrvt_components[item_name] = revit_ribbon_item
+        all_adskwnd_ribbon_items = []
+        # getting a list of existing items under this panel
+        # RibbonFoldPanel items are not visible. they automatically fold buttons into stack on revit ui resize
+        # since RibbonFoldPanel are not visible it does not make sense to create objects for them.
+        # This pre cleaner loop, finds the RibbonFoldPanel items and adds the children to the main list
+        for adskwnd_ribbon_item in adskwnd_ribbon_panel.Source.Items:
+            if isinstance(adskwnd_ribbon_item, RibbonFoldPanel):
+                try:
+                    for sub_rvtapi_item in adskwnd_ribbon_item.Items:
+                        all_adskwnd_ribbon_items.append(sub_rvtapi_item)
+                except Exception as err:
+                    logger.debug('Can not get RibbonFoldPanel children: {} | {}'.format(adskwnd_ribbon_item, err))
+            else:
+                all_adskwnd_ribbon_items.append(adskwnd_ribbon_item)
+
+        # processing the cleaned children list and creating pyrevit native ribbon objects
+        for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
+            try:
+                if isinstance(adskwnd_ribbon_item, RibbonButton) or isinstance(adskwnd_ribbon_item, RibbonToggleButton):
+                    self._add_component(_RevitNativeRibbonButton(adskwnd_ribbon_item))
+                elif isinstance(adskwnd_ribbon_item, RibbonSplitButton):
+                    self._add_component(_RevitNativeRibbonGroupItem(adskwnd_ribbon_item))
+
+            except Exception as err:
+                logger.debug('Can not create native ribbon item: {} | {}'.format(adskwnd_ribbon_item, err))
 
     ribbon_item = _GenericPyRevitUIContainer._get_component
 
 
 class _RevitNativeRibbonTab(_GenericPyRevitUIContainer):
-    def __init__(self, revit_ribbon_tab):
+    def __init__(self, adskwnd_ribbon_tab):
         _GenericPyRevitUIContainer.__init__(self)
 
-        self.name = revit_ribbon_tab.Title
-        self._rvtapi_object = revit_ribbon_tab
+        self.name = adskwnd_ribbon_tab.Title
+        self._rvtapi_object = adskwnd_ribbon_tab
 
         # getting a list of existing panels under this tab
         try:
-            revit_ribbon_panels = revit_ribbon_tab.Panels
-            for rvt_panel in revit_ribbon_panels:
-                if rvt_panel.IsVisible:
-                    self._sub_pyrvt_components[rvt_panel.Source.Title] = _RevitNativeRibbonPanel(rvt_panel)
+            for adskwnd_ribbon_panel in adskwnd_ribbon_tab.Panels:
+                # only listing visible panels
+                if adskwnd_ribbon_panel.IsVisible:
+                    self._add_component(_RevitNativeRibbonPanel(adskwnd_ribbon_panel))
         except Exception as err:
-            raise PyRevitUIError('Can not get native panels for this native tab: {} | {}'.format(revit_ribbon_tab, err))
+            logger.debug('Can not get native panels for this native tab: {} | {}'.format(adskwnd_ribbon_tab, err))
 
     ribbon_panel = _GenericPyRevitUIContainer._get_component
 
@@ -502,17 +555,20 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
         for revit_ui_tab in ComponentManager.Ribbon.Tabs:
             # feeding self._sub_pyrvt_ribbon_tabs with an instance of _PyRevitRibbonTab or _RevitNativeRibbonTab
             # for each existing tab. _PyRevitRibbonTab or _RevitNativeRibbonTab will find their existing panels
-            try:
-                new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
-                self._add_component(new_pyrvt_tab)
-                logger.debug('Tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
-            except PyRevitUIError:
-                # if _PyRevitRibbonTab(revit_ui_tab) fails, Revit restricts access to its panels
-                # _RevitNativeRibbonTab uses a different method to access the panels and provides minimal functionality
-                # to interact with existing native ui
-                new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
-                self._add_component(new_pyrvt_tab)
-                logger.debug('Native tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
+            # only listing visible tabs (there might be tabs with identical names
+            # e.g. there are two Annotate tabs. They are activated as neccessary per context
+            if revit_ui_tab.IsVisible:
+                try:
+                    new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
+                    self._add_component(new_pyrvt_tab)
+                    logger.debug('Tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
+                except PyRevitUIError:
+                    # if _PyRevitRibbonTab(revit_ui_tab) fails, Revit restricts access to its panels
+                    # _RevitNativeRibbonTab uses a different method to access the panels
+                    # to interact with existing native ui
+                    new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
+                    self._add_component(new_pyrvt_tab)
+                    logger.debug('Native tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
 
     def create_ribbon_tab(self, tab_name, update_if_exists=False):
         if self.contains(tab_name):
