@@ -182,8 +182,11 @@ def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
 
         # if sub_cmp is NOT a stack, create ui item for sub_cmp and continue creating its children (if any)
         else:
-            logger.debug('Calling create function {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
-            ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
+            try:
+                logger.debug('Calling create function {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
+                ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, asm_info)
+            except KeyError:
+                logger.debug('Can not find create function for: {}'.format(sub_cmp))
             logger.debug('UI item created by create func is: {}'.format(ui_item))
             if ui_item:
                 if sub_cmp.is_container():
