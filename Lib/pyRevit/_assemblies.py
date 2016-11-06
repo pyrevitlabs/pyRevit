@@ -34,15 +34,15 @@ All these four modules can understand the component tree. (_basecomponents modul
 
 import os
 import os.path as op
-import shutil
 from collections import namedtuple
 
 from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
 from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
+from .config import REVISION_EXTENSION
 from .config import SPECIAL_CHARS, PyRevitVersion
 from .exceptions import PyRevitLoaderNotFoundError
 from .logger import logger
-from .utils import join_paths
+from .utils import join_paths, get_revit_instances
 
 
 import clr
@@ -53,17 +53,15 @@ clr.AddReference('System.Xml.Linq')
 
 # dot net imports
 from System import AppDomain, Version, Array, Type
-from System.IO import Path
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
 from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder, OpCodes
-from System.Diagnostics import Process
 
 # revit api imports
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
 
 # Generic named tuple for passing assembly information to other modules
-PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location'])
+PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location', 'reloading'])
 
 # Generic named tuple for passing loader class parameters to the assembly maker
 LoaderClassParams = namedtuple('LoaderClassParams', ['class_name', 'script_file_address', 'search_paths_str'])
@@ -73,11 +71,29 @@ def _make_pkg_asm_name(pkg):
     return SESSION_STAMPED_ID + '_' + pkg.unique_name
 
 
+def _make_pkg_asm_name_revised(pkg):
+    pkg_dll_name = _make_pkg_asm_name(pkg)
+    # if package is already loaded, add revision extension to pkg_dll_name (_R1, _R2,...)
+    if _is_package_already_loaded(pkg):
+        rev_num = 1
+        while True:
+            reload_pkg_dll_name = pkg_dll_name + REVISION_EXTENSION.format(rev_num)
+            logger.debug('Trying new dll file name: {}'.format(reload_pkg_dll_name))
+            if not op.exists(op.join(USER_TEMP_DIR, reload_pkg_dll_name + ASSEMBLY_FILE_TYPE)):
+                logger.debug('New dll name created: {}'.format(reload_pkg_dll_name))
+                pkg_dll_name = reload_pkg_dll_name
+                break
+            else:
+                rev_num += 1
+
+    return pkg_dll_name
+
+
 def _is_pkg_asm_file(pkg, file_name):
     # if this is a pyRevit assembly file
     if file_name.startswith(SESSION_ID) and file_name.endswith(ASSEMBLY_FILE_TYPE):
         # return true if it belongs to this package
-        return (pkg.unique_name + ASSEMBLY_FILE_TYPE) in file_name
+        return pkg.unique_name in file_name
     return False
 
 
@@ -103,8 +119,9 @@ def _find_loaded_package_assemblies(pkg):
     """Private func: Collects information about previously loaded assemblies"""
     logger.debug('Asking Revit for previously loaded package assemblies...: {}'.format(pkg))
     loaded_pkg_assemblies = []
+    pkg_assembly_name = _make_pkg_asm_name(pkg)
     for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-        if _make_pkg_asm_name(pkg) in loadedAssembly.FullName:
+        if pkg_assembly_name in loadedAssembly.FullName:
             logger.debug('Existing assembly found: {0}'.format(loadedAssembly.FullName))
             # loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
             loaded_pkg_assemblies.append(loadedAssembly)
@@ -118,19 +135,15 @@ def _is_package_already_loaded(pkg):
 
 def _cleanup_existing_package_asm_files(pkg):
     """Private func: Removes assembly files from previous sessions from user temp directory."""
-    revitinstances = list(Process.GetProcessesByName('Revit'))
-    if len(revitinstances) > 1:
-        logger.debug('Multiple Revit instance are running...Skipping assembly files cleanup')
-    elif len(revitinstances) == 1:
-        logger.debug('Cleaning up old package assembly files...: {}'.format(pkg))
-        files = os.listdir(USER_TEMP_DIR)
-        for file_name in files:
-            if _is_pkg_asm_file(pkg, file_name):
-                try:
-                    os.remove(op.join(USER_TEMP_DIR, file_name))
-                    logger.debug('Existing assembly file removed: {0}'.format(file_name))
-                except OSError:
-                    logger.debug('Error deleting assembly file: {0}'.format(file_name))
+    logger.debug('Cleaning up old package assembly files...: {}'.format(pkg))
+    files = os.listdir(USER_TEMP_DIR)
+    for file_name in files:
+        if _is_pkg_asm_file(pkg, file_name):
+            try:
+                os.remove(op.join(USER_TEMP_DIR, file_name))
+                logger.debug('Existing assembly file removed: {0}'.format(file_name))
+            except OSError:
+                logger.debug('Error deleting assembly file: {0}'.format(file_name))
 
 
 def _get_params_for_commands(parent_cmp):
@@ -152,19 +165,22 @@ def _get_params_for_commands(parent_cmp):
     return loader_params_for_all_cmds
 
 
-def _create_asm_file(pkg, loader_class):
+def _create_asm_file(pkg, loader_class, pkg_reloading):
     logger.debug('Building script executer assembly...')
 
-    pkg_asm_name = _make_pkg_asm_name(pkg)                    # unique assembly name for this package
-    pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE     # unique assembly filename for this package
+    # make unique assembly name for this package
+    pkg_asm_name = _make_pkg_asm_name_revised(pkg) if pkg_reloading else _make_pkg_asm_name(pkg)
+    # unique assembly filename for this package
+    pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE
+
     # create assembly
     windowsassemblyname = AssemblyName(Name=pkg_asm_name, Version=Version(PyRevitVersion.major,
                                                                           PyRevitVersion.minor,
                                                                           PyRevitVersion.patch, 0))
     logger.debug('Generated assembly name for this session: {0}'.format(pkg_asm_name))
     logger.debug('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
-    logger.debug('Generated assembly file name for this session: {0}'.format(pkg_asm_file_name))
-    logger.debug('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
+    logger.info('Generated assembly file name for this session: {0}'.format(pkg_asm_file_name))
+    logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
     assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(windowsassemblyname,
                                                                     AssemblyBuilderAccess.RunAndSave, USER_TEMP_DIR)
 
@@ -216,18 +232,23 @@ def _create_asm_file(pkg, loader_class):
     # save final assembly
     assemblybuilder.Save(pkg_asm_file_name)
     logger.debug('Executer assembly saved.')
-    return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name))
+    return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name), pkg_reloading)
 
 
 def _create_assembly(parsed_pkg):
     logger.debug('Initializing python script loader...')
 
-    if not _is_package_already_loaded(parsed_pkg):
-        _cleanup_existing_package_asm_files(parsed_pkg)
+    pkg_reloading = _is_package_already_loaded(parsed_pkg)
+
+    running_rvt_instance_count = get_revit_instances()
+    if running_rvt_instance_count > 1:
+        logger.debug('Multiple Revit instance are running...Skipping assembly files cleanup')
+    elif running_rvt_instance_count == 1 and pkg_reloading:
+        logger.debug('pyRevit is reloading. Skipping assembly file cleanup...')
     else:
-        logger.debug('pyRevit is reloading. Skipping assembly file cleanup.')
+        _cleanup_existing_package_asm_files(parsed_pkg)
 
     # create assembly file and return assembly file path to be used in UI creation
-    pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class())
+    pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class(), pkg_reloading)
     logger.debug('Assembly created: {}'.format(pkg_asm_info))
     return pkg_asm_info

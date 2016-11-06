@@ -1,6 +1,10 @@
 import os
 import os.path as op
 
+from .config import HOST_ADSK_PROCESS_NAME
+
+from System.Diagnostics import Process
+
 
 class Timer:
     """Timer class using python native time module."""
@@ -152,6 +156,10 @@ def set_interscript_comm_data(param_name, param_value):
         data_dict = {param_name: param_value}
 
     CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ISC_DICT_NAME, data_dict)
+
+
+def get_revit_instances():
+    return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))
 
 
 # todo script option manager - pyrevit will get a command prompt and users can provide switches and options to commands

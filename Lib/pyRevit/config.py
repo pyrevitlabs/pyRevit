@@ -136,6 +136,9 @@ SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
 ASSEMBLY_FILE_TYPE = '.dll'
 LOG_FILE_TYPE = '.log'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
+REVISION_EXTENSION = '_R{}'
+
+HOST_ADSK_PROCESS_NAME = _Process.GetCurrentProcess().ProcessName
 
 # caching tabs, panels, buttons and button groups ----------------------------------------------------------------------
 HASH_VALUE_PARAM = 'hash_value'
