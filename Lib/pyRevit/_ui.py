@@ -200,15 +200,17 @@ def _recursively_produce_ui_items(parent_ui_item, component, asm_info):
             try:       # making sure parent_ui_item has open_stack()
                 parent_ui_item.open_stack()
                 logger.debug('Opened stack: {}'.format(sub_cmp.name))
+
                 # capturing and logging any errors on stack item
                 # (e.g when parent_ui_item's stack is full and can not add any more items it will raise an error)
+                _recursively_produce_ui_items(parent_ui_item, sub_cmp, asm_info)
+
                 try:
-                    _recursively_produce_ui_items(parent_ui_item, sub_cmp, asm_info)
+                    parent_ui_item.close_stack()
+                    logger.debug('Closed stack: {}'.format(sub_cmp.name))
                 except PyRevitUIError as err:
-                    # fixme: implement stack count error check
                     logger.error('Stack is full | {}'.format(err))
-                parent_ui_item.close_stack()
-                logger.debug('Closed stack: {}'.format(sub_cmp.name))
+
             except Exception as err:
                 logger.error('Can not create stack under this parent: {} | {}'.format(parent_ui_item, err))
                 parent_ui_item.reset_stack()
