@@ -197,6 +197,7 @@ class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
             else:
                 all_adskwnd_ribbon_items.append(adskwnd_ribbon_item)
 
+        # fixme: read items in slideout: p.Source.SlideOutPanelItemsView
         # processing the cleaned children list and creating pyrevit native ribbon objects
         for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
             try:
@@ -307,6 +308,19 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 # feeding _sub_native_ribbon_items with an instance of _PyRevitRibbonButton for existing buttons
                 self._add_component(_PyRevitRibbonButton(revit_button))
 
+    def _create_data_items(self):
+        self._itemdata_mode = False
+        # iterate through data items and their associated revit api data objects and create ui objects
+        for pyrvt_ui_item in [x for x in self if x._itemdata_mode]:
+            rvtapi_data_obj = pyrvt_ui_item._get_rvtapi_object()
+
+            # create item in ui and get correspoding revit ui objects
+            if isinstance(pyrvt_ui_item, _PyRevitRibbonButton):
+                rvtapi_ribbon_item = self._get_rvtapi_object().AddPushButton(rvtapi_data_obj)
+                # replace data object with the newly create ribbon item
+                pyrvt_ui_item._set_rvtapi_object(rvtapi_ribbon_item)
+                pyrvt_ui_item._itemdata_mode = False
+
     def sync_with_current_item(self, state):
         if state:
             self._sync_with_cur_item = True
@@ -337,19 +351,6 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 return self._get_rvtapi_object().LargeImage.UriSource.LocalPath
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
-
-    def _create_data_items(self):
-        self._itemdata_mode = False
-        # iterate through data items and their associated revit api data objects and create ui objects
-        for pyrvt_ui_item in [x for x in self if x._itemdata_mode]:
-            rvtapi_data_obj = pyrvt_ui_item._get_rvtapi_object()
-
-            # create item in ui and get correspoding revit ui objects
-            if isinstance(pyrvt_ui_item, _PyRevitRibbonButton):
-                rvtapi_ribbon_item = self._get_rvtapi_object().AddPushButton(rvtapi_data_obj)
-                # replace data object with the newly create ribbon item
-                pyrvt_ui_item._set_rvtapi_object(rvtapi_ribbon_item)
-                pyrvt_ui_item._itemdata_mode = False
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path, tooltip, tooltip_ext,
@@ -401,6 +402,9 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         except Exception as err:
             raise PyRevitUIError('Can not create button | {}'.format(err))
 
+    def add_separator(self):
+        self._get_rvtapi_object().AddSeparator()
+
 
 class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
@@ -428,15 +432,6 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonButton(revit_ribbon_item))
             else:
                 raise PyRevitUIError('Can not determin ribbon item type: {}'.format(revit_ribbon_item))
-
-    def open_stack(self):
-        self._itemdata_mode = True
-
-    def reset_stack(self):
-        self._itemdata_mode = False
-
-    def close_stack(self):
-        self._create_data_items(as_stack=True)
 
     def _create_data_items(self, as_stack=False):
         self._itemdata_mode = False
@@ -507,6 +502,21 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
             except Exception as err:
                 raise PyRevitUIError('Can not create pull down button: {}'.format(err))
+
+    def open_stack(self):
+        self._itemdata_mode = True
+
+    def reset_stack(self):
+        self._itemdata_mode = False
+
+    def close_stack(self):
+        self._create_data_items(as_stack=True)
+
+    def add_separator(self):
+        self._get_rvtapi_object().AddSeparator()
+
+    def add_slideout(self):
+        self._get_rvtapi_object().AddSlideOut()
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path, tooltip, tooltip_ext,

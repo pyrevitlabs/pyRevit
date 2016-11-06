@@ -47,7 +47,7 @@ components as requested through its methods.
 """
 from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                    TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT
+                    TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 from .logger import logger
 from .ui import _PyRevitUI
 from .exceptions import PyRevitUIError
@@ -62,6 +62,26 @@ def _make_button_tooltip(button):
 
 def _make_button_tooltip_ext(button, asm_name):
     return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
+
+
+def _produce_ui_separator(parent_ui_item, pushbutton, pkg_asm_info):
+    logger.debug('Adding separator to: {}'.format(parent_ui_item))
+    try:
+        parent_ui_item.add_separator()
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+
+    return None
+
+
+def _produce_ui_slideout(parent_ui_item, pushbutton, pkg_asm_info):
+    logger.debug('Adding slide out to: {}'.format(parent_ui_item))
+    try:
+        parent_ui_item.add_slideout()
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+
+    return None
 
 
 def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
@@ -188,6 +208,8 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
                             TOGGLE_BUTTON_POSTFIX: _produce_ui_togglebutton,
                             LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
+                            SEPARATOR_IDENTIFIER: _produce_ui_separator,
+                            SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
                             }
 
 

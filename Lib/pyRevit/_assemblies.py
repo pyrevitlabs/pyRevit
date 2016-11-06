@@ -136,13 +136,18 @@ def _cleanup_existing_package_asm_files(pkg):
 def _get_params_for_commands(parent_cmp):
     loader_params_for_all_cmds = []
 
+    logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
     for sub_cmp in parent_cmp:
         if sub_cmp.is_container():
             loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
         else:
-            loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
-                                                                sub_cmp.get_full_script_address(),
-                                                                join_paths(sub_cmp.get_search_paths())))
+            try:
+                logger.debug('Command found: {}'.format(sub_cmp))
+                loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
+                                                                    sub_cmp.get_full_script_address(),
+                                                                    join_paths(sub_cmp.get_search_paths())))
+            except Exception as err:
+                logger.debug('Can not create class parameters from: {}'.format(sub_cmp))
 
     return loader_params_for_all_cmds
 
@@ -154,8 +159,8 @@ def _create_asm_file(pkg, loader_class):
     pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE     # unique assembly filename for this package
     # create assembly
     windowsassemblyname = AssemblyName(Name=pkg_asm_name, Version=Version(PyRevitVersion.major,
-                                                                      PyRevitVersion.minor,
-                                                                      PyRevitVersion.patch, 0))
+                                                                          PyRevitVersion.minor,
+                                                                          PyRevitVersion.patch, 0))
     logger.debug('Generated assembly name for this session: {0}'.format(pkg_asm_name))
     logger.debug('Generated windows assembly name for this session: {0}'.format(windowsassemblyname))
     logger.debug('Generated assembly file name for this session: {0}'.format(pkg_asm_file_name))

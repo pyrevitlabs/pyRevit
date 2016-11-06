@@ -39,7 +39,7 @@ from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyR
 from .logger import logger
 from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,             \
                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
-                    SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
+                    SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,               \
                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
 from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
@@ -88,8 +88,7 @@ class GenericContainer(object):
         return self.directory.endswith(self.type_id)
 
     def __iter__(self):
-        self._process_components_per_layout()
-        return iter(self._sub_components)
+        return iter(self._get_components_per_layout())
 
     def __repr__(self):
         return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
@@ -124,26 +123,37 @@ class GenericContainer(object):
     def _read_layout_file(self):
         if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
             layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
-            return [x.replace('\n', '') for x in layout_file.readlines()]
+            # return [x.replace('\n', '') for x in layout_file.readlines()]
+            return layout_file.read().splitlines()
         else:
             logger.debug('Container does not have layout file defined: {}'.format(self))
 
-    def _process_components_per_layout(self):
+    def _get_components_per_layout(self):
+        # fixme: how to deal with components with aliases? user should not change internal layout file
         if self.layout_list and self._sub_components:
             logger.debug('Reordering components per layout file...')
-            for i_index, item in enumerate(self.layout_list):
-                item_found = False
+            layout_index = 0
+            # fixme: im duplicating the list. this means that if item is not listed in layout, it will not be created
+            _processed_cmps = []
+            for layout_item in self.layout_list:
                 for cmp_index, component in enumerate(self._sub_components):
-                    if component.name == item:
-                        a, b = self._sub_components[i_index], self._sub_components[cmp_index]
-                        self._sub_components[i_index], self._sub_components[cmp_index] = b, a
-                        item_found = True
-                if not item_found:
-                    # fixme: if item is in layout and not in folder, it skips over that index
-                    # todo: how to deal with components with aliases? user should not change internal layout file
-                    logger.debug('Item listed in layout file is not available: {}'.format(item))
+                    if component.name == layout_item:
+                        _processed_cmps.append(component)
+                        layout_index += 1
+                        break
 
-            logger.debug('Reordered sub-_get_component list is: {}'.format(self._sub_components))
+            # insert separators and slideouts per layout definition
+            logger.debug('Adding separators and slide outs per layout...')
+            for i_index, layout_item in enumerate(self.layout_list):
+                if SEPARATOR_IDENTIFIER in layout_item:
+                    _processed_cmps.insert(i_index, GenericSeparator())
+                elif SLIDEOUT_IDENTIFIER in layout_item:
+                    _processed_cmps.insert(i_index, GenericSlideout())
+
+            logger.debug('Reordered sub_component list is: {}'.format(_processed_cmps))
+            return _processed_cmps
+        else:
+            return self._sub_components
 
     def _get_cache_data(self):
         cache_dict = self.__dict__.copy()
@@ -278,7 +288,6 @@ class GenericCommand(object):
 # Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
 # Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
 # ----------------------------------------------------------------------------------------------------------------------
-
 class LinkButton(GenericCommand):
     type_id = LINK_BUTTON_POSTFIX
 
@@ -388,3 +397,38 @@ class Package(GenericContainer):
                         modtime = op.getmtime(op.join(root, filename))
                         mtime_sum += modtime
         return hashlib.md5(str(mtime_sum)).hexdigest()
+
+
+# Misc UI Classes
+# ----------------------------------------------------------------------------------------------------------------------
+class GenericSeparator:
+    type_id = SEPARATOR_IDENTIFIER
+
+    def __init__(self):
+        self.name = SEPARATOR_IDENTIFIER
+
+    @staticmethod
+    def is_container():
+        return False
+
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+
+class GenericSlideout:
+    type_id = SLIDEOUT_IDENTIFIER
+
+    def __init__(self):
+        self.name = SLIDEOUT_IDENTIFIER
+
+    @staticmethod
+    def is_container():
+        return False
+
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
