@@ -129,15 +129,14 @@ class GenericContainer(object):
             logger.debug('Container does not have layout file defined: {}'.format(self))
 
     def _get_components_per_layout(self):
-        # fixme: how to deal with components with aliases? user should not change internal layout file
+        # if item is not listed in layout, it will not be created
         if self.layout_list and self._sub_components:
             logger.debug('Reordering components per layout file...')
             layout_index = 0
-            # fixme: im duplicating the list. this means that if item is not listed in layout, it will not be created
             _processed_cmps = []
             for layout_item in self.layout_list:
                 for cmp_index, component in enumerate(self._sub_components):
-                    if component.name == layout_item:
+                    if component.original_name == layout_item:
                         _processed_cmps.append(component)
                         layout_index += 1
                         break
