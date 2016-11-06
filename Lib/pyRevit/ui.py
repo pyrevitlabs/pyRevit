@@ -516,7 +516,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 exiting_item = self._get_component(button_name)
                 exiting_item.activate()
                 if icon_path:
-                    exiting_item.set_icon(icon_path)
+                    exiting_item.set_icon(icon_path, icon_size=ICON_LARGE_SIZE)
             else:
                 raise PyRevitUIError('Push button already exits and update is not allowed: {}'.format(button_name))
         else:
@@ -534,7 +534,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 else:
                     logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
                     try:
-                        new_button.set_icon(icon_path)
+                        new_button.set_icon(icon_path, icon_size=ICON_LARGE_SIZE)
                     except PyRevitUIError as iconerr:
                         logger.error('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
 
