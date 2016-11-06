@@ -1,7 +1,7 @@
 import sys
 import logging
 
-from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME
+from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, LOADER_ADDIN
 from .utils import set_interscript_comm_data, get_interscript_comm_data
 
 
@@ -35,19 +35,18 @@ class _LoggerWrapper:
     """
 
     def __init__(self):
-        # fixme add .config default to here?
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
 
-        logger = logging.getLogger('pyrevitloader')
+        logger = logging.getLogger(LOADER_ADDIN)
         logger.addHandler(handler)
 
         handler_title = logging.StreamHandler(sys.stdout)
         formatter_title = logging.Formatter("%(message)s")
         handler_title.setFormatter(formatter_title)
 
-        logger_title = logging.getLogger('pyrevitloader_title')
+        logger_title = logging.getLogger(LOADER_ADDIN + '_title')
         logger_title.addHandler(handler_title)
 
         self._logger = logger
