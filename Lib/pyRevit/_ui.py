@@ -48,6 +48,7 @@ components as requested through its methods.
 from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                     TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from .config import REVIT_VERSION
 from .logger import logger
 from .ui import _PyRevitUI
 from .exceptions import PyRevitUIError
@@ -232,6 +233,10 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
         # All subsequent items will be placed under this stack.
         # Close the stack (parent_ui_item.close_stack) to finish adding items to the stack.
         if sub_cmp.type_id == STACKTWO_BUTTON_POSTFIX or sub_cmp.type_id == STACKTHREE_BUTTON_POSTFIX:
+            if int(REVIT_VERSION) < 2017:
+                _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_pulldown
+                _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = _produce_ui_pulldown
+
             try:       # making sure parent_ui_item has open_stack()
                 parent_ui_item.open_stack()
                 logger.debug('Opened stack: {}'.format(sub_cmp.name))
@@ -245,6 +250,10 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
                     logger.debug('Closed stack: {}'.format(sub_cmp.name))
                 except PyRevitUIError as err:
                     logger.error('Error creating stack | {}'.format(err))
+
+                if int(REVIT_VERSION) < 2017:
+                    _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_split
+                    _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = _produce_ui_splitpush
 
             except Exception as err:
                 logger.error('Can not create stack under this parent: {} | {}'.format(parent_ui_item, err))
