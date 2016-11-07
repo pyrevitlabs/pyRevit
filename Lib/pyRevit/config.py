@@ -105,7 +105,7 @@ def _find_user_roaming_appdata_pyrevit():
     return _op.join(_find_user_roaming_appdata(), "pyRevit")
 
 
-def _get_host_revit_version():
+def _get_host_version():
     """Returns the host Revit version number in format: YYYY"""
     return __revit__.Application.VersionNumber
 
@@ -122,7 +122,7 @@ USER_TEMP_DIR = _find_user_temp_directory()
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
-REVIT_VERSION = _get_host_revit_version()
+REVIT_VERSION = _get_host_version()
 
 # new session defaults -------------------------------------------------------------------------------------------------
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
