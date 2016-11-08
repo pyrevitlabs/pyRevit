@@ -275,7 +275,7 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
 def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
     """
-    logger.debug('Updating ui: {}'.format(parsed_pkg))
+    logger.info('Creating/Updating ui for package: {}'.format(parsed_pkg))
     current_ui = _PyRevitUI()
     _recursively_produce_ui_items(current_ui, parsed_pkg, pkg_asm_info)
 
