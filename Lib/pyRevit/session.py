@@ -27,13 +27,14 @@ Each pyRevit session will have its own .dll and log file.
 """
 
 from .logger import logger
+from .config import SESSION_LOG_FILE_NAME
 
 from ._cache import _is_cache_valid, _get_cached_package, _update_cache
 from ._parser import _get_installed_package_data, _parse_package
 from ._assemblies import _create_assembly
 from ._ui import _update_pyrevit_ui
 
-from usagedata import _archive_script_usage_logs
+from .usagedata import _archive_script_usage_logs
 
 
 def load_from(root_dir):
@@ -53,6 +54,7 @@ def load_from(root_dir):
     # might occur when setting up a package.
 
     # archive previous sessions logs
+    logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
     _archive_script_usage_logs()
 
     # get_installed_packages() returns a list of discovered packages in root_dir
@@ -75,7 +77,7 @@ def load_from(root_dir):
             logger.debug('Updating cache for package: {}'.format(package))
             _update_cache(package)
 
-        logger.debug('Package successfuly added to this session: {}'.format(package))
+        logger.info('Package successfuly loaded: {}'.format(package))
 
         # create a dll assembly and get assembly info
         pkg_asm_info = _create_assembly(package)
