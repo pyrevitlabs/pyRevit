@@ -460,9 +460,6 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
     def open_stack(self):
         self._itemdata_mode = True
 
-    def reset_stack(self):
-        self._itemdata_mode = False
-
     def close_stack(self):
         self._create_data_items(as_stack=True)
 
@@ -599,16 +596,14 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._create_button_group(PulldownButtonData, item_name, icon_path, update_if_exists)
 
     def create_split_button(self, item_name, icon_path, update_if_exists=False):
-        # fixme: proper checking for stack mode
-        if int(REVIT_VERSION) < 2017 and self._itemdata_mode:
+        if self._itemdata_mode and int(REVIT_VERSION) < 2017:
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
-        # fixme: proper checking for stack mode
-        if int(REVIT_VERSION) < 2017 and self._itemdata_mode:
+        if self._itemdata_mode and int(REVIT_VERSION) < 2017:
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
