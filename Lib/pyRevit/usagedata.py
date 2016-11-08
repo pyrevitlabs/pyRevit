@@ -20,10 +20,10 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 ~~~
 Description:
 This module provides access to script usage data.
-Script usage data is collected through a specific log file. Each script will log its successful execution in this log.
+Script usage data is collected through log files. Each script will log its successful execution.
 The log file is session-based. All older log files will be archived per settings provided by the user.
-The logging system is handles through the loader addin and is inside the C# class for the script command. On startup,
-pyRevit assembly make will set the log file name inside each C# class created for script commands.
+The logging system is handled through the loader addin and is inside the C# class for the script command. On startup,
+pyRevit assembly make will set the log filename inside each C# class created for script commands.
 """
 
 
@@ -34,7 +34,7 @@ from datetime import datetime
 
 from .logger import logger
 from .config import USER_TEMP_DIR
-from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, SESSION_LOG_FILE_NAME, LOG_ENTRY_DATETIME_FORMAT
+from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
 
 from .exceptions import PyRevitException
 from .usersettings import user_settings
@@ -43,11 +43,10 @@ from System.Diagnostics import Process
 from System.IO import IOException
 
 
-def _get_session_log_file_path():
-    return op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
-
-
 def _archive_script_usage_logs():
+    """Archives older script usage log files to the folder provided by user in user settings.
+    :return: None
+    """
     if op.exists(user_settings.archivelogfolder):
         host_instances = list(Process.GetProcessesByName('Revit'))
         if len(host_instances) > 1:
@@ -110,14 +109,14 @@ class UsageDatabase:
     def _verify_log_file(file_name):
         """
         :type file_name: str
-        :rtype :bool
+        :return :bool
         """
         return PYREVIT_ASSEMBLY_NAME in file_name and file_name.endswith(LOG_FILE_TYPE)
 
     def _read_log_files(self, log_dir):
         """find all log files in log_dir and reads them line by line and creates database entries
         :type log_dir: str
-        :rtype : None
+        :return : None
         """
         logger.debug('Reading log files in: {}'.format(log_dir))
         for parsed_file in os.listdir(log_dir):
@@ -136,7 +135,7 @@ class UsageDatabase:
     # data query functions ---------------------------------------------------------------------------------------------
     def get_usernames(self):
         """Returns a list of all usenames found in the usage data.
-        :rtype : list
+        :return : list
         """
         unames = set()
         for entry in self:  # type: UsageDataEntry
@@ -146,6 +145,6 @@ class UsageDatabase:
 
 def get_usagedata_db():
     """Returns an instance of the usagedata database
-    :rtype : UsageDatabase
+    :return : UsageDatabase
     """
     return UsageDatabase()

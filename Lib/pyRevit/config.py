@@ -115,6 +115,12 @@ def _find_git_dir():
     return _op.join(_find_home_directory(), '__git__', 'cmd')
 
 
+def _get_session_log_file_path():
+    """Returns full address of this session's log file."""
+    return _op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
+
+
+
 # general defaults -----------------------------------------------------------------------------------------------------
 LOADER_DIR = _find_loader_directory()
 HOME_DIR = _find_home_directory()
@@ -136,6 +142,7 @@ SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
 ASSEMBLY_FILE_TYPE = '.dll'
 LOG_FILE_TYPE = '.log'
 SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
+SESSION_LOG_FILE_PATH = _get_session_log_file_path()
 LOG_ENTRY_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 REVISION_EXTENSION = '_R{}'
 
