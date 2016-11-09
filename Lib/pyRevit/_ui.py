@@ -56,8 +56,9 @@ from .exceptions import PyRevitUIError
 
 def _make_button_tooltip(button):
     tooltip = button.doc_string
-    tooltip += '\n\nScript Name:\n{0}'.format(button.name + ' ' + SCRIPT_FILE_FORMAT)
-    tooltip += '\n\nAuthor:\n{0}'.format(button.author)
+    if tooltip:
+        tooltip += '\n\nScript Name:\n{0}'.format(button.name + ' ' + SCRIPT_FILE_FORMAT)
+        tooltip += '\n\nAuthor:\n{0}'.format(button.author)
     return tooltip
 
 
