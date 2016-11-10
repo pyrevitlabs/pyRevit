@@ -37,6 +37,7 @@ from .utils import verify_directory
 
 from System.IO import IOException
 
+# fixme: add binary/ascii cache selection
 
 class _CustomUserSettings:
     """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to

@@ -28,7 +28,11 @@ Each pyRevit session will have its own .dll and log file.
 
 from .logger import logger
 from .config import SESSION_LOG_FILE_NAME
+from .exceptions import PyRevitCacheError
 
+# fixme: reorganize all private modules in to session/ or loader/
+# todo: create sub folder .pkg for user panels and tabs and exclude from repo
+# todo: create sub folder .pkg for extended panels and tabs and exclude from repo
 from ._cache import _is_cache_valid, _get_cached_package, _update_cache
 from ._parser import _get_installed_package_data, _parse_package
 from ._assemblies import _create_assembly
@@ -63,14 +67,21 @@ def load_from(root_dir):
         # it might seem unusual to create a package and then re-load it from cache but minimum information
         # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
         # Also package object is very small and its creation doesn't add much overhead.
+        package_loaded_from_cache = False
+
         if _is_cache_valid(package):
             # if yes, load the cached package and add the cached tabs to the new package
-            logger.debug('Cache is valid for: {}'.format(package))
+            logger.info('Cache is valid for: {}'.format(package))
             logger.debug('Loading package from cache...')
-            _get_cached_package(package)
+            try:
+                _get_cached_package(package)
+                package_loaded_from_cache = True
+            except PyRevitCacheError as cache_err:
+                logger.debug('Error loading package from cache: {} | {}'.format(package, cache_err))
 
-        else:
-            logger.debug('Cache is NOT valid for: {}'.format(package))
+        if not package_loaded_from_cache:
+            logger.info('Cache is NOT valid for: {}'.format(package))
+            logger.debug('Parsing for package...')
             _parse_package(package)
 
             # update cache with newly parsed package and its components
@@ -81,6 +92,7 @@ def load_from(root_dir):
 
         # create a dll assembly and get assembly info
         pkg_asm_info = _create_assembly(package)
+
         # update/create ui (needs the assembly to link button actions to commands saved in the dll)
         _update_pyrevit_ui(package, pkg_asm_info)
 

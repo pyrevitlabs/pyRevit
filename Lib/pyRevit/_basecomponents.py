@@ -60,6 +60,8 @@ class GenericContainer(object):
     allowed_sub_cmps = []
 
     def __init__(self, branch_dir):
+        self._sub_components = []
+
         self.directory = branch_dir
         if not self._is_valid_dir():
             raise PyRevitUnknownFormatError()
@@ -77,8 +79,6 @@ class GenericContainer(object):
         self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
         if self.icon_file:
             logger.debug('Icon file is: {}'.format(self.original_name, self.icon_file))
-
-        self._sub_components = []
 
     @staticmethod
     def is_container():
@@ -154,6 +154,7 @@ class GenericContainer(object):
         else:
             return self._sub_components
 
+    # fixme: move all this to cache module
     def _get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
@@ -376,7 +377,7 @@ class Package(GenericContainer):
         self.version = None
 
         self.hash_value = self._calculate_hash()
-        self.has_version = PyRevitVersion.full_version_as_str()
+        self.hash_version = PyRevitVersion.full_version_as_str()
 
     def _calculate_hash(self):
         """Creates a unique hash # to represent state of directory."""
@@ -410,11 +411,6 @@ class GenericSeparator:
     def is_container():
         return False
 
-    def _get_cache_data(self):
-        cache_dict = self.__dict__.copy()
-        cache_dict['type_id'] = self.type_id
-        return cache_dict
-
 
 class GenericSlideout:
     type_id = SLIDEOUT_IDENTIFIER
@@ -425,9 +421,4 @@ class GenericSlideout:
     @staticmethod
     def is_container():
         return False
-
-    def _get_cache_data(self):
-        cache_dict = self.__dict__.copy()
-        cache_dict['type_id'] = self.type_id
-        return cache_dict
 

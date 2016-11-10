@@ -149,8 +149,9 @@ REVISION_EXTENSION = '_R{}'
 HOST_ADSK_PROCESS_NAME = _Process.GetCurrentProcess().ProcessName
 
 # caching tabs, panels, buttons and button groups ----------------------------------------------------------------------
+SUB_CMP_KEY = '_sub_components'
 HASH_VALUE_PARAM = 'hash_value'
-HASH_VERSION_PARAM = 'has_version'
+HASH_VERSION_PARAM = 'hash_version'
 
 # parsing tabs, panels, buttons and button groups ----------------------------------------------------------------------
 PACKAGE_POSTFIX = '.package'
