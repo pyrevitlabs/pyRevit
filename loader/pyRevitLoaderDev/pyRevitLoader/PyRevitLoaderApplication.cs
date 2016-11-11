@@ -59,7 +59,7 @@ namespace PyRevitLoader
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
-                var result = executor.ExecuteScript(startupScript, GetStartupScriptPath(), "" );
+                var result = executor.ExecuteScript(startupScript, GetStartupScriptPath(), "", false);
                 if (result == (int)Result.Failed)
                 {
                     TaskDialog.Show("PyRevitLoader", executor.Message);
@@ -69,9 +69,10 @@ namespace PyRevitLoader
 
         public static string GetStartupScriptPath()
         {
-            var startupScriptName = "__init__.py";
+            var startupScriptName = "PyRevitLoader.py";
             var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(dllfolder, startupScriptName);
+            var loaderScriptFolder = Path.GetDirectoryName(dllfolder);
+            return Path.Combine(loaderScriptFolder, startupScriptName);
         }
 
         public static string GetStartupScript()

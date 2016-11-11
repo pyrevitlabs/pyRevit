@@ -44,14 +44,12 @@ from ..exceptions import PyRevitLoaderNotFoundError
 from ..logger import logger
 from ..utils import join_paths, get_revit_instances
 
-
+# dot net imports
 import clr
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 clr.AddReference('System.Xml.Linq')
-
-# dot net imports
 from System import AppDomain, Version, Array, Type
 from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
 from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder, OpCodes
@@ -64,7 +62,8 @@ from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption,
 PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location', 'reloading'])
 
 # Generic named tuple for passing loader class parameters to the assembly maker
-LoaderClassParams = namedtuple('LoaderClassParams', ['class_name', 'script_file_address', 'search_paths_str'])
+LoaderClassParams = namedtuple('LoaderClassParams',
+                               ['class_name', 'script_file_address', 'config_script_file_address', 'search_paths_str'])
 
 
 def _make_pkg_asm_name(pkg):
@@ -158,9 +157,10 @@ def _get_params_for_commands(parent_cmp):
                 logger.debug('Command found: {}'.format(sub_cmp))
                 loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
                                                                     sub_cmp.get_full_script_address(),
+                                                                    sub_cmp.get_full_config_script_address(),
                                                                     join_paths(sub_cmp.get_search_paths())))
             except Exception as err:
-                logger.debug('Can not create class parameters from: {}'.format(sub_cmp))
+                logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
 
     return loader_params_for_all_cmds
 
@@ -193,21 +193,19 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
                                                 loader_class)
 
         # add RegenerationAttribute to type
-        regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(
-            Array[Type]((RegenerationOption,)))
+        regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
         regen_attr_builder = CustomAttributeBuilder(regen_const_info,
                                                     Array[object]((RegenerationOption.Manual,)))
         type_builder.SetCustomAttribute(regen_attr_builder)
 
         # add TransactionAttribute to type
-        trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(
-            Array[Type]((TransactionMode,)))
+        trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
         trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info,
                                                       Array[object]((TransactionMode.Manual,)))
         type_builder.SetCustomAttribute(trans_attrib_builder)
 
         # call base constructor
-        ci = loader_class.GetConstructor(Array[Type]((str, str, str,)))
+        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str)))
 
         const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
                                                        CallingConventions.Standard,
@@ -217,6 +215,8 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
         gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
         # Load the path to the command as a string onto stack
         gen.Emit(OpCodes.Ldstr, loader_class_params.script_file_address)
+        # Load the config script path to the command as a string onto stack (for alternate click)
+        gen.Emit(OpCodes.Ldstr, loader_class_params.config_script_file_address)
         # Load log file name into stack
         gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
         # Adding search paths to the stack. to simplify, concatenate using ; as separator

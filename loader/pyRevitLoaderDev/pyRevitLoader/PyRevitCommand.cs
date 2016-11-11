@@ -5,6 +5,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace PyRevitLoader
 {
@@ -20,12 +21,15 @@ namespace PyRevitLoader
     public abstract class PyRevitCommand : IExternalCommand
     {
         protected string _scriptSource = "";
+        protected string _alternateScriptSource = "";
         protected string _logfilename = "";
+        protected bool _forcedDebugMode = false;
         protected string _syspaths;
 
-        public PyRevitCommand(string scriptSource, string logfilename, string syspaths)
+        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths)
         {
             _scriptSource = scriptSource;
+            _alternateScriptSource = alternateScriptSource;
             _logfilename = logfilename;
             _syspaths = syspaths;
         }
@@ -46,6 +50,18 @@ namespace PyRevitLoader
             // FIXME: somehow fetch back message after script execution...
             var executor = new ScriptExecutor( commandData, message, elements);
 
+            // If Ctrl clicking on button, set forced debug mode
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                _forcedDebugMode = true;
+            }
+
+            // If Shift clicking on button, run config script instead
+            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            {
+                _scriptSource = _alternateScriptSource;
+            }
+
             // Reading script source
             string source;
             using (var reader = File.OpenText(_scriptSource))
@@ -54,7 +70,7 @@ namespace PyRevitLoader
             }
 
             // Execute script
-            var result = executor.ExecuteScript(source, _scriptSource, _syspaths);
+            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _forcedDebugMode);
             message = executor.Message;
 
             // Log successful script usage

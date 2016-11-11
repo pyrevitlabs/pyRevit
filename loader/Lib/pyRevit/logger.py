@@ -1,7 +1,7 @@
 import sys
 import logging
 
-from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, LOADER_ADDIN
+from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, LOADER_ADDIN, FORCED_DEBUG_MODE_PARAM
 from .utils import set_interscript_comm_data, get_interscript_comm_data
 
 
@@ -60,6 +60,11 @@ class _LoggerWrapper:
             self.set_level(logging.INFO)
         else:
             self.set_level(logging.WARNING)
+
+        # Set level to DEBUG if user Shift-clicks on the button
+        # FORCED_DEBUG_MODE_PARAM will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at runtime
+        if FORCED_DEBUG_MODE_PARAM:
+            self.set_level(logging.DEBUG)
 
     # log level methods ---------------------------------------------
     def set_level(self, level):

@@ -21,8 +21,8 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 Provides default values for the pyRevit library.
 """
 
-import os as _os
-import os.path as _op
+import os
+import os.path as op
 
 from System.Diagnostics import Process as _Process
 from System import AppDomain as _Appdomain
@@ -35,7 +35,7 @@ _VER_PATCH = 0
 
 # Addon defaults -------------------------------------------------------------------------------------------------------
 PYREVIT_ASSEMBLY_NAME = 'pyRevit'
-PYREVIT_INIT_SCRIPT_NAME = '__init__'
+PYREVIT_INIT_SCRIPT_NAME = 'pyRevitLoader'
 
 LOADER_ADDIN = 'PyRevitLoader'
 LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
@@ -66,10 +66,10 @@ class PyRevitVersion(object):
 
 
 def _find_loader_directory():
-    """Return the __init__ full directory address"""
+    """Return the pyRevitLoader.py full directory address"""
     try:
         current_file_path = __file__
-        folder = _op.dirname(_op.dirname(_op.dirname(current_file_path)))  # three steps back for /__init__/Lib/pyRevit
+        folder = op.dirname(op.dirname(op.dirname(current_file_path)))  # three steps back for /loader/Lib/pyRevit
         return folder
     except NameError:
         return None
@@ -77,14 +77,14 @@ def _find_loader_directory():
 
 def _find_home_directory():
     """Return the pyRevit home directory address. This is the
-       directory that contains the portable git, __init__, pyRevit, and other package_list"""
-    folder = _op.dirname(_find_loader_directory())
+       directory that contains the loader, pyRevit.package, and other folders"""
+    folder = op.dirname(_find_loader_directory())
     return folder
 
 
 def _find_user_temp_directory():
     """Return the user temp directory %temp%"""
-    return _os.getenv('Temp')
+    return os.getenv('Temp')
 
 
 def _get_username():
@@ -97,12 +97,12 @@ def _get_username():
 
 def _find_user_roaming_appdata():
     """Return %appdata% directory address"""
-    return _os.getenv('appdata')
+    return os.getenv('appdata')
 
 
 def _find_user_roaming_appdata_pyrevit():
     """Return %appdata%/pyRevit directory address"""
-    return _op.join(_find_user_roaming_appdata(), "pyRevit")
+    return op.join(_find_user_roaming_appdata(), "pyRevit")
 
 
 def _get_host_version():
@@ -112,13 +112,12 @@ def _get_host_version():
 
 def _find_git_dir():
     # todo is portable git needed? (run a search for all mentions)
-    return _op.join(_find_home_directory(), '__git__', 'cmd')
+    return op.join(_find_home_directory(), '__git__', 'cmd')
 
 
 def _get_session_log_file_path():
     """Returns full address of this session's log file."""
-    return _op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
-
+    return op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
 
 
 # general defaults -----------------------------------------------------------------------------------------------------
@@ -176,6 +175,7 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 DEFAULT_SCRIPT_FILE = 'script' + SCRIPT_FILE_FORMAT
+DEFAULT_CONFIG_SCRIPT_FILE = 'config' + SCRIPT_FILE_FORMAT
 
 DEFAULT_LAYOUT_FILE_NAME = '_layout'
 
@@ -209,6 +209,8 @@ SPECIAL_CHARS = {' ': '',
                  '|': 'VERT',
                  '\/': '', '\\': ''}
 
+# script internal parameters set by loader module ----------------------------------------------------------------------
+FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
 
 # creating ui for tabs, panels, buttons and button groups --------------------------------------------------------------
 ICON_SMALL_SIZE = 16
@@ -217,7 +219,7 @@ ICON_LARGE_SIZE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
-GIT_EXE = '\"' + _op.join(_find_git_dir(), 'git.exe') + '\"'
+GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
 GIT_SUB_FOLDER = '.git'
 GIT_LIB = 'LibGit2Sharp'
 

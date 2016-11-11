@@ -58,7 +58,7 @@ namespace PyRevitLoader
         /// <summary>
         /// Run the script and print the output to a new output window.
         /// </summary>
-        public int ExecuteScript(string source, string sourcePath, string syspaths)
+        public int ExecuteScript(string source, string sourcePath, string syspaths, bool forcedDebugMode)
         {
             try
             {
@@ -90,6 +90,10 @@ namespace PyRevitLoader
                 scope.SetVariable("__window__", scriptOutput);
                 scope.SetVariable("__file__", sourcePath);
                 scope.SetVariable("__libpath__", importLibPath);
+
+                // add __forceddebugmode__ to builtins
+                var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
+                builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
 
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
@@ -156,7 +160,8 @@ namespace PyRevitLoader
         {
             var importLibraryFolderName = "Lib";
             var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(dllfolder, importLibraryFolderName);
+            var loaderScriptFolder = Path.GetDirectoryName(dllfolder);
+            return Path.Combine(loaderScriptFolder, importLibraryFolderName);
         }
 
         /// <summary>

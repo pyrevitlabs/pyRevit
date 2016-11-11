@@ -42,7 +42,7 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
-                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
+                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,\
                      MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
 from ..config import PyRevitVersion
@@ -64,20 +64,21 @@ class GenericContainer(object):
         self._sub_components = []
 
         self.directory = branch_dir
-        if not self._is_valid_dir():
+        if not self.directory.endswith(self.type_id):
             raise PyRevitUnknownFormatError()
 
-        self.original_name = self._get_name()
+        self.original_name = op.splitext(op.basename(self.directory))[0]
         self.name = user_settings.get_alias(self.original_name, self.type_id)
         if self.name != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
 
-        self.library_path = self._get_library()
+        self.library_path = op.join(self.directory, COMPONENT_LIB_NAME)
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
 
-        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        full_file_path = op.join(self.directory, DEFAULT_ICON_FILE)
+        self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
             logger.debug('Icon file is: {}'.format(self.original_name, self.icon_file))
 
@@ -85,20 +86,11 @@ class GenericContainer(object):
     def is_container():
         return True
 
-    def _is_valid_dir(self):
-        return self.directory.endswith(self.type_id)
-
     def __iter__(self):
         return iter(self._get_components_per_layout())
 
     def __repr__(self):
         return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
-
-    def _get_name(self):
-        return op.splitext(op.basename(self.directory))[0]
-
-    def _get_library(self):
-        return op.join(self.directory, COMPONENT_LIB_NAME)
 
     def _get_unique_name(self):
         """Creates a unique name for the container. This is used to uniquely identify this container and also
@@ -117,12 +109,9 @@ class GenericContainer(object):
                 continue
         return cleanup_string(uname)
 
-    def _verify_file(self, file_name):
-        full_file_path = op.join(self.directory, file_name)
-        return full_file_path if op.exists(full_file_path) else None
-
     def _read_layout_file(self):
-        if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
+        full_file_path = op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME)
+        if op.exists(full_file_path):
             layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
             # return [x.replace('\n', '') for x in layout_file.readlines()]
             return layout_file.read().splitlines()
@@ -185,21 +174,29 @@ class GenericCommand(object):
 
     def __init__(self, cmd_dir):
         self.directory = cmd_dir
-        if not self._is_valid_dir():
+        if not self.directory.endswith(self.type_id):
             raise PyRevitUnknownFormatError()
 
-        self.original_name = self._get_name()
+        self.original_name = op.splitext(op.basename(self.directory))[0]
         self.name = user_settings.get_alias(self.original_name, self.type_id)
         if self.name != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
 
-        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        full_file_path = op.join(self.directory, DEFAULT_ICON_FILE)
+        self.icon_file = full_file_path if op.exists(full_file_path) else None
         logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
 
-        self.script_file = self._verify_file(DEFAULT_SCRIPT_FILE)
+        full_file_path = op.join(self.directory, DEFAULT_SCRIPT_FILE)
+        self.script_file = full_file_path if op.exists(full_file_path) else None
         if self.script_file is None:
             logger.error('Command {}: Does not have script file.'.format(self))
             raise PyRevitNoScriptFileError()
+
+        full_file_path = op.join(self.directory, DEFAULT_CONFIG_SCRIPT_FILE)
+        self.config_script_file = full_file_path if op.exists(full_file_path) else None
+        if self.config_script_file is None:
+            logger.debug('Command {}: Does not have independent config script.'.format(self))
+            self.config_script_file = self.script_file
 
         # reading script file content to extract parameters
         script_content = ScriptFileContents(self.get_full_script_address())
@@ -217,7 +214,7 @@ class GenericCommand(object):
         self.unique_name = self._get_unique_name()
 
         # each command can store custom libraries under /Lib inside the command folder
-        self.library_path = self._get_library()
+        self.library_path = op.join(self.directory, COMPONENT_LIB_NAME)
         # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
         self.search_paths = []
         self.search_paths.append(self.library_path)
@@ -228,22 +225,6 @@ class GenericCommand(object):
 
     def __repr__(self):
         return 'Type Id: {} Directory: {} Name: {}'.format(self.type_id, self.directory, self.original_name)
-
-    def _is_valid_dir(self):
-        return self.directory.endswith(self.type_id)
-
-    def _get_full_file_address(self, file_name):
-        return op.join(self.directory, file_name)
-
-    def _get_name(self):
-        return op.splitext(op.basename(self.directory))[0]
-
-    def _verify_file(self, file_name):
-        full_file_path = op.join(self.directory, file_name)
-        return full_file_path if op.exists(full_file_path) else None
-
-    def _get_library(self):
-        return op.join(self.directory, COMPONENT_LIB_NAME)
 
     def _check_dependencies(self):
         # todo implement host version / library version dependencies
@@ -282,6 +263,9 @@ class GenericCommand(object):
     def get_full_script_address(self):
         return op.join(self.directory, self.script_file)
 
+    def get_full_config_script_address(self):
+        return op.join(self.directory, self.config_script_file)
+
     def append_search_path(self, path):
         self.search_paths.append(path)
 
@@ -306,8 +290,12 @@ class ToggleButton(GenericCommand):
 
     def __init__(self, cmd_dir):
         GenericCommand.__init__(self, cmd_dir)
-        self.icon_on_file = self._verify_file(DEFAULT_ON_ICON_FILE)
-        self.icon_off_file = self._verify_file(DEFAULT_OFF_ICON_FILE)
+
+        full_file_path = op.join(self.directory, DEFAULT_ON_ICON_FILE)
+        self.icon_on_file = full_file_path if op.exists(full_file_path) else None
+
+        full_file_path = op.join(self.directory, DEFAULT_OFF_ICON_FILE)
+        self.icon_off_file = full_file_path if op.exists(full_file_path) else None
 
 
 # # Command groups only include commands. these classes can include GenericCommand as sub components
