@@ -37,18 +37,18 @@ from .utils import verify_directory
 
 from System.IO import IOException
 
-# fixme: add binary/ascii cache selection
 
-class _CustomUserSettings:
-    """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to
-    previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
-    Example:
-        user_settings.save_parameter(param, value)
-        this_script_settings = user_settings.load_parameters()
-        print( this_script_settings.custom_param )
-    """
-    # fixme custom user settings?
-    pass
+# todo: add binary/ascii cache selection
+# todo custom user settings?
+# class _CustomUserSettings:
+#     """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to
+#     previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
+#     Example:
+#         user_settings.save_parameter(param, value)
+#         this_script_settings = user_settings.load_parameters()
+#         print( this_script_settings.custom_param )
+#     """
+#     pass
 
 
 class _PyRevitUserSettings:
