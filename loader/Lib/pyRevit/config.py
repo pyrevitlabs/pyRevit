@@ -234,9 +234,9 @@ GLOBAL_SETTINGS_SECTION_NAME = 'global'
 ALIAS_SECTION_NAME = 'alias'
 
 VERBOSE_KEY = 'verbose'
-LOG_SCRIPT_USAGE_KEY = 'log_script_usage'
+LOG_SCRIPT_USAGE_KEY = 'logscriptusage'
 DEBUG_KEY = 'debug'
-ARCHIVE_LOG_FOLDER_KEY = 'log_archive_folder'
+ARCHIVE_LOG_FOLDER_KEY = 'archivelogfolder'
 CACHE_TYPE_KEY = 'cachetype'
 
 VERBOSE_KEY_DEFAULT = False
