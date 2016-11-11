@@ -6,14 +6,15 @@ example:
 """
 import re
 
+from .config import HOST_SOFTWARE
 from System.Collections.Generic import List
 
 from Autodesk.Revit.DB import FilteredElementCollector, ElementMulticategoryFilter, BuiltInCategory
 from Autodesk.Revit.DB import ElementId
 
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+doc = HOST_SOFTWARE.ActiveUIDocument.Document
+uidoc = HOST_SOFTWARE.ActiveUIDocument
 
 
 class GenericFamily(object):

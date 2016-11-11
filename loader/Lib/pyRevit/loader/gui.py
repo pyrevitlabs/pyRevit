@@ -46,9 +46,10 @@ interface doesn't need to understand that. Its main purpose is to capture the cu
 components as requested through its methods.
 """
 
-from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
-                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                     TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
+                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
+                     SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
+                     SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
 from ..config import REVIT_VERSION
 from ..logger import logger
 from ..ui import get_current_ui
@@ -147,13 +148,18 @@ def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
 def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
     logger.debug('Producing button: {}'.format(pushbutton))
     try:
+        if pushbutton.has_config_script():
+            pb_title = pushbutton.name + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
+        else:
+            pb_title = None
         parent_ui_item.create_push_button(pushbutton.name,
                                           pkg_asm_info.location,
                                           pushbutton.unique_name,
                                           pushbutton.icon_file,
                                           _make_button_tooltip(pushbutton),
                                           _make_button_tooltip_ext(pushbutton, pkg_asm_info.name),
-                                          update_if_exists=True)
+                                          update_if_exists=True,
+                                          ui_title=pb_title)
         return parent_ui_item.button(pushbutton.name)
     except PyRevitUIError as err:
         logger.error('UI error: {}'.format(err.message))

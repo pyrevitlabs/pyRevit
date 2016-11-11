@@ -27,11 +27,13 @@ import os.path as op
 from System.Diagnostics import Process as _Process
 from System import AppDomain as _Appdomain
 
-
 _VER_MAJOR = 4
 _VER_MINOR = 0
 _VER_PATCH = 0
 
+# script internal parameters set by loader module ----------------------------------------------------------------------
+HOST_SOFTWARE = __revit__
+FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
 
 # Addon defaults -------------------------------------------------------------------------------------------------------
 PYREVIT_ASSEMBLY_NAME = 'pyRevit'
@@ -89,7 +91,7 @@ def _find_user_temp_directory():
 
 def _get_username():
     """Return the username from Revit API (Application.Username)"""
-    uname = __revit__.Application.Username
+    uname = HOST_SOFTWARE.Application.Username
     uname = uname.split('@')[0]         # if username is email
     uname = uname.replace('.', '')       # removing dots since username will be used in file naming
     return uname
@@ -107,7 +109,7 @@ def _find_user_roaming_appdata_pyrevit():
 
 def _get_host_version():
     """Returns the host Revit version number in format: YYYY"""
-    return __revit__.Application.VersionNumber
+    return HOST_SOFTWARE.Application.VersionNumber
 
 
 def _find_git_dir():
@@ -181,11 +183,10 @@ DEFAULT_LAYOUT_FILE_NAME = '_layout'
 
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
-SCRIPT_TIME_SAVED_PARAM = '__timesaved__'
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 
-COMPONENT_LIB_NAME = 'Lib'
+MAIN_LIBRARY_DIR_NAME = 'Lib'
 
 # character replacement list for cleaning up file names
 SPECIAL_CHARS = {' ': '',
@@ -209,14 +210,13 @@ SPECIAL_CHARS = {' ': '',
                  '|': 'VERT',
                  '\/': '', '\\': ''}
 
-# script internal parameters set by loader module ----------------------------------------------------------------------
-FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
-
 # creating ui for tabs, panels, buttons and button groups --------------------------------------------------------------
 ICON_SMALL_SIZE = 16
 ICON_MEDIUM_SIZE = 24
 ICON_LARGE_SIZE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
+
+CONFIG_SCRIPT_TITLE_POSTFIX = u'\u2610'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
 GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
