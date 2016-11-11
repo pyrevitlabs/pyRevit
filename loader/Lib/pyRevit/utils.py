@@ -59,14 +59,16 @@ class Timer:
 class ScriptFileContents:
     def __init__(self, file_address):
         self.file_addr = file_address
-        self.file_contents = ''
-        with open(file_address, 'r') as f:
-            self.file_contents = f.read()
+        try:
+            with open(file_address, 'r') as f:
+                self.ast_tree = ast.parse(f.read())
+        # fixme: capture read errors
+        except Exception as err:
+            raise PyRevitException('Error parsing script file: {}'.format(self.file_addr))
 
     def extract_param(self, param):
         try:
-            ast_tree = ast.parse(self.file_contents)
-            for child in ast.iter_child_nodes(ast_tree):
+            for child in ast.iter_child_nodes(self.ast_tree):
                 if hasattr(child, 'targets'):
                     for target in child.targets:
                         if hasattr(target, 'id') and target.id == param:
@@ -119,7 +121,9 @@ def run_process(proc, cwd=''):
 
 
 def join_strings(path_list):
-    return ';'.join(path_list)
+    if path_list:
+        return ';'.join(path_list)
+    return ''
 
 
 def cleanup_string(input_str):
