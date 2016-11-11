@@ -40,6 +40,7 @@ from .usagedata import archive_script_usage_logs
 from .usersettings import user_settings
 
 
+# Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
 if user_settings.cache_type == CACHE_TYPE_ASCII:
     from loader.cache_ascii import is_cache_valid, get_cached_package, update_cache
 else:
