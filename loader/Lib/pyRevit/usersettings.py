@@ -30,8 +30,9 @@ from .logger import logger
 from .config import LOADER_DIR, USER_SETTINGS_DIR
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
-from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY
-from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT, ARCHIVE_LOG_FOLDER_KEY_DEFAULT
+from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY, CACHE_TYPE_KEY
+from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT,\
+                    ARCHIVE_LOG_FOLDER_KEY_DEFAULT, CACHE_TYPE_KEY_DEFAULT
 
 from .utils import verify_directory
 
@@ -56,15 +57,18 @@ class _PyRevitUserSettings:
      This module reads and writes settings using python native ConfigParser.
      Usage:
      from pyRevit.usersettings import user_settings
-     print(user_settings.archivelogfolder)
+     print(user_settings.log_archive_folder)
     """
 
     def __init__(self):
         self.verbose = VERBOSE_KEY_DEFAULT
-
-        self.logScriptUsage = LOG_SCRIPT_USAGE_KEY_DEFAULT
-        self.archivelogfolder = ARCHIVE_LOG_FOLDER_KEY_DEFAULT
         self.debug = DEBUG_KEY_DEFAULT
+
+        self.log_script_usage = LOG_SCRIPT_USAGE_KEY_DEFAULT
+        self.log_archive_folder = ARCHIVE_LOG_FOLDER_KEY_DEFAULT
+
+        self.cache_type = CACHE_TYPE_KEY_DEFAULT
+
         self.alias_dict = {}
 
         # prepare user config file address
@@ -115,10 +119,12 @@ class _PyRevitUserSettings:
                                                VERBOSE_KEY).lower() == KEY_VALUE_TRUE else False
             self.debug = True if cparser.get(GLOBAL_SETTINGS_SECTION_NAME,
                                              DEBUG_KEY).lower() == KEY_VALUE_TRUE else False
-            self.logScriptUsage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
-                                                      LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
-            self.archivelogfolder = cparser.get(INIT_SETTINGS_SECTION_NAME,
-                                                ARCHIVE_LOG_FOLDER_KEY)
+            self.log_script_usage = True if cparser.get(INIT_SETTINGS_SECTION_NAME,
+                                                        LOG_SCRIPT_USAGE_KEY).lower() == KEY_VALUE_TRUE else False
+            self.log_archive_folder = cparser.get(INIT_SETTINGS_SECTION_NAME,
+                                                  ARCHIVE_LOG_FOLDER_KEY)
+            self.cache_type = cparser.get(INIT_SETTINGS_SECTION_NAME,
+                                          CACHE_TYPE_KEY)
         except ConfigParser.Error as err:
             # handling ConfigParser errors
             logger.warning(err.message)
@@ -172,9 +178,9 @@ class _PyRevitUserSettings:
                 # INIT_SETTINGS_SECTION_NAME
                 cparser.add_section(INIT_SETTINGS_SECTION_NAME)
                 cparser.set(INIT_SETTINGS_SECTION_NAME,
-                            LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.logScriptUsage else KEY_VALUE_FALSE)
+                            LOG_SCRIPT_USAGE_KEY, KEY_VALUE_TRUE if self.log_script_usage else KEY_VALUE_FALSE)
                 cparser.set(INIT_SETTINGS_SECTION_NAME,
-                            ARCHIVE_LOG_FOLDER_KEY, self.archivelogfolder)
+                            ARCHIVE_LOG_FOLDER_KEY, self.log_archive_folder)
                 cparser.write(udfile)
                 logger.debug('Config file saved under with default settings.')
                 logger.debug('Config file saved under: {}'.format(USER_SETTINGS_DIR))

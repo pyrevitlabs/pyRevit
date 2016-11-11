@@ -43,8 +43,8 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,\
-                     MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_REVIT_VERSION_PARAM,\
+                     MIN_PYREVIT_VERSION_PARAM
 from ..config import PyRevitVersion
 from ..utils import ScriptFileContents, cleanup_string
 
@@ -60,7 +60,17 @@ class GenericContainer(object):
     type_id = ''
     allowed_sub_cmps = []
 
-    def __init__(self, branch_dir):
+    def __init__(self):
+        self._sub_components = []
+
+        self.directory = None
+        self.original_name = self.name = None
+        self.unique_name = None
+        self.library_path = None
+        self.layout_list = None
+        self.icon_file = None
+
+    def __init_from_dir__(self, branch_dir):
         self._sub_components = []
 
         self.directory = branch_dir
@@ -73,7 +83,7 @@ class GenericContainer(object):
             logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
 
-        self.library_path = op.join(self.directory, COMPONENT_LIB_NAME)
+        self.library_path = op.join(self.directory, MAIN_LIBRARY_DIR_NAME)
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
 
@@ -145,12 +155,12 @@ class GenericContainer(object):
             return self._sub_components
 
     # fixme: move all this to cache module
-    def _get_cache_data(self):
+    def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
         return cache_dict
 
-    def _load_cache_data(self, cache_dict):
+    def load_cache_data(self, cache_dict):
         for k, v in cache_dict.items():
             self.__dict__[k] = v
 
@@ -172,7 +182,16 @@ class GenericCommand(object):
     """
     type_id = ''
 
-    def __init__(self, cmd_dir):
+    def __init__(self):
+        self.directory = None
+        self.original_name = self.name = None
+        self.icon_file = self.script_file = self.config_script_file = None
+        self.min_pyrevit_ver = self.min_revit_ver = None
+        self.doc_string = self.author = None
+        self.unique_name = None
+        self.library_path = self.search_paths = None
+
+    def __init_from_dir__(self, cmd_dir):
         self.directory = cmd_dir
         if not self.directory.endswith(self.type_id):
             raise PyRevitUnknownFormatError()
@@ -208,13 +227,12 @@ class GenericCommand(object):
 
         self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
         self.author = script_content.extract_param(AUTHOR_PARAM)
-        self.time_saved = script_content.extract_param(SCRIPT_TIME_SAVED_PARAM)
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()
 
         # each command can store custom libraries under /Lib inside the command folder
-        self.library_path = op.join(self.directory, COMPONENT_LIB_NAME)
+        self.library_path = op.join(self.directory, MAIN_LIBRARY_DIR_NAME)
         # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
         self.search_paths = []
         self.search_paths.append(self.library_path)
@@ -248,14 +266,17 @@ class GenericCommand(object):
                 continue
         return cleanup_string(uname)
 
-    def _get_cache_data(self):
+    def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
         return cache_dict
 
-    def _load_cache_data(self, cache_dict):
+    def load_cache_data(self, cache_dict):
         for k, v in cache_dict.items():
             self.__dict__[k] = v
+
+    def has_config_script(self):
+        return self.config_script_file != self.script_file
 
     def get_search_paths(self):
         return self.search_paths
@@ -276,9 +297,14 @@ class GenericCommand(object):
 class LinkButton(GenericCommand):
     type_id = LINK_BUTTON_POSTFIX
 
-    def __init__(self, cmd_dir):
-        GenericCommand.__init__(self, cmd_dir)
+    def __init__(self):
+        GenericCommand.__init__(self)
+        self.assembly = self.command_class = None
+
+    def __init_from_dir__(self, cmd_dir):
+        GenericCommand.__init_from_dir__(self, cmd_dir)
         # todo extract assembly and class info
+        self.assembly = self.command_class = None
 
 
 class PushButton(GenericCommand):
@@ -288,8 +314,12 @@ class PushButton(GenericCommand):
 class ToggleButton(GenericCommand):
     type_id = TOGGLE_BUTTON_POSTFIX
 
-    def __init__(self, cmd_dir):
-        GenericCommand.__init__(self, cmd_dir)
+    def __init__(self):
+        GenericCommand.__init__(self)
+        self.icon_on_file = self.icon_off_file = None
+
+    def __init_from_dir__(self, cmd_dir):
+        GenericCommand.__init_from_dir__(self, cmd_dir)
 
         full_file_path = op.join(self.directory, DEFAULT_ON_ICON_FILE)
         self.icon_on_file = full_file_path if op.exists(full_file_path) else None
@@ -333,9 +363,6 @@ class Panel(GenericContainer):
     type_id = PANEL_POSTFIX
     allowed_sub_cmps = [GenericStack, GenericCommandGroup, GenericCommand]
 
-    def __init__(self, panel_dir):
-        GenericContainer.__init__(self, panel_dir)
-
     def has_commands(self):
         # todo proper search for commands in button groups and stacks
         return True if len(self._sub_components) > 0 else False
@@ -345,9 +372,6 @@ class Panel(GenericContainer):
 class Tab(GenericContainer):
     type_id = TAB_POSTFIX
     allowed_sub_cmps = [Panel]
-
-    def __init__(self, tab_dir):
-        GenericContainer.__init__(self, tab_dir)
 
     def has_commands(self):
         for panel in self:
@@ -360,11 +384,14 @@ class Package(GenericContainer):
     type_id = PACKAGE_POSTFIX
     allowed_sub_cmps = [Tab]
 
-    def __init__(self, package_dir):
-        GenericContainer.__init__(self, package_dir)
+    def __init__(self):
+        GenericContainer.__init__(self)
         self.author = None
         self.version = None
+        self.hash_value = self.hash_version = None
 
+    def __init_from_dir__(self, package_dir):
+        GenericContainer.__init_from_dir__(self, package_dir)
         self.hash_value = self._calculate_hash()
         self.hash_version = PyRevitVersion.full_version_as_str()
 

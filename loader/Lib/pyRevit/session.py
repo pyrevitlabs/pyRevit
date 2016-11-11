@@ -27,17 +27,23 @@ Each pyRevit session will have its own .dll and log file.
 """
 
 from .logger import logger
-from .config import SESSION_LOG_FILE_NAME
+from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError
 
 # todo: create sub folder .pkg for user panels and tabs and exclude from repo
 # todo: create sub folder .pkg for extended panels and tabs and exclude from repo
-from loader.cache_json import is_cache_valid, get_cached_package, update_cache
 from loader.parser import get_installed_package_data, parse_package
 from loader.assemblies import create_assembly
 from loader.gui import update_pyrevit_ui
 
 from .usagedata import archive_script_usage_logs
+from .usersettings import user_settings
+
+
+if user_settings.cache_type == CACHE_TYPE_ASCII:
+    from loader.cache_ascii import is_cache_valid, get_cached_package, update_cache
+else:
+    from loader.cache_binary import is_cache_valid, get_cached_package, update_cache
 
 
 def load_from(root_dir):
@@ -79,7 +85,7 @@ def load_from(root_dir):
                 logger.debug('Error loading package from cache: {} | {}'.format(package, cache_err))
 
         if not package_loaded_from_cache:
-            logger.info('Cache is NOT valid for: {}'.format(package))
+            logger.info('Cache is not valid for: {}'.format(package))
             logger.debug('Parsing for package...')
             parse_package(package)
 

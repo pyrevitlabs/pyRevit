@@ -50,13 +50,11 @@ def _get_cache_file(cached_pkg):
 
 
 def _make_cache_from_cmp(obj):
-    return json.dumps(obj, default=lambda o: o._get_cache_data(), sort_keys=True, indent=4)
+    return json.dumps(obj, default=lambda o: o.get_cache_data(), sort_keys=True, indent=4)
 
 
-def _make_cmp_from_cache(parent_cmp, cached_dict):
+def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
     logger.debug('Processing cache for: {}'.format(parent_cmp))
-    # get cached sub component dictionary
-    cached_sub_cmps = cached_dict.pop(SUB_CMP_KEY)    # type: list
     # get allowed classes under this component
     allowed_sub_cmps = get_all_subclasses(parent_cmp.allowed_sub_cmps)
     logger.debug('Allowed sub components are: {}'.format(allowed_sub_cmps))
@@ -65,26 +63,23 @@ def _make_cmp_from_cache(parent_cmp, cached_dict):
         for sub_class in allowed_sub_cmps:
             if sub_class.type_id == cached_cmp['type_id']:
                 logger.debug('Creating sub component from cache: {}, {}'.format(cached_cmp['name'], sub_class))
-                # if this component has children
-                if SUB_CMP_KEY in cached_cmp.keys():
-                    logger.debug('Sub component has children.')
-                    # drop subcomponents dict from cached_cmp since we don't want the loaded_cmp to include this
-                    cleaned_cache_dict = cached_cmp.copy()
-                    cleaned_cache_dict.pop(SUB_CMP_KEY)
-                    # create matching sub component and add to parent
-                    loaded_cmp = sub_class(None, cleaned_cache_dict)
-                    logger.debug('Sub component created: {}'.format(loaded_cmp))
-                    parent_cmp.add_component(loaded_cmp)
-                    # now process sub components for  loaded_cmp
-                    logger.debug('Processing sub components for loaded component: {}'.format(loaded_cmp))
-                    _make_cmp_from_cache(loaded_cmp, cached_cmp)
 
-                else:
-                    logger.debug('Sub component does not have children.')
-                    # create matching sub component and add to parent
-                    loaded_cmp = sub_class(None, cached_cmp)
-                    logger.debug('Sub component created: {}'.format(loaded_cmp))
-                    parent_cmp.add_component(loaded_cmp)
+                # cached_cmp might contain SUB_CMP_KEY. This needs to be removed since this function will make
+                # all the children recursively. So if this component has SUB_CMP_KEY means it has sub components:
+                sub_cmp_cache = None
+                if SUB_CMP_KEY in cached_cmp.keys():
+                    # drop subcomponents dict from cached_cmp since we don't want the loaded_cmp to include this
+                    sub_cmp_cache = cached_cmp.pop(SUB_CMP_KEY)
+
+                # create sub component from cleaned cached_cmp
+                loaded_cmp = sub_class()
+                loaded_cmp.load_cache_data(cached_cmp)
+
+                # now process sub components for loaded_cmp if any
+                if sub_cmp_cache:
+                    _make_sub_cmp_from_cache(loaded_cmp, sub_cmp_cache)
+
+                parent_cmp.add_component(loaded_cmp)
 
 
 def _cleanup_cache_files():
@@ -124,7 +119,8 @@ def get_cached_package(installed_pkg):
     cached_pkg_dict = _read_cache_for(installed_pkg)
     try:
         logger.debug('Constructing components from cache for: {}'.format(installed_pkg))
-        _make_cmp_from_cache(installed_pkg, cached_pkg_dict)
+        # get cached sub component dictionary and call recursive maker function
+        _make_sub_cmp_from_cache(installed_pkg, cached_pkg_dict.pop(SUB_CMP_KEY))
         logger.debug('Load successful...')
     except Exception as err:
         logger.debug('Error reading cache...')

@@ -278,9 +278,9 @@ def load_user_settings():
             with open(configfile,'r') as udfile:
                 cparser = settingsParser.ConfigParser()          
                 cparser.readfp(udfile)
-                logScriptUsageConfigValue = cparser.get(initsectionname, "logScriptUsage")
+                logScriptUsageConfigValue = cparser.get(initsectionname, "log_script_usage")
                 logScriptUsage = True if logScriptUsageConfigValue.lower() == "true" else False
-                archivelogfolder = cparser.get(initsectionname, "archivelogfolder")
+                archivelogfolder = cparser.get(initsectionname, "log_archive_folder")
                 verbose = True if cparser.get(globalsectionname, "verbose").lower() == "true" else False
                 
         except:
@@ -307,8 +307,8 @@ def save_user_settings():
                 cparser.add_section(globalsectionname)
                 cparser.set(globalsectionname, "verbose", "true" if verbose else "false")
                 cparser.add_section(initsectionname)
-                cparser.set(initsectionname, "logScriptUsage", "true" if logScriptUsage else "false")
-                cparser.set(initsectionname, "archivelogfolder", archivelogfolder)
+                cparser.set(initsectionname, "log_script_usage", "true" if logScriptUsage else "false")
+                cparser.set(initsectionname, "log_archive_folder", archivelogfolder)
                 cparser.write(udfile)   
         except:
             raise ErrorWritingUserSettings

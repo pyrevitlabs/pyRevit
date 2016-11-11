@@ -70,12 +70,13 @@ def _create_subcomponents(search_dir, component_types_list):
                 try:
                     # if cmp_class can be created for this sub-dir, the add to list
                     # cmp_class will raise error if full_path is not of cmp_class type.
-                    component = component_type(full_path)
+                    component = component_type()
+                    component.__init_from_dir__(full_path)
                     sub_cmp_list.append(component)
-                    logger.debug('Successfuly created _get_component: {} from: {}'.format(component_type, full_path))
+                    logger.debug('Successfuly created component: {} from: {}'.format(component, full_path))
                     break
                 except PyRevitException:
-                    logger.debug('Can not create _get_component: {} from: {}'.format(component_type, full_path))
+                    logger.debug('Can not create component of type: {} from: {}'.format(component_type, full_path))
         else:
             logger.debug('Skipping _get_component. Name can not start with . or _: {}'.format(full_path))
 
