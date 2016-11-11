@@ -58,7 +58,7 @@ namespace PyRevitLoader
         /// <summary>
         /// Run the script and print the output to a new output window.
         /// </summary>
-        public int ExecuteScript(string source, string sourcePath, string syspaths, bool forcedDebugMode)
+        public int ExecuteScript(string source, string sourcePath, string syspaths, string cmdOptions, bool forcedDebugMode)
         {
             try
             {

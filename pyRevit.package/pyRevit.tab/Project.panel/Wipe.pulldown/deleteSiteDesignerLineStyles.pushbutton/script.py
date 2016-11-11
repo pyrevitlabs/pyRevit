@@ -19,7 +19,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Deletes all extra lines styles created by the faulty Site Designer addin.'
 
-from __future__ import print_function
+# from __future__ import print_function
 from Autodesk.Revit.DB import Transaction
 import StringIO
 

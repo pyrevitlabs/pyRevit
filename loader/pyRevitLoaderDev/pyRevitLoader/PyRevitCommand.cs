@@ -25,13 +25,15 @@ namespace PyRevitLoader
         protected string _logfilename = "";
         protected bool _forcedDebugMode = false;
         protected string _syspaths;
+        protected string _cmdOptions;
 
-        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths)
+        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths, string cmdOptions)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _logfilename = logfilename;
             _syspaths = syspaths;
+            _cmdOptions = cmdOptions;
         }
 
         /// <summary>
@@ -70,7 +72,7 @@ namespace PyRevitLoader
             }
 
             // Execute script
-            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _forcedDebugMode);
+            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdOptions, _forcedDebugMode);
             message = executor.Message;
 
             // Log successful script usage

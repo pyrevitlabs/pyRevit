@@ -1,5 +1,8 @@
 import os
 import os.path as op
+import ast
+
+from .exceptions import PyRevitException
 
 from .config import HOST_ADSK_PROCESS_NAME
 
@@ -21,36 +24,55 @@ class Timer:
         return "%02.2f seconds" % (time.time() - self.start)
 
 
+# class ScriptFileContents:
+#     def __init__(self, file_address):
+#         self.file_contents = ''
+#         with open(file_address, 'r') as f:
+#             self.file_contents = f.readlines()
+#
+#     def extract_param(self, param):
+#         import re
+#         param_str_found = False
+#         param_str = ''
+#         param_finder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+#         param_finder_ex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
+#         for thisline in self.file_contents:
+#             if not param_str_found:
+#                 values = param_finder.findall(thisline)
+#                 if values:
+#                     param_str = values[0]
+#                     param_str_found = True
+#                 continue
+#             elif param_str_found:
+#                 values = param_finder_ex.findall(thisline)
+#                 if values:
+#                     param_str += values[0]
+#                     continue
+#                 break
+#         cleaned_param_str = param_str.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
+#         if '' != cleaned_param_str:
+#             return cleaned_param_str
+#         else:
+#             return None
+
+
 class ScriptFileContents:
     def __init__(self, file_address):
-        self.filecontents = ''
+        self.file_addr = file_address
+        self.file_contents = ''
         with open(file_address, 'r') as f:
-            self.filecontents = f.readlines()
+            self.file_contents = f.read()
 
     def extract_param(self, param):
-        import re
-        param_str_found = False
-        param_str = ''
-        param_finder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-        param_finder_ex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-        for thisline in self.filecontents:
-            if not param_str_found:
-                values = param_finder.findall(thisline)
-                if values:
-                    param_str = values[0]
-                    param_str_found = True
-                continue
-            elif param_str_found:
-                values = param_finder_ex.findall(thisline)
-                if values:
-                    param_str += values[0]
-                    continue
-                break
-        cleaned_param_str = param_str.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
-        if '' != cleaned_param_str:
-            return cleaned_param_str
-        else:
-            return None
+        try:
+            ast_tree = ast.parse(self.file_contents)
+            for child in ast.iter_child_nodes(ast_tree):
+                if hasattr(child, 'targets'):
+                    for target in child.targets:
+                        if hasattr(target, 'id') and target.id == param:
+                            return ast.literal_eval(child.value)
+        except Exception as err:
+            raise PyRevitException('Error parsing parameter: {} in script file: {}'.format(param, self.file_addr))
 
 
 def get_all_subclasses(parent_classes):
@@ -96,7 +118,7 @@ def run_process(proc, cwd=''):
     return subprocess.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
 
 
-def join_paths(path_list):
+def join_strings(path_list):
     return ';'.join(path_list)
 
 

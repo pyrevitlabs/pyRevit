@@ -183,6 +183,7 @@ DEFAULT_LAYOUT_FILE_NAME = '_layout'
 
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
+COMMAND_OPTIONS_PARAM = '__cmdoptions__'
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 

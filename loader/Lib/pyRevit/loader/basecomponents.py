@@ -35,7 +35,7 @@ import re
 import hashlib
 import os.path as op
 
-from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
+from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
 from ..logger import logger
 from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
@@ -44,7 +44,7 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_REVIT_VERSION_PARAM,\
-                     MIN_PYREVIT_VERSION_PARAM
+                     MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
 from ..config import PyRevitVersion
 from ..utils import ScriptFileContents, cleanup_string
 
@@ -221,12 +221,19 @@ class GenericCommand(object):
         script_content = ScriptFileContents(self.get_full_script_address())
 
         # extracting min requried Revit and pyRevit versions
-        self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)
-        self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)
-        self._check_dependencies()
+        try:
+            self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)
+            self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)
+            self._check_dependencies()
+        except PyRevitException as err:
+            logger.error(err)
 
-        self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
-        self.author = script_content.extract_param(AUTHOR_PARAM)
+        try:
+            self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
+            self.author = script_content.extract_param(AUTHOR_PARAM)
+            self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)
+        except PyRevitException as err:
+            logger.error(err)
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()
@@ -280,6 +287,9 @@ class GenericCommand(object):
 
     def get_search_paths(self):
         return self.search_paths
+
+    def get_cmd_options(self):
+        return self.cmd_options
 
     def get_full_script_address(self):
         return op.join(self.directory, self.script_file)

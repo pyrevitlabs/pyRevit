@@ -42,7 +42,7 @@ from ..config import REVISION_EXTENSION
 from ..config import SPECIAL_CHARS, PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
 from ..logger import logger
-from ..utils import join_paths, get_revit_instances
+from ..utils import join_strings, get_revit_instances
 
 # dot net imports
 import clr
@@ -63,7 +63,11 @@ PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location', 're
 
 # Generic named tuple for passing loader class parameters to the assembly maker
 LoaderClassParams = namedtuple('LoaderClassParams',
-                               ['class_name', 'script_file_address', 'config_script_file_address', 'search_paths_str'])
+                               ['class_name',
+                                'script_file_address', 'config_script_file_address',
+                                'search_paths_str',
+                                'cmd_options',
+                                ])
 
 
 def _make_pkg_asm_name(pkg):
@@ -149,7 +153,7 @@ def _get_params_for_commands(parent_cmp):
     loader_params_for_all_cmds = []
 
     logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
-    for sub_cmp in parent_cmp:
+    for sub_cmp in parent_cmp:  # type: GenericCommand
         if sub_cmp.is_container():
             loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
         else:
@@ -158,7 +162,9 @@ def _get_params_for_commands(parent_cmp):
                 loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
                                                                     sub_cmp.get_full_script_address(),
                                                                     sub_cmp.get_full_config_script_address(),
-                                                                    join_paths(sub_cmp.get_search_paths())))
+                                                                    join_strings(sub_cmp.get_search_paths()),
+                                                                    join_strings(sub_cmp.get_cmd_options())
+                                                                    ))
             except Exception as err:
                 logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
 
@@ -187,7 +193,7 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
     modulebuilder = assemblybuilder.DefineDynamicModule(pkg_asm_name, pkg_asm_file_name)
 
     # create command classes
-    for loader_class_params in _get_params_for_commands(pkg):
+    for loader_class_params in _get_params_for_commands(pkg):  # type: LoaderClassParams
         type_builder = modulebuilder.DefineType(loader_class_params.class_name,
                                                 TypeAttributes.Class | TypeAttributes.Public,
                                                 loader_class)
@@ -205,7 +211,7 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
         type_builder.SetCustomAttribute(trans_attrib_builder)
 
         # call base constructor
-        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str)))
+        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str, str)))
 
         const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
                                                        CallingConventions.Standard,
@@ -219,8 +225,10 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
         gen.Emit(OpCodes.Ldstr, loader_class_params.config_script_file_address)
         # Load log file name into stack
         gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
-        # Adding search paths to the stack. to simplify, concatenate using ; as separator
+        # Adding search paths to the stack (concatenated using ; as separator)
         gen.Emit(OpCodes.Ldstr, loader_class_params.search_paths_str)
+        # Adding command options to the stack (concatenated using ; as separator)
+        gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_options)
         gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
         gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
         gen.Emit(OpCodes.Nop)
