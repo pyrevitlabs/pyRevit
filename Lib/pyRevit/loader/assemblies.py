@@ -36,13 +36,13 @@ import os
 import os.path as op
 from collections import namedtuple
 
-from .config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from .config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
-from .config import REVISION_EXTENSION
-from .config import SPECIAL_CHARS, PyRevitVersion
-from .exceptions import PyRevitLoaderNotFoundError
-from .logger import logger
-from .utils import join_paths, get_revit_instances
+from ..config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
+from ..config import REVISION_EXTENSION
+from ..config import SPECIAL_CHARS, PyRevitVersion
+from ..exceptions import PyRevitLoaderNotFoundError
+from ..logger import logger
+from ..utils import join_paths, get_revit_instances
 
 
 import clr
@@ -234,7 +234,7 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
     return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name), pkg_reloading)
 
 
-def _create_assembly(parsed_pkg):
+def create_assembly(parsed_pkg):
     logger.debug('Initializing python script loader...')
 
     pkg_reloading = _is_package_already_loaded(parsed_pkg)

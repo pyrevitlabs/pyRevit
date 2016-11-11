@@ -35,11 +35,11 @@ All these four modules can understand the component tree. (_basecomponents modul
 import os
 import os.path as op
 
-from .exceptions import PyRevitException
-from .logger import logger
-from .utils import get_all_subclasses, get_sub_folders
+from ..exceptions import PyRevitException
+from ..logger import logger
+from ..utils import get_all_subclasses, get_sub_folders
 
-from ._basecomponents import Package
+from .basecomponents import Package
 
 
 def _create_subcomponents(search_dir, component_types_list):
@@ -97,7 +97,7 @@ def _parse_for_components(component):
             _parse_for_components(new_cmp)
 
 
-def _parse_package(pkg):
+def parse_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
@@ -105,7 +105,7 @@ def _parse_package(pkg):
     _parse_for_components(pkg)
 
 
-def _get_installed_package_data(root_dir):
+def get_installed_package_data(root_dir):
     """Parses home directory and return a list of Package objects for installed packages.
     The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
     packages so the session can check the cache for each package and decide if they need to be parsed or not.

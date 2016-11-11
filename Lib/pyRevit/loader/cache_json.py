@@ -39,10 +39,10 @@ import os.path as op
 import json
 
 # pyrevit module imports
-from .config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
-from .exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
-from .logger import logger
-from .utils import get_all_subclasses
+from ..config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
+from ..exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
+from ..logger import logger
+from ..utils import get_all_subclasses
 
 
 def _get_cache_file(cached_pkg):
@@ -114,13 +114,13 @@ def _write_cache_for(parsed_pkg):
         raise PyRevitCacheWriteError()
 
 
-def _update_cache(parsed_pkg):
+def update_cache(parsed_pkg):
     logger.debug('Updating cache for tab: {} ...'.format(parsed_pkg.name))
     _write_cache_for(parsed_pkg)
     logger.debug('Cache updated for tab: {}'.format(parsed_pkg.name))
 
 
-def _get_cached_package(installed_pkg):
+def get_cached_package(installed_pkg):
     cached_pkg_dict = _read_cache_for(installed_pkg)
     try:
         logger.debug('Constructing components from cache for: {}'.format(installed_pkg))
@@ -131,7 +131,7 @@ def _get_cached_package(installed_pkg):
         raise PyRevitCacheError(err)
 
 
-def _is_cache_valid(pkg):
+def is_cache_valid(pkg):
     try:
         cached_pkg_dict = _read_cache_for(pkg)
         logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))

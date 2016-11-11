@@ -35,19 +35,20 @@ import re
 import hashlib
 import os.path as op
 
-from .exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
-from .logger import logger
-from .config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,             \
-                    TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX,\
-                    SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
-from .config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,               \
-                    DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
-from .config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,                        \
-                    MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
-from .config import PyRevitVersion
-from .utils import ScriptFileContents, cleanup_string
+from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
+from ..logger import logger
+from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
+                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
+                     STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
+                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
+                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,\
+                     MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
+from ..config import PyRevitVersion
+from ..utils import ScriptFileContents, cleanup_string
 
-from .usersettings import user_settings
+from ..usersettings import user_settings
 
 
 # superclass for all tree branches that contain sub-branches (containers)

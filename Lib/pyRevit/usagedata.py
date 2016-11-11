@@ -43,7 +43,7 @@ from System.Diagnostics import Process
 from System.IO import IOException
 
 
-def _archive_script_usage_logs():
+def archive_script_usage_logs():
     """Archives older script usage log files to the folder provided by user in user settings.
     :return: None
     """

@@ -45,13 +45,14 @@ And because user script don't create components based on bundled folder (e.g. fo
 interface doesn't need to understand that. Its main purpose is to capture the current state of ui and create or update
 components as requested through its methods.
 """
-from .config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
-                    STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                    TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
-from .config import REVIT_VERSION
-from .logger import logger
-from .ui import _PyRevitUI
-from .exceptions import PyRevitUIError
+
+from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,          \
+                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
+                     TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from ..config import REVIT_VERSION
+from ..logger import logger
+from ..ui import get_current_ui
+from ..exceptions import PyRevitUIError
 
 
 def _make_button_tooltip(button):
@@ -273,11 +274,11 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
                 _recursively_produce_ui_items(ui_item, sub_cmp, pkg_asm_info)
 
 
-def _update_pyrevit_ui(parsed_pkg, pkg_asm_info):
+def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
     """
     logger.info('Creating/Updating ui for package: {}'.format(parsed_pkg))
-    current_ui = _PyRevitUI()
+    current_ui = get_current_ui()
     _recursively_produce_ui_items(current_ui, parsed_pkg, pkg_asm_info)
 
     # current_ui.tab(tab) now includes updated or new ribbon_tabs.
