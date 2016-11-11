@@ -1,0 +1,425 @@
+""" Module name = _basecomponents.py
+Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Python scripts for Autodesk Revit
+
+This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+
+pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3, as published by
+the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+See this link for a copy of the GNU General Public License protecting this package.
+https://github.com/eirannejad/pyRevit/blob/master/LICENSE
+
+
+~~~
+Description:
+pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
+This module provides the base component classes that is understood by these four modules.
+It is the language the these four modules can understand (_basecomponents module)
+ _parser parses the folders and creates a tree of components provided by _basecomponents
+ _assemblies make a dll from the tree.
+ _ui creates the ui using the information provided by the tree.
+ _cache will save and restore the tree to increase loading performance.
+
+This module only uses the base modules (.config, .logger, .exceptions, .output, .utils)
+"""
+
+import os
+import re
+import hashlib
+import os.path as op
+
+from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitScriptDependencyError
+from ..logger import logger
+from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
+                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
+                     STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
+                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
+                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, COMPONENT_LIB_NAME, MIN_REVIT_VERSION_PARAM,\
+                     MIN_PYREVIT_VERSION_PARAM, SCRIPT_TIME_SAVED_PARAM
+from ..config import PyRevitVersion
+from ..utils import ScriptFileContents, cleanup_string
+
+from ..usersettings import user_settings
+
+
+# superclass for all tree branches that contain sub-branches (containers)
+class GenericContainer(object):
+    """
+
+    """
+
+    type_id = ''
+    allowed_sub_cmps = []
+
+    def __init__(self, branch_dir):
+        self._sub_components = []
+
+        self.directory = branch_dir
+        if not self._is_valid_dir():
+            raise PyRevitUnknownFormatError()
+
+        self.original_name = self._get_name()
+        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        if self.name != self.original_name:
+            logger.debug('Alias name is: {}'.format(self.name))
+        self.unique_name = self._get_unique_name()
+
+        self.library_path = self._get_library()
+        self.layout_list = self._read_layout_file()
+        logger.debug('Layout is: {}'.format(self.layout_list))
+
+        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        if self.icon_file:
+            logger.debug('Icon file is: {}'.format(self.original_name, self.icon_file))
+
+    @staticmethod
+    def is_container():
+        return True
+
+    def _is_valid_dir(self):
+        return self.directory.endswith(self.type_id)
+
+    def __iter__(self):
+        return iter(self._get_components_per_layout())
+
+    def __repr__(self):
+        return 'Name: {} Directory: {}'.format(self.original_name, self.directory)
+
+    def _get_name(self):
+        return op.splitext(op.basename(self.directory))[0]
+
+    def _get_library(self):
+        return op.join(self.directory, COMPONENT_LIB_NAME)
+
+    def _get_unique_name(self):
+        """Creates a unique name for the container. This is used to uniquely identify this container and also
+        to create the dll assembly. Current method create a unique name based on the full directory address.
+        Example:
+            self.direcotry = '/pyRevit.package/pyRevit.tab/Edit.panel'
+            unique name = pyRevitpyRevitEdit
+        """
+        uname = ''
+        dir_str = self.directory
+        for dname in dir_str.split(op.sep):
+            name, ext = op.splitext(dname)
+            if ext != '':
+                uname += name
+            else:
+                continue
+        return cleanup_string(uname)
+
+    def _verify_file(self, file_name):
+        full_file_path = op.join(self.directory, file_name)
+        return full_file_path if op.exists(full_file_path) else None
+
+    def _read_layout_file(self):
+        if self._verify_file(DEFAULT_LAYOUT_FILE_NAME):
+            layout_file = open(op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME), 'r')
+            # return [x.replace('\n', '') for x in layout_file.readlines()]
+            return layout_file.read().splitlines()
+        else:
+            logger.debug('Container does not have layout file defined: {}'.format(self))
+
+    def _get_components_per_layout(self):
+        # if item is not listed in layout, it will not be created
+        if self.layout_list and self._sub_components:
+            logger.debug('Reordering components per layout file...')
+            layout_index = 0
+            _processed_cmps = []
+            for layout_item in self.layout_list:
+                for cmp_index, component in enumerate(self._sub_components):
+                    if component.original_name == layout_item:
+                        _processed_cmps.append(component)
+                        layout_index += 1
+                        break
+
+            # insert separators and slideouts per layout definition
+            logger.debug('Adding separators and slide outs per layout...')
+            for i_index, layout_item in enumerate(self.layout_list):
+                if SEPARATOR_IDENTIFIER in layout_item:
+                    _processed_cmps.insert(i_index, GenericSeparator())
+                elif SLIDEOUT_IDENTIFIER in layout_item:
+                    _processed_cmps.insert(i_index, GenericSlideout())
+
+            logger.debug('Reordered sub_component list is: {}'.format(_processed_cmps))
+            return _processed_cmps
+        else:
+            return self._sub_components
+
+    # fixme: move all this to cache module
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+    def _load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
+
+    def add_component(self, comp):
+        self._sub_components.append(comp)
+
+    def get_components(self):
+        return self._sub_components
+
+
+# superclass for all single command classes (link, push button, toggle button) -----------------------------------------
+# GenericCommand is not derived from GenericContainer since a command can not contain other elements
+class GenericCommand(object):
+    """Superclass for all single commands.
+    The information provided by these classes will be used to create a
+    push button under Revit UI. However, pyRevit expands the capabilities of push button beyond what is provided by
+    Revit UI. (e.g. Toggle button changes it's icon based on its on/off status)
+    See LinkButton and ToggleButton classes.
+    """
+    type_id = ''
+
+    def __init__(self, cmd_dir):
+        self.directory = cmd_dir
+        if not self._is_valid_dir():
+            raise PyRevitUnknownFormatError()
+
+        self.original_name = self._get_name()
+        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        if self.name != self.original_name:
+            logger.debug('Alias name is: {}'.format(self.name))
+
+        self.icon_file = self._verify_file(DEFAULT_ICON_FILE)
+        logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
+
+        self.script_file = self._verify_file(DEFAULT_SCRIPT_FILE)
+        if self.script_file is None:
+            logger.error('Command {}: Does not have script file.'.format(self))
+            raise PyRevitNoScriptFileError()
+
+        # reading script file content to extract parameters
+        script_content = ScriptFileContents(self.get_full_script_address())
+
+        # extracting min requried Revit and pyRevit versions
+        self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)
+        self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)
+        self._check_dependencies()
+
+        self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
+        self.author = script_content.extract_param(AUTHOR_PARAM)
+        self.time_saved = script_content.extract_param(SCRIPT_TIME_SAVED_PARAM)
+
+        # setting up a unique name for command. This name is especially useful for creating dll assembly
+        self.unique_name = self._get_unique_name()
+
+        # each command can store custom libraries under /Lib inside the command folder
+        self.library_path = self._get_library()
+        # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
+        self.search_paths = []
+        self.search_paths.append(self.library_path)
+
+    @staticmethod
+    def is_container():
+        return False
+
+    def __repr__(self):
+        return 'Type Id: {} Directory: {} Name: {}'.format(self.type_id, self.directory, self.original_name)
+
+    def _is_valid_dir(self):
+        return self.directory.endswith(self.type_id)
+
+    def _get_full_file_address(self, file_name):
+        return op.join(self.directory, file_name)
+
+    def _get_name(self):
+        return op.splitext(op.basename(self.directory))[0]
+
+    def _verify_file(self, file_name):
+        full_file_path = op.join(self.directory, file_name)
+        return full_file_path if op.exists(full_file_path) else None
+
+    def _get_library(self):
+        return op.join(self.directory, COMPONENT_LIB_NAME)
+
+    def _check_dependencies(self):
+        # todo implement host version / library version dependencies
+        pass
+
+    def _get_unique_name(self):
+        """Creates a unique name for the command. This is used to uniquely identify this command and also
+        to create the class in pyRevit dll assembly.
+        Current method create a unique name based on the command full directory address.
+        Example:
+            self.direcotry = '/pyRevit.package/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
+            unique name = pyRevitpyRevitEditFlipdoors
+        """
+        uname = ''
+        dir_str = self.directory
+        for dname in dir_str.split(op.sep):
+            name, ext = op.splitext(dname)
+            if ext != '':
+                uname += name
+            else:
+                continue
+        return cleanup_string(uname)
+
+    def _get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+    def _load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
+
+    def get_search_paths(self):
+        return self.search_paths
+
+    def get_full_script_address(self):
+        return op.join(self.directory, self.script_file)
+
+    def append_search_path(self, path):
+        self.search_paths.append(path)
+
+
+# Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
+# Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
+# ----------------------------------------------------------------------------------------------------------------------
+class LinkButton(GenericCommand):
+    type_id = LINK_BUTTON_POSTFIX
+
+    def __init__(self, cmd_dir):
+        GenericCommand.__init__(self, cmd_dir)
+        # todo extract assembly and class info
+
+
+class PushButton(GenericCommand):
+    type_id = PUSH_BUTTON_POSTFIX
+
+
+class ToggleButton(GenericCommand):
+    type_id = TOGGLE_BUTTON_POSTFIX
+
+    def __init__(self, cmd_dir):
+        GenericCommand.__init__(self, cmd_dir)
+        self.icon_on_file = self._verify_file(DEFAULT_ON_ICON_FILE)
+        self.icon_off_file = self._verify_file(DEFAULT_OFF_ICON_FILE)
+
+
+# # Command groups only include commands. these classes can include GenericCommand as sub components
+class GenericCommandGroup(GenericContainer):
+    allowed_sub_cmps = [GenericCommand]
+
+
+class PullDownButtonGroup(GenericCommandGroup):
+    type_id = PULLDOWN_BUTTON_POSTFIX
+
+
+class SplitPushButtonGroup(GenericCommandGroup):
+    type_id = SPLITPUSH_BUTTON_POSTFIX
+
+
+class SplitButtonGroup(GenericCommandGroup):
+    type_id = SPLIT_BUTTON_POSTFIX
+
+
+# Stacks include GenericCommand, or GenericCommandGroup
+class GenericStack(GenericContainer):
+    allowed_sub_cmps = [GenericCommandGroup, GenericCommand]
+
+
+class StackThreeButtonGroup(GenericStack):
+    type_id = STACKTHREE_BUTTON_POSTFIX
+
+
+class StackTwoButtonGroup(GenericStack):
+    type_id = STACKTWO_BUTTON_POSTFIX
+
+
+# Panels include GenericStack, GenericCommand, or GenericCommandGroup
+class Panel(GenericContainer):
+    type_id = PANEL_POSTFIX
+    allowed_sub_cmps = [GenericStack, GenericCommandGroup, GenericCommand]
+
+    def __init__(self, panel_dir):
+        GenericContainer.__init__(self, panel_dir)
+
+    def has_commands(self):
+        # todo proper search for commands in button groups and stacks
+        return True if len(self._sub_components) > 0 else False
+
+
+# Tabs include Panels
+class Tab(GenericContainer):
+    type_id = TAB_POSTFIX
+    allowed_sub_cmps = [Panel]
+
+    def __init__(self, tab_dir):
+        GenericContainer.__init__(self, tab_dir)
+
+    def has_commands(self):
+        for panel in self:
+            if panel.has_commands():
+                return True
+        return False
+
+
+class Package(GenericContainer):
+    type_id = PACKAGE_POSTFIX
+    allowed_sub_cmps = [Tab]
+
+    def __init__(self, package_dir):
+        GenericContainer.__init__(self, package_dir)
+        self.author = None
+        self.version = None
+
+        self.hash_value = self._calculate_hash()
+        self.hash_version = PyRevitVersion.full_version_as_str()
+
+    def _calculate_hash(self):
+        """Creates a unique hash # to represent state of directory."""
+        # logger.info('Generating Hash of directory')
+        # search does not include png files:
+        #   if png files are added the parent folder mtime gets affected
+        #   cache only saves the png address and not the contents so they'll get loaded everytime
+        #       see http://stackoverflow.com/a/5141710/2350244
+        pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
+        mtime_sum = 0
+        for root, dirs, files in os.walk(self.directory):
+            if re.search(pat, root, flags=re.IGNORECASE):
+                mtime_sum += op.getmtime(root)
+                for filename in files:
+                    if re.search(patfile, filename, flags=re.IGNORECASE):
+                        modtime = op.getmtime(op.join(root, filename))
+                        mtime_sum += modtime
+        return hashlib.md5(str(mtime_sum)).hexdigest()
+
+
+# Misc UI Classes
+# ----------------------------------------------------------------------------------------------------------------------
+class GenericSeparator:
+    type_id = SEPARATOR_IDENTIFIER
+
+    def __init__(self):
+        self.name = SEPARATOR_IDENTIFIER
+
+    @staticmethod
+    def is_container():
+        return False
+
+
+class GenericSlideout:
+    type_id = SLIDEOUT_IDENTIFIER
+
+    def __init__(self):
+        self.name = SLIDEOUT_IDENTIFIER
+
+    @staticmethod
+    def is_container():
+        return False
+

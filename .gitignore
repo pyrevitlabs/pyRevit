@@ -1,4 +1,6 @@
 _gsdata_/
 *.db
 *.txt
-*-.*
+.idea
+*.ini
+__py*
