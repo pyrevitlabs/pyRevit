@@ -284,6 +284,10 @@ class GenericCommand(object):
                 continue
         return cleanup_string(uname)
 
+    @staticmethod
+    def is_valid_cmd():
+        return True
+
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
@@ -353,6 +357,11 @@ class ToggleButton(GenericCommand):
 class GenericCommandGroup(GenericContainer):
     allowed_sub_cmps = [GenericCommand]
 
+    def has_commands(self):
+        for component in self:
+            if component.is_valid_cmd():
+                return True
+
 
 class PullDownButtonGroup(GenericCommandGroup):
     type_id = PULLDOWN_BUTTON_POSTFIX
@@ -370,6 +379,15 @@ class SplitButtonGroup(GenericCommandGroup):
 class GenericStack(GenericContainer):
     allowed_sub_cmps = [GenericCommandGroup, GenericCommand]
 
+    def has_commands(self):
+        for component in self:
+            if not component.is_container():
+                if component.is_valid_cmd():
+                    return True
+            else:
+                if component.has_commands():
+                    return True
+
 
 class StackThreeButtonGroup(GenericStack):
     type_id = STACKTHREE_BUTTON_POSTFIX
@@ -385,8 +403,13 @@ class Panel(GenericContainer):
     allowed_sub_cmps = [GenericStack, GenericCommandGroup, GenericCommand]
 
     def has_commands(self):
-        # todo proper search for commands in button groups and stacks
-        return True if len(self._sub_components) > 0 else False
+        for component in self:
+            if not component.is_container():
+                if component.is_valid_cmd():
+                    return True
+            else:
+                if component.has_commands():
+                    return True
 
 
 # Tabs include Panels
