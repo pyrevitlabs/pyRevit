@@ -62,7 +62,6 @@ class ScriptFileContents:
         try:
             with open(file_address, 'r') as f:
                 self.ast_tree = ast.parse(f.read())
-        # fixme: capture read errors
         except Exception as err:
             raise PyRevitException('Error parsing script file: {}'.format(self.file_addr))
 
