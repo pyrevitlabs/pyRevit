@@ -46,11 +46,13 @@ interface doesn't need to understand that. Its main purpose is to capture the cu
 components as requested through its methods.
 """
 
+import imp
+
 from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
-from ..config import HostVersion
+from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
 from ..logger import logger
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
@@ -102,29 +104,32 @@ def _produce_ui_slideout(parent_ui_item, pushbutton, pkg_asm_info):
 
 
 def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
-    # fixme: create toggle button
-    # logger.debug('Producing toggle button: {}'.format(togglebutton))
-    # try:
-    #     parent_ui_item.create_push_button(togglebutton.name,
-    #                                       pkg_asm_info.location,
-    #                                       togglebutton.unique_name,
-    #                                       togglebutton.icon_file,
-    #                                       _make_button_tooltip(togglebutton),
-    #                                       _make_button_tooltip_ext(togglebutton, pkg_asm_info.name),
-    #                                       update_if_exists=True)
-    #
-    #     logger.warning('Importing toggle button as module: {}'.format(togglebutton))
-    #     importedscript = __import__(togglebutton.get_full_script_address())
-    #     logger.warning('Import successful: {}'.format(importedscript))
-    #     logger.warning('Running self initializer: {}'.format(togglebutton))
-    #     importedscript.selfInit(__revit__,
-    #                             togglebutton.get_full_script_address(),
-    #                             parent_ui_item.button(togglebutton.name)._get_rvtapi_object())
-    #     return parent_ui_item.button(togglebutton.name)
-    # except PyRevitUIError as err:
-    #     logger.error('UI error: {}'.format(err.message))
-    #     return None
-    pass
+    """:type togglebutton: ToggleButton"""
+    logger.debug('Producing toggle button: {}'.format(togglebutton))
+    try:
+        parent_ui_item.create_push_button(togglebutton.name,
+                                          pkg_asm_info.location,
+                                          togglebutton.unique_name,
+                                          togglebutton.icon_file,
+                                          _make_button_tooltip(togglebutton),
+                                          _make_button_tooltip_ext(togglebutton, pkg_asm_info.name),
+                                          update_if_exists=True)
+
+        logger.debug('Importing toggle button as module: {}'.format(togglebutton))
+        # importedscript = __import__(togglebutton.get_full_script_address())
+        importedscript = imp.load_source(togglebutton.unique_name, togglebutton.script_file)
+        logger.debug('Import successful: {}'.format(importedscript))
+        logger.debug('Running self initializer: {}'.format(togglebutton))
+        try:
+            importedscript.selfInit(HOST_SOFTWARE,
+                                    togglebutton.get_full_script_address(),
+                                    parent_ui_item.button(togglebutton.name)._get_rvtapi_object())
+        except Exception as togglebutton_err:
+            logger.error('Error initializing toggle button: {} | {}'.format(togglebutton, togglebutton_err))
+        return parent_ui_item.button(togglebutton.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
 def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
