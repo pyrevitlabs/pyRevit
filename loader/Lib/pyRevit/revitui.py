@@ -193,7 +193,7 @@ class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
         # getting a list of existing items under this panel
         # RibbonFoldPanel items are not visible. they automatically fold buttons into stack on revit ui resize
         # since RibbonFoldPanel are not visible it does not make sense to create objects for them.
-        # This pre cleaner loop, finds the RibbonFoldPanel items and adds the children to the main list
+        # This pre-cleaner loop, finds the RibbonFoldPanel items and adds the children to the main list
         for adskwnd_ribbon_item in adskwnd_ribbon_panel.Source.Items:
             if isinstance(adskwnd_ribbon_item, RibbonFoldPanel):
                 try:
@@ -204,7 +204,10 @@ class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
             else:
                 all_adskwnd_ribbon_items.append(adskwnd_ribbon_item)
 
-        # fixme: read items in slideout: p.Source.SlideOutPanelItemsView
+        # processing the panel slideout for exising ribbon items
+        for adskwnd_slideout_item in adskwnd_ribbon_panel.Source.SlideOutPanelItemsView:
+            all_adskwnd_ribbon_items.append(adskwnd_slideout_item)
+
         # processing the cleaned children list and creating pyrevit native ribbon objects
         for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
             try:
