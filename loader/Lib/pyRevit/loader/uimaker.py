@@ -52,7 +52,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
 from ..config import HostVersion
 from ..logger import logger
-from ..ui import get_current_ui
+from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
 
 
