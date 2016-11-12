@@ -154,7 +154,6 @@ class GenericContainer(object):
         else:
             return self._sub_components
 
-    # fixme: move all this to cache module
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
