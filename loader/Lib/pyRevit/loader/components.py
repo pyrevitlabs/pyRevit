@@ -48,7 +48,7 @@ from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_R
 from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileParser, cleanup_string
 
-from ..usersettings import user_settings
+from ..userconfig import user_settings
 
 
 # superclass for all tree branches that contain sub-branches (containers)

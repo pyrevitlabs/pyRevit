@@ -37,7 +37,7 @@ from .config import USER_TEMP_DIR
 from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
 
 from .exceptions import PyRevitException
-from .usersettings import user_settings
+from .userconfig import user_settings
 
 from System.Diagnostics import Process
 from System.IO import IOException

@@ -35,7 +35,7 @@ from loader.asmmaker import create_assembly
 from loader.uimaker import update_pyrevit_ui
 
 from .usagedata import archive_script_usage_logs
-from .usersettings import user_settings
+from .userconfig import user_settings
 
 
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
