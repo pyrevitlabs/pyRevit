@@ -217,7 +217,7 @@ ICON_MEDIUM_SIZE = 24
 ICON_LARGE_SIZE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
-CONFIG_SCRIPT_TITLE_POSTFIX = u'\u2610'
+CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
 GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
