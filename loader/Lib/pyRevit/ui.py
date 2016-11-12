@@ -34,7 +34,7 @@ import clr
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPIUI')
 from System import Uri
-from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
+from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption, BitmapCreateOptions
 
 # revit api imports
 from Autodesk.Revit.UI import PushButton, PulldownButton, SplitButton
@@ -58,31 +58,37 @@ class _ButtonIcons:
         uri = Uri(file_address)
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_SMALL_SIZE, file_address))
-        self.smallBitmap = BitmapImage()
-        self.smallBitmap.BeginInit()
-        self.smallBitmap.UriSource = uri
-        self.smallBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.smallBitmap.DecodePixelHeight = ICON_SMALL_SIZE
-        self.smallBitmap.DecodePixelWidth = ICON_SMALL_SIZE
-        self.smallBitmap.EndInit()
+        bitmap_image = BitmapImage()
+        bitmap_image.BeginInit()
+        bitmap_image.UriSource = uri
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
+        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.DecodePixelHeight = ICON_SMALL_SIZE
+        # bitmap_image.DecodePixelWidth = ICON_SMALL_SIZE
+        bitmap_image.EndInit()
+        self.smallBitmap = bitmap_image
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_MEDIUM_SIZE, file_address))
-        self.mediumBitmap = BitmapImage()
-        self.mediumBitmap.BeginInit()
-        self.mediumBitmap.UriSource = uri
-        self.mediumBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.mediumBitmap.DecodePixelHeight = ICON_MEDIUM_SIZE
-        self.mediumBitmap.DecodePixelWidth = ICON_MEDIUM_SIZE
-        self.mediumBitmap.EndInit()
+        bitmap_image = BitmapImage()
+        bitmap_image.BeginInit()
+        bitmap_image.UriSource = uri
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
+        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.DecodePixelHeight = ICON_MEDIUM_SIZE
+        # bitmap_image.DecodePixelWidth = ICON_MEDIUM_SIZE
+        bitmap_image.EndInit()
+        self.mediumBitmap = bitmap_image
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_LARGE_SIZE, file_address))
-        self.largeBitmap = BitmapImage()
-        self.largeBitmap.BeginInit()
-        self.largeBitmap.UriSource = uri
-        self.largeBitmap.CacheOption = BitmapCacheOption.OnLoad
-        self.largeBitmap.DecodePixelHeight = ICON_LARGE_SIZE
-        self.largeBitmap.DecodePixelWidth = ICON_LARGE_SIZE
-        self.largeBitmap.EndInit()
+        bitmap_image = BitmapImage()
+        bitmap_image.BeginInit()
+        bitmap_image.UriSource = uri
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
+        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.DecodePixelHeight = ICON_LARGE_SIZE
+        # bitmap_image.DecodePixelWidth = ICON_LARGE_SIZE
+        bitmap_image.EndInit()
+        self.largeBitmap = bitmap_image
 
 
 # Superclass to all ui item classes ---------------------------------------------------------------------------------
