@@ -1,35 +1,18 @@
 # doc: https://github.com/libgit2/libgit2sharp/wiki
 
 import sys
-import os
 import os.path as op
-import re
 import importlib
 
-from .config import LOADER_DIR, GIT_LIB
-from .logger import logger
-
-sys.path.append(op.join(LOADER_DIR, GIT_LIB))
+from .config import LOADER_DIR, GIT_LIB_DIR
 
 import clr
-clr.AddReference("System.Core")
-
 import System
+
+sys.path.append(op.join(LOADER_DIR, GIT_LIB_DIR))
+clr.AddReference("System.Core")
 # todo figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime.
 clr.ImportExtensions(System.Linq)
+clr.AddReferenceByName(GIT_LIB_DIR)
 
-clr.AddReferenceByName(GIT_LIB)
-git = importlib.import_module(GIT_LIB)
-
-# fixme rewrite update mechanism to use this to update all(?) extensions
-
-# from pyRevit.git import git
-# repo = git.Repository(r'C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevitDev')
-# for c in repo.Diff.Compare[git.TreeChanges]():
-#     print(c)
-#
-#
-# from pyRevit.git import git
-# repo = git.Repository(r'C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevitDev')
-# for c in repo.Diff.Compare(repo.Head.Tip.Parents.Single().Tree, repo.Head.Tip.Tree):
-#     print(c)
+git = importlib.import_module(GIT_LIB_DIR)
