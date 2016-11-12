@@ -33,6 +33,7 @@ from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, AL
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY, CACHE_TYPE_KEY
 from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT,\
                     ARCHIVE_LOG_FOLDER_KEY_DEFAULT, CACHE_TYPE_KEY_DEFAULT
+from .config import FORCED_DEBUG_MODE_PARAM
 
 from .utils import verify_directory
 
@@ -131,7 +132,7 @@ class _PyRevitUserSettings:
             logger.warning('Continuing with settings that were successfully read and defaults for others.')
 
         # set log mode on the logger module based on user settings (overriding the defaults)
-        if self.debug:
+        if self.debug or FORCED_DEBUG_MODE_PARAM:
             logger.set_debug_mode()
         elif self.verbose:
             logger.set_verbose_mode()

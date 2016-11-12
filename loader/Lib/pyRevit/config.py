@@ -217,7 +217,7 @@ ICON_MEDIUM_SIZE = 24
 ICON_LARGE_SIZE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
-CONFIG_SCRIPT_TITLE_POSTFIX = u'\u2610'
+CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
 GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
@@ -234,9 +234,9 @@ GLOBAL_SETTINGS_SECTION_NAME = 'global'
 ALIAS_SECTION_NAME = 'alias'
 
 VERBOSE_KEY = 'verbose'
-LOG_SCRIPT_USAGE_KEY = 'log_script_usage'
+LOG_SCRIPT_USAGE_KEY = 'logscriptusage'
 DEBUG_KEY = 'debug'
-ARCHIVE_LOG_FOLDER_KEY = 'log_archive_folder'
+ARCHIVE_LOG_FOLDER_KEY = 'archivelogfolder'
 CACHE_TYPE_KEY = 'cachetype'
 
 VERBOSE_KEY_DEFAULT = False

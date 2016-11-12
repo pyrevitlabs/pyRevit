@@ -187,7 +187,7 @@ class GenericCommand(object):
         self.original_name = self.name = None
         self.icon_file = self.script_file = self.config_script_file = None
         self.min_pyrevit_ver = self.min_revit_ver = None
-        self.doc_string = self.author = None
+        self.doc_string = self.author = self.cmd_options = None
         self.unique_name = None
         self.library_path = self.search_paths = None
 
@@ -447,4 +447,3 @@ class GenericSlideout:
     @staticmethod
     def is_container():
         return False
-

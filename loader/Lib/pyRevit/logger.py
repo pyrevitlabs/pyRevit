@@ -4,118 +4,59 @@ import logging
 from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, LOADER_ADDIN, FORCED_DEBUG_MODE_PARAM
 from .utils import set_interscript_comm_data, get_interscript_comm_data
 
+# custom logger methods (for module consistency and custom adjustments) ------------------------------------------------
+def set_level(self, level):
+    self.setLevel(level)
 
-class _LoggerWrapper:
-    """ Logger Wrapper to extend loggers functionality.
-    Usage:
-     from logger import logger
+def set_verbose_mode(self):
+    set_interscript_comm_data(VERBOSE_ISC_NAME, True)
+    self.setLevel(logging.INFO)
 
-    Same calls as regular logger:
-     logger.info('Message')             # [INFO]  Message
-     logger.debug('Message')            # [DEBUG]  Message
+def set_debug_mode(self):
+    set_interscript_comm_data(DEBUG_ISC_NAME, True)
+    self.setLevel(logging.DEBUG)
 
-    Set Logging Level/Debug:
-     logger.verbose(True)               # Set to Info or higher as default
+def reset_level(self):
+    set_interscript_comm_data(VERBOSE_ISC_NAME, False)
+    set_interscript_comm_data(DEBUG_ISC_NAME, False)
+    self.setLevel(logging.WARNING)
 
-    Additional Features:
-     logger.title('Message'): Outputs lines above and below, uses clean format
-     >> =========
-     >> Message
-     >> =========
+def get_level(self):
+    return self.level
 
-     logger.error('Message'): appends errmsg to self.errors.
-                              This allows you to check if an error occured,
-                              and if it did not, close console window.
-     >> [ERROR]  Message
-     print(logger.errors)
-     >> ['Message']
+# setting up public logger. this will be imported in with other modules ------------------------------------------------
+# todo: add file logging / add option to user settings.
+handler = logging.StreamHandler(sys.stdout)
 
-    # Output graphical window will automatically pop up if any content is printed to it.
-    # By default (info.WARNING) output window will pop up to show errors, criticals, and warnings.
-    """
+# e.g [assemblies] DEBUG: Can not make command.
+formatter = logging.Formatter("[%(module)s] %(levelname)s: %(message)s")
+handler.setFormatter(formatter)
 
-    def __init__(self):
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter("[%(levelname)s] %(message)s")
-        handler.setFormatter(formatter)
+logger = logging.getLogger(LOADER_ADDIN)
+logger.addHandler(handler)
 
-        logger = logging.getLogger(LOADER_ADDIN)
-        logger.addHandler(handler)
+# Setting session-wide debug/verbose status so other individual scripts know about it.
+# individual scripts are run at different time and the level settings need to be set inside current host session
+# so they can be retreieved later.
+if get_interscript_comm_data(DEBUG_ISC_NAME):
+    logger.setLevel(logging.DEBUG)
+elif get_interscript_comm_data(VERBOSE_ISC_NAME):
+    logger.setLevel(logging.INFO)
+else:
+    logger.setLevel(logging.WARNING)
 
-        handler_title = logging.StreamHandler(sys.stdout)
-        formatter_title = logging.Formatter("%(message)s")
-        handler_title.setFormatter(formatter_title)
+# the loader assembly sets FORCED_DEBUG_MODE_PARAM to true if user Shift-clicks on the button
+# FORCED_DEBUG_MODE_PARAM will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
+if FORCED_DEBUG_MODE_PARAM:
+    logger.setLevel(logging.DEBUG)
 
-        logger_title = logging.getLogger(LOADER_ADDIN + '_title')
-        logger_title.addHandler(handler_title)
+# adding custom methods to the logging.Logger class
+logging.Logger.set_level = set_level
+logging.Logger.set_verbose_mode = set_verbose_mode
+logging.Logger.set_debug_mode = set_debug_mode
+logging.Logger.reset_level = reset_level
+logging.Logger.get_level = get_level
 
-        self._logger = logger
-        self._logger_title = logger_title
-        self.errors = []
-
-        # Setting session-wide debug/verbose status so other individual scripts know about it.
-        if get_interscript_comm_data(DEBUG_ISC_NAME):
-            self.set_level(logging.DEBUG)
-        elif get_interscript_comm_data(VERBOSE_ISC_NAME):
-            self.set_level(logging.INFO)
-        else:
-            self.set_level(logging.WARNING)
-
-        # Set level to DEBUG if user Shift-clicks on the button
-        # FORCED_DEBUG_MODE_PARAM will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at runtime
-        if FORCED_DEBUG_MODE_PARAM:
-            self.set_level(logging.DEBUG)
-
-    # log level methods ---------------------------------------------
-    def set_level(self, level):
-        self._logger.setLevel(level)
-        self._logger_title.setLevel(level)
-
-    def set_verbose_mode(self):
-        set_interscript_comm_data(VERBOSE_ISC_NAME, True)
-        self._logger.setLevel(logging.INFO)
-        self._logger_title.setLevel(logging.INFO)
-
-    def set_debug_mode(self):
-        set_interscript_comm_data(DEBUG_ISC_NAME, True)
-        self._logger.setLevel(logging.DEBUG)
-        self._logger_title.setLevel(logging.DEBUG)
-
-    def reset_level(self):
-        set_interscript_comm_data(VERBOSE_ISC_NAME, False)
-        set_interscript_comm_data(DEBUG_ISC_NAME, False)
-        self._logger.setLevel(logging.WARNING)
-        self._logger_title.setLevel(logging.WARNING)
-
-    def get_level(self):
-        return self._logger.level, self._logger_title.level
-
-    # output methods -----------------------------------------------
-    def title(self, msg):
-        print('='*100)
-        self._logger_title.info(msg)
-        print('='*100)
-
-    def info(self, msg):
-        self._logger.info(msg)
-
-    def debug(self, msg):
-        self._logger.debug(msg)
-
-    def warning(self, msg):
-        self._logger.warning(msg)
-
-    def error(self, msg):
-        self._logger.error(msg)
-        self.errors.append(msg)
-
-    def critical(self, msg):
-        self._logger.critical(msg)
-
-
-logger = _LoggerWrapper()
-
-# todo: add file logging / add option to user settings or use DEBUG mode.
 # # new handler
 # filehandler = logging.FileHandler('pyrevit.log')
 #
