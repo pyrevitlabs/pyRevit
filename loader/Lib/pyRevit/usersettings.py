@@ -40,17 +40,19 @@ from .utils import verify_directory
 from System.IO import IOException
 
 
-# todo: add binary/ascii cache selection
-# todo custom user settings?
-# class _CustomUserSettings:
-#     """_PyRevitUserSettings.load_parameter returns an instance of this class with parameters corresponding to
-#     previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
-#     Example:
-#         user_settings.save_parameter(param, value)
-#         this_script_settings = user_settings.load_parameters()
-#         print( this_script_settings.custom_param )
-#     """
-#     pass
+# todo: add log file selection
+
+# todo: custom user settings?
+class _CustomUserSettings:
+    """_PyRevitUserSettings.get_script_config returns an instance of this class with parameters corresponding to
+    previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
+    Example:
+        user_settings.save_parameter(param, value)
+        this_script_settings = user_settings.load_parameters()
+        print( this_script_settings.custom_param )
+    """
+    def __init__(self):
+        pass
 
 
 class _PyRevitUserSettings:
@@ -84,7 +86,7 @@ class _PyRevitUserSettings:
         self.config_file = None
 
         # try reading user or admin config files
-        if not self._load_settings():
+        if not self.load_config():
             # if failed, create a user config file with default values
             logger.debug('No config file is found.')
             logger.debug('Saving default config file under {}'.format(USER_SETTINGS_DIR))
@@ -94,14 +96,6 @@ class _PyRevitUserSettings:
                 logger.error(err.message)
                 logger.debug('Skipping saving config file.')
                 logger.debug('Continuing with default hard-coded settings.')
-
-    def _load_settings(self):
-        """Loads settings from settings file."""
-        # try opening and reading config file in order.
-        for config_file in [self.user_config_file, self.admin_config_file]:
-            if self._parse_config(config_file):
-                return True
-        return False
 
     def _parse_config(self, config_file):
         """Parses the config file and reads parameters."""
@@ -197,6 +191,20 @@ class _PyRevitUserSettings:
             # handling ConfigParser errors
             logger.error(err.message)
 
+    def load_config(self):
+        """Loads settings from settings file."""
+        # try opening and reading config file in order.
+        for config_file in [self.user_config_file, self.admin_config_file]:
+            if self._parse_config(config_file):
+                return True
+        return False
+
+    def get_alias(self, original_name, type_id):
+        try:
+            return self.alias_dict[original_name.lower() + type_id.lower()]
+        except KeyError:
+            return original_name
+
     def save_parameter(self,  param_name, param_value):
         # fixme: save user param
         try:
@@ -211,12 +219,6 @@ class _PyRevitUserSettings:
     def load_parameters(self):
         # fixme: load user param
         pass
-
-    def get_alias(self, original_name, type_id):
-        try:
-            return self.alias_dict[original_name.lower() + type_id.lower()]
-        except KeyError:
-            return original_name
 
 
 # creating an instance of _PyRevitUserSettings().
