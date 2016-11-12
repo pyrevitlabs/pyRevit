@@ -30,8 +30,6 @@ from .logger import logger
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError
 
-# todo: create sub folder .pkg for user panels and tabs and exclude from repo
-# todo: create sub folder .pkg for extended panels and tabs and exclude from repo
 from loader.parser import get_installed_package_data, parse_package
 from loader.assemblies import create_assembly
 from loader.gui import update_pyrevit_ui

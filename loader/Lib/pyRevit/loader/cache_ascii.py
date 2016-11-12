@@ -32,9 +32,6 @@ All these four modules can understand the component tree. (_basecomponents modul
  _cache will save and restore the tree to increase loading performance.
 """
 
-# fixme: rename to ascii cache module
-# todo: create binary cache module
-
 import os.path as op
 import json
 

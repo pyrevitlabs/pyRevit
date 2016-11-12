@@ -115,7 +115,7 @@ class _LoggerWrapper:
 
 logger = _LoggerWrapper()
 
-# fixme add file logging / add option to user settings or use DEBUG mode.
+# todo: add file logging / add option to user settings or use DEBUG mode.
 # # new handler
 # filehandler = logging.FileHandler('pyrevit.log')
 #

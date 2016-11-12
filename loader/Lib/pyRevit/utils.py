@@ -72,7 +72,7 @@ class ScriptFileContents:
                         if hasattr(target, 'id') and target.id == param:
                             return ast.literal_eval(child.value)
         except Exception as err:
-            raise PyRevitException('Error parsing parameter: {} in script file: {}'.format(param, self.file_addr))
+            raise PyRevitException('Error parsing parameter: {} in script file for : {}'.format(param, self.file_addr))
 
 
 def get_all_subclasses(parent_classes):
@@ -182,11 +182,6 @@ def set_interscript_comm_data(param_name, param_value):
 
 def get_revit_instances():
     return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))
-
-
-# todo script option manager - pyrevit will get a command prompt and users can provide switches and options to commands
-def get_options_dict():
-    pass
 
 
 # fixme add transaction wrapper
