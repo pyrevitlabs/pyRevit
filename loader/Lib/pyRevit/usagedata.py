@@ -88,8 +88,8 @@ class UsageDataEntry:
 
             # extract script directory and name
             # fixme: proper script name extraction for new and legacy scripts
-            self.script_directory = op.basename(script_name_entry)
-            self.script_name = op.dirname(script_name_entry)
+            self.script_directory = op.dirname(script_name_entry)
+            self.script_name = op.basename(script_name_entry)
         except Exception as err:
             raise PyRevitException('Error creating entry from string: {}'.format(log_entry))
 
