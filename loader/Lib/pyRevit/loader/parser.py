@@ -39,7 +39,7 @@ from ..exceptions import PyRevitException
 from ..logger import logger
 from ..utils import get_all_subclasses, get_sub_folders
 
-from .basecomponents import Package
+from .components import Package
 
 
 def _create_subcomponents(search_dir, component_types_list):

@@ -39,7 +39,7 @@ from collections import namedtuple
 from ..config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
 from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..config import REVISION_EXTENSION
-from ..config import SPECIAL_CHARS, PyRevitVersion
+from ..config import PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
 from ..logger import logger
 from ..utils import join_strings, get_revit_instances

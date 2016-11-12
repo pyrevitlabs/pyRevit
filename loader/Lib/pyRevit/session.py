@@ -31,8 +31,8 @@ from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError
 
 from loader.parser import get_installed_package_data, get_parsed_package
-from loader.assemblies import create_assembly
-from loader.gui import update_pyrevit_ui
+from loader.dllmaker import create_assembly
+from loader.uimaker import update_pyrevit_ui
 
 from .usagedata import archive_script_usage_logs
 from .usersettings import user_settings
