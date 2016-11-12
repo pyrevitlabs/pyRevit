@@ -2,6 +2,7 @@ import os
 import os.path as op
 import ast
 
+
 from .exceptions import PyRevitException
 
 from .config import HOST_ADSK_PROCESS_NAME
@@ -24,39 +25,7 @@ class Timer:
         return "%02.2f seconds" % (time.time() - self.start)
 
 
-# class ScriptFileContents:
-#     def __init__(self, file_address):
-#         self.file_contents = ''
-#         with open(file_address, 'r') as f:
-#             self.file_contents = f.readlines()
-#
-#     def extract_param(self, param):
-#         import re
-#         param_str_found = False
-#         param_str = ''
-#         param_finder = re.compile(param + '\s*=\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-#         param_finder_ex = re.compile('^\s*[\'\"](.*)[\'\"]', flags=re.IGNORECASE)
-#         for thisline in self.file_contents:
-#             if not param_str_found:
-#                 values = param_finder.findall(thisline)
-#                 if values:
-#                     param_str = values[0]
-#                     param_str_found = True
-#                 continue
-#             elif param_str_found:
-#                 values = param_finder_ex.findall(thisline)
-#                 if values:
-#                     param_str += values[0]
-#                     continue
-#                 break
-#         cleaned_param_str = param_str.replace('\\\'', '\'').replace('\\"', '\"').replace('\\n', '\n').replace('\\t', '\t')
-#         if '' != cleaned_param_str:
-#             return cleaned_param_str
-#         else:
-#             return None
-
-
-class ScriptFileContents:
+class ScriptFileParser:
     def __init__(self, file_address):
         self.file_addr = file_address
         try:
@@ -65,15 +34,18 @@ class ScriptFileContents:
         except Exception as err:
             raise PyRevitException('Error parsing script file: {}'.format(self.file_addr))
 
-    def extract_param(self, param):
+    def extract_param(self, param_name):
         try:
             for child in ast.iter_child_nodes(self.ast_tree):
                 if hasattr(child, 'targets'):
                     for target in child.targets:
-                        if hasattr(target, 'id') and target.id == param:
+                        if hasattr(target, 'id') and target.id == param_name:
                             return ast.literal_eval(child.value)
         except Exception as err:
-            raise PyRevitException('Error parsing parameter: {} in script file for : {}'.format(param, self.file_addr))
+            raise PyRevitException('Error parsing parameter: {} in script file for : {}'.format(param_name,
+                                                                                                self.file_addr))
+
+        return None
 
 
 def get_all_subclasses(parent_classes):

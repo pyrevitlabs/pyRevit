@@ -46,7 +46,7 @@ from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FIL
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_REVIT_VERSION_PARAM,\
                      MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
 from ..config import PyRevitVersion, HostVersion
-from ..utils import ScriptFileContents, cleanup_string
+from ..utils import ScriptFileParser, cleanup_string
 
 from ..usersettings import user_settings
 
@@ -218,7 +218,7 @@ class GenericCommand(object):
 
         try:
             # reading script file content to extract parameters
-            script_content = ScriptFileContents(self.get_full_script_address())
+            script_content = ScriptFileParser(self.get_full_script_address())
             # extracting min requried Revit and pyRevit versions
             self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
             self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
@@ -228,11 +228,12 @@ class GenericCommand(object):
         except PyRevitException as err:
             logger.error(err)
 
-        logger.debug('Minimum pyRevit version: '.format(self.min_pyrevit_ver))
-        logger.debug('Minimum host version: '.format(self.min_revit_ver))
-        logger.debug('command tooltip: '.format(self.doc_string))
-        logger.debug('Command author: '.format(self.author))
-        logger.debug('Command options: '.format(self.cmd_options))
+        # fixme: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
+        logger.debug('Minimum pyRevit version: {}'.format(self.min_pyrevit_ver))
+        logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
+        logger.debug('command tooltip: {}'.format(self.doc_string))
+        logger.debug('Command author: {}'.format(self.author))
+        logger.debug('Command options: {}'.format(self.cmd_options))
 
         try:
             # check minimum requirements
