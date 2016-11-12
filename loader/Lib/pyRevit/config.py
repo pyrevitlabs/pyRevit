@@ -84,6 +84,34 @@ class PyRevitVersion(object):
         """Returns 'major.minor.patch' in string"""
         return str(PyRevitVersion.major) + '.' + str(PyRevitVersion.minor) + '.' + str(PyRevitVersion.patch)
 
+    @staticmethod
+    def is_newer_than(version_tuple):
+        """:type version_tuple: tuple"""
+        if PyRevitVersion.major > version_tuple[0]:
+            return True
+        elif PyRevitVersion.major == version_tuple[0]:
+            if PyRevitVersion.minor > version_tuple[1]:
+                return True
+            elif PyRevitVersion.minor == version_tuple[1]:
+                if PyRevitVersion.patch > version_tuple[2]:
+                    return True
+
+        return False
+
+    @staticmethod
+    def is_older_than(version_tuple):
+        """:type version_tuple: tuple"""
+        if PyRevitVersion.major < version_tuple[0]:
+            return True
+        elif PyRevitVersion.major == version_tuple[0]:
+            if PyRevitVersion.minor < version_tuple[1]:
+                return True
+            elif PyRevitVersion.minor == version_tuple[1]:
+                if PyRevitVersion.patch < version_tuple[2]:
+                    return True
+
+        return False
+
 
 def _find_loader_directory():
     """Return the pyRevitLoader.py full directory address"""

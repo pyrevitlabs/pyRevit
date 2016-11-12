@@ -45,7 +45,7 @@ from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FIL
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_REVIT_VERSION_PARAM,\
                      MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
-from ..config import PyRevitVersion
+from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileContents, cleanup_string
 
 from ..usersettings import user_settings
@@ -216,23 +216,30 @@ class GenericCommand(object):
             logger.debug('Command {}: Does not have independent config script.'.format(self))
             self.config_script_file = self.script_file
 
-        # reading script file content to extract parameters
-        script_content = ScriptFileContents(self.get_full_script_address())
-
-        # extracting min requried Revit and pyRevit versions
         try:
-            self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)
-            self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)
+            # reading script file content to extract parameters
+            script_content = ScriptFileContents(self.get_full_script_address())
+            # extracting min requried Revit and pyRevit versions
+            self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
+            self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
+            self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
+            self.author = script_content.extract_param(AUTHOR_PARAM)  # type: str
+            self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)  # type: list
+        except PyRevitException as err:
+            logger.error(err)
+
+        logger.debug('Minimum pyRevit version: '.format(self.min_pyrevit_ver))
+        logger.debug('Minimum host version: '.format(self.min_revit_ver))
+        logger.debug('command tooltip: '.format(self.doc_string))
+        logger.debug('Command author: '.format(self.author))
+        logger.debug('Command options: '.format(self.cmd_options))
+
+        try:
+            # check minimum requirements
             self._check_dependencies()
         except PyRevitException as err:
-            logger.error(err)
-
-        try:
-            self.doc_string = script_content.extract_param(DOCSTRING_PARAM)
-            self.author = script_content.extract_param(AUTHOR_PARAM)
-            self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)
-        except PyRevitException as err:
-            logger.error(err)
+            logger.warning(err)
+            raise err
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()
@@ -251,8 +258,12 @@ class GenericCommand(object):
         return 'Type Id: {} Directory: {} Name: {}'.format(self.type_id, self.directory, self.original_name)
 
     def _check_dependencies(self):
-        # todo implement host version / library version dependencies
-        pass
+        if self.min_revit_ver and HostVersion.is_older_than(self.min_revit_ver):
+            raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
+                                                                                           self))
+        elif self.min_pyrevit_ver and PyRevitVersion.is_older_than(self.min_pyrevit_ver):
+            raise PyRevitException('Command requires a newer pyrevit version ({}): {}'.format(self.min_pyrevit_ver,
+                                                                                              self))
 
     def _get_unique_name(self):
         """Creates a unique name for the command. This is used to uniquely identify this command and also
