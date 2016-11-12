@@ -33,7 +33,10 @@ _VER_PATCH = 0
 
 # script internal parameters set by loader module ----------------------------------------------------------------------
 HOST_SOFTWARE = __revit__
-FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
+try:
+    FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
+except Exception as err:
+    FORCED_DEBUG_MODE_PARAM = None
 
 # Addon defaults -------------------------------------------------------------------------------------------------------
 PYREVIT_ASSEMBLY_NAME = 'pyRevit'
