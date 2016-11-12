@@ -80,6 +80,7 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
 
 
 def _cleanup_cache_files():
+    # todo: cleanup cache files?
     pass
 
 
@@ -91,8 +92,8 @@ def _read_cache_for(cached_pkg):
         with open(_get_cache_file(cached_pkg), 'r') as cache_file:
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
-    except:
-        raise PyRevitCacheReadError()
+    except Exception as err:
+        raise PyRevitCacheReadError('Error reading cache for: {} | {}'.format(cached_pkg, err))
 
 
 def _write_cache_for(parsed_pkg):
@@ -102,8 +103,8 @@ def _write_cache_for(parsed_pkg):
         logger.debug('Cache file is: {}'.format(cache_file))
         with open(cache_file, 'w') as cache_file:
             cache_file.write(_make_cache_from_cmp(parsed_pkg))
-    except:
-        raise PyRevitCacheWriteError()
+    except Exception as err:
+        raise PyRevitCacheWriteError('Error writing cache for: {} | {}'.format(parsed_pkg, err))
 
 
 def update_cache(parsed_pkg):
@@ -123,10 +124,12 @@ def get_cached_package(installed_pkg):
         logger.debug('Error reading cache...')
         raise PyRevitCacheError(err)
 
+    return installed_pkg
+
 
 def is_cache_valid(pkg):
     try:
-        cached_pkg_dict = _read_cache_for(pkg)
+        cached_pkg_dict = _read_cache_for(pkg)  # type: dict
         logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))
         cache_version_valid = cached_pkg_dict[HASH_VERSION_PARAM] == pkg.hash_version
 
@@ -136,5 +139,9 @@ def is_cache_valid(pkg):
         # cache is valid if both version and hash value match
         return cache_version_valid and cache_hash_valid
 
+    except PyRevitCacheReadError as err:
+        logger.debug(err)
+        return False
+
     except Exception as err:
-        logger.debug('Can not read cache file for: {} | {}'.format(pkg, err))
+        logger.debug('Error determining cache validity: {} | {}'.format(pkg, err))

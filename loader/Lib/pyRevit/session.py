@@ -30,7 +30,7 @@ from .logger import logger
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError
 
-from loader.parser import get_installed_package_data, parse_package
+from loader.parser import get_installed_package_data, get_parsed_package
 from loader.assemblies import create_assembly
 from loader.gui import update_pyrevit_ui
 
@@ -78,7 +78,7 @@ def load_from(root_dir):
             logger.info('Cache is valid for: {}'.format(package))
             logger.debug('Loading package from cache...')
             try:
-                get_cached_package(package)
+                package = get_cached_package(package)
                 package_loaded_from_cache = True
             except PyRevitCacheError as cache_err:
                 logger.debug('Error loading package from cache: {} | {}'.format(package, cache_err))
@@ -86,7 +86,7 @@ def load_from(root_dir):
         if not package_loaded_from_cache:
             logger.info('Cache is not valid for: {}'.format(package))
             logger.debug('Parsing for package...')
-            parse_package(package)
+            package = get_parsed_package(package)
 
             # update cache with newly parsed package and its components
             logger.debug('Updating cache for package: {}'.format(package))

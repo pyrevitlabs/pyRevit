@@ -98,12 +98,14 @@ def _parse_for_components(component):
             _parse_for_components(new_cmp)
 
 
-def parse_package(pkg):
+def get_parsed_package(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
     """
     _parse_for_components(pkg)
+
+    return pkg
 
 
 def get_installed_package_data(root_dir):
