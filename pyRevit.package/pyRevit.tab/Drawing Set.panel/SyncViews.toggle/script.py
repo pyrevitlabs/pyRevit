@@ -64,9 +64,9 @@ class ButtonIcon:
 
 
 class ToggleButtonIcons:
-    def __init__(self, scriptfulladdress):
-        enableduri = Uri(scriptfulladdress.replace('.py', 'ON.png'))
-        disableduri = Uri(scriptfulladdress.replace('.py', 'OFF.png'))
+    def __init__(self, script_directory):
+        enableduri = Uri(op.join(script_directory, 'on.png'))
+        disableduri = Uri(op.join(script_directory, 'off.png'))
         self.enabledIcon = ButtonIcon(enableduri)
         self.disabledIcon = ButtonIcon(disableduri)
 
@@ -153,7 +153,7 @@ def togglestate():
     inactivestatefile = op.join(usertemp, 'syncviewsinactive.pys')
 
     commandbutton = getcommandbutton(__revit__, __file__)
-    icon = ToggleButtonIcons(__file__)
+    icon = ToggleButtonIcons(op.dirname(__file__))
 
     if op.isfile(activestatefile):
         os.rename(activestatefile, inactivestatefile)
@@ -183,7 +183,7 @@ def selfInit(__rvt__, scriptaddress, commandbutton):
     clearstate()
     __revit__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
     __revit__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
-    icon = ToggleButtonIcons(scriptaddress)
+    icon = ToggleButtonIcons(op.dirname(scriptaddress))
     commandbutton.Image = icon.disabledIcon.smallIcon
     commandbutton.LargeImage = icon.disabledIcon.largeIcon
 
