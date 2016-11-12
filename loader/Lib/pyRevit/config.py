@@ -43,6 +43,24 @@ LOADER_ADDIN = 'PyRevitLoader'
 LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
 
 
+class _HostVersion:
+    """Contains current host version and provides comparison functions."""
+    def __init__(self, *args):
+        if args:
+            self.version = str(args[0]) # type: str
+        else:
+            self.version = HOST_SOFTWARE.Application.VersionNumber # type: str
+
+    def is_newer_than(self, version):
+        return int(self.version) > int(version)
+
+    def is_older_than(self, version):
+        return int(self.version) < int(version)
+
+
+HostVersion = _HostVersion()
+
+
 class PyRevitVersion(object):
     """Contains current pyRevit version"""
     major = _VER_MAJOR
@@ -107,11 +125,6 @@ def _find_user_roaming_appdata_pyrevit():
     return op.join(_find_user_roaming_appdata(), "pyRevit")
 
 
-def _get_host_version():
-    """Returns the host Revit version number in format: YYYY"""
-    return HOST_SOFTWARE.Application.VersionNumber
-
-
 # def _find_git_dir():
 #     return op.join(_find_home_directory(), '__git__', 'cmd')
 
@@ -128,10 +141,9 @@ USER_TEMP_DIR = _find_user_temp_directory()
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
-REVIT_VERSION = _get_host_version()
 
 # new session defaults -------------------------------------------------------------------------------------------------
-SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, REVIT_VERSION, REVIT_UNAME)
+SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HostVersion.version, REVIT_UNAME)
 # creating a session id that is stamped with the process id of the Revit session.
 # This id is unique for all python scripts running under this session.
 # Previously the session id was stamped by formatted time

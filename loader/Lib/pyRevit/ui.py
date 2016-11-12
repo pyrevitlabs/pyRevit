@@ -25,7 +25,7 @@ This is the public module that makes internal UI wrappers accessible to the user
 from collections import OrderedDict
 
 from .config import ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE, SPLITPUSH_BUTTON_SYNC_PARAM
-from .config import REVIT_VERSION, HOST_SOFTWARE
+from .config import HostVersion, HOST_SOFTWARE
 from .logger import logger
 from .exceptions import PyRevitUIError
 
@@ -631,14 +631,14 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._create_button_group(PulldownButtonData, item_name, icon_path, update_if_exists)
 
     def create_split_button(self, item_name, icon_path, update_if_exists=False):
-        if self._itemdata_mode and int(REVIT_VERSION) < 2017:
+        if self._itemdata_mode and HostVersion.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
-        if self._itemdata_mode and int(REVIT_VERSION) < 2017:
+        if self._itemdata_mode and HostVersion.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)

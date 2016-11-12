@@ -50,7 +50,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
-from ..config import REVIT_VERSION
+from ..config import HostVersion
 from ..logger import logger
 from ..ui import get_current_ui
 from ..exceptions import PyRevitUIError
@@ -204,7 +204,7 @@ def _produce_ui_stacks(parent_ui_panel, stack_cmp, pkg_asm_info):
         parent_ui_panel.open_stack()
         logger.debug('Opened stack: {}'.format(stack_cmp.name))
 
-        if int(REVIT_VERSION) < 2017:
+        if HostVersion.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_pulldown
             _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = _produce_ui_pulldown
 
@@ -212,7 +212,7 @@ def _produce_ui_stacks(parent_ui_panel, stack_cmp, pkg_asm_info):
         # (e.g when parent_ui_panel's stack is full and can not add any more items it will raise an error)
         _recursively_produce_ui_items(parent_ui_panel, stack_cmp, pkg_asm_info)
 
-        if int(REVIT_VERSION) < 2017:
+        if HostVersion.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_split
             _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = _produce_ui_splitpush
 
