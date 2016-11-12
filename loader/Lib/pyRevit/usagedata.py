@@ -77,7 +77,7 @@ class UsageDataEntry:
         """Initialize by a log file entry string.
         Sample log entry:
         2016-10-25 10:51:20, eirannejad, 2016, L:\pyRevitv3\pyRevit\pyRevit.tab\Select_addTaggedElementsToSelection.py
-        :type log_entry: str
+        :param str log_entry:
         """
         try:
             # extract main components
@@ -108,15 +108,15 @@ class UsageDatabase:
     @staticmethod
     def _verify_log_file(file_name):
         """
-        :type file_name: str
-        :return :bool
+        :param str file_name:
+        :return: bool
         """
         return PYREVIT_ASSEMBLY_NAME in file_name and file_name.endswith(LOG_FILE_TYPE)
 
     def _read_log_files(self, log_dir):
         """find all log files in log_dir and reads them line by line and creates database entries
-        :type log_dir: str
-        :return : None
+        :param str log_dir:
+        :return: None
         """
         logger.debug('Reading log files in: {}'.format(log_dir))
         for parsed_file in os.listdir(log_dir):
@@ -135,7 +135,7 @@ class UsageDatabase:
     # data query functions ---------------------------------------------------------------------------------------------
     def get_usernames(self):
         """Returns a list of all usenames found in the usage data.
-        :return : list
+        :return: list
         """
         unames = set()
         for entry in self:  # type: UsageDataEntry
@@ -145,6 +145,6 @@ class UsageDatabase:
 
 def get_usagedata_db():
     """Returns an instance of the usagedata database
-    :return : UsageDatabase
+    :return: UsageDatabase
     """
     return UsageDatabase()

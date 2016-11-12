@@ -105,6 +105,12 @@ class _GenericPyRevitUIContainer:
         return 'Name: {} RevitAPIObject: {}'.format(self.name, self._rvtapi_object)
 
     def _get_component(self, cmp_name):
+        """
+
+        :param str cmp_name:
+        :return:
+        :rtype: _GenericPyRevitUIContainer
+        """
         try:
             return self._sub_pyrvt_components[cmp_name]
         except KeyError:
@@ -649,8 +655,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
 
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
-
-    ribbon_panel = _GenericPyRevitUIContainer._get_component
+    ribbon_panel = _GenericPyRevitUIContainer._get_component    # type: _PyRevitRibbonPanel
 
     def __init__(self, revit_ribbon_tab):
         _GenericPyRevitUIContainer.__init__(self)
@@ -694,7 +699,7 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
 class _PyRevitUI(_GenericPyRevitUIContainer):
     """Captures the existing ui state and elements at creation."""
 
-    ribbon_tab = _GenericPyRevitUIContainer._get_component
+    ribbon_tab = _GenericPyRevitUIContainer._get_component  # type: _PyRevitRibbonTab
 
     def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
@@ -753,9 +758,14 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
 def get_current_ui():
     """Revit UI Wrapper class for interacting with current pyRevit UI.
     Returned class provides min required functionality for user interaction
-    Example:
+
+    :Example:
+
         current_ui = pyRevit.session.current_ui()
         this_script = pyRevit.session.get_this_command()
         current_ui.update_button_icon(this_script, new_icon)
+
+    :return: Returns an instance of _PyRevitUI that contains info on current ui
+    :rtype: _PyRevitUI
     """
     return _PyRevitUI()
