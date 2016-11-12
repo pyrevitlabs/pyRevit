@@ -6,28 +6,25 @@ from .utils import set_interscript_comm_data, get_interscript_comm_data
 
 
 # custom logger methods (for module consistency and custom adjustments) ------------------------------------------------
-def set_level(self, level):
-    self.setLevel(level)
+class LoggerWrapper(logging.Logger):
+    def set_level(self, level):
+        self.setLevel(level)
 
+    def set_verbose_mode(self):
+        set_interscript_comm_data(VERBOSE_ISC_NAME, True)
+        self.setLevel(logging.INFO)
 
-def set_verbose_mode(self):
-    set_interscript_comm_data(VERBOSE_ISC_NAME, True)
-    self.setLevel(logging.INFO)
+    def set_debug_mode(self):
+        set_interscript_comm_data(DEBUG_ISC_NAME, True)
+        self.setLevel(logging.DEBUG)
 
+    def reset_level(self):
+        set_interscript_comm_data(VERBOSE_ISC_NAME, False)
+        set_interscript_comm_data(DEBUG_ISC_NAME, False)
+        self.setLevel(logging.WARNING)
 
-def set_debug_mode(self):
-    set_interscript_comm_data(DEBUG_ISC_NAME, True)
-    self.setLevel(logging.DEBUG)
-
-
-def reset_level(self):
-    set_interscript_comm_data(VERBOSE_ISC_NAME, False)
-    set_interscript_comm_data(DEBUG_ISC_NAME, False)
-    self.setLevel(logging.WARNING)
-
-
-def get_level(self):
-    return self.level
+    def get_level(self):
+        return self.level
 
 # setting up public logger. this will be imported in with other modules ------------------------------------------------
 # todo: add file logging / add option to user settings.
@@ -47,7 +44,8 @@ handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter("[%(module)s] %(levelname)s: %(message)s")
 handler.setFormatter(formatter)
 
-logger = logging.getLogger(LOADER_ADDIN)
+logging.setLoggerClass(LoggerWrapper)
+logger = logging.getLogger(LOADER_ADDIN)    # type: LoggerWrapper
 logger.addHandler(handler)
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
@@ -65,9 +63,9 @@ else:
 if FORCED_DEBUG_MODE_PARAM:
     logger.setLevel(logging.DEBUG)
 
-# adding custom methods to the logging.Logger class
-logging.Logger.set_level = set_level
-logging.Logger.set_verbose_mode = set_verbose_mode
-logging.Logger.set_debug_mode = set_debug_mode
-logging.Logger.reset_level = reset_level
-logging.Logger.get_level = get_level
+# # adding custom methods to the logging.Logger class
+# logging.Logger.set_level = set_level
+# logging.Logger.set_verbose_mode = set_verbose_mode
+# logging.Logger.set_debug_mode = set_debug_mode
+# logging.Logger.reset_level = reset_level
+# logging.Logger.get_level = get_level
