@@ -112,9 +112,8 @@ def _get_host_version():
     return HOST_SOFTWARE.Application.VersionNumber
 
 
-def _find_git_dir():
-    # todo is portable git needed? (run a search for all mentions)
-    return op.join(_find_home_directory(), '__git__', 'cmd')
+# def _find_git_dir():
+#     return op.join(_find_home_directory(), '__git__', 'cmd')
 
 
 def _get_session_log_file_path():
@@ -220,9 +219,9 @@ SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
-GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
-GIT_SUB_FOLDER = '.git'
-GIT_LIB = 'LibGit2Sharp'
+# GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
+# GIT_SUB_FOLDER = '.git'
+GIT_LIB_DIR = 'LibGit2Sharp'
 
 # user settings defaults -----------------------------------------------------------------------------------------------
 SETTINGS_FILE_EXTENSION = '.ini'
