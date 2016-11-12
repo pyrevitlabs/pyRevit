@@ -31,7 +31,7 @@ from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError
 
 from loader.parser import get_installed_package_data, get_parsed_package
-from loader.dllmaker import create_assembly
+from loader.asmmaker import create_assembly
 from loader.uimaker import update_pyrevit_ui
 
 from .usagedata import archive_script_usage_logs
@@ -40,9 +40,9 @@ from .usersettings import user_settings
 
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
 if user_settings.cache_type == CACHE_TYPE_ASCII:
-    from loader.cache_ascii import is_cache_valid, get_cached_package, update_cache
+    from loader.cacher_asc import is_cache_valid, get_cached_package, update_cache
 else:
-    from loader.cache_binary import is_cache_valid, get_cached_package, update_cache
+    from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
 
 def load_from(root_dir):
