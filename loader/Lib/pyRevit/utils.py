@@ -1,6 +1,7 @@
 import os
 import os.path as op
 import ast
+import inspect
 
 
 from .exceptions import PyRevitException
@@ -112,6 +113,34 @@ def get_temp_file():
     """
     # fixme temporary file
     pass
+
+
+def inspect_calling_scope_local_var(variable_name):
+    """Traces back the stack to find the variable in the caller local stack.
+    Example:
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
+    __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
+    """
+    frame = inspect.stack()[1][0]
+    while variable_name not in frame.f_locals:
+        frame = frame.f_back
+        if frame is None:
+            return None
+    return frame.f_locals[variable_name]
+
+
+def inspect_calling_scope_global_var(variable_name):
+    """Traces back the stack to find the variable in the caller local stack.
+    Example:
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
+    __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
+    """
+    frame = inspect.stack()[1][0]
+    while variable_name not in frame.f_globals:
+        frame = frame.f_back
+        if frame is None:
+            return None
+    return frame.f_locals[variable_name]
 
 
 def get_interscript_comm_data(param_name):
