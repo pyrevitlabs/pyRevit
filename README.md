@@ -10,7 +10,6 @@
 The setup program clones these two branches into your machine at installation.
 
 - `master` : Master branch holds the main published repository. (It's currently empty but will hold the library scripts for final release of version 3.) It also includes this Readme file that provides a link to the [pyRevit blog](http://eirannejad.github.io/pyRevit/).
-- `loader` : This is the main branch for the loader script that creates UI buttons for the library scripts. It also includes the compiled `.dll` binaries for `RevitPythonLoader` that is needed to create the buttons.
 
 ## License
 
