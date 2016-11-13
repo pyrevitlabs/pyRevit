@@ -1,7 +1,14 @@
 from pyrevit.logger import logger
 import pyrevit.config as cfg
+import sys
 
 print cfg.LOADER_ASM_DIR
+
+print '\nPATHS:'
+for path in sys.path:
+    print path
+
+print '\n\n'
 
 __cmdoptions__ = ['op1', 'op2', 'op3']
 
