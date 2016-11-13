@@ -9,8 +9,6 @@
 
 The setup program clones these two branches into your machine at installation.
 
-- `master` : Master branch holds the main published repository. (It's currently empty but will hold the library scripts for final release of version 3.) It also includes this Readme file that provides a link to the [pyRevit blog](http://eirannejad.github.io/pyRevit/).
-
 ## License
 
 This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
