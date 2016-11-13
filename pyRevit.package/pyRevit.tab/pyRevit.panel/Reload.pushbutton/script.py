@@ -22,7 +22,7 @@ logger.info('Config file is: {}'.format(user_settings.config_file))
 
 # re-load pyrevit session.
 logger.info('Reloading....')
-session.load_from(cfg.HOME_DIR)
+session.load()
 
 # log load time
 logger.info('Load time: {}'.format(t.get_time_hhmmss()))
