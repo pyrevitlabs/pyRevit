@@ -39,13 +39,13 @@ from ..logger import get_logger
 logger = get_logger(__name__)
 
 # pyrevit module imports
-from ..config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
+from ..config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
 from ..exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
 from ..utils import get_all_subclasses
 
 
 def _get_cache_file(cached_pkg):
-    return op.join(USER_TEMP_DIR, '{}_cache_{}.json'.format(PYREVIT_ASSEMBLY_NAME, cached_pkg.name))
+    return op.join(USER_TEMP_DIR, '{}_cache_{}.json'.format(SESSION_ID, cached_pkg.name))
 
 
 def _make_cache_from_cmp(obj):

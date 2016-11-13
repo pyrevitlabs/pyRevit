@@ -4,7 +4,7 @@ import pickle
 from ..logger import get_logger
 logger = get_logger(__name__)
 
-from ..config import USER_TEMP_DIR, PYREVIT_ASSEMBLY_NAME, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
+from ..config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
 from ..exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
 
 
@@ -12,7 +12,7 @@ loaded_packages = []
 
 
 def _get_cache_file(cached_pkg):
-    return op.join(USER_TEMP_DIR, '{}_cache_{}.pickle'.format(PYREVIT_ASSEMBLY_NAME, cached_pkg.name))
+    return op.join(USER_TEMP_DIR, '{}_cache_{}.pickle'.format(SESSION_ID, cached_pkg.name))
 
 
 def _cleanup_cache_files():
