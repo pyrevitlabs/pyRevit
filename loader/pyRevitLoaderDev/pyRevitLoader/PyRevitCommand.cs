@@ -20,19 +20,21 @@ namespace PyRevitLoader
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand
     {
-        protected string _scriptSource = "";
-        protected string _alternateScriptSource = "";
-        protected string _logfilename = "";
-        protected bool _forcedDebugMode = false;
-        protected string _syspaths;
-        protected string _cmdOptions;
+        public string _scriptSource = "";
+        public string _alternateScriptSource = "";
+        public string _logfilename = "";
+        public bool _forcedDebugMode = false;
+        public string _syspaths;
+        public string _cmdName;
+        public string _cmdOptions;
 
-        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths, string cmdOptions)
+        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths, string cmdName, string cmdOptions)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _logfilename = logfilename;
             _syspaths = syspaths;
+            _cmdName = cmdName;
             _cmdOptions = cmdOptions;
         }
 
@@ -72,11 +74,11 @@ namespace PyRevitLoader
             }
 
             // Execute script
-            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdOptions, _forcedDebugMode);
+            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode);
             message = executor.Message;
 
             // Log successful script usage
-            if (_logfilename.Length > 0)
+            if (result == (int)Result.Succeeded && _logfilename.Length > 0)
             {
                 //Logger: Log filename will be set by the loader when creating classes for each script. That's the _logfilename.
                 //This step will record a log entry for each script execution.

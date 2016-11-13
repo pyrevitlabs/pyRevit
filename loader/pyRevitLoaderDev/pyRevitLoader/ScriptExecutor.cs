@@ -58,7 +58,7 @@ namespace PyRevitLoader
         /// <summary>
         /// Run the script and print the output to a new output window.
         /// </summary>
-        public int ExecuteScript(string source, string sourcePath, string syspaths, string cmdOptions, bool forcedDebugMode)
+        public int ExecuteScript(string source, string sourcePath, string syspaths, string cmdName, string cmdOptions, bool forcedDebugMode)
         {
             try
             {
@@ -67,6 +67,7 @@ namespace PyRevitLoader
 
                 var scriptOutput = new ScriptOutput();
                 var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
+                scriptOutput.Text = cmdName;
                 //scriptOutput.Show();
                 var outputStream = new ScriptOutputStream(scriptOutput, engine);
 
@@ -94,6 +95,9 @@ namespace PyRevitLoader
                 // add __forceddebugmode__ to builtins
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
                 builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
+
+                // add command name to builtins
+                builtin.SetVariable("__commandname__", cmdName);
 
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
@@ -126,7 +130,13 @@ namespace PyRevitLoader
                 {
                     // show (power) user everything!
                     _message = exception.ToString();
-                    return (int)Result.Failed;
+
+                    // Print all errors to stdout and return cancelled to Revit.
+                    // This is to avoid getting window prompts from revit. Those pop ups are small and errors are hard to read.
+                    _message = string.Join("\r\n", new String('-', 100), _message, " ");
+                    outputStream.Write(Encoding.ASCII.GetBytes(_message), 0, _message.Length);
+                    _message = "";
+                    return (int)Result.Cancelled;
                 }
 
             }
