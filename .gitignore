@@ -1,6 +1,14 @@
-_gsdata_/
-packages/
+# ignore everything in packages/ folder except the native pyRevit.package
+packages/*
+!packages/pyRevit.package/
+
+# ignore pyCharm project settings
 .idea/
+
+# ignore Goodsync cache folder
+_gsdata_/
+
+# ignore standard files
 __py*
 *.db
 *.txt
