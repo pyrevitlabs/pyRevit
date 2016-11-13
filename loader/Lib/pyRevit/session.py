@@ -26,7 +26,9 @@ then calls the parser, assembly maker, and lastly ui maker to create the buttons
 Each pyRevit session will have its own .dll and log file.
 """
 
-from .logger import logger
+from .logger import get_logger
+logger = get_logger(__name__)
+
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .config import HOME_DIR, EXTENSIONS_DEFAULT_DIR
 from .exceptions import PyRevitCacheError

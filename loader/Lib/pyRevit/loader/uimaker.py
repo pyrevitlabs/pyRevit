@@ -48,12 +48,14 @@ components as requested through its methods.
 
 import imp
 
+from ..logger import get_logger
+logger = get_logger(__name__)
+
 from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
-from ..logger import logger
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
 

@@ -1,4 +1,7 @@
-from pyrevit.logger import logger
+raise Exception()
+from pyrevit.logger import get_logger
+logger = get_logger(__commandname__)
+
 import pyrevit.config as cfg
 import sys
 

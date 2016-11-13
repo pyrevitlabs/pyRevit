@@ -32,7 +32,9 @@ import os.path as op
 import shutil as shutil
 from datetime import datetime
 
-from .logger import logger
+from .logger import get_logger
+logger = get_logger(__name__)
+
 from .config import USER_TEMP_DIR
 from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
 

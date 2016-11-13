@@ -24,9 +24,11 @@ This is the public module that makes internal UI wrappers accessible to the user
 
 from collections import OrderedDict
 
+from .logger import get_logger
+logger = get_logger(__name__)
+
 from .config import ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE, SPLITPUSH_BUTTON_SYNC_PARAM
 from .config import HostVersion, HOST_SOFTWARE
-from .logger import logger
 from .exceptions import PyRevitUIError
 
 # dotnet imports

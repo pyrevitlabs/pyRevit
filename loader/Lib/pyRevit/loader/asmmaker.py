@@ -36,12 +36,14 @@ import os
 import os.path as op
 from collections import namedtuple
 
+from ..logger import get_logger
+logger = get_logger(__name__)
+
 from ..config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
 from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..config import REVISION_EXTENSION
 from ..config import PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
-from ..logger import logger
 from ..utils import join_strings, get_revit_instances
 
 # dot net imports
@@ -66,6 +68,7 @@ LoaderClassParams = namedtuple('LoaderClassParams',
                                ['class_name',
                                 'script_file_address', 'config_script_file_address',
                                 'search_paths_str',
+                                'cmd_name',
                                 'cmd_options',
                                 ])
 
@@ -163,6 +166,7 @@ def _get_params_for_commands(parent_cmp):
                                                                     sub_cmp.get_full_script_address(),
                                                                     sub_cmp.get_full_config_script_address(),
                                                                     join_strings(sub_cmp.get_search_paths()),
+                                                                    sub_cmp.name,
                                                                     join_strings(sub_cmp.get_cmd_options())
                                                                     ))
             except Exception as err:
@@ -211,7 +215,7 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
         type_builder.SetCustomAttribute(trans_attrib_builder)
 
         # call base constructor
-        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str, str)))
+        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str, str, str)))
 
         const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
                                                        CallingConventions.Standard,
@@ -227,6 +231,8 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
         gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
         # Adding search paths to the stack (concatenated using ; as separator)
         gen.Emit(OpCodes.Ldstr, loader_class_params.search_paths_str)
+        # set command name:
+        gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_name)
         # Adding command options to the stack (concatenated using ; as separator)
         gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_options)
         gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)

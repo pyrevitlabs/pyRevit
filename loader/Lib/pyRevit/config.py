@@ -27,7 +27,7 @@ import sys
 
 from System.Diagnostics import Process as _Process
 from System import AppDomain
-from System.Reflection import Assembly
+
 
 _VER_MAJOR = 4
 _VER_MINOR = 0

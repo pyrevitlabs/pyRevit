@@ -1,7 +1,9 @@
 import sys
 
+from pyrevit.logger import get_logger                   # import logger to log messages to pyrevit log.
+logger = get_logger(__commandname__)
+
 import pyrevit.config as cfg                        # import basic configurations.
-from pyrevit.logger import logger                   # import logger to log messages to pyrevit log.
 from pyrevit.utils import Timer                     # import Timer from standard utils to log the load  time.
 
 from pyrevit.userconfig import user_settings      # handles user settings

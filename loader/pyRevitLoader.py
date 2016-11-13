@@ -31,13 +31,13 @@ start and interact with a pyRevit.session
 
 import sys
 
+from pyrevit.logger import get_logger                   # import logger to log messages to pyrevit log.
+logger = get_logger('pyRevitLoader')
+
 import pyrevit.config as cfg                        # import basic configurations.
-from pyrevit.logger import logger                   # import logger to log messages to pyrevit log.
 from pyrevit.utils import Timer                     # import Timer from standard utils to log the load  time.
-
-from pyrevit.userconfig import user_settings      # handles user settings
-
-import pyrevit.session as session              # import session to start loading pyRvit.
+from pyrevit.userconfig import user_settings        # handles user settings
+import pyrevit.session as session                   # import session to start loading pyRvit.
 
 
 # initialize timer

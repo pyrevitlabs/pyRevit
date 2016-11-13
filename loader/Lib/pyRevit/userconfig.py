@@ -25,8 +25,10 @@ Also provides functionality for adding custom settings for scripts
 import os.path as op
 import ConfigParser
 
+from .logger import get_logger
+logger = get_logger(__name__)
+
 from .exceptions import ConfigFileError
-from .logger import logger
 from .config import LOADER_DIR, USER_SETTINGS_DIR
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
