@@ -1,5 +1,5 @@
 _gsdata_/
-extensions/
+packages/
 .idea/
 __py*
 *.db
