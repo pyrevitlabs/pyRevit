@@ -1,6 +1,8 @@
 _gsdata_/
+extensions/
+.idea/
+__py*
 *.db
 *.txt
-.idea
 *.ini
-__py*
+
