@@ -12,8 +12,13 @@ import LibGit2Sharp as git
 
 r = git.Repository(r'C:\pyRevitv4')
 
-options = git.PullOptions()
-options.FetchOptions = git.FetchOptions()
+print r.Head.Tip.Id.Sha
+print r.Head.Tip.Message
+
+# options = git.PullOptions()
+# options.FetchOptions = git.FetchOptions()
+
+options = git.FetchOptions()
 
 up = git.UsernamePasswordCredentials()
 up.Username = 'eirannejad'
@@ -28,3 +33,7 @@ options.FetchOptions.CredentialsProvider = git.Handlers.CredentialsHandler(hndlr
 sig = git.Signature('eirannejad', 'eirannejad@gmail.com', DateTimeOffset(DateTime.Now))
 
 r.Network.Pull(sig, options)
+
+
+from pyrevit.git import git
+r = git.Repository(r'C:\pyRevitv4')
