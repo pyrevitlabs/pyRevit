@@ -62,8 +62,11 @@ def update_pyrevit():
             logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
             head_msg = str(repo.Head.Tip.Message).replace('\n','')
             logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+            return True
         except Exception as pull_err:
             logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
+
+    return False
 
 def has_pending_updates(repo_info):
     repo = repo_info.repo
