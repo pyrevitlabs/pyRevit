@@ -5,6 +5,7 @@
 ## License
 
 This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
+
 See LICENSE.md for full license text.
 See [this](http://choosealicense.com/) page for more help on licensing your work.
 
