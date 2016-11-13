@@ -4,15 +4,14 @@ import sys
 import os.path as op
 import importlib
 
-from .config import LOADER_ASM_DIR, GIT_LIB_DIR
+from .config import GIT_LIB
 
 import clr
 import System
 
-sys.path.append(op.join(LOADER_ASM_DIR, GIT_LIB_DIR))
 clr.AddReference("System.Core")
 # todo figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime.
 clr.ImportExtensions(System.Linq)
-clr.AddReferenceByName(GIT_LIB_DIR)
+clr.AddReferenceByName(GIT_LIB)
 
-git = importlib.import_module(GIT_LIB_DIR)
+git = importlib.import_module(GIT_LIB)

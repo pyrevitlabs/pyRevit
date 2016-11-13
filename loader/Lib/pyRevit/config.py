@@ -23,6 +23,7 @@ Provides default values for the pyRevit library.
 
 import os
 import os.path as op
+import sys
 
 from System.Diagnostics import Process as _Process
 from System import AppDomain
@@ -42,9 +43,11 @@ except Exception as err:
 # Addon defaults -------------------------------------------------------------------------------------------------------
 PYREVIT_ASSEMBLY_NAME = 'pyrevit'
 PYREVIT_INIT_SCRIPT_NAME = 'pyrevitloader'
+PYREVIT_MAIN_LIBRARY_DIRNAME = 'Lib'
 
 LOADER_ADDIN = 'PyRevitLoader'
 LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
+LOADER_ADDIN_ASM_DIRNAME = 'pyRevitLoader'
 
 
 class _HostVersion:
@@ -127,22 +130,26 @@ def _find_loader_directory():
         return None
 
 
+def _find_loader_assembly_directory():
+    """Return the pyRevitLoader.dll full directory address"""
+    # op.dirname(Assembly.GetExecutingAssembly().Location) does not work when imported in RevitPythonShell
+    return op.join(_find_loader_directory(), LOADER_ADDIN_ASM_DIRNAME)
+
+
+def _find_pyrevit_lib():
+    """Return the main pyrevit module directory address"""
+    return op.join(_find_loader_directory(), PYREVIT_MAIN_LIBRARY_DIRNAME)
+
+
 def _find_home_directory():
     """Return the pyrevit home directory address. This is the
        directory that contains the loader, pyrevit.package, and other folders"""
-    folder = op.dirname(_find_loader_directory())
-    return folder
-
-
-def _find_loader_assembly_directory():
-    """Return the pyRevitLoader.dll full directory address"""
-    folder = op.dirname(Assembly.GetExecutingAssembly().Location)
-    return folder
+    return op.dirname(_find_loader_directory())
 
 
 def _find_user_temp_directory():
     """Return the user temp directory %temp%"""
-    return os.getenv('Temp')
+    return os.getenv('temp')
 
 
 def _get_username():
@@ -163,10 +170,6 @@ def _find_user_roaming_appdata_pyrevit():
     return op.join(_find_user_roaming_appdata(), "pyrevit")
 
 
-# def _find_git_dir():
-#     return op.join(_find_home_directory(), '__git__', 'cmd')
-
-
 def _get_session_log_file_path():
     """Returns full address of this session's log file."""
     return op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
@@ -180,6 +183,15 @@ USER_TEMP_DIR = _find_user_temp_directory()
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
+
+MAIN_LIBRARY_DIR = _find_pyrevit_lib()
+
+# define a list of basic folders that need to be added to all scripts
+DEFAULT_SYS_PATHS = [MAIN_LIBRARY_DIR, LOADER_ASM_DIR]
+
+for path in DEFAULT_SYS_PATHS:
+    if path not in sys.path:
+        sys.path.append(path)
 
 # new session defaults -------------------------------------------------------------------------------------------------
 SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HostVersion.version, REVIT_UNAME)
@@ -237,7 +249,7 @@ COMMAND_OPTIONS_PARAM = '__cmdoptions__'
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 
-MAIN_LIBRARY_DIR_NAME = 'Lib'
+COMP_LIBRARY_DIR_NAME = 'Lib'
 
 # character replacement list for cleaning up file names
 SPECIAL_CHARS = {' ': '',
@@ -270,9 +282,7 @@ SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 # portable git and LibGit2Sharp git tools ------------------------------------------------------------------------------
-# GIT_EXE = '\"' + op.join(_find_git_dir(), 'git.exe') + '\"'
-# GIT_SUB_FOLDER = '.git'
-GIT_LIB_DIR = 'LibGit2Sharp'
+GIT_LIB = 'LibGit2Sharp'
 
 # user settings defaults -----------------------------------------------------------------------------------------------
 SETTINGS_FILE_EXTENSION = '.ini'

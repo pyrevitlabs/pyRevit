@@ -41,9 +41,10 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MAIN_LIBRARY_DIR_NAME, MIN_REVIT_VERSION_PARAM,\
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM,\
                      MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
 from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileParser, cleanup_string
@@ -83,7 +84,7 @@ class GenericContainer(object):
             logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
 
-        self.library_path = op.join(self.directory, MAIN_LIBRARY_DIR_NAME)
+        self.library_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
 
@@ -246,9 +247,10 @@ class GenericCommand(object):
         self.unique_name = self._get_unique_name()
 
         # each command can store custom libraries under /Lib inside the command folder
-        self.library_path = op.join(self.directory, MAIN_LIBRARY_DIR_NAME)
+        self.library_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
         # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
         self.search_paths = []
+        self.search_paths.extend(DEFAULT_SYS_PATHS)
         self.search_paths.append(self.library_path)
 
     @staticmethod
