@@ -43,7 +43,7 @@ from System.IO import IOException
 
 
 # todo: add log file selection
-
+# todo: disabling tools (e.g. updater)
 # todo: custom user settings?
 class _CustomUserSettings:
     """_PyRevitUserSettings.get_script_config returns an instance of this class with parameters corresponding to

@@ -470,6 +470,7 @@ class Package(GenericContainer):
         #   if png files are added the parent folder mtime gets affected
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
+        # fixme: layout and icons won't affect cache
         pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         mtime_sum = 0
