@@ -44,6 +44,7 @@ except Exception as err:
 PYREVIT_ASSEMBLY_NAME = 'pyrevit'
 PYREVIT_INIT_SCRIPT_NAME = 'pyrevitloader'
 PYREVIT_MAIN_LIBRARY_DIRNAME = 'Lib'
+PYREVIT_EXTENSIONS_DIRNAME = 'extensions'
 
 LOADER_ADDIN = 'PyRevitLoader'
 LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
@@ -147,6 +148,12 @@ def _find_home_directory():
     return op.dirname(_find_loader_directory())
 
 
+def _find_extensions_directory():
+    """Return the pyrevit home directory address. This is the
+       directory that contains the loader, pyrevit.package, and other folders"""
+    return op.join(_find_home_directory(), PYREVIT_EXTENSIONS_DIRNAME)
+
+
 def _find_user_temp_directory():
     """Return the user temp directory %temp%"""
     return os.getenv('temp')
@@ -185,6 +192,7 @@ USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
 
 MAIN_LIBRARY_DIR = _find_pyrevit_lib()
+EXTENSIONS_DEFAULT_DIR = _find_extensions_directory()
 
 # define a list of basic folders that need to be added to all scripts
 DEFAULT_SYS_PATHS = [MAIN_LIBRARY_DIR, LOADER_ASM_DIR]

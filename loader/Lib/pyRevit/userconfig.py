@@ -74,6 +74,9 @@ class _PyRevitUserSettings:
 
         self.alias_dict = {}
 
+        # todo: implement user custom package dirs
+        self.user_extension_dirs = []
+
         # prepare user config file address
         self.user_config_file = op.join(USER_SETTINGS_DIR, USER_DEFAULT_SETTINGS_FILENAME)
         logger.debug('User config file: {}'.format(self.user_config_file))

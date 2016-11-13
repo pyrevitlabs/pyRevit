@@ -49,7 +49,7 @@ logger.info('Home Directory is: {0}'.format(cfg.HOME_DIR))
 logger.info('Config file is: {}'.format(user_settings.config_file))
 
 # load pyrevit session.
-session.load_from(cfg.HOME_DIR)
+session.load()
 
 # log load time
 logger.info('Load time: {}'.format(t.get_time_hhmmss()))

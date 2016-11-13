@@ -68,6 +68,7 @@ class GenericContainer(object):
         self.original_name = self.name = None
         self.unique_name = None
         self.library_path = None
+        self.syspath_search_paths = []
         self.layout_list = None
         self.icon_file = None
 
@@ -84,7 +85,14 @@ class GenericContainer(object):
             logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
 
-        self.library_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        # each container can store custom libraries under /Lib inside the container folder
+        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        self.library_path = lib_path if op.exists(lib_path) else None
+
+        # setting up search paths. These paths will be added to all sub-components of this component.
+        if self.library_path:
+            self.syspath_search_paths.append(self.library_path)
+
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
 
@@ -165,6 +173,8 @@ class GenericContainer(object):
             self.__dict__[k] = v
 
     def add_component(self, comp):
+        if self.syspath_search_paths:
+            comp.syspath_search_paths.extend(self.syspath_search_paths)
         self._sub_components.append(comp)
 
     def get_components(self):
@@ -190,6 +200,7 @@ class GenericCommand(object):
         self.doc_string = self.author = self.cmd_options = None
         self.unique_name = None
         self.library_path = self.search_paths = None
+        self.syspath_search_paths = []
 
     def __init_from_dir__(self, cmd_dir):
         self.directory = cmd_dir
@@ -247,11 +258,12 @@ class GenericCommand(object):
         self.unique_name = self._get_unique_name()
 
         # each command can store custom libraries under /Lib inside the command folder
-        self.library_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        self.library_path = lib_path if op.exists(lib_path) else None
+
         # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
-        self.search_paths = []
-        self.search_paths.extend(DEFAULT_SYS_PATHS)
-        self.search_paths.append(self.library_path)
+        if self.library_path:
+            self.syspath_search_paths.append(self.library_path)
 
     @staticmethod
     def is_container():
@@ -303,7 +315,7 @@ class GenericCommand(object):
         return self.config_script_file != self.script_file
 
     def get_search_paths(self):
-        return self.search_paths
+        return self.syspath_search_paths
 
     def get_cmd_options(self):
         return self.cmd_options

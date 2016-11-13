@@ -28,6 +28,7 @@ Each pyRevit session will have its own .dll and log file.
 
 from .logger import logger
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
+from .config import HOME_DIR, EXTENSIONS_DEFAULT_DIR
 from .exceptions import PyRevitCacheError
 
 from loader.parser import get_installed_package_data, get_parsed_package
@@ -45,7 +46,7 @@ else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
 
-def load_from(root_dir):
+def load():
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
     This function handles both tasks through private interactions with ._parser and ._ui
@@ -65,40 +66,49 @@ def load_from(root_dir):
     logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
     archive_script_usage_logs()
 
+    # create a list of all directories that could include packages
+    # default home and extension directory
+    pkg_search_dirs = [HOME_DIR, EXTENSIONS_DEFAULT_DIR]
+    # misc package directories provided by user
+    pkg_search_dirs.extend(user_settings.user_extension_dirs)
+
+    logger.info('Package Directories: {}'.format(pkg_search_dirs))
+
     # get_installed_packages() returns a list of discovered packages in root_dir
-    for package in get_installed_package_data(root_dir):
-        # test if cache is valid for this package
-        # it might seem unusual to create a package and then re-load it from cache but minimum information
-        # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
-        # Also package object is very small and its creation doesn't add much overhead.
-        package_loaded_from_cache = False
+    for root_dir in pkg_search_dirs:
+        for package in get_installed_package_data(root_dir):
+            # test if cache is valid for this package
+            # it might seem unusual to create a package and then re-load it from cache but minimum information
+            # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
+            # Also package object is very small and its creation doesn't add much overhead.
+            package_loaded_from_cache = False
 
-        if is_cache_valid(package):
-            # if yes, load the cached package and add the cached tabs to the new package
-            logger.info('Cache is valid for: {}'.format(package))
-            logger.debug('Loading package from cache...')
-            try:
-                package = get_cached_package(package)
-                package_loaded_from_cache = True
-            except PyRevitCacheError as cache_err:
-                logger.debug('Error loading package from cache: {} | {}'.format(package, cache_err))
+            if is_cache_valid(package):
+                # if yes, load the cached package and add the cached tabs to the new package
+                logger.info('Cache is valid for: {}'.format(package))
+                logger.debug('Loading package from cache...')
+                try:
+                    package = get_cached_package(package)
+                    package_loaded_from_cache = True
+                except PyRevitCacheError as cache_err:
+                    logger.debug('Error loading package from cache: {} | {}'.format(package, cache_err))
 
-        if not package_loaded_from_cache:
-            logger.info('Cache is not valid for: {}'.format(package))
-            logger.debug('Parsing for package...')
-            package = get_parsed_package(package)
+            if not package_loaded_from_cache:
+                logger.info('Cache is not valid for: {}'.format(package))
+                logger.debug('Parsing for package...')
+                package = get_parsed_package(package)
 
-            # update cache with newly parsed package and its components
-            logger.debug('Updating cache for package: {}'.format(package))
-            update_cache(package)
+                # update cache with newly parsed package and its components
+                logger.debug('Updating cache for package: {}'.format(package))
+                update_cache(package)
 
-        logger.info('Package successfuly loaded: {}'.format(package))
+            logger.info('Package successfuly loaded: {}'.format(package))
 
-        # create a dll assembly and get assembly info
-        pkg_asm_info = create_assembly(package)
+            # create a dll assembly and get assembly info
+            pkg_asm_info = create_assembly(package)
 
-        # update/create ui (needs the assembly to link button actions to commands saved in the dll)
-        update_pyrevit_ui(package, pkg_asm_info)
+            # update/create ui (needs the assembly to link button actions to commands saved in the dll)
+            update_pyrevit_ui(package, pkg_asm_info)
 
 
 # session object will have all the functionality for the user to interact with the session
