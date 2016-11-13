@@ -1,5 +1,6 @@
 
 # fixme rewrite update mechanism to use this to update all(?) extensions
+# todo: add support for versioning based on git head hash
 
 import sys
 import clr
