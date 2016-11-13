@@ -6,7 +6,8 @@ from pyrevit.git import git
 from System import DateTime, DateTimeOffset
 
 
-r = git.Repository(HOME_DIR)
+# r = git.Repository(HOME_DIR)
+r = git.Repository(r'C:\Users\eirannejad\Desktop\pyRevit2')
 
 print r.Head.Tip.Id.Sha
 print r.Head.Tip.Message
