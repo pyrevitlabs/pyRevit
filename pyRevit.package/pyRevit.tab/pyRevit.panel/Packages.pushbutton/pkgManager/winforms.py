@@ -39,7 +39,7 @@ class PackageManagerForm(Form):
         self.packages = packages
 
         #  Window Settings
-        self.Text = 'pyRevit - Package Manager'
+        self.Text = 'pyrevit - Package Manager'
         self.Icon = Icon(ICO_FILEPATH)
         self.MinimizeBox = False
         self.MaximizeBox = False

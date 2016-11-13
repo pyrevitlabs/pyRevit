@@ -214,7 +214,7 @@ class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
         for adskwnd_slideout_item in adskwnd_ribbon_panel.Source.SlideOutPanelItemsView:
             all_adskwnd_ribbon_items.append(adskwnd_slideout_item)
 
-        # processing the cleaned children list and creating pyrevit native ribbon objects
+        # processing the cleaned children list and creating pyRevit native ribbon objects
         for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
             try:
                 if isinstance(adskwnd_ribbon_item, RibbonButton) or isinstance(adskwnd_ribbon_item, RibbonToggleButton):
@@ -761,8 +761,8 @@ def get_current_ui():
 
     :Example:
 
-        current_ui = pyRevit.session.current_ui()
-        this_script = pyRevit.session.get_this_command()
+        current_ui = pyrevit.session.current_ui()
+        this_script = pyrevit.session.get_this_command()
         current_ui.update_button_icon(this_script, new_icon)
 
     :return: Returns an instance of _PyRevitUI that contains info on current ui

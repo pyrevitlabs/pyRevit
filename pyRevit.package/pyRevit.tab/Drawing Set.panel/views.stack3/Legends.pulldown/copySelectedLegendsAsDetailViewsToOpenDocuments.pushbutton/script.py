@@ -34,7 +34,7 @@ class CopyUseDestination(IDuplicateTypeNamesHandler):
 
 
 def error(msg):
-    TaskDialog.Show('pyRevit', msg)
+    TaskDialog.Show('pyrevit', msg)
     sys.exit(0)
 
 

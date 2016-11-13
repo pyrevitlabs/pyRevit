@@ -22,4 +22,4 @@ __doc__ = 'Opens the issue tracker on github to report bugs and issues.'
 
 __window__.Close()
 import os
-os.system('start https://github.com/eirannejad/pyRevit/issues') 
+os.system('start https://github.com/eirannejad/pyrevit/issues')

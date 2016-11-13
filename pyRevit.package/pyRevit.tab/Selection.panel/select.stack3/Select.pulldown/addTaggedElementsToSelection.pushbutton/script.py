@@ -41,4 +41,4 @@ for eltid in selection:
 if len(tagged_elements) > 0:
     uidoc.Selection.SetElementIds(List[ElementId](selection + tagged_elements))
 else:
-    TaskDialog.Show('pyRevit', 'Please select at least one element tag.')
+    TaskDialog.Show('pyrevit', 'Please select at least one element tag.')

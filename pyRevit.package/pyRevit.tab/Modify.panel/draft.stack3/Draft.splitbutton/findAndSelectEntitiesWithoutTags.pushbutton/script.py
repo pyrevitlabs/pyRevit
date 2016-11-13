@@ -97,7 +97,7 @@ class commandSwitches:
 
 curview = uidoc.ActiveGraphicalView
 if isinstance(curview, ViewSheet):
-    TaskDialog.Show('pyRevit', "You're on a Sheet. Activate a model view please.")
+    TaskDialog.Show('pyrevit', "You're on a Sheet. Activate a model view please.")
     sys.exit(0)
 
 selected_switch = ''
@@ -132,7 +132,7 @@ if selected_switch == 'Rooms':
     if len(untaggedrooms) > 0:
         uidoc.Selection.SetElementIds(List[ElementId](untaggedrooms))
     else:
-        TaskDialog.Show('pyRevit', 'All rooms have associated tags.')
+        TaskDialog.Show('pyrevit', 'All rooms have associated tags.')
 
 elif selected_switch == 'Areas':
     areatags = FilteredElementCollector(doc, curview.Id).OfCategory(
@@ -155,7 +155,7 @@ elif selected_switch == 'Areas':
     if len(untaggedareas) > 0:
         uidoc.Selection.SetElementIds(List[ElementId](untaggedareas))
     else:
-        TaskDialog.Show('pyRevit', 'All areas have associated tags.')
+        TaskDialog.Show('pyrevit', 'All areas have associated tags.')
 
 elif selected_switch == 'Doors' or selected_switch == 'Windows' or selected_switch == 'Walls':
     if selected_switch == 'Doors':
@@ -198,5 +198,5 @@ elif selected_switch == 'Doors' or selected_switch == 'Windows' or selected_swit
     if len(untagged_elements) > 0:
         uidoc.Selection.SetElementIds(List[ElementId](untagged_elements))
     else:
-        TaskDialog.Show('pyRevit', 'All {} have associated tags.'.format(elname))
+        TaskDialog.Show('pyrevit', 'All {} have associated tags.'.format(elname))
 

@@ -138,10 +138,10 @@ if len(selviewports) > 0:
     selvp = selviewports[0]
     selview = doc.GetElement(selvp.ViewId)
 else:
-    TaskDialog.Show('pyRevit', 'At least one viewport must be selected.')
+    TaskDialog.Show('pyrevit', 'At least one viewport must be selected.')
 
 if len(selboundary) < 3:
-    TaskDialog.Show('pyRevit', 'At least one closed polygon must be selected (minimum 3 detail lines).')
+    TaskDialog.Show('pyrevit', 'At least one closed polygon must be selected (minimum 3 detail lines).')
 
 # making sure the cropbox is active.
 if not selview.CropBoxActive:
@@ -211,5 +211,5 @@ with Transaction(doc, 'Set Crop Region') as t:
     if sortedcurves:
         crsm.SetCropShape(CurveLoop.Create(List[Curve](sortedcurves)))
     else:
-        TaskDialog.Show('pyRevit', 'Curves must be in a closed loop.')
+        TaskDialog.Show('pyrevit', 'Curves must be in a closed loop.')
     t.Commit()

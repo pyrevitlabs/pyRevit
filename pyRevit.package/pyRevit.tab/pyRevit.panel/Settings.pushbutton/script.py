@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Shows the preferences window for pyRevit. You can customize how pyRevit loads and set some basic ' \
+__doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic ' \
           'parameters here.'
 
 __window__.Close()
@@ -45,7 +45,7 @@ globalsectionname = 'global'
 ADDIN_DLL_NAME = "RevitPythonLoader"
 ADDIN_CLASSNAME = "RevitPythonLoaderApplication"
 ADDIN_GUID = "7E37F14E-D840-42F8-8CA6-90FFC5497972"
-ADDIN_DEF_FILENAME = 'pyRevit.addin'
+ADDIN_DEF_FILENAME = 'pyrevit.addin'
 ADDIN_VENDORID = 'eirannejad'
 
 addinfilecontents =                                                                         \
@@ -83,7 +83,7 @@ class settingsWindow:
         
         # Create window
         self.my_window = System.Windows.Window()
-        self.my_window.Title = 'pyRevit user settings'
+        self.my_window.Title = 'pyrevit user settings'
         self.my_window.Width = 400
         self.my_window.Height = 400
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
@@ -106,9 +106,9 @@ class settingsWindow:
 
 
         self.logScriptUsageCheckBox = System.Windows.Controls.CheckBox()
-        self.logScriptUsageCheckBox.Content = 'Log script usage\nIf logging is active, pyRevit records '     \
+        self.logScriptUsageCheckBox.Content = 'Log script usage\nIf logging is active, pyrevit records '     \
                                               'each script run\nin a log under user temporary folder.\n'     \
-                                              'pyRevit will create a log for every session and will '        \
+                                              'pyrevit will create a log for every session and will '        \
                                               'copy\nthe previous session logs into the archive folder\n'    \
                                               'specified below, at each Revit startup.'
         self.logScriptUsageCheckBox.IsChecked = logScriptUsage
@@ -128,7 +128,7 @@ class settingsWindow:
         self.my_stack.Children.Add(self.my_textbox_archivelogfolder)
 
         label = System.Windows.Controls.Label()
-        label.Content = 'Activate pyRevit for:\n'                           \
+        label.Content = 'Activate pyrevit for:\n'                           \
                         '(Restart Revit for this change to take effect)'
         label.Margin = System.Windows.Thickness(30, 15, 30, 0)
         self.my_stack.Children.Add(label)
@@ -173,12 +173,12 @@ class settingsWindow:
             if checkbox.IsChecked:
                 checkedversions.append(revitversion)
         if len(checkedversions) == 0:
-            res = TaskDialog.Show('pyRevit', 'You are disabling pyRevit for all Revit versions. If you make this '     \
-                                             'change, pyRevit will not load under any Revit version and later you '    \
+            res = TaskDialog.Show('pyrevit', 'You are disabling pyrevit for all Revit versions. If you make this '     \
+                                             'change, pyrevit will not load under any Revit version and later you '    \
                                              'have to manually re-activate it. Are you sure?',
                                    TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)
             if res == TaskDialogResult.Yes:
-                TaskDialog.Show('pyRevit', 'Okay. To activate pyRevit later, go under the installation folder and ' \
+                TaskDialog.Show('pyrevit', 'Okay. To activate pyrevit later, go under the installation folder and ' \
                                            'run "makeAddins.bat" file. This will recreate the addin files for '     \
                                            'installed Revit versions.',
                                 TaskDialogCommonButtons.Ok)
@@ -258,7 +258,7 @@ def toggle_addin_for(revitversions):
 def find_user_configfile():
     # find the user config file
     userappdatafolder = os.getenv('appdata')
-    pyrevituserappdatafolder = op.join(userappdatafolder, "pyRevit")
+    pyrevituserappdatafolder = op.join(userappdatafolder, "pyrevit")
     return op.join(pyrevituserappdatafolder, "userdefaults.ini")
 
 
@@ -320,9 +320,9 @@ try:
     load_user_settings()
     settingsWindow().showwindow()
 except ErrorReadingUserSettings:
-    TaskDialog.Show('pyRevit', 'Error reading settings file.')
+    TaskDialog.Show('pyrevit', 'Error reading settings file.')
 except ErrorWritingUserSettings:
-    TaskDialog.Show('pyRevit', 'Error writing settings file.')
+    TaskDialog.Show('pyrevit', 'Error writing settings file.')
 except MasterSettingsIsOverriding:
-    TaskDialog.Show('pyRevit', 'Settings are set by the master settings file and '\
+    TaskDialog.Show('pyrevit', 'Settings are set by the master settings file and '\
                                'can not be changed from this window.')

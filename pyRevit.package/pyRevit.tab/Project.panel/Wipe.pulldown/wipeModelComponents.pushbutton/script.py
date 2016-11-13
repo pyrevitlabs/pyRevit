@@ -160,7 +160,7 @@ class purgeWindow:
     def purgeProcess(self, sender, args):
         if doc.GetWorksharingCentralModelPath():
             centralPath = ModelPathUtils.ConvertModelPathToUserVisiblePath(doc.GetWorksharingCentralModelPath())
-            res = TaskDialog.Show('pyRevit',
+            res = TaskDialog.Show('pyrevit',
                                   'The central model is located at:\n {0}\n\nAre you sure you want to wipe?'.format(
                                       centralPath), TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)
             if res == TaskDialogResult.Cancel:

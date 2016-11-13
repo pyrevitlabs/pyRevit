@@ -405,7 +405,7 @@ elif selected_switch == 'Worksets':
             print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
     else:
         __window__.Close()
-        TaskDialog.Show('pyRevit', 'Model is not workshared.')
+        TaskDialog.Show('pyrevit', 'Model is not workshared.')
 
 elif selected_switch == 'Revision Clouds':
     cl = FilteredElementCollector(doc)

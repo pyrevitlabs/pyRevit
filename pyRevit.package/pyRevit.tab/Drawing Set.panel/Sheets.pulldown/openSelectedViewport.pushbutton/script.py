@@ -36,4 +36,4 @@ if len(selection) > 0 and isinstance(selection[0], Viewport):
     view = doc.GetElement(vpid)
     uidoc.ActiveView = view
 else:
-    TaskDialog.Show('pyRevit', 'Select a Viewport first')
+    TaskDialog.Show('pyrevit', 'Select a Viewport first')

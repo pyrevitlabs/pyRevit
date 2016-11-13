@@ -59,7 +59,7 @@ class _PyRevitUserSettings:
     """Private class for handling all functions related to user settings.
      This module reads and writes settings using python native ConfigParser.
      Usage:
-     from pyRevit.usersettings import user_settings
+     from pyrevit.usersettings import user_settings
      print(user_settings.log_archive_folder)
     """
 

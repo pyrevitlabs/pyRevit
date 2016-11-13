@@ -204,7 +204,7 @@ elif selected_switch == '3D Section Box State':
         pickle.dump(vo, f)
         f.close()
     else:
-        TaskDialog.Show('pyRevit', 'You must be on a 3D view to copy Section Box settings.')
+        TaskDialog.Show('pyrevit', 'You must be on a 3D view to copy Section Box settings.')
 
 elif selected_switch == 'Viewport Placement on Sheet':
     """
@@ -215,8 +215,8 @@ elif selected_switch == 'Viewport Placement on Sheet':
     github.com/gtalarico | gtalarico@gmail.com
 
     --------------------------------------------------------
-    pyRevit Notice:
-    pyRevit: repository at https://github.com/eirannejad/pyRevit
+    pyrevit Notice:
+    pyrevit: repository at https://github.com/eirannejad/pyrevit
     """
     Point = namedtuple('Point', ['X', 'Y','Z'])
     originalviewtype = ''
@@ -320,7 +320,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
         try:
             vport = doc.GetElement(vport_id)
         except:
-            TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
+            TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
         if isinstance(vport, Viewport):
             view = doc.GetElement(vport.ViewId)
             if view is not None and isinstance(view, ViewPlan):
@@ -345,9 +345,9 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     pickle.dump(originalviewtype, fp)
                     pickle.dump(center_pt, fp)
             else:
-                TaskDialog.Show('pyRevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
+                TaskDialog.Show('pyrevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
     else:
-        TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
+        TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
 
 elif selected_switch == 'Visibility Graphics':
     datafile = usertemp + '\\' + prjname + '_pySaveVisibilityGraphicsState.pym'

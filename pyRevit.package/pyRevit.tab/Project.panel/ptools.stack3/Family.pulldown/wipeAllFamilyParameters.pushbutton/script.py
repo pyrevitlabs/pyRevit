@@ -71,4 +71,4 @@ if doc.IsFamilyDocument:
     t.Commit()
 else:
     __window__.Close()
-    TaskDialog.Show('pyRevit', 'This script works only on an active family editor.')
+    TaskDialog.Show('pyrevit', 'This script works only on an active family editor.')

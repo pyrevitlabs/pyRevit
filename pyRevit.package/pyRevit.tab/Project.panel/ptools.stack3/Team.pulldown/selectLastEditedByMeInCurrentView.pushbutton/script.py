@@ -54,4 +54,4 @@ if doc.IsWorkshared:
     else:
         pass
 else:
-    TaskDialog.Show('pyRevit','Model is not workshared.')
+    TaskDialog.Show('pyrevit','Model is not workshared.')

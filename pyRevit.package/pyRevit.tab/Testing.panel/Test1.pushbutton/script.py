@@ -1,4 +1,4 @@
-from pyRevit.logger import logger
+from pyrevit.logger import logger
 
 __cmdoptions__ = ['op1', 'op2', 'op3']
 

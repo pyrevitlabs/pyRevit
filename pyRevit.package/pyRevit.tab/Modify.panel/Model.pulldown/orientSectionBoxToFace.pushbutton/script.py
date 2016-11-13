@@ -55,6 +55,6 @@ if isinstance(curview, View3D) and curview.IsSectionBoxActive:
     except:
         pass
 elif isinstance(curview, View3D) and not curview.IsSectionBoxActive:
-    TaskDialog.Show("pyRevit", "The section box for View3D isn't active.")
+    TaskDialog.Show("pyrevit", "The section box for View3D isn't active.")
 else:
-    TaskDialog.Show("pyRevit", "You must be on a 3D view for this tool to work.")
+    TaskDialog.Show("pyrevit", "You must be on a 3D view for this tool to work.")

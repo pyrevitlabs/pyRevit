@@ -199,9 +199,9 @@ elif selected_switch == '3D Section Box State':
                 t.Commit()
             avui.ZoomToFit()
         else:
-            TaskDialog.Show('pyRevit', 'You must be on a 3D view to paste Section Box settings.')
+            TaskDialog.Show('pyrevit', 'You must be on a 3D view to paste Section Box settings.')
     except:
-        TaskDialog.Show('pyRevit', 'Can not find any section box settings in memory:\n{0}'.format(datafile))
+        TaskDialog.Show('pyrevit', 'Can not find any section box settings in memory:\n{0}'.format(datafile))
 
 elif selected_switch == 'Viewport Placement on Sheet':
     """
@@ -212,8 +212,8 @@ elif selected_switch == 'Viewport Placement on Sheet':
     github.com/gtalarico | gtalarico@gmail.com
 
     --------------------------------------------------------
-    pyRevit Notice:
-    pyRevit: repository at https://github.com/eirannejad/pyRevit
+    pyrevit Notice:
+    pyrevit: repository at https://github.com/eirannejad/pyrevit
     """
     PINAFTERSET = False
     Point = namedtuple('Point', ['X', 'Y','Z'])
@@ -330,7 +330,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
         try:
             vport = doc.GetElement(vport_id)
         except:
-            TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
+            TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
         if isinstance(vport, Viewport):
             view = doc.GetElement(vport.ViewId)
             if view is not None and isinstance(view, ViewPlan):
@@ -346,10 +346,10 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             else:
                                 raise OriginalIsViewDrafting
                     except IOError:
-                        TaskDialog.Show('pyRevit',
+                        TaskDialog.Show('pyrevit',
                                         'Could not find saved viewport placement.\nCopy a Viewport Placement first.')
                     except OriginalIsViewDrafting:
-                        TaskDialog.Show('pyRevit',
+                        TaskDialog.Show('pyrevit',
                                         'Viewport placement info is from a drafting view and can not be applied here.')
                     else:
                         savedcenter_pt = XYZ(savedcen_pt.X, savedcen_pt.Y, savedcen_pt.Z)
@@ -372,10 +372,10 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         else:
                             raise OriginalIsViewPlan
                 except IOError:
-                    TaskDialog.Show('pyRevit',
+                    TaskDialog.Show('pyrevit',
                                     'Could not find saved viewport placement.\nCopy a Viewport Placement first.')
                 except OriginalIsViewPlan:
-                    TaskDialog.Show('pyRevit',
+                    TaskDialog.Show('pyrevit',
                                     'Viewport placement info is from a model view and can not be applied here.')
                 else:
                     savedcenter_pt = XYZ(savedcen_pt.X, savedcen_pt.Y, savedcen_pt.Z)
@@ -386,9 +386,9 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             vport.Pinned = True
                         t.Commit()
             else:
-                TaskDialog.Show('pyRevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
+                TaskDialog.Show('pyrevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
     else:
-        TaskDialog.Show('pyRevit', 'Select at least one viewport. No more, no less!')
+        TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
 
 elif selected_switch == 'Visibility Graphics':
     datafile = usertemp + '\\' + prjname + '_pySaveVisibilityGraphicsState.pym'

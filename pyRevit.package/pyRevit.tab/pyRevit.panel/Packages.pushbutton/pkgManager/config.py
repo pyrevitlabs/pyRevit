@@ -4,17 +4,17 @@ import os
 # pyrevit.tab\PkgMager
 PKGMGR_DIR = os.path.dirname(__file__)
 
-# pyRevit\pyRevit\pyRevit.tab\
+# pyrevit\pyrevit\pyrevit.tab\
 SCRIPTS_DIR = os.path.dirname(PKGMGR_DIR)
 
-# pyRevit\pyRevit - this is where pyRevit.tab is
+# pyrevit\pyrevit - this is where pyrevit.tab is
 PYREVIT_DIR = os.path.dirname(SCRIPTS_DIR)
 
 #  Path fir file version of packages.json
 PKGSJSON_FILEPATH = os.path.join(PKGMGR_DIR, 'packages.json')
 
 # CHANGE TO PYREVIT REPO
-PKGSJSON_WEB = 'https://raw.githubusercontent.com/gtalarico/pyRevit/pyrevitv3/pyRevit/pyRevit.tab/pkgManager/packages.json'
+PKGSJSON_WEB = 'https://raw.githubusercontent.com/gtalarico/pyrevit/pyrevitv3/pyrevit/pyrevit.tab/pkgManager/packages.json'
 
 # .Ico path
 ICO_FILEPATH = os.path.join(PKGMGR_DIR, 'pkgManager.ico')

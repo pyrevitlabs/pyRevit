@@ -28,4 +28,4 @@ if doc.IsWorkshared:
     print(ModelPathUtils.ConvertModelPathToUserVisiblePath(doc.GetWorksharingCentralModelPath()))
 else:
     __window__.Close()
-    TaskDialog.Show('pyRevit', 'Model is not workshared.')
+    TaskDialog.Show('pyrevit', 'Model is not workshared.')

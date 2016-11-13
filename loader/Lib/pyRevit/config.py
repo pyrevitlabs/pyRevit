@@ -39,8 +39,8 @@ except Exception as err:
     FORCED_DEBUG_MODE_PARAM = None
 
 # Addon defaults -------------------------------------------------------------------------------------------------------
-PYREVIT_ASSEMBLY_NAME = 'pyRevit'
-PYREVIT_INIT_SCRIPT_NAME = 'pyRevitLoader'
+PYREVIT_ASSEMBLY_NAME = 'pyrevit'
+PYREVIT_INIT_SCRIPT_NAME = 'pyrevitloader'
 
 LOADER_ADDIN = 'PyRevitLoader'
 LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
@@ -65,7 +65,7 @@ HostVersion = _HostVersion()
 
 
 class PyRevitVersion(object):
-    """Contains current pyRevit version"""
+    """Contains current pyrevit version"""
     major = _VER_MAJOR
     minor = _VER_MINOR
     patch = _VER_PATCH
@@ -120,15 +120,15 @@ def _find_loader_directory():
     """Return the pyRevitLoader.py full directory address"""
     try:
         current_file_path = __file__
-        folder = op.dirname(op.dirname(op.dirname(current_file_path)))  # three steps back for /loader/Lib/pyRevit
+        folder = op.dirname(op.dirname(op.dirname(current_file_path)))  # three steps back for /loader/Lib/pyrevit
         return folder
     except NameError:
         return None
 
 
 def _find_home_directory():
-    """Return the pyRevit home directory address. This is the
-       directory that contains the loader, pyRevit.package, and other folders"""
+    """Return the pyrevit home directory address. This is the
+       directory that contains the loader, pyrevit.package, and other folders"""
     folder = op.dirname(_find_loader_directory())
     return folder
 
@@ -152,8 +152,8 @@ def _find_user_roaming_appdata():
 
 
 def _find_user_roaming_appdata_pyrevit():
-    """Return %appdata%/pyRevit directory address"""
-    return op.join(_find_user_roaming_appdata(), "pyRevit")
+    """Return %appdata%/pyrevit directory address"""
+    return op.join(_find_user_roaming_appdata(), "pyrevit")
 
 
 # def _find_git_dir():

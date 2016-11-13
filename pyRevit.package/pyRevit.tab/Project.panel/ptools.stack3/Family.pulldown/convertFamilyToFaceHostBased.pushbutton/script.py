@@ -45,7 +45,7 @@ def deleteallinstances(family):
             raise Exception
 
 
-res = TaskDialog.Show('pyRevit',
+res = TaskDialog.Show('pyrevit',
                       'All instances of the selected families will be removed for this conversion.'
                       'Are you ready to proceed?',
                       TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)

@@ -52,7 +52,7 @@ for vid in unusedvtemp:
     view = doc.GetElement(ElementId(vid))
     print view.ViewName
 
-res = TaskDialog.Show('pyRevit',
+res = TaskDialog.Show('pyrevit',
                       'Are you sure you want to remove these view templates?',
                       TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)
 

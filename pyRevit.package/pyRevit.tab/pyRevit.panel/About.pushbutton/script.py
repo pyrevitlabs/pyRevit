@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'About pyRevit. Opens the pyRevit blog website. You can find detailed information on how pyRevit works, ' \
+__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
           'updates about the new tools and changes, and a lot of other information there.'
 
 __window__.Close()
@@ -39,7 +39,7 @@ class aboutWindow:
     def __init__(self):
         # Create window
         self.my_window = System.Windows.Window()
-        self.my_window.Title = 'About pyRevit'
+        self.my_window.Title = 'About pyrevit'
         self.my_window.Width = 400
         self.my_window.Height = 300
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
@@ -53,7 +53,7 @@ class aboutWindow:
         self.my_window.Content = self.my_stack
 
         self.reponame = System.Windows.Controls.Label()
-        self.reponame.Content = 'pyRevit'
+        self.reponame.Content = 'pyrevit'
         self.reponame.FontFamily = fontfam
         self.reponame.FontSize = 32.0
         self.reponame.Margin = System.Windows.Thickness(30, 10, 30, 0)
@@ -68,7 +68,7 @@ class aboutWindow:
         self.my_stack.Children.Add(self.versionlabel)
 
         self.my_button_openwebsite = System.Windows.Controls.Button()
-        self.my_button_openwebsite.Content = 'Open pyRevit website'
+        self.my_button_openwebsite.Content = 'Open pyrevit website'
         self.my_button_openwebsite.Margin = System.Windows.Thickness(30, 10, 30, 0)
         self.my_button_openwebsite.Click += self.openwebsite
         self.my_button_openwebsite.Cursor = System.Windows.Input.Cursors.Hand
@@ -98,19 +98,19 @@ class aboutWindow:
 
 
     def openwebsite(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyRevit/')
+        os.system('start http://eirannejad.github.io/pyrevit/')
 
 
     def opencredits(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyRevit/credits/')
+        os.system('start http://eirannejad.github.io/pyrevit/credits/')
 
 
     def openrevisionhistory(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyRevit/releasenotes/')
+        os.system('start http://eirannejad.github.io/pyrevit/releasenotes/')
 
 
     def opengithubrepopage(self, sender, args):
-        os.system('start https://github.com/eirannejad/pyRevit')
+        os.system('start https://github.com/eirannejad/pyrevit')
 
 
     def showwindow(self):

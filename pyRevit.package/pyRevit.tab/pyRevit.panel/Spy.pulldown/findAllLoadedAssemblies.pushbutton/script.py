@@ -26,7 +26,7 @@ __window__.Width = 1500
 userScriptsAssemblies = []
 for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
     loc = ''
-    if 'pyRevit' in loadedAssembly.FullName:
+    if 'pyrevit' in loadedAssembly.FullName:
         userScriptsAssemblies.append(loadedAssembly)
         continue
     try:

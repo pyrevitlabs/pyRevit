@@ -42,7 +42,7 @@ for el in selection:
         grpTypes.add(el.GroupType)
 
 if len(grpTypes) == 0:
-    TaskDialog.Show('pyRevit', 'At least one group type must be selected.')
+    TaskDialog.Show('pyrevit', 'At least one group type must be selected.')
 
 for gt in grpTypes:
     for grp in gt.Groups:

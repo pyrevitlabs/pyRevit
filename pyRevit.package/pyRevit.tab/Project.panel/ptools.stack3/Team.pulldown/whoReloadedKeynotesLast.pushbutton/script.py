@@ -39,10 +39,10 @@ if doc.IsWorkshared:
                 ktable = doc.GetElement(extRef.GetReferencingId())
                 editedByParam = ktable.Parameter[BuiltInParameter.EDITED_BY]
                 if editedByParam and editedByParam.AsString() != '':
-                    TaskDialog.Show('pyRevit', 'Keynote table has been reloaded by:\n{0}\nTable Id is: {1}'.format(
+                    TaskDialog.Show('pyrevit', 'Keynote table has been reloaded by:\n{0}\nTable Id is: {1}'.format(
                         editedByParam.AsString(), ktable.Id))
                 else:
-                    TaskDialog.Show('pyRevit',
+                    TaskDialog.Show('pyrevit',
                                     'No one own the keynote table. You can make changes and reload.\n'
                                     'Table Id is: {0}'.format(ktable.Id))
     except Exception as e:
@@ -50,6 +50,6 @@ if doc.IsWorkshared:
         print('Model is not saved yet. Can not aquire keynote file location.')
         print(e)
 else:
-    TaskDialog.Show('pyRevit', 'Model is not workshared.')
+    TaskDialog.Show('pyrevit', 'Model is not workshared.')
 
 __window__.Close()

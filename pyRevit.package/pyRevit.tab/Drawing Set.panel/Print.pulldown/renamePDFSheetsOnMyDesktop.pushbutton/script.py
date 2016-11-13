@@ -30,7 +30,7 @@ sheetcount = 0
 
 
 def alert(msg):
-    TaskDialog.Show('pyRevit', msg)
+    TaskDialog.Show('pyrevit', msg)
 
 
 def renamePDF(pdffile):

@@ -51,7 +51,7 @@ def load_from(root_dir):
     This function handles both tasks through private interactions with ._parser and ._ui
 
     Usage Example:
-        import pyRevit.session as current_session
+        import pyrevit.session as current_session
         current_session.load()
     """
 
@@ -109,6 +109,6 @@ def load_from(root_dir):
 # def get_command(script_address):
 #     """Returns read only info about the caller python script.
 #     Example:
-#         this_script = pyRevit.session.get_this_command()
+#         this_script = pyrevit.session.get_this_command()
 #         print(this_script.script_file_address)
 #     """

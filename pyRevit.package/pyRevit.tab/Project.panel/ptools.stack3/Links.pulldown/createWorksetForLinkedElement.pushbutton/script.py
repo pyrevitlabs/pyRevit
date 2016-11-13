@@ -45,4 +45,4 @@ if len(selection) > 0:
                 worksetParam.Set(newWs.Id.IntegerValue)
                 t.Commit()
 else:
-    TaskDialog.Show('pyRevit', 'At least one linked element must be selected.')
+    TaskDialog.Show('pyrevit', 'At least one linked element must be selected.')

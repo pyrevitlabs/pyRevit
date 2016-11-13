@@ -32,13 +32,13 @@ if doc.IsWorkshared:
     if selection and len(selection) == 1:
         el = selection[0]
         wti = WorksharingUtils.GetWorksharingTooltipInfo(doc, el.Id)
-        TaskDialog.Show('pyRevit',
+        TaskDialog.Show('pyrevit',
                         'Creator: {0}\n'
                         'Current Owner: {1}\n'
                         'Last Changed By: {2}'.format(wti.Creator,
                                                       wti.Owner,
                                                       wti.LastChangedBy))
     else:
-        TaskDialog.Show('pyRevit', 'Exactly one element must be selected.')
+        TaskDialog.Show('pyrevit', 'Exactly one element must be selected.')
 else:
-    TaskDialog.Show('pyRevit', 'Model is not workshared.')
+    TaskDialog.Show('pyrevit', 'Model is not workshared.')

@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Downloads updates from the github repository. This function works only when pyRevit was ' \
+__doc__ = 'Downloads updates from the github repository. This function works only when pyrevit was ' \
           'installed using the setup package provided on the github repo. ' \
           '(It needs the portable git tool to download the updates)'
 
@@ -41,7 +41,7 @@ def get_install_dir():
 
 
 def get_pyrevit_clone_dir():
-    return op.join(get_install_dir(), 'pyRevit')
+    return op.join(get_install_dir(), 'pyrevit')
 
 
 def get_loader_clone_dir():
@@ -106,20 +106,20 @@ print('Portable git package is located at: {0}'.format(gitDir))
 if op.exists('{0}\git.exe'.format(gitDir)):
     try:
         print('\nUPDATING PYTHON LOADER '.ljust(100, '-'))
-        print('pyRevit loader has been cloned to: {0}\n'.format(loaderCloneDir))
+        print('pyrevit loader has been cloned to: {0}\n'.format(loaderCloneDir))
         git_pull_overwrite(loaderCloneDir)
     except:
         print('Error Updating loader repository...The cloned repo might be corrupt or no internet access.\n'      \
               'Trying to update the main repository now')
     try:
         print('\n\nUPDATING PYTHON SCRIPT LIBRARY '.ljust(100, '-'))
-        print('pyRevit has been cloned to: {0}\n'.format(pyrevitCloneDir))
+        print('pyrevit has been cloned to: {0}\n'.format(pyrevitCloneDir))
         git_pull_overwrite(pyrevitCloneDir)
 
-        TaskDialog.Show('pyRevit', 'Update completed. reload pyRevit now to see changes...')
+        TaskDialog.Show('pyrevit', 'Update completed. reload pyrevit now to see changes...')
         __window__.Focus()
     except:
-        TaskDialog.Show('pyRevit', 'Error Updating repository...Please check your internet connection. ' \
+        TaskDialog.Show('pyrevit', 'Error Updating repository...Please check your internet connection. ' \
                                    'If the updater still did not work please copy the printed report and ' \
                                    'contact the developers...')
         __window__.Focus()

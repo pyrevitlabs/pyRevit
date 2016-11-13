@@ -30,7 +30,7 @@ doc = __revit__.ActiveUIDocument.Document
 curview = doc.ActiveView
 
 if not isinstance(curview, ViewSheet):
-    TaskDialog.Show('pyRevit', 'You must be on a sheet to use this tool.')
+    TaskDialog.Show('pyrevit', 'You must be on a sheet to use this tool.')
     __window__.Close()
 
 viewports = []
