@@ -276,7 +276,6 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             self._get_rvtapi_object().LargeImage = button_icon.mediumBitmap
             if icon_size == ICON_LARGE_SIZE:
                 self._get_rvtapi_object().LargeImage = button_icon.largeBitmap
-
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
 
@@ -394,8 +393,10 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             if update_if_exists:
                 exiting_item = self._get_component(button_name)
                 try:
-                    exiting_item._get_rvtapi_object().AssemblyName = asm_location
-                    exiting_item._get_rvtapi_object().ClassName = class_name
+                    # Assembly and Class info of current active script button can not be updated.
+                    if button_name != __commandname__:
+                        exiting_item._get_rvtapi_object().AssemblyName = asm_location
+                        exiting_item._get_rvtapi_object().ClassName = class_name
                 except Exception as err:
                     raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name, err))
 
@@ -558,8 +559,10 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             if update_if_exists:
                 existing_item = self._get_component(button_name)
                 try:
-                    existing_item._get_rvtapi_object().AssemblyName = asm_location
-                    existing_item._get_rvtapi_object().ClassName = class_name
+                    # Assembly and Class info of current active script button can not be updated.
+                    if button_name != __commandname__:
+                        existing_item._get_rvtapi_object().AssemblyName = asm_location
+                        existing_item._get_rvtapi_object().ClassName = class_name
                 except Exception as err:
                     raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name, err))
                 existing_item.set_tooltip(tooltip)
