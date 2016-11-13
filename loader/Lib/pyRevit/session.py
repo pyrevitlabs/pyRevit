@@ -78,6 +78,7 @@ def load():
 
     # get_installed_packages() returns a list of discovered packages in root_dir
     for root_dir in pkg_search_dirs:
+        # fixme: verify if folder exists
         for package in get_installed_package_data(root_dir):
             # test if cache is valid for this package
             # it might seem unusual to create a package and then re-load it from cache but minimum information
