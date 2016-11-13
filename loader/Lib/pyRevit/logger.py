@@ -6,7 +6,7 @@ from .utils import set_interscript_comm_data, get_interscript_comm_data
 
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
-LOG_RECORD_FORMAT = "[%(name)s] %(levelname)s: %(message)s"
+LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session
