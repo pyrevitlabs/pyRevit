@@ -27,8 +27,8 @@ from pyrevit.loader import updater
 
 def selfInit(__rvt__, script_cmp, commandbutton):
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-    for repo in updater._find_all_pkg_repos():
-        if updater.has_pending_updates(repo):
+    for repo_info in updater.find_all_pkg_repos():
+        if updater.has_pending_updates(repo_info):
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE_SIZE)
 
 
