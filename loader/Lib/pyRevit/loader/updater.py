@@ -54,6 +54,8 @@ def update_pyrevit():
         try:
             repo.Network.Pull(_make_pull_signature(), _make_pull_options())
             logger.info('Successfully updated repo: {}'.format(repo_dir))
+            head_msg = str(repo.Head.Tip.Message).replace('\n','')
+            logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
         except Exception as pull_err:
             logger.error('Failed updating: {} | {}'.format(repo_dir, pull_err))
 
