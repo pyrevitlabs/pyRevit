@@ -211,7 +211,7 @@ class _PyRevitUserSettings:
             return original_name
 
     def save_parameter(self,  param_name, param_value):
-        # fixme: save user param
+        # todo: save user param
         try:
             with open(self.user_config_file, 'w') as udfile:
                 cparser = ConfigParser.ConfigParser()
@@ -222,7 +222,7 @@ class _PyRevitUserSettings:
             raise ConfigFileError(err.message)
 
     def load_parameters(self):
-        # fixme: load user param
+        # todo: load user param
         pass
 
 

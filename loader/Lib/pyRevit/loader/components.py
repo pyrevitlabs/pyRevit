@@ -242,7 +242,7 @@ class GenericCommand(object):
         except PyRevitException as err:
             logger.error(err)
 
-        # fixme: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
+        # todo: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
         logger.debug('Minimum pyRevit version: {}'.format(self.min_pyrevit_ver))
         logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
         logger.debug('command tooltip: {}'.format(self.doc_string))

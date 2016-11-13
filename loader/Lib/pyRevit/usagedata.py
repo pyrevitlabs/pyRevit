@@ -89,7 +89,7 @@ class UsageDataEntry:
             self.usage_datetime = datetime.strptime(time_date, LOG_ENTRY_DATETIME_FORMAT)
 
             # extract script directory and name
-            # fixme: proper script name extraction for new and legacy scripts
+            # todo: proper script name extraction for new and legacy scripts
             self.script_directory = op.dirname(script_name_entry)
             self.script_name = op.basename(script_name_entry)
         except Exception as err:

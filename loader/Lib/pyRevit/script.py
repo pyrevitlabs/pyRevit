@@ -1,4 +1,4 @@
-# fixme: implement script info functions
+# todo: implement script info functions
 def get_script_info():
     pass
 
