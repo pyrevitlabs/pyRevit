@@ -42,7 +42,7 @@ from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, Py
 from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX
 from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
@@ -331,6 +331,10 @@ class GenericCommand(object):
     def append_search_path(self, path):
         self.search_paths.append(path)
 
+    def get_bundle_file(self, file_name):
+        file_addr = op.join(self.directory, file_name)
+        return file_addr if op.exists(file_addr) else None
+
 
 # Derived classes here correspond to similar elements in Revit ui. Under Revit UI:
 # Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks, Commands, or Command groups
@@ -367,6 +371,10 @@ class ToggleButton(GenericCommand):
 
         full_file_path = op.join(self.directory, DEFAULT_OFF_ICON_FILE)
         self.icon_off_file = full_file_path if op.exists(full_file_path) else None
+
+
+class SmartButton(GenericCommand):
+    type_id = SMART_BUTTON_POSTFIX
 
 
 # # Command groups only include commands. these classes can include GenericCommand as sub components

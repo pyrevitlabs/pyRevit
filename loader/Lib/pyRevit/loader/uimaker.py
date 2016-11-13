@@ -54,7 +54,7 @@ logger = get_logger(__name__)
 from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
-                     SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX
+                     SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
@@ -105,7 +105,7 @@ def _produce_ui_slideout(parent_ui_item, pushbutton, pkg_asm_info):
     return None
 
 
-def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
+def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
     """:type togglebutton: ToggleButton"""
     logger.debug('Producing toggle button: {}'.format(togglebutton))
     try:
@@ -124,8 +124,8 @@ def _produce_ui_togglebutton(parent_ui_item, togglebutton, pkg_asm_info):
         logger.debug('Running self initializer: {}'.format(togglebutton))
         try:
             importedscript.selfInit(HOST_SOFTWARE,
-                                    togglebutton.get_full_script_address(),
-                                    parent_ui_item.button(togglebutton.name)._get_rvtapi_object())
+                                    togglebutton,
+                                    parent_ui_item.button(togglebutton.name))
         except Exception as togglebutton_err:
             logger.error('Error initializing toggle button: {} | {}'.format(togglebutton, togglebutton_err))
         return parent_ui_item.button(togglebutton.name)
@@ -267,7 +267,8 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             SPLIT_BUTTON_POSTFIX: _produce_ui_split,
                             SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
                             PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-                            TOGGLE_BUTTON_POSTFIX: _produce_ui_togglebutton,
+                            TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
+                            SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
                             LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
                             SEPARATOR_IDENTIFIER: _produce_ui_separator,
                             SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
