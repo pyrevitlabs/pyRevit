@@ -49,3 +49,7 @@ __cmdoptions__ = ['Op1', 'Op2']
 print('main script')
 logger.debug('Forced debug mode is active')
 raise Exception()
+
+
+def selfInit(__rvt__, scriptaddress, commandbutton):
+    pass

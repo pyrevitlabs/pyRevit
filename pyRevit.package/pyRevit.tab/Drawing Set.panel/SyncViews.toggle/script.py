@@ -180,12 +180,13 @@ def clearstate():
 
 
 def selfInit(__rvt__, scriptaddress, commandbutton):
-    clearstate()
-    __revit__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
-    __revit__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
-    icon = ToggleButtonIcons(op.dirname(scriptaddress))
-    commandbutton.Image = icon.disabledIcon.smallIcon
-    commandbutton.LargeImage = icon.disabledIcon.largeIcon
+    # clearstate()
+    # __revit__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
+    # __revit__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
+    # icon = ToggleButtonIcons(op.dirname(scriptaddress))
+    # commandbutton.Image = icon.disabledIcon.smallIcon
+    # commandbutton.LargeImage = icon.disabledIcon.largeIcon
+    pass
 
 
 if __name__ == '__main__':
