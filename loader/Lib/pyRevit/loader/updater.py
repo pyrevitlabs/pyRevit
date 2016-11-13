@@ -22,10 +22,17 @@ def hndlr(url, uname, types):
 
 
 def _make_pull_options():
-    options = git.PullOptions()
-    options.FetchOptions = git.FetchOptions()
-    options.FetchOptions.CredentialsProvider = git.Handlers.CredentialsHandler(hndlr)
-    return options
+    pull_ops = git.PullOptions()
+    pull_ops.FetchOptions = git.FetchOptions()
+    pull_ops.FetchOptions.CredentialsProvider = git.Handlers.CredentialsHandler(hndlr)
+    return pull_ops
+
+
+def _make_fetch_options():
+    fetch_ops = git.FetchOptions()
+    fetch_ops.CredentialsProvider = git.Handlers.CredentialsHandler(hndlr)
+    return fetch_ops
+
 
 def _make_pull_signature():
     return git.Signature('eirannejad', 'eirannejad@gmail.com', DateTimeOffset(DateTime.Now))
@@ -49,3 +56,25 @@ def update_pyrevit():
             logger.info('Successfully updated repo: {}'.format(repo_dir))
         except Exception as pull_err:
             logger.error('Failed updating: {} | {}'.format(repo_dir, pull_err))
+
+def has_pending_updates(repo):
+    repo_dir = repo.Info.WorkingDirectory
+    logger.debug('Fetching updates for: {}'.format(repo_dir))
+    repo_branches = repo.Branches
+    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+
+    for remote in repo.Network.Remotes:
+        logger.debug('Fetching remote: {} of {}'.format(remote.Name, repo_dir))
+        try:
+            repo.Network.Fetch(remote, _make_fetch_options())
+        except Exception as fetch_err:
+            logger.error('Failed fetching: {} | {}'.format(repo_dir, fetch_err))
+
+    for branch in repo_branches:
+        if not branch.IsRemote:
+            logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName, branch.TrackedBranch.CanonicalName))
+            hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
+            if hist_div.BehindBy > 0:
+                return True
+
+    return False
