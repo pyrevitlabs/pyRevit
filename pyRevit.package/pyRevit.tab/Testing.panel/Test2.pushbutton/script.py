@@ -1,16 +1,9 @@
-
-# fixme rewrite update mechanism to use this to update all(?) extensions
-# todo: add support for versioning based on git head hash
-
-import sys
 import clr
 
-from ..config import HOME_DIR
-
-from ..git import git
+from pyrevit.config import HOME_DIR
+from pyrevit.git import git
 
 from System import DateTime, DateTimeOffset
-
 
 
 r = git.Repository(HOME_DIR)
@@ -18,10 +11,8 @@ r = git.Repository(HOME_DIR)
 print r.Head.Tip.Id.Sha
 print r.Head.Tip.Message
 
-# options = git.PullOptions()
-# options.FetchOptions = git.FetchOptions()
-
-options = git.FetchOptions()
+options = git.PullOptions()
+options.FetchOptions = git.FetchOptions()
 
 up = git.UsernamePasswordCredentials()
 up.Username = 'eirannejad'

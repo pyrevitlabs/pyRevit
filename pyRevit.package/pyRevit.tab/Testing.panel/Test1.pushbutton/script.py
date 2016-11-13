@@ -1,4 +1,3 @@
-raise Exception()
 from pyrevit.logger import get_logger
 logger = get_logger(__commandname__)
 
@@ -42,8 +41,11 @@ print 'Forced Debug: {}'.format(__forceddebugmode__)
 print 'Message: {}'.format(__message__)
 print 'Result: {}'.format(__result__)
 
+__doc__ = "test tootip"
+__author__ = "test author"
+__cmdoptions__ = ['Op1', 'Op2']
+
 
 print('main script')
 logger.debug('Forced debug mode is active')
-
-#--------------------
+raise Exception()
