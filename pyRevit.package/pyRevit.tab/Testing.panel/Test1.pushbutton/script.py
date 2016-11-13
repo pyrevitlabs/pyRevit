@@ -2,6 +2,11 @@ from pyrevit.logger import logger
 import pyrevit.config as cfg
 import sys
 
+print __builtins__['__name__']
+print globals()['__name__']
+print locals()['__name__']
+
+
 print cfg.LOADER_ASM_DIR
 
 print '\nPATHS:'
@@ -15,7 +20,25 @@ __cmdoptions__ = ['op1', 'op2', 'op3']
 __min_req_revit_ver__ = '2015'
 __min_req_pyrevit_ver__ = (3, 0, 0)
 
-print(__name__)
+print 'Name: {}'.format(__name__)
+
+print 'Host: {}'.format(__revit__)
+print 'Command Data: {}'.format(__commandData__)
+try:
+    print 'UI App: {}'.format(__uiControlledApplication__)
+except:
+    logger.error('UI App is Null.')
+
+print 'Selection: {}'.format(__elements__)
+
+print 'Window hndlr: {}'.format(__window__)
+print 'File: {}'.format(__file__)
+print 'Lib path: {}'.format(__libpath__)
+print 'Forced Debug: {}'.format(__forceddebugmode__)
+
+print 'Message: {}'.format(__message__)
+print 'Result: {}'.format(__result__)
+
 
 print('main script')
 logger.debug('Forced debug mode is active')
