@@ -144,6 +144,7 @@
     <Reference Include="System">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <EmbedInteropTypes>False</EmbedInteropTypes>
