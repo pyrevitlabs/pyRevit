@@ -25,7 +25,8 @@ import os
 import os.path as op
 
 from System.Diagnostics import Process as _Process
-from System import AppDomain as _Appdomain
+from System import AppDomain
+from System.Reflection import Assembly
 
 _VER_MAJOR = 4
 _VER_MINOR = 0
@@ -133,6 +134,12 @@ def _find_home_directory():
     return folder
 
 
+def _find_loader_assembly_directory():
+    """Return the pyRevitLoader.dll full directory address"""
+    folder = op.dirname(Assembly.GetExecutingAssembly().Location)
+    return folder
+
+
 def _find_user_temp_directory():
     """Return the user temp directory %temp%"""
     return os.getenv('Temp')
@@ -167,6 +174,7 @@ def _get_session_log_file_path():
 
 # general defaults -----------------------------------------------------------------------------------------------------
 LOADER_DIR = _find_loader_directory()
+LOADER_ASM_DIR = _find_loader_assembly_directory()
 HOME_DIR = _find_home_directory()
 USER_TEMP_DIR = _find_user_temp_directory()
 REVIT_UNAME = _get_username()
@@ -295,7 +303,7 @@ KEY_VALUE_FALSE = "false"
 
 # InterScript Communication (ISC) defaults -----------------------------------------------------------------------------
 
-CURRENT_REVIT_APPDOMAIN = _Appdomain.CurrentDomain
+CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
 
 PYREVIT_ISC_DICT_NAME = PYREVIT_ASSEMBLY_NAME + '_dictISC'
 DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
