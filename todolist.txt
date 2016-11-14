@@ -1,0 +1,34 @@
+
+Cache:
+	clean cache files
+	changes changes to layout and icons won't affect cache
+
+UI maker:
+	remove missing items
+
+revit ui:
+	fix revit ui items
+	tied into the ui updater changes
+
+Updater: 
+	add versioning class based on last git commit. about window should use this
+	look into making this version class universal
+
+Pkg manager:
+	window to list available packages, allows installation and removal
+	update is handled through main update module
+
+script info:
+	implement the three functions
+
+user config:
+	disabling tools
+	custom user settings
+
+
+Legacy scripts:
+	about with WPF xml
+	settings with WPF xml.
+	
+
+

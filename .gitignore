@@ -11,6 +11,5 @@ _gsdata_/
 # ignore standard files
 __py*
 *.db
-*.txt
 *.ini
 
