@@ -5,11 +5,14 @@ import sys
 import clr
 from collections import namedtuple
 
+from .parser import get_installed_package_data
+
 from ..logger import get_logger
 logger = get_logger(__name__)
 
 from ..config import HOME_DIR
 from ..git import git
+from ..userconfig import user_settings
 
 from System import DateTime, DateTimeOffset
 
@@ -43,15 +46,35 @@ def _make_pull_signature():
 
 
 def find_all_pkg_repos():
-    logger.debug('Finding installed repos.')
+    # get a list of all directories that could include packages
+    # and ask parser for package info object
+    pkgs = []
+    logger.debug('Finding installed repos...')
+    for root_dir in user_settings.get_package_root_dirs():
+        pkg_info_list = get_installed_package_data(root_dir)
+        for pkg_info in pkg_info_list:
+            if pkg_info and git.Repository.IsValid(pkg_info.directory):
+                pkgs.append(pkg_info)
+
+    logger.debug('Valid packages for update: {}'.format(pkgs))
+
+    repos = []
+    for pkg_info in pkgs:
+        repo = git.Repository(pkg_info.directory)
+        repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+        repos.append(repo_info)
+
+    #finally add HOME_DIR as the main repo
     repo = git.Repository(HOME_DIR)
     repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
-    repos = [repo_info]
+    repos.append(repo_info)
+
     logger.debug('Installed repos: {}'.format(repos))
     return repos
 
 
 def update_pyrevit():
+    updated_repos = []
     for repo_info in find_all_pkg_repos():
         repo = repo_info.repo
         logger.debug('Updating repo: {}'.format(repo_info.directory))
@@ -62,11 +85,12 @@ def update_pyrevit():
             logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
             head_msg = str(repo.Head.Tip.Message).replace('\n','')
             logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
-            return True
+            updated_repos.append(repo_info)
+
         except Exception as pull_err:
             logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
 
-    return False
+    return updated_repos
 
 def has_pending_updates(repo_info):
     repo = repo_info.repo

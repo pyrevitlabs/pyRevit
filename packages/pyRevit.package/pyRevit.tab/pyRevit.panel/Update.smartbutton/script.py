@@ -34,10 +34,10 @@ def selfInit(__rvt__, script_cmp, commandbutton):
 
 if __name__ == '__main__':
     import pyrevit.session as session
-    if updater.update_pyrevit():
-        logger.info('Successfully updated...')
+    updated_repos = updater.update_pyrevit()
+    for repo_info in updated_repos:
+        logger.info('Successfully updated: {}'.format(repo_info))
         # re-load pyrevit session.
-        logger.info('Reloading...')
-        session.load()
-    else:
-        logger.info('Already updated...')
+
+    logger.info('Reloading...')
+    session.load()

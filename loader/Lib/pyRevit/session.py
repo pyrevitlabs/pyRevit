@@ -68,12 +68,8 @@ def load():
     logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
     archive_script_usage_logs()
 
-    # create a list of all directories that could include packages
-    # default home and extension directory
-    pkg_search_dirs = [HOME_DIR, EXTENSIONS_DEFAULT_DIR]
-    # misc package directories provided by user
-    pkg_search_dirs.extend(user_settings.user_extension_dirs)
-
+    # get a list of all directories that could include packages
+    pkg_search_dirs = user_settings.get_package_root_dirs()
     logger.info('Package Directories: {}'.format(pkg_search_dirs))
 
     # get_installed_packages() returns a list of discovered packages in root_dir

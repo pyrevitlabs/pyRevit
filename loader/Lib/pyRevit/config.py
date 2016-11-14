@@ -185,14 +185,18 @@ def _get_session_log_file_path():
 # general defaults -----------------------------------------------------------------------------------------------------
 LOADER_DIR = _find_loader_directory()
 LOADER_ASM_DIR = _find_loader_assembly_directory()
+MAIN_LIBRARY_DIR = _find_pyrevit_lib()
 HOME_DIR = _find_home_directory()
+EXTENSIONS_DEFAULT_DIR = _find_extensions_directory()
+
 USER_TEMP_DIR = _find_user_temp_directory()
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
 
-MAIN_LIBRARY_DIR = _find_pyrevit_lib()
-EXTENSIONS_DEFAULT_DIR = _find_extensions_directory()
+# create a list of all directories that could include packages
+# default is HOME_DIR and EXTENSIONS_DEFAULT_DIR directories
+DEFAULT_PKG_SEARCH_DIRS = [HOME_DIR, EXTENSIONS_DEFAULT_DIR]
 
 # define a list of basic folders that need to be added to all scripts
 DEFAULT_SYS_PATHS = [MAIN_LIBRARY_DIR, LOADER_ASM_DIR]

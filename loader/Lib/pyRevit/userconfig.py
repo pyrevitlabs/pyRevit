@@ -29,7 +29,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 from .exceptions import ConfigFileError
-from .config import LOADER_DIR, USER_SETTINGS_DIR
+from .config import LOADER_DIR, USER_SETTINGS_DIR, DEFAULT_PKG_SEARCH_DIRS
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY, CACHE_TYPE_KEY
@@ -224,6 +224,14 @@ class _PyRevitUserSettings:
     def load_parameters(self):
         # todo: load user param
         pass
+
+    @staticmethod
+    def get_package_root_dirs():
+        # default package search directories
+        pkg_search_dirs = DEFAULT_PKG_SEARCH_DIRS
+        # add misc package directories provided by user
+        pkg_search_dirs.extend(user_settings.user_extension_dirs)
+        return pkg_search_dirs
 
 
 # creating an instance of _PyRevitUserSettings().
