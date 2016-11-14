@@ -20,10 +20,12 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
           'updates about the new tools and changes, and a lot of other information there.'
 
-__window__.Close()
-
 import clr
 import os
+
+
+from pyrevit.config import PyRevitVersion
+from pyrevit.loader.updater import get_pyrevit_repo
 
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
@@ -31,16 +33,12 @@ clr.AddReferenceByPartialName('System.Windows.Forms')
 import System.Windows
 
 
-def get_repo_version():
-    return '3.0.0-beta'
-
-
 class aboutWindow:
     def __init__(self):
         # Create window
         self.my_window = System.Windows.Window()
         self.my_window.Title = 'About pyrevit'
-        self.my_window.Width = 400
+        self.my_window.Width = 500
         self.my_window.Height = 300
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
@@ -59,7 +57,10 @@ class aboutWindow:
         self.reponame.Margin = System.Windows.Thickness(30, 10, 30, 0)
 
         self.versionlabel = System.Windows.Controls.Label()
-        self.versionlabel.Content = 'IronPython Scripts for Autodesk Revit®\nv {0}'.format(get_repo_version())
+        tag_line = 'IronPython Library and Scripts for Autodesk Revit®'
+        last_commit_hash = get_pyrevit_repo().last_commit_hash[:7]
+        sub_title = '{}\nv {} : {}'.format(tag_line, PyRevitVersion.full_version_as_str(), last_commit_hash)
+        self.versionlabel.Content = sub_title
         self.versionlabel.FontFamily = fontfam
         self.versionlabel.FontSize = 16.0
         self.versionlabel.Margin = System.Windows.Thickness(30, -10, 30, 0)
