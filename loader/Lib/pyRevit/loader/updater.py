@@ -45,6 +45,11 @@ def _make_pull_signature():
     return git.Signature('eirannejad', 'eirannejad@gmail.com', DateTimeOffset(DateTime.Now))
 
 
+def get_pyrevit_repo():
+    repo = git.Repository(HOME_DIR)
+    return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+
+
 def find_all_pkg_repos():
     # get a list of all directories that could include packages
     # and ask parser for package info object
@@ -65,9 +70,7 @@ def find_all_pkg_repos():
         repos.append(repo_info)
 
     #finally add HOME_DIR as the main repo
-    repo = git.Repository(HOME_DIR)
-    repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
-    repos.append(repo_info)
+    repos.append(get_pyrevit_repo())
 
     logger.debug('Installed repos: {}'.format(repos))
     return repos
