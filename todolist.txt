@@ -31,4 +31,6 @@ Legacy scripts:
 	settings with WPF xml.
 	
 
+Parser:
+	add support for adding panels to other packages: currently works because of name similarity in ui module
 
