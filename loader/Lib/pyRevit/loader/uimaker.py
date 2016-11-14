@@ -123,9 +123,9 @@ def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
         logger.debug('Import successful: {}'.format(importedscript))
         logger.debug('Running self initializer: {}'.format(togglebutton))
         try:
-            importedscript.selfInit(HOST_SOFTWARE,
-                                    togglebutton,
-                                    parent_ui_item.button(togglebutton.name))
+            importedscript.__selfinit__(togglebutton,
+                                        parent_ui_item.button(togglebutton.name),
+                                        HOST_SOFTWARE)
         except Exception as togglebutton_err:
             logger.error('Error initializing toggle button: {} | {}'.format(togglebutton, togglebutton_err))
         return parent_ui_item.button(togglebutton.name)

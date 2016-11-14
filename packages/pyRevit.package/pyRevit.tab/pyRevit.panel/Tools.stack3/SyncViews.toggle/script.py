@@ -179,7 +179,7 @@ def clearstate():
         open(inactivestatefile, 'a').close()
 
 
-def selfInit(__rvt__, scriptaddress, commandbutton):
+def __selfinit__(script_cmp, commandbutton, __rvt__):
     # clearstate()
     # __revit__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
     # __revit__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)

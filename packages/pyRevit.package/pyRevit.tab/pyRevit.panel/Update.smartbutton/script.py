@@ -19,26 +19,27 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Downloads updates from the github repository.'
 
-from pyrevit.logger import get_logger
-logger = get_logger(__commandname__)
 
 from pyrevit.config import ICON_LARGE_SIZE
 from pyrevit.loader import updater
 
 
-def selfInit(__rvt__, script_cmp, commandbutton):
+def __selfinit__(script_cmp, commandbutton, __rvt__):
+    from pyrevit.logger import get_logger
+    logger = get_logger('Update.__selfinit__')
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-    for repo_info in updater.get_thirdparty_pkg_repos():
+    for repo_info in updater.get_all_available_repos():
         if updater.has_pending_updates(repo_info):
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE_SIZE)
 
 
 if __name__ == '__main__':
+    from pyrevit.logger import get_logger
+    logger = get_logger(__commandname__)
     import pyrevit.session as session
 
     # collect a list of all repos to be updates
-    repo_info_list = [updater.get_pyrevit_repo()]      # pyrevit main repo
-    repo_info_list.extend(updater.get_thirdparty_pkg_repos())   # add all thirdparty repos
+    repo_info_list = updater.get_all_available_repos()
     logger.debug('List of repos to be updated: {}'.format(repo_info_list))
 
     for repo_info in repo_info_list:
