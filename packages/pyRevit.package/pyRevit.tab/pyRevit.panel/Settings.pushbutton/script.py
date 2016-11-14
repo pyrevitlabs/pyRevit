@@ -20,6 +20,8 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic ' \
           'parameters here.'
 
+#fixme: Update settings window using wpf
+
 __window__.Close()
 
 import clr

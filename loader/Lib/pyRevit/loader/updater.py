@@ -21,7 +21,9 @@ from System import DateTime, DateTimeOffset
 PyRevitRepoInfo = namedtuple('PyRevitRepoInfo', ['directory', 'head_name', 'last_commit_hash', 'repo'])
 
 
-# fixme: remove on final release
+# fixme: remove credentials on final release
+# fixme: error check for internet connection
+
 def hndlr(url, uname, types):
     up = git.UsernamePasswordCredentials()
     up.Username = 'eirannejad@gmail.com'
@@ -95,6 +97,7 @@ def update_pyrevit():
             logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
 
     return updated_repos
+
 
 def has_pending_updates(repo_info):
     repo = repo_info.repo

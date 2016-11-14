@@ -33,6 +33,8 @@ clr.AddReferenceByPartialName('System.Windows.Forms')
 import System.Windows
 
 
+# fixme: Update about using wpf
+
 class aboutWindow:
     def __init__(self):
         # Create window

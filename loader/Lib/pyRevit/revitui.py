@@ -513,6 +513,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Error adding slide out: {}'.format(err))
 
     def _create_data_items(self, as_stack=False):
+        # fixme: Make a pushbutton if stack of one
         self._itemdata_mode = False
         # get a list of data item names and the associated revit api data objects
         pyrvt_data_item_names = [x.name for x in self if x._itemdata_mode]

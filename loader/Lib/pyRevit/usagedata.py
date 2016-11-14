@@ -45,6 +45,8 @@ from System.Diagnostics import Process
 from System.IO import IOException
 
 
+# fixme: add resolution to usage data tool. Some tools are used within close timing to each other.
+
 def archive_script_usage_logs():
     """Archives older script usage log files to the folder provided by user in user settings.
     :return: None
