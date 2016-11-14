@@ -25,19 +25,28 @@ logger = get_logger(__commandname__)
 from pyrevit.config import ICON_LARGE_SIZE
 from pyrevit.loader import updater
 
+
 def selfInit(__rvt__, script_cmp, commandbutton):
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-    for repo_info in updater.find_all_pkg_repos():
+    for repo_info in updater.get_thirdparty_pkg_repos():
         if updater.has_pending_updates(repo_info):
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE_SIZE)
 
 
 if __name__ == '__main__':
     import pyrevit.session as session
-    updated_repos = updater.update_pyrevit()
-    for repo_info in updated_repos:
-        logger.info('Successfully updated: {}'.format(repo_info))
-        # re-load pyrevit session.
 
+    # collect a list of all repos to be updates
+    repo_info_list = [updater.get_pyrevit_repo()]      # pyrevit main repo
+    repo_info_list.extend(updater.get_thirdparty_pkg_repos())   # add all thirdparty repos
+    logger.debug('List of repos to be updated: {}'.format(repo_info_list))
+
+    for repo_info in repo_info_list:
+        # update one by one
+        logger.info('Updating repo: {}'.format(repo_info))
+        if updater.update_pyrevit(repo_info):
+            logger.info('Successfully updated: {}'.format(repo_info))
+
+    # now re-load pyrevit session.
     logger.info('Reloading...')
     session.load()

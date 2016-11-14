@@ -242,7 +242,7 @@ class GenericCommand(object):
         except PyRevitException as err:
             logger.error(err)
 
-        # todo: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
+        # fixme: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
         logger.debug('Minimum pyRevit version: {}'.format(self.min_pyrevit_ver))
         logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
         logger.debug('command tooltip: {}'.format(self.doc_string))
@@ -470,7 +470,7 @@ class Package(GenericContainer):
         #   if png files are added the parent folder mtime gets affected
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        # fixme: layout and icons won't affect cache
+        # fixme: changes to layout and icons won't affect cache
         pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         mtime_sum = 0

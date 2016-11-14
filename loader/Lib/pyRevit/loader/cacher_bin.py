@@ -49,6 +49,7 @@ def get_cached_package(installed_pkg):
 
 
 def is_cache_valid(pkg):
+    # fixme: clean cache file if it is not valid
     try:
         cached_pkg = get_cached_package(pkg)    # type: Package
         logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))

@@ -131,7 +131,7 @@ class _PyRevitUserSettings:
             logger.warning('Continuing with settings that were successfully read and defaults for others.')
 
         # set log mode on the logger module based on user settings (overriding the defaults)
-        if self.debug or FORCED_DEBUG_MODE_PARAM:
+        if self.debug:
             logger.set_debug_mode()
         elif self.verbose:
             logger.set_verbose_mode()

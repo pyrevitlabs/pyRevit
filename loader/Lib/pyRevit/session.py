@@ -26,11 +26,12 @@ then calls the parser, assembly maker, and lastly ui maker to create the buttons
 Each pyRevit session will have its own .dll and log file.
 """
 
+import os.path as op
+
 from .logger import get_logger
 logger = get_logger(__name__)
 
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
-from .config import HOME_DIR, EXTENSIONS_DEFAULT_DIR
 from .exceptions import PyRevitCacheError
 
 from loader.parser import get_installed_package_data, get_parsed_package
@@ -39,6 +40,7 @@ from loader.uimaker import update_pyrevit_ui
 
 from .usagedata import archive_script_usage_logs
 from .userconfig import user_settings
+from .utils import verify_directory
 
 
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
@@ -74,7 +76,12 @@ def load():
 
     # get_installed_packages() returns a list of discovered packages in root_dir
     for root_dir in pkg_search_dirs:
-        # fixme: verify if folder exists
+        # making sure the provided directory exists. This is mainly for the user defined package directories
+        if not op.exists(root_dir):
+            logger.debug('Package search directory does not exist: {}'.format(root_dir))
+            continue
+
+        # iterater through packages and load one by one
         for package in get_installed_package_data(root_dir):
             # test if cache is valid for this package
             # it might seem unusual to create a package and then re-load it from cache but minimum information
@@ -108,16 +115,3 @@ def load():
 
             # update/create ui (needs the assembly to link button actions to commands saved in the dll)
             update_pyrevit_ui(package, pkg_asm_info)
-
-
-# session object will have all the functionality for the user to interact with the session
-# e.g. providing a list of installed packages, and others
-# user is not expected to use _cache, _parser, _commandtree, _assemblies, or _ui
-# All interactions should be through session module.
-# ----------------------------------------------------------------------------------------------------------------------
-# def get_command(script_address):
-#     """Returns read only info about the caller python script.
-#     Example:
-#         this_script = pyrevit.session.get_this_command()
-#         print(this_script.script_file_address)
-#     """

@@ -107,14 +107,6 @@ def cleanup_string(input_str):
     return input_str
 
 
-def get_temp_file():
-    """Returns a filename to be used by a user script to store temporary information.
-    Temporary files are saved in USER_TEMP_DIR.
-    """
-    # fixme temporary file
-    pass
-
-
 def inspect_calling_scope_local_var(variable_name):
     """Traces back the stack to find the variable in the caller local stack.
     Example:
@@ -186,8 +178,3 @@ def set_interscript_comm_data(param_name, param_value):
 
 def get_revit_instances():
     return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))
-
-
-# fixme add transaction wrapper
-def transaction_wrapper():
-    pass

@@ -1,4 +1,3 @@
-# todo: create json file under EXTENSIONS_DEFAULT_DIR
 # todo: support listing, installing, and uninstalling packages
 
 

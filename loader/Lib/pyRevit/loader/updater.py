@@ -1,5 +1,4 @@
 # todo: add support for versioning based on git head hash
-# todo: test for extensions
 
 import sys
 import clr
@@ -22,7 +21,6 @@ PyRevitRepoInfo = namedtuple('PyRevitRepoInfo', ['directory', 'head_name', 'last
 
 
 # fixme: remove credentials on final release
-# fixme: error check for internet connection
 
 def hndlr(url, uname, types):
     up = git.UsernamePasswordCredentials()
@@ -49,11 +47,14 @@ def _make_pull_signature():
 
 
 def get_pyrevit_repo():
-    repo = git.Repository(HOME_DIR)
-    return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+    try:
+        repo = git.Repository(HOME_DIR)
+        return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+    except Exception as err:
+        logger.error('Can not create repo from home directory: {}'.format(HOME_DIR))
 
 
-def find_all_pkg_repos():
+def get_thirdparty_pkg_repos():
     # get a list of all directories that could include packages
     # and ask parser for package info object
     pkgs = []
@@ -64,39 +65,36 @@ def find_all_pkg_repos():
             if pkg_info and git.Repository.IsValid(pkg_info.directory):
                 pkgs.append(pkg_info)
 
-    logger.debug('Valid packages for update: {}'.format(pkgs))
+    logger.debug('Valid third-party packages for update: {}'.format(pkgs))
 
     repos = []
     for pkg_info in pkgs:
-        repo = git.Repository(pkg_info.directory)
-        repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
-        repos.append(repo_info)
+        try:
+            repo = git.Repository(pkg_info.directory)
+            repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+            repos.append(repo_info)
+        except Exception as err:
+            logger.error('Can not create repo from home directory: {}'.format(pkg_info.directory))
 
-    #finally add HOME_DIR as the main repo
-    repos.append(get_pyrevit_repo())
-
-    logger.debug('Installed repos: {}'.format(repos))
     return repos
 
 
-def update_pyrevit():
-    updated_repos = []
-    for repo_info in find_all_pkg_repos():
-        repo = repo_info.repo
-        logger.debug('Updating repo: {}'.format(repo_info.directory))
+def update_pyrevit(repo_info):
+    repo = repo_info.repo
+    logger.debug('Updating repo: {}'.format(repo_info.directory))
+    head_msg = str(repo.Head.Tip.Message).replace('\n','')
+    logger.debug('Current head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+    try:
+        repo.Network.Pull(_make_pull_signature(), _make_pull_options())
+        logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
         head_msg = str(repo.Head.Tip.Message).replace('\n','')
-        logger.debug('Current head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
-        try:
-            repo.Network.Pull(_make_pull_signature(), _make_pull_options())
-            logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
-            head_msg = str(repo.Head.Tip.Message).replace('\n','')
-            logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
-            updated_repos.append(repo_info)
+        logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+        return True
 
-        except Exception as pull_err:
-            logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
+    except Exception as pull_err:
+        logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
 
-    return updated_repos
+    return False
 
 
 def has_pending_updates(repo_info):
@@ -114,9 +112,13 @@ def has_pending_updates(repo_info):
 
     for branch in repo_branches:
         if not branch.IsRemote:
-            logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName, branch.TrackedBranch.CanonicalName))
-            hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
-            if hist_div.BehindBy > 0:
-                return True
+            try:
+                if branch.TrackedBranch:
+                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName, branch.TrackedBranch.CanonicalName))
+                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
+                    if hist_div.BehindBy > 0:
+                        return True
+            except Exception as compare_err:
+                logger.error('Can not compare branch {} in repo: {}'.format(branch, repo))
 
     return False
