@@ -79,6 +79,12 @@ def get_thirdparty_pkg_repos():
     return repos
 
 
+def get_all_available_repos():
+    repo_info_list = [get_pyrevit_repo()]      # pyrevit main repo
+    repo_info_list.extend(get_thirdparty_pkg_repos())   # add all thirdparty repos
+    return repo_info_list
+
+
 def update_pyrevit(repo_info):
     repo = repo_info.repo
     logger.debug('Updating repo: {}'.format(repo_info.directory))
