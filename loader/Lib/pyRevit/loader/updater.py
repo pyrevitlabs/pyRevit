@@ -21,6 +21,7 @@ from System import DateTime, DateTimeOffset
 PyRevitRepoInfo = namedtuple('PyRevitRepoInfo', ['directory', 'head_name', 'last_commit_hash', 'repo'])
 
 
+# fixme: remove on final release
 def hndlr(url, uname, types):
     up = git.UsernamePasswordCredentials()
     up.Username = 'eirannejad@gmail.com'
