@@ -1,7 +1,7 @@
 
 Cache:
 	clean cache files
-	changes changes to layout and icons won't affect cache
+	changes to layout and icons won't affect cache
 
 UI maker:
 	remove missing items
