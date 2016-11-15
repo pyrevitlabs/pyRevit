@@ -63,7 +63,7 @@ class _ButtonIcons:
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_SMALL_SIZE
         # bitmap_image.DecodePixelWidth = ICON_SMALL_SIZE
@@ -74,7 +74,7 @@ class _ButtonIcons:
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_MEDIUM_SIZE
         # bitmap_image.DecodePixelWidth = ICON_MEDIUM_SIZE
@@ -85,7 +85,7 @@ class _ButtonIcons:
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
+        bitmap_image.CacheOption = BitmapCacheOption.OnDemand
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_LARGE_SIZE
         # bitmap_image.DecodePixelWidth = ICON_LARGE_SIZE
