@@ -8,10 +8,6 @@ revit ui:
 Cache:
 	clean cache files
 
-Updater: 
-	add versioning class based on last git commit. about window should use this
-	look into making this version class universal
-
 Pkg manager:
 	window to list available packages, allows installation and removal
 	update is handled through main update module

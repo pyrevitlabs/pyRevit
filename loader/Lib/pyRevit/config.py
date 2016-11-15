@@ -94,6 +94,7 @@ class PyRevitVersion(object):
 
     @staticmethod
     def is_newer_than(version_tuple):
+        # fixme: check for tuple length
         """:type version_tuple: tuple"""
         if PyRevitVersion.major > version_tuple[0]:
             return True
@@ -108,6 +109,7 @@ class PyRevitVersion(object):
 
     @staticmethod
     def is_older_than(version_tuple):
+        # fixme: check for tuple length
         """:type version_tuple: tuple"""
         if PyRevitVersion.major < version_tuple[0]:
             return True
