@@ -46,7 +46,7 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
 from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM,\
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
                      MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
 from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileParser, cleanup_string
@@ -234,10 +234,13 @@ class GenericCommand(object):
             # reading script file content to extract parameters
             script_content = ScriptFileParser(self.get_full_script_address())
             # extracting min requried Revit and pyRevit versions
-            self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
-            self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
+            self.ui_title = script_content.extract_param(UI_TITLE_PARAM)  # type: str
+            if not self.ui_title:
+                self.ui_title = self.name
             self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
             self.author = script_content.extract_param(AUTHOR_PARAM)  # type: str
+            self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
+            self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)  # type: list
         except PyRevitException as err:
             logger.error(err)

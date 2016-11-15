@@ -256,6 +256,7 @@ DEFAULT_CONFIG_SCRIPT_FILE = 'config' + SCRIPT_FILE_FORMAT
 
 DEFAULT_LAYOUT_FILE_NAME = '_layout'
 
+UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
 COMMAND_OPTIONS_PARAM = '__cmdoptions__'

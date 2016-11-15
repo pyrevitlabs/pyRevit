@@ -156,7 +156,7 @@ def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
     logger.debug('Producing button: {}'.format(pushbutton))
     try:
         if pushbutton.has_config_script():
-            pb_title = pushbutton.name + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
+            pb_title = pushbutton.ui_title + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
         else:
             pb_title = None
         parent_ui_item.create_push_button(pushbutton.name,
