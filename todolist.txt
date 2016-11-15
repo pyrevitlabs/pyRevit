@@ -1,7 +1,5 @@
 UI maker:
 	remove missing items
-	component should make its own title + the dot if it has config
-	components to check for __title__
 
 revit ui:
 	fix revit ui items
@@ -9,7 +7,6 @@ revit ui:
 
 Cache:
 	clean cache files
-	changes to layout won't affect cache
 
 Updater: 
 	add versioning class based on last git commit. about window should use this
@@ -25,7 +22,6 @@ script info:
 user config:
 	disabling tools
 	custom user settings
-
 
 Legacy scripts:
 	about with WPF xml
