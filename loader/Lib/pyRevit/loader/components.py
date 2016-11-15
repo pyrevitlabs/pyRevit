@@ -43,7 +43,7 @@ from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_PO
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX
-from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME
+from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
@@ -473,9 +473,11 @@ class Package(GenericContainer):
         #   if png files are added the parent folder mtime gets affected
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        # fixme: changes to layout and icons won't affect cache
         pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + SETTINGS_FILE_EXTENSION + ')'
+        patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
         mtime_sum = 0
         for root, dirs, files in os.walk(self.directory):
             if re.search(pat, root, flags=re.IGNORECASE):
