@@ -82,6 +82,7 @@ def load():
             logger.debug('Package search directory does not exist: {}'.format(root_dir))
             continue
 
+        # Get a list of all installed packages in this directory
         # iterater through packages and load one by one
         for package in get_installed_package_data(root_dir):
             # test if cache is valid for this package
