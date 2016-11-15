@@ -11,4 +11,5 @@ _gsdata_/
 # ignore standard files
 __py*
 *.db
+.DS_Store
 
