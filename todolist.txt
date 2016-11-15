@@ -1,14 +1,15 @@
-
-Cache:
-	clean cache files
-	changes to layout and icons won't affect cache
-
 UI maker:
 	remove missing items
+	component should make its own title + the dot if it has config
+	components to check for __title__
 
 revit ui:
 	fix revit ui items
 	tied into the ui updater changes
+
+Cache:
+	clean cache files
+	changes to layout won't affect cache
 
 Updater: 
 	add versioning class based on last git commit. about window should use this
