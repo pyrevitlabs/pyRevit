@@ -56,7 +56,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
-from ..revitui import get_current_ui
+from ..revitui import get_current_ui, _PyRevitUI
 from ..exceptions import PyRevitUIError
 
 
@@ -70,17 +70,6 @@ def _make_button_tooltip(button):
 
 def _make_button_tooltip_ext(button, asm_name):
     return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
-
-
-def _cleanup_orphaned_ui_items(parent_ui_item, component):
-    pyrvt_items = [x.name for x in component]
-    for ui_item in parent_ui_item:
-        if ui_item.name not in pyrvt_items:
-            logger.debug('Deactivating: {}'.format(ui_item))
-            ui_item.deactivate()
-    for sub_cmp in component:
-        if sub_cmp.is_container():
-            _cleanup_orphaned_ui_items(parent_ui_item._get_component(component.name), sub_cmp)
 
 
 def _produce_ui_separator(parent_ui_item, pushbutton, pkg_asm_info):
@@ -217,7 +206,7 @@ def _produce_ui_stacks(parent_ui_panel, stack_cmp, pkg_asm_info):
 
         # capturing and logging any errors on stack item
         # (e.g when parent_ui_panel's stack is full and can not add any more items it will raise an error)
-        _recursively_produce_ui_items(parent_ui_panel, stack_cmp, pkg_asm_info)
+        _recursively_produce_ui_items(parent_ui_panel, stack_cmp, pkg_asm_info, cleanup=False)
 
         if HostVersion.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_split
@@ -275,17 +264,28 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             }
 
 
-def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
+def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info, cleanup=True):
     for sub_cmp in component:
         try:
-            logger.debug('Calling create function {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
+            logger.debug('Calling create func {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
             ui_item = _component_creation_dict[sub_cmp.type_id](parent_ui_item, sub_cmp, pkg_asm_info)
         except KeyError:
             logger.debug('Can not find create function for: {}'.format(sub_cmp))
+
         logger.debug('UI item created by create func is: {}'.format(ui_item))
 
         if ui_item and sub_cmp.is_container():
                 _recursively_produce_ui_items(ui_item, sub_cmp, pkg_asm_info)
+
+    # Cleanup all existing items. All new items will reactivate existing if necessary
+    if cleanup:
+        for rvt_ui_item in parent_ui_item:
+            if not component.contains(rvt_ui_item.name):
+                logger.debug('Deactivating existing item: {}'.format(rvt_ui_item))
+                try:
+                    rvt_ui_item.deactivate()
+                except Exception as err:
+                    logger.debug('Error deactivating item: {}'.format(err))
 
 
 def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
@@ -294,8 +294,3 @@ def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     logger.info('Creating/Updating ui for package: {}'.format(parsed_pkg))
     current_ui = get_current_ui()
     _recursively_produce_ui_items(current_ui, parsed_pkg, pkg_asm_info)
-
-    # current_ui.tab(tab) now includes updated or new ribbon_tabs.
-    # so cleanup all the remaining existing tabs that are not available anymore.
-    # fixme: deactivate system
-    # _cleanup_orphaned_ui_items(current_ui, parsed_pkg)

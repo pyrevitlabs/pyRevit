@@ -165,6 +165,14 @@ class GenericContainer(object):
         else:
             return self._sub_components
 
+    def contains(self, item_name):
+        """
+        :param str item_name:
+        """
+        for component in self._sub_components:
+            if item_name == component.name:
+                return True
+
     def get_cache_data(self):
         cache_dict = self.__dict__.copy()
         cache_dict['type_id'] = self.type_id
@@ -436,6 +444,23 @@ class Panel(GenericContainer):
                     return True
             else:
                 if component.has_commands():
+                    return True
+
+    def contains(self, item_name):
+        """
+        :param str item_name:
+        """
+        # Panels contain stacks. But stacks itself does not have any ui and its subitems are displayed within the ui of
+        # the prent panel. This is different from pulldowns and other button groups. Button groups, contain and display
+        # their sub components in their own drop down menu.
+        # So when checking if panel has a button, panel should check all the items visible to the user and respond.
+        item_exists = GenericContainer.contains(self, item_name)
+        if item_exists:
+            return True
+        else:
+            # if child is a stack item, check its children too
+            for component in self._sub_components:
+                if isinstance(component, GenericStack) and component.contains(item_name):
                     return True
 
 

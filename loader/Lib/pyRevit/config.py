@@ -262,6 +262,7 @@ UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
 COMMAND_OPTIONS_PARAM = '__cmdoptions__'
+COMMAND_NAME_PARAM = '__commandname__'
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
 
@@ -290,9 +291,9 @@ SPECIAL_CHARS = {' ': '',
                  '\/': '', '\\': ''}
 
 # creating ui for tabs, panels, buttons and button groups --------------------------------------------------------------
-ICON_SMALL_SIZE = 16
-ICON_MEDIUM_SIZE = 24
-ICON_LARGE_SIZE = 32
+ICON_SMALL = 16
+ICON_MEDIUM = 24
+ICON_LARGE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'

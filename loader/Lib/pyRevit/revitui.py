@@ -27,7 +27,7 @@ from collections import OrderedDict
 from .logger import get_logger
 logger = get_logger(__name__)
 
-from .config import ICON_SMALL_SIZE, ICON_MEDIUM_SIZE, ICON_LARGE_SIZE, SPLITPUSH_BUTTON_SYNC_PARAM
+from .config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, COMMAND_NAME_PARAM
 from .config import HostVersion, HOST_SOFTWARE
 from .exceptions import PyRevitUIError
 
@@ -59,36 +59,36 @@ class _ButtonIcons:
         logger.debug('Creating uri from: {}'.format(file_address))
         uri = Uri(file_address)
 
-        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_SMALL_SIZE, file_address))
+        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_SMALL, file_address))
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
         bitmap_image.CacheOption = BitmapCacheOption.OnLoad
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_SMALL_SIZE
-        # bitmap_image.DecodePixelWidth = ICON_SMALL_SIZE
+        bitmap_image.DecodePixelHeight = ICON_SMALL
+        # bitmap_image.DecodePixelWidth = ICON_SMALL
         bitmap_image.EndInit()
         self.smallBitmap = bitmap_image
 
-        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_MEDIUM_SIZE, file_address))
+        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_MEDIUM, file_address))
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
         bitmap_image.CacheOption = BitmapCacheOption.OnLoad
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_MEDIUM_SIZE
-        # bitmap_image.DecodePixelWidth = ICON_MEDIUM_SIZE
+        bitmap_image.DecodePixelHeight = ICON_MEDIUM
+        # bitmap_image.DecodePixelWidth = ICON_MEDIUM
         bitmap_image.EndInit()
         self.mediumBitmap = bitmap_image
 
-        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_LARGE_SIZE, file_address))
+        logger.debug('Creating {0}x{0} bitmap from: {1}'.format(ICON_LARGE, file_address))
         bitmap_image = BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
         bitmap_image.CacheOption = BitmapCacheOption.OnLoad
         bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_LARGE_SIZE
-        # bitmap_image.DecodePixelWidth = ICON_LARGE_SIZE
+        bitmap_image.DecodePixelHeight = ICON_LARGE
+        # bitmap_image.DecodePixelWidth = ICON_LARGE
         bitmap_image.EndInit()
         self.largeBitmap = bitmap_image
 
@@ -168,17 +168,27 @@ class _GenericPyRevitUIContainer:
 
 
 # Classes holding existing native ui elements (These elements are native and can not be modified) ----------------------
-class _RevitNativeRibbonButton(_GenericPyRevitUIContainer):
-    def __init__(self, adskwnd_ribbon_button):
+class _GenericRevitNativeUIContainer(_GenericPyRevitUIContainer):
+    def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
+
+    def deactivate(self):
+        raise PyRevitUIError('Can not de/activate native item: {}'.format(self))
+
+    activate = deactivate
+
+
+class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
+    def __init__(self, adskwnd_ribbon_button):
+        _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = str(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
         self._rvtapi_object = adskwnd_ribbon_button
 
 
-class _RevitNativeRibbonGroupItem(_GenericPyRevitUIContainer):
+class _RevitNativeRibbonGroupItem(_GenericRevitNativeUIContainer):
     def __init__(self, adskwnd_ribbon_item):
-        _GenericPyRevitUIContainer.__init__(self)
+        _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adskwnd_ribbon_item.Source.Title
         self._rvtapi_object = adskwnd_ribbon_item
@@ -187,12 +197,12 @@ class _RevitNativeRibbonGroupItem(_GenericPyRevitUIContainer):
         for adskwnd_ribbon_button in adskwnd_ribbon_item.Items:
             self._add_component(_RevitNativeRibbonButton(adskwnd_ribbon_button))
 
-    button = _GenericPyRevitUIContainer._get_component
+    button = _GenericRevitNativeUIContainer._get_component
 
 
-class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
+class _RevitNativeRibbonPanel(_GenericRevitNativeUIContainer):
     def __init__(self, adskwnd_ribbon_panel):
-        _GenericPyRevitUIContainer.__init__(self)
+        _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adskwnd_ribbon_panel.Source.Title
         self._rvtapi_object = adskwnd_ribbon_panel
@@ -227,12 +237,12 @@ class _RevitNativeRibbonPanel(_GenericPyRevitUIContainer):
             except Exception as err:
                 logger.debug('Can not create native ribbon item: {} | {}'.format(adskwnd_ribbon_item, err))
 
-    ribbon_item = _GenericPyRevitUIContainer._get_component
+    ribbon_item = _GenericRevitNativeUIContainer._get_component
 
 
-class _RevitNativeRibbonTab(_GenericPyRevitUIContainer):
+class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
     def __init__(self, adskwnd_ribbon_tab):
-        _GenericPyRevitUIContainer.__init__(self)
+        _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adskwnd_ribbon_tab.Title
         self._rvtapi_object = adskwnd_ribbon_tab
@@ -246,7 +256,7 @@ class _RevitNativeRibbonTab(_GenericPyRevitUIContainer):
         except Exception as err:
             logger.debug('Can not get native panels for this native tab: {} | {}'.format(adskwnd_ribbon_tab, err))
 
-    ribbon_panel = _GenericPyRevitUIContainer._get_component
+    ribbon_panel = _GenericRevitNativeUIContainer._get_component
 
 
 # Classes holding non-native ui elements -------------------------------------------------------------------------------
@@ -265,7 +275,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         if not self._itemdata_mode:
             self.ui_title = self._rvtapi_object.ItemText
 
-    def set_icon(self, icon_file, icon_size=ICON_MEDIUM_SIZE):
+    def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
             button_icon = _ButtonIcons(icon_file)
         except Exception as err:
@@ -274,7 +284,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         try:
             self._get_rvtapi_object().Image = button_icon.smallBitmap
             self._get_rvtapi_object().LargeImage = button_icon.mediumBitmap
-            if icon_size == ICON_LARGE_SIZE:
+            if icon_size == ICON_LARGE:
                 self._get_rvtapi_object().LargeImage = button_icon.largeBitmap
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
@@ -365,7 +375,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             if hasattr(self._get_rvtapi_object(), SPLITPUSH_BUTTON_SYNC_PARAM):
                 self._get_rvtapi_object().IsSynchronizedWithCurrentItem = False
 
-    def set_icon(self, icon_file):
+    def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
             button_icon = _ButtonIcons(icon_file)
         except Exception as err:
@@ -391,14 +401,15 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
             if update_if_exists:
-                exiting_item = self._get_component(button_name)
+                exiting_item = self._get_component(button_name)     # type: _PyRevitRibbonButton
                 try:
                     # Assembly and Class info of current active script button can not be updated.
-                    if button_name != __commandname__:
+                    if button_name != COMMAND_NAME_PARAM:
                         exiting_item._get_rvtapi_object().AssemblyName = asm_location
                         exiting_item._get_rvtapi_object().ClassName = class_name
-                except Exception as err:
-                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name, err))
+                except Exception as asm_update_err:
+                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name,
+                                                                                                    asm_update_err))
 
                 if not icon_path:
                     logger.debug('Using parent item icon for {}'.format(exiting_item))
@@ -406,16 +417,14 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                     if parent_icon_path:
                         # if button group shows the active button icon, then the child buttons need to have large icons
                         exiting_item.set_icon(parent_icon_path,
-                                            icon_size=ICON_LARGE_SIZE if self._use_active_item_icon
-                                                                      else ICON_MEDIUM_SIZE)
+                                              icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                     else:
                         logger.debug('Can not get item icon from {}'.format(self))
                 else:
                     try:
                         # if button group shows the active button icon, then the child buttons need to have large icons
                         exiting_item.set_icon(icon_path,
-                                              icon_size=ICON_LARGE_SIZE if self._use_active_item_icon
-                                                                        else ICON_MEDIUM_SIZE)
+                                              icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                     except PyRevitUIError as iconerr:
                         logger.error('Error adding icon for {} | {}'.format(button_name, iconerr))
 
@@ -423,6 +432,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 exiting_item.set_tooltip_ext(tooltip_ext)
                 if ui_title:
                     exiting_item.set_title(ui_title)
+
                 exiting_item.activate()
                 return
             else:
@@ -446,7 +456,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 if parent_icon_path:
                     # if button group shows the active button icon, then the child buttons need to have large icons
                     new_button.set_icon(parent_icon_path,
-                                        icon_size=ICON_LARGE_SIZE if self._use_active_item_icon else ICON_MEDIUM_SIZE)
+                                        icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                 else:
                     logger.debug('Can not get item icon from {}'.format(self))
             else:
@@ -454,7 +464,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 try:
                     # if button group shows the active button icon, then the child buttons need to have large icons
                     new_button.set_icon(icon_path,
-                                        icon_size=ICON_LARGE_SIZE if self._use_active_item_icon else ICON_MEDIUM_SIZE)
+                                        icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                 except PyRevitUIError as iconerr:
                     logger.debug('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
 
@@ -463,8 +473,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
             self._add_component(new_button)
 
-        except Exception as err:
-            raise PyRevitUIError('Can not create button | {}'.format(err))
+        except Exception as create_err:
+            raise PyRevitUIError('Can not create button | {}'.format(create_err))
 
     def add_separator(self):
         self._get_rvtapi_object().AddSeparator()
@@ -558,20 +568,21 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
             if update_if_exists:
-                existing_item = self._get_component(button_name)
+                existing_item = self._get_component(button_name)    # type: _PyRevitRibbonButton
                 try:
                     # Assembly and Class info of current active script button can not be updated.
-                    if button_name != __commandname__:
+                    if button_name != COMMAND_NAME_PARAM:
                         existing_item._get_rvtapi_object().AssemblyName = asm_location
                         existing_item._get_rvtapi_object().ClassName = class_name
-                except Exception as err:
-                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name, err))
+                except Exception as asm_update_err:
+                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name,
+                                                                                                    asm_update_err))
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
                 if ui_title:
                     existing_item.set_title(ui_title)
                 try:
-                    existing_item.set_icon(icon_path, icon_size=ICON_LARGE_SIZE)
+                    existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
                 except PyRevitUIError as iconerr:
                     logger.error('Error adding icon for {} | {}'.format(button_name, iconerr))
                 existing_item.activate()
@@ -595,7 +606,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 else:
                     logger.debug('Creating icon for push button {} from file: {}'.format(button_name, icon_path))
                     try:
-                        new_button.set_icon(icon_path, icon_size=ICON_LARGE_SIZE)
+                        new_button.set_icon(icon_path, icon_size=ICON_LARGE)
                     except PyRevitUIError as iconerr:
                         logger.error('Error adding icon for {} from {} | {}'.format(button_name, icon_path, iconerr))
 
@@ -604,8 +615,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 self._add_component(new_button)
 
-            except Exception as err:
-                raise PyRevitUIError('Can not create button | {}'.format(err))
+            except Exception as create_err:
+                raise PyRevitUIError('Can not create button | {}'.format(create_err))
 
     def _create_button_group(self, pulldowndata_type, item_name, icon_path, update_if_exists=False):
         if self.contains(item_name):

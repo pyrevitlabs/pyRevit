@@ -50,6 +50,7 @@ else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
 
+# todo: set handler for current session and delete on close? this is to expire cache on reload/update errors
 def load():
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.

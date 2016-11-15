@@ -20,7 +20,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Downloads updates from the github repository.'
 
 
-from pyrevit.config import ICON_LARGE_SIZE
+from pyrevit.config import ICON_LARGE
 from pyrevit.loader import updater
 
 
@@ -30,7 +30,7 @@ def __selfinit__(script_cmp, commandbutton, __rvt__):
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
     for repo_info in updater.get_all_available_repos():
         if updater.has_pending_updates(repo_info):
-            commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE_SIZE)
+            commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
 
 
 if __name__ == '__main__':
