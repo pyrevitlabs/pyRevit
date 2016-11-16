@@ -278,14 +278,14 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info, clean
                 _recursively_produce_ui_items(ui_item, sub_cmp, pkg_asm_info)
 
     # Cleanup all existing items. All new items will reactivate existing if necessary
-    if cleanup:
-        for rvt_ui_item in parent_ui_item:
-            if not component.contains(rvt_ui_item.name):
-                logger.debug('Deactivating existing item: {}'.format(rvt_ui_item))
-                try:
-                    rvt_ui_item.deactivate()
-                except Exception as err:
-                    logger.debug('Error deactivating item: {}'.format(err))
+    # if cleanup:
+    #     for rvt_ui_item in parent_ui_item:
+    #         if not component.contains(rvt_ui_item.name):
+    #             logger.debug('Deactivating existing item: {}'.format(rvt_ui_item))
+    #             try:
+    #                 rvt_ui_item.deactivate()
+    #             except Exception as err:
+    #                 logger.debug('Error deactivating item: {}'.format(err))
 
 
 def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
