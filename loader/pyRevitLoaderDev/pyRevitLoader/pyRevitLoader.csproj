@@ -111,6 +111,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\RequiredLibraries\ipy 276\IronPython.Modules.dll</HintPath>
     </Reference>
+    <Reference Include="IronPython.SQLite">
+      <HintPath>..\RequiredLibraries\ipy 276\IronPython.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="IronPython.Wpf">
+      <HintPath>..\RequiredLibraries\ipy 276\IronPython.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="LibGit2Sharp">
       <HintPath>..\packages\LibGit2Sharp.0.22.0\lib\net40\LibGit2Sharp.dll</HintPath>
     </Reference>

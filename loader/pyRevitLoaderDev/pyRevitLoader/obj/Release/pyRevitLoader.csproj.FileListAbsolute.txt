@@ -36,6 +36,8 @@ Z:\Revit API\pyRevitv3\loaderBinaryDev\pyRevitLoader\obj\Release\pyRevitLoader.c
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\PyRevitLoader.pdb
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\IronPython.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\IronPython.Modules.dll
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\IronPython.SQLite.dll
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\IronPython.Wpf.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\LibGit2Sharp.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\Microsoft.Dynamic.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\bin\Release\Microsoft.Scripting.dll
@@ -51,4 +53,3 @@ Z:\Revit API\pyRevitv3\loaderBinaryDev\pyRevitLoader\obj\Release\pyRevitLoader.c
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\pyRevitLoader.csproj.GenerateResource.Cache
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\PyRevitLoader.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\PyRevitLoader.pdb
-\\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\pyRevitLoader.csprojResolveAssemblyReference.cache

@@ -57,7 +57,7 @@ namespace PyRevitLoader
 
             var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
             // execute StartupScript
-            var startupScript = GetStartupScript();
+            var startupScript = GetStartupScriptSource();
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
@@ -71,13 +71,15 @@ namespace PyRevitLoader
 
         private static string GetStartupScriptPath()
         {
-            var startupScriptName = GetDLLAppSettings("startupscript");
-            var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var loaderScriptFolder = Path.GetDirectoryName(dllfolder);
-            return Path.Combine(loaderScriptFolder, startupScriptName);
-         }
+            return ProcessRelativeOrAbsolutePath(ExtractDLLConfigParameter("startupscript"));
+        }
 
-        private static string GetDLLAppSettings(string parameter)
+        public static string GetImportLibraryPath()
+        {
+            return ProcessRelativeOrAbsolutePath(ExtractDLLConfigParameter("lib"));
+        }
+
+        public static string ExtractDLLConfigParameter(string parameter)
         {
             ExeConfigurationFileMap map = new ExeConfigurationFileMap();
             map.ExeConfigFilename = Assembly.GetExecutingAssembly().Location + ".config";
@@ -85,7 +87,8 @@ namespace PyRevitLoader
             AppSettingsSection section = (libConfig.GetSection("appSettings") as AppSettingsSection);
             return section.Settings[parameter].Value;
         }
-        public static string GetStartupScript()
+
+        public static string GetStartupScriptSource()
         {
             var startupScriptFullPath = GetStartupScriptPath();
             if (File.Exists(startupScriptFullPath))
@@ -98,6 +101,19 @@ namespace PyRevitLoader
             }
             // no startup script found
             return null;
+        }
+
+        private static string ProcessRelativeOrAbsolutePath(string path)
+        {
+            if (Path.IsPathRooted(path))
+            {
+                return path;
+            }
+            else
+            {
+                var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                return Path.Combine(dllfolder, path);
+            }
         }
 
         Result IExternalApplication.OnShutdown(UIControlledApplication application)

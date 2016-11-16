@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RevitPythonLoader")]
+[assembly: AssemblyTitle("PyRevitLoader")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("RevitPythonLoader")]
+[assembly: AssemblyProduct("PyRevitLoader")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("B39107C3-A1D7-47F4-A5A1-532DDF6EDB5D")]
+[assembly: Guid("DDD0EC66-DF8D-405F-82ED-2FF4C8E5F0C0")]
 
 // Version information for an assembly consists of the following four values:
 //

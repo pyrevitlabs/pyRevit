@@ -75,7 +75,7 @@ namespace PyRevitLoader
                 //var path = engine.GetSearchPaths();
 
                 // At least the main library path is added to sys.path
-                var importLibPath = GetImportLibraryPath();
+                var importLibPath = PyRevitLoaderApplication.GetImportLibraryPath();
 
                 // if syspaths is empty use the baseSysPaths
                 if (syspaths.Length == 0)
@@ -166,13 +166,6 @@ namespace PyRevitLoader
             sys.meta_path.append(importer);            
         }
 
-        public static string GetImportLibraryPath()
-        {
-            var importLibraryFolderName = "Lib";
-            var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var loaderScriptFolder = Path.GetDirectoryName(dllfolder);
-            return Path.Combine(loaderScriptFolder, importLibraryFolderName);
-        }
 
         /// <summary>
         /// Set up an IronPython environment - for interactive shell or for canned scripts
