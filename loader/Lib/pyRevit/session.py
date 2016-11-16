@@ -75,7 +75,7 @@ def load():
     pkg_search_dirs = user_settings.get_package_root_dirs()
     logger.info('Package Directories: {}'.format(pkg_search_dirs))
 
-    # get_installed_packages() returns a list of discovered packages in root_dir
+    # get_installed_package_data() returns a list of discovered packages in root_dir
     for root_dir in pkg_search_dirs:
         # making sure the provided directory exists. This is mainly for the user defined package directories
         if not op.exists(root_dir):
