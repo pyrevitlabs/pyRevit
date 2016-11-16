@@ -23,3 +23,5 @@ Legacy scripts:
 Parser:
 	add support for adding panels to other packages: currently works because of name similarity in ui module
 
+
+lib packages
