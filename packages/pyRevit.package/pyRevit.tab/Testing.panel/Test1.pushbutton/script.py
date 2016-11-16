@@ -17,12 +17,10 @@ for path in sys.path:
 
 print '\n\n'
 
-__cmdoptions__ = ['op1', 'op2', 'op3']
-
 __title__ = 'Test\nScript'
 __doc__ = "test tootip"
 __author__ = "test author"
-__cmdoptions__ = ['Op1', 'Op2']
+__cmdoptions__ = ['op1', 'op2', 'op3']
 __min_req_revit_ver__ = '2015'
 __min_req_pyrevit_ver__ = (3, 0, 0)
 
