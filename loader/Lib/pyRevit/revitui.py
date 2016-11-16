@@ -27,7 +27,8 @@ from collections import OrderedDict
 from .logger import get_logger
 logger = get_logger(__name__)
 
-from .config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, COMMAND_NAME_PARAM
+from .config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
+                    COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER
 from .config import HostVersion, HOST_SOFTWARE
 from .exceptions import PyRevitUIError
 
@@ -257,6 +258,10 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
             logger.debug('Can not get native panels for this native tab: {} | {}'.format(adskwnd_ribbon_tab, err))
 
     ribbon_panel = _GenericRevitNativeUIContainer._get_component
+
+    @staticmethod
+    def is_pyrevit_tab():
+        return False
 
 
 # Classes holding non-native ui elements -------------------------------------------------------------------------------
@@ -674,11 +679,15 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
     ribbon_panel = _GenericPyRevitUIContainer._get_component    # type: _PyRevitRibbonPanel
 
-    def __init__(self, revit_ribbon_tab):
+    def __init__(self, revit_ribbon_tab, tab_id=None):
         _GenericPyRevitUIContainer.__init__(self)
 
         self.name = revit_ribbon_tab.Title
         self._rvtapi_object = revit_ribbon_tab
+
+        # is this tab created by pyrevit.revitui?
+        if tab_id:
+            self._rvtapi_object.Tag = tab_id
 
         # getting a list of existing panels under this tab
         try:
@@ -690,6 +699,9 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
         except:
             # if .GetRibbonPanels fails, this tab is an existing native tab
             raise PyRevitUIError('Can not get panels for this tab: {}'.format(self._rvtapi_object))
+
+    def is_pyrevit_tab(self):
+        return self._get_rvtapi_object().Tag == PYREVIT_TAB_IDENTIFIER
 
     def update_name(self, new_name):
         self._get_rvtapi_object().Title = new_name
@@ -742,6 +754,9 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                     self._add_component(new_pyrvt_tab)
                     logger.debug('Native tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
 
+    def get_pyrevit_tabs(self):
+        return [tab for tab in self if tab.is_pyrevit_tab()]
+
     def create_ribbon_tab(self, tab_name, update_if_exists=False):
         if self.contains(tab_name):
             if update_if_exists:
@@ -763,7 +778,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                 # create _PyRevitRibbonTab object with the recovered RibbonTab object
                 # and add new _PyRevitRibbonTab to list of current tabs
                 if revit_tab_ctrl:
-                    self._add_component(_PyRevitRibbonTab(revit_tab_ctrl))
+                    self._add_component(_PyRevitRibbonTab(revit_tab_ctrl, tab_id=PYREVIT_TAB_IDENTIFIER))
                 else:
                     raise PyRevitUIError('Tab created but can not be obtained from ui.')
 

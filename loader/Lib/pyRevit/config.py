@@ -291,6 +291,8 @@ SPECIAL_CHARS = {' ': '',
                  '\/': '', '\\': ''}
 
 # creating ui for tabs, panels, buttons and button groups --------------------------------------------------------------
+PYREVIT_TAB_IDENTIFIER = 'pyrevit_tab'
+
 ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
