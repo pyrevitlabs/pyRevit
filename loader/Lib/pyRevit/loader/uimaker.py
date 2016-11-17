@@ -56,7 +56,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
-from ..revitui import get_current_ui, _PyRevitUI
+from ..revitui import get_current_ui, _GenericRevitNativeUIContainer
 from ..exceptions import PyRevitUIError
 
 
@@ -206,7 +206,7 @@ def _produce_ui_stacks(parent_ui_panel, stack_cmp, pkg_asm_info):
 
         # capturing and logging any errors on stack item
         # (e.g when parent_ui_panel's stack is full and can not add any more items it will raise an error)
-        _recursively_produce_ui_items(parent_ui_panel, stack_cmp, pkg_asm_info, cleanup=False)
+        _recursively_produce_ui_items(parent_ui_panel, stack_cmp, pkg_asm_info)
 
         if HostVersion.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_split
@@ -264,7 +264,7 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             }
 
 
-def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info, cleanup=True):
+def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info):
     for sub_cmp in component:
         try:
             logger.debug('Calling create func {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
@@ -277,20 +277,23 @@ def _recursively_produce_ui_items(parent_ui_item, component, pkg_asm_info, clean
         if ui_item and sub_cmp.is_container():
                 _recursively_produce_ui_items(ui_item, sub_cmp, pkg_asm_info)
 
-    # Cleanup all existing items. All new items will reactivate existing if necessary
-    # if cleanup:
-    #     for rvt_ui_item in parent_ui_item:
-    #         if not component.contains(rvt_ui_item.name):
-    #             logger.debug('Deactivating existing item: {}'.format(rvt_ui_item))
-    #             try:
-    #                 rvt_ui_item.deactivate()
-    #             except Exception as err:
-    #                 logger.debug('Error deactivating item: {}'.format(err))
+
+current_ui = get_current_ui()
 
 
 def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
     """Updates/Creates pyRevit ui for the given package and provided assembly dll address.
     """
     logger.info('Creating/Updating ui for package: {}'.format(parsed_pkg))
-    current_ui = get_current_ui()
     _recursively_produce_ui_items(current_ui, parsed_pkg, pkg_asm_info)
+
+
+def cleanup_pyrevit_ui():
+    untouched_items = current_ui._get_flagged_children(state=False)
+    for item in untouched_items:
+        if not isinstance(item, _GenericRevitNativeUIContainer):
+            try:
+                logger.debug('Deactivating: {}'.format(item))
+                item.deactivate()
+            except Exception as deact_err:
+                logger.debug(deact_err)
