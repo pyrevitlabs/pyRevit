@@ -498,7 +498,7 @@ class Package(GenericContainer):
         #   if png files are added the parent folder mtime gets affected
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        pat = '(\\' + PACKAGE_POSTFIX + ')|(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + SETTINGS_FILE_EXTENSION + ')'
