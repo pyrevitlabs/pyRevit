@@ -139,6 +139,10 @@ class _GenericPyRevitUIContainer:
                 flagged_cmps.append(cmp)
         return flagged_cmps
 
+    @staticmethod
+    def is_native():
+        return False
+
     def is_dirty(self):
         if self._dirty:
             return self._dirty
@@ -154,7 +158,7 @@ class _GenericPyRevitUIContainer:
 
     def contains(self, pyrvt_cmp_name):
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
-                        
+
     def activate(self):
         if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
             self._rvtapi_object.Enabled = True
@@ -184,6 +188,10 @@ class _GenericPyRevitUIContainer:
 class _GenericRevitNativeUIContainer(_GenericPyRevitUIContainer):
     def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
+
+    @staticmethod
+    def is_native():
+        return True
 
     def deactivate(self):
         raise PyRevitUIError('Can not de/activate native item: {}'.format(self))

@@ -56,7 +56,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
-from ..revitui import get_current_ui, _GenericRevitNativeUIContainer
+from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
 
 
@@ -291,7 +291,7 @@ def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
 def cleanup_pyrevit_ui():
     untouched_items = current_ui._get_flagged_children(state=False)
     for item in untouched_items:
-        if not isinstance(item, _GenericRevitNativeUIContainer):
+        if not item.is_native():
             try:
                 logger.debug('Deactivating: {}'.format(item))
                 item.deactivate()
