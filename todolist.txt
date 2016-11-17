@@ -1,5 +1,6 @@
 revit ui:
 	fix revit ui items
+	don't add separator if it is at the end
 
 Cache:
 	clean cache files
@@ -12,6 +13,7 @@ script info:
 	implement the three functions
 
 user config:
+
 	disable caching
 	disabling tools
 	custom user settings
