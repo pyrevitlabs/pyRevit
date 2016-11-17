@@ -9,7 +9,7 @@ Cache:
 
 
 parser: get config script file name from __config__?
-	add context script __context__
+	add context script __context__ (IExternalCommandAvailability )
 	lib packages
 
 
