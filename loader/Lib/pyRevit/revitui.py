@@ -711,15 +711,15 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
     ribbon_panel = _GenericPyRevitUIContainer._get_component
 
-    def __init__(self, revit_ribbon_tab, tab_id=None):
+    def __init__(self, revit_ribbon_tab, is_pyrvt_tab=False):
         _GenericPyRevitUIContainer.__init__(self)
 
         self.name = revit_ribbon_tab.Title
         self._rvtapi_object = revit_ribbon_tab
 
         # is this tab created by pyrevit.revitui?
-        if tab_id:
-            self._rvtapi_object.Tag = tab_id
+        if is_pyrvt_tab:
+            self._rvtapi_object.Tag = PYREVIT_TAB_IDENTIFIER
 
         # getting a list of existing panels under this tab
         try:
@@ -731,6 +731,10 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
         except:
             # if .GetRibbonPanels fails, this tab is an existing native tab
             raise PyRevitUIError('Can not get panels for this tab: {}'.format(self._rvtapi_object))
+
+    @staticmethod
+    def check_pyrevit_tab(revit_ui_tab):
+        return hasattr(revit_ui_tab, 'Tag') and revit_ui_tab.Tag == PYREVIT_TAB_IDENTIFIER
 
     def is_pyrevit_tab(self):
         return self._get_rvtapi_object().Tag == PYREVIT_TAB_IDENTIFIER
@@ -776,18 +780,21 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
             # only listing visible tabs (there might be tabs with identical names
             # e.g. there are two Annotate tabs. They are activated as neccessary per context
             # but need to add inactive/invisible pyrevit tabs (PYREVIT_TAB_IDENTIFIER) anyway.
-            if revit_ui_tab.IsVisible or revit_ui_tab.Tag == PYREVIT_TAB_IDENTIFIER:
-                try:
+            # if revit_ui_tab.IsVisible
+            try:
+                if _PyRevitRibbonTab.check_pyrevit_tab(revit_ui_tab):
                     new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
-                    self._add_component(new_pyrvt_tab)
-                    logger.debug('Tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
-                except PyRevitUIError:
-                    # if _PyRevitRibbonTab(revit_ui_tab) fails, Revit restricts access to its panels
-                    # _RevitNativeRibbonTab uses a different method to access the panels
-                    # to interact with existing native ui
+                else:
                     new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
-                    self._add_component(new_pyrvt_tab)
-                    logger.debug('Native tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
+                self._add_component(new_pyrvt_tab)
+                logger.debug('Tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
+            except PyRevitUIError:
+                # if _PyRevitRibbonTab(revit_ui_tab) fails, Revit restricts access to its panels
+                # _RevitNativeRibbonTab uses a different method to access the panels
+                # to interact with existing native ui
+                new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
+                self._add_component(new_pyrvt_tab)
+                logger.debug('Native tab added to the list of tabs: {}'.format(new_pyrvt_tab.name))
 
     def get_pyrevit_tabs(self):
         return [tab for tab in self if tab.is_pyrevit_tab()]
@@ -813,7 +820,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                 # create _PyRevitRibbonTab object with the recovered RibbonTab object
                 # and add new _PyRevitRibbonTab to list of current tabs
                 if revit_tab_ctrl:
-                    pyrvt_ribbon_tab = _PyRevitRibbonTab(revit_tab_ctrl, tab_id=PYREVIT_TAB_IDENTIFIER)
+                    pyrvt_ribbon_tab = _PyRevitRibbonTab(revit_tab_ctrl, is_pyrvt_tab=True)
                     pyrvt_ribbon_tab.set_dirty_flag()
                     self._add_component(pyrvt_ribbon_tab)
                 else:
