@@ -41,11 +41,11 @@ def get_cached_package(installed_pkg):
         cache_file = _get_cache_file(installed_pkg)
         logger.debug('Cache file is: {}'.format(cache_file))
         with open(op.join(USER_TEMP_DIR, cache_file), 'rb') as bin_cache_file:
-            installed_pkg = pickle.load(bin_cache_file)
+            unpickled_pkg = pickle.load(bin_cache_file)
     except Exception as err:
         raise PyRevitCacheReadError('Error reading cache for: {} | {}'.format(installed_pkg, err))
 
-    return installed_pkg
+    return unpickled_pkg
 
 
 def is_cache_valid(pkg):
