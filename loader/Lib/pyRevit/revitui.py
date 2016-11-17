@@ -100,6 +100,8 @@ class _GenericPyRevitUIContainer:
         self.name = ''
         self._rvtapi_object = None
         self._sub_pyrvt_components = OrderedDict()
+        self._itemdata_mode = False
+        self._dirty = False
 
     def __iter__(self):
         return iter(self._sub_pyrvt_components.values())
@@ -108,12 +110,6 @@ class _GenericPyRevitUIContainer:
         return 'Name: {} RevitAPIObject: {}'.format(self.name, self._rvtapi_object)
 
     def _get_component(self, cmp_name):
-        """
-
-        :param str cmp_name:
-        :return:
-        :rtype: _GenericPyRevitUIContainer
-        """
         try:
             return self._sub_pyrvt_components[cmp_name]
         except KeyError:
@@ -133,27 +129,41 @@ class _GenericPyRevitUIContainer:
 
     def _set_rvtapi_object(self, rvtapi_obj):
         self._rvtapi_object = rvtapi_obj
+        self._itemdata_mode = False
+
+    def _get_flagged_children(self, state=True):
+        flagged_cmps = []
+        for cmp in self:
+            flagged_cmps.extend(cmp._get_flagged_children(state))
+            if cmp.is_dirty() == state:
+                flagged_cmps.append(cmp)
+        return flagged_cmps
+
+    def is_dirty(self):
+        if self._dirty:
+            return self._dirty
+        else:
+            # check if there is any dirty child
+            for cmp in self:
+                if cmp.is_dirty():
+                    return True
+            return False
+
+    def set_dirty_flag(self, state=True):
+        self._dirty = state
 
     def contains(self, pyrvt_cmp_name):
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
-
-    # def set_name(self, new_name):
-    #     if hasattr(self._rvtapi_object, 'Text'):
-    #         self._rvtapi_object.Text = new_name
-    #     elif hasattr(self._rvtapi_object, 'Title'):
-    #         self._rvtapi_object.Title = new_name
-    #     elif hasattr(self._rvtapi_object, 'Name'):
-    #         self._rvtapi_object.Name = new_name
-    #     else:
-    #         raise PyRevitUIError('Can not set name for: {}'.format(self))
-
+                        
     def activate(self):
         if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
             self._rvtapi_object.Enabled = True
             self._rvtapi_object.Visible = True
+            self._dirty = True
         elif hasattr(self._rvtapi_object, 'IsEnabled') and hasattr(self._rvtapi_object, 'IsVisible'):
             self._rvtapi_object.IsEnabled = True
             self._rvtapi_object.IsVisible = True
+            self._dirty = True
         else:
             raise PyRevitUIError('Can not activate: {}'.format(self))
 
@@ -161,9 +171,11 @@ class _GenericPyRevitUIContainer:
         if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
             self._rvtapi_object.Enabled = False
             self._rvtapi_object.Visible = False
+            self._dirty = True
         elif hasattr(self._rvtapi_object, 'IsEnabled') and hasattr(self._rvtapi_object, 'IsVisible'):
             self._rvtapi_object.IsEnabled = False
             self._rvtapi_object.IsVisible = False
+            self._dirty = True
         else:
             raise PyRevitUIError('Can not deactivate: {}'.format(self))
 
@@ -291,6 +303,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             self._get_rvtapi_object().LargeImage = button_icon.mediumBitmap
             if icon_size == ICON_LARGE:
                 self._get_rvtapi_object().LargeImage = button_icon.largeBitmap
+            self._dirty = True
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
 
@@ -306,20 +319,24 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
     def set_tooltip(self, tooltip):
         try:
             self._get_rvtapi_object().ToolTip = tooltip
+            self._dirty = True
         except Exception as err:
             raise PyRevitUIError('Item does not have tooltip property: {}'.format(err))
 
     def set_tooltip_ext(self, tooltip_ext):
         try:
             self._get_rvtapi_object().LongDescription = tooltip_ext
+            self._dirty = True
         except Exception as err:
             raise PyRevitUIError('Item does not have extended tooltip property: {}'.format(err))
 
     def set_title(self, ui_title):
         if self._itemdata_mode:
             self.ui_title = ui_title
+            self._dirty = True
         else:
             self._rvtapi_object.ItemText = ui_title
+            self._dirty = True
 
     def get_title(self):
         if self._itemdata_mode:
@@ -357,7 +374,6 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonButton(revit_button))
 
     def _create_data_items(self):
-        self._itemdata_mode = False
         # iterate through data items and their associated revit api data objects and create ui objects
         for pyrvt_ui_item in [x for x in self if x._itemdata_mode]:
             rvtapi_data_obj = pyrvt_ui_item._get_rvtapi_object()
@@ -368,17 +384,20 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_ribbon_item.ItemText = pyrvt_ui_item.get_title()
                 # replace data object with the newly create ribbon item
                 pyrvt_ui_item._set_rvtapi_object(rvtapi_ribbon_item)
-                pyrvt_ui_item._itemdata_mode = False
+
+        self._itemdata_mode = False
 
     def sync_with_current_item(self, state):
         if state:
-            self._sync_with_cur_item = True
             if hasattr(self._get_rvtapi_object(), SPLITPUSH_BUTTON_SYNC_PARAM):
+                self._sync_with_cur_item = True
                 self._get_rvtapi_object().IsSynchronizedWithCurrentItem = True
+                self._dirty = True
         else:
-            self._sync_with_cur_item = False
             if hasattr(self._get_rvtapi_object(), SPLITPUSH_BUTTON_SYNC_PARAM):
+                self._sync_with_cur_item = False
                 self._get_rvtapi_object().IsSynchronizedWithCurrentItem = False
+                self._dirty = True
 
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
@@ -389,6 +408,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         try:
             self._get_rvtapi_object().Image = button_icon.smallBitmap
             self._get_rvtapi_object().LargeImage = button_icon.largeBitmap
+            self._dirty = True
         except Exception as err:
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
 
@@ -413,8 +433,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                         exiting_item._get_rvtapi_object().AssemblyName = asm_location
                         exiting_item._get_rvtapi_object().ClassName = class_name
                 except Exception as asm_update_err:
-                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name,
-                                                                                                    asm_update_err))
+                        logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
                 if not icon_path:
                     logger.debug('Using parent item icon for {}'.format(exiting_item))
@@ -476,6 +495,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
 
+            new_button.set_dirty_flag()
             self._add_component(new_button)
 
         except Exception as create_err:
@@ -483,6 +503,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
     def add_separator(self):
         self._get_rvtapi_object().AddSeparator()
+        self._dirty = True
 
 
 class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
@@ -520,10 +541,12 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
     def add_separator(self):
         self._get_rvtapi_object().AddSeparator()
+        self._dirty = True
 
     def add_slideout(self):
         try:
             self._get_rvtapi_object().AddSlideOut()
+            self._dirty = True
         except Exception as err:
             raise PyRevitUIError('Error adding slide out: {}'.format(err))
 
@@ -562,7 +585,6 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             # pyrvt_ui_item only had button data info. Now that ui ribbon item has created, update pyrvt_ui_item
             # with corresponding revit api object. Also disable ._itemdata_mode since they're no longer data objects
             pyrvt_ui_item._set_rvtapi_object(rvtapi_ribbon_item)
-            pyrvt_ui_item._itemdata_mode = False
 
             # if pyrvt_ui_item is a group, create children and update group item data
             if isinstance(pyrvt_ui_item, _PyRevitRibbonGroupItem):
@@ -580,8 +602,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                         existing_item._get_rvtapi_object().AssemblyName = asm_location
                         existing_item._get_rvtapi_object().ClassName = class_name
                 except Exception as asm_update_err:
-                    raise PyRevitUIError('Can not change push button assembly info: {} | {}'.format(button_name,
-                                                                                                    asm_update_err))
+                    logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
+
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
                 if ui_title:
@@ -618,6 +640,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
 
+                new_button.set_dirty_flag()
                 self._add_component(new_button)
 
             except Exception as create_err:
@@ -653,6 +676,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                     except PyRevitUIError as iconerr:
                         logger.debug('Error adding icon for {} from {} | {}'.format(item_name, icon_path, iconerr))
 
+                pyrvt_pdbutton.set_dirty_flag()
                 self._add_component(pyrvt_pdbutton)
 
             except Exception as err:
@@ -677,7 +701,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
 
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
-    ribbon_panel = _GenericPyRevitUIContainer._get_component    # type: _PyRevitRibbonPanel
+    ribbon_panel = _GenericPyRevitUIContainer._get_component
 
     def __init__(self, revit_ribbon_tab, tab_id=None):
         _GenericPyRevitUIContainer.__init__(self)
@@ -719,7 +743,9 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                 # creating panel in tab
                 ribbon_panel = HOST_SOFTWARE.CreateRibbonPanel(self.name, panel_name)
                 # creating _PyRevitRibbonPanel object and add new panel to list of current panels
-                self._add_component(_PyRevitRibbonPanel(ribbon_panel))
+                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel)
+                pyrvt_ribbon_panel.set_dirty_flag()
+                self._add_component(pyrvt_ribbon_panel)
 
             except Exception as err:
                 raise PyRevitUIError('Can not create panel: {}'.format(err))
@@ -728,7 +754,7 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
 class _PyRevitUI(_GenericPyRevitUIContainer):
     """Captures the existing ui state and elements at creation."""
 
-    ribbon_tab = _GenericPyRevitUIContainer._get_component  # type: _PyRevitRibbonTab
+    ribbon_tab = _GenericPyRevitUIContainer._get_component
 
     def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
@@ -741,7 +767,8 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
             # for each existing tab. _PyRevitRibbonTab or _RevitNativeRibbonTab will find their existing panels
             # only listing visible tabs (there might be tabs with identical names
             # e.g. there are two Annotate tabs. They are activated as neccessary per context
-            if revit_ui_tab.IsVisible:
+            # but need to add inactive/invisible pyrevit tabs (PYREVIT_TAB_IDENTIFIER) anyway.
+            if revit_ui_tab.IsVisible or revit_ui_tab.Tag == PYREVIT_TAB_IDENTIFIER:
                 try:
                     new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
                     self._add_component(new_pyrvt_tab)
@@ -760,8 +787,8 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
     def create_ribbon_tab(self, tab_name, update_if_exists=False):
         if self.contains(tab_name):
             if update_if_exists:
-                pyrvt_ribbon_tab = self._get_component(tab_name)
-                pyrvt_ribbon_tab.activate()
+                existing_pyrvt_tab = self._get_component(tab_name)
+                existing_pyrvt_tab.activate()
             else:
                 raise PyRevitUIError('RibbonTab already exits and update is not allowed: {}'.format(tab_name))
         else:
@@ -778,12 +805,14 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                 # create _PyRevitRibbonTab object with the recovered RibbonTab object
                 # and add new _PyRevitRibbonTab to list of current tabs
                 if revit_tab_ctrl:
-                    self._add_component(_PyRevitRibbonTab(revit_tab_ctrl, tab_id=PYREVIT_TAB_IDENTIFIER))
+                    pyrvt_ribbon_tab = _PyRevitRibbonTab(revit_tab_ctrl, tab_id=PYREVIT_TAB_IDENTIFIER)
+                    pyrvt_ribbon_tab.set_dirty_flag()
+                    self._add_component(pyrvt_ribbon_tab)
                 else:
                     raise PyRevitUIError('Tab created but can not be obtained from ui.')
 
-            except Exception as err:
-                raise PyRevitUIError('Can not create tab: {}'.format(err))
+            except Exception as tab_create_err:
+                raise PyRevitUIError('Can not create tab: {}'.format(tab_create_err))
 
 
 # Public function to return an instance of _PyRevitUI which is used to interact with current ui ------------------------
