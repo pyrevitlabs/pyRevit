@@ -2,15 +2,19 @@ revit ui:
 	fix revit ui items
 	don't add separator if it is at the end
 
+
 Cache:
 	clean cache files
+	use startup cleanup function
 
-Pkg manager:
-	window to list available packages, allows installation and removal
-	update is handled through main update module
+
+parser: get config script file name from __config__?
+	lib packages
+
 
 script info:
 	implement the three functions
+
 
 user config:
 
@@ -22,8 +26,9 @@ Legacy scripts:
 	about with WPF xml
 	settings with WPF xml.
 
-Parser:
-	add support for adding panels to other packages: currently works because of name similarity in ui module
+loader: implement command options
+	command options must be dynamic if handled by loader
 
-
-lib packages
+Pkg manager:
+	window to list available packages, allows installation and removal
+	update is handled through main update module
