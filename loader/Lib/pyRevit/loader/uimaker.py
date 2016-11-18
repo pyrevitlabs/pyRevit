@@ -102,7 +102,6 @@ def _produce_ui_slideout(parent_ui_item, pushbutton, pkg_asm_info):
 
 
 def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
-    """:type togglebutton: ToggleButton"""
     logger.debug('Producing toggle button: {}'.format(togglebutton))
     try:
         parent_ui_item.create_push_button(togglebutton.name,

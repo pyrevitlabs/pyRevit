@@ -166,9 +166,6 @@ class GenericContainer(object):
             return self._sub_components
 
     def contains(self, item_name):
-        """
-        :param str item_name:
-        """
         for component in self._sub_components:
             if item_name == component.name:
                 return True
@@ -455,9 +452,6 @@ class Panel(GenericContainer):
                     return True
 
     def contains(self, item_name):
-        """
-        :param str item_name:
-        """
         # Panels contain stacks. But stacks itself does not have any ui and its subitems are displayed within the ui of
         # the prent panel. This is different from pulldowns and other button groups. Button groups, contain and display
         # their sub components in their own drop down menu.
