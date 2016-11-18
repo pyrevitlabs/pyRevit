@@ -49,15 +49,15 @@ components as requested through its methods.
 import imp
 
 from ..logger import get_logger
-logger = get_logger(__name__)
-
 from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
-from ..config import HostVersion, HOST_SOFTWARE, DEFAULT_SCRIPT_FILE
+from ..config import HostVersion, HOST_SOFTWARE
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
+
+logger = get_logger(__name__)
 
 
 def _make_button_tooltip(button):
@@ -291,7 +291,7 @@ def update_pyrevit_ui(parsed_pkg, pkg_asm_info):
 
 
 def cleanup_pyrevit_ui():
-    untouched_items = current_ui._get_flagged_children(state=False)
+    untouched_items = current_ui.get_unchanged_items()
     for item in untouched_items:
         if not item.is_native():
             try:

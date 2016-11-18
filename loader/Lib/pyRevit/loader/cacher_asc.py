@@ -36,12 +36,11 @@ import os.path as op
 import json
 
 from ..logger import get_logger
-logger = get_logger(__name__)
-
-# pyrevit module imports
 from ..config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
 from ..exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
 from ..utils import get_all_subclasses
+
+logger = get_logger(__name__)
 
 
 def _get_cache_file(cached_pkg):

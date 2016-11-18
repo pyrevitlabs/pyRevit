@@ -36,12 +36,12 @@ import os
 import os.path as op
 
 from ..logger import get_logger
-logger = get_logger(__name__)
-
 from ..exceptions import PyRevitException
-from ..utils import get_all_subclasses, get_sub_folders
+from ..utils import get_all_subclasses
 
 from .components import Package
+
+logger = get_logger(__name__)
 
 
 def _create_subcomponents(search_dir, component_types_list):

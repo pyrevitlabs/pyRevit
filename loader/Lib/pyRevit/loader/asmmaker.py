@@ -35,10 +35,9 @@ All these four modules can understand the component tree. (_basecomponents modul
 import os
 import os.path as op
 from collections import namedtuple
+import clr
 
 from ..logger import get_logger
-logger = get_logger(__name__)
-
 from ..config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
 from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..config import REVISION_EXTENSION
@@ -46,8 +45,9 @@ from ..config import PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
 from ..utils import join_strings, get_revit_instances
 
+logger = get_logger(__name__)
+
 # dot net imports
-import clr
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
@@ -156,7 +156,7 @@ def _get_params_for_commands(parent_cmp):
     loader_params_for_all_cmds = []
 
     logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
-    for sub_cmp in parent_cmp:  # type: GenericCommand
+    for sub_cmp in parent_cmp:
         if sub_cmp.is_container():
             loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
         else:

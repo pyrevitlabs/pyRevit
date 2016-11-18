@@ -29,8 +29,6 @@ Each pyRevit session will have its own .dll and log file.
 import os.path as op
 
 from .logger import get_logger
-logger = get_logger(__name__)
-
 from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError, PyRevitCacheExpiredError
 
@@ -39,6 +37,7 @@ from .userconfig import user_settings
 from loader.parser import get_installed_package_data, get_parsed_package
 from loader.asmmaker import create_assembly
 from loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from .usagedata import archive_script_usage_logs
 
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
 if user_settings.cache_type == CACHE_TYPE_ASCII:
@@ -46,7 +45,8 @@ if user_settings.cache_type == CACHE_TYPE_ASCII:
 else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
-from .usagedata import archive_script_usage_logs
+
+logger = get_logger(__name__)
 
 
 def load():

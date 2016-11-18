@@ -2,11 +2,10 @@ import os.path as op
 import pickle
 
 from ..logger import get_logger
+from ..config import USER_TEMP_DIR, SESSION_ID
+from ..exceptions import PyRevitCacheReadError, PyRevitCacheWriteError
+
 logger = get_logger(__name__)
-
-from ..config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
-from ..exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
-
 
 loaded_packages = []
 

@@ -2,11 +2,11 @@ import os
 import os.path as op
 
 from .logger import get_logger
-logger = get_logger(__name__)
-
 from .utils import get_all_subclasses
 from .exceptions import PyRevitException
 from .loader.components import GenericCommand
+
+logger = get_logger(__name__)
 
 
 def get_script_info(script_file_addr):
