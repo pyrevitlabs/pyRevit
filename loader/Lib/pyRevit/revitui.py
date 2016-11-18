@@ -130,6 +130,7 @@ class _GenericPyRevitUIContainer:
     def _set_rvtapi_object(self, rvtapi_obj):
         self._rvtapi_object = rvtapi_obj
         self._itemdata_mode = False
+        self._dirty = True
 
     def _get_flagged_children(self, state=True):
         flagged_cmps = []
@@ -300,6 +301,11 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         if not self._itemdata_mode:
             self.ui_title = self._rvtapi_object.ItemText
 
+    def _set_rvtapi_object(self, rvtapi_obj):
+        _GenericPyRevitUIContainer._set_rvtapi_object(self, rvtapi_obj)
+        # update the ui title for the newly added rvtapi_obj
+        self._rvtapi_object.ItemText = self.ui_title
+
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
             button_icon = _ButtonIcons(icon_file)
@@ -343,7 +349,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             self.ui_title = ui_title
             self._dirty = True
         else:
-            self._rvtapi_object.ItemText = ui_title
+            self._rvtapi_object.ItemText = self.ui_title = ui_title
             self._dirty = True
 
     def get_title(self):
@@ -545,7 +551,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._itemdata_mode = True
 
     def close_stack(self):
-        self._create_data_items(as_stack=True)
+        self._create_data_items()
 
     def add_separator(self):
         self._get_rvtapi_object().AddSeparator()
@@ -558,40 +564,43 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         except Exception as err:
             raise PyRevitUIError('Error adding slide out: {}'.format(err))
 
-    def _create_data_items(self, as_stack=False):
-        # fixme: Make a pushbutton if stack of one
+    def _create_data_items(self):
+        # fixme: what if a single button is added to the stack but other two items have been updated?
         self._itemdata_mode = False
+
         # get a list of data item names and the associated revit api data objects
         pyrvt_data_item_names = [x.name for x in self if x._itemdata_mode]
         rvtapi_data_objs = [x._get_rvtapi_object() for x in self if x._itemdata_mode]
 
-        # list of newly created revit ribbon items
+        # list of newly created revit_api ribbon items
         created_rvtapi_ribbon_items = []
 
-        if as_stack:
-            # create stack items in ui and get correspoding revit ui objects
-            obj_count = len(rvtapi_data_objs)
-            if obj_count == 2 or obj_count == 3:
-                created_rvtapi_ribbon_items = self._get_rvtapi_object().AddStackedItems(*rvtapi_data_objs)
-            # fixme: what if a single button is added to the stack but other two items have been updated?
-            elif obj_count == 0:
-                logger.debug('No new items has been added to stack. Skipping stack creation.')
-            else:
-                for pyrvt_data_item_name in pyrvt_data_item_names:
-                    self._remove_component(pyrvt_data_item_name)
-                raise PyRevitUIError('Can not create stack of {}. Stack can only have 2 or 3 items.'.format(obj_count))
-        else:
-            for rvtapi_data_obj in rvtapi_data_objs:
-                rvtapi_ribbon_item = self._get_rvtapi_object().AddItem(rvtapi_data_obj)
-                # fixme: rvtapi_ribbon_item.ItemText =
-                # fixme: update button info
-                created_rvtapi_ribbon_items.append(rvtapi_ribbon_item)
+        # create stack items in ui and get correspoding revit ui objects
+        data_obj_count = len(rvtapi_data_objs)
 
-        # iterate over the ribbon items and create children from button data info from associated pyrvt object
+        # if there are two or 3 items, create a proper stack
+        if data_obj_count == 2 or data_obj_count == 3:
+            created_rvtapi_ribbon_items = self._get_rvtapi_object().AddStackedItems(*rvtapi_data_objs)
+        # if there is only one item added, add that to panel and forget about stacking
+        elif data_obj_count == 1:
+            rvtapi_pushbutton = self._get_rvtapi_object().AddItem(*rvtapi_data_objs)
+            created_rvtapi_ribbon_items.append(rvtapi_pushbutton)
+        # if no items have been added, log the empty stack and return
+        elif data_obj_count == 0:
+            logger.debug('No new items has been added to stack. Skipping stack creation.')
+        # if none of the above, more than 3 items have been added. Cleanup data item cache and raise an error.
+        else:
+            for pyrvt_data_item_name in pyrvt_data_item_names:
+                self._remove_component(pyrvt_data_item_name)
+            raise PyRevitUIError('Can not create stack of {}. Stack can only have 2 or 3 items.'.format(data_obj_count))
+
+        # now that items are created and revit api objects are ready iterate over the ribbon items and
+        # inject revit api objects into the child pyrevit items
         for rvtapi_ribbon_item, pyrvt_data_item_name in zip(created_rvtapi_ribbon_items, pyrvt_data_item_names):
             pyrvt_ui_item = self._get_component(pyrvt_data_item_name)
             # pyrvt_ui_item only had button data info. Now that ui ribbon item has created, update pyrvt_ui_item
-            # with corresponding revit api object. Also disable ._itemdata_mode since they're no longer data objects
+            # with corresponding revit api object.
+            # ._set_rvtapi_object() disables ._itemdata_mode since they're no longer data objects
             pyrvt_ui_item._set_rvtapi_object(rvtapi_ribbon_item)
 
             # if pyrvt_ui_item is a group, create children and update group item data
