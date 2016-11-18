@@ -16,28 +16,25 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
+from pyrevit.logger import get_logger
+from pyrevit.config import ICON_LARGE
+from pyrevit.loader import updater
+import pyrevit.session as session
+
+logger = get_logger(__commandname__)
 
 __doc__ = 'Downloads updates from the github repository.'
 
 
-from pyrevit.config import ICON_LARGE
-from pyrevit.loader import updater
-
-
 def __selfinit__(script_cmp, commandbutton, __rvt__):
-    from pyrevit.logger import get_logger
-    logger = get_logger('Update.__selfinit__')
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-    for repo_info in updater.get_all_available_repos():
-        if updater.has_pending_updates(repo_info):
+
+    for repo in updater.get_all_available_repos():
+        if updater.has_pending_updates(repo):
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
 
 
 if __name__ == '__main__':
-    from pyrevit.logger import get_logger
-    logger = get_logger(__commandname__)
-    import pyrevit.session as session
-
     # collect a list of all repos to be updates
     repo_info_list = updater.get_all_available_repos()
     logger.debug('List of repos to be updated: {}'.format(repo_info_list))

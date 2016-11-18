@@ -9,9 +9,9 @@ from .exceptions import PyRevitException
 from .loader.components import GenericCommand
 
 
-def get_script_info(script_dir):
-    # fixme: test
-    for component_type in get_all_subclasses(GenericCommand):
+def get_script_info(script_file_addr):
+    script_dir = op.dirname(script_file_addr)
+    for component_type in get_all_subclasses([GenericCommand]):
         logger.debug('Testing sub_directory {} for {}'.format(script_dir, component_type))
         try:
             # if cmp_class can be created for this sub-dir, the add to list
