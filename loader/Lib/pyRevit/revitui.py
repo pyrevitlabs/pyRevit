@@ -185,10 +185,10 @@ class _GenericPyRevitUIContainer:
             raise PyRevitUIError('Can not deactivate: {}'.format(self))
 
     def get_updated_items(self):
-        self._get_flagged_children()
+        return self._get_flagged_children()
 
     def get_unchanged_items(self):
-        self._get_flagged_children(state=False)
+        return self._get_flagged_children(state=False)
 
 
 # Classes holding existing native ui elements (These elements are native and can not be modified) ----------------------
