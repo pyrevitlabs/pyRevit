@@ -32,3 +32,6 @@ loader: implement/cleanup command options
 Pkg manager:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
+
+compiling ironpython for speed:
+https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
