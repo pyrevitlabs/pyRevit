@@ -112,17 +112,20 @@ def has_pending_updates(repo_info):
         try:
             repo.Network.Fetch(remote, _make_fetch_options())
         except Exception as fetch_err:
-            logger.error('Failed fetching: {} | {}'.format(repo_info.directory, fetch_err))
+            logger.error('Failed fetching: {} | {}'.format(repo_info.directory, str(fetch_err).replace('\n', '')))
 
     for branch in repo_branches:
         if not branch.IsRemote:
             try:
                 if branch.TrackedBranch:
-                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName, branch.TrackedBranch.CanonicalName))
+                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
+                                                                    branch.TrackedBranch.CanonicalName))
                     hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
                     if hist_div.BehindBy > 0:
                         return True
             except Exception as compare_err:
-                logger.error('Can not compare branch {} in repo: {}'.format(branch, repo))
+                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
+                                                                                 repo,
+                                                                                 str(compare_err).replace('\n', '')))
 
     return False
