@@ -57,6 +57,8 @@ from ..config import HostVersion, HOST_SOFTWARE
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
 
+from System import AppDomain
+
 logger = get_logger(__name__)
 
 
@@ -77,6 +79,13 @@ def _make_ui_title(button):
         return button.ui_title + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
     else:
         return button.ui_title
+
+
+def _find_loaded_assembly(asm_name):
+    for loaded_asm in AppDomain.CurrentDomain.GetAssemblies():
+        if asm_name in loaded_asm.FullName:
+            return loaded_asm
+    return None
 
 
 def _produce_ui_separator(parent_ui_item, pushbutton, pkg_asm_info):
@@ -132,9 +141,12 @@ def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
 def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
     logger.debug('Producing button: {}'.format(linkbutton))
     try:
+        linked_asm = _find_loaded_assembly(linkbutton.assembly)
+        if not linked_asm or not linkbutton.command_class:
+            return None
         parent_ui_item.create_push_button(linkbutton.name,
-                                          linkbutton.assembly,
-                                          linkbutton.command_class,
+                                          linked_asm.Location,
+                                          '{}.{}'.format(linked_asm.GetName().Name, linkbutton.command_class),
                                           linkbutton.icon_file,
                                           _make_button_tooltip(linkbutton),
                                           _make_button_tooltip_ext(linkbutton, pkg_asm_info.name),

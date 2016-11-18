@@ -13,7 +13,7 @@ parser: - get config script file name from __config__?
 
 
 script info:
-	implement the three functions
+	implement the two functions
 
 
 user config:
@@ -32,7 +32,3 @@ loader: implement command options
 Pkg manager:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
-
-
-Test:
-link buttons
