@@ -25,6 +25,9 @@ import os
 import os.path as op
 import sys
 
+
+from exceptions import PyRevitException
+
 from System.Diagnostics import Process as _Process
 from System import AppDomain
 
@@ -37,7 +40,7 @@ _VER_PATCH = 0
 HOST_SOFTWARE = __revit__
 try:
     FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
-except Exception as err:
+except Exception:
     FORCED_DEBUG_MODE_PARAM = None
 
 # Addon defaults -------------------------------------------------------------------------------------------------------
@@ -94,31 +97,35 @@ class PyRevitVersion(object):
 
     @staticmethod
     def is_newer_than(version_tuple):
-        # fixme: check for tuple length
         """:type version_tuple: tuple"""
-        if PyRevitVersion.major > version_tuple[0]:
-            return True
-        elif PyRevitVersion.major == version_tuple[0]:
-            if PyRevitVersion.minor > version_tuple[1]:
+        try:
+            if PyRevitVersion.major > version_tuple[0]:
                 return True
-            elif PyRevitVersion.minor == version_tuple[1]:
-                if PyRevitVersion.patch > version_tuple[2]:
+            elif PyRevitVersion.major == version_tuple[0]:
+                if PyRevitVersion.minor > version_tuple[1]:
                     return True
+                elif PyRevitVersion.minor == version_tuple[1]:
+                    if PyRevitVersion.patch > version_tuple[2]:
+                        return True
+        except IndexError as err:
+            raise PyRevitException('Version tuple must be in format: (Major, Minor, Patch) | {}'.format(err))
 
         return False
 
     @staticmethod
     def is_older_than(version_tuple):
-        # fixme: check for tuple length
         """:type version_tuple: tuple"""
-        if PyRevitVersion.major < version_tuple[0]:
-            return True
-        elif PyRevitVersion.major == version_tuple[0]:
-            if PyRevitVersion.minor < version_tuple[1]:
+        try:
+            if PyRevitVersion.major < version_tuple[0]:
                 return True
-            elif PyRevitVersion.minor == version_tuple[1]:
-                if PyRevitVersion.patch < version_tuple[2]:
+            elif PyRevitVersion.major == version_tuple[0]:
+                if PyRevitVersion.minor < version_tuple[1]:
                     return True
+                elif PyRevitVersion.minor == version_tuple[1]:
+                    if PyRevitVersion.patch < version_tuple[2]:
+                        return True
+        except IndexError as err:
+            raise PyRevitException('Version tuple must be in format: (Major, Minor, Patch) | {}'.format(err))
 
         return False
 
