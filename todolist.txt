@@ -17,21 +17,24 @@ script info:
 
 
 user config:
-
 	disable caching
 	disabling tools
 	custom user settings
+
 
 Legacy scripts:
 	about with WPF xml
 	settings with WPF xml.
 
+
 loader: implement/cleanup command options
 	command options must be dynamic if handled by loader
+
 
 Pkg manager:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
+
 
 compiling ironpython for speed:
 https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
