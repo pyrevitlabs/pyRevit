@@ -565,7 +565,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Error adding slide out: {}'.format(err))
 
     def _create_data_items(self):
-        # fixme: what if a single button is added to the stack but other two items have been updated?
+        # fixme: if one item changes in stack and others dont change, button will be created as pushbutton out of stack
         self._itemdata_mode = False
 
         # get a list of data item names and the associated revit api data objects
