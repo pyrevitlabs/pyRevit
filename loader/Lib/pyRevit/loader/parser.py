@@ -105,7 +105,6 @@ def get_parsed_package(pkg):
     sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
     """
     _parse_for_components(pkg)
-
     return pkg
 
 

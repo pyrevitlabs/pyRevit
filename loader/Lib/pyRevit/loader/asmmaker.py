@@ -189,7 +189,7 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
                                                                           PyRevitVersion.patch, 0))
     logger.debug('Generated assembly name for this package: {0}'.format(pkg_asm_name))
     logger.debug('Generated windows assembly name for this package: {0}'.format(windowsassemblyname))
-    logger.info('Generated assembly file name for this package: {0}'.format(pkg_asm_file_name))
+    logger.debug('Generated assembly file name for this package: {0}'.format(pkg_asm_file_name))
     assemblybuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(windowsassemblyname,
                                                                     AssemblyBuilderAccess.RunAndSave, USER_TEMP_DIR)
 

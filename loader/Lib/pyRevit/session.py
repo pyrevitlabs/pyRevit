@@ -100,7 +100,7 @@ def load():
                 logger.debug('Cache is valid for: {}'.format(package_info))
                 # cacher module takes the package object and injects cache data into it.
                 package = get_cached_package(package_info)
-                logger.debug('Package successfuly loaded from cache: {}'.format(package))
+                logger.info('Package successfuly loaded from cache: {}'.format(package.name))
 
             except PyRevitCacheError as cache_err:
                 logger.debug(cache_err)
@@ -111,15 +111,16 @@ def load():
                 package = get_parsed_package(package_info)
 
                 # update cache with newly parsed package
-                logger.debug('Package successfuly parsed: {}'.format(package))
-                logger.debug('Updating cache for package: {}'.format(package))
+                logger.info('Package successfuly parsed: {}'.format(package.name))
+                logger.info('Updating cache for package: {}'.format(package.name))
                 update_cache(package)
 
             # create a dll assembly and get assembly info
             pkg_asm_info = create_assembly(package)
-            logger.debug('Package successfuly loaded: {}'.format(package_info))
+            logger.info('Package assembly created: {}'.format(package_info.name))
 
             # update/create ui (needs the assembly to link button actions to commands saved in the dll)
             update_pyrevit_ui(package, pkg_asm_info)
+            logger.info('UI created for package: {}'.format(package.name))
 
     cleanup_pyrevit_ui()
