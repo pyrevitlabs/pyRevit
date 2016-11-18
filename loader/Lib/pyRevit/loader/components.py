@@ -39,15 +39,15 @@ from ..logger import get_logger
 logger = get_logger(__name__)
 
 from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
+from ..config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
 from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX
-from ..config import DEFAULT_SYS_PATHS, COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
-                     MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM
+from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, MIN_PYREVIT_VERSION_PARAM,\
+                     COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM
 from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileParser, cleanup_string
 
@@ -359,8 +359,16 @@ class LinkButton(GenericCommand):
 
     def __init_from_dir__(self, cmd_dir):
         GenericCommand.__init_from_dir__(self, cmd_dir)
-        # todo extract assembly and class info
         self.assembly = self.command_class = None
+        try:
+            # reading script file content to extract parameters
+            script_content = ScriptFileParser(self.get_full_script_address())
+            self.assembly = script_content.extract_param(LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
+            self.command_class = script_content.extract_param(LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
+        except PyRevitException as err:
+            logger.error(err)
+
+        logger.debug('Link button assembly.class: {}.{}'.format(self.assembly, self.command_class))
 
 
 class PushButton(GenericCommand):

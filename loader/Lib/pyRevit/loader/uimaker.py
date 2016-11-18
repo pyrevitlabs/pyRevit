@@ -72,6 +72,13 @@ def _make_button_tooltip_ext(button, asm_name):
     return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
 
 
+def _make_ui_title(button):
+    if button.has_config_script():
+        return button.ui_title + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
+    else:
+        return button.ui_title
+
+
 def _produce_ui_separator(parent_ui_item, pushbutton, pkg_asm_info):
     if not pkg_asm_info.reloading:
         logger.debug('Adding separator to: {}'.format(parent_ui_item))
@@ -124,30 +131,25 @@ def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
 
 
 def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
-    # todo: create link button
-    # logger.debug('Producing link button: {}'.format(linkbutton))
-    # try:
-    #     parent_ui_item.create_push_button(linkbutton.name,
-    #                                       linkbutton.assembly_name,
-    #                                       linkbutton.unique_name,
-    #                                       linkbutton.icon_file,
-    #                                       _make_button_tooltip(linkbutton),
-    #                                       _make_button_tooltip_ext(linkbutton, linkbutton.assembly_name),
-    #                                       update_if_exists=True)
-    #     return parent_ui_item.button(linkbutton.name)
-    # except PyRevitUIError as err:
-    #     logger.error('UI error: {}'.format(err.message))
-    #     return None
-    pass
+    logger.debug('Producing button: {}'.format(linkbutton))
+    try:
+        parent_ui_item.create_push_button(linkbutton.name,
+                                          linkbutton.assembly,
+                                          linkbutton.command_class,
+                                          linkbutton.icon_file,
+                                          _make_button_tooltip(linkbutton),
+                                          _make_button_tooltip_ext(linkbutton, pkg_asm_info.name),
+                                          update_if_exists=True,
+                                          ui_title=_make_ui_title(linkbutton))
+        return parent_ui_item.button(linkbutton.name)
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
 def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
     logger.debug('Producing button: {}'.format(pushbutton))
     try:
-        if pushbutton.has_config_script():
-            pb_title = pushbutton.ui_title + ' {}'.format(CONFIG_SCRIPT_TITLE_POSTFIX)
-        else:
-            pb_title = None
         parent_ui_item.create_push_button(pushbutton.name,
                                           pkg_asm_info.location,
                                           pushbutton.unique_name,
@@ -155,7 +157,7 @@ def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
                                           _make_button_tooltip(pushbutton),
                                           _make_button_tooltip_ext(pushbutton, pkg_asm_info.name),
                                           update_if_exists=True,
-                                          ui_title=pb_title)
+                                          ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)
     except PyRevitUIError as err:
         logger.error('UI error: {}'.format(err.message))
