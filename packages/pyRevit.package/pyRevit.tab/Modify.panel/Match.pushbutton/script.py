@@ -31,6 +31,7 @@ verbose = True
 __window__.Close()
 
 sel = []
+# fixme: modify to remember source style
 sourceElement = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick source object.'))
 fromStyle = curview.GetElementOverrides(sourceElement.Id)
 
