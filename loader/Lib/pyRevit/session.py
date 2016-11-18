@@ -39,6 +39,7 @@ from .userconfig import user_settings
 from loader.parser import get_installed_package_data, get_parsed_package
 from loader.asmmaker import create_assembly
 from loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
 if user_settings.cache_type == CACHE_TYPE_ASCII:
     from loader.cacher_asc import is_cache_valid, get_cached_package, update_cache
@@ -46,12 +47,6 @@ else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
 from .usagedata import archive_script_usage_logs
-
-
-def _runtime_cleanup_actions():
-    # archive previous sessions logs
-    logger.debug('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
-    archive_script_usage_logs()
 
 
 def load():
@@ -72,8 +67,9 @@ def load():
     # Session, creates an independent dll (using asmmaker) and ui (using uimaker) for every package.
     # This isolates other packages from any errors that might occur during package startup.
 
-    # call runtime cleaner to cleanup temporary files from previous sessions
-    _runtime_cleanup_actions()
+    # archive previous sessions logs
+    logger.debug('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
+    archive_script_usage_logs()
 
     # get a list of all directories that could include packages
     pkg_search_dirs = user_settings.get_package_root_dirs()

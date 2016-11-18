@@ -15,11 +15,6 @@ def _get_cache_file(cached_pkg):
     return op.join(USER_TEMP_DIR, '{}_cache_{}.pickle'.format(SESSION_ID, cached_pkg.name))
 
 
-def _cleanup_cache_files():
-    # todo: cleanup cache files?
-    pass
-
-
 def update_cache(parsed_pkg):
     try:
         logger.debug('Writing cache for: {}'.format(parsed_pkg))
@@ -49,9 +44,8 @@ def get_cached_package(installed_pkg):
 
 
 def is_cache_valid(pkg):
-    # fixme: clean cache file if it is not valid
     try:
-        cached_pkg = get_cached_package(pkg)    # type: Package
+        cached_pkg = get_cached_package(pkg)
         logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))
         cache_version_valid = cached_pkg.hash_version == pkg.hash_version
 

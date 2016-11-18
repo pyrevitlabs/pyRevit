@@ -81,11 +81,6 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
                 parent_cmp.add_component(loaded_cmp)
 
 
-def _cleanup_cache_files():
-    # todo: cleanup cache files?
-    pass
-
-
 def _read_cache_for(cached_pkg):
     try:
         logger.debug('Reading cache for: {}'.format(cached_pkg))
@@ -130,7 +125,6 @@ def get_cached_package(installed_pkg):
 
 
 def is_cache_valid(pkg):
-    # fixme: clean cache file if it is not valid
     try:
         cached_pkg_dict = _read_cache_for(pkg)  # type: dict
         logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))

@@ -1,5 +1,3 @@
-# todo: add support for versioning based on git head hash
-
 import sys
 import clr
 from collections import namedtuple
