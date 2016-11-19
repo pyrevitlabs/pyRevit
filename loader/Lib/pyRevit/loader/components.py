@@ -181,9 +181,36 @@ class GenericContainer(object):
         for k, v in cache_dict.items():
             self.__dict__[k] = v
 
+    def get_search_paths(self):
+        return self.syspath_search_paths
+
+    def get_lib_path(self):
+        return self.library_path
+
+    def has_syspath(self, path):
+        return path in self.syspath_search_paths
+
+    def add_syspath(self, path):
+        if path and not self.has_syspath(path):
+            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            for cmp in self._sub_components:
+                cmp.add_syspath(path)
+            return self.syspath_search_paths.append(path)
+        else:
+            return None
+
+    def remove_syspath(self, path):
+        if path and self.has_syspath(path):
+            logger.debug('Removing syspath: {} from {}'.format(path, self))
+            for cmp in self._sub_components:
+                cmp.remove_syspath(path)
+            return self.syspath_search_paths.remove(path)
+        else:
+            return None
+
     def add_component(self, comp):
-        if self.syspath_search_paths:
-            comp.syspath_search_paths.extend(self.syspath_search_paths)
+        for path in self.syspath_search_paths:
+            comp.add_syspath(path)
         self._sub_components.append(comp)
 
     def get_components(self):
@@ -331,6 +358,26 @@ class GenericCommand(object):
 
     def get_search_paths(self):
         return self.syspath_search_paths
+
+    def get_lib_path(self):
+        return self.library_path
+
+    def has_syspath(self, path):
+        return path in self.syspath_search_paths
+
+    def add_syspath(self, path):
+        if path and not self.has_syspath(path):
+            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            return self.syspath_search_paths.append(path)
+        else:
+            return None
+
+    def remove_syspath(self, path):
+        if path and self.has_syspath(path):
+            logger.debug('Removing syspath: {} from {}'.format(path, self))
+            return self.syspath_search_paths.remove(path)
+        else:
+            return None
 
     def get_cmd_options(self):
         return self.cmd_options
@@ -523,23 +570,26 @@ class Package(GenericContainer):
 
 # Misc UI Classes
 # ----------------------------------------------------------------------------------------------------------------------
-class GenericSeparator:
+class GenericLayoutComponent:
+    type_id = None
+
+    def __init__(self):
+        self.name = self.type_id
+
+    @staticmethod
+    def is_container():
+        return False
+
+
+class GenericSeparator(GenericLayoutComponent):
     type_id = SEPARATOR_IDENTIFIER
 
     def __init__(self):
-        self.name = SEPARATOR_IDENTIFIER
-
-    @staticmethod
-    def is_container():
-        return False
+        GenericLayoutComponent.__init__(self)
 
 
-class GenericSlideout:
+class GenericSlideout(GenericLayoutComponent):
     type_id = SLIDEOUT_IDENTIFIER
 
     def __init__(self):
-        self.name = SLIDEOUT_IDENTIFIER
-
-    @staticmethod
-    def is_container():
-        return False
+        GenericLayoutComponent.__init__(self)

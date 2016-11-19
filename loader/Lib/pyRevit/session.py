@@ -49,6 +49,11 @@ else:
 logger = get_logger(__name__)
 
 
+def _update_pkg_syspaths(pkg, all_installed_pkgs):
+    for installed_pkg in all_installed_pkgs:
+        pkg.add_syspath(installed_pkg.get_lib_path())
+
+
 def load():
     """Handles loading/reloading of the pyRevit addin and extension packages.
     To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
@@ -84,7 +89,8 @@ def load():
         # Get a list of all installed packages in this directory
         # parser.get_installed_package_data() returns a list of packages in given directory
         # then iterater through packages and load one by one
-        for package_info in get_installed_package_data(root_dir):
+        all_installed_pkgs = get_installed_package_data(root_dir)
+        for package_info in all_installed_pkgs:
             # test if cache is valid for this package
             # it might seem unusual to create a package and then re-load it from cache but minimum information
             # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
@@ -114,6 +120,10 @@ def load():
                 logger.info('Package successfuly parsed: {}'.format(package.name))
                 logger.info('Updating cache for package: {}'.format(package.name))
                 update_cache(package)
+
+            # update package master syspaths with lib address of other packages
+            # this is to support packages that provide library only to be used by other packages
+            _update_pkg_syspaths(package, all_installed_pkgs)
 
             # create a dll assembly and get assembly info
             pkg_asm_info = create_assembly(package)
