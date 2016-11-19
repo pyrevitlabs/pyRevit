@@ -84,6 +84,7 @@ def get_all_available_repos():
 
 
 def update_pyrevit(repo_info):
+    # fixme: if core update is available, pull to a new branch, then merge on pyrevit restart
     repo = repo_info.repo
     logger.debug('Updating repo: {}'.format(repo_info.directory))
     head_msg = str(repo.Head.Tip.Message).replace('\n','')
