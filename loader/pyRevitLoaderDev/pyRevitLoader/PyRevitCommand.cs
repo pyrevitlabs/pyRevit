@@ -23,10 +23,11 @@ namespace PyRevitLoader
         public string _scriptSource = "";
         public string _alternateScriptSource = "";
         public string _logfilename = "";
-        public bool _forcedDebugMode = false;
         public string _syspaths;
         public string _cmdName;
         public string _cmdOptions;
+        public bool _forcedDebugMode = false;
+        public bool _altScriptMode = false;
 
         public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths, string cmdName, string cmdOptions)
         {
@@ -64,6 +65,7 @@ namespace PyRevitLoader
             if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
                 _scriptSource = _alternateScriptSource;
+                _altScriptMode = true;
             }
 
             // Reading script source
@@ -74,7 +76,7 @@ namespace PyRevitLoader
             }
 
             // Execute script
-            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode);
+            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode, _altScriptMode);
             message = executor.Message;
 
             // Log successful script usage

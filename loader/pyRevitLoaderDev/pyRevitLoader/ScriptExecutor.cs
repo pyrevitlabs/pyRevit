@@ -58,7 +58,10 @@ namespace PyRevitLoader
         /// <summary>
         /// Run the script and print the output to a new output window.
         /// </summary>
-        public int ExecuteScript(string source, string sourcePath, string syspaths, string cmdName, string cmdOptions, bool forcedDebugMode)
+        public int ExecuteScript(string source,
+                                 string sourcePath, string syspaths,
+                                 string cmdName, string cmdOptions,
+                                 bool forcedDebugMode, bool altScriptMode)
         {
             try
             {
@@ -95,6 +98,7 @@ namespace PyRevitLoader
                 // add __forceddebugmode__ to builtins
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
                 builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
+                builtin.SetVariable("__shiftclick__", altScriptMode);
 
                 // add command name to builtins
                 builtin.SetVariable("__commandname__", cmdName);
