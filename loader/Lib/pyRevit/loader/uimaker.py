@@ -53,7 +53,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
-from ..config import HostVersion, HOST_SOFTWARE
+from ..config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
 from ..revitui import get_current_ui
 from ..exceptions import PyRevitUIError
 
@@ -117,31 +117,37 @@ def _produce_ui_slideout(parent_ui_item, pushbutton, pkg_asm_info):
     return None
 
 
-def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
-    logger.debug('Producing toggle button: {}'.format(togglebutton))
+def _produce_ui_smartbutton(parent_ui_item, smartbutton, pkg_asm_info):
+    logger.debug('Producing smart button: {}'.format(smartbutton))
     try:
-        parent_ui_item.create_push_button(togglebutton.name,
+        parent_ui_item.create_push_button(smartbutton.name,
                                           pkg_asm_info.location,
-                                          togglebutton.unique_name,
-                                          togglebutton.icon_file,
-                                          _make_button_tooltip(togglebutton),
-                                          _make_button_tooltip_ext(togglebutton, pkg_asm_info.name),
-                                          togglebutton.unique_avail_name,
+                                          smartbutton.unique_name,
+                                          smartbutton.icon_file,
+                                          _make_button_tooltip(smartbutton),
+                                          _make_button_tooltip_ext(smartbutton, pkg_asm_info.name),
+                                          smartbutton.unique_avail_name,
                                           update_if_exists=True,
-                                          ui_title=_make_ui_title(togglebutton))
+                                          ui_title=_make_ui_title(smartbutton))
 
-        logger.debug('Importing toggle button as module: {}'.format(togglebutton))
-        # importedscript = __import__(togglebutton.get_full_script_address())
-        importedscript = imp.load_source(togglebutton.unique_name, togglebutton.script_file)
+        logger.debug('Importing smart button as module: {}'.format(smartbutton))
+        # replacing COMMAND_NAME_PARAM value with button name so the init script can log under its own name
+        orig_cmd_name = __builtins__[COMMAND_NAME_PARAM]
+        __builtins__[COMMAND_NAME_PARAM] = smartbutton.name
+        # importing smart button script as a module
+        importedscript = imp.load_source(smartbutton.unique_name, smartbutton.script_file)
+        # resetting COMMAND_NAME_PARAM to original
+        __builtins__[COMMAND_NAME_PARAM] = orig_cmd_name
         logger.debug('Import successful: {}'.format(importedscript))
-        logger.debug('Running self initializer: {}'.format(togglebutton))
+        logger.debug('Running self initializer: {}'.format(smartbutton))
         try:
-            importedscript.__selfinit__(togglebutton,
-                                        parent_ui_item.button(togglebutton.name),
+            # running the smart button initializer function
+            importedscript.__selfinit__(smartbutton,
+                                        parent_ui_item.button(smartbutton.name),
                                         HOST_SOFTWARE)
-        except Exception as togglebutton_err:
-            logger.error('Error initializing toggle button: {} | {}'.format(togglebutton, togglebutton_err))
-        return parent_ui_item.button(togglebutton.name)
+        except Exception as button_err:
+            logger.error('Error initializing smart button: {} | {}'.format(smartbutton, button_err))
+        return parent_ui_item.button(smartbutton.name)
     except PyRevitUIError as err:
         logger.error('UI error: {}'.format(err.message))
         return None
