@@ -27,6 +27,7 @@ __doc__ = 'Downloads updates from the github repository.'
 
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
+    logger.info('Checking for updates...')
     has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
 
     for repo in updater.get_all_available_repos():
