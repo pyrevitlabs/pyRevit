@@ -81,6 +81,13 @@ def _make_ui_title(button):
         return button.ui_title
 
 
+def _make_full_class_name(asm_name, class_name):
+    if asm_name is None or class_name is None:
+        return None
+    else:
+        return '{}.{}'.format(asm_name, class_name)
+
+
 def _find_loaded_assembly(asm_name):
     for loaded_asm in AppDomain.CurrentDomain.GetAssemblies():
         if asm_name in loaded_asm.FullName:
@@ -119,7 +126,9 @@ def _produce_ui_smartbutton(parent_ui_item, togglebutton, pkg_asm_info):
                                           togglebutton.icon_file,
                                           _make_button_tooltip(togglebutton),
                                           _make_button_tooltip_ext(togglebutton, pkg_asm_info.name),
-                                          update_if_exists=True)
+                                          togglebutton.unique_avail_name,
+                                          update_if_exists=True,
+                                          ui_title=_make_ui_title(togglebutton))
 
         logger.debug('Importing toggle button as module: {}'.format(togglebutton))
         # importedscript = __import__(togglebutton.get_full_script_address())
@@ -146,10 +155,11 @@ def _produce_ui_linkbutton(parent_ui_item, linkbutton, pkg_asm_info):
             return None
         parent_ui_item.create_push_button(linkbutton.name,
                                           linked_asm.Location,
-                                          '{}.{}'.format(linked_asm.GetName().Name, linkbutton.command_class),
+                                          _make_full_class_name(linked_asm.GetName().Name, linkbutton.command_class),
                                           linkbutton.icon_file,
                                           _make_button_tooltip(linkbutton),
                                           _make_button_tooltip_ext(linkbutton, pkg_asm_info.name),
+                                          linkbutton.unique_avail_name,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(linkbutton))
         return parent_ui_item.button(linkbutton.name)
@@ -167,6 +177,7 @@ def _produce_ui_pushbutton(parent_ui_item, pushbutton, pkg_asm_info):
                                           pushbutton.icon_file,
                                           _make_button_tooltip(pushbutton),
                                           _make_button_tooltip_ext(pushbutton, pkg_asm_info.name),
+                                          pushbutton.unique_avail_name,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)

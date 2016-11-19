@@ -43,11 +43,12 @@ from ..config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
 from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
                      TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX
+                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, COMMAND_AVAILABILITY_NAME_POSTFIX
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
                      DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
 from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, MIN_PYREVIT_VERSION_PARAM,\
-                     COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM
+                     COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM, \
+                     COMMAND_CONTEXT_PARAM
 from ..config import PyRevitVersion, HostVersion
 from ..utils import ScriptFileParser, cleanup_string
 
@@ -154,10 +155,11 @@ class GenericContainer(object):
 
             # insert separators and slideouts per layout definition
             logger.debug('Adding separators and slide outs per layout...')
+            last_item_index = len(self.layout_list) - 1
             for i_index, layout_item in enumerate(self.layout_list):
-                if SEPARATOR_IDENTIFIER in layout_item:
+                if SEPARATOR_IDENTIFIER in layout_item and i_index < last_item_index:
                     _processed_cmps.insert(i_index, GenericSeparator())
-                elif SLIDEOUT_IDENTIFIER in layout_item:
+                elif SLIDEOUT_IDENTIFIER in layout_item and i_index < last_item_index:
                     _processed_cmps.insert(i_index, GenericSlideout())
 
             logger.debug('Reordered sub_component list is: {}'.format(_processed_cmps))
@@ -204,8 +206,8 @@ class GenericCommand(object):
         self.original_name = self.name = None
         self.icon_file = self.script_file = self.config_script_file = None
         self.min_pyrevit_ver = self.min_revit_ver = None
-        self.doc_string = self.author = self.cmd_options = None
-        self.unique_name = None
+        self.doc_string = self.author = self.cmd_options = self.cmd_context = None
+        self.unique_name = self.unique_avail_name = None
         self.library_path = self.search_paths = None
         self.syspath_search_paths = []
 
@@ -247,6 +249,7 @@ class GenericCommand(object):
             self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
             self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)  # type: list
+            self.cmd_context = script_content.extract_param(COMMAND_CONTEXT_PARAM)  # type: stt
         except PyRevitException as err:
             logger.error(err)
 
@@ -266,6 +269,8 @@ class GenericCommand(object):
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()
+        if self.cmd_context:
+            self.unique_avail_name = self.unique_name + COMMAND_AVAILABILITY_NAME_POSTFIX
 
         # each command can store custom libraries under /Lib inside the command folder
         lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)

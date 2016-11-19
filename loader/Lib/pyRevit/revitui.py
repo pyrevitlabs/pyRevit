@@ -442,42 +442,44 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Item does not have image property: {}'.format(err))
 
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path, tooltip, tooltip_ext,
+                           icon_path='', tooltip='', tooltip_ext='', avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
             if update_if_exists:
-                exiting_item = self._get_component(button_name)     # type: _PyRevitRibbonButton
+                existing_item = self._get_component(button_name)     # type: _PyRevitRibbonButton
                 try:
                     # Assembly and Class info of current active script button can not be updated.
                     if button_name != COMMAND_NAME_PARAM:
-                        exiting_item._get_rvtapi_object().AssemblyName = asm_location
-                        exiting_item._get_rvtapi_object().ClassName = class_name
+                        existing_item._get_rvtapi_object().AssemblyName = asm_location
+                        existing_item._get_rvtapi_object().ClassName = class_name
+                        if avail_class_name:
+                            existing_item._get_rvtapi_object().AvailabilityClassName = avail_class_name
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
                 if not icon_path:
-                    logger.debug('Using parent item icon for {}'.format(exiting_item))
+                    logger.debug('Using parent item icon for {}'.format(existing_item))
                     parent_icon_path = self.get_icon()
                     if parent_icon_path:
                         # if button group shows the active button icon, then the child buttons need to have large icons
-                        exiting_item.set_icon(parent_icon_path,
+                        existing_item.set_icon(parent_icon_path,
                                               icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                     else:
                         logger.debug('Can not get item icon from {}'.format(self))
                 else:
                     try:
                         # if button group shows the active button icon, then the child buttons need to have large icons
-                        exiting_item.set_icon(icon_path,
+                        existing_item.set_icon(icon_path,
                                               icon_size=ICON_LARGE if self._use_active_item_icon else ICON_MEDIUM)
                     except PyRevitUIError as iconerr:
                         logger.error('Error adding icon for {} | {}'.format(button_name, iconerr))
 
-                exiting_item.set_tooltip(tooltip)
-                exiting_item.set_tooltip_ext(tooltip_ext)
+                existing_item.set_tooltip(tooltip)
+                existing_item.set_tooltip_ext(tooltip_ext)
                 if ui_title:
-                    exiting_item.set_title(ui_title)
+                    existing_item.set_title(ui_title)
 
-                exiting_item.activate()
+                existing_item.activate()
                 return
             else:
                 raise PyRevitUIError('Push button already exits and update is not allowed: {}'.format(button_name))
@@ -485,6 +487,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         logger.debug('Parent does not include this button. Creating: {}'.format(button_name))
         try:
             button_data = PushButtonData(button_name, button_name, asm_location, class_name)
+            if avail_class_name:
+                button_data.AvailabilityClassName = avail_class_name
             if not self._itemdata_mode:
                 ribbon_button = self._get_rvtapi_object().AddPushButton(button_data)
                 new_button = _PyRevitRibbonButton(ribbon_button)
@@ -614,7 +618,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 pyrvt_ui_item._create_data_items()
 
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path, tooltip, tooltip_ext,
+                           icon_path='', tooltip='', tooltip_ext='', avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
             if update_if_exists:
@@ -624,6 +628,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                     if button_name != COMMAND_NAME_PARAM:
                         existing_item._get_rvtapi_object().AssemblyName = asm_location
                         existing_item._get_rvtapi_object().ClassName = class_name
+                        if avail_class_name:
+                            existing_item._get_rvtapi_object().AvailabilityClassName = avail_class_name
                 except Exception as asm_update_err:
                     logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
@@ -642,6 +648,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             logger.debug('Parent does not include this button. Creating: {}'.format(button_name))
             try:
                 button_data = PushButtonData(button_name, button_name, asm_location, class_name)
+                if avail_class_name:
+                    button_data.AvailabilityClassName = avail_class_name
                 if not self._itemdata_mode:
                     ribbon_button = self._get_rvtapi_object().AddItem(button_data)
                     new_button = _PyRevitRibbonButton(ribbon_button)

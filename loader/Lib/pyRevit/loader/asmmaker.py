@@ -38,9 +38,11 @@ from collections import namedtuple
 import clr
 
 from ..logger import get_logger
-from ..config import SESSION_ID, LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from ..config import SESSION_ID
+from ..config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from ..config import LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS
 from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
-from ..config import REVISION_EXTENSION
+from ..config import REVISION_EXTENSION, COMMAND_CONTEXT_SELECT_AVAIL
 from ..config import PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
 from ..utils import join_strings, get_revit_instances
@@ -66,10 +68,12 @@ PackageAssemblyInfo = namedtuple('PackageAssemblyInfo', ['name', 'location', 're
 # Generic named tuple for passing loader class parameters to the assembly maker
 LoaderClassParams = namedtuple('LoaderClassParams',
                                ['class_name',
+                                'avail_class_name',
                                 'script_file_address', 'config_script_file_address',
                                 'search_paths_str',
                                 'cmd_name',
                                 'cmd_options',
+                                'cmd_context'
                                 ])
 
 
@@ -103,22 +107,23 @@ def _is_pkg_asm_file(pkg, file_name):
     return False
 
 
-def _find_commandloader_class():
-    """Private func: Finds the loader assembly addin and command interface class."""
+def _find_command_loader():
     logger.debug('Asking Revit for command loader assembly...')
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
         if LOADER_ADDIN.lower() in str(loaded_assembly.FullName).lower():
-            # Loader assembly is found
-            # Getting the base command loader class
             logger.debug('Command loader assembly found: {0}'.format(loaded_assembly.GetName().FullName))
-            loader_class = loaded_assembly.GetType(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
-            if loader_class is not None:
-                return loader_class
-            else:
-                logger.critical('Can not find command loader class type.')
+            return loaded_assembly
+    raise PyRevitLoaderNotFoundError('Can not find necessary command loader assembly.')
 
-    logger.critical('Can not find necessary command loader assembly.')
-    raise PyRevitLoaderNotFoundError()
+
+def _find_cmd_loader_class(loader_class_name):
+    cmd_loader_asm = _find_command_loader()
+    """Private func: Finds the loader assembly addin and command interface class."""
+    loader_class = cmd_loader_asm.GetType(loader_class_name)
+    if loader_class is not None:
+        return loader_class
+    else:
+        raise PyRevitLoaderNotFoundError('Can not find command loader class type: {}'.format(loader_class_name))
 
 
 def _find_loaded_package_assemblies(pkg):
@@ -163,11 +168,13 @@ def _get_params_for_commands(parent_cmp):
             try:
                 logger.debug('Command found: {}'.format(sub_cmp))
                 loader_params_for_all_cmds.append(LoaderClassParams(sub_cmp.unique_name,
+                                                                    sub_cmp.unique_avail_name,
                                                                     sub_cmp.get_full_script_address(),
                                                                     sub_cmp.get_full_config_script_address(),
                                                                     join_strings(sub_cmp.get_search_paths()),
                                                                     sub_cmp.name,
-                                                                    join_strings(sub_cmp.get_cmd_options())
+                                                                    join_strings(sub_cmp.get_cmd_options()),
+                                                                    sub_cmp.cmd_context
                                                                     ))
             except Exception as err:
                 logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
@@ -175,13 +182,89 @@ def _get_params_for_commands(parent_cmp):
     return loader_params_for_all_cmds
 
 
-def _create_asm_file(pkg, loader_class, pkg_reloading):
+def _create_cmd_availability_type(modulebuilder, availability_class, loader_class_params):
+    type_builder = modulebuilder.DefineType(loader_class_params.avail_class_name,
+                                            TypeAttributes.Class | TypeAttributes.Public,
+                                            availability_class)
+
+    # call base constructor
+    ci = availability_class.GetConstructor(Array[Type]([str]))
+
+    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
+                                                   CallingConventions.Standard,
+                                                   Array[Type](()))
+    # add constructor parameters to stack
+    gen = const_builder.GetILGenerator()
+    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    # Load the command context as a string onto stack
+    gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_context)
+    gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
+    gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Ret)
+    type_builder.CreateType()
+
+
+def _create_cmd_loader_type(modulebuilder, loader_class, loader_class_params):
+    logger.debug('Creating loader class type for: {}'.format(loader_class_params))
+    type_builder = modulebuilder.DefineType(loader_class_params.class_name,
+                                            TypeAttributes.Class | TypeAttributes.Public,
+                                            loader_class)
+
+    # add RegenerationAttribute to type
+    regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
+    regen_attr_builder = CustomAttributeBuilder(regen_const_info,
+                                                Array[object]((RegenerationOption.Manual,)))
+    type_builder.SetCustomAttribute(regen_attr_builder)
+
+    # add TransactionAttribute to type
+    trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
+    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info,
+                                                  Array[object]((TransactionMode.Manual,)))
+    type_builder.SetCustomAttribute(trans_attrib_builder)
+
+    # call base constructor
+    ci = loader_class.GetConstructor(Array[Type]((str, str, str, str, str, str)))
+
+    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
+                                                   CallingConventions.Standard,
+                                                   Array[Type](()))
+    # add constructor parameters to stack
+    gen = const_builder.GetILGenerator()
+    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    # Load the path to the command as a string onto stack
+    gen.Emit(OpCodes.Ldstr, loader_class_params.script_file_address)
+    # Load the config script path to the command as a string onto stack (for alternate click)
+    gen.Emit(OpCodes.Ldstr, loader_class_params.config_script_file_address)
+    # Load log file name into stack
+    gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
+    # Adding search paths to the stack (concatenated using ; as separator)
+    gen.Emit(OpCodes.Ldstr, loader_class_params.search_paths_str)
+    # set command name:
+    gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_name)
+    # Adding command options to the stack (concatenated using ; as separator)
+    gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_options)
+    gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
+    gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Ret)
+    type_builder.CreateType()
+
+
+def _create_asm_file(pkg, pkg_reloading):
     logger.debug('Building script executer assembly...')
 
     # make unique assembly name for this package
     pkg_asm_name = _make_pkg_asm_name_revised(pkg) if pkg_reloading else _make_pkg_asm_name(pkg)
     # unique assembly filename for this package
     pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE
+
+    # find command loader and availability classes
+    loader_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
+    category_avail_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)
+    selection_avail_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS)
 
     # create assembly
     windowsassemblyname = AssemblyName(Name=pkg_asm_name, Version=Version(PyRevitVersion.major,
@@ -198,49 +281,12 @@ def _create_asm_file(pkg, loader_class, pkg_reloading):
 
     # create command classes
     for loader_class_params in _get_params_for_commands(pkg):  # type: LoaderClassParams
-        type_builder = modulebuilder.DefineType(loader_class_params.class_name,
-                                                TypeAttributes.Class | TypeAttributes.Public,
-                                                loader_class)
-
-        # add RegenerationAttribute to type
-        regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
-        regen_attr_builder = CustomAttributeBuilder(regen_const_info,
-                                                    Array[object]((RegenerationOption.Manual,)))
-        type_builder.SetCustomAttribute(regen_attr_builder)
-
-        # add TransactionAttribute to type
-        trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
-        trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info,
-                                                      Array[object]((TransactionMode.Manual,)))
-        type_builder.SetCustomAttribute(trans_attrib_builder)
-
-        # call base constructor
-        ci = loader_class.GetConstructor(Array[Type]((str, str, str, str, str, str)))
-
-        const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
-                                                       CallingConventions.Standard,
-                                                       Array[Type](()))
-        # add constructor parameters to stack
-        gen = const_builder.GetILGenerator()
-        gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
-        # Load the path to the command as a string onto stack
-        gen.Emit(OpCodes.Ldstr, loader_class_params.script_file_address)
-        # Load the config script path to the command as a string onto stack (for alternate click)
-        gen.Emit(OpCodes.Ldstr, loader_class_params.config_script_file_address)
-        # Load log file name into stack
-        gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE_NAME)
-        # Adding search paths to the stack (concatenated using ; as separator)
-        gen.Emit(OpCodes.Ldstr, loader_class_params.search_paths_str)
-        # set command name:
-        gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_name)
-        # Adding command options to the stack (concatenated using ; as separator)
-        gen.Emit(OpCodes.Ldstr, loader_class_params.cmd_options)
-        gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
-        gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
-        gen.Emit(OpCodes.Nop)
-        gen.Emit(OpCodes.Nop)
-        gen.Emit(OpCodes.Ret)
-        type_builder.CreateType()
+        _create_cmd_loader_type(modulebuilder, loader_class, loader_class_params)
+        if loader_class_params.cmd_context:
+            if COMMAND_CONTEXT_SELECT_AVAIL == loader_class_params.cmd_context:
+                _create_cmd_availability_type(modulebuilder, selection_avail_class, loader_class_params)
+            else:
+                _create_cmd_availability_type(modulebuilder, category_avail_class, loader_class_params)
 
     # save final assembly
     assemblybuilder.Save(pkg_asm_file_name)
@@ -262,6 +308,9 @@ def create_assembly(parsed_pkg):
         _cleanup_existing_package_asm_files(parsed_pkg)
 
     # create assembly file and return assembly file path to be used in UI creation
-    pkg_asm_info = _create_asm_file(parsed_pkg, _find_commandloader_class(), pkg_reloading)
-    logger.debug('Assembly created: {}'.format(pkg_asm_info))
-    return pkg_asm_info
+    try:
+        pkg_asm_info = _create_asm_file(parsed_pkg, pkg_reloading)
+        logger.debug('Assembly created: {}'.format(pkg_asm_info))
+        return pkg_asm_info
+    except Exception as asm_err:
+        logger.critical('Can not create assembly for: {} | {}'.format(parsed_pkg, asm_err))
