@@ -19,13 +19,17 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Read selection from memory. Works like the MR button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
 
-__window__.Hide()
-from Autodesk.Revit.DB import ElementId
-from System.Collections.Generic import List
-
 import os
 import os.path as op
 import pickle as pl
+
+from pyrevit.scriptutils import ContextClass
+
+__context__ = 'selection'
+
+
+from Autodesk.Revit.DB import ElementId
+from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document

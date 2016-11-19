@@ -21,11 +21,14 @@ __doc__ = 'Clear memory and Append current selection. Works like the M+ button i
           'This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in ' \
           'user temp folder as *.pym files.'
 
-__window__.Close()
 # from Autodesk.Revit.DB import ElementId
 import os
 import os.path as op
 import pickle as pl
+
+from pyrevit.scriptutils import ContextClass
+
+__context__ = 'selection'
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
