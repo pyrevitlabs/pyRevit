@@ -19,7 +19,9 @@ Pkg manager:
 	update is handled through main update module
 
 
-add support for alt-click to open source file?
+loader:
+	add support for alt-click to open source file?
+
 
 compiling ironpython for speed:
 https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
