@@ -117,6 +117,10 @@ def load():
 
             # create a dll assembly and get assembly info
             pkg_asm_info = create_assembly(package)
+            if not pkg_asm_info:
+                logger.critical('Failed to create assembly for: {}'.format(package))
+                continue
+
             logger.info('Package assembly created: {}'.format(package_info.name))
 
             # update/create ui (needs the assembly to link button actions to commands saved in the dll)
