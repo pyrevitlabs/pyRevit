@@ -49,6 +49,10 @@ class ScriptFileParser:
         return None
 
 
+def enum(**enums):
+    return type('Enum', (), enums)
+
+
 def get_all_subclasses(parent_classes):
     sub_classes = []
     # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
