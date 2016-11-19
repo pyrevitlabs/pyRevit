@@ -1,11 +1,9 @@
-parser: lib packages
-
-
 script info:
 	implement the two functions
 
 
 user config:
+
 	disable caching
 	disabling tools
 	custom user settings
@@ -20,6 +18,8 @@ Pkg manager:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
 
+
+add support for alt-click to open source file?
 
 compiling ironpython for speed:
 https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
