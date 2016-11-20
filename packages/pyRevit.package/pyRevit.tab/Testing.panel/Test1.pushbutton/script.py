@@ -3,11 +3,22 @@ import sys
 from pyrevit.logger import get_logger
 logger = get_logger(__commandname__)
 
+from pyrevit.output import output_window as ow
+
+ow.set_height(800)
+print ow.get_title()
+ow.set_title('Beautiful title')
+# print ow.get_title()
+# ow.set_title('Very nice title')
+
 import pyrevit.config as cfg
 
 from pyrevit.loader.components import GenericCommand
 import pyrevit.scriptutils as su
 this_script = su.get_script_info(__file__)  # type: GenericCommand
+
+print u'\uf37a'
+print 'http://www.google.com'
 
 print '\n\n' + '-'*100 + '\nTESTING SCRIPT UTILS\n' + '-'*100
 print this_script.name
