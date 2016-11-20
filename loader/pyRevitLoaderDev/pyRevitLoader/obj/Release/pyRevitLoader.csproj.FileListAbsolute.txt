@@ -57,4 +57,3 @@ Z:\Revit API\pyRevitv3\loaderBinaryDev\pyRevitLoader\obj\Release\pyRevitLoader.c
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\PyRevitLoader.g.resources
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\ScriptWPFOutputWindow.baml
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\ScriptWPFOutputWindow.g.cs
-\\vmware-host\Shared Folders\Revit API\pyRevitv4\loader\pyRevitLoaderDev\pyRevitLoader\obj\Release\pyRevitLoader.csprojResolveAssemblyReference.cache
