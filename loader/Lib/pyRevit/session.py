@@ -26,12 +26,14 @@ then calls the parser, assembly maker, and lastly ui maker to create the buttons
 Each pyRevit session will have its own .dll and log file.
 """
 
+import sys
 import os.path as op
 
 from .logger import get_logger
-from .config import SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
+from .config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
 from .exceptions import PyRevitCacheError, PyRevitCacheExpiredError
 
+from .utils import Timer
 from .userconfig import user_settings
 
 from loader.parser import get_installed_package_data, get_parsed_package
@@ -63,6 +65,14 @@ def load():
         import pyrevit.session as current_session
         current_session.load()
     """
+
+    # initialize timer
+    timer = Timer()
+
+    # log python version, home directory, config file and loader script location.
+    logger.info('Running on: {0}'.format(sys.version))
+    logger.info('Home Directory is: {0}'.format(HOME_DIR))
+    logger.info('Config file is: {}'.format(user_settings.config_file))
 
     # for every package of installed packages, create an assembly, and create a ui
     # parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
@@ -138,3 +148,6 @@ def load():
             logger.info('UI created for package: {}'.format(package.name))
 
     cleanup_pyrevit_ui()
+
+    # log load time
+    logger.info('Load time: {}'.format(timer.get_time_hhmmss()))

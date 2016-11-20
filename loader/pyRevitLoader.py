@@ -34,22 +34,7 @@ import sys
 from pyrevit.logger import get_logger                   # import logger to log messages to pyrevit log.
 logger = get_logger('pyRevitLoader')
 
-import pyrevit.config as cfg                        # import basic configurations.
-from pyrevit.utils import Timer                     # import Timer from standard utils to log the load  time.
-from pyrevit.userconfig import user_settings        # handles user settings
-import pyrevit.session as session                   # import session to start loading pyRvit.
-
-
-# initialize timer
-t = Timer()
-
-# log python version, home directory, config file and loader script location.
-logger.info('Running on: {0}'.format(sys.version))
-logger.info('Home Directory is: {0}'.format(cfg.HOME_DIR))
-logger.info('Config file is: {}'.format(user_settings.config_file))
+import pyrevit.session as session
 
 # load pyrevit session.
 session.load()
-
-# log load time
-logger.info('Load time: {}'.format(t.get_time_hhmmss()))

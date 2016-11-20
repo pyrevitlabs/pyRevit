@@ -42,9 +42,9 @@ if __name__ == '__main__':
 
     for repo_info in repo_info_list:
         # update one by one
-        logger.info('Updating repo: {}'.format(repo_info))
+        logger.info('Updating repo: {}'.format(repo_info.directory))
         if updater.update_pyrevit(repo_info):
-            logger.info('Successfully updated: {}'.format(repo_info))
+            logger.info(':thumbsup: Successfully updated: {}'.format(repo_info.directory))
 
     # now re-load pyrevit session.
     logger.info('Reloading...')
