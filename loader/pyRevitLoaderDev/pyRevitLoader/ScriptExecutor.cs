@@ -86,12 +86,12 @@ namespace PyRevitLoader
                 // otherwise prepend the base paths
                 else
                     syspaths = importLibPath + ';' + syspaths;
-  
+
                 //syspath is a string of paths separated by ';'
                 //Split syspath and aupdate the search paths with new list
                 engine.SetSearchPaths(syspaths.Split(';'));
 
-                scope.SetVariable("__window__", scriptOutput);
+                //scope.SetVariable("__window__", scriptOutput);
                 scope.SetVariable("__file__", sourcePath);
                 scope.SetVariable("__libpath__", importLibPath);
 
@@ -99,6 +99,8 @@ namespace PyRevitLoader
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
                 builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
                 builtin.SetVariable("__shiftclick__", altScriptMode);
+
+                builtin.SetVariable("__window__", scriptOutput);
 
                 // add command name to builtins
                 builtin.SetVariable("__commandname__", cmdName);
@@ -153,7 +155,7 @@ namespace PyRevitLoader
 
         private ScriptEngine CreateEngine()
         {
-            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() { { "Frames", true }, { "FullFrames", true } });                        
+            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() { { "Frames", true }, { "FullFrames", true } });
             return engine;
         }
 
@@ -167,7 +169,7 @@ namespace PyRevitLoader
             var resName = resQuery.Single();
             var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resName);
             dynamic sys = IronPython.Hosting.Python.GetSysModule(engine);
-            sys.meta_path.append(importer);            
+            sys.meta_path.append(importer);
         }
 
 
@@ -200,7 +202,7 @@ namespace PyRevitLoader
             {
                 builtin.SetVariable("__uiControlledApplication__", _uiControlledApplication);
             }
-            
+
             // add the search paths
             AddEmbeddedLib(engine);
 
@@ -211,7 +213,7 @@ namespace PyRevitLoader
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
 
-        }        
+        }
 
         /// <summary>
         /// Be nasty and reach into the ScriptScope to get at its private '_scope' member,

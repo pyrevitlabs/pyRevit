@@ -33,28 +33,30 @@
             // 
             // txtStdOut
             // 
-            this.txtStdOut.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(223)))), ((int)(((byte)(219)))), ((int)(((byte)(195)))));
+            this.txtStdOut.BackColor = System.Drawing.Color.White;
             this.txtStdOut.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtStdOut.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtStdOut.Font = new System.Drawing.Font("Courier New", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtStdOut.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(59)))), ((int)(((byte)(39)))), ((int)(((byte)(34)))));
-            this.txtStdOut.Location = new System.Drawing.Point(0, 0);
+            this.txtStdOut.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtStdOut.ForeColor = System.Drawing.Color.Black;
+            this.txtStdOut.Location = new System.Drawing.Point(5, 5);
             this.txtStdOut.Multiline = true;
             this.txtStdOut.Name = "txtStdOut";
             this.txtStdOut.ReadOnly = true;
-            this.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.txtStdOut.Size = new System.Drawing.Size(884, 461);
+            this.txtStdOut.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtStdOut.Size = new System.Drawing.Size(974, 451);
             this.txtStdOut.TabIndex = 4;
-            this.txtStdOut.WordWrap = false;
             this.txtStdOut.TextChanged += new System.EventHandler(this.txtStdOut_TextChanged);
             // 
             // ScriptOutput
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(884, 461);
+            this.BackColor = System.Drawing.Color.White;
+            this.ClientSize = new System.Drawing.Size(984, 461);
             this.Controls.Add(this.txtStdOut);
             this.Name = "ScriptOutput";
+            this.Padding = new System.Windows.Forms.Padding(5);
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "pyRevit";

@@ -1,0 +1,12 @@
+﻿<Window x:Class="WpfApplication2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="500" Width="1000">
+    <RichTextBox Name="RichTextBox" FontFamily="Consolas" FontSize="14" IsReadOnly="True">
+        <FlowDocument>
+            <Paragraph>
+                <Run Text="RichTextBox"/>
+            </Paragraph>
+        </FlowDocument>
+    </RichTextBox>
+</Window>
