@@ -7,6 +7,7 @@ namespace PyRevitLoader
     {
         public ScriptOutput()
         {
+            Application.EnableVisualStyles();
             InitializeComponent();
             txtStdOut.Text = "";            
         }

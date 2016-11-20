@@ -63,8 +63,6 @@ namespace PyRevitLoader
                 _gui.BeginInvoke((Action)delegate()
                 {
                     _gui.txtStdOut.AppendText(text);
-                    //_gui.txtStdOut.SelectionStart = _gui.txtStdOut.Text.Length;
-                    //_gui.txtStdOut.ScrollToCaret();
                 });
                 Application.DoEvents();
             }

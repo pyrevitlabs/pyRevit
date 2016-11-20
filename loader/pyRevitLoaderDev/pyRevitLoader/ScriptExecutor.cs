@@ -72,6 +72,7 @@ namespace PyRevitLoader
                 var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
                 scriptOutput.Text = cmdName;
                 //scriptOutput.Show();
+
                 var outputStream = new ScriptOutputStream(scriptOutput, engine);
 
                 //get the sys.path object and get ready to add more search paths

@@ -182,9 +182,11 @@
     <Reference Include="System.Xml">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="UIAutomationProvider" />
     <Reference Include="WindowsBase">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
+    <Reference Include="WindowsFormsIntegration" />
     <Reference Include="WPG">
       <HintPath>..\RequiredLibraries\WPG.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -208,9 +210,6 @@
       <DependentUpon>ScriptOutput.cs</DependentUpon>
     </Compile>
     <Compile Include="ScriptOutputStream.cs" />
-    <Compile Include="ScriptWPFOutputWindow.xaml.cs">
-      <DependentUpon>ScriptWPFOutputWindow.xaml</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -244,12 +243,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="ScriptWPFOutputWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
