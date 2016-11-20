@@ -25,7 +25,7 @@ import pickle as pl
 
 from pyrevit.scriptutils import ContextClass
 
-__context__ = 'selection'
+__context__ = 'Selection'
 
 
 from Autodesk.Revit.DB import ElementId

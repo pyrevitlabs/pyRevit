@@ -26,7 +26,7 @@ import pickle as pl
 
 from pyrevit.scriptutils import ContextClass
 
-__context__ = 'selection'
+__context__ = 'Selection'
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document

@@ -276,7 +276,7 @@ COMMAND_OPTIONS_PARAM = '__cmdoptions__'
 COMMAND_NAME_PARAM = '__commandname__'
 
 COMMAND_CONTEXT_PARAM = '__context__'
-COMMAND_CONTEXT_SELECT_AVAIL = 'selection'
+COMMAND_CONTEXT_SELECT_AVAIL = 'Selection'
 
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'

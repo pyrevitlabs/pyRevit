@@ -11,10 +11,9 @@ ow.set_height(600)
 print ow.get_title()
 ow.set_title('Beautiful title')
 
-# ow.set_font('Verdana', 11)
+ow.set_font('Verdana', 8)
 ow.set_word_wrap(False)
 ow.show_both_scrollbars()
-print '-'*500
 
 print u'\u2588'
 logger.info(':beer: Everything went well!')
@@ -79,5 +78,5 @@ print 'Result: {}'.format(__result__)
 
 
 # smart button template ------------------------------------------------------------------------------------------------
-def __selfinit__(script_cmp, commandbutton, __rvt__):
+def __selfinit__(script_cmp, commandbutton, user_settings, __rvt__):
     pass

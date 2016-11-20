@@ -19,8 +19,6 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Applies the copied state to the active view. This works in conjunction with the copyState tool.'
 
-__window__.Hide()
-
 import os
 import os.path as op
 import pickle
@@ -35,6 +33,8 @@ from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__context__ = 'Selection'
 
 import clr
 clr.AddReferenceByPartialName('PresentationCore')
@@ -261,7 +261,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
                 and el.CanBeHidden               \
                 and el.Category != None:
                 viewspecificelements.append(el.Id)
-        
+
         with TransactionGroup(doc, 'Activate and Read Cropbox Boundary') as tg:
             tg.Start()
             with Transaction(doc, 'Hiding all 2d elements') as t:
@@ -273,18 +273,18 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         except:
                             pass
                 t.Commit()
-                
+
             with Transaction(doc, 'Activate and Read Cropbox Boundary') as t:
                 t.Start()
                 selview.CropBoxActive = True
                 selview.CropBoxVisible = False
                 cboxannoparam.Set(0)
-                                
+
                 # get view min max points in modelUCS.
                 modelucsx = []
                 modelucsy = []
                 crsm = selview.GetCropRegionShapeManager()
-                
+
                 cllist = crsm.GetCropShape()
                 if len(cllist) == 1:
                     cl = cllist[0]
@@ -293,7 +293,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         modelucsy.append(l.GetEndPoint(0).Y)
                     cropmin = XYZ(min(modelucsx), min(modelucsy), 0.0)
                     cropmax = XYZ(max(modelucsx), max(modelucsy), 0.0)
-                    
+
                     # get vp min max points in sheetUCS
                     ol = selvp.GetBoxOutline()
                     vptempmin = ol.MinimumPoint
@@ -310,11 +310,11 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     revtransmatrix.sourcemax = cropmax
                     revtransmatrix.destmin = vpmin
                     revtransmatrix.destmax = vpmax
-                
+
                     selview.CropBoxActive = cboxactive
                     selview.CropBoxVisible = cboxvisible
                     cboxannoparam.Set(cboxannostate)
-                    
+
                     if viewspecificelements:
                         selview.UnhideElements(List[ElementId](viewspecificelements))
 
@@ -405,4 +405,3 @@ elif selected_switch == 'Visibility Graphics':
     except:
         __window__.Show()
         print('CAN NOT FIND ANY VISIBILITY GRAPHICS SETTINGS IN MEMORY:\n{0}'.format(datafile))
-

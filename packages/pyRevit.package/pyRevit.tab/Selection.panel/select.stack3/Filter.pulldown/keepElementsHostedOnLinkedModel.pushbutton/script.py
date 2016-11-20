@@ -19,12 +19,13 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Looks into the current selection elements and keeps the ones hosted on a linked model surface.'
 
-__window__.Close()
 from Autodesk.Revit.DB import ElementId, RevitLinkInstance
 from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__context__ = 'Selection'
 
 set = []
 for elId in uidoc.Selection.GetElementIds():
