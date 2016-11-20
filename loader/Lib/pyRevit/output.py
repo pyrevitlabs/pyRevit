@@ -35,9 +35,10 @@ class PyRevitConsoleWindow:
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
         self.__winhandle__.Width = 1100
+        self.__winhandle__.Show()
 
     def set_title(self, new_title):
-        self.__winhandle__.Title = new_title
+        self.__winhandle__.Text = new_title
 
     def set_width(self, width):
         self.__winhandle__.Width = width
@@ -50,7 +51,7 @@ class PyRevitConsoleWindow:
         self.set_height(height)
 
     def get_title(self):
-        return self.__winhandle__.Title
+        return self.__winhandle__.Text
 
     def get_width(self):
         return self.__winhandle__.Width
@@ -74,7 +75,9 @@ class PyRevitConsoleWindow:
 
 
 # creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
-output_window = None
-win_handler = inspect_calling_scope_local_var('__window__')
-if win_handler:
-    output_window = PyRevitConsoleWindow(win_handler)
+# output_window = None
+# win_handler = inspect_calling_scope_local_var('__window__')
+# if win_handler:
+#     output_window = PyRevitConsoleWindow(win_handler)
+
+output_window = PyRevitConsoleWindow(__window__)
