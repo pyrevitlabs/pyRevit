@@ -4,6 +4,7 @@ import logging
 from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
 from .utils import set_interscript_comm_data, get_interscript_comm_data
 
+from emoji import emojize
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
@@ -27,6 +28,10 @@ if FORCED_DEBUG_MODE_PARAM:
 class LoggerWrapper(logging.Logger):
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
+
+    def _log(self, level, msg, args, exc_info=None, extra=None):
+        edited_msg = emojize(msg)
+        logging.Logger._log(self, level, edited_msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
         """Overrides the parent class method to check handler.level instead of self.level.
