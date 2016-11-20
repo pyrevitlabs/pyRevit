@@ -3,22 +3,28 @@ import sys
 from pyrevit.logger import get_logger
 logger = get_logger(__commandname__)
 
+# testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.output import output_window as ow
 
-ow.set_height(800)
+print '\n\n' + '-'*100 + '\nTESTING OUTPUT WINDOW\n' + '-'*100
+ow.set_height(600)
 print ow.get_title()
 ow.set_title('Beautiful title')
-# print ow.get_title()
-# ow.set_title('Very nice title')
 
-import pyrevit.config as cfg
+ow.set_font('Verdana', 11)
+ow.set_word_wrap(False)
+ow.show_both_scrollbars()
+print '-'*500
 
+print u'\u2588'
+logger.info(':beer: Everything went well!')
+logger.info("Python is :thumbsup: :banana:")
+print 'http://www.google.com'
+
+# testing scriptutils --------------------------------------------------------------------------------------------------
 from pyrevit.loader.components import GenericCommand
 import pyrevit.scriptutils as su
 this_script = su.get_script_info(__file__)  # type: GenericCommand
-
-print u'\uf37a'
-print 'http://www.google.com'
 
 print '\n\n' + '-'*100 + '\nTESTING SCRIPT UTILS\n' + '-'*100
 print this_script.name
@@ -31,6 +37,8 @@ print this_script.icon_file
 print this_script.library_path
 print this_script.ui_title
 
+# testing params -------------------------------------------------------------------------------------------------------
+import pyrevit.config as cfg
 
 print '\n\n' + '-'*100 + '\nTESTING PARAMS\n' + '-'*100
 
@@ -70,5 +78,6 @@ print 'Message: {}'.format(__message__)
 print 'Result: {}'.format(__result__)
 
 
+# smart button template ------------------------------------------------------------------------------------------------
 def __selfinit__(script_cmp, commandbutton, __rvt__):
     pass
