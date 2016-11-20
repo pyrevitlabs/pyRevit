@@ -25,6 +25,15 @@ Usage.
     output_window.show()
 """
 
+import clr
+
+# clr.AddReferenceByPartialName('PresentationCore')
+# clr.AddReferenceByPartialName("PresentationFramework")
+clr.AddReferenceByPartialName('System.Windows.Forms')
+clr.AddReferenceByPartialName('System.Drawing')
+import System.Drawing
+import System.Windows
+
 
 class PyRevitConsoleWindow:
     """Wrapper to interact with the output console window."""
@@ -43,6 +52,20 @@ class PyRevitConsoleWindow:
 
     def set_height(self, height):
         self.__winhandle__.Height = height
+
+    def set_font(self, font_family_name, font_size):
+        self.__winhandle__.txtStdOut.Font = System.Drawing.Font(font_family_name, font_size,
+                                                                System.Drawing.FontStyle.Regular,
+                                                                System.Drawing.GraphicsUnit.Point)
+
+    def set_word_wrap(self, state):
+        self.__winhandle__.txtStdOut.WordWrap = state
+
+    def show_both_scrollbars(self):
+        self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Both
+
+    def reset_scrollbars(self):
+        self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
 
     def resize(self, width, height):
         self.set_width(width)
