@@ -30,7 +30,7 @@ class LoggerWrapper(logging.Logger):
         logging.Logger.__init__(self, *args)
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
-        edited_msg = emojize(msg)
+        edited_msg = emojize(str(msg))
         logging.Logger._log(self, level, edited_msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
@@ -39,8 +39,10 @@ class LoggerWrapper(logging.Logger):
         of self.level. This ensures that the level set on any logger affects all the other logger modules."""
         logger = self
         while logger:
-            if logger.handlers[0].level:
+            if len(logger.handlers) > 0 and logger.handlers[0].level:
                 return logger.handlers[0].level
+            elif logger.level:
+                return logger.level
             logger = logger.parent
         return logging.NOTSET
 
