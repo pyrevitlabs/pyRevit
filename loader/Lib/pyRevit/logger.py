@@ -1,4 +1,5 @@
 import sys
+from os.path import sep
 import logging
 
 from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
@@ -30,7 +31,7 @@ class LoggerWrapper(logging.Logger):
         logging.Logger.__init__(self, *args)
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
-        edited_msg = emojize(str(msg))
+        edited_msg = emojize(str(msg).replace(sep,'/'))
         logging.Logger._log(self, level, edited_msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
