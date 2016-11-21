@@ -93,7 +93,9 @@ def load():
     # collect all library packages. Their dir paths need to be added to sys.path for all commands
     all_lib_pkgs = []
     for root_dir in pkg_search_dirs:
-        all_lib_pkgs.extend(get_installed_lib_package_data(root_dir))
+        for libpkg in get_installed_lib_package_data(root_dir):
+            all_lib_pkgs.append(libpkg)
+            logger.info('Library package found: {}'.format(libpkg.directory))
 
     for root_dir in pkg_search_dirs:
         # Get a list of all installed packages in this directory
