@@ -24,8 +24,6 @@ import os
 import os.path as op
 import pickle as pl
 
-from pyrevit.scriptutils import ContextClass
-
 __context__ = 'Selection'
 
 uidoc = __revit__.ActiveUIDocument

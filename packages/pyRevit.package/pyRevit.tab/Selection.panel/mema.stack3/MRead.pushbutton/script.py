@@ -23,16 +23,12 @@ import os
 import os.path as op
 import pickle as pl
 
-from pyrevit.scriptutils import ContextClass
-
-__context__ = 'Selection'
-
-
 from Autodesk.Revit.DB import ElementId
 from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
 
 usertemp = os.getenv('Temp')
 prjname = op.splitext(op.basename(doc.PathName))[0]
