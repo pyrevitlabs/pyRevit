@@ -19,12 +19,13 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'keeps elements with painted faces in current selection and filters everything else out.'
 
-__window__.Close()
 from Autodesk.Revit.DB import ElementId, Group
 from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__context__ = 'Selection'
 
 set = []
 for elId in uidoc.Selection.GetElementIds():

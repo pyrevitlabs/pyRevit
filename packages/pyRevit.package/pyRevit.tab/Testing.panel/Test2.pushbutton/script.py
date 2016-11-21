@@ -22,3 +22,5 @@ for a in ad.CurrentDomain.GetAssemblies():
 # assembly = dom.Load(assemblyName)
 # types = assembly.GetTypes()
 # AppDomain.Unload(dom)
+
+raise Exception('Test')

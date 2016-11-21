@@ -37,7 +37,13 @@ _VER_MINOR = 0
 _VER_PATCH = 0
 
 # script internal parameters set by loader module ----------------------------------------------------------------------
-HOST_SOFTWARE = __revit__
+# testing for availability of __revit__ just in case
+try:
+    HOST_SOFTWARE = __revit__
+except Exception:
+    raise PyRevitException('Critical Error. Host software handle is not available (__revit__)')
+
+# testing for availability of __forceddebugmode__ just in case
 try:
     FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
 except Exception:
@@ -188,11 +194,6 @@ def _find_user_roaming_appdata_pyrevit():
     return op.join(_find_user_roaming_appdata(), "pyrevit")
 
 
-def _get_session_log_file_path():
-    """Returns full address of this session's log file."""
-    return op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
-
-
 # general defaults -----------------------------------------------------------------------------------------------------
 LOADER_DIR = _find_loader_directory()
 LOADER_ASM_DIR = _find_loader_assembly_directory()
@@ -200,7 +201,11 @@ MAIN_LIBRARY_DIR = _find_pyrevit_lib()
 HOME_DIR = _find_home_directory()
 EXTENSIONS_DEFAULT_DIR = _find_extensions_directory()
 
-USER_TEMP_DIR = _find_user_temp_directory()
+PYREVIT_TEMP_DIR = 'pyrevittemp'
+USER_TEMP_DIR = op.join(_find_user_temp_directory(), PYREVIT_TEMP_DIR)
+if not op.isdir(USER_TEMP_DIR):
+    os.mkdir(USER_TEMP_DIR)
+    
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()
@@ -223,6 +228,12 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HostVersion.version, REVIT_
 # Previously the session id was stamped by formatted time
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
+
+
+def _get_session_log_file_path():
+    """Returns full address of this session's log file."""
+    return op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
+
 
 # creating log file name from stamped session id
 ASSEMBLY_FILE_TYPE = '.dll'
@@ -276,7 +287,7 @@ COMMAND_OPTIONS_PARAM = '__cmdoptions__'
 COMMAND_NAME_PARAM = '__commandname__'
 
 COMMAND_CONTEXT_PARAM = '__context__'
-COMMAND_CONTEXT_SELECT_AVAIL = 'selection'
+COMMAND_CONTEXT_SELECT_AVAIL = 'Selection'
 
 MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
 MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'

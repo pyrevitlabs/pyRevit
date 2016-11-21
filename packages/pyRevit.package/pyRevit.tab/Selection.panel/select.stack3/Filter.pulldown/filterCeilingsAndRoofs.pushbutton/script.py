@@ -20,12 +20,13 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Keeps roof and ceiling elements in the current selection and discards everything else. ' \
           'This is helpful for inspecting interstitial spaces.'
 
-__window__.Close()
 from Autodesk.Revit.DB import FilteredElementCollector, Transaction, BuiltInCategory, FootPrintRoof, Ceiling, ElementId
 from System.Collections.Generic import List
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__context__ = 'Selection'
 
 set = []
 for elId in uidoc.Selection.GetElementIds():
