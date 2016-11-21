@@ -40,8 +40,8 @@ logger = get_logger(__name__)
 
 from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
 from ..config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
-from ..config import PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX,\
-                     TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
+from ..config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
+                     PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
                      STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
                      SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, COMMAND_AVAILABILITY_NAME_POSTFIX
 from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
@@ -230,7 +230,7 @@ class GenericCommand(object):
 
     def __init__(self):
         self.directory = None
-        self.original_name = self.name = None
+        self.original_name = self.ui_title = self.name = None
         self.icon_file = self.script_file = self.config_script_file = None
         self.min_pyrevit_ver = self.min_revit_ver = None
         self.doc_string = self.author = self.cmd_options = self.cmd_context = None
@@ -247,6 +247,8 @@ class GenericCommand(object):
         self.name = user_settings.get_alias(self.original_name, self.type_id)
         if self.name != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
+
+        self.ui_title = self.name
 
         full_file_path = op.join(self.directory, DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
@@ -268,9 +270,9 @@ class GenericCommand(object):
             # reading script file content to extract parameters
             script_content = ScriptFileParser(self.get_full_script_address())
             # extracting min requried Revit and pyRevit versions
-            self.ui_title = script_content.extract_param(UI_TITLE_PARAM)  # type: str
-            if not self.ui_title:
-                self.ui_title = self.name
+            extracted_ui_title = script_content.extract_param(UI_TITLE_PARAM)  # type: str
+            if extracted_ui_title:
+                self.ui_title = extracted_ui_title
             self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
             self.author = script_content.extract_param(AUTHOR_PARAM)  # type: str
             self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
@@ -566,6 +568,23 @@ class Package(GenericContainer):
                         modtime = op.getmtime(op.join(root, filename))
                         mtime_sum += modtime
         return hashlib.md5(str(mtime_sum)).hexdigest()
+
+
+# library package class
+# ----------------------------------------------------------------------------------------------------------------------
+class LibraryPackage:
+    type_id = LIB_PACKAGE_POSTFIX
+
+    def __init__(self):
+        self.directory = None
+        self.name = None
+
+    def __init_from_dir__(self, package_dir):
+        self.directory = package_dir
+        if not self.directory.endswith(self.type_id):
+            raise PyRevitUnknownFormatError()
+
+        self.name = op.splitext(op.basename(self.directory))[0]
 
 
 # Misc UI Classes

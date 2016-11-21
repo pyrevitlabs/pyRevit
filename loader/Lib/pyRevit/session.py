@@ -36,7 +36,7 @@ from .exceptions import PyRevitCacheError, PyRevitCacheExpiredError
 from .utils import Timer
 from .userconfig import user_settings
 
-from loader.parser import get_installed_package_data, get_parsed_package
+from loader.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
 from loader.asmmaker import create_assembly
 from loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from .usagedata import archive_script_usage_logs
@@ -51,9 +51,9 @@ else:
 logger = get_logger(__name__)
 
 
-def _update_pkg_syspaths(pkg, all_installed_pkgs):
-    for installed_pkg in all_installed_pkgs:
-        pkg.add_syspath(installed_pkg.get_lib_path())
+def _update_pkg_syspaths(pkg, all_installed_lib_pkgs):
+    for installed_lib_pkg in all_installed_lib_pkgs:
+        pkg.add_syspath(installed_lib_pkg.directory)
 
 
 def load():
@@ -90,17 +90,16 @@ def load():
     pkg_search_dirs = user_settings.get_package_root_dirs()
     logger.debug('Package Directories: {}'.format(pkg_search_dirs))
 
+    # collect all library packages. Their dir paths need to be added to sys.path for all commands
+    all_lib_pkgs = []
     for root_dir in pkg_search_dirs:
-        # making sure the provided directory exists. This is mainly for the user defined package directories
-        if not op.exists(root_dir):
-            logger.debug('Package search directory does not exist: {}'.format(root_dir))
-            continue
+        all_lib_pkgs.extend(get_installed_lib_package_data(root_dir))
 
+    for root_dir in pkg_search_dirs:
         # Get a list of all installed packages in this directory
         # parser.get_installed_package_data() returns a list of packages in given directory
         # then iterater through packages and load one by one
-        all_installed_pkgs = get_installed_package_data(root_dir)
-        for package_info in all_installed_pkgs:
+        for package_info in get_installed_package_data(root_dir):
             # test if cache is valid for this package
             # it might seem unusual to create a package and then re-load it from cache but minimum information
             # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
@@ -133,7 +132,7 @@ def load():
 
             # update package master syspaths with lib address of other packages
             # this is to support packages that provide library only to be used by other packages
-            _update_pkg_syspaths(package, all_installed_pkgs)
+            _update_pkg_syspaths(package, all_lib_pkgs)
 
             # create a dll assembly and get assembly info
             pkg_asm_info = create_assembly(package)

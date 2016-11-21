@@ -39,7 +39,7 @@ from ..logger import get_logger
 from ..exceptions import PyRevitException
 from ..utils import get_all_subclasses
 
-from .components import Package
+from .components import Package, LibraryPackage
 
 logger = get_logger(__name__)
 
@@ -113,6 +113,10 @@ def get_installed_package_data(root_dir):
     The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
     packages so the session can check the cache for each package and decide if they need to be parsed or not.
     """
+    # making sure the provided directory exists. This is mainly for the user defined package directories
+    if not op.exists(root_dir):
+        logger.debug('Package search directory does not exist: {}'.format(root_dir))
+        return []
 
     # try creating packages in given directory
     pkg_data_list = []
@@ -123,3 +127,22 @@ def get_installed_package_data(root_dir):
         pkg_data_list.append(pkg_data)
 
     return pkg_data_list
+
+
+def get_installed_lib_package_data(root_dir):
+    """Parses home directory and return a list of LibraryPackage objects for installed library packages."""
+
+    # making sure the provided directory exists. This is mainly for the user defined package directories
+    if not op.exists(root_dir):
+        logger.debug('Package search directory does not exist: {}'.format(root_dir))
+        return []
+
+    # try creating packages in given directory
+    lib_pkg_data_list = []
+
+    logger.debug('Parsing directory for library packages...')
+    for lib_pkg_data in _create_subcomponents(root_dir, [LibraryPackage]):
+        logger.debug('Library package directory found: {}'.format(lib_pkg_data))
+        lib_pkg_data_list.append(lib_pkg_data)
+
+    return lib_pkg_data_list
