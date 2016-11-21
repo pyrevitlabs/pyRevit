@@ -194,12 +194,16 @@ def _find_user_roaming_appdata_pyrevit():
     return op.join(_find_user_roaming_appdata(), "pyrevit")
 
 
+def _find_rpw_pkg_directory():
+    return op.join(_find_extensions_directory(), "rpw.package")
+
 # general defaults -----------------------------------------------------------------------------------------------------
 LOADER_DIR = _find_loader_directory()
 LOADER_ASM_DIR = _find_loader_assembly_directory()
 MAIN_LIBRARY_DIR = _find_pyrevit_lib()
 HOME_DIR = _find_home_directory()
 EXTENSIONS_DEFAULT_DIR = _find_extensions_directory()
+RPW_PACKAGE_DIR = _find_rpw_pkg_directory()
 
 PYREVIT_TEMP_DIR = 'pyrevittemp'
 USER_TEMP_DIR = op.join(_find_user_temp_directory(), PYREVIT_TEMP_DIR)
@@ -278,7 +282,8 @@ DEFAULT_CONFIG_SCRIPT_FILE = 'config' + SCRIPT_FILE_FORMAT
 
 DEFAULT_LAYOUT_FILE_NAME = '_layout'
 
-COMMAND_AVAILABILITY_NAME_POSTFIX = 'Avail'
+COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
+
 UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'

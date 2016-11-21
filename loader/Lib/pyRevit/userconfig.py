@@ -29,7 +29,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 from .exceptions import ConfigFileError
-from .config import LOADER_DIR, USER_SETTINGS_DIR, DEFAULT_PKG_SEARCH_DIRS
+from .config import LOADER_DIR, USER_SETTINGS_DIR, DEFAULT_PKG_SEARCH_DIRS, RPW_PACKAGE_DIR
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
 from .config import INIT_SETTINGS_SECTION_NAME, GLOBAL_SETTINGS_SECTION_NAME, ALIAS_SECTION_NAME
 from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, DEBUG_KEY, CACHE_TYPE_KEY
@@ -77,7 +77,7 @@ class _PyRevitUserSettings:
         self.alias_dict = {}
 
         # todo: implement user custom package dirs
-        self.user_extension_dirs = []
+        self.user_extension_dirs = [RPW_PACKAGE_DIR]
 
         # prepare user config file address
         self.user_config_file = op.join(USER_SETTINGS_DIR, USER_DEFAULT_SETTINGS_FILENAME)
