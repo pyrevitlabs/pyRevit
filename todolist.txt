@@ -25,3 +25,7 @@ loader:
 
 compiling ironpython for speed:
 https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
+
+baseclasses in python code
+reset avail class
+updating .lib packages git
