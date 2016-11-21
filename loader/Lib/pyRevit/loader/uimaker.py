@@ -54,7 +54,7 @@ from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POS
                      SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
                      SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
 from ..config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
-from ..revitui import get_current_ui
+from ..ui import get_current_ui
 from ..exceptions import PyRevitUIError
 
 from System import AppDomain
