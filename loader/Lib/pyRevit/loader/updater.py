@@ -2,7 +2,7 @@ import sys
 import clr
 from collections import namedtuple
 
-from .parser import get_installed_package_data
+from .parser import get_installed_lib_package_data, get_installed_package_data
 
 from ..logger import get_logger
 logger = get_logger(__name__)
@@ -44,12 +44,43 @@ def _make_pull_signature():
     return git.Signature('eirannejad', 'eirannejad@gmail.com', DateTimeOffset(DateTime.Now))
 
 
+def _get_repo(repo_dir):
+    try:
+        repo = git.Repository(repo_dir)
+        repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+        return repo_info
+    except Exception as err:
+        logger.error('Can not create repo from home directory: {}'.format(repo_dir))
+
+
 def get_pyrevit_repo():
     try:
         repo = git.Repository(HOME_DIR)
         return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
     except Exception as err:
         logger.error('Can not create repo from home directory: {}'.format(HOME_DIR))
+
+
+def get_thirdparty_lib_repos():
+    # get a list of all directories that could include library packages
+    # and ask parser for library package info object
+    lib_pkgs = []
+    logger.debug('Finding installed library repos...')
+    for root_dir in user_settings.get_package_root_dirs():
+        lib_pkg_info_list = get_installed_lib_package_data(root_dir)
+        for lib_pkg_info in lib_pkg_info_list:
+            if lib_pkg_info and git.Repository.IsValid(lib_pkg_info.directory):
+                lib_pkgs.append(lib_pkg_info)
+
+    logger.debug('Valid third-party packages for update: {}'.format(lib_pkgs))
+
+    lib_repos = []
+    for lib_pkg_info in lib_pkgs:
+        repo_info = _get_repo(lib_pkg_info.directory)
+        if repo_info:
+            lib_repos.append(repo_info)
+
+    return lib_repos
 
 
 def get_thirdparty_pkg_repos():
@@ -67,12 +98,9 @@ def get_thirdparty_pkg_repos():
 
     repos = []
     for pkg_info in pkgs:
-        try:
-            repo = git.Repository(pkg_info.directory)
-            repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
+        repo_info = _get_repo(pkg_info.directory)
+        if repo_info:
             repos.append(repo_info)
-        except Exception as err:
-            logger.error('Can not create repo from home directory: {}'.format(pkg_info.directory))
 
     return repos
 
@@ -80,6 +108,7 @@ def get_thirdparty_pkg_repos():
 def get_all_available_repos():
     repo_info_list = [get_pyrevit_repo()]      # pyrevit main repo
     repo_info_list.extend(get_thirdparty_pkg_repos())   # add all thirdparty repos
+    repo_info_list.extend(get_thirdparty_lib_repos())   # add all thirdparty library repos
     return repo_info_list
 
 
