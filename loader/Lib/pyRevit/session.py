@@ -27,7 +27,6 @@ Each pyRevit session will have its own .dll and log file.
 """
 
 import sys
-import os.path as op
 
 from .logger import get_logger
 from .config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
