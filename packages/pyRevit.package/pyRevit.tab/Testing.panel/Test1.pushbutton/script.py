@@ -3,6 +3,11 @@ import sys
 from pyrevit.logger import get_logger
 logger = get_logger(__commandname__)
 
+# html test ------------------------------------------------------------------------------------------------------------
+logger.info(':beer: Everything went well!')
+logger.info("Python is :thumbsup: :banana:")
+print "<a href='http://www.google.com'>Clickable link Google</a>"
+
 # testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.output import output_window as ow
 
@@ -11,14 +16,9 @@ ow.set_height(600)
 print ow.get_title()
 ow.set_title('Beautiful title')
 
-ow.set_font('Verdana', 8)
-ow.set_word_wrap(False)
-ow.show_both_scrollbars()
-
-print u'\u2588'
-logger.info(':beer: Everything went well!')
-logger.info("Python is :thumbsup: :banana:")
-print 'http://www.google.com'
+# ow.set_font('Verdana', 8)
+# ow.set_word_wrap(False)
+# ow.show_both_scrollbars()
 
 # testing scriptutils --------------------------------------------------------------------------------------------------
 from pyrevit.loader.components import GenericCommand
@@ -75,6 +75,10 @@ print 'Lib path: {}'.format(__libpath__)
 print 'Forced Debug: {}'.format(__forceddebugmode__)
 print 'Message: {}'.format(__message__)
 print 'Result: {}'.format(__result__)
+
+
+# exception output -----------------------------------------------------------------------------------------------------
+raise Exception('Testing exception output report')
 
 
 # smart button template ------------------------------------------------------------------------------------------------
