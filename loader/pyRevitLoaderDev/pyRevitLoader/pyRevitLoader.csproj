@@ -158,10 +158,6 @@
     <Reference Include="System.Drawing">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
-    <Reference Include="System.Windows.Controls.WpfPropertyGrid">
-      <HintPath>..\RequiredLibraries\System.Windows.Controls.WpfPropertyGrid.dll</HintPath>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
     <Reference Include="System.Windows.Forms">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>

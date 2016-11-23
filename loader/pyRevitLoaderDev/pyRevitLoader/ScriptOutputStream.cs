@@ -49,6 +49,11 @@ namespace PyRevitLoader
                     return;
                 }
 
+                if (!_gui.Visible)
+                {
+                    _gui.Show();
+                }
+
                 while (_bomCharsLeft > 0 && count > 0)
                 {
                     _bomCharsLeft--;
@@ -59,10 +64,15 @@ namespace PyRevitLoader
                 var actualBuffer = new byte[count];
                 Array.Copy(buffer, offset, actualBuffer, 0, count);
                 var text = Encoding.UTF8.GetString(actualBuffer);
-                Debug.WriteLine(text);
+                //Debug.WriteLine(text);
                 _gui.BeginInvoke((Action)delegate()
                 {
-                    _gui.txtStdOut.AppendText(text);
+                    var div = _gui.txtStdOut.Document.CreateElement("div");
+                    if (text.EndsWith("\n"))
+                        text = text.Remove(text.Length - 1);
+                    text = text.Replace("\n", "<br/>");
+                    div.InnerHtml = text;
+                    _gui.txtStdOut.Document.Body.AppendChild(div);
                 });
                 Application.DoEvents();
             }
@@ -100,7 +110,6 @@ namespace PyRevitLoader
             var line = _completedLines.Dequeue();
             return line.Read(buffer, offset, count);
         }
-
        
         public override bool CanRead
         {
@@ -119,7 +128,7 @@ namespace PyRevitLoader
 
         public override long Length
         {
-            get { return _gui.txtStdOut.Text.Length; }
+            get { return _gui.txtStdOut.DocumentText.Length; }
         }
 
         public override long Position

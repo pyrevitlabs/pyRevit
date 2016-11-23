@@ -28,47 +28,44 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.txtStdOut = new System.Windows.Forms.TextBox();
+            this.txtStdOut = new System.Windows.Forms.WebBrowser();
             this.SuspendLayout();
             // 
             // txtStdOut
             // 
-            this.txtStdOut.BackColor = System.Drawing.Color.White;
-            this.txtStdOut.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtStdOut.AllowWebBrowserDrop = false;
             this.txtStdOut.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtStdOut.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtStdOut.ForeColor = System.Drawing.Color.Black;
-            this.txtStdOut.Location = new System.Drawing.Point(5, 5);
-            this.txtStdOut.Multiline = true;
+            this.txtStdOut.Location = new System.Drawing.Point(7, 6);
+            this.txtStdOut.Margin = new System.Windows.Forms.Padding(4);
+            this.txtStdOut.MinimumSize = new System.Drawing.Size(27, 25);
             this.txtStdOut.Name = "txtStdOut";
-            this.txtStdOut.ReadOnly = true;
-            this.txtStdOut.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtStdOut.Size = new System.Drawing.Size(974, 451);
-            this.txtStdOut.TabIndex = 4;
-            this.txtStdOut.TextChanged += new System.EventHandler(this.txtStdOut_TextChanged);
+            this.txtStdOut.Size = new System.Drawing.Size(870, 449);
+            this.txtStdOut.TabIndex = 0;
+            this.txtStdOut.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.txtStdOut_Navigating);
             // 
             // ScriptOutput
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(984, 461);
+            this.ClientSize = new System.Drawing.Size(884, 461);
             this.Controls.Add(this.txtStdOut);
+            this.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "ScriptOutput";
-            this.Padding = new System.Windows.Forms.Padding(5);
+            this.Padding = new System.Windows.Forms.Padding(7, 6, 7, 6);
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "pyRevit";
             this.Load += new System.EventHandler(this.ScriptOutput_Load);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
-        public System.Windows.Forms.TextBox txtStdOut;
+        public System.Windows.Forms.WebBrowser txtStdOut;
+
 
     }
 }

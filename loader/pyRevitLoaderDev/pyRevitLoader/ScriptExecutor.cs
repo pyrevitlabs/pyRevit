@@ -117,7 +117,9 @@ namespace PyRevitLoader
                 {
                     // compilation failed, print errors and return
 
-                    _message = "\r\n" + string.Join("\r\n", new String('#', 80), string.Join("\r\n", errors.Errors.ToArray()));
+                    _message = string.Join("<br/>", new String('#', 80), string.Join("<br/>", errors.Errors.ToArray()));
+                    var error_div_style = PyRevitLoaderApplication.ExtractDLLConfigParameter("errordiv");
+                    _message = "<br/>" + error_div_style + "<br/>" + _message + "</div>";
                     outputStream.Write(Encoding.ASCII.GetBytes(_message), 0, _message.Length);
                     _message = "";
                     return (int)Result.Cancelled;
@@ -144,11 +146,13 @@ namespace PyRevitLoader
 
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from revit. Those pop ups are small and errors are hard to read.
-                    _python_err_messages = "\r\n" + string.Join("\r\n", new String('#', 80), _python_err_messages);
-                    outputStream.Write(Encoding.ASCII.GetBytes(_python_err_messages), 0, _python_err_messages.Length);
+                    _python_err_messages = string.Join("<br/>", new String('#', 80), _python_err_messages);
+                    _dotnet_err_message = string.Join("<br/>", "IronPython Engine Error Report:", _dotnet_err_message);
 
-                    _dotnet_err_message = "\r\n" + string.Join("\r\n", "IronPython Engine Error Report:", _dotnet_err_message);
-                    outputStream.Write(Encoding.ASCII.GetBytes(_dotnet_err_message), 0, _dotnet_err_message.Length);
+                    var error_div_style = PyRevitLoaderApplication.ExtractDLLConfigParameter("errordiv");
+
+                    _message = "<br/>" + error_div_style + _python_err_messages + "<br/><br/>" + _dotnet_err_message + "</div>";
+                    outputStream.Write(Encoding.ASCII.GetBytes(_message), 0, _dotnet_err_message.Length);
                   
                     _message = "";
                     return (int)Result.Cancelled;
