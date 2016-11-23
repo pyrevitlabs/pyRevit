@@ -68,15 +68,8 @@ namespace PyRevitLoader
                 _altScriptMode = true;
             }
 
-            // Reading script source
-            string source;
-            using (var reader = File.OpenText(_scriptSource))
-            {
-                source = reader.ReadToEnd();
-            }
-
             // Execute script
-            var result = executor.ExecuteScript(source, _scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode, _altScriptMode);
+            var result = executor.ExecuteScript(_scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode, _altScriptMode);
             message = executor.Message;
 
             // Log successful script usage
