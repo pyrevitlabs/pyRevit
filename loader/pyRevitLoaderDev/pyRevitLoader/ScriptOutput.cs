@@ -26,6 +26,7 @@ namespace PyRevitLoader
 
         }
 
+
         private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))

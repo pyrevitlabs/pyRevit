@@ -35,11 +35,11 @@
             // 
             this.txtStdOut.AllowWebBrowserDrop = false;
             this.txtStdOut.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtStdOut.Location = new System.Drawing.Point(7, 6);
-            this.txtStdOut.Margin = new System.Windows.Forms.Padding(4);
+            this.txtStdOut.Location = new System.Drawing.Point(3, 3);
+            this.txtStdOut.Margin = new System.Windows.Forms.Padding(0);
             this.txtStdOut.MinimumSize = new System.Drawing.Size(27, 25);
             this.txtStdOut.Name = "txtStdOut";
-            this.txtStdOut.Size = new System.Drawing.Size(870, 449);
+            this.txtStdOut.Size = new System.Drawing.Size(878, 455);
             this.txtStdOut.TabIndex = 0;
             this.txtStdOut.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.txtStdOut_Navigating);
             // 
@@ -53,7 +53,7 @@
             this.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "ScriptOutput";
-            this.Padding = new System.Windows.Forms.Padding(7, 6, 7, 6);
+            this.Padding = new System.Windows.Forms.Padding(3);
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "pyRevit";

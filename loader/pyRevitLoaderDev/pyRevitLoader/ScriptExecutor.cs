@@ -23,6 +23,8 @@ namespace PyRevitLoader
         private readonly ElementSet _elements;
         private readonly UIApplication _revit;
         private readonly UIControlledApplication _uiControlledApplication;
+        private string _dotnet_err_title;
+        private string _ipy_err_title;
 
         public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
         {
@@ -35,6 +37,7 @@ namespace PyRevitLoader
             _commandData = null;
             _elements = null;
             _message = null;
+
         }
 
         public ScriptExecutor(ExternalCommandData commandData, string message, ElementSet elements)
@@ -45,6 +48,9 @@ namespace PyRevitLoader
             _message = message;
 
             _uiControlledApplication = null;
+
+            _dotnet_err_title = PyRevitLoaderApplication.ExtractDLLConfigParameter("dotneterrtitle");
+            _ipy_err_title = PyRevitLoaderApplication.ExtractDLLConfigParameter("ipyerrtitle");
         }
 
         public string Message
@@ -117,10 +123,7 @@ namespace PyRevitLoader
                 {
                     // compilation failed, print errors and return
 
-                    _message = string.Join("<br/>", new String('#', 80), string.Join("<br/>", errors.Errors.ToArray()));
-                    var error_div_style = PyRevitLoaderApplication.ExtractDLLConfigParameter("errordiv");
-                    _message = "<br/>" + error_div_style + "<br/>" + _message + "</div>";
-                    outputStream.Write(Encoding.ASCII.GetBytes(_message), 0, _message.Length);
+                    outputStream.WriteError(string.Join("\n", _ipy_err_title, string.Join("\n", errors.Errors.ToArray())));
                     _message = "";
                     return (int)Result.Cancelled;
                 }
@@ -142,18 +145,14 @@ namespace PyRevitLoader
                 {
                     // show (power) user everything!
                     string _dotnet_err_message = exception.ToString();
-                    string _python_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
+                    string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
 
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from revit. Those pop ups are small and errors are hard to read.
-                    _python_err_messages = string.Join("<br/>", new String('#', 80), _python_err_messages);
-                    _dotnet_err_message = string.Join("<br/>", "IronPython Engine Error Report:", _dotnet_err_message);
+                    _ipy_err_messages = string.Join("\n", _ipy_err_title, _ipy_err_messages);
+                    _dotnet_err_message = string.Join("\n", _dotnet_err_title, _dotnet_err_message);
 
-                    var error_div_style = PyRevitLoaderApplication.ExtractDLLConfigParameter("errordiv");
-
-                    _message = "<br/>" + error_div_style + _python_err_messages + "<br/><br/>" + _dotnet_err_message + "</div>";
-                    outputStream.Write(Encoding.ASCII.GetBytes(_message), 0, _dotnet_err_message.Length);
-                  
+                    outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);                  
                     _message = "";
                     return (int)Result.Cancelled;
                 }
