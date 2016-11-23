@@ -1,30 +1,4 @@
-#
-# This file is based on emoji (https://github.com/kyokomi/emoji).
-# 
-# The MIT License (MIT)
-# 
-# Copyright (c) 2014 kyokomi
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-
-emojiCodeDict = {
+emojiFileNameDict = {
     ":capricorn:":                    u"\U00002651",
     ":end:":                          u"\U0001f51a",
     ":no_mobile_phones:":             u"\U0001f4f5",
@@ -70,7 +44,7 @@ emojiCodeDict = {
     ":cyclone:":                      u"\U0001f300",
     ":herb:":                         u"\U0001f33f",
     ":leopard:":                      u"\U0001f406",
-    ":banana:":                       u"\U0001f34c",
+    ":banana:":                       'Emoji Objects\Emoji Objects-224',
     ":handbag:":                      u"\U0001f45c",
     ":honey_pot:":                    u"\U0001f36f",
     ":ok:":                           u"\U0001f197",
@@ -286,7 +260,7 @@ emojiCodeDict = {
     ":triangular_flag_on_post:": u"\U0001f6a9",
     ":arrow_upper_left:":        u"\U00002196",
     ":bee:":                     u"\U0001f41d",
-    ":beer:":                    u"\U0001f37a",
+    ":beer:":                         'Emoji Objects\Emoji Objects-176',
     ":black_nib:":               u"\U00002712",
     ":exclamation:":             u"\U00002757",
     ":dog:":                     u"\U0001f436",
@@ -835,7 +809,7 @@ emojiCodeDict = {
     ":door:":                         u"\U0001f6aa",
     ":kissing:":                      u"\U0001f617",
     ":six_pointed_star:":             u"\U0001f52f",
-    ":thumbsup:":                     u"\U0001f44d",
+    ":thumbsup:":                     'Emoji Smiley\Emoji Smiley-106',
     ":u6708:":                        u"\U0001f237",
     ":do_not_litter:":                u"\U0001f6af",
     ":whale2:":                       u"\U0001f40b",
