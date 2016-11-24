@@ -129,11 +129,15 @@ def _produce_ui_smartbutton(parent_ui_item, smartbutton, pkg_asm_info):
                                           smartbutton.unique_avail_name,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(smartbutton))
+    except PyRevitUIError as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
-        logger.debug('Importing smart button as module: {}'.format(smartbutton))
-        # replacing COMMAND_NAME_PARAM value with button name so the init script can log under its own name
-        orig_cmd_name = __builtins__[COMMAND_NAME_PARAM]
-        __builtins__[COMMAND_NAME_PARAM] = smartbutton.name
+    logger.debug('Importing smart button as module: {}'.format(smartbutton))
+    # replacing COMMAND_NAME_PARAM value with button name so the init script can log under its own name
+    orig_cmd_name = __builtins__[COMMAND_NAME_PARAM]
+    __builtins__[COMMAND_NAME_PARAM] = smartbutton.name
+    try:
         # importing smart button script as a module
         importedscript = imp.load_source(smartbutton.unique_name, smartbutton.script_file)
         # resetting COMMAND_NAME_PARAM to original
@@ -148,8 +152,8 @@ def _produce_ui_smartbutton(parent_ui_item, smartbutton, pkg_asm_info):
         except Exception as button_err:
             logger.error('Error initializing smart button: {} | {}'.format(smartbutton, button_err))
         return parent_ui_item.button(smartbutton.name)
-    except PyRevitUIError as err:
-        logger.error('UI error: {}'.format(err.message))
+    except Exception as err:
+        logger.error('Smart button initialization error: {}'.format(err.message))
         return None
 
 
