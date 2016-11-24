@@ -1,3 +1,5 @@
+raise Exception('Testing exception output report')
+
 import sys
 
 from pyrevit.logger import get_logger
