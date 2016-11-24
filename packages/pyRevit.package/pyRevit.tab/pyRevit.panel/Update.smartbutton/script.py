@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-print "name is {}".format(__name__)
 """
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
