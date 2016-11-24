@@ -94,7 +94,7 @@ def load():
     for root_dir in pkg_search_dirs:
         for libpkg in get_installed_lib_package_data(root_dir):
             all_lib_pkgs.append(libpkg)
-            logger.info('Library package found: {}'.format(libpkg.directory))
+            logger.info(':books: Library package found: {}'.format(libpkg.directory))
 
     for root_dir in pkg_search_dirs:
         # Get a list of all installed packages in this directory
@@ -116,7 +116,7 @@ def load():
                 logger.debug('Cache is valid for: {}'.format(package_info))
                 # cacher module takes the package object and injects cache data into it.
                 package = get_cached_package(package_info)
-                logger.info(':thumbsup: Package successfuly loaded from cache: {}'.format(package.name))
+                logger.info(':package: Package successfuly loaded from cache: {}'.format(package.name))
 
             except PyRevitCacheError as cache_err:
                 logger.debug(cache_err)
@@ -127,7 +127,7 @@ def load():
                 package = get_parsed_package(package_info)
 
                 # update cache with newly parsed package
-                logger.info(':thumbsup: Package successfuly parsed: {}'.format(package.name))
+                logger.info(':package: Package successfuly parsed: {}'.format(package.name))
                 logger.info('Updating cache for package: {}'.format(package.name))
                 update_cache(package)
 
