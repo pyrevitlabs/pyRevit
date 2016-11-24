@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit

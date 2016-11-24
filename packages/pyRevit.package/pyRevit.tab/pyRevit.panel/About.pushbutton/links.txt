@@ -1,0 +1,6 @@
+https://pypi.python.org/pypi/emoji
+emojione
+libgit2sharp
+icons8
+rpw
+revitpythonshell
