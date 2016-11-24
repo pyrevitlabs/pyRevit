@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Autodesk.Revit;
 using IronPython.Runtime.Exceptions;
+using IronPython.Compiler;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
@@ -98,7 +99,6 @@ namespace PyRevitLoader
                 engine.SetSearchPaths(syspaths.Split(';'));
 
                 //scope.SetVariable("__window__", scriptOutput);
-                scope.SetVariable("__name__", "__main__");
                 scope.SetVariable("__file__", sourcePath);
                 scope.SetVariable("__libpath__", importLibPath);
 
@@ -117,13 +117,19 @@ namespace PyRevitLoader
                 engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
 
                 //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
-                var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.File);
+                var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.Statements);
+
+                // setting module to be the main module so __name__ == __main__ is True
+                var compiler_options = (PythonCompilerOptions)engine.GetCompilerOptions(scope);
+                compiler_options.ModuleName = "__main__";
+                compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
+
+                // Setting up error reporter and compile the script
                 var errors = new ErrorReporter();
-                var command = script.Compile(errors);
+                var command = script.Compile(compiler_options, errors);
                 if (command == null)
                 {
                     // compilation failed, print errors and return
-
                     outputStream.WriteError(string.Join("\n", _ipy_err_title, string.Join("\n", errors.Errors.ToArray())));
                     _message = "";
                     return (int)Result.Cancelled;
