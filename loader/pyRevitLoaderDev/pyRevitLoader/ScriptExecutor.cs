@@ -64,8 +64,7 @@ namespace PyRevitLoader
         /// <summary>
         /// Run the script and print the output to a new output window.
         /// </summary>
-        public int ExecuteScript(string source,
-                                 string sourcePath, string syspaths,
+        public int ExecuteScript(string sourcePath, string syspaths,
                                  string cmdName, string cmdOptions,
                                  bool forcedDebugMode, bool altScriptMode)
         {
@@ -116,7 +115,8 @@ namespace PyRevitLoader
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
 
-                var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
+                //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
+                var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.File);
                 var errors = new ErrorReporter();
                 var command = script.Compile(errors);
                 if (command == null)

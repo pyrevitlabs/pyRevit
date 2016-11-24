@@ -57,11 +57,11 @@ namespace PyRevitLoader
 
             var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
             // execute StartupScript
-            var startupScript = GetStartupScriptSource();
+            var startupScript = GetStartupScriptPath();
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
-                var result = executor.ExecuteScript(startupScript, GetStartupScriptPath(), "", Path.GetFileName(GetStartupScriptPath()), "", false, false);
+                var result = executor.ExecuteScript(startupScript, "", Path.GetFileName(GetStartupScriptPath()), "", false, false);
                 if (result == (int)Result.Failed)
                 {
                     TaskDialog.Show("PyRevitLoader", executor.Message);
@@ -88,20 +88,20 @@ namespace PyRevitLoader
             return section.Settings[parameter].Value;
         }
 
-        public static string GetStartupScriptSource()
-        {
-            var startupScriptFullPath = GetStartupScriptPath();
-            if (File.Exists(startupScriptFullPath))
-            {
-                using (var reader = File.OpenText(startupScriptFullPath))
-                {
-                    var source = reader.ReadToEnd();
-                    return source;
-                }
-            }
-            // no startup script found
-            return null;
-        }
+        //public static string GetStartupScriptSource()
+        //{
+        //    var startupScriptFullPath = GetStartupScriptPath();
+        //    if (File.Exists(startupScriptFullPath))
+        //    {
+        //        using (var reader = File.OpenText(startupScriptFullPath))
+        //        {
+        //            var source = reader.ReadToEnd();
+        //            return source;
+        //        }
+        //    }
+        //    // no startup script found
+        //    return null;
+        //}
 
         private static string ProcessRelativeOrAbsolutePath(string path)
         {
