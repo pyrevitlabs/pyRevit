@@ -98,9 +98,9 @@ namespace PyRevitLoader
                 engine.SetSearchPaths(syspaths.Split(';'));
 
                 //scope.SetVariable("__window__", scriptOutput);
+                scope.SetVariable("__name__", "__main__");
                 scope.SetVariable("__file__", sourcePath);
                 scope.SetVariable("__libpath__", importLibPath);
-                scope.SetVariable("__name__", "__main__");
 
                 // add __forceddebugmode__ to builtins
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
