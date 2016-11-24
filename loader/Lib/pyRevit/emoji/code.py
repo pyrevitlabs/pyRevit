@@ -1280,5 +1280,7 @@ emoji_file_dict = {
     ':writing_hand:': '270D',
     ':yellow_heart:': '1F49B',
     ':yin_yang:': '262F',
-    ':zipper-mouth_face:': '1F910'
+    ':zipper-mouth_face:': '1F910',
+    ':python:': 'python',
+    ':python-dark:': 'python-dark',
 }
