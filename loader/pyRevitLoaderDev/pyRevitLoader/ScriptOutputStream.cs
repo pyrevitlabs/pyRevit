@@ -23,6 +23,8 @@ namespace PyRevitLoader
         private int _bomCharsLeft; // we want to get rid of pesky UTF8-BOM-Chars on write
         private readonly Queue<MemoryStream> _completedLines; // one memorystream per line of input
         private MemoryStream _inputBuffer;
+        private readonly string _err_msg_html_element;
+        private readonly string _default_element;
 
         public ScriptOutputStream(ScriptOutput gui, ScriptEngine engine)
         {
@@ -35,6 +37,18 @@ namespace PyRevitLoader
             _inputBuffer = new MemoryStream();
 
             _bomCharsLeft = 3; //0xef, 0xbb, 0xbf for UTF-8 (see http://en.wikipedia.org/wiki/Byte_order_mark#Representations_of_byte_order_marks_by_encoding)
+
+            _default_element = PyRevitLoaderApplication.ExtractDLLConfigParameter("defaultelement");
+            _err_msg_html_element = PyRevitLoaderApplication.ExtractDLLConfigParameter("errordiv");
+
+        }
+
+        public void WriteError(string error_msg)
+        {
+            var err_div = _gui.txtStdOut.Document.CreateElement(_err_msg_html_element);
+            err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
+
+            Write(Encoding.ASCII.GetBytes(err_div.OuterHtml), 0, error_msg.Length);
         }
 
         /// <summary>
@@ -49,6 +63,11 @@ namespace PyRevitLoader
                     return;
                 }
 
+                if (!_gui.Visible)
+                {
+                    _gui.Show();
+                }
+
                 while (_bomCharsLeft > 0 && count > 0)
                 {
                     _bomCharsLeft--;
@@ -59,10 +78,15 @@ namespace PyRevitLoader
                 var actualBuffer = new byte[count];
                 Array.Copy(buffer, offset, actualBuffer, 0, count);
                 var text = Encoding.UTF8.GetString(actualBuffer);
-                Debug.WriteLine(text);
+                //Debug.WriteLine(text);
                 _gui.BeginInvoke((Action)delegate()
                 {
-                    _gui.txtStdOut.AppendText(text);
+                    var div = _gui.txtStdOut.Document.CreateElement(_default_element);
+                    if (text.EndsWith("\n"))
+                        text = text.Remove(text.Length - 1);
+                    text = text.Replace("\n", "<br/>");
+                    div.InnerHtml = text;
+                    _gui.txtStdOut.Document.Body.AppendChild(div);
                 });
                 Application.DoEvents();
             }
@@ -100,7 +124,6 @@ namespace PyRevitLoader
             var line = _completedLines.Dequeue();
             return line.Read(buffer, offset, count);
         }
-
        
         public override bool CanRead
         {
@@ -119,7 +142,7 @@ namespace PyRevitLoader
 
         public override long Length
         {
-            get { return _gui.txtStdOut.Text.Length; }
+            get { return _gui.txtStdOut.DocumentText.Length; }
         }
 
         public override long Position

@@ -1,11 +1,13 @@
 import sys
 from os.path import sep
 import logging
+import re
+
 
 from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
 from .utils import set_interscript_comm_data, get_interscript_comm_data
 
-from emoji import emojize
+from emoji.emoji import emojize
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"

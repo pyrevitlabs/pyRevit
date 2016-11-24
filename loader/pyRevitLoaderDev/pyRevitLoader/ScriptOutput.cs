@@ -9,7 +9,16 @@ namespace PyRevitLoader
         {
             Application.EnableVisualStyles();
             InitializeComponent();
-            txtStdOut.Text = "";            
+            txtStdOut.DocumentText = "<html><body></body></html>";
+
+            // Let's leave the WebBrowser control working alone.
+            while (txtStdOut.Document.Body == null)
+            {
+                Application.DoEvents();
+            }
+
+            var style = PyRevitLoaderApplication.ExtractDLLConfigParameter("htmlstyle");
+            txtStdOut.Document.Body.Style = style;
         }
 
         private void ScriptOutput_Load(object sender, EventArgs e)
@@ -17,9 +26,14 @@ namespace PyRevitLoader
 
         }
 
-        private void txtStdOut_TextChanged(object sender, EventArgs e)
+
+        private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
-            this.Show();
+            if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                System.Diagnostics.Process.Start(e.Url.ToString());
+                e.Cancel = true;
+            }
         }
     }
 }

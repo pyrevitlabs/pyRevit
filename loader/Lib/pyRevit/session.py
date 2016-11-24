@@ -27,7 +27,6 @@ Each pyRevit session will have its own .dll and log file.
 """
 
 import sys
-import os.path as op
 
 from .logger import get_logger
 from .config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
@@ -117,7 +116,7 @@ def load():
                 logger.debug('Cache is valid for: {}'.format(package_info))
                 # cacher module takes the package object and injects cache data into it.
                 package = get_cached_package(package_info)
-                logger.info('Package successfuly loaded from cache: {}'.format(package.name))
+                logger.info(':thumbsup: Package successfuly loaded from cache: {}'.format(package.name))
 
             except PyRevitCacheError as cache_err:
                 logger.debug(cache_err)
@@ -128,7 +127,7 @@ def load():
                 package = get_parsed_package(package_info)
 
                 # update cache with newly parsed package
-                logger.info('Package successfuly parsed: {}'.format(package.name))
+                logger.info(':thumbsup: Package successfuly parsed: {}'.format(package.name))
                 logger.info('Updating cache for package: {}'.format(package.name))
                 update_cache(package)
 
