@@ -3,10 +3,11 @@ import sys
 from pyrevit.logger import get_logger
 logger = get_logger(__commandname__)
 
+
 # html test ------------------------------------------------------------------------------------------------------------
-logger.info(':beer: Everything went well!')
-logger.info("Python is :thumbsup: :banana:")
-print "<a href='http://www.google.com'>Clickable link Google</a>"
+logger.info(':beer_mug: Everything went well!')
+logger.info("Python is :thumbs_up: :banana:")
+print "\n<a href='http://www.google.com'>Clickable link Google</a>"
 
 # testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.output import output_window as ow
