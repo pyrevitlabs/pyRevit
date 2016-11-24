@@ -14,9 +14,10 @@ Legacy scripts:
 	settings with WPF xml.
 
 
-Pkg manager:
+Pkg manager pushbutton:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
+	move non-update funcs to pkgmanager.py
 
 
 loader:
@@ -28,4 +29,4 @@ https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironp
 
 baseclasses in python code
 reset avail class
-updating .lib packages git
+move utils.py to core
