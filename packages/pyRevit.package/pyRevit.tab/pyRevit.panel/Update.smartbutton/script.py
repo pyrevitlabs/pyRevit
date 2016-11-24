@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Copyright (c) 2014-2016 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
@@ -44,7 +46,7 @@ if __name__ == '__main__':
         # update one by one
         logger.info('Updating repo: {}'.format(repo_info.directory))
         if updater.update_pyrevit(repo_info):
-            logger.info(':thumbsup: Successfully updated: {}'.format(repo_info.directory))
+            logger.info(':thumbs-up: Successfully updated: {}'.format(repo_info.directory))
 
     # now re-load pyrevit session.
     logger.info('Reloading...')
