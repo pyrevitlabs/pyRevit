@@ -20,6 +20,22 @@ for i in range(2):
 
 print t
 
+print """
+<form action="http://google.com">
+    <input type="submit" value="Go to Google" />
+</form>
+<form action="demo_form.asp">
+  First name: <input type="text" name="fname"><br>
+  Last name: <input type="text" name="lname"><br>
+  <input type="submit" value="Submit">
+</form>
+ <form>
+  <input type="radio" name="gender" value="male" checked> Male<br>
+  <input type="radio" name="gender" value="female"> Female<br>
+  <input type="radio" name="gender" value="other"> Other
+</form>
+"""
+
 # testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.output import output_window as ow
 
