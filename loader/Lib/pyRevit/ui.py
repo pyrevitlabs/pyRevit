@@ -28,7 +28,7 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 from .config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
-                    COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER
+                    COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
 from .config import HostVersion, HOST_SOFTWARE
 from .exceptions import PyRevitUIError
 
@@ -450,10 +450,13 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 try:
                     # Assembly and Class info of current active script button can not be updated.
                     if button_name != COMMAND_NAME_PARAM:
-                        existing_item._get_rvtapi_object().AssemblyName = asm_location
-                        existing_item._get_rvtapi_object().ClassName = class_name
+                        rvtapi_obj = existing_item._get_rvtapi_object()
+                        rvtapi_obj.AssemblyName = asm_location
+                        rvtapi_obj.ClassName = class_name
                         if avail_class_name:
                             existing_item._get_rvtapi_object().AvailabilityClassName = avail_class_name
+                        elif rvtapi_obj.AvailabilityClassName:
+                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
@@ -626,10 +629,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 try:
                     # Assembly and Class info of current active script button can not be updated.
                     if button_name != COMMAND_NAME_PARAM:
-                        existing_item._get_rvtapi_object().AssemblyName = asm_location
-                        existing_item._get_rvtapi_object().ClassName = class_name
+                        rvtapi_obj = existing_item._get_rvtapi_object()
+                        rvtapi_obj.AssemblyName = asm_location
+                        rvtapi_obj.ClassName = class_name
                         if avail_class_name:
-                            existing_item._get_rvtapi_object().AvailabilityClassName = avail_class_name
+                            rvtapi_obj.AvailabilityClassName = avail_class_name
+                        elif rvtapi_obj.AvailabilityClassName:
+                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
                 except Exception as asm_update_err:
                     logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 

@@ -42,7 +42,9 @@ from .compiler import Generate
 from ..logger import get_logger
 from ..config import SESSION_ID
 from ..config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from ..config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS
+from ..config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
+                     LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS, \
+                     LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
 from ..config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
 from ..config import SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..config import REVISION_EXTENSION, COMMAND_CONTEXT_SELECT_AVAIL
@@ -214,6 +216,28 @@ def _get_params_for_commands(parent_cmp):
     return loader_params_for_all_cmds
 
 
+def _create_default_cmd_availability_type(modulebuilder, availability_class):
+    type_builder = modulebuilder.DefineType(LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME,
+                                            TypeAttributes.Class | TypeAttributes.Public,
+                                            availability_class)
+
+    # call base constructor
+    ci = availability_class.GetConstructor(Array[Type]([]))
+
+    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
+                                                   CallingConventions.Standard,
+                                                   Array[Type](()))
+    # add constructor parameters to stack
+    gen = const_builder.GetILGenerator()
+    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
+    gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Ret)
+    type_builder.CreateType()
+
+
 def _create_cmd_availability_type(modulebuilder, availability_class, loader_class_params):
     type_builder = modulebuilder.DefineType(loader_class_params.avail_class_name,
                                             TypeAttributes.Class | TypeAttributes.Public,
@@ -293,10 +317,9 @@ def _create_asm_file(pkg, pkg_reloading):
     # unique assembly filename for this package
     pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE
 
-    # find command loader and availability classes
-    loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
-
     # compile C# source code into a dll, then load and get the base class types from it
+    loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
+    default_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS)
     category_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)
     selection_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS)
 
@@ -312,6 +335,9 @@ def _create_asm_file(pkg, pkg_reloading):
 
     # get module builder
     modulebuilder = assemblybuilder.DefineDynamicModule(pkg_asm_name, pkg_asm_file_name)
+
+    # create default availability class (this is for resetting buttons back to normal context state)
+    _create_default_cmd_availability_type(modulebuilder, default_avail_class)
 
     # create command classes
     for loader_class_params in _get_params_for_commands(pkg):  # type: LoaderClassParams

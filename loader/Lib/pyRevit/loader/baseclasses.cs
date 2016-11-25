@@ -121,4 +121,16 @@ namespace PyRevitBaseClasses
         }
     }
 
+    public abstract class PyRevitCommandDefaultAvail : IExternalCommandAvailability
+    {
+        public PyRevitCommandDefaultAvail()
+        {
+        }
+
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
+        {
+            return true;
+        }
+    }
+
 }
