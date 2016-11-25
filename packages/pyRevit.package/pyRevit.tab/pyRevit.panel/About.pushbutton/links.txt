@@ -1,4 +1,5 @@
 https://pypi.python.org/pypi/emoji
+https://pypi.python.org/pypi/html/
 emojione
 libgit2sharp
 icons8

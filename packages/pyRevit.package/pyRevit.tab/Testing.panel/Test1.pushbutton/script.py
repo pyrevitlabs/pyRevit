@@ -1,5 +1,3 @@
-raise Exception('Testing exception output report')
-
 import sys
 
 from pyrevit.logger import get_logger
@@ -10,6 +8,17 @@ logger = get_logger(__commandname__)
 logger.info(':beer_mug: Everything went well!')
 logger.info("Python is :thumbs_up: :banana:")
 print "\n<a href='http://www.google.com'>Clickable link Google</a>"
+
+from html import HTML
+h = HTML()
+
+t = h.table(border='1', newlines=False)
+for i in range(2):
+    r = t.tr
+    r.td('column 1')
+    r.td('column 2')
+
+print t
 
 # testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.output import output_window as ow
