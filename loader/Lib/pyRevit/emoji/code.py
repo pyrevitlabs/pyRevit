@@ -1283,4 +1283,5 @@ emoji_file_dict = {
     ':zipper-mouth_face:': '1F910',
     ':python:': 'python',
     ':python-dark:': 'python-dark',
+    ':small-black-heart:': 'small-black-heart',
 }

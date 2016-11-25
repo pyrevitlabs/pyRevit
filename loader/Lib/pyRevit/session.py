@@ -46,6 +46,8 @@ if user_settings.cache_type == CACHE_TYPE_ASCII:
 else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
+from .config import PyRevitVersion
+from loader.updater import get_pyrevit_repo
 
 logger = get_logger(__name__)
 
@@ -77,10 +79,13 @@ def load():
     timer = Timer()
 
     # log python version, home directory, config file and loader script location.
-    logger.info('Running on: {0}'.format(sys.version))
-    logger.info('Home Directory is: {0}'.format(HOME_DIR))
+    last_commit_hash = get_pyrevit_repo().last_commit_hash[:7]
+    pyrvt_ver = '{}:{}'.format(PyRevitVersion.full_version_as_str(), last_commit_hash)
+    logger.info('pyRevit version: {} - Made with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
+    logger.info('Running on: {}'.format(sys.version))
+    logger.info('Home Directory is: {}'.format(HOME_DIR))
     logger.info('Config file is: {}'.format(user_settings.config_file))
-    logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
+    logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE_NAME))
 
     # for every package of installed packages, create an assembly, and create a ui
     # parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
@@ -158,4 +163,4 @@ def load():
 
     # log load time
     endtime = timer.get_time()
-    logger.info('Load time: {} seconds {}'.format(endtime,':ok_hand_sign:' if endtime < 3.00 else ':face_with_rolling_eyes:'))
+    logger.info('Load time: {} seconds {}'.format(endtime,':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'))
