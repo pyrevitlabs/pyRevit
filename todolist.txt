@@ -1,3 +1,5 @@
+support recompile of base classes during reload
+
 reordering:
 	move utils.py to core
 	move updater, and pkgmanager to .extensions?
