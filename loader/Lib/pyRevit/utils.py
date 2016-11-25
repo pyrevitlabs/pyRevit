@@ -2,7 +2,7 @@ import os
 import os.path as op
 import ast
 import inspect
-
+import time
 
 from .exceptions import PyRevitException
 
@@ -14,16 +14,13 @@ from System.Diagnostics import Process
 class Timer:
     """Timer class using python native time module."""
     def __init__(self):
-        import time
         self.start = time.time()
 
     def restart(self):
-        import time
         self.start = time.time()
 
-    def get_time_hhmmss(self):
-        import time
-        return "%02.2f seconds" % (time.time() - self.start)
+    def get_time(self):
+        return (time.time() - self.start)
 
 
 class ScriptFileParser:

@@ -157,4 +157,5 @@ def load():
     cleanup_pyrevit_ui()
 
     # log load time
-    logger.info('Load time: {} :ok_hand_sign:'.format(timer.get_time_hhmmss()))
+    endtime = timer.get_time()
+    logger.info('Load time: {} seconds {}'.format(endtime,':ok_hand_sign:' if endtime < 3.00 else ':face_with_rolling_eyes:'))
