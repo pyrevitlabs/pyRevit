@@ -48,7 +48,7 @@ namespace PyRevitLoader
             var err_div = _gui.txtStdOut.Document.CreateElement(_err_msg_html_element);
             err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
 
-            Write(Encoding.ASCII.GetBytes(err_div.OuterHtml), 0, error_msg.Length);
+            Write(Encoding.ASCII.GetBytes(" " + err_div.OuterHtml), 0, error_msg.Length);
         }
 
         /// <summary>
