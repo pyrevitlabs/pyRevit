@@ -37,11 +37,14 @@ import os.path as op
 from collections import namedtuple
 import clr
 
+from .compiler import Generate
+
 from ..logger import get_logger
 from ..config import SESSION_ID
 from ..config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from ..config import LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS
-from ..config import USER_TEMP_DIR, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
+from ..config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS
+from ..config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
+from ..config import SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..config import REVISION_EXTENSION, COMMAND_CONTEXT_SELECT_AVAIL
 from ..config import PyRevitVersion
 from ..exceptions import PyRevitLoaderNotFoundError
@@ -55,7 +58,7 @@ clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 clr.AddReference('System.Xml.Linq')
 from System import AppDomain, Version, Array, Type
-from System.Reflection import AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
+from System.Reflection import Assembly, AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
 from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder, OpCodes
 
 # revit api imports
@@ -77,6 +80,10 @@ LoaderClassParams = namedtuple('LoaderClassParams',
                                 ])
 
 
+def _make_baseclasses_asm_name():
+    return SESSION_STAMPED_ID + '_' + LOADER_BASE_CLASSES_ASM
+
+
 def _make_pkg_asm_name(pkg):
     return SESSION_STAMPED_ID + '_' + pkg.unique_name
 
@@ -84,41 +91,69 @@ def _make_pkg_asm_name(pkg):
 def _make_pkg_asm_name_revised(pkg):
     pkg_dll_name = _make_pkg_asm_name(pkg)
     # if package is already loaded, add revision extension to pkg_dll_name (_R1, _R2,...)
-    if _is_package_already_loaded(pkg):
-        rev_num = 1
-        while True:
-            reload_pkg_dll_name = pkg_dll_name + REVISION_EXTENSION.format(rev_num)
-            logger.debug('Trying new dll file name: {}'.format(reload_pkg_dll_name))
-            if not op.exists(op.join(USER_TEMP_DIR, reload_pkg_dll_name + ASSEMBLY_FILE_TYPE)):
-                logger.debug('New dll name created: {}'.format(reload_pkg_dll_name))
-                pkg_dll_name = reload_pkg_dll_name
-                break
-            else:
-                rev_num += 1
+    rev_num = 1
+    while True:
+        reload_pkg_dll_name = pkg_dll_name + REVISION_EXTENSION.format(rev_num)
+        logger.debug('Trying new dll file name: {}'.format(reload_pkg_dll_name))
+        if not op.exists(op.join(USER_TEMP_DIR, reload_pkg_dll_name + ASSEMBLY_FILE_TYPE)):
+            logger.debug('New dll name created: {}'.format(reload_pkg_dll_name))
+            pkg_dll_name = reload_pkg_dll_name
+            break
+        else:
+            rev_num += 1
 
     return pkg_dll_name
 
 
-def _is_pkg_asm_file(pkg, file_name):
+def _is_pyrevit_asm_file(file_name):
     # if this is a pyRevit assembly file
-    if file_name.startswith(SESSION_ID) and file_name.endswith(ASSEMBLY_FILE_TYPE):
-        # return true if it belongs to this package
-        return pkg.unique_name in file_name
-    return False
+    return (file_name.startswith(SESSION_ID) and file_name.endswith(ASSEMBLY_FILE_TYPE))
 
 
-def _find_command_loader():
-    logger.debug('Asking Revit for command loader assembly...')
+def _find_loaded_asm(asm_name):
+    logger.debug('Asking Revit for loaded assembly: {}'.format(asm_name))
+    loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
-        if LOADER_ADDIN.lower() in str(loaded_assembly.FullName).lower():
-            logger.debug('Command loader assembly found: {0}'.format(loaded_assembly.GetName().FullName))
-            return loaded_assembly
-    raise PyRevitLoaderNotFoundError('Can not find necessary command loader assembly.')
+        if asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
+            logger.debug('Assembly found: {0}'.format(loaded_assembly.GetName().FullName))
+            loaded_asm_list.append(loaded_assembly)
+
+    count = len(loaded_asm_list)
+    if count == 1:
+        return loaded_asm_list[0]
+    elif count > 1:
+        return  loaded_asm_list
+    else:
+        raise PyRevitLoaderNotFoundError('Can not find assembly: {}'.format(asm_name))
+
+
+def _generate_base_classes_asm():
+    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'baseclasses.cs'), 'r') as code_file:
+        source = code_file.read()
+
+    baseclass_asm = Generate(source, _make_baseclasses_asm_name(),
+                             outputDirectory=USER_TEMP_DIR,
+                             references = [_find_loaded_asm('PresentationCore').Location, \
+                                           _find_loaded_asm('WindowsBase').Location, \
+                                           'RevitAPI.dll', 'RevitAPIUI.dll', \
+                                            op.join(LOADER_ASM_DIR, LOADER_ADDIN + ASSEMBLY_FILE_TYPE)])
+    return Assembly.LoadFrom(baseclass_asm)
+
+
+def _find_command_loader_asm():
+    return _find_loaded_asm(LOADER_ADDIN)
+
+
+def _find_base_classes_asm():
+    try:
+        return _find_loaded_asm(_make_baseclasses_asm_name())
+    except Exception as err:
+        # if base classes is not already loaded, compile and load the assembly
+        return _generate_base_classes_asm()
 
 
 def _find_cmd_loader_class(loader_class_name):
-    cmd_loader_asm = _find_command_loader()
-    """Private func: Finds the loader assembly addin and command interface class."""
+    cmd_loader_asm = _find_command_loader_asm()
     loader_class = cmd_loader_asm.GetType(loader_class_name)
     if loader_class is not None:
         return loader_class
@@ -126,35 +161,32 @@ def _find_cmd_loader_class(loader_class_name):
         raise PyRevitLoaderNotFoundError('Can not find command loader class type: {}'.format(loader_class_name))
 
 
-def _find_loaded_package_assemblies(pkg):
-    """Private func: Collects information about previously loaded assemblies"""
-    logger.debug('Asking Revit for previously loaded package assemblies...: {}'.format(pkg))
-    loaded_pkg_assemblies = []
-    pkg_assembly_name = _make_pkg_asm_name(pkg)
-    for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
-        if pkg_assembly_name in loadedAssembly.FullName:
-            logger.debug('Existing assembly found: {0}'.format(loadedAssembly.FullName))
-            # loadedPyRevitScripts.extend([ct.Name for ct in loadedAssembly.GetTypes()])
-            loaded_pkg_assemblies.append(loadedAssembly)
-
-    return loaded_pkg_assemblies
+def _find_pyrevit_base_class(base_class_name):
+    baseclass_asm = _find_base_classes_asm()
+    base_class = baseclass_asm.GetType(base_class_name)
+    if base_class is not None:
+        return base_class
+    else:
+        raise PyRevitLoaderNotFoundError('Can not find base class type: {}'.format(base_class_name))
 
 
-def _is_package_already_loaded(pkg):
-    return len(_find_loaded_package_assemblies(pkg)) > 0
+def _is_pyrevit_already_loaded():
+    logger.debug('Asking Revit for previously loaded pyrevit assemblies...')
+    try:
+        return _find_loaded_asm(_make_baseclasses_asm_name())
+    except Exception as err:
+        logger.debug('PyRevit is not loaded.')
+        return False
 
 
-def _cleanup_existing_package_asm_files(pkg):
-    """Private func: Removes assembly files from previous sessions from user temp directory."""
-    logger.debug('Cleaning up old package assembly files...: {}'.format(pkg))
-    files = os.listdir(USER_TEMP_DIR)
-    for file_name in files:
-        if _is_pkg_asm_file(pkg, file_name):
-            try:
-                os.remove(op.join(USER_TEMP_DIR, file_name))
-                logger.debug('Existing assembly file removed: {0}'.format(file_name))
-            except OSError:
-                logger.debug('Error deleting assembly file: {0}'.format(file_name))
+def _is_pyrevit_pkg_already_loaded(pkg):
+    logger.debug('Asking Revit for previously loaded package assemblies: {}'.format(pkg))
+    pkg_asm_name = _make_pkg_asm_name(pkg)
+    try:
+        return _find_loaded_asm(pkg_asm_name)
+    except Exception as err:
+        logger.debug('Package is not loaded: {}'.format(pkg))
+        return False
 
 
 def _get_params_for_commands(parent_cmp):
@@ -262,9 +294,11 @@ def _create_asm_file(pkg, pkg_reloading):
     pkg_asm_file_name = pkg_asm_name + ASSEMBLY_FILE_TYPE
 
     # find command loader and availability classes
-    loader_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
-    category_avail_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)
-    selection_avail_class = _find_cmd_loader_class(LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS)
+    loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
+
+    # compile C# source code into a dll, then load and get the base class types from it
+    category_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)
+    selection_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS)
 
     # create assembly
     windowsassemblyname = AssemblyName(Name=pkg_asm_name, Version=Version(PyRevitVersion.major,
@@ -294,18 +328,30 @@ def _create_asm_file(pkg, pkg_reloading):
     return PackageAssemblyInfo(pkg_asm_name, op.join(USER_TEMP_DIR, pkg_asm_file_name), pkg_reloading)
 
 
-def create_assembly(parsed_pkg):
-    logger.debug('Initializing python script loader...')
-
-    pkg_reloading = _is_package_already_loaded(parsed_pkg)
-
+def cleanup_existing_pyrevit_asm_files():
     running_rvt_instance_count = get_revit_instances()
     if running_rvt_instance_count > 1:
         logger.debug('Multiple Revit instance are running...Skipping assembly files cleanup')
-    elif running_rvt_instance_count == 1 and pkg_reloading:
+    elif running_rvt_instance_count == 1 and _is_pyrevit_already_loaded():
         logger.debug('pyRevit is reloading. Skipping assembly file cleanup...')
     else:
-        _cleanup_existing_package_asm_files(parsed_pkg)
+        logger.debug('Cleaning up old pyrevit assembly files...')
+
+        files = os.listdir(USER_TEMP_DIR)
+        for file_name in files:
+            if _is_pyrevit_asm_file(file_name):
+                try:
+                    os.remove(op.join(USER_TEMP_DIR, file_name))
+                    logger.debug('Existing assembly file removed: {0}'.format(file_name))
+                except OSError:
+                    # fixme: what if it can't delete the baseclasses file?
+                    logger.debug('Error deleting assembly file: {0}'.format(file_name))
+
+
+def create_assembly(parsed_pkg):
+    logger.debug('Initializing python script loader...')
+
+    pkg_reloading = _is_pyrevit_pkg_already_loaded(parsed_pkg)
 
     # create assembly file and return assembly file path to be used in UI creation
     try:

@@ -52,14 +52,17 @@ except Exception:
 # Addon defaults -------------------------------------------------------------------------------------------------------
 PYREVIT_ASSEMBLY_NAME = 'pyrevit'
 PYREVIT_INIT_SCRIPT_NAME = 'pyrevitloader'
+
 PYREVIT_MAIN_LIBRARY_DIRNAME = 'Lib'
 PYREVIT_EXTENSIONS_DIRNAME = 'packages'
+LOADER_ADDIN_ASM_DIRNAME = 'pyRevitLoader'
 
 LOADER_ADDIN = 'PyRevitLoader'
-LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_ADDIN + '.PyRevitCommand'
-LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS = LOADER_ADDIN + '.PyRevitCommandCategoryAvail'
-LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS = LOADER_ADDIN + '.PyRevitCommandSelectionAvail'
-LOADER_ADDIN_ASM_DIRNAME = 'pyRevitLoader'
+
+LOADER_BASE_CLASSES_ASM = 'PyRevitBaseClasses'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = LOADER_BASE_CLASSES_ASM + '.PyRevitCommand'
+LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS = LOADER_BASE_CLASSES_ASM + '.PyRevitCommandCategoryAvail'
+LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS = LOADER_BASE_CLASSES_ASM + '.PyRevitCommandSelectionAvail'
 
 
 class _HostVersion:
@@ -205,7 +208,7 @@ PYREVIT_TEMP_DIR = 'pyrevittemp'
 USER_TEMP_DIR = op.join(_find_user_temp_directory(), PYREVIT_TEMP_DIR)
 if not op.isdir(USER_TEMP_DIR):
     os.mkdir(USER_TEMP_DIR)
-    
+
 REVIT_UNAME = _get_username()
 USER_ROAMING_DIR = _find_user_roaming_appdata()
 USER_SETTINGS_DIR = _find_user_roaming_appdata_pyrevit()

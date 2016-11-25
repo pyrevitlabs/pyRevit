@@ -36,7 +36,7 @@ from .utils import Timer
 from .userconfig import user_settings
 
 from loader.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
-from loader.asmmaker import create_assembly
+from loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
 from loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from .usagedata import archive_script_usage_logs
 
@@ -53,6 +53,14 @@ logger = get_logger(__name__)
 def _update_pkg_syspaths(pkg, all_installed_lib_pkgs):
     for installed_lib_pkg in all_installed_lib_pkgs:
         pkg.add_syspath(installed_lib_pkg.directory)
+
+
+def _perform_startup_cleanup_operations():
+    # archive previous sessions logs
+    archive_script_usage_logs()
+
+    # Cleanups previous temporary assembly files
+    cleanup_existing_pyrevit_asm_files()
 
 
 def load():
@@ -72,6 +80,7 @@ def load():
     logger.info('Running on: {0}'.format(sys.version))
     logger.info('Home Directory is: {0}'.format(HOME_DIR))
     logger.info('Config file is: {}'.format(user_settings.config_file))
+    logger.info('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
 
     # for every package of installed packages, create an assembly, and create a ui
     # parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
@@ -81,9 +90,7 @@ def load():
     # Session, creates an independent dll (using asmmaker) and ui (using uimaker) for every package.
     # This isolates other packages from any errors that might occur during package startup.
 
-    # archive previous sessions logs
-    logger.debug('Generated log name for this session: {0}'.format(SESSION_LOG_FILE_NAME))
-    archive_script_usage_logs()
+    _perform_startup_cleanup_operations()
 
     # get a list of all directories that could include packages
     pkg_search_dirs = user_settings.get_package_root_dirs()
