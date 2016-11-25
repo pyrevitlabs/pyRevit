@@ -1,25 +1,20 @@
-__context__ = 'Walls'
-
 if __shiftclick__:
     print('Shif-Clicked button')
 
-import pyrevit.scriptutils as su
 
-script = su.get_script_info(__file__)
-print script.cmd_context
+# # testing rpw ----------------------------------------------------------------------------------------------------------
+# import rpw
+# from rpw import doc, uidoc
+#
+# print doc, uidoc
+#
+# from System import AppDomain as ad
+#
+# for a in ad.CurrentDomain.GetAssemblies():
+#     if 'pyrevit' in str(a.FullName).lower():
+#         print a
 
-# testing rpw ----------------------------------------------------------------------------------------------------------
-import rpw
-from rpw import doc, uidoc
-
-print doc, uidoc
-
-from System import AppDomain as ad
-
-for a in ad.CurrentDomain.GetAssemblies():
-    if 'pyrevit' in str(a.FullName).lower():
-        print a
-
+# # testing getting loaded assemblies ----------------------------------------------------------------------------------------------------------
 # from System import AppDomain
 # from System.Reflection import AssemblyName
 # dom = AppDomain.CreateDomain("some")
@@ -28,5 +23,3 @@ for a in ad.CurrentDomain.GetAssemblies():
 # assembly = dom.Load(assemblyName)
 # types = assembly.GetTypes()
 # AppDomain.Unload(dom)
-
-raise Exception('Test')
