@@ -4,13 +4,14 @@ logger = get_logger(__commandname__)
 if __shiftclick__:
     print('Shif-Clicked button')
 
+logger.critical('message')
 
 # testing rpw ----------------------------------------------------------------------------------------------------------
-# import rpw
-# from rpw import doc, uidoc
-#
-# print doc, uidoc
-#
+import rpw
+from rpw import doc, uidoc
+
+print doc, uidoc
+
 # from System import AppDomain as ad
 #
 # for a in ad.CurrentDomain.GetAssemblies():

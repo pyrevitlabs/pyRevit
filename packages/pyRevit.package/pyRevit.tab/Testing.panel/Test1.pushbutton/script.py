@@ -112,9 +112,9 @@ try:
 except Exception as err:
     logger.info('\n\nError occured:{} | {}'.format(__commandname__, err))
 
-#
-# # exception output -----------------------------------------------------------------------------------------------------
-# raise Exception('Testing exception output report')
+
+# exception output -----------------------------------------------------------------------------------------------------
+raise Exception('Testing exception output report')
 
 
 # smart button template ------------------------------------------------------------------------------------------------
