@@ -9,7 +9,7 @@ For publish --------------------------------------------------------------------
 
 3.	reordering:
 	move utils.py to core?
-	move updater, and pkgmanager to .extensions?
+	move updater, and pkgmanager to .extensions? Add a module to create packages on the fly
 	Get the modules organized into sub-modules.
 
 4.	script info:
@@ -19,6 +19,10 @@ For publish --------------------------------------------------------------------
 	Create base settings window with WPF
 
 6.	about window with WPF and list all links, and extensions w/ version
+
+7.	button that points to a script in other location
+
+8. C# buttons
 
 
 After publish ----------------------------------------------------------------------------------------------------------
