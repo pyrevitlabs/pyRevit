@@ -31,9 +31,6 @@ After publish ------------------------------------------------------------------
 [].	improving execution speed (caching or compiling scripts):
 	https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
 
-[].	properly output error messages:
-	http://stackoverflow.com/questions/1278705/python-when-i-catch-an-exception-how-do-i-get-the-type-file-and-line-number
-
 []. C# buttons
 
 []. Add a module to create packages on the fly
