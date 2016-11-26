@@ -1,38 +1,55 @@
 For publish ------------------------------------------------------------------------------------------------------------
-1.	Support recompile of base classes during reload
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	Support recompile of base classes during reload
 	Figure out how to not have any files in the repo locked by Revit. This means that the loader needs to generate
 	a new temp dll for baseclasses and also for ScriptExecutor. So on every reload a new version of this dll is
 	generated and the C# source code needs to know which dll to load SE from.
 	Main loader still needs a script executor and output window. So there would be a little code duplication.
 
-2.	compute hash value for components and use that to name dlls. This way they can be reused if no change to source.
+[X].	compute hash value for components and use that to name dlls. This way they can be reused if no change to source.
 
-3.	reordering:
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	reordering:
 	move utils.py to core?
-	move updater, and pkgmanager to .extensions? Add a module to create packages on the fly
+	move updater, and pkgmanager to .extensions? move non-update funcs to pkgmanager.py
 	Get the modules organized into sub-modules.
 
-4.	script info:
+[].	script info:
 	implement the two functions
 
-5.	user config: custom user settings / debug settings(debug mode, disable caching)
+[].	button that points to a script in other location
+
+[].	properly output error messages:
+	http://stackoverflow.com/questions/1278705/python-when-i-catch-an-exception-how-do-i-get-the-type-file-and-line-number
+
+[].	move abstract functions to utils?
+
+DAY --------------------------------------------------------------------------------------------------------------------
+[].  Add a module to create packages on the fly
+
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	user config: custom user settings / debug settings(debug mode, disable caching)
 	Create base settings window with WPF
 
-6.	about window with WPF and list all links, and extensions w/ version
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	about window with WPF and list all links, and extensions w/ version
 
-7.	button that points to a script in other location
+DAY --------------------------------------------------------------------------------------------------------------------
+[]. C# buttons
 
-8. C# buttons
+
+
 
 
 After publish ----------------------------------------------------------------------------------------------------------
-user config: disabling tools
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	user config: disabling tools
 
-Pkg manager pushbutton:
+DAY --------------------------------------------------------------------------------------------------------------------
+DAY --------------------------------------------------------------------------------------------------------------------
+[].	Pkg manager pushbutton:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
-	move non-update funcs to pkgmanager.py
 
-
-improving execution speed (caching or compiling scripts):
-https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
+[].	improving execution speed (caching or compiling scripts):
+	https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
