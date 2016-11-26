@@ -23,8 +23,8 @@ Description:
 """
 import os.path as op
 
-from ..config import ASSEMBLY_FILE_TYPE
-from ..exceptions import PyRevitException
+from ...config import ASSEMBLY_FILE_TYPE
+from ...exceptions import PyRevitException
 
 from System import Array
 from System.CodeDom import Compiler

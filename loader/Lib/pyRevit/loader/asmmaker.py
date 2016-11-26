@@ -38,7 +38,7 @@ import os.path as op
 from collections import namedtuple
 import clr
 
-from .compiler import compile_to_asm
+from .source import compile_to_asm
 
 from ..logger import get_logger
 from ..config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
@@ -91,7 +91,7 @@ def _make_pkg_asm_name(pkg):
 
 
 def _generate_base_classes_asm():
-    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'baseclasses.cs'), 'r') as code_file:
+    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'source','baseclasses.cs'), 'r') as code_file:
         source = code_file.read()
     try:
         baseclass_asm = compile_to_asm(source, _make_baseclasses_asm_name(), USER_TEMP_DIR,
