@@ -104,9 +104,17 @@ print 'Forced Debug: {}'.format(__forceddebugmode__)
 print 'Message: {}'.format(__message__)
 print 'Result: {}'.format(__result__)
 
+# handling exception and reporting  ------------------------------------------------------------------------------------
+from pyrevit.exceptions import PyRevitException
 
-# exception output -----------------------------------------------------------------------------------------------------
-raise Exception('Testing exception output report')
+try:
+    raise PyRevitException('this is the message')
+except Exception as err:
+    logger.info('\n\nError occured:{} | {}'.format(__commandname__, err))
+
+#
+# # exception output -----------------------------------------------------------------------------------------------------
+# raise Exception('Testing exception output report')
 
 
 # smart button template ------------------------------------------------------------------------------------------------
