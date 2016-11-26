@@ -13,7 +13,7 @@ if __shiftclick__:
 # for a in ad.CurrentDomain.GetAssemblies():
 #     if 'pyrevit' in str(a.FullName).lower():
 #         print a
-
+#
 # # testing getting loaded assemblies ----------------------------------------------------------------------------------------------------------
 # from System import AppDomain
 # from System.Reflection import AssemblyName
