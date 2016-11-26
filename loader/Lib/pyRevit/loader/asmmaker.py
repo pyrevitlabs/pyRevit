@@ -38,7 +38,7 @@ import os.path as op
 from collections import namedtuple
 import clr
 
-from .compiler import Generate
+from .compiler import compile_to_asm
 
 from ..logger import get_logger
 from ..config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
@@ -49,7 +49,7 @@ from ..config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLA
 from ..config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
 from ..config import REVISION_EXTENSION, COMMAND_CONTEXT_SELECT_AVAIL
 from ..config import PyRevitVersion
-from ..exceptions import PyRevitLoaderNotFoundError
+from ..exceptions import PyRevitLoaderNotFoundError, PyRevitException
 from ..utils import join_strings, get_revit_instances
 
 logger = get_logger(__name__)
@@ -93,13 +93,16 @@ def _make_pkg_asm_name(pkg):
 def _generate_base_classes_asm():
     with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'baseclasses.cs'), 'r') as code_file:
         source = code_file.read()
+    try:
+        baseclass_asm = compile_to_asm(source, _make_baseclasses_asm_name(), USER_TEMP_DIR,
+                                       references=[_find_loaded_asm('PresentationCore').Location,
+                                                   _find_loaded_asm('WindowsBase').Location,
+                                                   'RevitAPI.dll', 'RevitAPIUI.dll',
+                                                   op.join(LOADER_ASM_DIR, LOADER_ADDIN + ASSEMBLY_FILE_TYPE)])
+    except PyRevitException as compile_err:
+        logger.critical('Can not compile source code into assembly. | {}'.format(compile_err))
+        raise compile_err
 
-    baseclass_asm = Generate(source, _make_baseclasses_asm_name(),
-                             outputDirectory=USER_TEMP_DIR,
-                             references = [_find_loaded_asm('PresentationCore').Location, \
-                                           _find_loaded_asm('WindowsBase').Location, \
-                                           'RevitAPI.dll', 'RevitAPIUI.dll', \
-                                            op.join(LOADER_ASM_DIR, LOADER_ADDIN + ASSEMBLY_FILE_TYPE)])
     return Assembly.LoadFrom(baseclass_asm)
 
 
@@ -129,7 +132,7 @@ def _find_base_classes_asm():
     if base_classes_asm is not None:
         return base_classes_asm
     else:
-        # if base classes is not already loaded, compile and load the assembly
+        # if base classes is not already loaded, compile_to_asm and load the assembly
         return _generate_base_classes_asm()
 
 
@@ -139,7 +142,7 @@ def _find_pyrevit_base_class(base_class_name):
     if base_class is not None:
         return base_class
     else:
-        raise PyRevitLoaderNotFoundError('Can not find base class type: {}'.format(base_class_name))
+        raise PyRevitException('Can not find base class type: {}'.format(base_class_name))
 
 
 def _get_params_for_commands(parent_cmp):
@@ -307,7 +310,7 @@ def _create_asm_file(pkg):
     is_reloading_pkg = _is_any_pkg_asm_loaded(pkg)
 
     logger.debug('Building assembly for package: {}'.format(pkg))
-    # compile C# source code into a dll, then load and get the base class types from it
+    # compile_to_asm C# source code into a dll, then load and get the base class types from it
     loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
     default_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS)
     category_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)
