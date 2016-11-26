@@ -1,5 +1,6 @@
 import clr
 
+from System import Array
 from System.Environment import CurrentDirectory
 from System.IO import Path, Directory
 
@@ -27,7 +28,7 @@ def Generate(code, name, references=None, outputDirectory=None, inMemory=False):
         CompilerParams.ReferencedAssemblies.Add(reference)
 
     provider = CSharpCodeProvider()
-    compile = provider.CompileAssemblyFromSource(CompilerParams, code)
+    compile = provider.CompileAssemblyFromSource(CompilerParams, Array[str]([code]))
 
     if compile.Errors.HasErrors:
         error_list = [str(err) for err in compile.Errors.GetEnumerator()]
