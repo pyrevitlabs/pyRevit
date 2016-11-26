@@ -123,7 +123,7 @@ def update_pyrevit(repo_info):
         logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
         head_msg = str(repo.Head.Tip.Message).replace('\n','')
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
-        return True
+        return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
 
     except Exception as pull_err:
         logger.error('Failed updating: {} | {}'.format(repo_info.directory, pull_err))
