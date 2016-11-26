@@ -1,11 +1,11 @@
 For publish ------------------------------------------------------------------------------------------------------------
-[].	Support recompile of base classes during reload
+[1].	Support recompile of base classes during reload
 	Figure out how to not have any files in the repo locked by Revit. This means that the loader needs to generate
 	a new temp dll for baseclasses and also for ScriptExecutor. So on every reload a new version of this dll is
 	generated and the C# source code needs to know which dll to load SE from.
 	Main loader still needs a script executor and output window. So there would be a little code duplication.
 
-[].	move abstract functions to utils?
+[2].	move abstract functions to utils?
 [].	reordering:
 	move utils.py to core?
 	move updater, and pkgmanager to .extensions? move non-update funcs to pkgmanager.py
@@ -15,7 +15,7 @@ For publish --------------------------------------------------------------------
 [].	script info:
 	implement the two functions
 
-[].	user config: custom user settings / debug settings(debug mode, disable caching)
+[3].	user config: custom user settings / debug settings(debug mode, disable caching)
 	Create base settings window with WPF
 
 [].	about window with WPF and list all links, and extensions w/ version
