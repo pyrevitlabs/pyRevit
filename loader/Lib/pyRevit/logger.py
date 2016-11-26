@@ -11,6 +11,8 @@ from emoji import emojize
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
+LOG_RECORD_FORMAT_ERROR = '<div style="background:#EEE;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
+LOG_RECORD_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session
@@ -28,6 +30,16 @@ if FORCED_DEBUG_MODE_PARAM:
 
 
 # custom logger methods (for module consistency and custom adjustments) ------------------------------------------------
+class DispatchingFormatter:
+    def __init__(self, formatters, default_formatter):
+        self._formatters = formatters
+        self._default_formatter = default_formatter
+
+    def format(self, record):
+        formatter = self._formatters.get(record.levelno, self._default_formatter)
+        return formatter.format(record)
+
+
 class LoggerWrapper(logging.Logger):
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
@@ -71,8 +83,9 @@ class LoggerWrapper(logging.Logger):
 # setting up handlers and formatters -----------------------------------------------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
 # e.g [parser] DEBUG: Can not create command.
-stdout_formatter = logging.Formatter(LOG_RECORD_FORMAT)
-stdout_hndlr.setFormatter(stdout_formatter)
+stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter(LOG_RECORD_FORMAT_ERROR),
+                                                logging.CRITICAL: logging.Formatter(LOG_RECORD_FORMAT_CRITICAL)},
+                                                logging.Formatter(LOG_RECORD_FORMAT)))
 stdout_hndlr.setLevel(RUNTIME_LOGGING_LEVEL)
 
 # todo: file handler

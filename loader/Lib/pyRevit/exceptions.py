@@ -9,7 +9,9 @@ class PyRevitException(Exception):
     """
     def __str__(self):
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
-        return traceback.format_tb(sys.exc_traceback)[0]
+        if self.args:
+            message = self.args[0]
+        return '{}\n\n<strong>Traceback:</strong>\n{}'.format(message, traceback.format_tb(sys.exc_traceback)[0])
 
 
 class PyRevitUnknownAssemblyError(PyRevitException):
