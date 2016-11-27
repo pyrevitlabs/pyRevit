@@ -34,8 +34,10 @@ All these four modules can understand the component tree. (_basecomponents modul
 
 import os
 import os.path as op
-import clr
 from collections import namedtuple
+
+import clr
+from pyrevit.loader.scriptexec import compile_to_asm
 
 from ..core.config import COMMAND_CONTEXT_SELECT_AVAIL
 from ..core.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
@@ -45,12 +47,9 @@ from ..core.config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAI
 from ..core.config import PyRevitVersion
 from ..core.config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..core.config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
+from ..core.coreutils import join_strings, get_revit_instances
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger
-from ..core.coreutils import join_strings, get_revit_instances
-
-from ..scriptexec import compile_to_asm
-
 
 logger = get_logger(__name__)
 

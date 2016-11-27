@@ -32,7 +32,7 @@ start and interact with a pyRevit.session
 from pyrevit.core.logger import get_logger                   # import logger to log messages to pyrevit log.
 logger = get_logger('pyRevitLoader')
 
-import pyrevit.session as session
+import pyrevit.loader.session as session
 
 # load pyrevit session.
 session.load()

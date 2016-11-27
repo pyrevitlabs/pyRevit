@@ -18,10 +18,10 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
-import pyrevit.session as session
+import pyrevit.loader.session as session
 from pyrevit.core.config import ICON_LARGE
 from pyrevit.core.logger import get_logger
-from pyrevit.extension import updater
+from pyrevit.packages import updater
 
 logger = get_logger(__commandname__)
 

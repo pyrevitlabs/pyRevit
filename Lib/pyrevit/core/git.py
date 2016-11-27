@@ -31,7 +31,7 @@ import System
 import clr
 from .config import GIT_LIB
 
-# todo: figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime
+# todo: figure out how to import packages on the caller's scope. Can't expect the user to import this everytime
 clr.AddReference("System.Core")
 clr.ImportExtensions(System.Linq)
 clr.AddReferenceByName(GIT_LIB)

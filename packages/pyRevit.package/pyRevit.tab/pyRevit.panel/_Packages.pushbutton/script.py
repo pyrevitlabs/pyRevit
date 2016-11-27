@@ -15,7 +15,7 @@ protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = "Package Manager for pyrevit. You can install other shared extensions using this tool."
+__doc__ = "Package Manager for pyrevit. You can install other shared packages using this tool."
 __version__ = "0.3.0"
 __author__ = 'Gui Talarico | gtalarico@gmail.com'
 
