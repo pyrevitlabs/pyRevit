@@ -1,9 +1,10 @@
 import os.path as op
 
-from ..core.logger import get_logger
-from ..core.exceptions import PyRevitException
+from pyrevit.packages.parser.components import GenericCommand
+
 from ..core.coreutils import get_all_subclasses
-from ..loader.components import GenericCommand
+from ..core.exceptions import PyRevitException
+from ..core.logger import get_logger
 
 
 logger = get_logger(__name__)

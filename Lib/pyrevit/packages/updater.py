@@ -1,6 +1,7 @@
 from collections import namedtuple
 
-from pyrevit.loader.parser import get_installed_lib_package_data, get_installed_package_data
+from pyrevit.packages.parser.parser import get_installed_lib_package_data, get_installed_package_data
+
 from ..logger import get_logger
 logger = get_logger(__name__)
 

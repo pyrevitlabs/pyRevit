@@ -37,7 +37,7 @@ import os.path as op
 from collections import namedtuple
 
 import clr
-from pyrevit.loader.scriptexec import compile_to_asm
+from pyrevit.loader.cstemplates import compile_to_asm
 
 from ..core.config import COMMAND_CONTEXT_SELECT_AVAIL
 from ..core.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
@@ -90,7 +90,7 @@ def _make_pkg_asm_name(pkg):
 
 
 def _generate_base_classes_asm():
-    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'scriptexec','baseclasses.cs'), 'r') as code_file:
+    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'cstemplates','baseclasses.cs'), 'r') as code_file:
         source = code_file.read()
     try:
         baseclass_asm = compile_to_asm(source, _make_baseclasses_asm_name(), USER_TEMP_DIR,
@@ -99,7 +99,7 @@ def _generate_base_classes_asm():
                                                    'RevitAPI.dll', 'RevitAPIUI.dll',
                                                    op.join(LOADER_ASM_DIR, LOADER_ADDIN + ASSEMBLY_FILE_TYPE)])
     except PyRevitException as compile_err:
-        logger.critical('Can not compile scriptexec code into assembly. | {}'.format(compile_err))
+        logger.critical('Can not compile cstemplates code into assembly. | {}'.format(compile_err))
         raise compile_err
 
     return Assembly.LoadFrom(baseclass_asm)
@@ -309,7 +309,7 @@ def _create_asm_file(pkg):
     is_reloading_pkg = _is_any_pkg_asm_loaded(pkg)
 
     logger.debug('Building assembly for package: {}'.format(pkg))
-    # compile_to_asm C# scriptexec code into a dll, then load and get the base class types from it
+    # compile_to_asm C# cstemplates code into a dll, then load and get the base class types from it
     loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
     default_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS)
     category_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)

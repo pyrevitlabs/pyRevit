@@ -111,7 +111,7 @@ instance:
 u'<p>Some Euro: €1.14</p>'
 
 If (under Python 2.x) you add non-unicode strings or attempt to get the
-resultant HTML scriptexec through any means other than ``unicode()`` then you
+resultant HTML cstemplates through any means other than ``unicode()`` then you
 will most likely get one of the following errors raised:
 
 UnicodeDecodeError
@@ -220,7 +220,7 @@ I would be interested to know whether this module is useful - if you use it
 please indicate so at https://www.ohloh.net/p/pyhtml
 
 This code is copyright 2009-2011 eKit.com Inc (http://www.ekit.com/)
-See the end of the scriptexec file for the license of use.
+See the end of the cstemplates file for the license of use.
 XHTML support was contributed by Michael Haubenwallner.
 '''
 from __future__ import with_statement

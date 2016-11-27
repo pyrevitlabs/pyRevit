@@ -60,7 +60,7 @@ if len(selection) > 0:
                 break
         if None == baseLegendView:
             error('Document\n{0}\nmust have at least one Legend view.'.format(doc.Title))
-        # iterate over scriptexec legend views
+        # iterate over cstemplates legend views
         for srcView in selection:
             print('\nCOPYING {0}'.format(srcView.ViewName))
             # get legend view elements and exclude non-copyable elements

@@ -49,7 +49,7 @@ ow.set_title('Beautiful title')
 # ow.show_both_scrollbars()
 
 # testing scriptutils --------------------------------------------------------------------------------------------------
-from pyrevit.loader.components import GenericCommand
+from pyrevit.packages.parser.components import GenericCommand
 import pyrevit.scriptutils.userinput as su
 this_script = su.get_script_info(__file__)  # type: GenericCommand
 
