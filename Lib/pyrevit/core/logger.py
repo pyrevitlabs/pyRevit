@@ -1,11 +1,11 @@
-import sys
 import logging
+import sys
 from os.path import sep
 
-from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
+from pyrevit.config.config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
+
 from .coreutils import set_interscript_comm_data, get_interscript_comm_data
 from .emoji import emojize
-
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"

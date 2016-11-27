@@ -49,13 +49,13 @@ components as requested through its methods.
 import imp
 
 from System import AppDomain
-from pyrevit.core.ribbon import get_current_ui
-
-from ..core.config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
-from ..core.config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
+from pyrevit.config.config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
+from pyrevit.config.config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
                           STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                           SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, \
                           SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
+from pyrevit.core.ribbon import get_current_ui
+
 from ..core.exceptions import PyRevitUIError
 from ..core.logger import get_logger
 

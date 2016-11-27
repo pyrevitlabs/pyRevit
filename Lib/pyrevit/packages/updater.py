@@ -5,9 +5,9 @@ from pyrevit.packages.parser.parser import get_installed_lib_package_data, get_i
 from ..logger import get_logger
 logger = get_logger(__name__)
 
-from pyrevit.core.config import HOME_DIR
+from pyrevit.config.config import HOME_DIR
 from pyrevit.core.git import git
-from pyrevit.core.userconfig import user_config
+from pyrevit.config.userconfig import user_config
 
 from System import DateTime, DateTimeOffset
 

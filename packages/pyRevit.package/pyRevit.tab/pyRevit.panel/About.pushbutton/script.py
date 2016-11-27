@@ -25,7 +25,7 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed 
 import os
 
 import clr
-from pyrevit.core.config import PyRevitVersion
+from pyrevit.config.config import PyRevitVersion
 from pyrevit.packages.updater import get_pyrevit_repo
 
 clr.AddReferenceByPartialName('PresentationCore')

@@ -65,7 +65,7 @@ print this_script.library_path
 print this_script.ui_title
 
 # testing params -------------------------------------------------------------------------------------------------------
-import pyrevit.core.config as cfg
+import pyrevit.config.config as cfg
 
 print '\n\n' + '-'*100 + '\nTESTING PARAMS\n' + '-'*100
 

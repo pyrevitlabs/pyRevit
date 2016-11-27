@@ -37,16 +37,16 @@ import os.path as op
 from collections import namedtuple
 
 import clr
-from pyrevit.loader.cstemplates import compile_to_asm
-
-from ..core.config import COMMAND_CONTEXT_SELECT_AVAIL
-from ..core.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from ..core.config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
+from pyrevit.config.config import COMMAND_CONTEXT_SELECT_AVAIL
+from pyrevit.config.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from pyrevit.config.config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
                           LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS, \
                           LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from ..core.config import PyRevitVersion
-from ..core.config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
-from ..core.config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
+from pyrevit.config.config import PyRevitVersion
+from pyrevit.config.config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
+from pyrevit.config.config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
+from pyrevit.loader.cstemplates import compile_to_asm
+
 from ..core.coreutils import join_strings, get_revit_instances
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger

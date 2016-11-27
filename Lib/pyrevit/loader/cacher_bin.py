@@ -1,10 +1,10 @@
 import os.path as op
 import pickle
 
-from ..core.config import USER_TEMP_DIR, SESSION_ID
+from pyrevit.config.config import USER_TEMP_DIR, SESSION_ID
+
 from ..core.exceptions import PyRevitCacheReadError, PyRevitCacheWriteError
 from ..core.logger import get_logger
-
 
 logger = get_logger(__name__)
 loaded_packages = []

@@ -22,15 +22,14 @@ Description:
 This is the public module that makes internal UI wrappers accessible to the user.
 """
 
-import clr
 from collections import OrderedDict
 
-from pyrevit.core.logger import get_logger
-
-from pyrevit.core.config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
+import clr
+from pyrevit.config.config import HostVersion, HOST_SOFTWARE
+from pyrevit.config.config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
                          COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from pyrevit.core.config import HostVersion, HOST_SOFTWARE
 from pyrevit.core.exceptions import PyRevitUIError, PyRevitException
+from pyrevit.core.logger import get_logger
 
 # dotnet imports
 clr.AddReference('PresentationCore')

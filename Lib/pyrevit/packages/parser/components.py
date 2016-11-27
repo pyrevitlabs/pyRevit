@@ -1,58 +1,24 @@
-""" Module name = _basecomponents.py
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-
-
-~~~
-Description:
-pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
-This module provides the base component classes that is understood by these four modules.
-It is the language the these four modules can understand (_basecomponents module)
- _parser parses the folders and creates a tree of components provided by _basecomponents
- _assemblies make a dll from the tree.
- _ui creates the ui using the information provided by the tree.
- _cache will save and restore the tree to increase loading performance.
-
-This module only uses the base modules (.config, .logger, .exceptions, .output, .utils)
-"""
-
 import hashlib
 import os
 import os.path as op
 import re
 
-from pyrevit.core.logger import get_logger
-
-from pyrevit.core.exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
-from pyrevit.core.config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
-from pyrevit.core.config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
+from pyrevit.config.config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
+from pyrevit.config.config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
+                          DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
+from pyrevit.config.config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
+                          MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, \
+                          LINK_BUTTON_COMMAND_CLASS_PARAM, COMMAND_CONTEXT_PARAM
+from pyrevit.config.config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
                           PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, \
                           STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, \
                           SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, \
                           COMMAND_AVAILABILITY_NAME_POSTFIX
-from pyrevit.core.config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
-                          DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from pyrevit.core.config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
-                          MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, \
-                          LINK_BUTTON_COMMAND_CLASS_PARAM, COMMAND_CONTEXT_PARAM
-from pyrevit.core.config import PyRevitVersion, HostVersion
+from pyrevit.config.config import PyRevitVersion, HostVersion
+from pyrevit.config.userconfig import user_config
 from pyrevit.core.coreutils import ScriptFileParser, cleanup_string
-from pyrevit.core.userconfig import user_config
-
+from pyrevit.core.exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
+from pyrevit.core.logger import get_logger
 
 logger = get_logger(__name__)
 

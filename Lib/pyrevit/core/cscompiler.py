@@ -3,7 +3,7 @@ import os.path as op
 from Microsoft.CSharp import CSharpCodeProvider
 from System import Array
 from System.CodeDom import Compiler
-from pyrevit.core.config import ASSEMBLY_FILE_TYPE
+from pyrevit.config.config import ASSEMBLY_FILE_TYPE
 from pyrevit.core.exceptions import PyRevitException
 
 

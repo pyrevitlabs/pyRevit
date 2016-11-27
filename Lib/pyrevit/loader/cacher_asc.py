@@ -35,11 +35,11 @@ All these four modules can understand the component tree. (_basecomponents modul
 import json
 import os.path as op
 
-from ..core.config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
+from pyrevit.config.config import USER_TEMP_DIR, SESSION_ID, HASH_VALUE_PARAM, HASH_VERSION_PARAM, SUB_CMP_KEY
+
+from ..core.coreutils import get_all_subclasses
 from ..core.exceptions import PyRevitCacheError, PyRevitCacheReadError, PyRevitCacheWriteError
 from ..core.logger import get_logger
-from ..core.coreutils import get_all_subclasses
-
 
 logger = get_logger(__name__)
 

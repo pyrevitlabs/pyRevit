@@ -35,11 +35,11 @@ from .logger import get_logger
 
 logger = get_logger(__name__)
 
-from pyrevit.core.config import USER_TEMP_DIR
-from pyrevit.core.config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
+from pyrevit.config.config import USER_TEMP_DIR
+from pyrevit.config.config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.core.userconfig import user_config
+from pyrevit.config.userconfig import user_config
 
 from System.Diagnostics import Process
 from System.IO import IOException

@@ -28,12 +28,12 @@ Each pyRevit session will have its own .dll and log file.
 
 import sys
 
-from pyrevit.core.config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
-from pyrevit.core.config import PyRevitVersion
+from pyrevit.config.config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
+from pyrevit.config.config import PyRevitVersion
+from pyrevit.config.userconfig import user_config
 from pyrevit.core.coreutils import Timer
 from pyrevit.core.exceptions import PyRevitCacheError, PyRevitCacheExpiredError
 from pyrevit.core.logger import get_logger
-from pyrevit.core.userconfig import user_config
 from pyrevit.loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from pyrevit.packages.parser.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
