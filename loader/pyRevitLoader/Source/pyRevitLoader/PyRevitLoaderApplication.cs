@@ -88,21 +88,6 @@ namespace PyRevitLoader
             return section.Settings[parameter].Value;
         }
 
-        //public static string GetStartupScriptSource()
-        //{
-        //    var startupScriptFullPath = GetStartupScriptPath();
-        //    if (File.Exists(startupScriptFullPath))
-        //    {
-        //        using (var reader = File.OpenText(startupScriptFullPath))
-        //        {
-        //            var source = reader.ReadToEnd();
-        //            return source;
-        //        }
-        //    }
-        //    // no startup script found
-        //    return null;
-        //}
-
         private static string ProcessRelativeOrAbsolutePath(string path)
         {
             if (Path.IsPathRooted(path))
