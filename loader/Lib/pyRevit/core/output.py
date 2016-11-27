@@ -26,11 +26,9 @@ Usage.
 """
 
 import clr
-
-# clr.AddReferenceByPartialName('PresentationCore')
-# clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
+
 import System.Drawing
 import System.Windows
 

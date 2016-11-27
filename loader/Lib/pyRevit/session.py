@@ -28,26 +28,25 @@ Each pyRevit session will have its own .dll and log file.
 
 import sys
 
-from .logger import get_logger
-from .config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
-from .exceptions import PyRevitCacheError, PyRevitCacheExpiredError
-
-from .utils import Timer
-from .userconfig import user_settings
-
-from loader.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
 from loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
+from loader.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
 from loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from pyrevit.core.config import HOME_DIR, SESSION_LOG_FILE_NAME, CACHE_TYPE_ASCII
+from pyrevit.core.exceptions import PyRevitCacheError, PyRevitCacheExpiredError
+from pyrevit.core.userconfig import user_config
+
+from .logger import get_logger
 from .usagedata import archive_script_usage_logs
+from .utils import Timer
 
 # Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
-if user_settings.cache_type == CACHE_TYPE_ASCII:
+if user_config.cache_type == CACHE_TYPE_ASCII:
     from loader.cacher_asc import is_cache_valid, get_cached_package, update_cache
 else:
     from loader.cacher_bin import is_cache_valid, get_cached_package, update_cache
 
-from .config import PyRevitVersion
-from loader.updater import get_pyrevit_repo
+from pyrevit.core.config import PyRevitVersion
+from pyrevit.extension.updater import get_pyrevit_repo
 
 logger = get_logger(__name__)
 
@@ -84,7 +83,7 @@ def load():
     logger.info('pyRevit version: {} - Made with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Config file is: {}'.format(user_settings.config_file))
+    logger.info('Config file is: {}'.format(user_config.config_file))
     logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE_NAME))
 
     # for every package of installed packages, create an assembly, and create a ui
@@ -98,7 +97,7 @@ def load():
     _perform_startup_cleanup_operations()
 
     # get a list of all directories that could include packages
-    pkg_search_dirs = user_settings.get_package_root_dirs()
+    pkg_search_dirs = user_config.get_package_root_dirs()
     logger.debug('Package Directories: {}'.format(pkg_search_dirs))
 
     # collect all library packages. Their dir paths need to be added to sys.path for all commands

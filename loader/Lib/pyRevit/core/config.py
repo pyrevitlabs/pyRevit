@@ -25,12 +25,9 @@ import os
 import os.path as op
 import sys
 
-
-from exceptions import PyRevitException
-
-from System.Diagnostics import Process as _Process
 from System import AppDomain
-
+from System.Diagnostics import Process as _Process
+from pyrevit.core.exceptions import PyRevitException
 
 _VER_MAJOR = 4
 _VER_MINOR = 0

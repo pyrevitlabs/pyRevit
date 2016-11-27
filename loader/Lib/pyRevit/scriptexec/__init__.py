@@ -23,12 +23,11 @@ Description:
 """
 import os.path as op
 
-from ...config import ASSEMBLY_FILE_TYPE
-from ...exceptions import PyRevitException
-
+from Microsoft.CSharp import CSharpCodeProvider
 from System import Array
 from System.CodeDom import Compiler
-from Microsoft.CSharp import CSharpCodeProvider
+from pyrevit.core.config import ASSEMBLY_FILE_TYPE
+from pyrevit.core.exceptions import PyRevitException
 
 
 def compile_to_asm(code, name, output_dir, references=None):

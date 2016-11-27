@@ -30,29 +30,31 @@ It is the language the these four modules can understand (_basecomponents module
 This module only uses the base modules (.config, .logger, .exceptions, .output, .utils)
 """
 
-import os
-import re
 import hashlib
+import os
 import os.path as op
+import re
 
-from ..logger import get_logger
+from ..core.logger import get_logger
+
+from ..core.exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
+from ..core.config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
+from ..core.config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
+                          PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, \
+                          STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, \
+                          SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, \
+                          COMMAND_AVAILABILITY_NAME_POSTFIX
+from ..core.config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
+                          DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
+from ..core.config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
+                          MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, \
+                          LINK_BUTTON_COMMAND_CLASS_PARAM, COMMAND_CONTEXT_PARAM
+from ..core.config import PyRevitVersion, HostVersion
+from ..core.coreutils import ScriptFileParser, cleanup_string
+from ..core.userconfig import user_config
+
+
 logger = get_logger(__name__)
-
-from ..exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
-from ..config import COMP_LIBRARY_DIR_NAME, SETTINGS_FILE_EXTENSION
-from ..config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
-                     PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX,\
-                     STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX,\
-                     SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, COMMAND_AVAILABILITY_NAME_POSTFIX
-from ..config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE,\
-                     DEFAULT_LAYOUT_FILE_NAME, SCRIPT_FILE_FORMAT, DEFAULT_CONFIG_SCRIPT_FILE
-from ..config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, MIN_PYREVIT_VERSION_PARAM,\
-                     COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM, \
-                     COMMAND_CONTEXT_PARAM
-from ..config import PyRevitVersion, HostVersion
-from ..utils import ScriptFileParser, cleanup_string
-
-from ..userconfig import user_settings
 
 
 # superclass for all tree branches that contain sub-branches (containers)
@@ -83,7 +85,7 @@ class GenericContainer(object):
             raise PyRevitUnknownFormatError()
 
         self.original_name = op.splitext(op.basename(self.directory))[0]
-        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        self.name = user_config.get_alias(self.original_name, self.type_id)
         if self.name != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
         self.unique_name = self._get_unique_name()
@@ -244,7 +246,7 @@ class GenericCommand(object):
             raise PyRevitUnknownFormatError()
 
         self.original_name = op.splitext(op.basename(self.directory))[0]
-        self.name = user_settings.get_alias(self.original_name, self.type_id)
+        self.name = user_config.get_alias(self.original_name, self.type_id)
         if self.name != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
 

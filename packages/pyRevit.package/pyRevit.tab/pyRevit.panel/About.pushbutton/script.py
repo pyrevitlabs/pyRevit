@@ -22,12 +22,11 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
           'updates about the new tools and changes, and a lot of other information there.'
 
-import clr
 import os
 
-
-from pyrevit.config import PyRevitVersion
-from pyrevit.loader.updater import get_pyrevit_repo
+import clr
+from pyrevit.core.config import PyRevitVersion
+from pyrevit.extension.updater import get_pyrevit_repo
 
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")

@@ -35,11 +35,12 @@ All these four modules can understand the component tree. (_basecomponents modul
 import os
 import os.path as op
 
-from ..logger import get_logger
-from ..exceptions import PyRevitException
-from ..utils import get_all_subclasses
+from ..core.exceptions import PyRevitException
+from ..core.logger import get_logger
+from ..core.coreutils import get_all_subclasses
 
 from .components import Package, LibraryPackage
+
 
 logger = get_logger(__name__)
 

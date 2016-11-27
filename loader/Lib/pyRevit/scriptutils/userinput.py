@@ -1,15 +1,7 @@
-import os
-import os.path as op
-
-from .logger import get_logger
-from .utils import get_all_subclasses
-from .exceptions import PyRevitException
-from .loader.components import GenericCommand
-
-logger = get_logger(__name__)
-
-
 import clr
+
+from ..core.logger import get_logger
+
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
@@ -17,8 +9,11 @@ clr.AddReferenceByPartialName('WindowsBase')
 import System.Windows
 
 
-class commandSwitches:
-    def __init__(self, switches, message = 'Pick a command option:'):
+logger = get_logger(__name__)
+
+
+class CommandSwitchWindow:
+    def __init__(self, switches, message='Pick a command option:'):
         self.selected_switch = ''
         # Create window
         self.my_window = System.Windows.Window()
@@ -30,10 +25,10 @@ class commandSwitches:
         self.my_window.SizeToContent = System.Windows.SizeToContent.Height
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
-        self.my_window.PreviewKeyDown += self.handleEsc
+        self.my_window.PreviewKeyDown += self.handle_esc_key
         border = System.Windows.Controls.Border()
-        border.CornerRadius  = System.Windows.CornerRadius(15)
-        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(220,55,50,50))
+        border.CornerRadius = System.Windows.CornerRadius(15)
+        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(220, 55, 50, 50))
         self.my_window.Content = border
 
         # Create StackPanel to Layout UI elements
@@ -59,48 +54,17 @@ class commandSwitches:
             my_button.Content = switch
             my_button.Margin = System.Windows.Thickness(5, 0, 5, 5)
             my_button.Padding = System.Windows.Thickness(5, 0, 5, 0)
-            my_button.Click += self.processSwitch
+            my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
-
-    def handleEsc(self, sender, args):
-        if (args.Key == System.Windows.Input.Key.Escape):
+    def handle_esc_key(self, sender, args):
+        if args.Key == System.Windows.Input.Key.Escape:
             self.my_window.Close()
 
-
-    def processSwitch(self, sender, args):
+    def process_switch(self, sender, args):
         self.my_window.Close()
         self.selected_switch = sender.Content
 
-    def pickCommandSwitch(self):
+    def pick_cmd_switch(self):
         self.my_window.ShowDialog()
         return self.selected_switch
-
-
-def get_script_info(script_file_addr):
-    script_dir = op.dirname(script_file_addr)
-    for component_type in get_all_subclasses([GenericCommand]):
-        logger.debug('Testing sub_directory {} for {}'.format(script_dir, component_type))
-        try:
-            # if cmp_class can be created for this sub-dir, the add to list
-            # cmp_class will raise error if full_path is not of cmp_class type.
-            component = component_type()
-            component.__init_from_dir__(script_dir)
-            logger.debug('Successfuly created component: {} from: {}'.format(component, script_dir))
-            return component
-        except PyRevitException:
-            logger.debug('Can not create component of type: {} from: {}'.format(component_type, script_dir))
-    return None
-
-
-def get_ui_button():
-    # fixme: implement get_ui_button
-    pass
-
-
-def get_temp_file():
-    """Returns a filename to be used by a user script to store temporary information.
-    Temporary files are saved in USER_TEMP_DIR.
-    """
-    # fixme temporary file
-    pass

@@ -26,8 +26,6 @@ import os.path as op
 import ConfigParser
 
 from .logger import get_logger
-logger = get_logger(__name__)
-
 from .exceptions import ConfigFileError
 from .config import LOADER_DIR, USER_SETTINGS_DIR, DEFAULT_PKG_SEARCH_DIRS
 from .config import USER_DEFAULT_SETTINGS_FILENAME, ADMIN_DEFAULT_SETTINGS_FILENAME, KEY_VALUE_TRUE, KEY_VALUE_FALSE
@@ -36,10 +34,12 @@ from .config import LOG_SCRIPT_USAGE_KEY, ARCHIVE_LOG_FOLDER_KEY, VERBOSE_KEY, D
 from .config import VERBOSE_KEY_DEFAULT, DEBUG_KEY_DEFAULT, LOG_SCRIPT_USAGE_KEY_DEFAULT,\
                     ARCHIVE_LOG_FOLDER_KEY_DEFAULT, CACHE_TYPE_KEY_DEFAULT
 from .config import FORCED_DEBUG_MODE_PARAM
-
-from .utils import verify_directory
+from .coreutils import verify_directory
 
 from System.IO import IOException
+
+
+logger = get_logger(__name__)
 
 
 # todo: add log file selection
@@ -49,8 +49,8 @@ class _CustomUserSettings:
     """_PyRevitUserSettings.get_script_config returns an instance of this class with parameters corresponding to
     previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
     Example:
-        user_settings.save_parameter(param, value)
-        this_script_settings = user_settings.load_parameters()
+        user_config.save_parameter(param, value)
+        this_script_settings = user_config.load_parameters()
         print( this_script_settings.custom_param )
     """
     def __init__(self):
@@ -61,8 +61,8 @@ class _PyRevitUserSettings:
     """Private class for handling all functions related to user settings.
      This module reads and writes settings using python native ConfigParser.
      Usage:
-     from pyrevit.usersettings import user_settings
-     print(user_settings.log_archive_folder)
+     from pyrevit.usersettings import user_config
+     print(user_config.log_archive_folder)
     """
 
     def __init__(self):
@@ -231,10 +231,10 @@ class _PyRevitUserSettings:
         # default package search directories
         pkg_search_dirs = DEFAULT_PKG_SEARCH_DIRS
         # add misc package directories provided by user
-        pkg_search_dirs.extend(user_settings.user_extension_dirs)
+        pkg_search_dirs.extend(user_config.user_extension_dirs)
         return pkg_search_dirs
 
 
 # creating an instance of _PyRevitUserSettings().
 # this pushes reading settings at first import of this module.
-user_settings = _PyRevitUserSettings()
+user_config = _PyRevitUserSettings()

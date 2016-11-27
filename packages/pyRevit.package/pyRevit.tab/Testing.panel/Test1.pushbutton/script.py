@@ -9,7 +9,7 @@ logger.info(':beer_mug: Everything went well!')
 logger.info("Python is :thumbs_up: :banana:")
 print "\n<a href='http://www.google.com'>Clickable link Google</a>"
 
-from html import HTML
+from pyrevit.core.html import HTML
 h = HTML()
 
 t = h.table(border='1', newlines=False)
@@ -37,7 +37,7 @@ print """
 """
 
 # testing output window ------------------------------------------------------------------------------------------------
-from pyrevit.output import output_window as ow
+from pyrevit.core.output import output_window as ow
 
 print '\n\n' + '-'*100 + '\nTESTING OUTPUT WINDOW\n' + '-'*100
 ow.set_height(600)
@@ -50,7 +50,7 @@ ow.set_title('Beautiful title')
 
 # testing scriptutils --------------------------------------------------------------------------------------------------
 from pyrevit.loader.components import GenericCommand
-import pyrevit.scriptutils as su
+import pyrevit.scriptutils.userinput as su
 this_script = su.get_script_info(__file__)  # type: GenericCommand
 
 print '\n\n' + '-'*100 + '\nTESTING SCRIPT UTILS\n' + '-'*100
@@ -65,7 +65,7 @@ print this_script.library_path
 print this_script.ui_title
 
 # testing params -------------------------------------------------------------------------------------------------------
-import pyrevit.config as cfg
+import pyrevit.core.config as cfg
 
 print '\n\n' + '-'*100 + '\nTESTING PARAMS\n' + '-'*100
 
@@ -105,7 +105,7 @@ print 'Message: {}'.format(__message__)
 print 'Result: {}'.format(__result__)
 
 # handling exception and reporting  ------------------------------------------------------------------------------------
-from pyrevit.exceptions import PyRevitException
+from pyrevit.core.exceptions import PyRevitException
 
 try:
     raise PyRevitException('this is the message')

@@ -48,16 +48,17 @@ components as requested through its methods.
 
 import imp
 
-from ..logger import get_logger
-from ..config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
-                     STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
-                     SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, SEPARATOR_IDENTIFIER,\
-                     SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
-from ..config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
-from ..ui import get_current_ui
-from ..exceptions import PyRevitUIError
+from ..core.config import HostVersion, HOST_SOFTWARE, COMMAND_NAME_PARAM
+from ..core.config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX,\
+                          STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
+                          SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, \
+                          SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
+from ..core.exceptions import PyRevitUIError
+from ..core.logger import get_logger
+from ..ribbon import get_current_ui
 
 from System import AppDomain
+
 
 logger = get_logger(__name__)
 

@@ -1,14 +1,12 @@
-import os
-import os.path as op
 import ast
 import inspect
+import os
+import os.path as op
 import time
 
-from .exceptions import PyRevitException
-
-from .config import HOST_ADSK_PROCESS_NAME
-
 from System.Diagnostics import Process
+from pyrevit.core.config import HOST_ADSK_PROCESS_NAME
+from pyrevit.core.exceptions import PyRevitException
 
 
 class Timer:
@@ -102,7 +100,7 @@ def join_strings(path_list):
 
 def cleanup_string(input_str):
     # remove spaces and special characters from strings
-    from .config import SPECIAL_CHARS
+    from pyrevit.core.config import SPECIAL_CHARS
     for char, repl in SPECIAL_CHARS.items():
         input_str = input_str.replace(char, repl)
 
@@ -147,7 +145,7 @@ def get_interscript_comm_data(param_name):
     to read the usersettings data which reduces file io and saves time.
     """
     # This function returns None if it can not find the parameter. Thus value of None should not be used for params
-    from .config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+    from pyrevit.core.config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
     data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
     if data_dict:
         try:
@@ -168,7 +166,7 @@ def set_interscript_comm_data(param_name, param_value):
     to read the usersettings data which reduces file io and saves time.
     """
     # Get function returns None if it can not find the parameter. Thus value of None should not be used for params
-    from .config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+    from pyrevit.core.config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
     data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
     if data_dict:
         data_dict[param_name] = param_value

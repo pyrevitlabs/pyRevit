@@ -11,7 +11,7 @@ Constructing your HTML
 To construct HTML start with an instance of ``html.HTML()``. Add
 tags by accessing the tag's attribute on that object. For example:
 
->>> from html import HTML
+>>> from pyrevit.core.html import HTML
 >>> h = HTML()
 >>> h.p('Hello, world!')
 >>> print h                          # or print(h) in python 3+
@@ -111,7 +111,7 @@ instance:
 u'<p>Some Euro: €1.14</p>'
 
 If (under Python 2.x) you add non-unicode strings or attempt to get the
-resultant HTML source through any means other than ``unicode()`` then you
+resultant HTML scriptexec through any means other than ``unicode()`` then you
 will most likely get one of the following errors raised:
 
 UnicodeDecodeError
@@ -147,7 +147,7 @@ To construct XHTML start with an instance of ``html.XHTML()`` and use it
 as you would an ``HTML`` instance. Empty elements will now be rendered
 with the appropriate XHTML minimized tag syntax. For example:
 
->>> from html import XHTML
+>>> from pyrevit.core.html import XHTML
 >>> h = XHTML()
 >>> h.p
 >>> h.br
@@ -162,7 +162,7 @@ Creating XML
 A slight tweak to the ``html.XHTML()`` implementation allows us to generate
 arbitrary XML using ``html.XML()``:
 
->>> from html import XML
+>>> from pyrevit.core.html import XML
 >>> h = XML('xml')
 >>> h.p
 >>> h.br('hi there')
@@ -179,7 +179,7 @@ Tags with difficult names
 If your tag name isn't a valid Python identifier name, or if it's called
 "text" or "raw_text" you can add your tag slightly more manually:
 
->>> from html import XML
+>>> from pyrevit.core.html import XML
 >>> h = XML('xml')
 >>> h += XML('some-tag', 'some text')
 >>> h += XML('text', 'some text')
@@ -220,7 +220,7 @@ I would be interested to know whether this module is useful - if you use it
 please indicate so at https://www.ohloh.net/p/pyhtml
 
 This code is copyright 2009-2011 eKit.com Inc (http://www.ekit.com/)
-See the end of the source file for the license of use.
+See the end of the scriptexec file for the license of use.
 XHTML support was contributed by Michael Haubenwallner.
 '''
 from __future__ import with_statement

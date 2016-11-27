@@ -32,27 +32,28 @@ All these four modules can understand the component tree. (_basecomponents modul
  _cache will save and restore the tree to increase loading performance.
 """
 
-import sys
 import os
 import os.path as op
-from collections import namedtuple
 import clr
+from collections import namedtuple
 
-from .source import compile_to_asm
+from ..core.config import COMMAND_CONTEXT_SELECT_AVAIL
+from ..core.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from ..core.config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
+                          LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS, \
+                          LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+from ..core.config import PyRevitVersion
+from ..core.config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
+from ..core.config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
+from ..core.exceptions import PyRevitException
+from ..core.logger import get_logger
+from ..core.coreutils import join_strings, get_revit_instances
 
-from ..logger import get_logger
-from ..config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
-from ..config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from ..config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
-                     LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS, \
-                     LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from ..config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
-from ..config import REVISION_EXTENSION, COMMAND_CONTEXT_SELECT_AVAIL
-from ..config import PyRevitVersion
-from ..exceptions import PyRevitLoaderNotFoundError, PyRevitException
-from ..utils import join_strings, get_revit_instances
+from ..scriptexec import compile_to_asm
+
 
 logger = get_logger(__name__)
+
 
 # dot net imports
 clr.AddReference('PresentationCore')
@@ -62,7 +63,6 @@ clr.AddReference('System.Xml.Linq')
 from System import AppDomain, Version, Array, Type
 from System.Reflection import Assembly, AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
 from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder, OpCodes
-
 # revit api imports
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
@@ -91,7 +91,7 @@ def _make_pkg_asm_name(pkg):
 
 
 def _generate_base_classes_asm():
-    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'source','baseclasses.cs'), 'r') as code_file:
+    with open(op.join(LOADER_DIR, 'lib', 'pyrevit', 'loader', 'scriptexec','baseclasses.cs'), 'r') as code_file:
         source = code_file.read()
     try:
         baseclass_asm = compile_to_asm(source, _make_baseclasses_asm_name(), USER_TEMP_DIR,
@@ -100,7 +100,7 @@ def _generate_base_classes_asm():
                                                    'RevitAPI.dll', 'RevitAPIUI.dll',
                                                    op.join(LOADER_ASM_DIR, LOADER_ADDIN + ASSEMBLY_FILE_TYPE)])
     except PyRevitException as compile_err:
-        logger.critical('Can not compile source code into assembly. | {}'.format(compile_err))
+        logger.critical('Can not compile scriptexec code into assembly. | {}'.format(compile_err))
         raise compile_err
 
     return Assembly.LoadFrom(baseclass_asm)
@@ -310,7 +310,7 @@ def _create_asm_file(pkg):
     is_reloading_pkg = _is_any_pkg_asm_loaded(pkg)
 
     logger.debug('Building assembly for package: {}'.format(pkg))
-    # compile_to_asm C# source code into a dll, then load and get the base class types from it
+    # compile_to_asm C# scriptexec code into a dll, then load and get the base class types from it
     loader_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT)
     default_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS)
     category_avail_class = _find_pyrevit_base_class(LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS)

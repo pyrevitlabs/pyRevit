@@ -49,7 +49,7 @@ if len(selection) > 0:
         if type.ViewFamily == ViewFamily.Drafting:
             draftingViewType = type
             break
-    # iterate over source legend views
+    # iterate over scriptexec legend views
     for srcView in selection:
         print('\nCOPYING {0}'.format(srcView.ViewName))
         # get legend view elements and exclude non-copyable elements

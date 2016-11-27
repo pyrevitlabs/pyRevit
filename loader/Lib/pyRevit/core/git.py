@@ -27,10 +27,9 @@ https://github.com/libgit2/libgit2sharp/wiki
 
 import importlib
 
-from .config import GIT_LIB
-
-import clr
 import System
+import clr
+from .config import GIT_LIB
 
 # todo: figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime
 clr.AddReference("System.Core")

@@ -19,22 +19,20 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Lists specific elements from the model database.'
 
-from pyrevit.scriptutils import commandSwitches
-
-from Autodesk.Revit.DB import FilteredElementCollector, ElementMulticategoryFilter, BuiltInCategory, Transaction, \
-                              Element, ElementType, FamilySymbol, GraphicsStyle, LinePatternElement, SketchPlane, View,\
+from Autodesk.Revit.DB import FilteredElementCollector, ElementMulticategoryFilter, BuiltInCategory, Element, ElementType, \
+    GraphicsStyle, LinePatternElement, SketchPlane, View,\
                               ViewSheet, ModelArc, ModelLine, DetailArc, DetailLine, LogicalOrFilter, ModelPathUtils, \
-                              TransmissionData, InstanceBinding, TypeBinding, Workset, FilteredWorksetCollector, \
+                              TransmissionData, InstanceBinding, TypeBinding, FilteredWorksetCollector, \
                               WorksetKind
 from Autodesk.Revit.DB.ExtensibleStorage import Schema
 from Autodesk.Revit.UI import TaskDialog, PostableCommand, RevitCommandId
-
 from System.Collections.Generic import List
+from pyrevit.scriptutils.userinput import CommandSwitchWindow
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-selected_switch = commandSwitches(sorted(['Graphic Styles',
+selected_switch = CommandSwitchWindow(sorted(['Graphic Styles',
                                          'Grids',
                                          'Line Patterns',
                                          'Line Styles',
@@ -43,24 +41,24 @@ selected_switch = commandSwitches(sorted(['Graphic Styles',
                                          'Project Parameters',
                                          'Data Schemas',
                                          'Data Schema Entities',
-                                         'Sketch Planes',
-                                         'Views',
-                                         'View Templates',
-                                         'Viewports',
-                                         'Viewport Types',
-                                         'Family Symbols',
-                                         'Levels',
-                                         'Scope Boxes',
-                                         'Areas',
-                                         'Rooms',
-                                         'External References',
-                                         'Revisions',
-                                         'Revision Clouds',
-                                         'Sheets',
-                                         'System Categories',
-                                         'System Postable Commands',
-                                         'Worksets',
-                                         ]), 'List elements of type:').pickCommandSwitch()
+                                              'Sketch Planes',
+                                              'Views',
+                                              'View Templates',
+                                              'Viewports',
+                                              'Viewport Types',
+                                              'Family Symbols',
+                                              'Levels',
+                                              'Scope Boxes',
+                                              'Areas',
+                                              'Rooms',
+                                              'External References',
+                                              'Revisions',
+                                              'Revision Clouds',
+                                              'Sheets',
+                                              'System Categories',
+                                              'System Postable Commands',
+                                              'Worksets',
+                                              ]), 'List elements of type:').pick_cmd_switch()
 
 
 if selected_switch == 'Graphic Styles':

@@ -19,12 +19,10 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Activates selection tool that picks a specific type of element.'
 
-
-from pyrevit.scriptutils import commandSwitches
-
+from Autodesk.Revit.DB import ElementId
 from Autodesk.Revit.UI.Selection import ISelectionFilter
 from System.Collections.Generic import List
-from Autodesk.Revit.DB import ElementId
+from pyrevit.scriptutils.userinput import CommandSwitchWindow
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
@@ -57,7 +55,7 @@ def pickbycategory(catname):
     except:
         pass
 
-selected_switch = commandSwitches(sorted(['Area',
+selected_switch = CommandSwitchWindow(sorted(['Area',
                                          'Column',
                                          'Dimension',
                                          'Door',
@@ -67,12 +65,12 @@ selected_switch = commandSwitches(sorted(['Area',
                                          'Grid',
                                          'Room',
                                          'Room Tag',
-                                         'Truss',
-                                         'Wall',
-                                         'Window',
-                                         'Ceiling',
-                                         'Section Box',
-                                         'Elevation Mark',
-                                         'Parking',]), 'Pick only elements of type:').pickCommandSwitch()
+                                              'Truss',
+                                              'Wall',
+                                              'Window',
+                                              'Ceiling',
+                                              'Section Box',
+                                              'Elevation Mark',
+                                              'Parking', ]), 'Pick only elements of type:').pick_cmd_switch()
 if selected_switch is not '':
     pickbycategory(selected_switch)

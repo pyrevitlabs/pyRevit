@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'Open source sheet. Select other sheets in Project Browser. Run this script ' \
+__doc__ = 'Open scriptexec sheet. Select other sheets in Project Browser. Run this script ' \
           '(Keep focus on Project Browser otherwise the current selection will not show the selected sheets). ' \
           'Select Viewports and push Finish button on the properties bar. ' \
           'The selected views will be added to the selected sheets.'

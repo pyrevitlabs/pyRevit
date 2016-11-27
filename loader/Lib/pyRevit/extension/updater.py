@@ -1,15 +1,12 @@
-import sys
-import clr
 from collections import namedtuple
 
-from .parser import get_installed_lib_package_data, get_installed_package_data
-
+from pyrevit.loader.parser import get_installed_lib_package_data, get_installed_package_data
 from ..logger import get_logger
 logger = get_logger(__name__)
 
-from ..config import HOME_DIR
-from ..git import git
-from ..userconfig import user_settings
+from pyrevit.core.config import HOME_DIR
+from pyrevit.core.git import git
+from pyrevit.core.userconfig import user_config
 
 from System import DateTime, DateTimeOffset
 
@@ -66,7 +63,7 @@ def get_thirdparty_lib_repos():
     # and ask parser for library package info object
     lib_pkgs = []
     logger.debug('Finding installed library repos...')
-    for root_dir in user_settings.get_package_root_dirs():
+    for root_dir in user_config.get_package_root_dirs():
         lib_pkg_info_list = get_installed_lib_package_data(root_dir)
         for lib_pkg_info in lib_pkg_info_list:
             if lib_pkg_info and git.Repository.IsValid(lib_pkg_info.directory):
@@ -88,7 +85,7 @@ def get_thirdparty_pkg_repos():
     # and ask parser for package info object
     pkgs = []
     logger.debug('Finding installed repos...')
-    for root_dir in user_settings.get_package_root_dirs():
+    for root_dir in user_config.get_package_root_dirs():
         pkg_info_list = get_installed_package_data(root_dir)
         for pkg_info in pkg_info_list:
             if pkg_info and git.Repository.IsValid(pkg_info.directory):

@@ -22,36 +22,34 @@ Description:
 This is the public module that makes internal UI wrappers accessible to the user.
 """
 
+import clr
 from collections import OrderedDict
 
-from .logger import get_logger
-logger = get_logger(__name__)
+from .core.logger import get_logger
 
-from .config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
-                    COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from .config import HostVersion, HOST_SOFTWARE
-from .exceptions import PyRevitUIError
+from .core.config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
+                         COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+from .core.config import HostVersion, HOST_SOFTWARE
+from .core.exceptions import PyRevitUIError, PyRevitException
 
 # dotnet imports
-import clr
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPIUI')
 from System import Uri
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption, BitmapCreateOptions
-
 # revit api imports
 from Autodesk.Revit.UI import PushButton, PulldownButton, SplitButton
 from Autodesk.Revit.UI import RibbonItemData, PushButtonData, PulldownButtonData, SplitButtonData
-from Autodesk.Revit.Exceptions import ArgumentException
-
 try:
     clr.AddReference('AdWindows')
     from Autodesk.Windows import ComponentManager
     from Autodesk.Windows import RibbonRowPanel, RibbonButton, RibbonFoldPanel, RibbonSplitButton, \
                                  RibbonToggleButton, RibbonSeparator, RibbonPanelBreak, RibbonRowPanel, RibbonSeparator
 except Exception as err:
-    logger.critical('Can not establish ui module. Error importing AdWindow.dll')
-    raise err
+    raise PyRevitException('Can not establish ui module. Error referencing AdWindow | {}'.format(err))
+
+
+logger = get_logger(__name__)
 
 
 # Helper classes and functions -----------------------------------------------------------------------------------------

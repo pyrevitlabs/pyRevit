@@ -1,18 +1,17 @@
 import sys
-from os.path import sep
 import logging
-import re
-
+from os.path import sep
 
 from .config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
-from .utils import set_interscript_comm_data, get_interscript_comm_data
+from .coreutils import set_interscript_comm_data, get_interscript_comm_data
+from .emoji import emojize
 
-from emoji import emojize
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_RECORD_FORMAT_ERROR = '<div style="background:#EEE;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
 LOG_RECORD_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
+
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session

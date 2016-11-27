@@ -26,20 +26,20 @@ The logging system is handled through the loader addin and is inside the C# clas
 pyRevit assembly make will set the log filename inside each C# class created for script commands.
 """
 
-
 import os
 import os.path as op
 import shutil as shutil
 from datetime import datetime
 
 from .logger import get_logger
+
 logger = get_logger(__name__)
 
-from .config import USER_TEMP_DIR
-from .config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
+from pyrevit.core.config import USER_TEMP_DIR
+from pyrevit.core.config import PYREVIT_ASSEMBLY_NAME, LOG_FILE_TYPE, LOG_ENTRY_DATETIME_FORMAT
 
-from .exceptions import PyRevitException
-from .userconfig import user_settings
+from pyrevit.core.exceptions import PyRevitException
+from pyrevit.core.userconfig import user_config
 
 from System.Diagnostics import Process
 from System.IO import IOException
@@ -51,7 +51,7 @@ def archive_script_usage_logs():
     """Archives older script usage log files to the folder provided by user in user settings.
     :return: None
     """
-    if op.exists(user_settings.log_archive_folder):
+    if op.exists(user_config.log_archive_folder):
         host_instances = list(Process.GetProcessesByName('Revit'))
         if len(host_instances) > 1:
             logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
@@ -62,7 +62,7 @@ def archive_script_usage_logs():
                 if f.startswith(PYREVIT_ASSEMBLY_NAME) and f.endswith(LOG_FILE_TYPE):
                     try:
                         current_file_path = op.join(USER_TEMP_DIR, f)
-                        newloc = op.join(user_settings.log_archive_folder, f)
+                        newloc = op.join(user_config.log_archive_folder, f)
                         shutil.move(current_file_path, newloc)
                         logger.debug('Existing log file archived to: {}'.format(newloc))
                     except IOException as io_err:
@@ -70,7 +70,7 @@ def archive_script_usage_logs():
                     except Exception as err:
                         logger.warning('Error archiving log file: {} | {}'.format(f, err))
     else:
-        logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_settings.log_archive_folder))
+        logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_config.log_archive_folder))
 
 
 # script usage database interface --------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ class UsageDatabase:
     def __init__(self):
         self._db = []           # list of UsageDataEntry objects
         self._read_log_files(USER_TEMP_DIR)
-        self._read_log_files(user_settings.log_archive_folder)
+        self._read_log_files(user_config.log_archive_folder)
 
     def __iter__(self):
         return iter(self._db)

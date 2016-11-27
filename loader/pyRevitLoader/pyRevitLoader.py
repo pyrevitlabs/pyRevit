@@ -29,9 +29,7 @@ script can tap into the pyRevit library to read configurations, user settings, a
 start and interact with a pyRevit.session
 """
 
-import sys
-
-from pyrevit.logger import get_logger                   # import logger to log messages to pyrevit log.
+from pyrevit.core.logger import get_logger                   # import logger to log messages to pyrevit log.
 logger = get_logger('pyRevitLoader')
 
 import pyrevit.session as session

@@ -1,4 +1,4 @@
-from pyrevit.logger import get_logger
+from pyrevit.core.logger import get_logger
 logger = get_logger(__commandname__)
 
 if __shiftclick__:
@@ -7,7 +7,6 @@ if __shiftclick__:
 logger.critical('message')
 
 # testing rpw ----------------------------------------------------------------------------------------------------------
-import rpw
 from rpw import doc, uidoc
 
 print doc, uidoc
