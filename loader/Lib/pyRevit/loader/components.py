@@ -549,25 +549,24 @@ class Package(GenericContainer):
 
     def _calculate_hash(self):
         """Creates a unique hash # to represent state of directory."""
-        # logger.info('Generating Hash of directory')
         # search does not include png files:
         #   if png files are added the parent folder mtime gets affected
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        pat = '(\\' + PACKAGE_POSTFIX + ')|(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + SETTINGS_FILE_EXTENSION + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
         mtime_sum = 0
         for root, dirs, files in os.walk(self.directory):
-            if re.search(pat, root, flags=re.IGNORECASE):
+            if re.search(pat, op.basename(root), flags=re.IGNORECASE):
                 mtime_sum += op.getmtime(root)
                 for filename in files:
                     if re.search(patfile, filename, flags=re.IGNORECASE):
                         modtime = op.getmtime(op.join(root, filename))
                         mtime_sum += modtime
-        return hashlib.md5(str(mtime_sum)).hexdigest()
+        return hashlib.md5(str(mtime_sum).encode('utf-8')).hexdigest()
 
 
 # library package class
