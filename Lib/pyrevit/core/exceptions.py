@@ -2,6 +2,9 @@ import sys
 import traceback
 
 
+TRACEBACK_TITLE = '<strong>Traceback:</strong>'
+
+
 # General Exceptions
 class PyRevitException(Exception):
     """Base class for all pyRevit Exceptions.
@@ -9,9 +12,12 @@ class PyRevitException(Exception):
     """
     def __str__(self):
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+        tb_report = traceback.format_tb(sys.exc_traceback)[0]
         if self.args:
             message = self.args[0]
-        return '{}\n\n<strong>Traceback:</strong>\n{}'.format(message, traceback.format_tb(sys.exc_traceback)[0])
+            return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
+        else:
+            return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
 
 
 class PyRevitUnknownAssemblyError(PyRevitException):
@@ -53,9 +59,4 @@ class PyRevitCacheWriteError(PyRevitCacheError):
 
 
 class PyRevitCacheExpiredError(PyRevitCacheError):
-    pass
-
-
-# Config file parsing exeptions
-class ConfigFileError(PyRevitException):
     pass

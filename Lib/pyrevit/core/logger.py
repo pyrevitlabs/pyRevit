@@ -2,7 +2,8 @@ import logging
 import sys
 from os.path import sep
 
-from pyrevit.config.config import DEBUG_ISC_NAME, VERBOSE_ISC_NAME, FORCED_DEBUG_MODE_PARAM
+from ..config import FORCED_DEBUG_MODE_PARAM
+from ..config.coreconfig import DEBUG_ISC_NAME, VERBOSE_ISC_NAME
 
 from .coreutils import set_interscript_comm_data, get_interscript_comm_data
 from .emoji import emojize

@@ -4,9 +4,16 @@ import os
 import os.path as op
 import time
 
+from ..config import HOST_ADSK_PROCESS_NAME
+from ..config.coreconfig import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+
+from ..core.exceptions import PyRevitException
+
 from System.Diagnostics import Process
-from pyrevit.config.config import HOST_ADSK_PROCESS_NAME
-from pyrevit.core.exceptions import PyRevitException
+
+
+def enum(**enums):
+    return type('Enum', (), enums)
 
 
 class Timer:
@@ -43,10 +50,6 @@ class ScriptFileParser:
                                                                                                      err))
 
         return None
-
-
-def enum(**enums):
-    return type('Enum', (), enums)
 
 
 def get_all_subclasses(parent_classes):
@@ -87,24 +90,50 @@ def get_parent_directory(path):
     return op.dirname(path)
 
 
-def run_process(proc, cwd=''):
-    import subprocess
-    return subprocess.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
-
-
 def join_strings(path_list):
     if path_list:
         return ';'.join(path_list)
     return ''
 
 
+# character replacement list for cleaning up file names
+SPECIAL_CHARS = {' ': '',
+                 '~': '',
+                 '!': 'EXCLAM',
+                 '@': 'AT',
+                 '#': 'NUM',
+                 '$': 'DOLLAR',
+                 '%': 'PERCENT',
+                 '^': '',
+                 '&': 'AND',
+                 '*': 'STAR',
+                 '+': 'PLUS',
+                 ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
+                 '-': 'MINUS',
+                 '=': 'EQUALS',
+                 '<': '', '>': '',
+                 '?': 'QMARK',
+                 '.': 'DOT',
+                 '_': 'UNDERS',
+                 '|': 'VERT',
+                 '\/': '', '\\': ''}
+
+
 def cleanup_string(input_str):
     # remove spaces and special characters from strings
-    from pyrevit.config.config import SPECIAL_CHARS
     for char, repl in SPECIAL_CHARS.items():
         input_str = input_str.replace(char, repl)
 
     return input_str
+
+
+def get_revit_instances():
+    return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))
+
+
+def run_process(proc, cwd=''):
+    import subprocess as sp
+    return sp.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
 
 
 def inspect_calling_scope_local_var(variable_name):
@@ -145,7 +174,6 @@ def get_interscript_comm_data(param_name):
     to read the usersettings data which reduces file io and saves time.
     """
     # This function returns None if it can not find the parameter. Thus value of None should not be used for params
-    from pyrevit.config.config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
     data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
     if data_dict:
         try:
@@ -166,7 +194,6 @@ def set_interscript_comm_data(param_name, param_value):
     to read the usersettings data which reduces file io and saves time.
     """
     # Get function returns None if it can not find the parameter. Thus value of None should not be used for params
-    from pyrevit.config.config import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
     data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
     if data_dict:
         data_dict[param_name] = param_value
@@ -174,7 +201,3 @@ def set_interscript_comm_data(param_name, param_value):
         data_dict = {param_name: param_value}
 
     CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ISC_DICT_NAME, data_dict)
-
-
-def get_revit_instances():
-    return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))

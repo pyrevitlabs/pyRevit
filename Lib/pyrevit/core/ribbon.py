@@ -1,44 +1,27 @@
-""" Module name: ui.py
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-
-
-~~~
+"""
 Description:
 This is the public module that makes internal UI wrappers accessible to the user.
 """
 
+import clr
 from collections import OrderedDict
 
-import clr
-from pyrevit.config.config import HostVersion, HOST_SOFTWARE
-from pyrevit.config.config import ICON_SMALL, ICON_MEDIUM, ICON_LARGE, SPLITPUSH_BUTTON_SYNC_PARAM, \
-                         COMMAND_NAME_PARAM, PYREVIT_TAB_IDENTIFIER, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+from ..config import HOST_VERSION, HOST_SOFTWARE, COMMAND_NAME_PARAM
+from ..config.coreconfig import ICON_SMALL, ICON_MEDIUM, ICON_LARGE,\
+                                SPLITPUSH_BUTTON_SYNC_PARAM, PYREVIT_TAB_IDENTIFIER
+from ..config.loaderconfig import LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+
 from pyrevit.core.exceptions import PyRevitUIError, PyRevitException
 from pyrevit.core.logger import get_logger
 
-# dotnet imports
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPIUI')
 from System import Uri
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption, BitmapCreateOptions
-# revit api imports
+
 from Autodesk.Revit.UI import PushButton, PulldownButton, SplitButton
 from Autodesk.Revit.UI import RibbonItemData, PushButtonData, PulldownButtonData, SplitButtonData
+
 try:
     clr.AddReference('AdWindows')
     from Autodesk.Windows import ComponentManager
@@ -453,7 +436,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                         if avail_class_name:
                             existing_item._get_rvtapi_object().AvailabilityClassName = avail_class_name
                         elif rvtapi_obj.AvailabilityClassName:
-                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS
+                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
@@ -720,14 +703,14 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._create_button_group(PulldownButtonData, item_name, icon_path, update_if_exists)
 
     def create_split_button(self, item_name, icon_path, update_if_exists=False):
-        if self._itemdata_mode and HostVersion.is_older_than('2017'):
+        if self._itemdata_mode and HOST_VERSION.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
-        if self._itemdata_mode and HostVersion.is_older_than('2017'):
+        if self._itemdata_mode and HOST_VERSION.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)

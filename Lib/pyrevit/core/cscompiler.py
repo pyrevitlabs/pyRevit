@@ -1,10 +1,11 @@
 import os.path as op
 
+from ..config.loaderconfig import ASSEMBLY_FILE_TYPE
+from ..core.exceptions import PyRevitException
+
 from Microsoft.CSharp import CSharpCodeProvider
 from System import Array
 from System.CodeDom import Compiler
-from pyrevit.config.config import ASSEMBLY_FILE_TYPE
-from pyrevit.core.exceptions import PyRevitException
 
 
 def compile_to_asm(code, name, output_dir, references=None):
