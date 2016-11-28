@@ -1,13 +1,13 @@
 from collections import namedtuple
 
-from pyrevit.packages.parser.parser import get_installed_lib_package_data, get_installed_package_data
+from pyrevit.extensions.parser.parser import get_installed_lib_package_data, get_installed_package_data
 
 from ..logger import get_logger
 logger = get_logger(__name__)
 
 from pyrevit.config.config import HOME_DIR
-from pyrevit.core.git import git
-from pyrevit.config.userconfig import user_config
+from pyrevit.coreutils.git import git
+from pyrevit.userconfig.userconfig import user_config
 
 from System import DateTime, DateTimeOffset
 
@@ -60,7 +60,7 @@ def get_pyrevit_repo():
 
 
 def get_thirdparty_lib_repos():
-    # get a list of all directories that could include library packages
+    # get a list of all directories that could include library extensions
     # and ask parser for library package info object
     lib_pkgs = []
     logger.debug('Finding installed library repos...')
@@ -70,7 +70,7 @@ def get_thirdparty_lib_repos():
             if lib_pkg_info and git.Repository.IsValid(lib_pkg_info.directory):
                 lib_pkgs.append(lib_pkg_info)
 
-    logger.debug('Valid third-party packages for update: {}'.format(lib_pkgs))
+    logger.debug('Valid third-party extensions for update: {}'.format(lib_pkgs))
 
     lib_repos = []
     for lib_pkg_info in lib_pkgs:
@@ -82,7 +82,7 @@ def get_thirdparty_lib_repos():
 
 
 def get_thirdparty_pkg_repos():
-    # get a list of all directories that could include packages
+    # get a list of all directories that could include extensions
     # and ask parser for package info object
     pkgs = []
     logger.debug('Finding installed repos...')
@@ -92,7 +92,7 @@ def get_thirdparty_pkg_repos():
             if pkg_info and git.Repository.IsValid(pkg_info.directory):
                 pkgs.append(pkg_info)
 
-    logger.debug('Valid third-party packages for update: {}'.format(pkgs))
+    logger.debug('Valid third-party extensions for update: {}'.format(pkgs))
 
     repos = []
     for pkg_info in pkgs:

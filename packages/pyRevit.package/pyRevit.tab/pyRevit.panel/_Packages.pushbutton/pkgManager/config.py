@@ -10,11 +10,11 @@ SCRIPTS_DIR = os.path.dirname(PKGMGR_DIR)
 # pyrevit\pyrevit - this is where pyrevit.tab is
 PYREVIT_DIR = os.path.dirname(SCRIPTS_DIR)
 
-#  Path fir file version of packages.json
-PKGSJSON_FILEPATH = os.path.join(PKGMGR_DIR, 'packages.json')
+#  Path fir file version of extensions.json
+PKGSJSON_FILEPATH = os.path.join(PKGMGR_DIR, 'extensions.json')
 
 # CHANGE TO PYREVIT REPO
-PKGSJSON_WEB = 'https://raw.githubusercontent.com/gtalarico/pyrevit/pyrevitv3/pyrevit/pyrevit.tab/pkgManager/packages.json'
+PKGSJSON_WEB = 'https://raw.githubusercontent.com/gtalarico/pyrevit/pyrevitv3/pyrevit/pyrevit.tab/pkgManager/extensions.json'
 
 # .Ico path
 ICO_FILEPATH = os.path.join(PKGMGR_DIR, 'pkgManager.ico')

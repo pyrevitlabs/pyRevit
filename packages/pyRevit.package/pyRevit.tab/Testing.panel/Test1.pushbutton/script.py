@@ -9,7 +9,7 @@ logger.info(':beer_mug: Everything went well!')
 logger.info("Python is :thumbs_up: :banana:")
 print "\n<a href='http://www.google.com'>Clickable link Google</a>"
 
-from pyrevit.core.html import HTML
+from pyrevit.coreutils.html import HTML
 h = HTML()
 
 t = h.table(border='1', newlines=False)
@@ -49,7 +49,7 @@ ow.set_title('Beautiful title')
 # ow.show_both_scrollbars()
 
 # testing scriptutils --------------------------------------------------------------------------------------------------
-from pyrevit.packages.parser.components import GenericCommand
+from pyrevit.extensions.parser.components import GenericCommand
 import pyrevit.scriptutils.userinput as su
 this_script = su.get_script_info(__file__)  # type: GenericCommand
 

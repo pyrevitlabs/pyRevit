@@ -1,6 +1,7 @@
 from System import AppDomain
 from pyrevit.config.config import SESSION_STAMPED_ID
-from pyrevit.core.coreutils import Timer
+
+from pyrevit.coreutils.coreutils import Timer
 
 # _scriptSource = "";
 # _alternateScriptSource = "";

@@ -1,69 +1,34 @@
-""" Module name = _assemblies.py
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-
-
-~~~
-Description:
-pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
-This is the module responsible for creating c# classes for commands and save them into an assembly file.
-The ui modules will later add the assembly and c# class information to the ui buttons.
-
-All these four modules are private and handled by pyRevit.session
-These modules do not import each other and mainly use base modules (.config, .logger, .exceptions, .output, .utils)
-All these four modules can understand the component tree. (_basecomponents module)
- _parser parses the folders and creates a tree of components provided by _basecomponents
- _assemblies make an assembly from the tree.
- _ui creates the ui using the information provided by the tree.
- _cache will save and restore the tree to increase loading performance.
-"""
-
 import os
 import os.path as op
 from collections import namedtuple
 
 import clr
-from pyrevit.config.config import COMMAND_CONTEXT_SELECT_AVAIL
-from pyrevit.config.config import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from pyrevit.config.config import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
-                          LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS, \
-                          LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from pyrevit.config.config import PyRevitVersion
-from pyrevit.config.config import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
-from pyrevit.config.config import USER_TEMP_DIR, LOADER_DIR, LOADER_ASM_DIR
-from pyrevit.loader.cstemplates import compile_to_asm
+from pyrevit.coreutils.coreutils import join_strings, get_revit_instances
 
-from ..core.coreutils import join_strings, get_revit_instances
+from pyrevit.config import PyRevitVersion, USER_TEMP_DIR
+from pyrevit.loader.loaderconfig import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
+from pyrevit.loader.loaderconfig import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
+                                        LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS,\
+                                        LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+from pyrevit.loader.loaderconfig import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger
 
-logger = get_logger(__name__)
-
-
-# dot net imports
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 clr.AddReference('System.Xml.Linq')
+
+# noinspection PyUnresolvedReferences
 from System import AppDomain, Version, Array, Type
+# noinspection PyUnresolvedReferences
 from System.Reflection import Assembly, AssemblyName, TypeAttributes, MethodAttributes, CallingConventions
+# noinspection PyUnresolvedReferences
 from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder, OpCodes
-# revit api imports
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
+
+logger = get_logger(__name__)
 
 
 # Generic named tuple for passing assembly information to other modules
@@ -76,7 +41,6 @@ LoaderClassParams = namedtuple('LoaderClassParams',
                                 'script_file_address', 'config_script_file_address',
                                 'search_paths_str',
                                 'cmd_name',
-                                'cmd_options',
                                 'cmd_context'
                                 ])
 

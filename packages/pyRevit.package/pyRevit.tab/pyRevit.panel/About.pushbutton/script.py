@@ -26,7 +26,8 @@ import os
 
 import clr
 from pyrevit.config.config import PyRevitVersion
-from pyrevit.packages.updater import get_pyrevit_repo
+
+from pyrevit.updater import get_pyrevit_repo
 
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")

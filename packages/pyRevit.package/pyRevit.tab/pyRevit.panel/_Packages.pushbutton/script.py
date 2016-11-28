@@ -15,7 +15,7 @@ protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = "Package Manager for pyrevit. You can install other shared packages using this tool."
+__doc__ = "Package Manager for pyrevit. You can install other shared extensions using this tool."
 __version__ = "0.3.0"
 __author__ = 'Gui Talarico | gtalarico@gmail.com'
 
@@ -56,8 +56,8 @@ doc = __revit__.ActiveUIDocument.Document
 headers = ['Package', 'Repo', 'Local', 'Description', '', '']
 
 # If fails to get remote,
-# packages = load_pgks_from_file()
-# packages = load_pgks_from_origin()
+# extensions = load_pgks_from_file()
+# extensions = load_pgks_from_origin()
 packages = load_pgks_from_origin() or load_pgks_from_file()
 local_folders = get_local_folders()
 

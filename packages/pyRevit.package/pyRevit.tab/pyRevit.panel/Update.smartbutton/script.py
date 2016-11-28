@@ -20,8 +20,9 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 import pyrevit.loader.session as session
 from pyrevit.config.config import ICON_LARGE
+
+from pyrevit import updater
 from pyrevit.core.logger import get_logger
-from pyrevit.packages import updater
 
 logger = get_logger(__commandname__)
 

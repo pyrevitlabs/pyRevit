@@ -1,8 +1,7 @@
 import os.path as op
 
-from pyrevit.packages.parser.components import GenericCommand
-
-from ..core.coreutils import get_all_subclasses
+from pyrevit.extensions.parser.components import GenericCommand
+from pyrevit.coreutils.coreutils import get_all_subclasses
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger
 

@@ -84,7 +84,7 @@ class PyRevitConsoleWindow:
 
 # __window__ used to be added to local scope by pyRevitLoader.dll, thus it needed to be extracted from caller scope
 # pyRevitLoader.dll has been modified to add __window__ to globals. This snippet is for backup only
-# from .utils import inspect_calling_scope_local_var
+# from .coreutils import inspect_calling_scope_local_var
 # win_handler = inspect_calling_scope_local_var('__window__')
 # if win_handler:
 #     output_window = PyRevitConsoleWindow(win_handler)

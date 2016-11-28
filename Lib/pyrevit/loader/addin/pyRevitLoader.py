@@ -1,7 +1,3 @@
-import sys
-# write func to find lib path and append to paths
-sys.path.append()
+from pyrevit.loader import load_session
 
-import pyrevit.loader.session as session
-
-session.load()
+load_session()

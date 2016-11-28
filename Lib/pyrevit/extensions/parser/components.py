@@ -15,10 +15,11 @@ from pyrevit.config.config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POST
                           SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, \
                           COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.config.config import PyRevitVersion, HostVersion
-from pyrevit.config.userconfig import user_config
-from pyrevit.core.coreutils import ScriptFileParser, cleanup_string
+from pyrevit.userconfig.userconfig import user_config
+
 from pyrevit.core.exceptions import PyRevitUnknownFormatError, PyRevitNoScriptFileError, PyRevitException
 from pyrevit.core.logger import get_logger
+from pyrevit.coreutils.coreutils import ScriptFileParser, cleanup_string
 
 logger = get_logger(__name__)
 

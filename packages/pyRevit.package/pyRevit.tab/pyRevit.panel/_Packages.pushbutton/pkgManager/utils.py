@@ -31,8 +31,8 @@ def get_local_folders():
 
 
 def load_pgks_from_file():
-    """ Reads packages.json from file
-    packages.json should be formatted like this:
+    """ Reads extensions.json from file
+    extensions.json should be formatted like this:
 
     [
         {   "name": "locker",
@@ -51,22 +51,22 @@ def load_pgks_from_file():
         with open(PKGSJSON_FILEPATH, 'r') as fp:
             packages_json = json.load(fp)
     except IOError as errmsg:
-        logger.error('Failed opening packages.json')
+        logger.error('Failed opening extensions.json')
         logger.error(errmsg)
         raise
     except ValueError as errmsg:
-        logger.error('Failed to decode packages.json')
+        logger.error('Failed to decode extensions.json')
         logger.error(errmsg)
         raise
     try:
-        packages = packages_json['packages']
+        packages = packages_json['extensions']
     except Exception as errmsg:
         logger.error('Packages is not properly formatted.')
         logger.error(errmsg)
         raise
 
     logger.debug('Got Local Packages:')
-    # logger.debug(pprint(packages))
+    # logger.debug(pprint(extensions))
     return packages
 
 
@@ -76,21 +76,21 @@ def load_pgks_from_origin():
     try:
         json_response = WebClient().DownloadString(PKGSJSON_WEB)
     except ValueError as errmsg:
-        logger.error('Failed to decode packages.json')
+        logger.error('Failed to decode extensions.json')
         logger.error(errmsg)
     except Exception as errmsg:
-        logger.error('Unkown Error while getting remote packages.json')
+        logger.error('Unkown Error while getting remote extensions.json')
         logger.error(errmsg)
     else:
         packages_json = json.loads(json_response)
         try:
-            packages = packages_json['packages']
+            packages = packages_json['extensions']
         except Exception as errmsg:
             logger.error('Packages is not properly formatted.')
             logger.error(errmsg)
         else:
             logger.debug('Got Remote Packages:')
-            # logger.debug(pprint(packages))
+            # logger.debug(pprint(extensions))
             return packages
 
 

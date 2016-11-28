@@ -54,8 +54,8 @@ from pyrevit.config.config import LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGG
                           STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
                           SPLITPUSH_BUTTON_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, SCRIPT_FILE_FORMAT, \
                           SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, CONFIG_SCRIPT_TITLE_POSTFIX, SMART_BUTTON_POSTFIX
-from pyrevit.core.ribbon import get_current_ui
 
+from pyrevit.coreutils.ribbon import get_current_ui
 from ..core.exceptions import PyRevitUIError
 from ..core.logger import get_logger
 

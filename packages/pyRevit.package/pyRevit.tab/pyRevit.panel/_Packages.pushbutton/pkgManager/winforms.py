@@ -171,7 +171,7 @@ class PackageManagerForm(Form):
             return None
 
     def toggle_action(self, cell):
-        """ Toggles Values of buttons and cells when packages added/removed"""
+        """ Toggles Values of buttons and cells when extensions added/removed"""
 
         row = self.dg.Rows[cell.RowIndex]
         repo_ref = row.Cells[1]
