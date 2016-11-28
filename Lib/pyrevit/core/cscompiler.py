@@ -1,7 +1,7 @@
 import os.path as op
 
-from ..config.loaderconfig import ASSEMBLY_FILE_TYPE
-from ..core.exceptions import PyRevitException
+from pyrevit.config.loaderconfig import ASSEMBLY_FILE_TYPE
+from pyrevit.core.exceptions import PyRevitException
 
 from Microsoft.CSharp import CSharpCodeProvider
 from System import Array

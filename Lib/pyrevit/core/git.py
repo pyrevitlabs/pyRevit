@@ -9,7 +9,7 @@ https://github.com/libgit2/libgit2sharp/wiki
 import clr
 import importlib
 
-from ..config.coreconfig import GIT_LIB
+from pyrevit.config.coreconfig import GIT_LIB
 
 import System
 

@@ -8,7 +8,7 @@ Usage.
 
 import clr
 
-from ..config import WINDOW_HANDLE_PARAM
+from pyrevit.config import WINDOW_HANDLE_PARAM
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')

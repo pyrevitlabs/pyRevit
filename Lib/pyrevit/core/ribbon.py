@@ -6,10 +6,10 @@ This is the public module that makes internal UI wrappers accessible to the user
 import clr
 from collections import OrderedDict
 
-from ..config import HOST_VERSION, HOST_SOFTWARE, COMMAND_NAME_PARAM
-from ..config.coreconfig import ICON_SMALL, ICON_MEDIUM, ICON_LARGE,\
+from pyrevit.config import HOST_VERSION, HOST_SOFTWARE, COMMAND_NAME_PARAM
+from pyrevit.config.coreconfig import ICON_SMALL, ICON_MEDIUM, ICON_LARGE,\
                                 SPLITPUSH_BUTTON_SYNC_PARAM, PYREVIT_TAB_IDENTIFIER
-from ..config.loaderconfig import LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
+from pyrevit.config.loaderconfig import LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
 
 from pyrevit.core.exceptions import PyRevitUIError, PyRevitException
 from pyrevit.core.logger import get_logger

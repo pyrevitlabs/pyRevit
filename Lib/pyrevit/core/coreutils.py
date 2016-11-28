@@ -4,10 +4,10 @@ import os
 import os.path as op
 import time
 
-from ..config import HOST_ADSK_PROCESS_NAME
-from ..config.coreconfig import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
+from pyrevit.config import HOST_ADSK_PROCESS_NAME
+from pyrevit.config.coreconfig import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
 
-from ..core.exceptions import PyRevitException
+from pyrevit.core.exceptions import PyRevitException
 
 from System.Diagnostics import Process
 

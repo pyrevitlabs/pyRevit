@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------------------------------------------------
 # session global environment variable defaults
 # ----------------------------------------------------------------------------------------------------------------------
-from ..config import PYREVIT_ASSEMBLY_NAME
+from pyrevit.config import PYREVIT_ASSEMBLY_NAME
 from System import AppDomain
 
 CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain

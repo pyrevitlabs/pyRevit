@@ -1,7 +1,7 @@
 import re
 import os.path as op
 
-from .code import emoji_file_dict
+from pyrevit.core.emoji.code import emoji_file_dict
 
 html_emoji_span = '<span><img src="{}" style="margin-top:0.35em;margin-bottom:-0.35em;"></span>'
 

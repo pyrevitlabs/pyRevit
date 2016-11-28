@@ -1,7 +1,7 @@
 import os.path as op
 
-from ..config import HOST_VERSION, HOST_USERNAME, PYREVIT_ASSEMBLY_NAME
-from ..config import USER_TEMP_DIR
+from pyrevit.config import HOST_VERSION, HOST_USERNAME, PYREVIT_ASSEMBLY_NAME
+from pyrevit.config import USER_TEMP_DIR
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -40,6 +40,9 @@ LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, '
 SUB_CMP_KEY = '_sub_components'
 HASH_VALUE_PARAM = 'hash_value'
 HASH_VERSION_PARAM = 'hash_version'
+
+CACHE_TYPE_ASCII = 'ascii'
+CACHE_TYPE_BINARY = 'binary'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
