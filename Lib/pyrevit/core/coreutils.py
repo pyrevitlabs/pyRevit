@@ -9,6 +9,7 @@ from pyrevit.config.coreconfig import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDO
 
 from pyrevit.core.exceptions import PyRevitException
 
+# noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
 
@@ -25,7 +26,7 @@ class Timer:
         self.start = time.time()
 
     def get_time(self):
-        return (time.time() - self.start)
+        return time.time() - self.start
 
 
 class ScriptFileParser:
@@ -70,7 +71,7 @@ def get_all_subclasses(parent_classes):
 def get_sub_folders(search_folder):
     sub_folders = []
     for f in os.listdir(search_folder):
-        if op.isdir(op.join(search_folder,f)):
+        if op.isdir(op.join(search_folder, f)):
             sub_folders.append(f)
     return sub_folders
 

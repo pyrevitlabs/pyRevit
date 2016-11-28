@@ -2,6 +2,8 @@
 # session global environment variable defaults
 # ----------------------------------------------------------------------------------------------------------------------
 from pyrevit.config import PYREVIT_ASSEMBLY_NAME
+
+# noinspection PyUnresolvedReferences
 from System import AppDomain
 
 CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
@@ -28,4 +30,3 @@ ICON_LARGE = 32
 SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
-

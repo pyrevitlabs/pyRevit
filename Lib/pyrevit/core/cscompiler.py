@@ -3,8 +3,11 @@ import os.path as op
 from pyrevit.config.loaderconfig import ASSEMBLY_FILE_TYPE
 from pyrevit.core.exceptions import PyRevitException
 
+# noinspection PyUnresolvedReferences
 from Microsoft.CSharp import CSharpCodeProvider
+# noinspection PyUnresolvedReferences
 from System import Array
+# noinspection PyUnresolvedReferences
 from System.CodeDom import Compiler
 
 

@@ -10,9 +10,9 @@ from pyrevit.core.emoji import emojize
 
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
-LOG_RECORD_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
-LOG_RECORD_FORMAT_ERROR = '<div style="background:#EEE;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
-LOG_RECORD_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_RECORD_FORMAT)
+LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
+LOG_REC_FORMAT_ERROR = '<div style="background:#EEE;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_REC_FORMAT)
+LOG_REC_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_REC_FORMAT)
 
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
@@ -46,7 +46,7 @@ class LoggerWrapper(logging.Logger):
         logging.Logger.__init__(self, *args)
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
-        edited_msg = emojize(str(msg).replace(sep,'/'))
+        edited_msg = emojize(str(msg).replace(sep, '/'))
         logging.Logger._log(self, level, edited_msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
@@ -84,15 +84,15 @@ class LoggerWrapper(logging.Logger):
 # setting up handlers and formatters -----------------------------------------------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
 # e.g [parser] DEBUG: Can not create command.
-stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter(LOG_RECORD_FORMAT_ERROR),
-                                                logging.CRITICAL: logging.Formatter(LOG_RECORD_FORMAT_CRITICAL)},
-                                                logging.Formatter(LOG_RECORD_FORMAT)))
+stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
+                                                logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL)},
+                                               logging.Formatter(LOG_REC_FORMAT)))
 stdout_hndlr.setLevel(RUNTIME_LOGGING_LEVEL)
 
 # todo: file handler
 # file_hndlr = logging.FileHandler(file_address)
 # # Custom formater for file
-# file_formatter = logging.Formatter(LOG_RECORD_FORMAT)
+# file_formatter = logging.Formatter(LOG_REC_FORMAT)
 # file_hndlr.setFormatter(file_formatter)
 
 

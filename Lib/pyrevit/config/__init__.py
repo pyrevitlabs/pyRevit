@@ -2,6 +2,7 @@ import os
 import os.path as op
 import sys
 
+# noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -49,8 +50,8 @@ class PyRevitVersion(object):
                 elif PyRevitVersion.minor == version_tuple[1]:
                     if PyRevitVersion.patch > version_tuple[2]:
                         return True
-        except IndexError as err:
-            raise PyRevitException('Version tuple must be in format: (Major, Minor, Patch) | {}'.format(err))
+        except IndexError:
+            raise Exception('Version tuple must be in format: (Major, Minor, Patch)')
 
         return False
 
@@ -66,8 +67,8 @@ class PyRevitVersion(object):
                 elif PyRevitVersion.minor == version_tuple[1]:
                     if PyRevitVersion.patch < version_tuple[2]:
                         return True
-        except IndexError as err:
-            raise PyRevitException('Version tuple must be in format: (Major, Minor, Patch) | {}'.format(err))
+        except IndexError:
+            raise Exception('Version tuple must be in format: (Major, Minor, Patch)')
 
         return False
 
@@ -78,6 +79,7 @@ class PyRevitVersion(object):
 
 # define HOST_SOFTWARE
 try:
+    # noinspection PyUnresolvedReferences
     HOST_SOFTWARE = __revit__
 except Exception:
     raise Exception('Critical Error. Host software handle is not available (__revit__)')
@@ -117,8 +119,11 @@ HOST_ADSK_PROCESS_NAME = Process.GetCurrentProcess().ProcessName
 # ----------------------------------------------------------------------------------------------------------------------
 
 # define FORCED_DEBUG_MODE_PARAM
+# noinspection PyUnresolvedReferences
 FORCED_DEBUG_MODE_PARAM = __forceddebugmode__
+# noinspection PyUnresolvedReferences
 WINDOW_HANDLE_PARAM = __window__
+# noinspection PyUnresolvedReferences
 COMMAND_NAME_PARAM = __commandname__
 
 

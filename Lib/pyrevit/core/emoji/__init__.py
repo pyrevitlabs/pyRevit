@@ -7,7 +7,7 @@ html_emoji_span = '<span><img src="{}" style="margin-top:0.35em;margin-bottom:-0
 
 
 def emojize(text):
-    pattern = re.compile('(:[a-z0-9\+\-_]+:)')
+    pattern = re.compile('(:[a-z0-9+-_]+:)')
 
     def emojifier(match):
         emoji_name = match.group(1)

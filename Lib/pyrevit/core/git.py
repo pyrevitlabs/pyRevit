@@ -11,6 +11,7 @@ import importlib
 
 from pyrevit.config.coreconfig import GIT_LIB
 
+# noinspection PyUnresolvedReferences
 import System
 
 # todo: figure out how to import packages on the caller's scope. Can't expect the user to import this everytime

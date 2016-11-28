@@ -3,6 +3,8 @@ import os.path as op
 from pyrevit.config import HOST_VERSION, HOST_USERNAME, PYREVIT_ASSEMBLY_NAME
 from pyrevit.config import USER_TEMP_DIR
 
+# noinspection PyUnresolvedReferences
+from System.Diagnostics import Process
 
 # ----------------------------------------------------------------------------------------------------------------------
 # session defaults
@@ -13,7 +15,7 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HOST_VERSION.version, HOST_
 # This id is unique for all python scripts running under this session.
 # Previously the session id was stamped by formatted time
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
-SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, _Process.GetCurrentProcess().Id)
+SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

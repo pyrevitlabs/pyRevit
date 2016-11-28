@@ -12,7 +12,10 @@ from pyrevit.config import WINDOW_HANDLE_PARAM
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
+
+# noinspection PyUnresolvedReferences
 import System.Drawing
+# noinspection PyUnresolvedReferences
 import System.Windows
 
 
@@ -35,6 +38,7 @@ class PyRevitConsoleWindow:
         self.__winhandle__.Height = height
 
     def set_font(self, font_family_name, font_size):
+        # noinspection PyUnresolvedReferences
         self.__winhandle__.txtStdOut.Font = System.Drawing.Font(font_family_name, font_size,
                                                                 System.Drawing.FontStyle.Regular,
                                                                 System.Drawing.GraphicsUnit.Point)
@@ -43,9 +47,11 @@ class PyRevitConsoleWindow:
         self.__winhandle__.txtStdOut.WordWrap = state
 
     def show_both_scrollbars(self):
+        # noinspection PyUnresolvedReferences
         self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Both
 
     def reset_scrollbars(self):
+        # noinspection PyUnresolvedReferences
         self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
 
     def resize(self, width, height):
