@@ -43,17 +43,6 @@ class PyRevitConsoleWindow:
                                                                 System.Drawing.FontStyle.Regular,
                                                                 System.Drawing.GraphicsUnit.Point)
 
-    def set_word_wrap(self, state):
-        self.__winhandle__.txtStdOut.WordWrap = state
-
-    def show_both_scrollbars(self):
-        # noinspection PyUnresolvedReferences
-        self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Both
-
-    def reset_scrollbars(self):
-        # noinspection PyUnresolvedReferences
-        self.__winhandle__.txtStdOut.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
-
     def resize(self, width, height):
         self.set_width(width)
         self.set_height(height)
@@ -77,15 +66,11 @@ class PyRevitConsoleWindow:
     def show(self):
         self.__winhandle__.Show()
 
-    def clear(self):
-        """Clears the content in output window."""
-        self.__winhandle__.txtStdOut.Clear()
-
 
 # __window__ used to be added to local scope by pyRevitLoader.dll, thus it needed to be extracted from caller scope
 # pyRevitLoader.dll has been modified to add __window__ to globals. This snippet is for backup only
 # from .coreutils import inspect_calling_scope_local_var
-# win_handler = inspect_calling_scope_local_var('__window__')
+# win_handler = pyrevit.coreutils.inspect_calling_scope_local_var('__window__')
 # if win_handler:
 #     output_window = PyRevitConsoleWindow(win_handler)
 

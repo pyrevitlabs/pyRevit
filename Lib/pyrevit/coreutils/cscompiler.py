@@ -11,7 +11,6 @@ from Microsoft.CSharp import CSharpCodeProvider
 from System.CodeDom import Compiler
 
 
-
 def compile_to_asm(code, full_file_name, output_dir, reference_list=None):
 
     compiler_params = Compiler.CompilerParameters()
