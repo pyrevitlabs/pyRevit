@@ -45,6 +45,17 @@ from System.Diagnostics import Process
 from System.IO import IOException
 
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# script usage logging defaults
+# ----------------------------------------------------------------------------------------------------------------------
+# creating log file name from stamped session id
+LOG_FILE_TYPE = '.log'
+SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
+SESSION_LOG_FILE_PATH = op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
+LOG_ENTRY_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+
 # todo: add resolution to usage data tool. Some tools are used within close timing to each other.
 
 def archive_script_usage_logs():

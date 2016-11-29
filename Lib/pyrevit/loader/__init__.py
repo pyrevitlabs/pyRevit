@@ -1,40 +1,22 @@
-"""
-Description:
-pyRevit library has 4 main modules for handling parsing, assembly creation, ui, and caching.
-This module provide a series of functions to create and manage a pyRevit session under Revit (using the 4 modules).
-Each time Revit is run, the loader script imports pyRevit.session and creates a session. The session (this module)
-then calls the parser, assembly maker, and lastly ui maker to create the buttons in Revit.
-Each pyRevit session will have its own .dll and log file.
-"""
-
-import os.path as op
 import sys
 
 from pyrevit import HOME_DIR, PyRevitVersion
 from pyrevit import HOST_VERSION, HOST_USERNAME, PYREVIT_ASSEMBLY_NAME
-from pyrevit import USER_TEMP_DIR
-from pyrevit.core.exceptions import PyRevitCacheError, PyRevitCacheExpiredError
 from pyrevit.core.logger import get_logger
 from pyrevit.coreutils import Timer
+
+from pyrevit.userconfig import user_config
+from pyrevit.usagedata import archive_script_usage_logs
 from pyrevit.extensions.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
 from pyrevit.loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-from pyrevit.scriptutils.usagedata import archive_script_usage_logs
-from pyrevit.updater import get_pyrevit_repo
-from pyrevit.userconfig import user_config
 
-# Load CACHE_TYPE_ASCII or CACHE_TYPE_BINARY based on user settings.
-if user_config.cache_type == CACHE_TYPE_ASCII:
-    from pyrevit.extensions.parser.cacher_asc import is_cache_valid, get_cached_package, update_cache
-else:
-    from pyrevit.extensions.parser.cacher_bin import is_cache_valid, get_cached_package, update_cache
+# noinspection PyUnresolvedReferences
+from System.Diagnostics import Process
 
 
 logger = get_logger(__name__)
 
-
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
 
 # ----------------------------------------------------------------------------------------------------------------------
 # session defaults
@@ -46,41 +28,6 @@ SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HOST_VERSION.version, HOST_
 # Previously the session id was stamped by formatted time
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# asm maker defaults
-# ----------------------------------------------------------------------------------------------------------------------
-ASSEMBLY_FILE_TYPE = '.dll'
-LOADER_ADDIN = 'PyRevitLoader'
-
-# template python command class
-LOADER_BASE_CLASSES_ASM = 'PyRevitBaseClasses'
-LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommand')
-
-# template python command availability class
-LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME = 'PyRevitCommandDefaultAvail'
-LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM,
-                                                          LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME)
-LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommandCategoryAvail')
-LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommandSelectionAvail')
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# caching tabs, panels, buttons and button groups
-# ----------------------------------------------------------------------------------------------------------------------
-SUB_CMP_KEY = '_sub_components'
-HASH_VALUE_PARAM = 'hash_value'
-HASH_VERSION_PARAM = 'hash_version'
-
-# ----------------------------------------------------------------------------------------------------------------------
-# script usage logging defaults
-# ----------------------------------------------------------------------------------------------------------------------
-# creating log file name from stamped session id
-LOG_FILE_TYPE = '.log'
-SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
-SESSION_LOG_FILE_PATH = op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
-LOG_ENTRY_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def _update_pkg_syspaths(pkg, all_installed_lib_pkgs):
@@ -194,8 +141,8 @@ def load_session():
     This function handles both tasks through private interactions with ._parser and ._ui
 
     Usage Example:
-        import pyrevit.session as current_session
-        current_session.load()
+        from pyrevit.loader import load_session
+        load_session()
     """
 
     # initialize timer

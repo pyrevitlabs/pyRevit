@@ -61,6 +61,16 @@ SHIFT_CLICK_PARAM = '__shiftclick__'
 COMP_LIBRARY_DIR_NAME = 'Lib'
 
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# caching tabs, panels, buttons and button groups
+# ----------------------------------------------------------------------------------------------------------------------
+SUB_CMP_KEY = '_sub_components'
+HASH_VALUE_PARAM = 'hash_value'
+HASH_VERSION_PARAM = 'hash_version'
+
+
+
 def _create_subcomponents(search_dir, component_types_list):
     """Parses the provided directory and returns a list of objects of the types in component_types_list.
     Arguments:

@@ -6,11 +6,6 @@ import clr
 from pyrevit.coreutils.coreutils import join_strings, get_revit_instances
 
 from pyrevit.config import PyRevitVersion, USER_TEMP_DIR
-from pyrevit.loader.loaderconfig import LOADER_ADDIN, LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT
-from pyrevit.loader.loaderconfig import LOADER_BASE_CLASSES_ASM, LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS, \
-                                        LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS, LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS,\
-                                        LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-from pyrevit.loader.loaderconfig import SESSION_ID, SESSION_STAMPED_ID, ASSEMBLY_FILE_TYPE, SESSION_LOG_FILE_NAME
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger
 
@@ -29,6 +24,26 @@ from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
 logger = get_logger(__name__)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# asm maker defaults
+# ----------------------------------------------------------------------------------------------------------------------
+ASSEMBLY_FILE_TYPE = '.dll'
+LOADER_ADDIN = 'PyRevitLoader'
+
+# template python command class
+LOADER_BASE_CLASSES_ASM = 'PyRevitBaseClasses'
+LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommand')
+
+# template python command availability class
+LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME = 'PyRevitCommandDefaultAvail'
+LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM,
+                                                          LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME)
+LOADER_ADDIN_COMMAND_CAT_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommandCategoryAvail')
+LOADER_ADDIN_COMMAND_SEL_AVAIL_CLASS = '{}.{}'.format(LOADER_BASE_CLASSES_ASM, 'PyRevitCommandSelectionAvail')
+
+
 
 
 # Generic named tuple for passing assembly information to other modules
