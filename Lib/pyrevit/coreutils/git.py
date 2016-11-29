@@ -6,12 +6,13 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
+import clr
 import importlib
 
+# noinspection PyUnresolvedReferences
 import System
-import clr
 
-from pyrevit.coreutils.coreconfig import GIT_LIB
+GIT_LIB = 'LibGit2Sharp'
 
 # todo: figure out how to import extensions on the caller's scope. Can't expect the user to import this everytime
 clr.AddReference("System.Core")

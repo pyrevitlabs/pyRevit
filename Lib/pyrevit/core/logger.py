@@ -1,12 +1,15 @@
-import logging
 import sys
+import logging
 from os.path import sep
 
-from pyrevit.coreutils.coreutils import set_interscript_comm_data, get_interscript_comm_data
-
-from pyrevit.config import FORCED_DEBUG_MODE_PARAM
+from pyrevit import FORCED_DEBUG_MODE_PARAM, PYREVIT_ASSEMBLY_NAME
 from pyrevit.core.emoji import emojize
-from pyrevit.coreutils.coreconfig import DEBUG_ISC_NAME, VERBOSE_ISC_NAME
+
+from pyrevit.core.envvars import set_pyrevit_env_var, get_pyrevit_env_var
+
+
+DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
+VERBOSE_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_verboseISC'
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
@@ -17,10 +20,10 @@ LOG_REC_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session
 # so they can be retreieved later.
-if get_interscript_comm_data(VERBOSE_ISC_NAME):
+if get_pyrevit_env_var(VERBOSE_ISC_NAME):
     RUNTIME_LOGGING_LEVEL = logging.INFO
 
-if get_interscript_comm_data(DEBUG_ISC_NAME):
+if get_pyrevit_env_var(DEBUG_ISC_NAME):
     RUNTIME_LOGGING_LEVEL = logging.DEBUG
 
 # the loader assembly sets FORCED_DEBUG_MODE_PARAM to true if user Shift-clicks on the button
@@ -65,16 +68,16 @@ class LoggerWrapper(logging.Logger):
         self.handlers[0].setLevel(level)
 
     def set_verbose_mode(self):
-        set_interscript_comm_data(VERBOSE_ISC_NAME, True)
+        set_pyrevit_env_var(VERBOSE_ISC_NAME, True)
         self.handlers[0].setLevel(logging.INFO)
 
     def set_debug_mode(self):
-        set_interscript_comm_data(DEBUG_ISC_NAME, True)
+        set_pyrevit_env_var(DEBUG_ISC_NAME, True)
         self.handlers[0].setLevel(logging.DEBUG)
 
     def reset_level(self):
-        set_interscript_comm_data(VERBOSE_ISC_NAME, False)
-        set_interscript_comm_data(DEBUG_ISC_NAME, False)
+        set_pyrevit_env_var(VERBOSE_ISC_NAME, False)
+        set_pyrevit_env_var(DEBUG_ISC_NAME, False)
         self.handlers[0].setLevel(RUNTIME_LOGGING_LEVEL)
 
     def get_level(self):
@@ -82,7 +85,7 @@ class LoggerWrapper(logging.Logger):
 
 # setting up handlers and formatters -----------------------------------------------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
-# e.g [parser] DEBUG: Can not create command.
+# e.g [_parser] DEBUG: Can not create command.
 stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
                                                 logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL)},
                                                logging.Formatter(LOG_REC_FORMAT)))

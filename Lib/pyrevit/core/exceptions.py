@@ -20,43 +20,5 @@ class PyRevitException(Exception):
             return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
 
 
-class PyRevitUnknownAssemblyError(PyRevitException):
-    pass
-
-
-class PyRevitUnknownFormatError(PyRevitException):
-    pass
-
-
-class PyRevitLoaderNotFoundError(PyRevitException):
-    pass
-
-
-class PyRevitNoScriptFileError(PyRevitException):
-    pass
-
-
-class PyRevitScriptDependencyError(PyRevitException):
-    pass
-
-
-# UI-Specific Exceptions
-class PyRevitUIError(PyRevitException):
-    pass
-
-
-# Cache-Specific Exceptions
-class PyRevitCacheError(PyRevitException):
-    pass
-
-
-class PyRevitCacheReadError(PyRevitCacheError):
-    pass
-
-
-class PyRevitCacheWriteError(PyRevitCacheError):
-    pass
-
-
-class PyRevitCacheExpiredError(PyRevitCacheError):
+class PyRevitIOError(PyRevitException):
     pass

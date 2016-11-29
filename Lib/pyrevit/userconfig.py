@@ -1,55 +1,38 @@
-import ConfigParser
 import os.path as op
-
-from System.IO import IOException
 
 from pyrevit import FORCED_DEBUG_MODE_PARAM
 from pyrevit.core.logger import get_logger
-from pyrevit.coreutils import verify_directory
 
 logger = get_logger(__name__)
 
 
 SETTINGS_FILE_EXTENSION = '.ini'
-ADMIN_DEFAULT_SETTINGS_FILENAME = PYREVIT_INIT_SCRIPT_NAME + SETTINGS_FILE_EXTENSION
-USER_DEFAULT_SETTINGS_FILENAME = 'userdefaults' + SETTINGS_FILE_EXTENSION
+USER_DEFAULT_SETTINGS_FILENAME = 'config' + SETTINGS_FILE_EXTENSION
 
-INIT_SETTINGS_SECTION_NAME = 'init'
 GLOBAL_SETTINGS_SECTION_NAME = 'global'
 ALIAS_SECTION_NAME = 'alias'
 
 VERBOSE_KEY = 'verbose'
-LOG_SCRIPT_USAGE_KEY = 'logscriptusage'
-DEBUG_KEY = 'debug'
-ARCHIVE_LOG_FOLDER_KEY = 'archivelogfolder'
-CACHE_TYPE_KEY = 'cachetype'
+VERBOSE_KEY_DEFAULT = KEY_VALUE_FALSE
 
-VERBOSE_KEY_DEFAULT = False
-LOG_SCRIPT_USAGE_KEY_DEFAULT = True
-DEBUG_KEY_DEFAULT = False
+LOG_SCRIPT_USAGE_KEY = 'logscriptusage'
+LOG_SCRIPT_USAGE_KEY_DEFAULT = KEY_VALUE_TRUE
+
+DEBUG_KEY = 'debug'
+DEBUG_KEY_DEFAULT = KEY_VALUE_FALSE
+
+ARCHIVE_LOG_FOLDER_KEY = 'archivelogfolder'
 ARCHIVE_LOG_FOLDER_KEY_DEFAULT = 'C:\\'
 
+CACHE_TYPE_KEY = 'cachetype'
+CACHE_TYPE_ASCII = 'ascii'
+CACHE_TYPE_BINARY = 'binary'
 CACHE_TYPE_KEY_DEFAULT = CACHE_TYPE_ASCII
-
-KEY_VALUE_TRUE = "true"
-KEY_VALUE_FALSE = "false"
-
 
 
 # todo: add log file selection
 # todo: disabling tools (e.g. updater)
 # todo: custom user settings?
-class _CustomUserSettings:
-    """_PyRevitUserSettings.get_script_config returns an instance of this class with parameters corresponding to
-    previously saved parameters by the calling script. See load_parameter and save_parameter in _PyRevitUserSettings
-    Example:
-        user_config.save_parameter(param, value)
-        this_script_settings = user_config.load_parameters()
-        print( this_script_settings.custom_param )
-    """
-    def __init__(self):
-        pass
-
 
 class _PyRevitUserSettings:
     """Private class for handling all functions related to user settings.

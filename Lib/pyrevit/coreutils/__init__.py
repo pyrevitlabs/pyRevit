@@ -4,32 +4,11 @@ import os
 import os.path as op
 import time
 
-from System.Diagnostics import Process
-
-from pyrevit.config import HOST_ADSK_PROCESS_NAME
+from pyrevit import HOST_ADSK_PROCESS_NAME
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils.coreconfig import PYREVIT_ISC_DICT_NAME, CURRENT_REVIT_APPDOMAIN
-
-# ----------------------------------------------------------------------------------------------------------------------
-# session global environment variable defaults
-# ----------------------------------------------------------------------------------------------------------------------
-from pyrevit.config import PYREVIT_ASSEMBLY_NAME
 
 # noinspection PyUnresolvedReferences
-from System import AppDomain
-
-CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
-
-PYREVIT_ISC_DICT_NAME = PYREVIT_ASSEMBLY_NAME + '_dictISC'
-DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
-VERBOSE_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_verboseISC'
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# portable git and LibGit2Sharp git tools
-# ----------------------------------------------------------------------------------------------------------------------
-GIT_LIB = 'LibGit2Sharp'
-
+from System.Diagnostics import Process
 
 
 def enum(**enums):
@@ -182,42 +161,3 @@ def inspect_calling_scope_global_var(variable_name):
         if frame is None:
             return None
     return frame.f_locals[variable_name]
-
-
-def get_interscript_comm_data(param_name):
-    """Gets value of a parameter shared between all scripts. (Interscript communication ISC)
-    Some settings needs to be set for the current session and should affect the behaviour of all individual scripts
-    inside the extensions. (e.g. If user activates the DEBUG mode, all scripts should follow and log the debug entries.)
-    The information is saved using AppDomain.GetData and SetData in a dictionary parameter (PYREVIT_ISC_DICT_NAME).
-    The dictionary is used to minimise the addition of named parameters to the AppDomain. The dictionary then includes
-    all the internal parameters and their associated value (e.g. DEBUG_ISC_NAME). This way each script does not need
-    to read the usersettings data which reduces file io and saves time.
-    """
-    # This function returns None if it can not find the parameter. Thus value of None should not be used for params
-    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
-    if data_dict:
-        try:
-            return data_dict[param_name]
-        except KeyError:
-            return None
-    else:
-        return None
-
-
-def set_interscript_comm_data(param_name, param_value):
-    """Sets value of a parameter shared between all scripts. (Interscript communication ISC)
-    Some settings needs to be set for the current session and should affect the behaviour of all individual scripts
-    inside the extensions. (e.g. If user activates the DEBUG mode, all scripts should follow and log the debug entries.)
-    The information is saved using AppDomain.GetData and SetData in a dictionary parameter (PYREVIT_ISC_DICT_NAME).
-    The dictionary is used to minimise the addition of named parameters to the AppDomain. The dictionary then includes
-    all the internal parameters and their associated value (e.g. DEBUG_ISC_NAME). This way each script does not need
-    to read the usersettings data which reduces file io and saves time.
-    """
-    # Get function returns None if it can not find the parameter. Thus value of None should not be used for params
-    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ISC_DICT_NAME)
-    if data_dict:
-        data_dict[param_name] = param_value
-    else:
-        data_dict = {param_name: param_value}
-
-    CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ISC_DICT_NAME, data_dict)

@@ -73,10 +73,6 @@ SUB_CMP_KEY = '_sub_components'
 HASH_VALUE_PARAM = 'hash_value'
 HASH_VERSION_PARAM = 'hash_version'
 
-CACHE_TYPE_ASCII = 'ascii'
-CACHE_TYPE_BINARY = 'binary'
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 # script usage logging defaults
 # ----------------------------------------------------------------------------------------------------------------------
@@ -144,10 +140,10 @@ def _new_session():
     _perform_startup_cleanup_operations()
 
     # for every package of installed extensions, create an assembly, and create a ui
-    # parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
+    # _parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
     # the session.load() function (this function) moderates the communication and keeps a list of all extensions that
     # are successfully loaded in this session. In another language, pyrevit.session sees the big picture whereas,
-    # cacher, parser, asmmaker, and uimaker only see the package they've been asked to work on.
+    # cacher, _parser, asmmaker, and uimaker only see the package they've been asked to work on.
     # Session, creates an independent dll (using asmmaker) and ui (using uimaker) for every package.
     # This isolates other extensions from any errors that might occur during package startup.
     # get a list of all directories that could include extensions
@@ -163,7 +159,7 @@ def _new_session():
 
     for root_dir in pkg_search_dirs:
         # Get a list of all installed extensions in this directory
-        # parser.get_installed_package_data() returns a list of extensions in given directory
+        # _parser.get_installed_package_data() returns a list of extensions in given directory
         # then iterater through extensions and load one by one
         for package_info in get_installed_package_data(root_dir):
             # test if cache is valid for this package

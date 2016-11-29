@@ -1,23 +1,27 @@
 import os.path as op
 
-from Microsoft.CSharp import CSharpCodeProvider
+from pyrevit.core.exceptions import PyRevitException
+
+# noinspection PyUnresolvedReferences
 from System import Array
+
+# noinspection PyUnresolvedReferences
+from Microsoft.CSharp import CSharpCodeProvider
+# noinspection PyUnresolvedReferences
 from System.CodeDom import Compiler
 
-from pyrevit.core.exceptions import PyRevitException
-from pyrevit.loader.loaderconfig import ASSEMBLY_FILE_TYPE
 
 
-def compile_to_asm(code, name, output_dir, references=None):
+def compile_to_asm(code, full_file_name, output_dir, reference_list=None):
 
     compiler_params = Compiler.CompilerParameters()
-    compiler_params.OutputAssembly = op.join(output_dir, name + ASSEMBLY_FILE_TYPE)
+    compiler_params.OutputAssembly = op.join(output_dir, full_file_name)
 
     compiler_params.TreatWarningsAsErrors = False
     compiler_params.GenerateExecutable = False
     compiler_params.CompilerOptions = "/optimize"
 
-    for reference in references or []:
+    for reference in reference_list or []:
         compiler_params.ReferencedAssemblies.Add(reference)
 
     provider = CSharpCodeProvider()

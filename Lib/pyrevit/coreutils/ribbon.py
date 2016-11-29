@@ -8,15 +8,11 @@ from collections import OrderedDict
 import clr
 
 from pyrevit import HOST_VERSION, HOST_SOFTWARE, COMMAND_NAME_PARAM
-from pyrevit.core.exceptions import PyRevitUIError, PyRevitException
+from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
 
-from pyrevit.loader import LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
-
-
-clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPIUI')
-
+clr.AddReference('PresentationCore')
 # noinspection PyUnresolvedReferences
 from System import Uri
 # noinspection PyUnresolvedReferences
@@ -41,19 +37,21 @@ except Exception as err:
 
 logger = get_logger(__name__)
 
-# ----------------------------------------------------------------------------------------------------------------------
-# creating ui for tabs, panels, buttons and button groups
-# ----------------------------------------------------------------------------------------------------------------------
+
 PYREVIT_TAB_IDENTIFIER = 'pyrevit_tab'
 
 ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
-SPLITPUSH_BUTTON_SYNC_PARAM = 'IsSynchronizedWithCurrentItem'
 
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
+
 # Helper classes and functions -----------------------------------------------------------------------------------------
+class PyRevitUIError(PyRevitException):
+    pass
+
+
 class _ButtonIcons:
     def __init__(self, file_address):
         logger.debug('Creating uri from: {}'.format(file_address))
@@ -365,6 +363,10 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         else:
             return self._rvtapi_object.ItemText
 
+    @property
+    def availability_class(self):
+        return self._rvtapi_object.AvailabilityClassName
+
 
 class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
@@ -409,16 +411,12 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         self.itemdata_mode = False
 
     def sync_with_current_item(self, state):
-        if state:
-            if hasattr(self.get_rvtapi_object(), SPLITPUSH_BUTTON_SYNC_PARAM):
-                self._sync_with_cur_item = True
-                self.get_rvtapi_object().IsSynchronizedWithCurrentItem = True
-                self._dirty = True
-        else:
-            if hasattr(self.get_rvtapi_object(), SPLITPUSH_BUTTON_SYNC_PARAM):
-                self._sync_with_cur_item = False
-                self.get_rvtapi_object().IsSynchronizedWithCurrentItem = False
-                self._dirty = True
+        try:
+            self.get_rvtapi_object().IsSynchronizedWithCurrentItem = state
+            self._sync_with_cur_item = state
+            self._dirty = True
+        except Exception as sync_item_err:
+            raise PyRevitUIError('Item is not a split button. | {}'.format(sync_item_err))
 
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
@@ -458,8 +456,6 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                         rvtapi_obj.ClassName = class_name
                         if avail_class_name:
                             existing_item.get_rvtapi_object().AvailabilityClassName = avail_class_name
-                        elif rvtapi_obj.AvailabilityClassName:
-                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 
@@ -637,8 +633,6 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                         rvtapi_obj.ClassName = class_name
                         if avail_class_name:
                             rvtapi_obj.AvailabilityClassName = avail_class_name
-                        elif rvtapi_obj.AvailabilityClassName:
-                            rvtapi_obj.AvailabilityClassName = LOADER_ADDIN_COMMAND_DEFAULT_AVAIL_CLASS_NAME
                 except Exception as asm_update_err:
                     logger.debug('Error updating button asm info: {} | {}'.format(button_name, asm_update_err))
 

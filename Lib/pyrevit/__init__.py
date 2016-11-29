@@ -115,7 +115,7 @@ HOST_ADSK_PROCESS_NAME = Process.GetCurrentProcess().ProcessName
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Testing the value of __forceddebugmode__ (provided by C# Script Executor)
+# Testing the value of __forceddebugmode__ (set in builtins scope by C# Script Executor)
 # ----------------------------------------------------------------------------------------------------------------------
 
 # define FORCED_DEBUG_MODE_PARAM

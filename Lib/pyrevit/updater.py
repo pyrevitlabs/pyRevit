@@ -61,7 +61,7 @@ def get_pyrevit_repo():
 
 def get_thirdparty_lib_repos():
     # get a list of all directories that could include library extensions
-    # and ask parser for library package info object
+    # and ask _parser for library package info object
     lib_pkgs = []
     logger.debug('Finding installed library repos...')
     for root_dir in user_config.get_package_root_dirs():
@@ -83,7 +83,7 @@ def get_thirdparty_lib_repos():
 
 def get_thirdparty_pkg_repos():
     # get a list of all directories that could include extensions
-    # and ask parser for package info object
+    # and ask _parser for package info object
     pkgs = []
     logger.debug('Finding installed repos...')
     for root_dir in user_config.get_package_root_dirs():
