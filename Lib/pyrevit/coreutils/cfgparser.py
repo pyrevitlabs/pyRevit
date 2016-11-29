@@ -7,6 +7,10 @@ from pyrevit.core.exceptions import PyRevitException, PyRevitIOError
 from System.IO import IOException
 
 
+KEY_VALUE_TRUE = "True"
+KEY_VALUE_FALSE = "false"
+
+
 class PyRevitConfigSectionParser(object):
     def __init__(self, config_parser, section_name):
         self._parser = config_parser
@@ -14,7 +18,11 @@ class PyRevitConfigSectionParser(object):
 
     def __getattr__(self, param_name):
         try:
-            return self._parser.get(self._section_name, param_name)
+            value = self._parser.get(self._section_name, param_name)
+            try:
+                return eval(value)
+            except:
+                return value
         except (NoOptionError, NoSectionError):
             raise AttributeError('Parameter does not exist in config file.')
 
@@ -29,13 +37,14 @@ class PyRevitConfigSectionParser(object):
 
 
 class PyRevitConfigParser(object):
-    def __init__(self, cfg_file_path):
+    def __init__(self, cfg_file_path=None):
         self._parser = ConfigParser.ConfigParser()
-        try:
-            with open(cfg_file_path, 'r') as cfg_file:
-                self._parser.readfp(cfg_file)
-        except (OSError, IOError):
-            raise PyRevitIOError()
+        if cfg_file_path is not None:
+            try:
+                with open(cfg_file_path, 'r') as cfg_file:
+                    self._parser.readfp(cfg_file)
+            except (OSError, IOError):
+                raise PyRevitIOError()
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
@@ -46,6 +55,13 @@ class PyRevitConfigParser(object):
     def add_section(self, section_name):
         self._parser.add_section(section_name)
         return PyRevitConfigSectionParser(self._parser, section_name)
+
+    def reload(self, cfg_file_path):
+        try:
+            with open(cfg_file_path, 'r') as cfg_file:
+                self._parser.readfp(cfg_file)
+        except (OSError, IOError):
+            raise PyRevitIOError()
 
     def save(self, cfg_file_path):
         try:

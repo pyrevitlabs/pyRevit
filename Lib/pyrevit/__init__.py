@@ -156,9 +156,6 @@ USER_TEMP_DIR = op.join(USER_SYS_TEMP, 'pyrevittemp')
 if not op.isdir(USER_TEMP_DIR):
     os.mkdir(USER_TEMP_DIR)
 
-# default directory for user config file
-USER_SETTINGS_DIR = op.join(USER_ROAMING_DIR, "pyrevit")
-
 # create a list of all directories that could include extensions
 # default is HOME_DIR and EXTENSIONS_DEFAULT_DIR directories
 DEFAULT_PKG_SEARCH_DIRS = [HOME_DIR, EXTENSIONS_DEFAULT_DIR]
