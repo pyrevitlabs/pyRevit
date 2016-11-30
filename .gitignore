@@ -1,4 +1,4 @@
-# ignore everything in packages/ folder except the native pyRevit.package
+# ignore everything in extension/ folder except for the native pyRevit.extension
 extensions/*
 !extensions/pyRevit.extension/
 
@@ -8,8 +8,7 @@ extensions/*
 # ignore Goodsync cache folder
 _gsdata_/
 
-# ignore standard files
+# ignore standard python and os temp files
 __py*
 *.db
 .DS_Store
-
