@@ -1,6 +1,6 @@
 # ignore everything in packages/ folder except the native pyRevit.package
 extensions/*
-!extensions/pyRevit.extensions/
+!extensions/pyRevit.extension/
 
 # ignore pyCharm project settings
 .idea/
