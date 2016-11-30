@@ -4,7 +4,7 @@ import os.path as op
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
 from pyrevit.coreutils.coreutils import get_all_subclasses
-from .components import Extension, LibraryPackage
+from .components import Extension, LibraryExtension
 
 logger = get_logger(__name__)
 
@@ -106,7 +106,7 @@ def get_installed_extension_data(root_dir):
 
 
 def get_installed_lib_extension_data(root_dir):
-    """Parses home directory and return a list of LibraryPackage objects for installed library extensions."""
+    """Parses home directory and return a list of LibraryExtension objects for installed library extensions."""
 
     # making sure the provided directory exists. This is mainly for the user defined package directories
     if not op.exists(root_dir):
@@ -117,7 +117,7 @@ def get_installed_lib_extension_data(root_dir):
     lib_pkg_data_list = []
 
     logger.debug('Parsing directory for library extensions...')
-    for lib_pkg_data in _create_subcomponents(root_dir, [LibraryPackage]):
+    for lib_pkg_data in _create_subcomponents(root_dir, [LibraryExtension]):
         logger.debug('Library package directory found: {}'.format(lib_pkg_data))
         lib_pkg_data_list.append(lib_pkg_data)
 
