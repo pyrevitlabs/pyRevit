@@ -1,19 +1,13 @@
-from collections import namedtuple
-
-from pyrevit.extensions.parser.parser import get_installed_lib_package_data, get_installed_package_data
+from pyrevit.extensions.parser import get_installed_lib_extension_data, get_installed_extension_data
 
 from ..logger import get_logger
 logger = get_logger(__name__)
 
-from pyrevit.config.config import HOME_DIR
 from pyrevit.coreutils.git import git
 from pyrevit.userconfig.userconfig import user_config
 
 from System import DateTime, DateTimeOffset
 
-
-# Generic named tuple for passing repository information to other modules
-PyRevitRepoInfo = namedtuple('PyRevitRepoInfo', ['directory', 'head_name', 'last_commit_hash', 'repo'])
 
 
 # fixme: remove credentials on final release
@@ -42,22 +36,6 @@ def _make_pull_signature():
     return git.Signature('eirannejad', 'eirannejad@gmail.com', DateTimeOffset(DateTime.Now))
 
 
-def _get_repo(repo_dir):
-    try:
-        repo = git.Repository(repo_dir)
-        repo_info = PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
-        return repo_info
-    except Exception as err:
-        logger.error('Can not create repo from home directory: {}'.format(repo_dir))
-
-
-def get_pyrevit_repo():
-    try:
-        repo = git.Repository(HOME_DIR)
-        return PyRevitRepoInfo(repo.Info.WorkingDirectory, repo.Head.Name, repo.Head.Tip.Id.Sha, repo)
-    except Exception as err:
-        logger.error('Can not create repo from home directory: {}'.format(HOME_DIR))
-
 
 def get_thirdparty_lib_repos():
     # get a list of all directories that could include library extensions
@@ -65,7 +43,7 @@ def get_thirdparty_lib_repos():
     lib_pkgs = []
     logger.debug('Finding installed library repos...')
     for root_dir in user_config.get_package_root_dirs():
-        lib_pkg_info_list = get_installed_lib_package_data(root_dir)
+        lib_pkg_info_list = get_installed_lib_extension_data(root_dir)
         for lib_pkg_info in lib_pkg_info_list:
             if lib_pkg_info and git.Repository.IsValid(lib_pkg_info.directory):
                 lib_pkgs.append(lib_pkg_info)
@@ -87,7 +65,7 @@ def get_thirdparty_pkg_repos():
     pkgs = []
     logger.debug('Finding installed repos...')
     for root_dir in user_config.get_package_root_dirs():
-        pkg_info_list = get_installed_package_data(root_dir)
+        pkg_info_list = get_installed_extension_data(root_dir)
         for pkg_info in pkg_info_list:
             if pkg_info and git.Repository.IsValid(pkg_info.directory):
                 pkgs.append(pkg_info)

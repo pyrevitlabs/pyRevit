@@ -1,7 +1,8 @@
 import os.path as op
 
-from pyrevit.extensions.parser.components import GenericCommand
 from pyrevit.coreutils.coreutils import get_all_subclasses
+
+from pyrevit.extensions.components import GenericCommand
 from ..core.exceptions import PyRevitException
 from ..core.logger import get_logger
 
@@ -32,7 +33,7 @@ def get_ui_button():
 
 def get_temp_file():
     """Returns a filename to be used by a user script to store temporary information.
-    Temporary files are saved in USER_TEMP_DIR.
+    Temporary files are saved in PYREVIT_APP_DIR.
     """
     # fixme temporary file
     pass

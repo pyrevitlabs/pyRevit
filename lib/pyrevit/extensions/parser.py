@@ -4,61 +4,10 @@ import os.path as op
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
 from pyrevit.coreutils.coreutils import get_all_subclasses
-from .components import Package, LibraryPackage
+from .components import Extension, LibraryPackage
 
 logger = get_logger(__name__)
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-# parsing tabs, panels, buttons and button groups
-# ----------------------------------------------------------------------------------------------------------------------
-LIB_PACKAGE_POSTFIX = '.lib'
-PACKAGE_POSTFIX = '.package'
-TAB_POSTFIX = '.tab'
-PANEL_POSTFIX = '.panel'
-LINK_BUTTON_POSTFIX = '.linkbutton'
-PUSH_BUTTON_POSTFIX = '.pushbutton'
-TOGGLE_BUTTON_POSTFIX = '.toggle'
-SMART_BUTTON_POSTFIX = '.smartbutton'
-PULLDOWN_BUTTON_POSTFIX = '.pulldown'
-STACKTHREE_BUTTON_POSTFIX = '.stack3'
-STACKTWO_BUTTON_POSTFIX = '.stack2'
-SPLIT_BUTTON_POSTFIX = '.splitbutton'
-SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
-
-SEPARATOR_IDENTIFIER = '---'
-SLIDEOUT_IDENTIFIER = '>>>'
-
-ICON_FILE_FORMAT = '.png'
-SCRIPT_FILE_FORMAT = '.py'
-
-DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
-DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
-DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
-DEFAULT_SCRIPT_FILE = 'script' + SCRIPT_FILE_FORMAT
-DEFAULT_CONFIG_SCRIPT_FILE = 'config' + SCRIPT_FILE_FORMAT
-
-DEFAULT_LAYOUT_FILE_NAME = '_layout'
-
-COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
-
-UI_TITLE_PARAM = '__title__'
-DOCSTRING_PARAM = '__doc__'
-AUTHOR_PARAM = '__author__'
-
-COMMAND_OPTIONS_PARAM = '__cmdoptions__'
-
-COMMAND_CONTEXT_PARAM = '__context__'
-
-MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
-MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
-
-LINK_BUTTON_ASSEMBLY_PARAM = '__assembly__'
-LINK_BUTTON_COMMAND_CLASS_PARAM = '__commandclass__'
-
-SHIFT_CLICK_PARAM = '__shiftclick__'
-
-COMP_LIBRARY_DIR_NAME = 'Lib'
 
 
 
@@ -126,7 +75,7 @@ def _parse_for_components(component):
             _parse_for_components(new_cmp)
 
 
-def get_parsed_package(pkg):
+def get_parsed_extension(pkg):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
@@ -135,33 +84,33 @@ def get_parsed_package(pkg):
     return pkg
 
 
-def get_installed_package_data(root_dir):
-    """Parses home directory and return a list of Package objects for installed extensions.
+def get_installed_extension_data(root_dir):
+    """Parses home directory and return a list of Extension objects for installed extensions.
     The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
     extensions so the session can check the cache for each package and decide if they need to be parsed or not.
     """
     # making sure the provided directory exists. This is mainly for the user defined package directories
     if not op.exists(root_dir):
-        logger.debug('Package search directory does not exist: {}'.format(root_dir))
+        logger.debug('Extension search directory does not exist: {}'.format(root_dir))
         return []
 
     # try creating extensions in given directory
     pkg_data_list = []
 
     logger.debug('Parsing directory for extensions...')
-    for pkg_data in _create_subcomponents(root_dir, [Package]):
-        logger.debug('Package directory found: {}'.format(pkg_data))
+    for pkg_data in _create_subcomponents(root_dir, [Extension]):
+        logger.debug('Extension directory found: {}'.format(pkg_data))
         pkg_data_list.append(pkg_data)
 
     return pkg_data_list
 
 
-def get_installed_lib_package_data(root_dir):
+def get_installed_lib_extension_data(root_dir):
     """Parses home directory and return a list of LibraryPackage objects for installed library extensions."""
 
     # making sure the provided directory exists. This is mainly for the user defined package directories
     if not op.exists(root_dir):
-        logger.debug('Package search directory does not exist: {}'.format(root_dir))
+        logger.debug('Extension search directory does not exist: {}'.format(root_dir))
         return []
 
     # try creating extensions in given directory

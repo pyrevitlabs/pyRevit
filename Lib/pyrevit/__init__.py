@@ -1,77 +1,8 @@
-import os
 import os.path as op
 import sys
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Addon version
-# ----------------------------------------------------------------------------------------------------------------------
-PYREVIT_ASSEMBLY_NAME = 'pyrevit'
-
-_VER_MAJOR = 4
-_VER_MINOR = 0
-_VER_PATCH = 0
-
-
-class PyRevitVersion(object):
-    """Contains current pyrevit version"""
-    major = _VER_MAJOR
-    minor = _VER_MINOR
-    patch = _VER_PATCH
-
-    @staticmethod
-    def as_int_tuple():
-        """Returns version as an int tuple (major, minor, patch)"""
-        ver_tuple = (PyRevitVersion.major, PyRevitVersion.minor, PyRevitVersion.patch)
-        return ver_tuple
-
-    @staticmethod
-    def as_str_tuple():
-        """Returns version as an string tuple ('major', 'minor', 'patch')"""
-        ver_tuple = (str(PyRevitVersion.major), str(PyRevitVersion.minor), str(PyRevitVersion.patch))
-        return ver_tuple
-
-    @staticmethod
-    def full_version_as_str():
-        """Returns 'major.minor.patch' in string"""
-        return str(PyRevitVersion.major) + '.' + str(PyRevitVersion.minor) + '.' + str(PyRevitVersion.patch)
-
-    @staticmethod
-    def is_newer_than(version_tuple):
-        """:type version_tuple: tuple"""
-        try:
-            if PyRevitVersion.major > version_tuple[0]:
-                return True
-            elif PyRevitVersion.major == version_tuple[0]:
-                if PyRevitVersion.minor > version_tuple[1]:
-                    return True
-                elif PyRevitVersion.minor == version_tuple[1]:
-                    if PyRevitVersion.patch > version_tuple[2]:
-                        return True
-        except IndexError:
-            raise Exception('Version tuple must be in format: (Major, Minor, Patch)')
-
-        return False
-
-    @staticmethod
-    def is_older_than(version_tuple):
-        """:type version_tuple: tuple"""
-        try:
-            if PyRevitVersion.major < version_tuple[0]:
-                return True
-            elif PyRevitVersion.major == version_tuple[0]:
-                if PyRevitVersion.minor < version_tuple[1]:
-                    return True
-                elif PyRevitVersion.minor == version_tuple[1]:
-                    if PyRevitVersion.patch < version_tuple[2]:
-                        return True
-        except IndexError:
-            raise Exception('Version tuple must be in format: (Major, Minor, Patch)')
-
-        return False
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # testing for availability of __revit__ just in case and collect host information
@@ -138,8 +69,8 @@ def _find_home_directory():
         raise Exception('Critical Error. Can not find home directory.')
 
 
+# main pyrevit repo folder
 HOME_DIR = _find_home_directory()
-
 
 # main pyrevit lib folder
 MAIN_LIB_DIR = op.join(HOME_DIR, 'lib')
@@ -147,22 +78,7 @@ MAIN_LIB_DIR = op.join(HOME_DIR, 'lib')
 # default extension extensions folder
 EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
-# user env paths
-USER_ROAMING_DIR = os.getenv('appdata')
-USER_SYS_TEMP = os.getenv('temp')
 
-# pyrevit temp file directory
-USER_TEMP_DIR = op.join(USER_SYS_TEMP, 'pyrevittemp')
-if not op.isdir(USER_TEMP_DIR):
-    os.mkdir(USER_TEMP_DIR)
-
-# create a list of all directories that could include extensions
-# default is HOME_DIR and EXTENSIONS_DEFAULT_DIR directories
-DEFAULT_PKG_SEARCH_DIRS = [HOME_DIR, EXTENSIONS_DEFAULT_DIR]
-
-# define a list of basic folders that need to be added to all scripts
-DEFAULT_SYS_PATHS = [MAIN_LIB_DIR]
-
-for path in DEFAULT_SYS_PATHS:
-    if path not in sys.path:
-        sys.path.append(path)
+PYREVIT_ADDON_NAME = 'pyrevit'
+_VERSION_MAJOR = 4
+_VERSION_MINOR = 0

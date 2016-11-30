@@ -1,13 +1,16 @@
 import sys
 
-from pyrevit import HOME_DIR, PyRevitVersion
-from pyrevit import HOST_VERSION, HOST_USERNAME, PYREVIT_ASSEMBLY_NAME
+from pyrevit import HOME_DIR
+from pyrevit import HOST_VERSION, HOST_USERNAME, PYREVIT_ADDON_NAME
+from pyrevit.repo import PYREVIT_VERSION
 from pyrevit.core.logger import get_logger
 from pyrevit.coreutils import Timer
 
 from pyrevit.userconfig import user_config
-from pyrevit.usagedata import archive_script_usage_logs
-from pyrevit.extensions.parser import get_installed_lib_package_data, get_installed_package_data, get_parsed_package
+from pyrevit.usagedata import SESSION_LOG_FILE_NAME, archive_script_usage_logs
+
+from pyrevit.extensions import get_installed_ui_extensions
+
 from pyrevit.loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
@@ -21,21 +24,16 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------------------------------------------------------
 # session defaults
 # ----------------------------------------------------------------------------------------------------------------------
-SESSION_ID = "{}{}_{}".format(PYREVIT_ASSEMBLY_NAME, HOST_VERSION.version, HOST_USERNAME)
+SESSION_ID = "{}{}_{}".format(PYREVIT_ADDON_NAME, HOST_VERSION.version, HOST_USERNAME)
 
 # creating a session id that is stamped with the process id of the Revit session.
 # This id is unique for all python scripts running under this session.
-# Previously the session id was stamped by formatted time
+# Previously the session id was stamped by get_formatted time
 # SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
 SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
 
 
-def _update_pkg_syspaths(pkg, all_installed_lib_pkgs):
-    for installed_lib_pkg in all_installed_lib_pkgs:
-        pkg.add_syspath(installed_lib_pkg.directory)
-
-
-def _perform_startup_cleanup_operations():
+def _perform_onstartup_operations():
     # archive previous sessions logs
     archive_script_usage_logs()
 
@@ -44,9 +42,8 @@ def _perform_startup_cleanup_operations():
 
 
 def _report_env():
-    # log python version, home directory, config file and loader script location.
-    last_commit_hash = get_pyrevit_repo().last_commit_hash[:7]
-    pyrvt_ver = '{}:{}'.format(PyRevitVersion.full_version_as_str(), last_commit_hash)
+    # log python version, home directory, config file, ...
+    pyrvt_ver = PYREVIT_VERSION.get_formatted()
     logger.info('pyRevit version: {} - Made with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
@@ -54,91 +51,42 @@ def _report_env():
     logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE_NAME))
 
 
-def _get_pkg_from_cache_or_parser(package_info):
-    try:
-        # raise error if package does not have a valid cache
-        if not is_cache_valid(package_info):
-            raise PyRevitCacheExpiredError('Cache is not valid for: {}'.format(package_info))
-
-        # if cache is valid, load the cached package
-        logger.debug('Cache is valid for: {}'.format(package_info))
-        # cacher module takes the package object and injects cache data into it.
-        package = get_cached_package(package_info)
-        logger.info(':three_button_mouse: UI Package successfuly loaded from cache: {}'.format(package.name))
-
-    except PyRevitCacheError as cache_err:
-        logger.debug(cache_err)
-
-        # Either cache is not available, not valid, or cache load has failed.
-        # parse directory for components and return fully loaded package
-        logger.debug('Parsing for package...')
-        package = get_parsed_package(package_info)
-
-        # update cache with newly parsed package
-        logger.info(':three_button_mouse: UI Package successfuly parsed: {}'.format(package.name))
-        logger.info('Updating cache for package: {}'.format(package.name))
-        update_cache(package)
-
-    return package
-
-
 def _new_session():
+    # report environment conditions
     _report_env()
-    _perform_startup_cleanup_operations()
 
-    # for every package of installed extensions, create an assembly, and create a ui
-    # _parser, assembly maker, and ui creator all understand loader.components classes. (They speak the same language)
-    # the session.load() function (this function) moderates the communication and keeps a list of all extensions that
-    # are successfully loaded in this session. In another language, pyrevit.session sees the big picture whereas,
-    # cacher, _parser, asmmaker, and uimaker only see the package they've been asked to work on.
-    # Session, creates an independent dll (using asmmaker) and ui (using uimaker) for every package.
-    # This isolates other extensions from any errors that might occur during package startup.
+    # for every extension of installed extensions, create an assembly, and create a ui
     # get a list of all directories that could include extensions
-    pkg_search_dirs = user_config.get_package_root_dirs()
-    logger.debug('Package Directories: {}'.format(pkg_search_dirs))
+    pkg_search_dirs = user_config.get_ext_root_dirs()
+    logger.debug('Extension Directories: {}'.format(pkg_search_dirs))
 
     # collect all library extensions. Their dir paths need to be added to sys.path for all commands
-    all_lib_pkgs = []
-    for root_dir in pkg_search_dirs:
-        for libpkg in get_installed_lib_package_data(root_dir):
-            all_lib_pkgs.append(libpkg)
-            logger.info(':python: Library package found: {}'.format(libpkg.directory))
-
     for root_dir in pkg_search_dirs:
         # Get a list of all installed extensions in this directory
-        # _parser.get_installed_package_data() returns a list of extensions in given directory
+        # _parser.get_installed_extension_data() returns a list of extensions in given directory
         # then iterater through extensions and load one by one
-        for package_info in get_installed_package_data(root_dir):
-            # test if cache is valid for this package
-            # it might seem unusual to create a package and then re-load it from cache but minimum information
-            # about the package needs to be passed to the cache module for proper hash calculation and package recovery.
-            # at this point `package` does not include any sub-components (e.g, tabs, panels, etc)
-            # package object is very small and its creation doesn't add much overhead.
-            package = _get_pkg_from_cache_or_parser()
-
-            # update package master syspaths with lib address of other extensions
-            # this is to support extensions that provide library only to be used by other extensions
-            _update_pkg_syspaths(package, all_lib_pkgs)
-
+        for ui_ext in get_installed_ui_extensions(root_dir):
             # create a dll assembly and get assembly info
-            pkg_asm_info = create_assembly(package)
+            pkg_asm_info = create_assembly(ui_ext)
             if not pkg_asm_info:
-                logger.critical('Failed to create assembly for: {}'.format(package))
+                logger.critical('Failed to create assembly for: {}'.format(ui_ext))
                 continue
 
-            logger.info('Package assembly created: {}'.format(package_info.name))
+            logger.info('Extension assembly created: {}'.format(ui_ext.name))
 
             # update/create ui (needs the assembly to link button actions to commands saved in the dll)
-            update_pyrevit_ui(package, pkg_asm_info)
-            logger.info('UI created for package: {}'.format(package.name))
+            update_pyrevit_ui(ui_ext, pkg_asm_info)
+            logger.info('UI created for extension: {}'.format(ui_ext.name))
 
     cleanup_pyrevit_ui()
 
+    _perform_onstartup_operations()
+
 
 def load_session():
-    """Handles loading/reloading of the pyRevit addin and extensions extensions.
-    To create a proper ui, pyRevit needs to be properly parsed and a dll assembly needs to be created.
-    This function handles both tasks through private interactions with ._parser and ._ui
+    """Handles loading/reloading of the pyRevit addin and extensions.
+    To create a proper ui, pyRevit extensions needs to be properly parsed and a dll assembly needs to be created.
+    This function handles both tasks through interactions with .extensions and .coreutils
 
     Usage Example:
         from pyrevit.loader import load_session
@@ -152,4 +100,4 @@ def load_session():
 
     # log load time
     endtime = timer.get_time()
-    logger.info('Load time: {} seconds {}'.format(endtime,':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'))
+    logger.info('Load time: {} seconds {}'.format(endtime, ':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'))

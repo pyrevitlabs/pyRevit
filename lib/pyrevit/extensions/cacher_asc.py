@@ -110,7 +110,7 @@ def update_cache(parsed_pkg):
     logger.debug('Cache updated for tab: {}'.format(parsed_pkg.name))
 
 
-def get_cached_package(installed_pkg):
+def get_cached_extension(installed_pkg):
     cached_pkg_dict = _read_cache_for(installed_pkg)
     try:
         logger.debug('Constructing components from cache for: {}'.format(installed_pkg))
@@ -127,10 +127,10 @@ def get_cached_package(installed_pkg):
 def is_cache_valid(pkg):
     try:
         cached_pkg_dict = _read_cache_for(pkg)  # type: dict
-        logger.debug('Package cache version is: {} for: {}'.format(pkg.hash_version, pkg))
+        logger.debug('Extension cache version is: {} for: {}'.format(pkg.hash_version, pkg))
         cache_version_valid = cached_pkg_dict[HASH_VERSION_PARAM] == pkg.hash_version
 
-        logger.debug('Package hash value is: {} for: {}'.format(pkg.hash_value, pkg))
+        logger.debug('Extension hash value is: {} for: {}'.format(pkg.hash_value, pkg))
         cache_hash_valid = cached_pkg_dict[HASH_VALUE_PARAM] == pkg.hash_value
 
         # cache is valid if both version and hash value match

@@ -9,8 +9,8 @@ from pyrevit.config.config import DEFAULT_ICON_FILE, DEFAULT_SCRIPT_FILE, DEFAUL
 from pyrevit.config.config import DOCSTRING_PARAM, AUTHOR_PARAM, MIN_REVIT_VERSION_PARAM, UI_TITLE_PARAM, \
                           MIN_PYREVIT_VERSION_PARAM, COMMAND_OPTIONS_PARAM, LINK_BUTTON_ASSEMBLY_PARAM, \
                           LINK_BUTTON_COMMAND_CLASS_PARAM, COMMAND_CONTEXT_PARAM
-from pyrevit.config.config import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX, LINK_BUTTON_POSTFIX,\
-                          PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, \
+from pyrevit.extensions.parser import LIB_PACKAGE_POSTFIX, PACKAGE_POSTFIX, TAB_POSTFIX, PANEL_POSTFIX,\
+                                      LINK_BUTTON_POSTFIX, PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, PULLDOWN_BUTTON_POSTFIX, \
                           STACKTHREE_BUTTON_POSTFIX, STACKTWO_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, \
                           SPLITPUSH_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, SMART_BUTTON_POSTFIX, \
                           COMMAND_AVAILABILITY_NAME_POSTFIX
@@ -501,7 +501,9 @@ class Tab(GenericContainer):
         return False
 
 
-class Package(GenericContainer):
+# UI Tools extension class
+# ----------------------------------------------------------------------------------------------------------------------
+class Extension(GenericContainer):
     type_id = PACKAGE_POSTFIX
     allowed_sub_cmps = [Tab]
 
@@ -514,7 +516,7 @@ class Package(GenericContainer):
     def __init_from_dir__(self, package_dir):
         GenericContainer.__init_from_dir__(self, package_dir)
         self.hash_value = self._calculate_hash()
-        self.hash_version = PyRevitVersion.full_version_as_str()
+        self.hash_version = PyRevitVersion.get_formatted()
 
     def _calculate_hash(self):
         """Creates a unique hash # to represent state of directory."""
@@ -538,7 +540,7 @@ class Package(GenericContainer):
         return hashlib.md5(str(mtime_sum).encode('utf-8')).hexdigest()
 
 
-# library package class
+# library extension class
 # ----------------------------------------------------------------------------------------------------------------------
 class LibraryPackage:
     type_id = LIB_PACKAGE_POSTFIX
