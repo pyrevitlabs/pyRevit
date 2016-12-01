@@ -22,23 +22,29 @@ from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 logger = get_logger(__name__)
 
 
-class GenericLayoutComponent:
+class GenericComponent:
     type_id = None
 
     def __init__(self):
-        type_id = SEPARATOR_IDENTIFIER
-        type_id = SLIDEOUT_IDENTIFIER
-        self.name = self.type_id
+        self.name = None
 
-    @staticmethod
-    def is_container():
-        return False
+    @property
+    def is_container(self):
+        return hasattr(self, '__iter__')
+
+    def get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        cache_dict['type_id'] = self.type_id
+        return cache_dict
+
+    def load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
 
 
-class GenericComponent(object):
-    type_id = ''
-
+class GenericUIComponent(GenericComponent):
     def __init__(self):
+        GenericComponent.__init__(self)
         self.directory = None
         self.original_name = self.name = None
         self.unique_name = None
@@ -46,10 +52,10 @@ class GenericComponent(object):
         self.syspath_search_paths = []
         self.icon_file = None
 
-    def __init_from_dir__(self, branch_dir):
-        self.directory = branch_dir
-        if not self.directory.endswith(self.type_id):
-            raise PyRevitException()
+    def __init_from_dir__(self, ext_dir):
+        if not ext_dir.endswith(self.type_id):
+            raise PyRevitException('Can not initialize from directory: {}'.format(ext_dir))
+        self.directory = ext_dir
 
     def __repr__(self):
         return '<type_id:{} name:{} @ {}>'.format(self.type_id, self.original_name, self.directory)
@@ -71,15 +77,6 @@ class GenericComponent(object):
             else:
                 continue
         return cleanup_string(uname)
-
-    def get_cache_data(self):
-        cache_dict = self.__dict__.copy()
-        cache_dict['type_id'] = self.type_id
-        return cache_dict
-
-    def load_cache_data(self, cache_dict):
-        for k, v in cache_dict.items():
-            self.__dict__[k] = v
 
     def get_search_paths(self):
         return self.syspath_search_paths
@@ -109,17 +106,17 @@ class GenericComponent(object):
         return file_addr if op.exists(file_addr) else None
 
 
-# superclass for all tree branches that contain sub-branches (containers)
-class GenericContainer(GenericComponent):
+# superclass for all UI group items (tab, panel, button groups, stacks) ------------------------------------------------
+class GenericUIContainer(GenericUIComponent):
     allowed_sub_cmps = []
 
     def __init__(self):
-        GenericComponent.__init__(self)
+        GenericUIComponent.__init__(self)
         self._sub_components = []
         self.layout_list = None
 
-    def __init_from_dir__(self, branch_dir):
-        GenericComponent.__init_from_dir__(self, branch_dir)
+    def __init_from_dir__(self, ext_dir):
+        GenericUIComponent.__init_from_dir__(self, ext_dir)
 
         self._sub_components = []
 
@@ -144,10 +141,6 @@ class GenericContainer(GenericComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
             logger.debug('Icon file is: {}'.format(self.original_name, self.icon_file))
-
-    @staticmethod
-    def is_container():
-        return True
 
     def __iter__(self):
         return iter(self._get_components_per_layout())
@@ -179,9 +172,13 @@ class GenericContainer(GenericComponent):
             last_item_index = len(self.layout_list) - 1
             for i_index, layout_item in enumerate(self.layout_list):
                 if SEPARATOR_IDENTIFIER in layout_item and i_index < last_item_index:
-                    _processed_cmps.insert(i_index, GenericSeparator())
+                    separator = GenericComponent()
+                    separator.type_id = SEPARATOR_IDENTIFIER
+                    _processed_cmps.insert(i_index, separator)
                 elif SLIDEOUT_IDENTIFIER in layout_item and i_index < last_item_index:
-                    _processed_cmps.insert(i_index, GenericSlideout())
+                    slideout = GenericComponent()
+                    slideout.type_id = SLIDEOUT_IDENTIFIER
+                    _processed_cmps.insert(i_index, slideout)
 
             logger.debug('Reordered sub_component list is: {}'.format(_processed_cmps))
             return _processed_cmps
@@ -221,8 +218,8 @@ class GenericContainer(GenericComponent):
 
 
 # superclass for all single command classes (link, push button, toggle button) -----------------------------------------
-# GenericCommand is not derived from GenericContainer since a command can not contain other elements
-class GenericCommand(GenericComponent):
+# GenericUICommand is not derived from GenericUIContainer since a command can not contain other elements
+class GenericUICommand(GenericUIComponent):
     """Superclass for all single commands.
     The information provided by these classes will be used to create a
     push button under Revit UI. However, pyRevit expands the capabilities of push button beyond what is provided by
@@ -230,7 +227,7 @@ class GenericCommand(GenericComponent):
     See LinkButton and ToggleButton classes.
     """
     def __init__(self):
-        GenericComponent.__init__(self)
+        GenericUIComponent.__init__(self)
         self.ui_title = None
         self.script_file = self.config_script_file = None
         self.min_pyrevit_ver = self.min_revit_ver = None
@@ -238,7 +235,7 @@ class GenericCommand(GenericComponent):
         self.unique_name = self.unique_avail_name = None
 
     def __init_from_dir__(self, cmd_dir):
-        GenericComponent.__init_from_dir__(self, cmd_dir)
+        GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
         self.original_name = op.splitext(op.basename(self.directory))[0]
         self.name = user_config.get_alias(self.original_name, self.type_id)
@@ -306,10 +303,6 @@ class GenericCommand(GenericComponent):
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
-    @staticmethod
-    def is_container():
-        return False
-
     def _check_dependencies(self):
         if self.min_revit_ver and HOST_VERSION.is_older_than(self.min_revit_ver):
             raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
@@ -333,4 +326,3 @@ class GenericCommand(GenericComponent):
 
     def get_full_config_script_address(self):
         return op.join(self.directory, self.config_script_file)
-

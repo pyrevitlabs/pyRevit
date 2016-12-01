@@ -3,21 +3,11 @@ import os.path as op
 
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
-from pyrevit.coreutils.coreutils import get_all_subclasses
+from pyrevit.coreutils import get_all_subclasses
 from .components import Extension, LibraryExtension
 
+
 logger = get_logger(__name__)
-
-
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# caching tabs, panels, buttons and button groups
-# ----------------------------------------------------------------------------------------------------------------------
-SUB_CMP_KEY = '_sub_components'
-HASH_VALUE_PARAM = 'hash_value'
-HASH_VERSION_PARAM = 'hash_version'
-
 
 
 def _create_subcomponents(search_dir, component_types_list):
@@ -70,18 +60,18 @@ def _parse_for_components(component):
     for new_cmp in _create_subcomponents(component.directory, get_all_subclasses(component.allowed_sub_cmps)):
         # add the successfulyl created _get_component to the parent _get_component
         component.add_component(new_cmp)
-        if new_cmp.is_container():
+        if new_cmp.is_container:
             # Recursive part: parse each sub-_get_component for its allowed sub-sub-components.
             _parse_for_components(new_cmp)
 
 
-def get_parsed_extension(pkg):
+def get_parsed_extension(extension):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)
     sub components of package can be accessed by iterating the _get_component. See _basecomponents for types.
     """
-    _parse_for_components(pkg)
-    return pkg
+    _parse_for_components(extension)
+    return extension
 
 
 def get_installed_extension_data(root_dir):
@@ -95,14 +85,14 @@ def get_installed_extension_data(root_dir):
         return []
 
     # try creating extensions in given directory
-    pkg_data_list = []
+    ext_data_list = []
 
     logger.debug('Parsing directory for extensions...')
-    for pkg_data in _create_subcomponents(root_dir, [Extension]):
-        logger.debug('Extension directory found: {}'.format(pkg_data))
-        pkg_data_list.append(pkg_data)
+    for ext_data in _create_subcomponents(root_dir, [Extension]):
+        logger.debug('Extension directory found: {}'.format(ext_data))
+        ext_data_list.append(ext_data)
 
-    return pkg_data_list
+    return ext_data_list
 
 
 def get_installed_lib_extension_data(root_dir):
@@ -114,11 +104,11 @@ def get_installed_lib_extension_data(root_dir):
         return []
 
     # try creating extensions in given directory
-    lib_pkg_data_list = []
+    lib_ext_data_list = []
 
     logger.debug('Parsing directory for library extensions...')
-    for lib_pkg_data in _create_subcomponents(root_dir, [LibraryExtension]):
-        logger.debug('Library package directory found: {}'.format(lib_pkg_data))
-        lib_pkg_data_list.append(lib_pkg_data)
+    for lib_ext_data in _create_subcomponents(root_dir, [LibraryExtension]):
+        logger.debug('Library package directory found: {}'.format(lib_ext_data))
+        lib_ext_data_list.append(lib_ext_data)
 
-    return lib_pkg_data_list
+    return lib_ext_data_list

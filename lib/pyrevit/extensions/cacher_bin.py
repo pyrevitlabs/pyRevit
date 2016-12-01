@@ -1,66 +1,67 @@
-import os.path as op
 import pickle
 
-from pyrevit.config.config import USER_TEMP_DIR, SESSION_ID
-
-from pyrevit.core.exceptions import PyRevitCacheReadError, PyRevitCacheWriteError
+from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
 
+import pyrevit.coreutils.appdata as appdata
+
 logger = get_logger(__name__)
-loaded_packages = []
 
 
-def _get_cache_file(cached_pkg):
-    return op.join(USER_TEMP_DIR, '{}_cache_{}.pickle'.format(SESSION_ID, cached_pkg.name))
+loaded_extensions = []
 
 
-def update_cache(parsed_pkg):
+def _get_cache_file(cached_ext):
+    return appdata.get_data_file(file_id='cache_{}'.format(cached_ext.name), file_ext='pickle')
+
+
+def update_cache(parsed_ext):
     try:
-        logger.debug('Writing cache for: {}'.format(parsed_pkg))
-        cache_file = _get_cache_file(parsed_pkg)
+        logger.debug('Writing cache for: {}'.format(parsed_ext))
+        cache_file = _get_cache_file(parsed_ext)
         logger.debug('Cache file is: {}'.format(cache_file))
-        with open(op.join(USER_TEMP_DIR, cache_file), 'wb') as bin_cache_file:
-            pickle.dump(parsed_pkg, bin_cache_file, pickle.HIGHEST_PROTOCOL)
+        with open(cache_file, 'wb') as bin_cache_file:
+            pickle.dump(parsed_ext, bin_cache_file, pickle.HIGHEST_PROTOCOL)
     except Exception as err:
-        raise PyRevitCacheWriteError('Error writing cache for: {} | {}'.format(parsed_pkg, err))
+        raise PyRevitException('Error writing cache for: {} | {}'.format(parsed_ext, err))
 
 
-def get_cached_extension(installed_pkg):
-    for loaded_pkg in loaded_packages:
-        if loaded_pkg.unique_name == installed_pkg.unique_name:
-            return loaded_pkg
+def get_cached_extension(installed_ext):
+    for loaded_ext in loaded_extensions:
+        if loaded_ext.unique_name == installed_ext.unique_name:
+            return loaded_ext
 
     try:
-        logger.debug('Reading cache for: {}'.format(installed_pkg))
-        cache_file = _get_cache_file(installed_pkg)
+        logger.debug('Reading cache for: {}'.format(installed_ext))
+        cache_file = _get_cache_file(installed_ext)
         logger.debug('Cache file is: {}'.format(cache_file))
-        with open(op.join(USER_TEMP_DIR, cache_file), 'rb') as bin_cache_file:
+        with open(cache_file, 'rb') as bin_cache_file:
             unpickled_pkg = pickle.load(bin_cache_file)
     except Exception as err:
-        raise PyRevitCacheReadError('Error reading cache for: {} | {}'.format(installed_pkg, err))
+        raise PyRevitException('Error reading cache for: {} | {}'.format(installed_ext, err))
 
     return unpickled_pkg
 
 
-def is_cache_valid(pkg):
+def is_cache_valid(extension):
     try:
-        cached_pkg = get_cached_extension(pkg)
-        logger.debug('Extension cache version is: {} for: {}'.format(pkg.hash_version, pkg))
-        cache_version_valid = cached_pkg.hash_version == pkg.hash_version
+        cached_ext = get_cached_extension(extension)
+        logger.debug('Extension cache version is: {} for: {}'.format(extension.hash_version, extension))
+        cache_version_valid = cached_ext.hash_version == extension.hash_version
 
-        logger.debug('Extension hash value is: {} for: {}'.format(pkg.hash_value, pkg))
-        cache_hash_valid = cached_pkg.hash_value == pkg.hash_value
+        logger.debug('Extension hash value is: {} for: {}'.format(extension.hash_value, extension))
+        cache_hash_valid = cached_ext.hash_value == extension.hash_value
 
         # add loaded package to list so it can be recovered later
         if cache_version_valid and cache_hash_valid:
-            loaded_packages.append(cached_pkg)
+            loaded_extensions.append(cached_ext)
 
         # cache is valid if both version and hash value match
         return cache_version_valid and cache_hash_valid
 
-    except PyRevitCacheReadError as err:
+    except PyRevitException as err:
         logger.debug(err)
         return False
 
     except Exception as err:
-        logger.debug('Error determining cache validity: {} | {}'.format(pkg, err))
+        logger.debug('Error determining cache validity: {} | {}'.format(extension, err))
