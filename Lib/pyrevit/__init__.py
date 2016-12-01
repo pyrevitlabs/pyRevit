@@ -1,5 +1,5 @@
+import os
 import os.path as op
-import sys
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -82,3 +82,8 @@ EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 PYREVIT_ADDON_NAME = 'pyrevit'
 _VERSION_MAJOR = 4
 _VERSION_MINOR = 0
+
+
+# user env paths
+USER_ROAMING_DIR = os.getenv('appdata')
+USER_SYS_TEMP = os.getenv('temp')
