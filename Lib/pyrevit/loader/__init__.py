@@ -11,7 +11,7 @@ from pyrevit.usagedata import SESSION_LOG_FILE_NAME, archive_script_usage_logs
 
 from pyrevit.extensions import get_installed_ui_extensions
 
-from pyrevit.loader.asmmaker import create_assembly, cleanup_existing_pyrevit_asm_files
+from pyrevit.loader.asmmaker import create_assembly
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
 # noinspection PyUnresolvedReferences
@@ -36,9 +36,6 @@ SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
 def _perform_onstartup_operations():
     # archive previous sessions logs
     archive_script_usage_logs()
-
-    # Cleanups previous temporary assembly files
-    cleanup_existing_pyrevit_asm_files()
 
 
 def _report_env():

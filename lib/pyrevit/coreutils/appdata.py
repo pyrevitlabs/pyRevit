@@ -63,3 +63,8 @@ def get_data_file(file_id, file_ext, name_only=False):
         return full_filename
     else:
         return op.join(PYREVIT_APP_DIR, full_filename)
+
+
+def is_data_file_available(file_id, file_ext):
+    full_filename = _get_base_file(file_id, file_ext)
+    return op.exists(full_filename)

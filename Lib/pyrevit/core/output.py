@@ -8,7 +8,7 @@ Usage.
 
 import clr
 
-from pyrevit import WINDOW_HANDLE_PARAM
+from pyrevit import EXEC_PARAMS
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
@@ -75,4 +75,4 @@ class PyRevitConsoleWindow:
 #     output_window = PyRevitConsoleWindow(win_handler)
 
 # creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
-output_window = PyRevitConsoleWindow(WINDOW_HANDLE_PARAM)
+output_window = PyRevitConsoleWindow(EXEC_PARAMS.window_handle)

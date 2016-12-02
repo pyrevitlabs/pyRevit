@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import clr
 
-from pyrevit import HOST_VERSION, HOST_SOFTWARE, COMMAND_NAME_PARAM
+from pyrevit import HOST_VERSION, HOST_SOFTWARE, EXEC_PARAMS
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.core.logger import get_logger
 
@@ -43,8 +43,6 @@ PYREVIT_TAB_IDENTIFIER = 'pyrevit_tab'
 ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
-
-CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 
 # Helper classes and functions -----------------------------------------------------------------------------------------
@@ -450,7 +448,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 existing_item = self._get_component(button_name)     # type: _PyRevitRibbonButton
                 try:
                     # Assembly and Class info of current active script button can not be updated.
-                    if button_name != COMMAND_NAME_PARAM:
+                    if button_name != EXEC_PARAMS.command_name:
                         rvtapi_obj = existing_item.get_rvtapi_object()
                         rvtapi_obj.AssemblyName = asm_location
                         rvtapi_obj.ClassName = class_name
@@ -627,7 +625,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 existing_item = self._get_component(button_name)    # type: _PyRevitRibbonButton
                 try:
                     # Assembly and Class info of current active script button can not be updated.
-                    if button_name != COMMAND_NAME_PARAM:
+                    if button_name != EXEC_PARAMS.command_name:
                         rvtapi_obj = existing_item.get_rvtapi_object()
                         rvtapi_obj.AssemblyName = asm_location
                         rvtapi_obj.ClassName = class_name

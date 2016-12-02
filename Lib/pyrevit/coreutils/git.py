@@ -8,7 +8,6 @@ https://github.com/libgit2/libgit2sharp/wiki
 
 import clr
 import importlib
-from collections import namedtuple
 
 from pyrevit.core.logger import get_logger
 

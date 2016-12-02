@@ -1,9 +1,9 @@
-from pyrevit import PYREVIT_ASSEMBLY_NAME
+from pyrevit import PYREVIT_ADDON_NAME
 
 # noinspection PyUnresolvedReferences
 from System import AppDomain
 
-PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ASSEMBLY_NAME + '_envvardict'
+PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
 CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
 
 

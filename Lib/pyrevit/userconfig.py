@@ -1,6 +1,6 @@
 import os.path as op
 
-from pyrevit import FORCED_DEBUG_MODE_PARAM, EXTENSIONS_DEFAULT_DIR
+from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
 from pyrevit.core.exceptions import PyRevitIOError
 from pyrevit.core.logger import get_logger
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
@@ -33,7 +33,7 @@ class PyRevitConfig(PyRevitConfigParser):
         # try opening and reading config file in order.
         PyRevitConfigParser.__init__(self, cfg_file_path=cfg_file_path)
         # set log mode on the logger module based on user settings (overriding the defaults)
-        if not FORCED_DEBUG_MODE_PARAM:
+        if not EXEC_PARAMS.forced_debug_mode:
             if self.init.debug:
                 logger.set_debug_mode()
             elif self.init.verbose:

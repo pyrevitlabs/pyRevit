@@ -2,14 +2,14 @@ import sys
 import logging
 from os.path import sep
 
-from pyrevit import FORCED_DEBUG_MODE_PARAM, PYREVIT_ASSEMBLY_NAME
+from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit.core.emoji import emojize
 
 from pyrevit.core.envvars import set_pyrevit_env_var, get_pyrevit_env_var
 
 
-DEBUG_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_debugISC'
-VERBOSE_ISC_NAME = PYREVIT_ASSEMBLY_NAME + '_verboseISC'
+DEBUG_ISC_NAME = PYREVIT_ADDON_NAME + '_debugISC'
+VERBOSE_ISC_NAME = PYREVIT_ADDON_NAME + '_verboseISC'
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
@@ -26,9 +26,9 @@ if get_pyrevit_env_var(VERBOSE_ISC_NAME):
 if get_pyrevit_env_var(DEBUG_ISC_NAME):
     RUNTIME_LOGGING_LEVEL = logging.DEBUG
 
-# the loader assembly sets FORCED_DEBUG_MODE_PARAM to true if user Shift-clicks on the button
-# FORCED_DEBUG_MODE_PARAM will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
-if FORCED_DEBUG_MODE_PARAM:
+# the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if user Shift-clicks on the button
+# EXEC_PARAMS.forced_debug_mode will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
+if EXEC_PARAMS.forced_debug_mode:
     RUNTIME_LOGGING_LEVEL = logging.DEBUG
 
 

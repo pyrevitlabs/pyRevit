@@ -9,6 +9,10 @@ from pyrevit.core.exceptions import PyRevitException
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
+# noinspection PyUnresolvedReferences
+from System import AppDomain
+# noinspection PyUnresolvedReferences
+from System.Reflection import Assembly
 
 
 def enum(**enums):
@@ -131,8 +135,8 @@ def get_revit_instances():
 
 
 def run_process(proc, cwd=''):
-    import subprocess as sp
-    return sp.Popen(proc, stdout=sp.PIPE, stderr=sp.PIPE, cwd=cwd, shell=True)
+    import subprocess
+    return subprocess.Popen(proc, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, shell=True)
 
 
 def inspect_calling_scope_local_var(variable_name):
@@ -161,3 +165,22 @@ def inspect_calling_scope_global_var(variable_name):
         if frame is None:
             return None
     return frame.f_locals[variable_name]
+
+
+def find_loaded_asm(asm_name):
+    loaded_asm_list = []
+    for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
+        if asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
+            loaded_asm_list.append(loaded_assembly)
+
+    count = len(loaded_asm_list)
+    if count == 0:
+        return None
+    elif count == 1:
+        return loaded_asm_list[0]
+    elif count > 1:
+        return loaded_asm_list
+
+
+def load_asm_file(asm_file):
+    return Assembly.LoadFile(asm_file)
