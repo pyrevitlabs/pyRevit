@@ -57,23 +57,6 @@ def _make_ext_asm_fileid(extension):
     return '{}_{}'.format(extension.hash_value, extension.unique_name)
 
 
-def _get_params_for_commands(parent_cmp):
-    loader_params_for_all_cmds = []
-
-    logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
-    for sub_cmp in parent_cmp:
-        if sub_cmp.is_container():
-            loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
-        else:
-            try:
-                logger.debug('Command found: {}'.format(sub_cmp))
-                loader_params_for_all_cmds.append(CommandExecutorParams(sub_cmp))
-            except Exception as err:
-                logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
-
-    return loader_params_for_all_cmds
-
-
 def _is_pyrevit_ext_asm(asm_name, extension):
     # if this is a pyRevit package assembly
     return asm_name.startswith(PYREVIT_ADDON_NAME) and asm_name.endswith(extension.unique_name)
@@ -90,6 +73,23 @@ def _is_any_ext_asm_loaded(extension):
         if _is_pyrevit_ext_asm(loaded_assembly.GetName().Name, extension):
             return True
     return False
+
+
+def _get_params_for_commands(parent_cmp):
+    logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
+    loader_params_for_all_cmds = []
+
+    for sub_cmp in parent_cmp:
+        if sub_cmp.is_container():
+            loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
+        else:
+            try:
+                logger.debug('Command found: {}'.format(sub_cmp))
+                loader_params_for_all_cmds.append(CommandExecutorParams(sub_cmp))
+            except Exception as err:
+                logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
+
+    return loader_params_for_all_cmds
 
 
 def _create_basic_type(modulebuilder, type_class, class_name):
