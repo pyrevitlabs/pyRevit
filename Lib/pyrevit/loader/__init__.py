@@ -7,7 +7,7 @@ from pyrevit import HOME_DIR
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.usagedata import archive_script_usage_logs
+# from pyrevit.usagedata import archive_script_usage_logs
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions import get_installed_ui_extensions
@@ -23,7 +23,8 @@ ASSEMBLY_FILE_TYPE = 'dll'
 
 def _perform_onstartup_operations():
     # archive previous sessions logs
-    archive_script_usage_logs()
+    # archive_script_usage_logs()
+    pass
 
 
 def _report_env():

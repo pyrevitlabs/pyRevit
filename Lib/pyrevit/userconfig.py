@@ -1,5 +1,6 @@
 import os.path as op
 
+# noinspection PyUnresolvedReferences
 from System.IO import IOException
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR

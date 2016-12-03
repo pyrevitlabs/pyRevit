@@ -6,6 +6,7 @@ clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('WindowsBase')
+# noinspection PyUnresolvedReferences
 import System.Windows
 
 
@@ -57,10 +58,12 @@ class CommandSwitchWindow:
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
+    # noinspection PyUnusedLocal
     def handle_esc_key(self, sender, args):
         if args.Key == System.Windows.Input.Key.Escape:
             self.my_window.Close()
 
+    # noinspection PyUnusedLocal
     def process_switch(self, sender, args):
         self.my_window.Close()
         self.selected_switch = sender.Content

@@ -6,10 +6,11 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
+import clr
 import importlib
 
+# noinspection PyUnresolvedReferences
 import System
-import clr
 
 from pyrevit.coreutils.logger import get_logger
 
