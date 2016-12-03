@@ -7,6 +7,7 @@ from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.repo import PYREVIT_VERSION
 
+from pyrevit.loader import ASSEMBLY_FILE_TYPE
 from pyrevit.loader.cstemplates import get_cmd_class, get_cmd_avail_class, get_shared_classes
 
 clr.AddReference('PresentationCore')
@@ -30,7 +31,6 @@ ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo', ['name', 'location',
 logger = get_logger(__name__)
 
 
-ASSEMBLY_FILE_TYPE = 'dll'
 # fixme: change script executor to write to this log file
 SESSION_LOG_FILE = appdata.get_session_data_file('usagelog', 'log')
 logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE))
@@ -202,8 +202,7 @@ def _create_asm_file(extension):
         _create_cmd_loader_type(modulebuilder, get_cmd_class(cmd_params.cmd_name), cmd_params)
 
         # create command availability class for this command
-        cmd_avail_class, cmd_avail_class_name = get_cmd_avail_class(cmd_params.avail_class_name)
-        _create_basic_type(modulebuilder, cmd_avail_class, cmd_avail_class_name)
+        _create_basic_type(modulebuilder, get_cmd_avail_class(cmd_params.avail_class_name), cmd_params.avail_class_name)
 
     # save final assembly
     assemblybuilder.Save(ext_asm_file_name)

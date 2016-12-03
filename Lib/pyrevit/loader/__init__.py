@@ -18,6 +18,8 @@ from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
 logger = get_logger(__name__)
 
+ASSEMBLY_FILE_TYPE = 'dll'
+
 
 def _perform_onstartup_operations():
     # archive previous sessions logs

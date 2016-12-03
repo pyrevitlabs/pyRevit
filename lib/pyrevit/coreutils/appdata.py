@@ -48,6 +48,7 @@ def _get_stamped_base_file(file_id, file_ext):
 def get_temp_file(file_id, file_ext='tmp', name_only=False):
     """
     Get full file path to a file that is temporary and will be cleaned up between sessions.
+    e.g TEMP_pyrevit_2016_eirannejad_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file
@@ -63,6 +64,7 @@ def get_temp_file(file_id, file_ext='tmp', name_only=False):
 def get_data_file(file_id, file_ext, name_only=False):
     """
     Get full file path to a file that will not be cleaned up between sessions.
+    e.g pyrevit_2016_eirannejad_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file
@@ -77,7 +79,8 @@ def get_data_file(file_id, file_ext, name_only=False):
 
 def get_session_data_file(file_id, file_ext, name_only=False):
     """
-    Get full file path to a file that will not be cleaned up between sessions.
+    Get full file path to a file that should be used by current host instance only.
+    e.g pyrevit_2016_eirannejad_2353_file_id.file_ext
 
     Args:
         file_id (str): Unique identifier for the file

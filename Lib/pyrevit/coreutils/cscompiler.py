@@ -1,5 +1,3 @@
-import os.path as op
-
 from pyrevit.core.exceptions import PyRevitException
 
 # noinspection PyUnresolvedReferences
@@ -11,10 +9,10 @@ from Microsoft.CSharp import CSharpCodeProvider
 from System.CodeDom import Compiler
 
 
-def compile_to_asm(code, full_file_name, output_dir, reference_list=None):
+def compile_to_asm(code, full_output_file_addr, reference_list=None):
 
     compiler_params = Compiler.CompilerParameters()
-    compiler_params.OutputAssembly = op.join(output_dir, full_file_name)
+    compiler_params.OutputAssembly = full_output_file_addr
 
     compiler_params.TreatWarningsAsErrors = False
     compiler_params.GenerateExecutable = False
