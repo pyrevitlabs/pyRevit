@@ -1,15 +1,13 @@
-import clr
 from collections import namedtuple
 
-from pyrevit import PYREVIT_ADDON_NAME, HOST_VERSION
-from pyrevit.core.logger import get_logger
+import clr
 
-from pyrevit.repo import PYREVIT_VERSION
-
-from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm
 import pyrevit.coreutils.appdata as appdata
-
+from pyrevit import PYREVIT_ADDON_NAME, HOST_VERSION
+from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.cstemplates import get_cmd_class, get_cmd_avail_class, get_shared_classes
+from pyrevit.repo import PYREVIT_VERSION
 from pyrevit.usagedata import SESSION_LOG_FILE_NAME
 
 clr.AddReference('PresentationCore')

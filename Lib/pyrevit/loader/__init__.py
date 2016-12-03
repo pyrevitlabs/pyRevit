@@ -1,21 +1,17 @@
 import sys
 
+from System.Diagnostics import Process
+
 from pyrevit import HOME_DIR
 from pyrevit import HOST_VERSION, HOST_USERNAME, PYREVIT_ADDON_NAME
-from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.core.logger import get_logger
 from pyrevit.coreutils import Timer
-
-from pyrevit.userconfig import user_config
-from pyrevit.usagedata import SESSION_LOG_FILE_NAME, archive_script_usage_logs
-
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import get_installed_ui_extensions
-
 from pyrevit.loader.asmmaker import create_assembly
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
+from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.usagedata import SESSION_LOG_FILE_NAME, archive_script_usage_logs
+from pyrevit.userconfig import user_config
 
 
 logger = get_logger(__name__)

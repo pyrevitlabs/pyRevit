@@ -1,5 +1,5 @@
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.core.logger import get_logger
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
 try:

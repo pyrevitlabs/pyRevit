@@ -1,4 +1,4 @@
-from pyrevit.core.logger import get_logger                   # import logger to log messages to pyrevit log.
+from pyrevit.coreutils.logger import get_logger                   # import logger to log messages to pyrevit log.
 logger = get_logger(__commandname__)
 
 import pyrevit.loader.session as session              # import session to start loading pyRvit.

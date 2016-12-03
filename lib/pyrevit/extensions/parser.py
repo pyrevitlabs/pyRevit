@@ -2,10 +2,9 @@ import os
 import os.path as op
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.core.logger import get_logger
 from pyrevit.coreutils import get_all_subclasses
+from pyrevit.coreutils.logger import get_logger
 from .components import Extension, LibraryExtension
-
 
 logger = get_logger(__name__)
 

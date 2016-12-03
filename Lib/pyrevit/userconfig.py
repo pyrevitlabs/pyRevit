@@ -1,14 +1,12 @@
 import os.path as op
 
+from System.IO import IOException
+
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
 from pyrevit.core.exceptions import PyRevitIOError
-from pyrevit.core.logger import get_logger
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
 from pyrevit.coreutils.configparser import PyRevitConfigParser
-
-
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
+from pyrevit.coreutils.logger import get_logger
 
 
 logger = get_logger(__name__)

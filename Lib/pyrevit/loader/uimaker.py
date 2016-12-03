@@ -2,12 +2,9 @@ import imp
 
 from pyrevit import HOST_SOFTWARE, HOST_VERSION, EXEC_PARAMS
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.core.logger import get_logger
-
-
 from pyrevit.coreutils import find_loaded_asm
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.ribbon import get_current_ui
-
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX, STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
                                PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
                                PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX, LINK_BUTTON_POSTFIX, \

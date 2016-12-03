@@ -1,4 +1,4 @@
-from pyrevit.core.logger import get_logger
+from pyrevit.coreutils.logger import get_logger
 logger = get_logger(__commandname__)
 
 if __shiftclick__:

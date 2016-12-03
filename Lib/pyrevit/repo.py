@@ -1,7 +1,6 @@
-from pyrevit import HOME_DIR, _VERSION_MAJOR, _VERSION_MINOR
-
-from pyrevit.core.logger import get_logger
 import pyrevit.coreutils.git as git
+from pyrevit import HOME_DIR, _VERSION_MAJOR, _VERSION_MINOR
+from pyrevit.coreutils.logger import get_logger
 
 
 logger = get_logger(__name__)

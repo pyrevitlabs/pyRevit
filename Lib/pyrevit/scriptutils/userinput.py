@@ -1,6 +1,6 @@
 import clr
 
-from ..core.logger import get_logger
+from pyrevit.coreutils.logger import get_logger
 
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")

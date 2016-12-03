@@ -3,22 +3,19 @@ import os
 import os.path as op
 import re
 
-from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.core.logger import get_logger
 from pyrevit.core.exceptions import PyRevitException
-
 from pyrevit.coreutils import ScriptFileParser
-
-from pyrevit.extensions.genericcomps import GenericComponent, GenericUIContainer, GenericUICommand
-from pyrevit.extensions import PUSH_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX
-from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
-from pyrevit.extensions import SCRIPT_FILE_FORMAT, DEFAULT_LAYOUT_FILE_NAME
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import LINK_BUTTON_POSTFIX, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM
-from pyrevit.extensions import PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
-from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX
 from pyrevit.extensions import PANEL_POSTFIX, TAB_POSTFIX
+from pyrevit.extensions import PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX
+from pyrevit.extensions import PUSH_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX
+from pyrevit.extensions import SCRIPT_FILE_FORMAT, DEFAULT_LAYOUT_FILE_NAME
+from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX
+from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
 from pyrevit.extensions import UI_EXTENSION_POSTFIX, LIB_EXTENSION_POSTFIX
-
+from pyrevit.extensions.genericcomps import GenericComponent, GenericUIContainer, GenericUICommand
+from pyrevit.repo import PYREVIT_VERSION
 
 logger = get_logger(__name__)
 

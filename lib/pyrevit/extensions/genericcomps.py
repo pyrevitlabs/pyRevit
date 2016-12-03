@@ -1,22 +1,19 @@
 import os.path as op
 
 from pyrevit import HOST_VERSION
-from pyrevit.repo import PYREVIT_VERSION
-
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.core.logger import get_logger
-
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
-from pyrevit.userconfig import user_config
-
-from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
-from pyrevit.extensions import DEFAULT_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
-from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
-from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM
-from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM
-from pyrevit.extensions import MIN_PYREVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
+from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM
+from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
+from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
+from pyrevit.extensions import DEFAULT_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
+from pyrevit.extensions import MIN_PYREVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
+from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.userconfig import user_config
 
 
 logger = get_logger(__name__)

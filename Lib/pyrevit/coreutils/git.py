@@ -6,13 +6,12 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
-import clr
 import importlib
 
-from pyrevit.core.logger import get_logger
-
-# noinspection PyUnresolvedReferences
 import System
+import clr
+
+from pyrevit.coreutils.logger import get_logger
 
 GIT_LIB = 'LibGit2Sharp'
 

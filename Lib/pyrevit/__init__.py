@@ -49,17 +49,17 @@ HOST_ADSK_PROCESS_NAME = Process.GetCurrentProcess().ProcessName
 # Testing the value of __forceddebugmode__ (set in builtins scope by C# Script Executor)
 # ----------------------------------------------------------------------------------------------------------------------
 class _ExecutorParams(object):
-    @property
+    @property   # read-only
     def forced_debug_mode(self):
         # noinspection PyUnresolvedReferences
         return __forceddebugmode__
 
-    @property
+    @property   # read-only
     def window_handle(self):
         # noinspection PyUnresolvedReferences
         return __window__
 
-    @property
+    @property   # writeabe
     def command_name(self):
         # noinspection PyUnresolvedReferences
         return __commandname__
