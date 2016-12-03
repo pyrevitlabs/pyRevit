@@ -51,8 +51,8 @@ from System.IO import IOException
 # ----------------------------------------------------------------------------------------------------------------------
 # creating log file name from stamped session id
 LOG_FILE_TYPE = '.log'
-SESSION_LOG_FILE_NAME = SESSION_STAMPED_ID + LOG_FILE_TYPE
-SESSION_LOG_FILE_PATH = op.join(USER_TEMP_DIR, SESSION_LOG_FILE_NAME)
+# SESSION_LOG_FILE = SESSION_STAMPED_ID + LOG_FILE_TYPE
+# SESSION_LOG_FILE_PATH = op.join(USER_TEMP_DIR, SESSION_LOG_FILE)
 LOG_ENTRY_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 

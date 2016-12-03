@@ -1,5 +1,5 @@
-def _make_full_classname(namespace, class_name):
-    return '{}.{}'.format(namespace, class_name)
+from pyrevit.coreutils import make_full_classname
+
 
 # base classes for pyRevit commands ------------------------------------------------------------------------------------
 LOADER_BASE_NAMESPACE = 'PyRevitBaseClasses'
@@ -8,13 +8,14 @@ LOADER_BASE_NAMESPACE = 'PyRevitBaseClasses'
 LOADER_CMD_CLASS = '{}.{}'.format(LOADER_BASE_NAMESPACE, 'PyRevitCommand')
 
 # template python command availability class
-LOADER_CMD_AVAIL_CLS = _make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
-LOADER_CMD_AVAIL_CLS_CATEGORY = _make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
-LOADER_CMD_AVAIL_CLS_SELECTION = _make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
+LOADER_CMD_AVAIL_CLS = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
+LOADER_CMD_AVAIL_CLS_CATEGORY = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
+LOADER_CMD_AVAIL_CLS_SELECTION = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
 
 def _make_baseclasses_asm_name():
     return SESSION_STAMPED_ID + '_' + LOADER_BASE_CLASSES_ASM
+
 
 def _is_pyrevit_already_loaded():
     logger.debug('Asking Revit for previously loaded pyrevit assemblies...')
@@ -32,7 +33,6 @@ def _find_pyrevit_base_class(base_class_name):
         return base_class
     else:
         raise PyRevitException('Can not find base class type: {}'.format(base_class_name))
-
 
 
 def _generate_base_classes_asm():

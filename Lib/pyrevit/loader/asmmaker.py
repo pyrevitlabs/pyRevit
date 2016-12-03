@@ -1,14 +1,13 @@
-from collections import namedtuple
-
 import clr
+from collections import namedtuple
 
 import pyrevit.coreutils.appdata as appdata
 from pyrevit import PYREVIT_ADDON_NAME, HOST_VERSION
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.loader.cstemplates import get_cmd_class, get_cmd_avail_class, get_shared_classes
 from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.usagedata import SESSION_LOG_FILE_NAME
+
+from pyrevit.loader.cstemplates import get_cmd_class, get_cmd_avail_class, get_shared_classes
 
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
@@ -24,15 +23,17 @@ from System.Reflection.Emit import AssemblyBuilderAccess, CustomAttributeBuilder
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
+# Generic named tuple for passing assembly information to other modules
+ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo', ['name', 'location', 'reloading'])
+
 
 logger = get_logger(__name__)
 
 
 ASSEMBLY_FILE_TYPE = 'dll'
-
-
-# Generic named tuple for passing assembly information to other modules
-ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo', ['name', 'location', 'reloading'])
+# fixme: change script executor to write to this log file
+SESSION_LOG_FILE = appdata.get_session_data_file('usagelog', 'log')
+logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE))
 
 
 # Generic named tuple for passing loader class parameters to the assembly maker
@@ -46,7 +47,6 @@ class CommandExecutorParams:
         self.script_file_address = script_cmp.get_full_script_address()
         self.config_script_file_address = script_cmp.get_full_config_script_address()
         self.search_paths_str = join_strings(script_cmp.get_search_paths())
-        self.log_filename = SESSION_LOG_FILE_NAME
 
 
 def _make_ext_asm_name(extension):
@@ -145,7 +145,7 @@ def _create_cmd_loader_type(modulebuilder, loader_class, cmd_params):
     # Load the config script path to the command as a string onto stack (for alternate click)
     gen.Emit(OpCodes.Ldstr, cmd_params.config_script_file_address)
     # Load log file name into stack
-    gen.Emit(OpCodes.Ldstr, cmd_params.log_filename)
+    gen.Emit(OpCodes.Ldstr, SESSION_LOG_FILE)
     # Adding search paths to the stack (concatenated using ; as separator)
     gen.Emit(OpCodes.Ldstr, cmd_params.search_paths_str)
     # set command name:

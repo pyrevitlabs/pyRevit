@@ -24,6 +24,8 @@ class _HostVersion:
         else:
             self.version = HOST_SOFTWARE.Application.VersionNumber      # type: str
 
+        self.proc_id = Process.GetCurrentProcess().Id
+
     def is_newer_than(self, version):
         return int(self.version) > int(version)
 

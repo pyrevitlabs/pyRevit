@@ -184,3 +184,8 @@ def find_loaded_asm(asm_name):
 
 def load_asm_file(asm_file):
     return Assembly.LoadFile(asm_file)
+
+
+def make_full_classname(namespace, class_name):
+    return '{}.{}'.format(namespace, class_name)
+

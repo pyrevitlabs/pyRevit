@@ -1,32 +1,22 @@
 import sys
 
+# noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
 from pyrevit import HOME_DIR
-from pyrevit import HOST_VERSION, HOST_USERNAME, PYREVIT_ADDON_NAME
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.usagedata import archive_script_usage_logs
+from pyrevit.userconfig import user_config
+
 from pyrevit.extensions import get_installed_ui_extensions
+
 from pyrevit.loader.asmmaker import create_assembly
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.usagedata import SESSION_LOG_FILE_NAME, archive_script_usage_logs
-from pyrevit.userconfig import user_config
 
 
 logger = get_logger(__name__)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# session defaults
-# ----------------------------------------------------------------------------------------------------------------------
-SESSION_ID = "{}{}_{}".format(PYREVIT_ADDON_NAME, HOST_VERSION.version, HOST_USERNAME)
-
-# creating a session id that is stamped with the process id of the Revit session.
-# This id is unique for all python scripts running under this session.
-# Previously the session id was stamped by get_formatted time
-# SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, datetime.now().strftime('%y%m%d%H%M%S'))
-SESSION_STAMPED_ID = "{}_{}".format(SESSION_ID, Process.GetCurrentProcess().Id)
 
 
 def _perform_onstartup_operations():
@@ -41,7 +31,6 @@ def _report_env():
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
     logger.info('Config file is: {}'.format(user_config.config_file))
-    logger.info('Generated log name for this session: {}'.format(SESSION_LOG_FILE_NAME))
 
 
 def _new_session():
