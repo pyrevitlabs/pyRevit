@@ -4,8 +4,9 @@ import os
 import os.path as op
 import time
 
-from pyrevit import HOST_ADSK_PROCESS_NAME
+from pyrevit import HOST_APP
 from pyrevit.core.exceptions import PyRevitException
+from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -13,6 +14,9 @@ from System.Diagnostics import Process
 from System import AppDomain
 # noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
+
+
+logger = get_logger(__name__)
 
 
 def enum(**enums):
@@ -58,15 +62,15 @@ class ScriptFileParser:
 def get_all_subclasses(parent_classes):
     sub_classes = []
     # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
-    for sub_class in parent_classes:
+    for parent_class in parent_classes:
         try:
-            derived_classes = sub_class.__subclasses__()
+            derived_classes = parent_class.__subclasses__()
             if len(derived_classes) == 0:
-                sub_classes.append(sub_class)
+                sub_classes.append(parent_class)
             else:
                 sub_classes.extend(derived_classes)
         except AttributeError:
-            sub_classes.append(sub_class)
+            sub_classes.append(parent_class)
     return sub_classes
 
 
@@ -131,7 +135,7 @@ def cleanup_string(input_str):
 
 
 def get_revit_instances():
-    return len(list(Process.GetProcessesByName(HOST_ADSK_PROCESS_NAME)))
+    return len(list(Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
 def run_process(proc, cwd=''):
@@ -168,6 +172,7 @@ def inspect_calling_scope_global_var(variable_name):
 
 
 def find_loaded_asm(asm_name):
+    logger.debug('Finding assembly: {}'.format(asm_name))
     loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
         if asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
@@ -175,10 +180,15 @@ def find_loaded_asm(asm_name):
 
     count = len(loaded_asm_list)
     if count == 0:
+        logger.debug('Assembly not found.')
         return None
     elif count == 1:
-        return loaded_asm_list[0]
+        found_asm = loaded_asm_list[0]
+        logger.debug('Assembly found: {}'.format(found_asm))
+        return found_asm
     elif count > 1:
+        found_asm_list = loaded_asm_list
+        logger.debug('More than one assembly found: {}'.format(found_asm_list))
         return loaded_asm_list
 
 
@@ -188,4 +198,3 @@ def load_asm_file(asm_file):
 
 def make_full_classname(namespace, class_name):
     return '{}.{}'.format(namespace, class_name)
-

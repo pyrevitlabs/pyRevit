@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_VERSION, HOST_USERNAME
+from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP
 from pyrevit.core.exceptions import PyRevitException
 
 # noinspection PyUnresolvedReferences
@@ -19,9 +19,9 @@ if not op.isdir(PYREVIT_APP_DIR):
 
 
 APPDATA_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                        HOST_VERSION, HOST_USERNAME)
+                                        HOST_APP.version, HOST_APP.username)
 APPDATA_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                   HOST_VERSION, HOST_USERNAME, HOST_VERSION.proc_id)
+                                                   HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 APPDATA_TEMP_FILE_PREFIX = 'TEMP_'
 
 

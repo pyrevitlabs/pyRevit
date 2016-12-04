@@ -57,7 +57,7 @@ if len(selection) > 0:
             if type.ViewFamily == ViewFamily.Drafting:
                 draftingViewType = type
                 break
-        # iterate over cstemplates legend views
+        # iterate over interfacetypes legend views
         for srcView in selection:
             print('\nCOPYING {0}'.format(srcView.ViewName))
             # get legend view elements and exclude non-copyable elements

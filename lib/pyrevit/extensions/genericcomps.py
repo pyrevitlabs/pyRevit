@@ -1,6 +1,6 @@
 import os.path as op
 
-from pyrevit import HOST_VERSION
+from pyrevit import HOST_APP
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
@@ -19,7 +19,7 @@ from pyrevit.userconfig import user_config
 logger = get_logger(__name__)
 
 
-class GenericComponent:
+class GenericComponent(object):
     type_id = None
 
     def __init__(self):
@@ -118,10 +118,15 @@ class GenericUIContainer(GenericUIComponent):
         self._sub_components = []
 
         self.original_name = op.splitext(op.basename(self.directory))[0]
-        self.name = user_config.get_alias(self.original_name, self.type_id)
-        if self.name != self.original_name:
+
+        alias = user_config.get_alias(self.original_name)
+        if alias and alias != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
-        self.unique_name = self._get_unique_name()
+            self.name = alias
+        else:
+            self.name = self.original_name
+
+        self.ui_title = self.name
 
         # each container can store custom libraries under /Lib inside the container folder
         lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
@@ -235,9 +240,12 @@ class GenericUICommand(GenericUIComponent):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
         self.original_name = op.splitext(op.basename(self.directory))[0]
-        self.name = user_config.get_alias(self.original_name, self.type_id)
-        if self.name != self.original_name:
+        alias = user_config.get_alias(self.original_name)
+        if alias and alias != self.original_name:
             logger.debug('Alias name is: {}'.format(self.name))
+            self.name = alias
+        else:
+            self.name = self.original_name
 
         self.ui_title = self.name
 
@@ -301,12 +309,14 @@ class GenericUICommand(GenericUIComponent):
             self.syspath_search_paths.append(self.library_path)
 
     def _check_dependencies(self):
-        if self.min_revit_ver and HOST_VERSION.is_older_than(self.min_revit_ver):
-            raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
-                                                                                           self))
-        elif self.min_pyrevit_ver and PYREVIT_VERSION.is_older_than(self.min_pyrevit_ver):
-            raise PyRevitException('Command requires a newer pyrevit version ({}): {}'.format(self.min_pyrevit_ver,
-                                                                                              self))
+        # fixme: correct dependency check
+        return True
+        # if self.min_revit_ver and HOST_APP.is_older_than(self.min_revit_ver):
+        #     raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
+        #                                                                                    self))
+        # elif self.min_pyrevit_ver and PYREVIT_VERSION.is_older_than(self.min_pyrevit_ver):
+        #     raise PyRevitException('Command requires a newer pyrevit version ({}): {}'.format(self.min_pyrevit_ver,
+        #                                                                                       self))
 
     @staticmethod
     def is_valid_cmd():

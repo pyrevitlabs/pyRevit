@@ -59,7 +59,7 @@ def is_cache_valid(extension):
         return cache_version_valid and cache_hash_valid
 
     except PyRevitException as err:
-        logger.debug(err)
+        logger.debug('Error reading cache file or file is not available: {}'.format(err))
         return False
 
     except Exception as err:

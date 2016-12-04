@@ -18,7 +18,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
 __doc__ = 'This is a tool to swap line styles. Run the tool, select a line with the style to be replaced, and then ' \
-          'select a line with the cstemplates style. The script will correct the line styles in the model. ' \
+          'select a line with the interfacetypes style. The script will correct the line styles in the model. ' \
           'HOWEVER the lines that are part of a group or a filled region will not be affected. ' \
           'Yeah I know. What\'s the point...But even this helps sometimes.'
 
@@ -36,7 +36,7 @@ try:
     fromStyleLine = doc.GetElement(
         uidoc.Selection.PickObject(ObjectType.Element, 'Pick a line with the style to be replaced.'))
     fromStyle = fromStyleLine.LineStyle
-    toStyleLine = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick a line with the cstemplates style.'))
+    toStyleLine = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick a line with the interfacetypes style.'))
     toStyle = toStyleLine.LineStyle
 
     linelist = []

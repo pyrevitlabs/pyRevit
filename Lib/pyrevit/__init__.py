@@ -4,27 +4,39 @@ import os.path as op
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 # testing for availability of __revit__ just in case and collect host information
 # ----------------------------------------------------------------------------------------------------------------------
-
-# define HOST_SOFTWARE
-try:
-    # noinspection PyUnresolvedReferences
-    HOST_SOFTWARE = __revit__
-except Exception:
-    raise Exception('Critical Error. Host software handle is not available (__revit__)')
-
-
-class _HostVersion:
+class _HostApplication:
     """Contains current host version and provides comparison functions."""
-    def __init__(self, *args):
-        if args:
-            self.version = str(args[0])     # type: str
-        else:
-            self.version = HOST_SOFTWARE.Application.VersionNumber      # type: str
+    def __init__(self):
+        # define HOST_SOFTWARE
+        try:
+            # noinspection PyUnresolvedReferences
+            self.uiapp = __revit__
+        except Exception:
+            raise Exception('Critical Error: Host software is not supported. (__revit__ handle is not available)')
 
-        self.proc_id = Process.GetCurrentProcess().Id
+    @property
+    def version(self):
+        return self.uiapp.Application.VersionNumber
+
+    @property
+    def username(self):
+        """Return the username from Revit API (Application.Username)"""
+        uname = self.uiapp.Application.Username
+        uname = uname.split('@')[0]  # if username is email
+        uname = uname.replace('.', '')  # removing dots since username will be used in file naming
+        return uname
+
+    @property
+    def proc_id(self):
+        return Process.GetCurrentProcess().Id
+
+    @property
+    def proc_name(self):
+        return Process.GetCurrentProcess().ProcessName
 
     def is_newer_than(self, version):
         return int(self.version) > int(version)
@@ -33,18 +45,7 @@ class _HostVersion:
         return int(self.version) < int(version)
 
 
-def _get_username():
-    """Return the username from Revit API (Application.Username)"""
-    uname = HOST_SOFTWARE.Application.Username
-    uname = uname.split('@')[0]  # if username is email
-    uname = uname.replace('.', '')  # removing dots since username will be used in file naming
-    return uname
-
-
-HOST_VERSION = _HostVersion()
-HOST_USERNAME = _get_username()
-
-HOST_ADSK_PROCESS_NAME = Process.GetCurrentProcess().ProcessName
+HOST_APP = _HostApplication()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,8 +54,11 @@ HOST_ADSK_PROCESS_NAME = Process.GetCurrentProcess().ProcessName
 class _ExecutorParams(object):
     @property   # read-only
     def forced_debug_mode(self):
-        # noinspection PyUnresolvedReferences
-        return __forceddebugmode__
+        try:
+            # noinspection PyUnresolvedReferences
+            return __forceddebugmode__
+        except:
+            return False
 
     @property   # read-only
     def window_handle(self):
@@ -81,7 +85,7 @@ EXEC_PARAMS = _ExecutorParams()
 def _find_home_directory():
     """Return the pyRevitLoader.py full directory address"""
     try:
-        return op.dirname(op.dirname(op.dirname(op.dirname(__file__))))   # 4 steps back for <home>/Lib/pyrevit/config
+        return op.dirname(op.dirname(op.dirname(__file__)))   # 3 steps back for <home>/Lib/pyrevit
     except NameError:
         raise Exception('Critical Error. Can not find home directory.')
 

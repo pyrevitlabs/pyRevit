@@ -23,6 +23,7 @@ logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 
 
 INIT_SETTINGS_SECTION = 'init'
+COMMAND_ALIAS_SECTION = 'alias'
 
 
 class PyRevitConfig(PyRevitConfigParser):
@@ -35,6 +36,7 @@ class PyRevitConfig(PyRevitConfigParser):
         if not EXEC_PARAMS.forced_debug_mode:
             if self.init.debug:
                 logger.set_debug_mode()
+                logger.debug('Debug mode is enabled in user settings.')
             elif self.init.verbose:
                 logger.set_verbose_mode()
 
@@ -47,6 +49,12 @@ class PyRevitConfig(PyRevitConfigParser):
             logger.error('Error reading list of user extension folders. | {}'.format(read_err))
 
         return dir_list
+
+    def get_alias(self, original_name):
+        try:
+            return self.alias.get_option(original_name)
+        except AttributeError:
+            return None
 
     def save_changes(self):
         PyRevitConfigParser.save(self, self.config_file)
@@ -67,6 +75,7 @@ def _get_default_config_parser():
         parser = PyRevitConfig()
 
     parser.add_section(INIT_SETTINGS_SECTION)
+    parser.add_section(COMMAND_ALIAS_SECTION)
     parser.init.verbose = False
     parser.init.debug = False
     parser.init.userextensions = '[]'

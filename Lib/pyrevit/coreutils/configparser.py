@@ -7,7 +7,7 @@ from pyrevit.core.exceptions import PyRevitException, PyRevitIOError
 from System.IO import IOException
 
 
-KEY_VALUE_TRUE = "True"
+KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
 
@@ -20,6 +20,12 @@ class PyRevitConfigSectionParser(object):
         try:
             value = self._parser.get(self._section_name, param_name)
             try:
+                # cleanup true, false values to eval statement
+                if value.lower() == KEY_VALUE_TRUE:
+                    value = 'True'
+                elif value.lower() == KEY_VALUE_FALSE:
+                    value = 'False'
+
                 return eval(value)
             except:
                 return value
@@ -34,6 +40,9 @@ class PyRevitConfigSectionParser(object):
                 return self._parser.set(self._section_name, param_name, value)
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. | {}'.format(set_err))
+
+    def get_option(self, op_name):
+        return self.__getattr__(op_name)
 
 
 class PyRevitConfigParser(object):

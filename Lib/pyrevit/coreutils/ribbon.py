@@ -1,13 +1,8 @@
-"""
-Description:
-This is the public module that makes internal UI wrappers accessible to the user.
-"""
-
 from collections import OrderedDict
 
 import clr
 
-from pyrevit import HOST_VERSION, HOST_SOFTWARE, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 
@@ -362,7 +357,15 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             return self._rvtapi_object.ItemText
 
     @property
-    def availability_class(self):
+    def assembly_name(self):
+        return self._rvtapi_object.AssemblyName
+
+    @property
+    def class_name(self):
+        return self._rvtapi_object.ClassName
+
+    @property
+    def availability_class_name(self):
         return self._rvtapi_object.AvailabilityClassName
 
 
@@ -382,8 +385,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         self.itemdata_mode = isinstance(self._rvtapi_object, RibbonItemData)
 
         # if button group shows the active button icon, then the child buttons need to have large icons
-        self._use_active_item_icon = (isinstance(self._rvtapi_object, SplitButton) or
-                                      isinstance(self._rvtapi_object, SplitButtonData))
+        self._use_active_item_icon = self._is_splitbutton()
 
         # by default the last item used, stays on top as the default button
         self._sync_with_cur_item = True
@@ -393,6 +395,14 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             for revit_button in ribbon_item.GetItems():
                 # feeding _sub_native_ribbon_items with an instance of _PyRevitRibbonButton for existing buttons
                 self._add_component(_PyRevitRibbonButton(revit_button))
+
+    def _is_splitbutton(self):
+        return isinstance(self._rvtapi_object, SplitButton) or isinstance(self._rvtapi_object, SplitButtonData)
+
+    def set_rvtapi_object(self, rvtapi_obj):
+        _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
+        if self._is_splitbutton():
+            self.get_rvtapi_object().IsSynchronizedWithCurrentItem = self._sync_with_cur_item
 
     def create_data_items(self):
         # iterate through data items and their associated revit api data objects and create ui objects
@@ -410,7 +420,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
     def sync_with_current_item(self, state):
         try:
-            self.get_rvtapi_object().IsSynchronizedWithCurrentItem = state
+            if not self.itemdata_mode:
+                self.get_rvtapi_object().IsSynchronizedWithCurrentItem = state
             self._sync_with_cur_item = state
             self._dirty = True
         except Exception as sync_item_err:
@@ -718,14 +729,14 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self._create_button_group(PulldownButtonData, item_name, icon_path, update_if_exists)
 
     def create_split_button(self, item_name, icon_path, update_if_exists=False):
-        if self.itemdata_mode and HOST_VERSION.is_older_than('2017'):
+        if self.itemdata_mode and HOST_APP.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
-        if self.itemdata_mode and HOST_VERSION.is_older_than('2017'):
+        if self.itemdata_mode and HOST_APP.is_older_than('2017'):
             raise PyRevitUIError('Revits earlier than 2017 do not support split buttons in a stack.')
         else:
             self._create_button_group(SplitButtonData, item_name, icon_path, update_if_exists)
@@ -747,7 +758,7 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
 
         # getting a list of existing panels under this tab
         try:
-            for revit_ui_panel in HOST_SOFTWARE.GetRibbonPanels(self.name):
+            for revit_ui_panel in HOST_APP.uiapp.GetRibbonPanels(self.name):
                 # feeding _sub_pyrvt_ribbon_panels with an instance of _PyRevitRibbonPanel for existing panels
                 # _PyRevitRibbonPanel will find its existing ribbon items internally
                 new_pyrvt_panel = _PyRevitRibbonPanel(revit_ui_panel)
@@ -777,7 +788,7 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
         else:
             try:
                 # creating panel in tab
-                ribbon_panel = HOST_SOFTWARE.CreateRibbonPanel(self.name, panel_name)
+                ribbon_panel = HOST_APP.uiapp.CreateRibbonPanel(self.name, panel_name)
                 # creating _PyRevitRibbonPanel object and add new panel to list of current panels
                 pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel)
                 pyrvt_ribbon_panel.set_dirty_flag()
@@ -833,8 +844,8 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
         else:
             try:
                 # creating tab in Revit ui
-                HOST_SOFTWARE.CreateRibbonTab(tab_name)
-                # HOST_SOFTWARE.CreateRibbonTab() does not return the created tab object.
+                HOST_APP.uiapp.CreateRibbonTab(tab_name)
+                # HOST_APP.uiapp.CreateRibbonTab() does not return the created tab object.
                 # so find the tab object in exiting ui
                 revit_tab_ctrl = None
                 for exiting_rvt_ribbon_tab in ComponentManager.Ribbon.Tabs:

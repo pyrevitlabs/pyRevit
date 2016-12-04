@@ -4,7 +4,7 @@ import os.path as op
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
-from .components import Extension, LibraryExtension
+
 
 logger = get_logger(__name__)
 
@@ -73,7 +73,7 @@ def get_parsed_extension(extension):
     return extension
 
 
-def get_installed_extension_data(root_dir):
+def get_installed_extension_data(root_dir, parent_cmp_type):
     """Parses home directory and return a list of Extension objects for installed extensions.
     The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
     extensions so the session can check the cache for each package and decide if they need to be parsed or not.
@@ -87,14 +87,14 @@ def get_installed_extension_data(root_dir):
     ext_data_list = []
 
     logger.debug('Parsing directory for extensions...')
-    for ext_data in _create_subcomponents(root_dir, [Extension]):
+    for ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
         logger.debug('Extension directory found: {}'.format(ext_data))
         ext_data_list.append(ext_data)
 
     return ext_data_list
 
 
-def get_installed_lib_extension_data(root_dir):
+def get_installed_lib_extension_data(root_dir, parent_cmp_type):
     """Parses home directory and return a list of LibraryExtension objects for installed library extensions."""
 
     # making sure the provided directory exists. This is mainly for the user defined package directories
@@ -106,7 +106,7 @@ def get_installed_lib_extension_data(root_dir):
     lib_ext_data_list = []
 
     logger.debug('Parsing directory for library extensions...')
-    for lib_ext_data in _create_subcomponents(root_dir, [LibraryExtension]):
+    for lib_ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
         logger.debug('Library package directory found: {}'.format(lib_ext_data))
         lib_ext_data_list.append(lib_ext_data)
 

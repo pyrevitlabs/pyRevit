@@ -1,15 +1,22 @@
 from pyrevit.core.exceptions import PyRevitException
+from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
 from System import Array
-
+# noinspection PyUnresolvedReferences
+from System.Collections.Generic import Dictionary
 # noinspection PyUnresolvedReferences
 from Microsoft.CSharp import CSharpCodeProvider
 # noinspection PyUnresolvedReferences
 from System.CodeDom import Compiler
 
 
-def compile_to_asm(code, full_output_file_addr, reference_list=None):
+logger = get_logger(__name__)
+
+
+def compile_to_asm(sourcecode_list, full_output_file_addr, reference_list=None):
+    logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
+    logger.debug('References assemblies are: {}'.format(reference_list))
 
     compiler_params = Compiler.CompilerParameters()
     compiler_params.OutputAssembly = full_output_file_addr
@@ -19,13 +26,17 @@ def compile_to_asm(code, full_output_file_addr, reference_list=None):
     compiler_params.CompilerOptions = "/optimize"
 
     for reference in reference_list or []:
+        logger.debug('Adding reference to compiler: {}'.format(reference_list))
         compiler_params.ReferencedAssemblies.Add(reference)
 
-    provider = CSharpCodeProvider()
-    compiler = provider.CompileAssemblyFromSource(compiler_params, Array[str]([code]))
+    logger.debug('Getting sourcecode_list provider.')
+    provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
+    logger.debug('Compiling source sourcecode_list.')
+    compiler = provider.CompileAssemblyFromSource(compiler_params, Array[str](sourcecode_list))
 
     if compiler.Errors.HasErrors:
         error_list = [str(err) for err in compiler.Errors.GetEnumerator()]
         raise PyRevitException("Compile error: {}".format(error_list))
 
+    logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
     return compiler.PathToAssembly
