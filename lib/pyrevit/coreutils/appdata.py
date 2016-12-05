@@ -1,4 +1,5 @@
 import os
+import sys
 import os.path as op
 
 from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP
@@ -10,6 +11,7 @@ from System.IO import IOException
 
 # pyrevit temp file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
+sys.path.append(PYREVIT_APP_DIR)
 
 if not op.isdir(PYREVIT_APP_DIR):
     try:

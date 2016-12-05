@@ -1,4 +1,5 @@
 import clr
+import os.path as op
 from collections import namedtuple
 
 import pyrevit.coreutils.appdata as appdata
@@ -159,7 +160,7 @@ def _produce_asm_file(extension):
         return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, True)
     elif appdata.is_data_file_available(file_id=ext_asm_fileid, file_ext=ASSEMBLY_FILE_TYPE):
         logger.debug('Extension assembly file already exists: {}'.format(ext_asm_file_path))
-        load_asm_file(ext_asm_file_path)
+        load_asm_file(op.basename(ext_asm_file_path))
         return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, False)
     else:
         return _create_asm_file(extension)

@@ -188,7 +188,7 @@ def find_loaded_asm(asm_name):
         return loaded_asm_list
 
 
-def load_asm_file(asm_file, using_appdomain=False):
+def load_asm_file(asm_file, using_appdomain=True):
     if using_appdomain:
         return AppDomain.CurrentDomain.Load(asm_file)
 

@@ -14,7 +14,7 @@ from System.CodeDom import Compiler
 logger = get_logger(__name__)
 
 
-def compile_to_asm(sourcecode_list, full_output_file_addr, reference_list=None):
+def compile_to_asm(sourcecode_list, full_output_file_addr, reference_list=None, resource_list=None):
     logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
     logger.debug('References assemblies are: {}'.format(reference_list))
 
@@ -26,8 +26,12 @@ def compile_to_asm(sourcecode_list, full_output_file_addr, reference_list=None):
     compiler_params.CompilerOptions = "/optimize"
 
     for reference in reference_list or []:
-        logger.debug('Adding reference to compiler: {}'.format(reference_list))
+        logger.debug('Adding reference to compiler: {}'.format(reference))
         compiler_params.ReferencedAssemblies.Add(reference)
+
+    for resource in resource_list or []:
+        logger.debug('Adding resource to compiler: {}'.format(resource))
+        compiler_params.EmbeddedResources.Add(resource)
 
     logger.debug('Getting sourcecode_list provider.')
     provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))

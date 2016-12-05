@@ -34,11 +34,17 @@ BASE_CLASSES_ASM_FILE = get_data_file(LOADER_BASE_NAMESPACE, ASSEMBLY_FILE_TYPE)
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]
 logger.debug('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
 
-DOTNET_FRAMEWORK_LOCATION_45 = r'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.2'
+# fixme: properly find the correct framework folder
+DOTNET_4_FRAMEWORK_LOCATION = r'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.1'
 
 
 def _get_framework_module(fw_module):
-    return op.join(DOTNET_FRAMEWORK_LOCATION_45, fw_module)
+    return op.join(DOTNET_4_FRAMEWORK_LOCATION, fw_module)
+
+
+def _get_resource(resource_name):
+    source_dir = op.dirname(op.dirname(__file__))
+    return op.join(source_dir, 'addin', 'Source', 'pyRevitLoader', 'Resources', resource_name)
 
 
 def _get_addin_files(addin_filename):
@@ -90,12 +96,13 @@ def _generate_base_classes_asm():
                                                        _get_addin_files('Microsoft.Scripting.Metadata.dll'),
                                                        _get_addin_files('WPG.dll'),
                                                        find_loaded_asm('RevitAPI').Location,
-                                                       find_loaded_asm('RevitAPIUI').Location])
+                                                       find_loaded_asm('RevitAPIUI').Location],
+                                       resource_list=[_get_resource('python_27_lib.zip')])
     except PyRevitException as compile_err:
         logger.critical('Can not compile interface types code into assembly. | {}'.format(compile_err))
         raise compile_err
 
-    return load_asm_file(BASE_CLASSES_ASM_FILE, using_appdomain=True)
+    return load_asm_file(BASE_CLASSES_ASM_NAME)
 
 
 def _find_pyrevit_base_class(base_class_name):
