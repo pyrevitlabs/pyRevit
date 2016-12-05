@@ -216,7 +216,7 @@ namespace PyRevitBaseClasses
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.UI.TaskDialog).Assembly);
 
             // also, allow access to the RPL internals
-            engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
+            engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
 
         }
 

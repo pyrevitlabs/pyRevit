@@ -4,17 +4,13 @@ import os
 import os.path as op
 import time
 
+from System import AppDomain
+from System.Diagnostics import Process
+from System.Reflection import Assembly
+
 from pyrevit import HOST_APP
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils.logger import get_logger
-
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-# noinspection PyUnresolvedReferences
-from System import AppDomain
-# noinspection PyUnresolvedReferences
-from System.Reflection import Assembly
-
 
 logger = get_logger(__name__)
 
@@ -192,7 +188,10 @@ def find_loaded_asm(asm_name):
         return loaded_asm_list
 
 
-def load_asm_file(asm_file):
+def load_asm_file(asm_file, using_appdomain=False):
+    if using_appdomain:
+        return AppDomain.CurrentDomain.Load(asm_file)
+
     return Assembly.LoadFile(asm_file)
 
 

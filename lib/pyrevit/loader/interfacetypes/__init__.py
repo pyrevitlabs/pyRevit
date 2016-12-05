@@ -1,24 +1,18 @@
-import clr
 import os
 import os.path as op
 
-from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import make_full_classname, find_loaded_asm, load_asm_file
-from pyrevit.coreutils.dotnetcompiler import compile_to_asm
-from pyrevit.coreutils.appdata import get_data_file
-
-from pyrevit.loader import ASSEMBLY_FILE_TYPE, LOADER_ADDON_NAMESPACE
-
-# noinspection PyUnresolvedReferences
-from System import Array, Type
-# noinspection PyUnresolvedReferences
-from System.Reflection import TypeAttributes, MethodAttributes, CallingConventions
-# noinspection PyUnresolvedReferences
-from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
-# noinspection PyUnresolvedReferences
+import clr
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
+from System import Array, Type
+from System.Reflection import TypeAttributes, MethodAttributes, CallingConventions
+from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
+from pyrevit.core.exceptions import PyRevitException
+from pyrevit.coreutils import make_full_classname, find_loaded_asm, load_asm_file
+from pyrevit.coreutils.appdata import get_data_file
+from pyrevit.coreutils.dotnetcompiler import compile_to_asm
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.loader import ASSEMBLY_FILE_TYPE
 
 logger = get_logger(__name__)
 
@@ -96,13 +90,12 @@ def _generate_base_classes_asm():
                                                        _get_addin_files('Microsoft.Scripting.Metadata.dll'),
                                                        _get_addin_files('WPG.dll'),
                                                        find_loaded_asm('RevitAPI').Location,
-                                                       find_loaded_asm('RevitAPIUI').Location,
-                                                       find_loaded_asm(LOADER_ADDON_NAMESPACE).Location])
+                                                       find_loaded_asm('RevitAPIUI').Location])
     except PyRevitException as compile_err:
         logger.critical('Can not compile interface types code into assembly. | {}'.format(compile_err))
         raise compile_err
 
-    return load_asm_file(baseclass_asm)
+    return load_asm_file(BASE_CLASSES_ASM_FILE, using_appdomain=True)
 
 
 def _find_pyrevit_base_class(base_class_name):
