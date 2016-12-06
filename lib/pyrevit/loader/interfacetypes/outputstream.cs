@@ -38,9 +38,8 @@ namespace PyRevitBaseClasses
 
             _bomCharsLeft = 3; //0xef, 0xbb, 0xbf for UTF-8 (see http://en.wikipedia.org/wiki/Byte_order_mark#Representations_of_byte_order_marks_by_encoding)
 
-            var config = new ExternalConfig();
-            _default_element = config.defaultelement;
-            _err_msg_html_element = config.errordiv;
+            _default_element = ExternalConfig.defaultelement;
+            _err_msg_html_element = ExternalConfig.errordiv;
 
         }
 

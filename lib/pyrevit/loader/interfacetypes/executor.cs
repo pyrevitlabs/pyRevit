@@ -50,9 +50,8 @@ namespace PyRevitBaseClasses
 
             _uiControlledApplication = null;
 
-            var config = new ExternalConfig();
-            _dotnet_err_title = config.dotneterrtitle;
-            _ipy_err_title = config.ipyerrtitle;
+            _dotnet_err_title = ExternalConfig.dotneterrtitle;
+            _ipy_err_title = ExternalConfig.ipyerrtitle;
         }
 
         public string Message
