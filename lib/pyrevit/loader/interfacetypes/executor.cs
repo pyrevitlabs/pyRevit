@@ -50,8 +50,9 @@ namespace PyRevitBaseClasses
 
             _uiControlledApplication = null;
 
-            _dotnet_err_title = ExternalConfig.ExtractDLLConfigParameter("dotneterrtitle");
-            _ipy_err_title = ExternalConfig.ExtractDLLConfigParameter("ipyerrtitle");
+            var config = new ExternalConfig();
+            _dotnet_err_title = config.dotneterrtitle;
+            _ipy_err_title = config.ipyerrtitle;
         }
 
         public string Message
@@ -145,7 +146,7 @@ namespace PyRevitBaseClasses
                     _ipy_err_messages = string.Join("\n", _ipy_err_title, _ipy_err_messages);
                     _dotnet_err_message = string.Join("\n", _dotnet_err_title, _dotnet_err_message);
 
-                    outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);                  
+                    outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
                     _message = "";
                     return (int)Result.Cancelled;
                 }
@@ -198,7 +199,7 @@ namespace PyRevitBaseClasses
             scope.SetVariable("__elements__", _elements);
             scope.SetVariable("__result__", (int)Result.Succeeded);
 
-            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
+            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
 

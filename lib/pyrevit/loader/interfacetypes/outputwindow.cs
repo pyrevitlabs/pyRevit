@@ -17,8 +17,8 @@ namespace PyRevitBaseClasses
                 Application.DoEvents();
             }
 
-            var style = ExternalConfig.ExtractDLLConfigParameter("htmlstyle");
-            txtStdOut.Document.Body.Style = style;
+            var config = new ExternalConfig();
+            txtStdOut.Document.Body.Style = config.htmlstyle;
         }
 
         private void ScriptOutput_Load(object sender, EventArgs e)

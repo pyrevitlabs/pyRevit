@@ -38,8 +38,9 @@ namespace PyRevitBaseClasses
 
             _bomCharsLeft = 3; //0xef, 0xbb, 0xbf for UTF-8 (see http://en.wikipedia.org/wiki/Byte_order_mark#Representations_of_byte_order_marks_by_encoding)
 
-            _default_element = ExternalConfig.ExtractDLLConfigParameter("defaultelement");
-            _err_msg_html_element = ExternalConfig.ExtractDLLConfigParameter("errordiv");
+            var config = new ExternalConfig();
+            _default_element = config.defaultelement;
+            _err_msg_html_element = config.errordiv;
 
         }
 
@@ -110,7 +111,7 @@ namespace PyRevitBaseClasses
         /// Read from the _inputBuffer, block until a new line has been entered...
         /// </summary>
         public override int Read(byte[] buffer, int offset, int count)
-        {                     
+        {
             while (_completedLines.Count < 1)
             {
                 if (_gui.Visible == false)
@@ -124,7 +125,7 @@ namespace PyRevitBaseClasses
             var line = _completedLines.Dequeue();
             return line.Read(buffer, offset, count);
         }
-       
+
         public override bool CanRead
         {
             get { return !_gui.IsDisposed; }

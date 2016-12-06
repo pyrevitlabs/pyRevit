@@ -8,8 +8,8 @@ from System.Reflection import TypeAttributes, MethodAttributes, CallingConventio
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm
-from pyrevit.coreutils.appdata import get_data_file
+from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm, calculate_dir_hash
+from pyrevit.coreutils.appdata import get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_to_asm
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
@@ -21,6 +21,7 @@ logger = get_logger(__name__)
 LOADER_DIR = op.dirname(op.dirname(__file__))
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
+INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'interfacetypes')
 
 DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
                          'Reference Assemblies', 'Microsoft', 'Framework', '.NETFramework')
@@ -39,8 +40,10 @@ CMD_AVAIL_CLS_NAME = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandD
 CMD_AVAIL_CLS_NAME_CATEGORY = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
 CMD_AVAIL_CLS_NAME_SELECTION = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
-
-BASE_CLASSES_ASM_FILE = get_data_file(LOADER_BASE_NAMESPACE, ASSEMBLY_FILE_TYPE)
+source_file_filter = '(\.cs)'
+BASE_CLASSES_ASM_FILE_ID = '{}_{}'.format(calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter),
+                                          LOADER_BASE_NAMESPACE)
+BASE_CLASSES_ASM_FILE = get_data_file(BASE_CLASSES_ASM_FILE_ID, ASSEMBLY_FILE_TYPE)
 # taking the name of the generated data file and use it as assembly name
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]
 logger.debug('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
@@ -129,6 +132,13 @@ def _generate_base_classes_asm():
         raise compile_err
 
 
+def _get_base_classes_asm():
+    if is_data_file_available(file_id=BASE_CLASSES_ASM_FILE_ID, file_ext=ASSEMBLY_FILE_TYPE):
+        return load_asm(BASE_CLASSES_ASM_NAME)
+    else:
+        return _generate_base_classes_asm()
+
+
 def _find_pyrevit_base_class(base_class_name):
     base_class = BASE_CLASSES_ASM.GetType(base_class_name)
     if base_class is not None:
@@ -142,7 +152,7 @@ def _find_pyrevit_base_class(base_class_name):
 BASE_CLASSES_ASM = find_loaded_asm(BASE_CLASSES_ASM_NAME)
 # else, let's generate the assembly and load it
 if not BASE_CLASSES_ASM:
-    BASE_CLASSES_ASM = _generate_base_classes_asm()
+    BASE_CLASSES_ASM = _get_base_classes_asm()
 
 
 CMD_EXECUTOR_CLASS = _find_pyrevit_base_class(CMD_EXECUTOR_CLASS_NAME)

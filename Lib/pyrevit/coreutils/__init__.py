@@ -3,6 +3,8 @@ import inspect
 import os
 import os.path as op
 import time
+import hashlib
+import re
 
 from System import AppDomain
 from System.Diagnostics import Process
@@ -200,3 +202,16 @@ def load_asm_file(asm_file):
 
 def make_canonical_name(*args):
     return '.'.join(args)
+
+
+def calculate_dir_hash(dir_path, dir_filter, file_filter):
+    """Creates a unique hash # to represent state of directory."""
+    mtime_sum = 0
+    for root, dirs, files in os.walk(dir_path):
+        if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
+            mtime_sum += op.getmtime(root)
+            for filename in files:
+                if re.search(file_filter, filename, flags=re.IGNORECASE):
+                    modtime = op.getmtime(op.join(root, filename))
+                    mtime_sum += modtime
+    return hashlib.md5(str(mtime_sum).encode('utf-8')).hexdigest()

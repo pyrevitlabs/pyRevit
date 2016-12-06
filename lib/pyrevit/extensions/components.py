@@ -1,10 +1,8 @@
-import hashlib
 import os
 import os.path as op
-import re
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import ScriptFileParser
+from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import LINK_BUTTON_POSTFIX, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM
 from pyrevit.extensions import PANEL_POSTFIX, TAB_POSTFIX
@@ -181,15 +179,7 @@ class Extension(GenericUIContainer):
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
-        mtime_sum = 0
-        for root, dirs, files in os.walk(self.directory):
-            if re.search(pat, op.basename(root), flags=re.IGNORECASE):
-                mtime_sum += op.getmtime(root)
-                for filename in files:
-                    if re.search(patfile, filename, flags=re.IGNORECASE):
-                        modtime = op.getmtime(op.join(root, filename))
-                        mtime_sum += modtime
-        return hashlib.md5(str(mtime_sum).encode('utf-8')).hexdigest()
+        return calculate_dir_hash(self.directory, pat, patfile)
 
 
 # library extension class
