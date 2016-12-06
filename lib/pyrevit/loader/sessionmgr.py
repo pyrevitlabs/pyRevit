@@ -28,7 +28,7 @@ def _perform_onstartup_operations():
 def _report_env():
     # log python version, home directory, config file, ...
     pyrvt_ver = PYREVIT_VERSION.get_formatted()
-    logger.info('pyRevit version: {} - Made with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
+    logger.info('pyRevit version: {} - :coded: with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
     logger.info('Config file is: {}'.format(user_config.config_file))
