@@ -87,15 +87,15 @@ def _get_reference_file(ref_name):
     if addin_file:
         return addin_file
 
-    # Then try to find location of assembly if already loaded
-    loaded_asm = find_loaded_asm(ref_name)
-    if loaded_asm:
-        return loaded_asm.Location
-
-    # Lastly try to find the dll in windows SDK
+    # Then try to find the dll in windows SDK
     fw_module_file = _get_framework_module(ref_name)
     if fw_module_file:
         return fw_module_file
+
+    # Lastly try to find location of assembly if already loaded
+    loaded_asm = find_loaded_asm(ref_name)
+    if loaded_asm:
+        return loaded_asm.Location
 
     # if not worked raise critical error
     logger.critical('Can not find required reference assembly: {}'.format(ref_name))
