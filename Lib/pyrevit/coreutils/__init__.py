@@ -180,7 +180,7 @@ def find_loaded_asm(asm_name):
         return None
     elif count == 1:
         found_asm = loaded_asm_list[0]
-        logger.debug('Assembly found: {}'.format(found_asm))
+        logger.debug('Assembly found: {} at {}'.format(found_asm, found_asm.Location))
         return found_asm
     elif count > 1:
         found_asm_list = loaded_asm_list
@@ -188,12 +188,15 @@ def find_loaded_asm(asm_name):
         return loaded_asm_list
 
 
-def load_asm_file(asm_file, using_appdomain=True):
-    if using_appdomain:
-        return AppDomain.CurrentDomain.Load(asm_file)
+def load_asm(asm_file):
+    logger.debug('Loading assembly to AppDomain: {}'.format(asm_file))
+    return AppDomain.CurrentDomain.Load(asm_file)
 
+
+def load_asm_file(asm_file):
+    logger.info('Loading assembly: {}'.format(asm_file))
     return Assembly.LoadFile(asm_file)
 
 
-def make_full_classname(namespace, class_name):
-    return '{}.{}'.format(namespace, class_name)
+def make_canonical_name(*args):
+    return '.'.join(args)

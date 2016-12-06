@@ -1,15 +1,15 @@
-import clr
 import os.path as op
 from collections import namedtuple
 
+import clr
+
 import pyrevit.coreutils.appdata as appdata
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
-from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm
+from pyrevit.coreutils import join_strings, load_asm, find_loaded_asm
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.repo import PYREVIT_VERSION
-
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
 from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes
+from pyrevit.repo import PYREVIT_VERSION
 
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
@@ -160,7 +160,7 @@ def _produce_asm_file(extension):
         return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, True)
     elif appdata.is_data_file_available(file_id=ext_asm_fileid, file_ext=ASSEMBLY_FILE_TYPE):
         logger.debug('Extension assembly file already exists: {}'.format(ext_asm_file_path))
-        load_asm_file(op.basename(ext_asm_file_path))
+        load_asm(op.basename(ext_asm_file_path))
         return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, False)
     else:
         return _create_asm_file(extension)

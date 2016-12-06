@@ -8,13 +8,24 @@ from System.Reflection import TypeAttributes, MethodAttributes, CallingConventio
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import make_full_classname, find_loaded_asm, load_asm_file
+from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm
 from pyrevit.coreutils.appdata import get_data_file
 from pyrevit.coreutils.dotnetcompiler import compile_to_asm
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
 
 logger = get_logger(__name__)
+
+
+# folders --------------------------------------------------------------------------------------------------------------
+LOADER_DIR = op.dirname(op.dirname(__file__))
+ADDIN_DIR = op.join(LOADER_DIR, 'addin')
+ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
+
+DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
+                         'Reference Assemblies', 'Microsoft', 'Framework', '.NETFramework')
+
+FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
 
 
 # base classes for pyRevit commands ------------------------------------------------------------------------------------
@@ -24,32 +35,15 @@ LOADER_BASE_NAMESPACE = 'PyRevitBaseClasses'
 CMD_EXECUTOR_CLASS_NAME = '{}.{}'.format(LOADER_BASE_NAMESPACE, 'PyRevitCommand')
 
 # template python command availability class
-CMD_AVAIL_CLS_NAME = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
-CMD_AVAIL_CLS_NAME_CATEGORY = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
-CMD_AVAIL_CLS_NAME_SELECTION = make_full_classname(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
+CMD_AVAIL_CLS_NAME = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
+CMD_AVAIL_CLS_NAME_CATEGORY = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
+CMD_AVAIL_CLS_NAME_SELECTION = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
 
 BASE_CLASSES_ASM_FILE = get_data_file(LOADER_BASE_NAMESPACE, ASSEMBLY_FILE_TYPE)
 # taking the name of the generated data file and use it as assembly name
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]
 logger.debug('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
-
-# fixme: properly find the correct framework folder
-DOTNET_4_FRAMEWORK_LOCATION = r'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.1'
-
-
-def _get_framework_module(fw_module):
-    return op.join(DOTNET_4_FRAMEWORK_LOCATION, fw_module)
-
-
-def _get_resource(resource_name):
-    source_dir = op.dirname(op.dirname(__file__))
-    return op.join(source_dir, 'addin', 'Source', 'pyRevitLoader', 'Resources', resource_name)
-
-
-def _get_addin_files(addin_filename):
-    source_dir = op.dirname(op.dirname(__file__))
-    return op.join(source_dir, 'addin', addin_filename)
 
 
 def _get_source_files():
@@ -65,6 +59,59 @@ def _get_source_files():
     return source_files
 
 
+def _get_resource_file(resource_name):
+    return op.join(ADDIN_RESOURCE_DIR, resource_name)
+
+
+def _get_framework_module(fw_module):
+    # start with the newest sdk folder and work backwards trying to find the dll
+    for sdk_folder in reversed(FRAMEWORK_DIRS):
+        fw_module_file = op.join(DOTNET_SDK_DIR, sdk_folder, make_canonical_name(fw_module, ASSEMBLY_FILE_TYPE))
+        if op.exists(fw_module_file):
+            return fw_module_file
+
+    return None
+
+
+def _get_addin_dll_file(addin_filename):
+    addin_file = op.join(ADDIN_DIR, make_canonical_name(addin_filename, ASSEMBLY_FILE_TYPE))
+    if op.exists(addin_file):
+        return addin_file
+
+    return None
+
+
+def _get_reference_file(ref_name):
+    # First try to find the dll in the project folder
+    addin_file = _get_addin_dll_file(ref_name)
+    if addin_file:
+        return addin_file
+
+    # Then try to find location of assembly if already loaded
+    loaded_asm = find_loaded_asm(ref_name)
+    if loaded_asm:
+        return loaded_asm.Location
+
+    # Lastly try to find the dll in windows SDK
+    fw_module_file = _get_framework_module(ref_name)
+    if fw_module_file:
+        return fw_module_file
+
+    # if not worked raise critical error
+    logger.critical('Can not find required reference assembly: {}'.format(ref_name))
+
+
+def _get_references():
+    ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
+                'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.Scripting.Metadata', 'WPG',
+                'System', 'System.Core', 'System.Configuration', 'System.Data', 'System.Data.DataSetExtensions',
+                'System.Windows.Forms', 'System.Xml', 'System.Xml.Linq', 'Microsoft.CSharp', 'PresentationCore',
+                'PresentationFramework', 'System.Drawing', 'UIAutomationProvider', 'WindowsBase',
+                'WindowsFormsIntegration']
+
+    return [_get_reference_file(ref_name) for ref_name in ref_list]
+
+
 def _generate_base_classes_asm():
     source_list = list()
     for source_file in _get_source_files():
@@ -73,36 +120,13 @@ def _generate_base_classes_asm():
             source_list.append(code_file.read())
     try:
         logger.debug('Compiling interface types to: {}'.format(BASE_CLASSES_ASM_FILE))
-        baseclass_asm = compile_to_asm(source_list, BASE_CLASSES_ASM_FILE,
-                                       reference_list=[_get_framework_module('System.dll'),
-                                                       _get_framework_module('System.Core.dll'),
-                                                       _get_framework_module('System.Configuration.dll'),
-                                                       _get_framework_module('System.Data.dll'),
-                                                       _get_framework_module('System.Data.DataSetExtensions.dll'),
-                                                       _get_framework_module('System.Windows.Forms.dll'),
-                                                       _get_framework_module('System.Xml.dll'),
-                                                       _get_framework_module('System.Xml.Linq.dll'),
-                                                       _get_framework_module('Microsoft.CSharp.dll'),
-                                                       _get_framework_module('PresentationCore.dll'),
-                                                       _get_framework_module('PresentationFramework.dll'),
-                                                       _get_framework_module('System.Drawing.dll'),
-                                                       _get_framework_module('UIAutomationProvider.dll'),
-                                                       _get_framework_module('WindowsBase.dll'),
-                                                       _get_framework_module('WindowsFormsIntegration.dll'),
-                                                       _get_addin_files('IronPython.dll'),
-                                                       _get_addin_files('IronPython.Modules.dll'),
-                                                       _get_addin_files('Microsoft.Dynamic.dll'),
-                                                       _get_addin_files('Microsoft.Scripting.dll'),
-                                                       _get_addin_files('Microsoft.Scripting.Metadata.dll'),
-                                                       _get_addin_files('WPG.dll'),
-                                                       find_loaded_asm('RevitAPI').Location,
-                                                       find_loaded_asm('RevitAPIUI').Location],
-                                       resource_list=[_get_resource('python_27_lib.zip')])
+        compile_to_asm(source_list, BASE_CLASSES_ASM_FILE,
+                       reference_list=_get_references(), resource_list=[_get_resource_file('python_27_lib.zip')])
+        return load_asm(BASE_CLASSES_ASM_NAME)
+
     except PyRevitException as compile_err:
         logger.critical('Can not compile interface types code into assembly. | {}'.format(compile_err))
         raise compile_err
-
-    return load_asm_file(BASE_CLASSES_ASM_NAME)
 
 
 def _find_pyrevit_base_class(base_class_name):
