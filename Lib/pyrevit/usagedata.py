@@ -156,6 +156,13 @@ class UsageDatabase:
 
         return list(scripts)
 
+    def get_script_usage_count(self, script_name):
+        count = 0
+        for entry in self:  # type: UsageDataEntry
+            if entry.script_name == script_name:
+                count +=1
+        return count
+
 
 def get_usagedata_db():
     """Returns an instance of the usagedata database
