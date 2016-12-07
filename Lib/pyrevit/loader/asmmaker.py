@@ -56,7 +56,7 @@ class CommandExecutorParams:
 
 
 def _make_ext_asm_name(extension):
-    return '{}{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, extension.hash_value, extension.name)
+    return '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, extension.hash_value, extension.name)
 
 
 def _make_ext_asm_fileid(extension):

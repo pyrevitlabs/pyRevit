@@ -196,7 +196,7 @@ def load_asm(asm_file):
 
 
 def load_asm_file(asm_file):
-    logger.info('Loading assembly: {}'.format(asm_file))
+    logger.debug('Loading assembly: {}'.format(asm_file))
     return Assembly.LoadFile(asm_file)
 
 

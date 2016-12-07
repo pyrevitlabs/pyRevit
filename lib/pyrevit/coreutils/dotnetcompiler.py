@@ -14,7 +14,7 @@ from System.CodeDom import Compiler
 logger = get_logger(__name__)
 
 
-def compile_to_asm(sourcecode_list, full_output_file_addr, reference_list=None, resource_list=None):
+def compile_csharp(sourcecode_list, full_output_file_addr, reference_list=None, resource_list=None):
     logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
     logger.debug('References assemblies are: {}'.format(reference_list))
 
