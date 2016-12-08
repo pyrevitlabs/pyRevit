@@ -34,5 +34,5 @@ with Transaction(doc, 'Halftone Elements in View') as t:
         ogs = OverrideGraphicSettings()
         ogs.SetHalftone(True)
         # ogs.SetProjectionFillPatternVisible(False)
-        doc.ActiveView.SetElementOverrides(el.Id, ogs);
+        doc.ActiveView.SetElementOverrides(el.Id, ogs)
     t.Commit()
