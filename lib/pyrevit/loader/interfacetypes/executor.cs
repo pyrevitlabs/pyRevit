@@ -52,8 +52,20 @@ namespace PyRevitBaseClasses
 
             _dotnet_err_title = ExternalConfig.dotneterrtitle;
             _ipy_err_title = ExternalConfig.ipyerrtitle;
+
+//            AppDomain.CurrentDomain.AssemblyResolve += OnResolveAssembly;
         }
 
+//        private static Assembly OnResolveAssembly(object sender, ResolveEventArgs e)
+//        {
+//            using (StreamWriter sw = File.AppendText(@"C:\\Users\\LeoW10\\Desktop\\test.txt"))
+//            {
+//                sw.WriteLine(String.Format("Asking for: {0}\n\tBy: {1}", e.Name, e.RequestingAssembly));
+//                return null;
+//            }
+//        }
+//
+//
         public string Message
         {
             get
@@ -160,7 +172,10 @@ namespace PyRevitBaseClasses
 
         private ScriptEngine CreateEngine()
         {
-            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() { { "Frames", true }, { "FullFrames", true } });
+            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
+            {
+                { "Frames", true }, { "FullFrames", true }
+            });
             return engine;
         }
 

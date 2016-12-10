@@ -1,11 +1,10 @@
-import os.path as op
 from collections import namedtuple
 
 import clr
 
 import pyrevit.coreutils.appdata as appdata
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
-from pyrevit.coreutils import join_strings, load_asm, find_loaded_asm
+from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
 from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes
@@ -100,35 +99,30 @@ def _get_params_for_commands(parent_cmp):
     return loader_params_for_all_cmds
 
 
-def _create_asm_file(extension):
-    # make unique assembly name for this package
-    ext_asm_name = _make_ext_asm_name(extension)
-    # unique assembly filename for this package
-    ext_asm_fileid = _make_ext_asm_fileid(extension)
-    ext_asm_file_name = appdata.get_data_file(file_id=ext_asm_fileid,
-                                              file_ext=ASSEMBLY_FILE_TYPE, name_only=True)
-    ext_asm_file_path = appdata.get_data_file(file_id=ext_asm_fileid,
-                                              file_ext=ASSEMBLY_FILE_TYPE)
-
+def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     # check to see if any older assemblies have been loaded for this package
+    ext_asm_full_file_name = make_canonical_name(ext_asm_file_name, ASSEMBLY_FILE_TYPE)
+
     # this means that we currently have this package loaded and we're reloading a new version
     is_reloading_pkg = _is_any_ext_asm_loaded(extension)
 
     # create assembly
     logger.debug('Building assembly for package: {}'.format(extension))
     pyrvt_ver_int_tuple = PYREVIT_VERSION.as_int_tuple()
-    win_asm_name = AssemblyName(Name=ext_asm_name, Version=Version(pyrvt_ver_int_tuple[0],
-                                                                   pyrvt_ver_int_tuple[1],
-                                                                   pyrvt_ver_int_tuple[2], 0))
-    logger.debug('Generated assembly name for this package: {0}'.format(ext_asm_name))
+    win_asm_name = AssemblyName(Name=ext_asm_file_name, Version=Version(pyrvt_ver_int_tuple[0],
+                                                                        pyrvt_ver_int_tuple[1],
+                                                                        pyrvt_ver_int_tuple[2], 0))
+    logger.debug('Generated assembly name for this package: {0}'.format(ext_asm_file_name))
     logger.debug('Generated windows assembly name for this package: {0}'.format(win_asm_name))
-    logger.debug('Generated assembly file name for this package: {0}'.format(ext_asm_file_name))
+    logger.debug('Generated assembly file name for this package: {0}'.format(ext_asm_full_file_name))
+
+    # get assembly builder
     asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(win_asm_name,
                                                                 AssemblyBuilderAccess.RunAndSave,
                                                                 appdata.PYREVIT_APP_DIR)
 
     # get module builder
-    module_builder = asm_builder.DefineDynamicModule(ext_asm_name, ext_asm_file_name)
+    module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name, ext_asm_full_file_name)
 
     # create classes that could be called from any button (shared classes)
     # currently only default availability class is implemented. default availability class is for resetting
@@ -142,28 +136,30 @@ def _create_asm_file(extension):
         make_cmd_classes(module_builder, cmd_params)
 
     # save final assembly
-    asm_builder.Save(ext_asm_file_name)
+    asm_builder.Save(ext_asm_full_file_name)
+    load_asm_file(ext_asm_file_path)
+
     logger.debug('Executer assembly saved.')
-    return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, is_reloading_pkg)
+    return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, is_reloading_pkg)
 
 
 def _produce_asm_file(extension):
-    # make unique assembly name for this package
-    ext_asm_name = _make_ext_asm_name(extension)
     # unique assembly filename for this package
     ext_asm_fileid = _make_ext_asm_fileid(extension)
     ext_asm_file_path = appdata.get_data_file(file_id=ext_asm_fileid,
                                               file_ext=ASSEMBLY_FILE_TYPE)
+    # make unique assembly name for this package
+    ext_asm_file_name = get_file_name(ext_asm_file_path)
 
-    if _is_pyrevit_ext_already_loaded(ext_asm_name):
-        logger.debug('Extension assembly is already loaded: {}'.format(ext_asm_name))
-        return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, True)
+    if _is_pyrevit_ext_already_loaded(ext_asm_file_name):
+        logger.debug('Extension assembly is already loaded: {}'.format(ext_asm_file_name))
+        return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, True)
     elif appdata.is_data_file_available(file_id=ext_asm_fileid, file_ext=ASSEMBLY_FILE_TYPE):
         logger.debug('Extension assembly file already exists: {}'.format(ext_asm_file_path))
-        load_asm(op.basename(ext_asm_file_path))
-        return ExtensionAssemblyInfo(ext_asm_name, ext_asm_file_path, False)
+        load_asm_file(ext_asm_file_path)
+        return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, False)
     else:
-        return _create_asm_file(extension)
+        return _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path)
 
 
 def create_assembly(extension):

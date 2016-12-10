@@ -1,24 +1,19 @@
 import os
-import sys
 import os.path as op
-import clr
+import sys
 
-# noinspection PyUnresolvedReferences
+import clr
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
-# noinspection PyUnresolvedReferences
 from System import Array, Type
-# noinspection PyUnresolvedReferences
 from System.Reflection import TypeAttributes, MethodAttributes, CallingConventions
-# noinspection PyUnresolvedReferences
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm, calculate_dir_hash
-from pyrevit.coreutils.appdata import get_data_file, is_data_file_available
+from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash
+from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
-
 
 logger = get_logger(__name__)
 
@@ -26,7 +21,10 @@ logger = get_logger(__name__)
 # folders --------------------------------------------------------------------------------------------------------------
 LOADER_DIR = op.dirname(op.dirname(__file__))
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
+
 sys.path.append(ADDIN_DIR)
+sys.path.append(PYREVIT_APP_DIR)
+
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
 INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'interfacetypes')
 
@@ -78,6 +76,7 @@ def _get_framework_module(fw_module):
     for sdk_folder in reversed(FRAMEWORK_DIRS):
         fw_module_file = op.join(DOTNET_SDK_DIR, sdk_folder, make_canonical_name(fw_module, ASSEMBLY_FILE_TYPE))
         if op.exists(fw_module_file):
+            sys.path.append(op.join(DOTNET_SDK_DIR, sdk_folder))
             return fw_module_file
 
     return None
@@ -112,13 +111,10 @@ def _get_reference_file(ref_name):
 
 
 def _get_references():
-    ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules', 'WPG',
+    ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'Microsoft.Scripting.Metadata', 'Microsoft.Scripting.AspNet',
-                'System', 'System.Core', 'System.Configuration', 'System.Data', 'System.Data.DataSetExtensions',
-                'System.Windows.Forms', 'System.Xml', 'System.Xml.Linq', 'PresentationCore',
-                'PresentationFramework', 'System.Drawing', 'UIAutomationProvider', 'WindowsBase',
-                'WindowsFormsIntegration']
+                'System', 'System.Core', 'System.Drawing', 'System.Windows.Forms',
+                'PresentationCore', 'PresentationFramework', 'WindowsBase']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
@@ -133,7 +129,7 @@ def _generate_base_classes_asm():
         logger.debug('Compiling interface types to: {}'.format(BASE_CLASSES_ASM_FILE))
         compile_csharp(source_list, BASE_CLASSES_ASM_FILE,
                        reference_list=_get_references(), resource_list=[_get_resource_file('python_27_lib.zip')])
-        return load_asm(BASE_CLASSES_ASM_NAME)
+        return load_asm_file(BASE_CLASSES_ASM_FILE)
 
     except PyRevitException as compile_err:
         logger.critical('Can not compile interface types code into assembly. | {}'.format(compile_err))
@@ -142,7 +138,7 @@ def _generate_base_classes_asm():
 
 def _get_base_classes_asm():
     if is_data_file_available(file_id=BASE_CLASSES_ASM_FILE_ID, file_ext=ASSEMBLY_FILE_TYPE):
-        return load_asm(BASE_CLASSES_ASM_NAME)
+        return load_asm_file(BASE_CLASSES_ASM_FILE)
     else:
         return _generate_base_classes_asm()
 

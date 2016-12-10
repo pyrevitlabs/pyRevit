@@ -1,10 +1,10 @@
 import ast
+import hashlib
 import inspect
 import os
 import os.path as op
-import time
-import hashlib
 import re
+import time
 
 from System import AppDomain
 from System.Diagnostics import Process
@@ -190,18 +190,22 @@ def find_loaded_asm(asm_name):
         return loaded_asm_list
 
 
-def load_asm(asm_file):
-    logger.debug('Loading assembly to AppDomain: {}'.format(asm_file))
-    return AppDomain.CurrentDomain.Load(asm_file)
+def load_asm(asm_name):
+    logger.debug('Loading assembly to AppDomain: {}'.format(asm_name))
+    return AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
     logger.debug('Loading assembly: {}'.format(asm_file))
-    return Assembly.LoadFile(asm_file)
+    return Assembly.LoadFrom(asm_file)
 
 
 def make_canonical_name(*args):
     return '.'.join(args)
+
+
+def get_file_name(file_path):
+    return op.splitext(op.basename(file_path))[0]
 
 
 def calculate_dir_hash(dir_path, dir_filter, file_filter):

@@ -1,7 +1,8 @@
-import sys
 import os.path as op
-print '\n'.join(sys.path)
-sys.path.append(op.dirname(__file__))
+import sys
+
+# add the library location to the search paths
+sys.path.append(op.dirname(op.dirname(op.dirname(op.dirname(__file__)))))
 
 from pyrevit.loader.sessionmgr import load_session
 

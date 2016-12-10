@@ -48,10 +48,13 @@ Z:\Revit API\pyRevitv3\loaderBinaryDev\pyRevitLoader\obj\Release\pyRevitLoader.c
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\LibGit2Sharp.dll.config
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\PyRevitLoader.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\PyRevitLoader.pdb
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\IronPython.dll
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\IronPython.Modules.dll
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\IronPython.SQLite.dll
+\\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\IronPython.Wpf.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\LibGit2Sharp.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\WPG.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\LibGit2Sharp.pdb
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\bin\Release\LibGit2Sharp.xml
-\\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\obj\Release\pyRevitLoader.csprojResolveAssemblyReference.cache
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\obj\Release\PyRevitLoader.dll
 \\vmware-host\Shared Folders\Revit API\pyRevitv4\lib\pyrevit\loader\addin\Source\pyRevitLoader\obj\Release\PyRevitLoader.pdb
