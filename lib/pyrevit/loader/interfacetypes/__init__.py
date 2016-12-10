@@ -3,9 +3,13 @@ import os.path as op
 import sys
 
 import clr
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
+# noinspection PyUnresolvedReferences
 from System import Array, Type
+# noinspection PyUnresolvedReferences
 from System.Reflection import TypeAttributes, MethodAttributes, CallingConventions
+# noinspection PyUnresolvedReferences
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
 from pyrevit.core.exceptions import PyRevitException
