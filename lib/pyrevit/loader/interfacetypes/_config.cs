@@ -2,6 +2,7 @@ namespace PyRevitBaseClasses
 {
     public static class ExternalConfig
     {
+        public static string execversion = "4.0:5133275";
         public static string startupscript = ".\\pyRevitLoader.py";
         public static string lib = "..\\..\\..\\..\\Lib";
         public static string htmlstyle = "font-size:12;font-family:Verdana;";

@@ -19,6 +19,7 @@ from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
 
+
 logger = get_logger(__name__)
 
 
@@ -50,8 +51,8 @@ CMD_AVAIL_CLS_NAME_CATEGORY = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevi
 CMD_AVAIL_CLS_NAME_SELECTION = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
 source_file_filter = '(\.cs)'
-BASE_CLASSES_ASM_FILE_ID = '{}_{}'.format(calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter),
-                                          LOADER_BASE_NAMESPACE)
+BASE_CLASSES_DIR_HASH = calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)
+BASE_CLASSES_ASM_FILE_ID = '{}_{}'.format(BASE_CLASSES_DIR_HASH, LOADER_BASE_NAMESPACE)
 BASE_CLASSES_ASM_FILE = get_data_file(BASE_CLASSES_ASM_FILE_ID, ASSEMBLY_FILE_TYPE)
 # taking the name of the generated data file and use it as assembly name
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]

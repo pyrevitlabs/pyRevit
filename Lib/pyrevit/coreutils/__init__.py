@@ -6,8 +6,11 @@ import os.path as op
 import re
 import time
 
+# noinspection PyUnresolvedReferences
 from System import AppDomain
+# noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
+# noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
 
 from pyrevit import HOST_APP
@@ -208,6 +211,10 @@ def get_file_name(file_path):
     return op.splitext(op.basename(file_path))[0]
 
 
+def get_hash_str(source_str):
+    return hashlib.md5(source_str).hexdigest()
+
+
 def calculate_dir_hash(dir_path, dir_filter, file_filter):
     """Creates a unique hash # to represent state of directory."""
     mtime_sum = 0
@@ -218,4 +225,4 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
                 if re.search(file_filter, filename, flags=re.IGNORECASE):
                     modtime = op.getmtime(op.join(root, filename))
                     mtime_sum += modtime
-    return hashlib.md5(str(mtime_sum).encode('utf-8')).hexdigest()
+    return get_hash_str(str(mtime_sum).encode('utf-8'))

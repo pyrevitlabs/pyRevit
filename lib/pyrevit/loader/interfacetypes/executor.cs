@@ -109,6 +109,7 @@ namespace PyRevitBaseClasses
 
                 // add command name to builtins
                 builtin.SetVariable("__commandname__", cmdName);
+                builtin.SetVariable("__execversion__", ExternalConfig.execversion);
 
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);

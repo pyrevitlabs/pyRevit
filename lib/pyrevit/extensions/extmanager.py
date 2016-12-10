@@ -1,3 +1,4 @@
+from pyrevit import MAIN_LIB_DIR
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
@@ -21,6 +22,8 @@ logger = get_logger(__name__)
 
 
 def _update_extension_syspaths(ui_ext, lib_ext_list):
+    ui_ext.add_syspath(MAIN_LIB_DIR)
+
     for lib_ext in lib_ext_list:
         ui_ext.add_syspath(lib_ext.directory)
 

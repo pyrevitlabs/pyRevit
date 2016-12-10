@@ -3,11 +3,12 @@ from collections import namedtuple
 import clr
 
 import pyrevit.coreutils.appdata as appdata
-from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
+from pyrevit import PYREVIT_ADDON_NAME
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
+from pyrevit.coreutils import get_hash_str
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
-from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes
+from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
 from pyrevit.repo import PYREVIT_VERSION
 
 clr.AddReference('PresentationCore')
@@ -54,12 +55,13 @@ class CommandExecutorParams:
                                                                     self.cmd_context)
 
 
-def _make_ext_asm_name(extension):
-    return '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, extension.hash_value, extension.name)
+def _make_extension_hash(extension):
+    # creates a hash based on hash of baseclasses module that the extension is based upon
+    return get_hash_str(BASE_CLASSES_DIR_HASH + extension.hash_value)
 
 
 def _make_ext_asm_fileid(extension):
-    return '{}_{}'.format(extension.hash_value, extension.name)
+    return '{}_{}'.format(_make_extension_hash(extension), extension.name)
 
 
 def _is_pyrevit_ext_asm(asm_name, extension):
