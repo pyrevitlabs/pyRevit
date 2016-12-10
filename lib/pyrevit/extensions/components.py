@@ -1,4 +1,3 @@
-import os
 import os.path as op
 
 from pyrevit.core.exceptions import PyRevitException

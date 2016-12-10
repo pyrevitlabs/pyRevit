@@ -1,31 +1,3 @@
-""" Module name = _assemblies.py
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-
-
-~~~
-Description:
-This module provides access to script usage data.
-Script usage data is collected through log files. Each script will log its successful execution.
-The log file is session-based. All older log files will be archived per settings provided by the user.
-The logging system is handled through the loader addin and is inside the C# class for the script command. On startup,
-pyRevit assembly make will set the log filename inside each C# class created for script commands.
-"""
-
 import os
 import os.path as op
 import shutil as shutil
@@ -37,7 +9,9 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
 from pyrevit.userconfig import user_config
 
+# noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
+# noinspection PyUnresolvedReferences
 from System.IO import IOException
 
 
@@ -98,7 +72,7 @@ class UsageDataEntry:
             self.script_directory = op.dirname(self.script_entry)
             self.script_name = op.basename(self.script_entry)
         except Exception as err:
-            raise PyRevitException('Error creating entry from string: {}'.format(log_entry))
+            raise PyRevitException('Error creating entry from string: {} | {}'.format(log_entry, err))
 
 
 # Create interface???????? per PEP249 standard: https://www.python.org/dev/peps/pep-0249/
@@ -160,7 +134,7 @@ class UsageDatabase:
         count = 0
         for entry in self:  # type: UsageDataEntry
             if entry.script_name == script_name:
-                count +=1
+                count += 1
         return count
 
 

@@ -1,6 +1,7 @@
 import os
 import os.path as op
 
+# noinspection PyUnresolvedReferences
 from System.IO import IOException
 
 from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP

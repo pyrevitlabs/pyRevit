@@ -1,6 +1,5 @@
 import os.path as op
 
-from pyrevit import HOST_APP
 from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
@@ -12,7 +11,6 @@ from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
 from pyrevit.extensions import DEFAULT_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
 from pyrevit.extensions import MIN_PYREVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
 from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
-from pyrevit.repo import PYREVIT_VERSION
 from pyrevit.userconfig import user_config
 
 
@@ -288,12 +286,13 @@ class GenericUICommand(GenericUIComponent):
         logger.debug('Command author: {}'.format(self.author))
         logger.debug('Command options: {}'.format(self.cmd_options))
 
-        try:
-            # check minimum requirements
-            self._check_dependencies()
-        except PyRevitException as err:
-            logger.warning(err)
-            raise err
+        # fixme: correct dependency check
+        # try:
+        #     # check minimum requirements
+        #     self._check_dependencies()
+        # except PyRevitException as err:
+        #     logger.warning(err)
+        #     raise err
 
         # setting up a unique name for command. This name is especially useful for creating dll assembly
         self.unique_name = self._get_unique_name()
@@ -308,9 +307,8 @@ class GenericUICommand(GenericUIComponent):
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
-    def _check_dependencies(self):
-        # fixme: correct dependency check
-        return True
+    # def _check_dependencies(self):
+    #     return True
         # if self.min_revit_ver and HOST_APP.is_older_than(self.min_revit_ver):
         #     raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
         #                                                                                    self))
