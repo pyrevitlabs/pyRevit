@@ -1,5 +1,8 @@
+import sys
 import os
 import os.path as op
+import traceback
+import __builtin__
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -60,25 +63,32 @@ class _ExecutorParams(object):
         except:
             return False
 
-    @property   # read-only
+    @property   # writeabe
     def window_handle(self):
         # noinspection PyUnresolvedReferences
-        return __window__
+        return __window__ if __window__ else None
+
+    @window_handle.setter
+    def window_handle(self, value):
+        __builtin__.__window__ = value
 
     @property   # writeabe
     def command_name(self):
-        # noinspection PyUnresolvedReferences
-        return __commandname__
+        try:
+            # noinspection PyUnresolvedReferences
+            return __commandname__
+        except:
+            return None
 
     @command_name.setter
     def command_name(self, value):
         # noinspection PyUnusedLocal
-        __commandname__ = value
+        __builtin__.__commandname__ = value
 
     @property   # read-only
     def executor_version(self):
-        # noinspection PyUnresolvedReferences
         try:
+            # noinspection PyUnresolvedReferences
             for custom_attr in __assmcustomattrs__:
                 if 'AssemblyPyRevitVersion' in str(custom_attr.AttributeType):
                     return str(custom_attr.ConstructorArguments[0]).replace('\"', '')
@@ -117,3 +127,28 @@ _VERSION_MINOR = 0
 # user env paths
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Base Exceptions
+# ----------------------------------------------------------------------------------------------------------------------
+TRACEBACK_TITLE = 'Traceback:'
+
+
+# General Exceptions
+class PyRevitException(Exception):
+    """Base class for all pyRevit Exceptions.
+    Parameters args and message are derived from Exception class.
+    """
+    def __str__(self):
+        sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+        tb_report = traceback.format_tb(sys.exc_traceback)[0]
+        if self.args:
+            message = self.args[0]
+            return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
+        else:
+            return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
+
+
+class PyRevitIOError(PyRevitException):
+    pass

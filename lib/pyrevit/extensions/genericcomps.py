@@ -1,7 +1,6 @@
 import os.path as op
 
-from pyrevit import MAIN_LIB_DIR
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import MAIN_LIB_DIR, PyRevitException
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM

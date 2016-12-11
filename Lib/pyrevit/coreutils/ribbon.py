@@ -2,8 +2,7 @@ from collections import OrderedDict
 
 import clr
 
-from pyrevit import HOST_APP, EXEC_PARAMS
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 
 clr.AddReference('RevitAPIUI')

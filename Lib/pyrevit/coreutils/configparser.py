@@ -1,7 +1,7 @@
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
-from pyrevit.core.exceptions import PyRevitException, PyRevitIOError
+from pyrevit import PyRevitException, PyRevitIOError
 
 # noinspection PyUnresolvedReferences
 from System.IO import IOException

@@ -1,7 +1,7 @@
 import json
 
+from pyrevit import PyRevitException
 import pyrevit.coreutils.appdata as appdata
-from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 

@@ -1,4 +1,4 @@
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences

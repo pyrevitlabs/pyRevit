@@ -1,6 +1,6 @@
 import os.path as op
 
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import PyRevitException
 from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import LINK_BUTTON_POSTFIX, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM

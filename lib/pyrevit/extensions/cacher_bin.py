@@ -1,7 +1,7 @@
 import pickle
 
+from pyrevit import PyRevitException
 import pyrevit.coreutils.appdata as appdata
-from pyrevit.core.exceptions import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 
 logger = get_logger(__name__)

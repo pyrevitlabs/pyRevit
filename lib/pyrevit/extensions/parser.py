@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import PyRevitException
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 

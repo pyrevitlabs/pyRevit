@@ -3,8 +3,7 @@ import os.path as op
 # noinspection PyUnresolvedReferences
 from System.IO import IOException
 
-from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
-from pyrevit.core.exceptions import PyRevitIOError
+from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, PyRevitIOError
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
 from pyrevit.coreutils.configparser import PyRevitConfigParser
 from pyrevit.coreutils.logger import get_logger

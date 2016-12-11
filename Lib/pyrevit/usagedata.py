@@ -3,8 +3,7 @@ import os.path as op
 import shutil as shutil
 from datetime import datetime
 
-from pyrevit import PYREVIT_ADDON_NAME
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import PYREVIT_ADDON_NAME, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
 from pyrevit.userconfig import user_config

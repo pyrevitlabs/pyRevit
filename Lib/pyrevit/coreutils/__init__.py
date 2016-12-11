@@ -6,9 +6,7 @@ import os.path as op
 import re
 import time
 
-from pyrevit import HOST_APP
-from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils.logger import get_logger
+from pyrevit import HOST_APP, PyRevitException
 
 # noinspection PyUnresolvedReferences
 from System import AppDomain
@@ -16,9 +14,6 @@ from System import AppDomain
 from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
-
-
-logger = get_logger(__name__)
 
 
 def enum(**enums):
@@ -173,34 +168,29 @@ def inspect_calling_scope_global_var(variable_name):
     return frame.f_locals[variable_name]
 
 
-def find_loaded_asm(asm_name):
-    logger.debug('Finding assembly: {}'.format(asm_name))
+def find_loaded_asm(asm_name, by_partial_name=False):
     loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
-        if asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
+        if by_partial_name and asm_name.lower() in str(loaded_assembly.GetName().Name).lower():
+            loaded_asm_list.append(loaded_assembly)
+        elif asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
     count = len(loaded_asm_list)
     if count == 0:
-        logger.debug('Assembly not found.')
         return None
     elif count == 1:
         found_asm = loaded_asm_list[0]
-        logger.debug('Assembly found: {} at {}'.format(found_asm, found_asm.Location))
         return found_asm
     elif count > 1:
-        found_asm_list = loaded_asm_list
-        logger.debug('More than one assembly found: {}'.format(found_asm_list))
         return loaded_asm_list
 
 
 def load_asm(asm_name):
-    logger.debug('Loading assembly to AppDomain: {}'.format(asm_name))
     return AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
-    logger.debug('Loading assembly: {}'.format(asm_file))
     return Assembly.LoadFrom(asm_file)
 
 
@@ -227,3 +217,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
                     modtime = op.getmtime(op.join(root, filename))
                     mtime_sum += modtime
     return get_str_hash(str(mtime_sum))
+
+
+def prepare_html_str(input_string):
+    return input_string.replace('<', '&clt;').replace('>', '&cgt;')

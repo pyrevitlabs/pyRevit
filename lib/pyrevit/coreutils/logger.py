@@ -3,7 +3,8 @@ import sys
 from os.path import sep
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
-from pyrevit.core.emoji import emojize
+from pyrevit.coreutils import prepare_html_str
+from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
 
 DEBUG_ISC_NAME = PYREVIT_ADDON_NAME + '_debugISC'
@@ -11,8 +12,12 @@ VERBOSE_ISC_NAME = PYREVIT_ADDON_NAME + '_verboseISC'
 
 RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
-LOG_REC_FORMAT_ERROR = '<div style="background:#EEE;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_REC_FORMAT)
-LOG_REC_FORMAT_CRITICAL = '<div style="background:#ffdabf;padding:10;margin:10 0 10 0">{}</div>'.format(LOG_REC_FORMAT)
+
+LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{style}">{format}</div>')
+LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(style='background:#EEE;padding:10;margin:10 0 10 0',
+                                                  format=LOG_REC_FORMAT)
+LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(style='background:#ffdabf;padding:10;margin:10 0 10 0',
+                                                     format=LOG_REC_FORMAT)
 
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
@@ -48,7 +53,7 @@ class LoggerWrapper(logging.Logger):
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
         if level != logging.INFO:
-            msg = str(msg).replace('<', '&lt;').replace('>','&gt;')
+            msg = str(msg).replace('<', '&clt;').replace('>', '&cgt;')
 
         msg = msg.replace(sep, '/')
         msg = emojize(str(msg))

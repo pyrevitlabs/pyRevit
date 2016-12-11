@@ -1,11 +1,10 @@
 import os
 import os.path as op
 
+from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP, PyRevitException
+
 # noinspection PyUnresolvedReferences
 from System.IO import IOException
-
-from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP
-from pyrevit.core.exceptions import PyRevitException
 
 # pyrevit temp file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
@@ -38,10 +37,6 @@ def _get_app_file(file_id, file_ext, filename_only=False, temp_file=False, stamp
         return full_filename
     else:
         return op.join(PYREVIT_APP_DIR, full_filename)
-
-
-def _get_stamped_app_file(file_id, file_ext):
-    return '{}_{}.{}'.format(APPDATA_FILE_PREFIX_STAMPED, file_id, file_ext)
 
 
 def get_temp_file(file_id, file_ext='tmp', name_only=False):
