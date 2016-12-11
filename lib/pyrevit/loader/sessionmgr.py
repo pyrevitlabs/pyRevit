@@ -19,6 +19,12 @@ from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 logger = get_logger(__name__)
 
 
+def _perform_onsessionload_operations():
+    # archive previous sessions logs
+    # archive_script_usage_logs()
+    pass
+
+
 def _perform_onstartup_operations():
     # archive previous sessions logs
     # archive_script_usage_logs()
@@ -35,9 +41,6 @@ def _report_env():
 
 
 def _new_session():
-    # report environment conditions
-    _report_env()
-
     # for every extension of installed extensions, create an assembly, and create a ui
     # get a list of all directories that could include extensions
     pkg_search_dirs = user_config.get_ext_root_dirs()
@@ -63,8 +66,6 @@ def _new_session():
 
     cleanup_pyrevit_ui()
 
-    _perform_onstartup_operations()
-
 
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
@@ -79,7 +80,13 @@ def load_session():
     # initialize timer
     timer = Timer()
 
+    # report environment conditions
+    _report_env()
+
     _new_session()
+
+    _perform_onsessionload_operations()
+    _perform_onstartup_operations()
 
     # log load time
     endtime = timer.get_time()

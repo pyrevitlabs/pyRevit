@@ -40,7 +40,7 @@ def _get_app_file(file_id, file_ext, filename_only=False, temp_file=False, stamp
         return op.join(PYREVIT_APP_DIR, full_filename)
 
 
-def _get_stamped_base_file(file_id, file_ext):
+def _get_stamped_app_file(file_id, file_ext):
     return '{}_{}.{}'.format(APPDATA_FILE_PREFIX_STAMPED, file_id, file_ext)
 
 
