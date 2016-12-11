@@ -28,7 +28,6 @@ if get_pyrevit_env_var(DEBUG_ISC_NAME):
 # EXEC_PARAMS.forced_debug_mode will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
 if EXEC_PARAMS.forced_debug_mode:
     RUNTIME_LOGGING_LEVEL = logging.DEBUG
-    logging.debug('Forced debug mode is enabled.')
 
 
 # custom logger methods (for module consistency and custom adjustments) ------------------------------------------------
@@ -51,8 +50,9 @@ class LoggerWrapper(logging.Logger):
         if level != logging.INFO:
             msg = str(msg).replace('<', '&lt;').replace('>','&gt;')
 
-        edited_msg = emojize(str(msg).replace(sep, '/'))
-        logging.Logger._log(self, level, edited_msg, args, exc_info=None, extra=None)
+        msg = msg.replace(sep, '/')
+        msg = emojize(str(msg))
+        logging.Logger._log(self, level, msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
         """Overrides the parent class method to check handler.level instead of self.level.
