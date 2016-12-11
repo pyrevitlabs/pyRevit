@@ -75,6 +75,15 @@ class _ExecutorParams(object):
         # noinspection PyUnusedLocal
         __commandname__ = value
 
+    @property   # read-only
+    def executor_version(self):
+        # noinspection PyUnresolvedReferences
+        try:
+            for custom_attr in __assmcustomattrs__:
+                if 'AssemblyPyRevitVersion' in str(custom_attr.AttributeType):
+                    return str(custom_attr.ConstructorArguments[0]).replace('\"', '')
+        except:
+            raise AttributeError()
 
 EXEC_PARAMS = _ExecutorParams()
 
