@@ -7,9 +7,9 @@ from pyrevit import PYREVIT_ADDON_NAME
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
 from pyrevit.coreutils import get_str_hash
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.loader import ASSEMBLY_FILE_TYPE
-from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
 from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
+from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
 
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
@@ -30,23 +30,16 @@ ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo', ['name', 'location',
 logger = get_logger(__name__)
 
 
-# fixme: change script executor to write to this log file (full address instead of name only)
-SESSION_LOG_FILE = appdata.get_session_data_file('usagelog', 'log')
-logger.debug('Generated log name for this session: {}'.format(SESSION_LOG_FILE))
-
-
 # Generic named tuple for passing loader class parameters to the assembly maker
 class CommandExecutorParams:
     def __init__(self, script_cmp):
         self.cmd_name = script_cmp.name
         self.cmd_context = script_cmp.cmd_context
-        self.cmd_options = join_strings(script_cmp.get_cmd_options())
         self.class_name = script_cmp.unique_name
         self.avail_class_name = script_cmp.unique_avail_name
         self.script_file_address = script_cmp.get_full_script_address()
         self.config_script_file_address = script_cmp.get_full_config_script_address()
         self.search_paths_str = join_strings(script_cmp.get_search_paths())
-        self.log_file = SESSION_LOG_FILE
 
     def __repr__(self):
         return '<Class:{} AvailClass:{} Name:{} Context:{}>'.format(self.class_name,
@@ -57,7 +50,7 @@ class CommandExecutorParams:
 
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that the extension is based upon
-    return get_str_hash(BASE_CLASSES_DIR_HASH + extension.ext_hash_value)
+    return get_str_hash(BASE_CLASSES_DIR_HASH + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
 
 
 def _make_ext_asm_fileid(extension):
@@ -181,3 +174,7 @@ def create_assembly(extension):
     return ext_asm_info
     # except Exception as asm_err:
     #     logger.critical('Can not create assembly for: {} | {}'.format(extension, asm_err))
+
+
+def cleanup_assembly_files():
+    pass

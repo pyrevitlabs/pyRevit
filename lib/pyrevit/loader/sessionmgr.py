@@ -1,33 +1,47 @@
 import sys
+import clr
 
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-
-from pyrevit import HOME_DIR
-from pyrevit.coreutils import Timer
-from pyrevit.coreutils.logger import get_logger
+from pyrevit import HOME_DIR, EXEC_PARAMS
+from pyrevit.coreutils import Timer, find_loaded_asm
+from pyrevit.coreutils.logger import get_logger, stdout_hndlr
 from pyrevit.repo import PYREVIT_VERSION
-# from pyrevit.usagedata import archive_script_usage_logs
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extmanager import get_installed_ui_extensions
 
+from pyrevit.loader.interfacetypes import LOADER_BASE_NAMESPACE, BASE_CLASSES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+
+# noinspection PyUnresolvedReferences
+from System.Diagnostics import Process
 
 
 logger = get_logger(__name__)
 
 
+def _setup_output_window():
+    # import module with ScriptOutput and ScriptOutputStream types (base classes module)
+    base_asm = find_loaded_asm(LOADER_BASE_NAMESPACE, by_partial_name=True)
+    clr.AddReference(base_asm)
+    base_module = __import__(LOADER_BASE_NAMESPACE)
+
+    # create output window and assign handle
+    out_window = base_module.ScriptOutput()
+    EXEC_PARAMS.window_handle = out_window.Handle
+
+    # create output stream and set stdout to it
+    outstr = base_module.ScriptOutputStream(out_window)
+    sys.stdout = outstr
+    sys.stderr = outstr
+    stdout_hndlr.stream = outstr
+
+
 def _perform_onsessionload_operations():
-    # archive previous sessions logs
-    # archive_script_usage_logs()
     pass
 
 
 def _perform_onstartup_operations():
-    # archive previous sessions logs
-    # archive_script_usage_logs()
     pass
 
 
@@ -37,7 +51,9 @@ def _report_env():
     logger.info('pyRevit version: {} - :coded: with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
+    logger.info('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
     logger.info('Config file is: {}'.format(user_config.config_file))
+
 
 
 def _new_session():
@@ -79,6 +95,9 @@ def load_session():
 
     # initialize timer
     timer = Timer()
+
+    if EXEC_PARAMS.window_handle is None:
+        _setup_output_window()
 
     # report environment conditions
     _report_env()
