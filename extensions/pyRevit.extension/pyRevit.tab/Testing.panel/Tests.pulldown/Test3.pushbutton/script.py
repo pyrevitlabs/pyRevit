@@ -1,6 +1,12 @@
-import pyrevit.usagedata as ud
-db = ud.get_usagedata_db()
+import sys
+print sys.version
 
-with open(r'H:\res.txt', 'w') as f:
-	for item in sorted(db.get_scripts()):
-		f.write(item + '\n')
+from pyrevit.coreutils.logger import get_logger
+
+logger = get_logger(__commandname__)
+
+print '\n'.join(sys.path)
+
+from pyrevit import EXEC_PARAMS
+
+print EXEC_PARAMS.executor_version
