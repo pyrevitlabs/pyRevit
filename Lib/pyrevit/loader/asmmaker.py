@@ -5,7 +5,7 @@ import clr
 import pyrevit.coreutils.appdata as appdata
 from pyrevit import PYREVIT_ADDON_NAME
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
-from pyrevit.coreutils import get_hash_str
+from pyrevit.coreutils import get_str_hash
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import ASSEMBLY_FILE_TYPE
 from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
@@ -57,7 +57,7 @@ class CommandExecutorParams:
 
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that the extension is based upon
-    return get_hash_str(BASE_CLASSES_DIR_HASH + extension.hash_value)
+    return get_str_hash(BASE_CLASSES_DIR_HASH + extension.ext_hash_value)
 
 
 def _make_ext_asm_fileid(extension):
@@ -113,7 +113,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     pyrvt_ver_int_tuple = PYREVIT_VERSION.as_int_tuple()
     win_asm_name = AssemblyName(Name=ext_asm_file_name, Version=Version(pyrvt_ver_int_tuple[0],
                                                                         pyrvt_ver_int_tuple[1],
-                                                                        pyrvt_ver_int_tuple[2], 0))
+                                                                        pyrvt_ver_int_tuple[2]))
     logger.debug('Generated assembly name for this package: {0}'.format(ext_asm_file_name))
     logger.debug('Generated windows assembly name for this package: {0}'.format(win_asm_name))
     logger.debug('Generated assembly file name for this package: {0}'.format(ext_asm_full_file_name))
