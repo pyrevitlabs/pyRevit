@@ -107,7 +107,7 @@ def get_installed_lib_extension_data(root_dir, parent_cmp_type):
 
     logger.debug('Parsing directory for library extensions...')
     for lib_ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
-        logger.debug('Library package directory found: {}'.format(lib_ext_data))
+        logger.info('Library package directory found: {}'.format(lib_ext_data.name))
         lib_ext_data_list.append(lib_ext_data)
 
     return lib_ext_data_list

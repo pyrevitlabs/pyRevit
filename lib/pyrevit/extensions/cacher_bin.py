@@ -45,11 +45,11 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext = get_cached_extension(extension)
-        logger.debug('Extension cache version is: {} for: {}'.format(extension.hash_version, extension))
-        cache_version_valid = cached_ext.hash_version == extension.hash_version
+        logger.debug('Extension cache version is: {} for: {}'.format(extension.pyrvt_version, extension))
+        cache_version_valid = cached_ext.pyrvt_version == extension.pyrvt_version
 
-        logger.debug('Extension hash value is: {} for: {}'.format(extension.hash_value, extension))
-        cache_hash_valid = cached_ext.hash_value == extension.hash_value
+        logger.debug('Extension hash value is: {} for: {}'.format(extension.dir_hash_value, extension))
+        cache_hash_valid = cached_ext.dir_hash_value == extension.dir_hash_value
 
         # add loaded package to list so it can be recovered later
         if cache_version_valid and cache_hash_valid:

@@ -9,8 +9,8 @@ from pyrevit.coreutils.logger import get_logger
 logger = get_logger(__name__)
 
 
-HASH_VALUE_KEY = 'hash_value'
-HASH_VERSION_KEY = 'hash_version'
+HASH_VALUE_KEY = 'dir_hash_value'
+HASH_VERSION_KEY = 'pyrvt_version'
 SUB_CMP_KEY = '_sub_components'
 TYPE_ID_KEY = 'type_id'
 NAME_KEY = 'name'
@@ -99,11 +99,11 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext_dict = _read_cache_for(extension)  # type: dict
-        logger.debug('Extension cache version is: {} for: {}'.format(extension.hash_version, extension))
-        cache_version_valid = cached_ext_dict[HASH_VERSION_KEY] == extension.hash_version
+        logger.debug('Extension cache version is: {} for: {}'.format(extension.pyrvt_version, extension))
+        cache_version_valid = cached_ext_dict[HASH_VERSION_KEY] == extension.pyrvt_version
 
-        logger.debug('Extension hash value is: {} for: {}'.format(extension.hash_value, extension))
-        cache_hash_valid = cached_ext_dict[HASH_VALUE_KEY] == extension.hash_value
+        logger.debug('Extension hash value is: {} for: {}'.format(extension.dir_hash_value, extension))
+        cache_hash_valid = cached_ext_dict[HASH_VALUE_KEY] == extension.dir_hash_value
 
         # cache is valid if both version and hash value match
         return cache_version_valid and cache_hash_valid

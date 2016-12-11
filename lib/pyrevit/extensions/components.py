@@ -1,7 +1,7 @@
 import os.path as op
 
 from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash
+from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import LINK_BUTTON_POSTFIX, LINK_BUTTON_ASSEMBLY_PARAM, LINK_BUTTON_COMMAND_CLASS_PARAM
 from pyrevit.extensions import PANEL_POSTFIX, TAB_POSTFIX
@@ -161,14 +161,18 @@ class Extension(GenericUIContainer):
         GenericUIContainer.__init__(self)
         self.author = None
         self.version = None
-        self.hash_value = self.hash_version = None
+        self.pyrvt_version = self.dir_hash_value = None
 
     def __init_from_dir__(self, package_dir):
         GenericUIContainer.__init_from_dir__(self, package_dir)
-        self.hash_value = self._calculate_hash()
-        self.hash_version = PYREVIT_VERSION.get_formatted()
+        self.pyrvt_version = PYREVIT_VERSION.get_formatted()
+        self.dir_hash_value = self._calculate_extension_dir_hash()
 
-    def _calculate_hash(self):
+    @property
+    def ext_hash_value(self):
+        return get_str_hash(str(self.get_cache_data()))
+
+    def _calculate_extension_dir_hash(self):
         """Creates a unique hash # to represent state of directory."""
         # search does not include png files:
         #   if png files are added the parent folder mtime gets affected
