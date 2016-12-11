@@ -6,6 +6,10 @@ import os.path as op
 import re
 import time
 
+from pyrevit import HOST_APP
+from pyrevit.core.exceptions import PyRevitException
+from pyrevit.coreutils.logger import get_logger
+
 # noinspection PyUnresolvedReferences
 from System import AppDomain
 # noinspection PyUnresolvedReferences
@@ -13,9 +17,6 @@ from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
 
-from pyrevit import HOST_APP
-from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -211,8 +212,8 @@ def get_file_name(file_path):
     return op.splitext(op.basename(file_path))[0]
 
 
-def get_hash_str(source_str):
-    return hashlib.md5(source_str).hexdigest()
+def get_str_hash(source_str):
+    return hashlib.md5(source_str.encode('utf-8')).hexdigest()
 
 
 def calculate_dir_hash(dir_path, dir_filter, file_filter):
@@ -225,4 +226,4 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
                 if re.search(file_filter, filename, flags=re.IGNORECASE):
                     modtime = op.getmtime(op.join(root, filename))
                     mtime_sum += modtime
-    return get_hash_str(str(mtime_sum).encode('utf-8'))
+    return get_str_hash(str(mtime_sum))
