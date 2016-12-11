@@ -1,8 +1,16 @@
 import os
 import os.path as op
 import sys
-
 import clr
+
+from pyrevit.core.exceptions import PyRevitException
+from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash
+from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
+from pyrevit.coreutils.dotnetcompiler import compile_csharp
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.loader import ASSEMBLY_FILE_TYPE
+
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 # noinspection PyUnresolvedReferences
@@ -11,13 +19,6 @@ from System import Array, Type
 from System.Reflection import TypeAttributes, MethodAttributes, CallingConventions
 # noinspection PyUnresolvedReferences
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
-
-from pyrevit.core.exceptions import PyRevitException
-from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash
-from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
-from pyrevit.coreutils.dotnetcompiler import compile_csharp
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.loader import ASSEMBLY_FILE_TYPE
 
 
 logger = get_logger(__name__)
@@ -57,6 +58,18 @@ BASE_CLASSES_ASM_FILE = get_data_file(BASE_CLASSES_ASM_FILE_ID, ASSEMBLY_FILE_TY
 # taking the name of the generated data file and use it as assembly name
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]
 logger.debug('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
+
+
+def _get_asm_attr_source():
+    asm_att_source = """
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
+    using PyRevitBaseClasses;
+    [assembly: AssemblyPyRevitVersion("{}")]
+    """.format(PYREVIT_VERSION.get_formatted())
+
+    return asm_att_source
 
 
 def _get_source_files():
@@ -126,6 +139,7 @@ def _get_references():
 
 def _generate_base_classes_asm():
     source_list = list()
+    source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
         # fixme: handle read errors
         with open(source_file, 'r') as code_file:

@@ -109,7 +109,10 @@ namespace PyRevitBaseClasses
 
                 // add command name to builtins
                 builtin.SetVariable("__commandname__", cmdName);
-                builtin.SetVariable("__execversion__", ExternalConfig.execversion);
+
+                // Add pyrevit version that created this assembly to builtins
+
+                builtin.SetVariable("__assmcustomattrs__", typeof(ScriptExecutor).Assembly.CustomAttributes);
 
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
@@ -263,5 +266,12 @@ namespace PyRevitBaseClasses
         {
             get { return Errors.Count; }
         }
+    }
+
+    [AttributeUsage(AttributeTargets.Assembly)]
+    public class AssemblyPyRevitVersion : Attribute {
+        string pyrevit_ver;
+        public AssemblyPyRevitVersion() : this(string.Empty) {}
+        public AssemblyPyRevitVersion(string txt) { pyrevit_ver = txt; }
     }
 }
