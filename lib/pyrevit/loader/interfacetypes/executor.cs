@@ -14,9 +14,7 @@ using System.Collections.Generic;
 
 namespace PyRevitBaseClasses
 {
-    /// <summary>
-    /// Executes a script scripts
-    /// </summary>
+    /// Executes a script
     public class ScriptExecutor
     {
         private readonly ExternalCommandData _commandData;
@@ -24,17 +22,12 @@ namespace PyRevitBaseClasses
         private readonly ElementSet _elements;
         private readonly UIApplication _revit;
         private readonly UIControlledApplication _uiControlledApplication;
-        private string _dotnet_err_title;
-        private string _ipy_err_title;
 
         public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
         {
             _revit = uiApplication;
             _uiControlledApplication = uiControlledApplication;
 
-            // note, if this constructor is used, then this stuff is all null
-            // (I'm just setting it here to be explete - this constructor is
-            // only used for the startupscript)
             _commandData = null;
             _elements = null;
             _message = null;
@@ -49,23 +42,9 @@ namespace PyRevitBaseClasses
             _message = message;
 
             _uiControlledApplication = null;
-
-            _dotnet_err_title = ExternalConfig.dotneterrtitle;
-            _ipy_err_title = ExternalConfig.ipyerrtitle;
-
-//            AppDomain.CurrentDomain.AssemblyResolve += OnResolveAssembly;
         }
 
-//        private static Assembly OnResolveAssembly(object sender, ResolveEventArgs e)
-//        {
-//            using (StreamWriter sw = File.AppendText(@"C:\\Users\\LeoW10\\Desktop\\test.txt"))
-//            {
-//                sw.WriteLine(String.Format("Asking for: {0}\n\tBy: {1}", e.Name, e.RequestingAssembly));
-//                return null;
-//            }
-//        }
-//
-//
+
         public string Message
         {
             get
@@ -74,51 +53,46 @@ namespace PyRevitBaseClasses
             }
         }
 
-        /// <summary>
+
         /// Run the script and print the output to a new output window.
-        /// </summary>
-        public int ExecuteScript(string sourcePath, string syspaths,
-                                 string cmdName, string cmdOptions,
+        public int ExecuteScript(string sourcePath, string syspaths, string cmdName,
                                  bool forcedDebugMode, bool altScriptMode)
         {
             try
             {
+                // Setup engine and set __file__
                 var engine = CreateEngine();
                 var scope = SetupEnvironment(engine);
 
-                var scriptOutput = new ScriptOutput();
-                var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
-                scriptOutput.Text = cmdName;
-                //scriptOutput.Show();
-
-                var outputStream = new ScriptOutputStream(scriptOutput, engine);
-
-                //syspath is a string of paths separated by ';'
-                //Split syspath and aupdate the search paths with new list
-                engine.SetSearchPaths(syspaths.Split(';'));
-
-                //scope.SetVariable("__window__", scriptOutput);
-                scope.SetVariable("__file__", sourcePath);
-
-                // add __forceddebugmode__ to builtins
+                // Get builtin scope to add custom variables
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
-                builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
-                builtin.SetVariable("__shiftclick__", altScriptMode);
+                builtin.SetVariable("__commandname__", cmdName);                    // add command name to builtins
+                builtin.SetVariable("__forceddebugmode__", forcedDebugMode);        // add forced debug mode to builtins
+                builtin.SetVariable("__shiftclick__", altScriptMode);               // set to true of alt script mode
 
-                builtin.SetVariable("__window__", scriptOutput);
-
-                // add command name to builtins
-                builtin.SetVariable("__commandname__", cmdName);
-
-                // Add pyrevit version that created this assembly to builtins
-
+                // Add assembly's custom attributes
                 builtin.SetVariable("__assmcustomattrs__", typeof(ScriptExecutor).Assembly.CustomAttributes);
 
+                var scriptOutput = new ScriptOutput();  // New output window
+                var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
+                scriptOutput.Text = cmdName;            // Set output window title to command name
+                builtin.SetVariable("__window__", scriptOutput);
+
+                // Create output stream
+                var outputStream = new ScriptOutputStream(scriptOutput);
+
+                // Process search paths provided to constructor
+                // syspaths variable is a string of paths separated by ';'
+                // Split syspath and update the search paths with new list
+                engine.SetSearchPaths(syspaths.Split(';'));
+
+                // Setup IO streams
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
 
-                //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
+                scope.SetVariable("__file__", sourcePath);
+
                 var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.Statements);
 
                 // setting module to be the main module so __name__ == __main__ is True
@@ -126,18 +100,24 @@ namespace PyRevitBaseClasses
                 compiler_options.ModuleName = "__main__";
                 compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
+
                 // Setting up error reporter and compile the script
                 var errors = new ErrorReporter();
                 var command = script.Compile(compiler_options, errors);
+
+                // Process compile errors if any
                 if (command == null)
                 {
                     // compilation failed, print errors and return
-                    outputStream.WriteError(string.Join("\n", _ipy_err_title, string.Join("\n", errors.Errors.ToArray())));
+                    outputStream.WriteError(string.Join("\n",
+                                                        ExternalConfig.ipyerrtitle,
+                                                        string.Join("\n", errors.Errors.ToArray())));
                     _message = "";
                     return (int)Result.Cancelled;
                 }
 
 
+                // Finally let's execute
                 try
                 {
                     script.Execute(scope);
@@ -157,9 +137,10 @@ namespace PyRevitBaseClasses
                     string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
 
                     // Print all errors to stdout and return cancelled to Revit.
-                    // This is to avoid getting window prompts from revit. Those pop ups are small and errors are hard to read.
-                    _ipy_err_messages = string.Join("\n", _ipy_err_title, _ipy_err_messages);
-                    _dotnet_err_message = string.Join("\n", _dotnet_err_title, _dotnet_err_message);
+                    // This is to avoid getting window prompts from Revit.
+                    // Those pop ups are small and errors are hard to read.
+                    _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
+                    _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
                     outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
                     _message = "";
@@ -197,9 +178,7 @@ namespace PyRevitBaseClasses
         }
 
 
-        /// <summary>
         /// Set up an IronPython environment - for interactive shell or for canned scripts
-        /// </summary>
         public ScriptScope SetupEnvironment(ScriptEngine engine)
         {
             var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
@@ -239,10 +218,8 @@ namespace PyRevitBaseClasses
 
         }
 
-        /// <summary>
         /// Be nasty and reach into the ScriptScope to get at its private '_scope' member,
         /// since the accessor 'ScriptScope.Scope' was defined 'internal'.
-        /// </summary>
         private Microsoft.Scripting.Runtime.Scope GetScope(ScriptScope scriptScope)
         {
             var field = scriptScope.GetType().GetField(
@@ -268,6 +245,7 @@ namespace PyRevitBaseClasses
         }
     }
 
+    // Custom attribute to carry the pyrevit version that compiles this assembly
     [AttributeUsage(AttributeTargets.Assembly)]
     public class AssemblyPyRevitVersion : Attribute {
         string pyrevit_ver;

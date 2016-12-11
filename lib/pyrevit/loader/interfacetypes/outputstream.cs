@@ -10,50 +10,40 @@ using Microsoft.Scripting.Hosting;
 
 namespace PyRevitBaseClasses
 {
-    /// <summary>
     /// A stream to write output to...
     /// This can be passed into the python interpreter to render all output to.
-    /// Only a minimal subset is actually implemented - this is all we really
-    /// expect to use.
-    /// </summary>
+    /// Only a minimal subset is actually implemented - this is all we really expect to use.
     public class ScriptOutputStream: Stream
     {
         private readonly ScriptOutput _gui;
-        private readonly ScriptEngine _engine;
         private int _bomCharsLeft; // we want to get rid of pesky UTF8-BOM-Chars on write
         private readonly Queue<MemoryStream> _completedLines; // one memorystream per line of input
         private MemoryStream _inputBuffer;
-        private readonly string _err_msg_html_element;
-        private readonly string _default_element;
 
-        public ScriptOutputStream(ScriptOutput gui, ScriptEngine engine)
+        public ScriptOutputStream(ScriptOutput gui)
         {
             _gui = gui;
-            _engine = engine;
-
             _gui.txtStdOut.Focus();
 
             _completedLines = new Queue<MemoryStream>();
             _inputBuffer = new MemoryStream();
+        }
 
-            _bomCharsLeft = 3; //0xef, 0xbb, 0xbf for UTF-8 (see http://en.wikipedia.org/wiki/Byte_order_mark#Representations_of_byte_order_marks_by_encoding)
-
-            _default_element = ExternalConfig.defaultelement;
-            _err_msg_html_element = ExternalConfig.errordiv;
-
+        public void write(string s)
+        {
+            Write(Encoding.ASCII.GetBytes(s), 0, s.Length);
         }
 
         public void WriteError(string error_msg)
         {
-            var err_div = _gui.txtStdOut.Document.CreateElement(_err_msg_html_element);
+            var err_div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.errordiv);
             err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
 
-            Write(Encoding.ASCII.GetBytes(" " + err_div.OuterHtml), 0, error_msg.Length);
+            var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
+            Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
         }
 
-        /// <summary>
         /// Append the text in the buffer to gui.txtStdOut
-        /// </summary>
         public override void Write(byte[] buffer, int offset, int count)
         {
             lock (this)
@@ -68,22 +58,17 @@ namespace PyRevitBaseClasses
                     _gui.Show();
                 }
 
-                while (_bomCharsLeft > 0 && count > 0)
-                {
-                    _bomCharsLeft--;
-                    count--;
-                    offset++;
-                }
-
                 var actualBuffer = new byte[count];
                 Array.Copy(buffer, offset, actualBuffer, 0, count);
                 var text = Encoding.UTF8.GetString(actualBuffer);
-                //Debug.WriteLine(text);
                 _gui.BeginInvoke((Action)delegate()
                 {
-                    var div = _gui.txtStdOut.Document.CreateElement(_default_element);
+                    // Cleanup output for html
+                    var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
                     if (text.EndsWith("\n"))
                         text = text.Remove(text.Length - 1);
+                    text = text.Replace("<", "&lt;").Replace(">", "&gt;");
+                    text = text.Replace("&clt;", "<").Replace("&cgt;", ">");
                     text = text.Replace("\n", "<br/>");
                     div.InnerHtml = text;
                     _gui.txtStdOut.Document.Body.AppendChild(div);
@@ -106,9 +91,7 @@ namespace PyRevitBaseClasses
             throw new NotImplementedException();
         }
 
-        /// <summary>
         /// Read from the _inputBuffer, block until a new line has been entered...
-        /// </summary>
         public override int Read(byte[] buffer, int offset, int count)
         {
             while (_completedLines.Count < 1)

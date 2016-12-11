@@ -14,18 +14,12 @@ using System.Collections.Generic;
 
 namespace PyRevitLoader
 {
-    /// <summary>
-    /// Executes a script scripts
-    /// </summary>
+    // Executes a script
     public class ScriptExecutor
     {
-        private readonly ExternalCommandData _commandData;
         private string _message;
-        private readonly ElementSet _elements;
         private readonly UIApplication _revit;
         private readonly UIControlledApplication _uiControlledApplication;
-        private string _dotnet_err_title;
-        private string _ipy_err_title;
 
         public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
         {
@@ -35,24 +29,10 @@ namespace PyRevitLoader
             // note, if this constructor is used, then this stuff is all null
             // (I'm just setting it here to be explete - this constructor is
             // only used for the startupscript)
-            _commandData = null;
-            _elements = null;
             _message = null;
 
         }
 
-        public ScriptExecutor(ExternalCommandData commandData, string message, ElementSet elements)
-        {
-            _revit = commandData.Application;
-            _commandData = commandData;
-            _elements = elements;
-            _message = message;
-
-            _uiControlledApplication = null;
-
-            _dotnet_err_title = PyRevitLoaderApplication.ExtractDLLConfigParameter("dotneterrtitle");
-            _ipy_err_title = PyRevitLoaderApplication.ExtractDLLConfigParameter("ipyerrtitle");
-        }
 
         public string Message
         {
@@ -62,59 +42,17 @@ namespace PyRevitLoader
             }
         }
 
-        /// <summary>
-        /// Run the script and print the output to a new output window.
-        /// </summary>
-        public int ExecuteScript(string sourcePath, string syspaths,
-                                 string cmdName, string cmdOptions,
-                                 bool forcedDebugMode, bool altScriptMode)
+        public int ExecuteScript(string sourcePath)
         {
             try
             {
                 var engine = CreateEngine();
                 var scope = SetupEnvironment(engine);
 
-                var scriptOutput = new ScriptOutput();
-                var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
-                scriptOutput.Text = cmdName;
-                //scriptOutput.Show();
-
-                var outputStream = new ScriptOutputStream(scriptOutput, engine);
-
-                //get the sys.path object and get ready to add more search paths
-                //var path = engine.GetSearchPaths();
-
-                // At least the main library path is added to sys.path
-                var importLibPath = PyRevitLoaderApplication.GetImportLibraryPath();
-
-                // if syspaths is empty use the baseSysPaths
-                if (syspaths.Length == 0)
-                    syspaths = importLibPath;
-                // otherwise prepend the base paths
-                else
-                    syspaths = importLibPath + ';' + syspaths;
-
-                //syspath is a string of paths separated by ';'
-                //Split syspath and aupdate the search paths with new list
-                engine.SetSearchPaths(syspaths.Split(';'));
-
-                //scope.SetVariable("__window__", scriptOutput);
                 scope.SetVariable("__file__", sourcePath);
-                scope.SetVariable("__libpath__", importLibPath);
 
-                // add __forceddebugmode__ to builtins
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
-                builtin.SetVariable("__forceddebugmode__", forcedDebugMode);
-                builtin.SetVariable("__shiftclick__", altScriptMode);
-
-                builtin.SetVariable("__window__", scriptOutput);
-
-                // add command name to builtins
-                builtin.SetVariable("__commandname__", cmdName);
-
-                engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
-                engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
-                engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
+                builtin.SetVariable("__window__", 0);
 
                 //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
                 var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.Statements);
@@ -128,18 +66,13 @@ namespace PyRevitLoader
                 var errors = new ErrorReporter();
                 var command = script.Compile(compiler_options, errors);
                 if (command == null)
-                {
-                    // compilation failed, print errors and return
-                    outputStream.WriteError(string.Join("\n", _ipy_err_title, string.Join("\n", errors.Errors.ToArray())));
-                    _message = "";
                     return (int)Result.Cancelled;
-                }
 
 
                 try
                 {
                     script.Execute(scope);
-
+                   
                     _message = (scope.GetVariable("__message__") ?? "").ToString();
                     return (int)(scope.GetVariable("__result__") ?? Result.Succeeded);
                 }
@@ -148,19 +81,8 @@ namespace PyRevitLoader
                     // ok, so the system exited. That was bound to happen...
                     return (int)Result.Succeeded;
                 }
-                catch (Exception exception)
+                catch (Exception)
                 {
-                    // show (power) user everything!
-                    string _dotnet_err_message = exception.ToString();
-                    string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
-
-                    // Print all errors to stdout and return cancelled to Revit.
-                    // This is to avoid getting window prompts from revit. Those pop ups are small and errors are hard to read.
-                    _ipy_err_messages = string.Join("\n", _ipy_err_title, _ipy_err_messages);
-                    _dotnet_err_message = string.Join("\n", _dotnet_err_title, _dotnet_err_message);
-
-                    outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);                  
-                    _message = "";
                     return (int)Result.Cancelled;
                 }
 
@@ -192,9 +114,7 @@ namespace PyRevitLoader
         }
 
 
-        /// <summary>
-        /// Set up an IronPython environment - for interactive shell or for canned scripts
-        /// </summary>
+        // Set up an IronPython environment
         public ScriptScope SetupEnvironment(ScriptEngine engine)
         {
             var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
@@ -207,20 +127,12 @@ namespace PyRevitLoader
         public void SetupEnvironment(ScriptEngine engine, ScriptScope scope)
         {
             // these variables refer to the signature of the IExternalCommand.Execute method
-            scope.SetVariable("__commandData__", _commandData);
             scope.SetVariable("__message__", _message);
-            scope.SetVariable("__elements__", _elements);
             scope.SetVariable("__result__", (int)Result.Succeeded);
 
             // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
-
-            // allow access to the UIControlledApplication in the startup script...
-            if (_uiControlledApplication != null)
-            {
-                builtin.SetVariable("__uiControlledApplication__", _uiControlledApplication);
-            }
 
             // add the search paths
             AddEmbeddedLib(engine);
@@ -232,18 +144,6 @@ namespace PyRevitLoader
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
 
-        }
-
-        /// <summary>
-        /// Be nasty and reach into the ScriptScope to get at its private '_scope' member,
-        /// since the accessor 'ScriptScope.Scope' was defined 'internal'.
-        /// </summary>
-        private Microsoft.Scripting.Runtime.Scope GetScope(ScriptScope scriptScope)
-        {
-            var field = scriptScope.GetType().GetField(
-                "_scope",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return (Microsoft.Scripting.Runtime.Scope)field.GetValue(scriptScope);
         }
     }
 

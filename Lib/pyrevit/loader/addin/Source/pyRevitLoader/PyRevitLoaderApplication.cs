@@ -23,9 +23,7 @@ namespace PyRevitLoader
     {
         private static string versionNumber;
 
-        /// <summary>
-        /// Hook into Revit to allow starting a command.
-        /// </summary>
+        // Hook into Revit to allow starting a command.
         Result IExternalApplication.OnStartup(UIControlledApplication application)
         {
 
@@ -61,7 +59,7 @@ namespace PyRevitLoader
             if (startupScript != null)
             {
                 var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
-                var result = executor.ExecuteScript(startupScript, "", Path.GetFileName(GetStartupScriptPath()), "", false, false);
+                var result = executor.ExecuteScript(startupScript);
                 if (result == (int)Result.Failed)
                 {
                     TaskDialog.Show("PyRevitLoader", executor.Message);
@@ -71,34 +69,8 @@ namespace PyRevitLoader
 
         private static string GetStartupScriptPath()
         {
-            return ProcessRelativeOrAbsolutePath(ExtractDLLConfigParameter("startupscript"));
-        }
-
-        public static string GetImportLibraryPath()
-        {
-            return ProcessRelativeOrAbsolutePath(ExtractDLLConfigParameter("lib"));
-        }
-
-        public static string ExtractDLLConfigParameter(string parameter)
-        {
-            ExeConfigurationFileMap map = new ExeConfigurationFileMap();
-            map.ExeConfigFilename = Assembly.GetExecutingAssembly().Location + ".config";
-            Configuration libConfig = ConfigurationManager.OpenMappedExeConfiguration(map, ConfigurationUserLevel.None);
-            AppSettingsSection section = (libConfig.GetSection("appSettings") as AppSettingsSection);
-            return section.Settings[parameter].Value;
-        }
-
-        private static string ProcessRelativeOrAbsolutePath(string path)
-        {
-            if (Path.IsPathRooted(path))
-            {
-                return path;
-            }
-            else
-            {
-                var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                return Path.Combine(dllfolder, path);
-            }
+            var dllfolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(dllfolder, String.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
         }
 
         Result IExternalApplication.OnShutdown(UIControlledApplication application)

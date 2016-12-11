@@ -15,61 +15,53 @@ namespace PyRevitBaseClasses
     {
         public string _scriptSource = "";
         public string _alternateScriptSource = "";
-        public string _logfilename = "";
         public string _syspaths;
         public string _cmdName;
-        public string _cmdOptions;
+        public string _appdatapath;
         public bool _forcedDebugMode = false;
         public bool _altScriptMode = false;
 
-        public PyRevitCommand(string scriptSource, string alternateScriptSource, string logfilename, string syspaths, string cmdName, string cmdOptions)
+        public PyRevitCommand(string scriptSource,
+                              string alternateScriptSource,
+                              string syspaths,
+                              string cmdName,
+                              string appdatapath)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
-            _logfilename = logfilename;
             _syspaths = syspaths;
             _cmdName = cmdName;
-            _cmdOptions = cmdOptions;
+            _appdatapath = appdatapath;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // FIXME: somehow fetch back message after script execution...
+            // Get script executor
             var executor = new ScriptExecutor( commandData, message, elements);
 
-            // If Ctrl clicking on button, set forced debug mode
+            // Default script is the main script unless it is changed by modifier buttons
+            var _script = _scriptSource;
+
+            // If Shift clicking on button, run config script instead
+            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            {
+                _script = _alternateScriptSource;
+                _altScriptMode = true;
+            }
+
+            // If Ctrl clicking on button, set forced debug mode.
             if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             {
                 _forcedDebugMode = true;
             }
 
-            // If Shift clicking on button, run config script instead
-            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-            {
-                _scriptSource = _alternateScriptSource;
-                _altScriptMode = true;
-            }
 
             // Execute script
-            var result = executor.ExecuteScript(_scriptSource, _syspaths, _cmdName, _cmdOptions, _forcedDebugMode, _altScriptMode);
+            var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
             message = executor.Message;
 
-            // Log successful script usage
-            if (result == (int)Result.Succeeded && _logfilename.Length > 0)
-            {
-                //Logger: Log filename will be set by the loader when creating classes for each script. That's the _logfilename.
-                //This step will record a log entry for each script execution.
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");        //log time stamp
-                string username = commandData.Application.Application.Username;         //log username
-                string rvtversion = commandData.Application.Application.VersionNumber;  //log Revit version
-                string temppath = Path.Combine(Path.GetTempPath(), _logfilename);
-                using (var logger = File.AppendText(temppath))
-                {
-                    //This is the log entry in CSV format: {timestamp}, {username}, {revit version}, {full script address}
-                    logger.WriteLine(String.Format("{0}, {1}, {2}, {3}", timestamp, username, rvtversion, _scriptSource));
-                }
-            }
 
+            // Return results
             switch (result)
             {
                 case (int)Result.Succeeded:
@@ -83,6 +75,7 @@ namespace PyRevitBaseClasses
             }
         }
     }
+
 
     public abstract class PyRevitCommandCategoryAvail : IExternalCommandAvailability
     {
@@ -104,6 +97,7 @@ namespace PyRevitBaseClasses
         }
     }
 
+
     public abstract class PyRevitCommandSelectionAvail : IExternalCommandAvailability
     {
         public string _categoryName = "";
@@ -119,6 +113,7 @@ namespace PyRevitBaseClasses
             return true;
         }
     }
+
 
     public abstract class PyRevitCommandDefaultAvail : IExternalCommandAvailability
     {

@@ -3,13 +3,13 @@ import os.path as op
 import sys
 import clr
 
-from pyrevit.core.exceptions import PyRevitException
+from pyrevit import PyRevitException
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.repo import PYREVIT_VERSION
-from pyrevit.loader import ASSEMBLY_FILE_TYPE
+from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
@@ -52,7 +52,7 @@ CMD_AVAIL_CLS_NAME_CATEGORY = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevi
 CMD_AVAIL_CLS_NAME_SELECTION = make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
 source_file_filter = '(\.cs)'
-BASE_CLASSES_DIR_HASH = calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)
+BASE_CLASSES_DIR_HASH = calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)[:HASH_CUTOFF_LENGTH]
 BASE_CLASSES_ASM_FILE_ID = '{}_{}'.format(BASE_CLASSES_DIR_HASH, LOADER_BASE_NAMESPACE)
 BASE_CLASSES_ASM_FILE = get_data_file(BASE_CLASSES_ASM_FILE_ID, ASSEMBLY_FILE_TYPE)
 # taking the name of the generated data file and use it as assembly name
@@ -265,10 +265,9 @@ def _create_cmd_loader_type(module_builder, cmd_params):
                       [regen_attr_builder, trans_attrib_builder],
                       cmd_params.script_file_address,
                       cmd_params.config_script_file_address,
-                      cmd_params.log_file,
                       cmd_params.search_paths_str,
                       cmd_params.cmd_name,
-                      cmd_params.cmd_options)
+                      PYREVIT_APP_DIR)
 
 
 # public base class maker function -------------------------------------------------------------------------------------
