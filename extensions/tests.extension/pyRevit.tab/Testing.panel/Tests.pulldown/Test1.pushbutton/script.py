@@ -13,36 +13,25 @@ except:
 
 
 # # html test ------------------------------------------------------------------------------------------------------------
-# logger.info(':beer_mug: Everything went well!')
-# logger.info("Python is :thumbs_up: :banana:")
-# print "\n<a href='http://www.google.com'>Clickable link Google</a>"
-#
-# from pyrevit.coreutils.html import HTML
-# h = HTML()
-#
-# t = h.table(border='1', newlines=False)
-# for i in range(2):
-#     r = t.tr
-#     r.td('column 1')
-#     r.td('column 2')
-#
-# print t
-#
-# print """
-# <form action="http://google.com">
-#     <input type="submit" value="Go to Google" />
-# </form>
-# <form action="demo_form.asp">
-#   First name: <input type="text" name="fname"><br>
-#   Last name: <input type="text" name="lname"><br>
-#   <input type="submit" value="Submit">
-# </form>
-#  <form>
-#   <input type="radio" name="gender" value="male" checked> Male<br>
-#   <input type="radio" name="gender" value="female"> Female<br>
-#   <input type="radio" name="gender" value="other"> Other
-# </form>
-# """
+logger.info(':beer_mug: Everything went well!')
+logger.info("Python is :thumbs_up: :banana:")
+logger.info("\n<a href='http://www.google.com'>Clickable link Google</a>")
+
+logger.info("""
+<form action="http://google.com">
+    <input type="submit" value="Go to Google" />
+</form>
+<form action="demo_form.asp">
+  First name: <input type="text" name="fname"><br>
+  Last name: <input type="text" name="lname"><br>
+  <input type="submit" value="Submit">
+</form>
+ <form>
+  <input type="radio" name="gender" value="male" checked> Male<br>
+  <input type="radio" name="gender" value="female"> Female<br>
+  <input type="radio" name="gender" value="other"> Other
+</form>
+""")
 
 # testing output window ------------------------------------------------------------------------------------------------
 from pyrevit.coreutils.console import output_window as ow

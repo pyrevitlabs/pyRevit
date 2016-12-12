@@ -20,7 +20,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Sums up the values of selected parameter on selected elements. Elements not containig ' \
           'that parameter will be skipped.'
 
-__window__.Hide()
+__title__ = 'Sum Total'
 
 from Autodesk.Revit.DB import CurveElement
 
