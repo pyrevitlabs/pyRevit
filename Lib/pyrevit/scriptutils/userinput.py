@@ -27,6 +27,7 @@ class CommandSwitchWindow:
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
         self.my_window.PreviewKeyDown += self.handle_esc_key
+        self.my_window.MouseUp += self.handle_click
         border = System.Windows.Controls.Border()
         border.CornerRadius = System.Windows.CornerRadius(15)
         border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(220, 55, 50, 50))
@@ -57,6 +58,10 @@ class CommandSwitchWindow:
             my_button.Padding = System.Windows.Thickness(5, 0, 5, 0)
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
+
+    # noinspection PyUnusedLocal
+    def handle_click(self, sender, args):
+        self.my_window.Close()
 
     # noinspection PyUnusedLocal
     def handle_esc_key(self, sender, args):
