@@ -51,7 +51,7 @@ def _report_env():
     logger.info('pyRevit version: {} - :coded: with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
+    logger.info('Base assembly is: {}'.format(BASE_CLASSES_ASM_NAME))
     logger.info('Config file is: {}'.format(user_config.config_file))
 
 

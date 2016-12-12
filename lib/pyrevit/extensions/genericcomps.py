@@ -53,7 +53,7 @@ class GenericUIComponent(GenericComponent):
         self.directory = ext_dir
 
     def __repr__(self):
-        return '<type_id:{} name:{} @ {}>'.format(self.type_id, self.original_name, self.directory)
+        return '<type_id \'{}\' name \'{}\' @ \'{}\'>'.format(self.type_id, self.original_name, self.directory)
 
     def _get_unique_name(self):
         """Creates a unique name for the command. This is used to uniquely identify this command and also

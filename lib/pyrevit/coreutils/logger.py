@@ -14,9 +14,9 @@ RUNTIME_LOGGING_LEVEL = logging.WARNING
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{style}">{format}</div>')
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(style='background:#EEE;padding:10;margin:10 0 10 0',
+LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(style='background:#f9f2f4;color:#c7254e;padding:10;margin:10 0 10 0',
                                                   format=LOG_REC_FORMAT)
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(style='background:#ffdabf;padding:10;margin:10 0 10 0',
+LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(style='background:#c7254e;color:white;padding:10;margin:10 0 10 0',
                                                      format=LOG_REC_FORMAT)
 
 
@@ -52,11 +52,10 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        if level != logging.INFO:
-            msg = str(msg).replace('<', '&clt;').replace('>', '&cgt;')
-
         msg = msg.replace(sep, '/')
         msg = emojize(str(msg))
+        if level == logging.INFO:
+            msg = prepare_html_str(str(msg))
         logging.Logger._log(self, level, msg, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
