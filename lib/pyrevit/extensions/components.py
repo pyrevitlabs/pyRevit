@@ -179,6 +179,15 @@ class Extension(GenericUIContainer):
         #   cache only saves the png address and not the contents so they'll get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
         pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
+        pat += '|(\\' + PULLDOWN_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + SPLIT_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + SPLITPUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + STACKTWO_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + STACKTHREE_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + PUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + SMART_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + TOGGLE_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + LINK_BUTTON_POSTFIX + ')'
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
