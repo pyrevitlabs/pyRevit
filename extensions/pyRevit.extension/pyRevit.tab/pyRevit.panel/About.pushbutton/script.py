@@ -25,13 +25,13 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed 
 import os
 
 import clr
-from pyrevit.config.config import PyRevitVersion
-
-from pyrevit.updater import get_pyrevit_repo
+from pyrevit.repo import PYREVIT_VERSION
 
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
+clr.AddReferenceByPartialName('WindowsBase')
+# noinspection PyUnresolvedReferences
 import System.Windows
 
 
@@ -41,32 +41,40 @@ class aboutWindow:
     def __init__(self):
         # Create window
         self.my_window = System.Windows.Window()
+        self.my_window.WindowStyle = System.Windows.WindowStyle.None
+        self.my_window.AllowsTransparency = True
+        self.my_window.Background = None
         self.my_window.Title = 'About pyrevit'
         self.my_window.Width = 500
         self.my_window.Height = 300
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+        self.my_window.PreviewKeyDown += self.handle_esc_key
+        self.my_window.MouseUp += self.handle_click
+        border = System.Windows.Controls.Border()
+        border.CornerRadius = System.Windows.CornerRadius(15)
+        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(240, 208, 208, 208))
+        self.my_window.Content = border
+
         fontfam = System.Windows.Media.FontFamily('Myriad Pro Light')
-        # fontfam = System.Windows.Media.FontFamily('not existing font test')
 
         # Create StackPanel to Layout UI elements
         self.my_stack = System.Windows.Controls.StackPanel()
         self.my_stack.Margin = System.Windows.Thickness(5)
-        self.my_window.Content = self.my_stack
+        border.Child = self.my_stack
 
         self.reponame = System.Windows.Controls.Label()
-        self.reponame.Content = 'pyrevit'
+        self.reponame.Content = 'pyRevit'
         self.reponame.FontFamily = fontfam
-        self.reponame.FontSize = 32.0
-        self.reponame.Margin = System.Windows.Thickness(30, 10, 30, 0)
+        self.reponame.FontSize = 48.0
+        self.reponame.Margin = System.Windows.Thickness(30, 20, 30, 0)
 
         self.versionlabel = System.Windows.Controls.Label()
         tag_line = 'IronPython Library and Scripts for Autodesk Revit®'
-        last_commit_hash = get_pyrevit_repo().last_commit_hash[:7]
-        sub_title = '{}\nv {} : {}'.format(tag_line, PyRevitVersion.get_formatted(), last_commit_hash)
+        sub_title = '{}\nv {}'.format(tag_line, PYREVIT_VERSION.get_formatted())
         self.versionlabel.Content = sub_title
         self.versionlabel.FontFamily = fontfam
-        self.versionlabel.FontSize = 16.0
+        self.versionlabel.FontSize = 20.0
         self.versionlabel.Margin = System.Windows.Thickness(30, -10, 30, 0)
 
         self.my_stack.Children.Add(self.reponame)
@@ -101,23 +109,32 @@ class aboutWindow:
         self.my_stack.Children.Add(self.my_button_openrevisionhistory)
         self.my_stack.Children.Add(self.my_button_opengithubrepopage)
 
+    # noinspection PyUnusedLocal
+    def handle_click(self, sender, args):
+        self.my_window.Close()
 
+    # noinspection PyUnusedLocal
+    def handle_esc_key(self, sender, args):
+        if args.Key == System.Windows.Input.Key.Escape:
+            self.my_window.Close()
+
+    # noinspection PyUnusedLocal
     def openwebsite(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyrevit/')
+        os.system('start http://eirannejad.github.io/pyRevit/')
 
-
+    # noinspection PyUnusedLocal
     def opencredits(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyrevit/credits/')
+        os.system('start http://eirannejad.github.io/pyRevit/credits/')
 
-
+    # noinspection PyUnusedLocal
     def openrevisionhistory(self, sender, args):
-        os.system('start http://eirannejad.github.io/pyrevit/releasenotes/')
+        os.system('start http://eirannejad.github.io/pyRevit/releasenotes/')
 
-
+    # noinspection PyUnusedLocal
     def opengithubrepopage(self, sender, args):
-        os.system('start https://github.com/eirannejad/pyrevit')
+        os.system('start https://github.com/eirannejad/pyRevit')
 
-
+    # noinspection PyUnusedLocal
     def showwindow(self):
         self.my_window.ShowDialog()
 

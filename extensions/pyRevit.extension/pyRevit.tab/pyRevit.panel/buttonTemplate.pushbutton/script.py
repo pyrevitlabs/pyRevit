@@ -20,4 +20,4 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic ' \
           'parameters here.'
 
-__title__ = 'Add\nButton'
+__title__ = 'Button\nTemplate'
