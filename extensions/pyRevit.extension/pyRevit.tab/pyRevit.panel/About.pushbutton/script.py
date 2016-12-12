@@ -23,6 +23,7 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed 
           'updates about the new tools and changes, and a lot of other information there.'
 
 import os
+import sys
 
 import clr
 from pyrevit.repo import PYREVIT_VERSION
@@ -45,18 +46,18 @@ class aboutWindow:
         self.my_window.AllowsTransparency = True
         self.my_window.Background = None
         self.my_window.Title = 'About pyrevit'
-        self.my_window.Width = 500
-        self.my_window.Height = 300
+        self.my_window.Width = 580
+        self.my_window.Height = 315
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
         self.my_window.PreviewKeyDown += self.handle_esc_key
         self.my_window.MouseUp += self.handle_click
         border = System.Windows.Controls.Border()
         border.CornerRadius = System.Windows.CornerRadius(15)
-        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(240, 208, 208, 208))
+        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(248, 240, 240, 240))
         self.my_window.Content = border
 
-        fontfam = System.Windows.Media.FontFamily('Myriad Pro Light')
+        fontfam = System.Windows.Media.FontFamily('Courier New')
 
         # Create StackPanel to Layout UI elements
         self.my_stack = System.Windows.Controls.StackPanel()
@@ -66,19 +67,29 @@ class aboutWindow:
         self.reponame = System.Windows.Controls.Label()
         self.reponame.Content = 'pyRevit'
         self.reponame.FontFamily = fontfam
-        self.reponame.FontSize = 48.0
+        self.reponame.FontSize = 44.0
         self.reponame.Margin = System.Windows.Thickness(30, 20, 30, 0)
 
         self.versionlabel = System.Windows.Controls.Label()
-        tag_line = 'IronPython Library and Scripts for Autodesk Revit®'
-        sub_title = '{}\nv {}'.format(tag_line, PYREVIT_VERSION.get_formatted())
+        tag_line = 'IronPython Library and Scripts for Autodesk Revit'
+        sub_title = '{}\nv {}\n'.format(tag_line, PYREVIT_VERSION.get_formatted())
         self.versionlabel.Content = sub_title
         self.versionlabel.FontFamily = fontfam
-        self.versionlabel.FontSize = 20.0
+        self.versionlabel.FontSize = 16.0
         self.versionlabel.Margin = System.Windows.Thickness(30, -10, 30, 0)
+
+        self.ipyversion = System.Windows.Controls.Label()
+        running_on = 'Running on IronPython {}.{}.{}'.format(sys.version_info.major,
+                                                             sys.version_info.minor,
+                                                             sys.version_info.micro)
+        self.ipyversion.Content = running_on
+        self.ipyversion.FontFamily = fontfam
+        self.ipyversion.FontSize = 14.0
+        self.ipyversion.Margin = System.Windows.Thickness(30, -10, 30, 0)
 
         self.my_stack.Children.Add(self.reponame)
         self.my_stack.Children.Add(self.versionlabel)
+        self.my_stack.Children.Add(self.ipyversion)
 
         self.my_button_openwebsite = System.Windows.Controls.Button()
         self.my_button_openwebsite.Content = 'Open pyrevit website'
