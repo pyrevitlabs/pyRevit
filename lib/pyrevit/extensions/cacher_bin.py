@@ -27,7 +27,7 @@ def update_cache(parsed_ext):
 
 def get_cached_extension(installed_ext):
     for loaded_ext in loaded_extensions:
-        if loaded_ext.unique_name == installed_ext.unique_name:
+        if loaded_ext.name == installed_ext.name:
             return loaded_ext
 
     try:
