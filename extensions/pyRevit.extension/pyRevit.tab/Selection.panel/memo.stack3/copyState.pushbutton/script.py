@@ -34,8 +34,6 @@ from Autodesk.Revit.UI import TaskDialog
 
 from System.Collections.Generic import List
 
-__context__ = 'Selection'
-
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 

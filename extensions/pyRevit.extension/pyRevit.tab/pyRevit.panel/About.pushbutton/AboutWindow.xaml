@@ -1,24 +1,21 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="480" Width="580" ShowInTaskbar="False" BorderThickness="0" Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None" KeyDown="handleclick" MouseDown="handleclick">
-    <Border BorderThickness="1" CornerRadius="15">
+        Title="MainWindow" Foreground="#000" Height="480" Width="580" ShowInTaskbar="False" BorderThickness="0" Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None" KeyDown="handleclick" MouseDown="handleclick">
+    <Border BorderThickness="1" CornerRadius="15" BorderBrush="#dfdfdf">
         <Border.Background>
-            <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.WindowColorKey}}"/>
+            <SolidColorBrush Color="#fff"/>
         </Border.Background>
-        <Border.Effect>
-            <DropShadowEffect ShadowDepth="10" Opacity="0.2" BlurRadius="15"/>
-        </Border.Effect>
         <Grid>
             <TextBlock x:Name="pyrevit_title" Margin="30,20,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="44"><Run Text="pyRevit"/><InlineUIContainer>
             		<TextBlock x:Name="version_info" TextWrapping="Wrap" Text="v 4.0:0000000" FontSize="20" Margin="12,0,0,0"/>
             	</InlineUIContainer></TextBlock>
-            <TextBlock x:Name="pyrevit_subtitle" Margin="30,75,30,0" TextWrapping="Wrap" Text="IronPython Library and Scripts for Autodesk Revit" VerticalAlignment="Top" FontSize="16"/>
+            <TextBlock x:Name="pyrevit_subtitle" Margin="30,75,30,0" TextWrapping="Wrap" Text="IronPython Library and Scripts for Autodesk Revit ®" VerticalAlignment="Top" FontSize="16"/>
             <TextBlock x:Name="os_title" Margin="30,135,30,0" TextWrapping="Wrap" Text="pyRevit uses some fine open source projects:" VerticalAlignment="Top" FontSize="16" TextAlignment="Center"/>
             <Image x:Name="image_credits" Height="100" Margin="30,160,30,0" VerticalAlignment="Top"/>
-            <Button x:Name="button_website" Content="Open Project on Github" Margin="34,292,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="opengithubrepopage" Height="30" FontSize="16"/>
-            <Button x:Name="button_revs_page" Content="Open Revision History Page" Margin="34,330,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="openrevisionhistory" Height="30" FontSize="16"/>
-            <Button x:Name="button_credits_page" Content="Credits" Margin="34,368,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="opencredits" Height="30" FontSize="16"/>
-            <TextBlock x:Name="coded_with_love" Margin="145,0,145,25" TextWrapping="Wrap" VerticalAlignment="Bottom" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center"><Run Text="&lt;/&gt; with "/><Run FontSize="17.3333333333333" FontFamily="Arial" Text="♥ "/><Run Text="in Portland, OR"/><Span FontFamily="Arial"><Run/></Span><LineBreak/><Span FontFamily="Arial"><Run Text="© "/></Span><Run Text="2014-2017 Ehsan Iran-Nejad"/></TextBlock>
+            <Button x:Name="button_website" Content="Open Project on Github" Margin="30,292,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="opengithubrepopage" Height="30" FontSize="16"/>
+            <Button x:Name="button_revs_page" Content="Open Revision History Page" Margin="30,330,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="openrevisionhistory" Height="30" FontSize="16"/>
+            <Button x:Name="button_credits_page" Content="Credits" Margin="30,368,30,0" VerticalAlignment="Top" BorderBrush="{x:Null}" Click="opencredits" Height="30" FontSize="16"/>
+            <TextBlock x:Name="coded_with_love" Margin="145,0,145,25" TextWrapping="Wrap" VerticalAlignment="Bottom" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center"><Run Text="&lt;/&gt; with "/><Run FontSize="16" FontFamily="Lucida Console" Text="♥"/><Run Text=" in Portland, OR"/><Span FontFamily="Arial"><Run/></Span><LineBreak/><Span FontFamily="Arial"><Run Text="© "/></Span><Run Text="2014-2017 Ehsan Iran-Nejad"/></TextBlock>
         </Grid>
     </Border>
 </Window>

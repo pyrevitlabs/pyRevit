@@ -34,8 +34,6 @@ from System.Collections.Generic import List
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-__context__ = 'Selection'
-
 import clr
 clr.AddReferenceByPartialName('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
