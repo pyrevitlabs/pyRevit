@@ -1,5 +1,4 @@
 For publish ------------------------------------------------------------------------------------------------------------
-[]. dll cleanup on startup
 []. C# buttons
 [].	script info / create the template script that explains funcs available to each script
 

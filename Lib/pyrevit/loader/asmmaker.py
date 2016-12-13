@@ -1,11 +1,10 @@
+import clr
 from collections import namedtuple
 
-import clr
-
-import pyrevit.coreutils.appdata as appdata
 from pyrevit import PYREVIT_ADDON_NAME
+import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
-from pyrevit.coreutils import get_str_hash
+from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.repo import PYREVIT_VERSION
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
@@ -64,7 +63,7 @@ def _is_pyrevit_ext_asm(asm_name, extension):
 
 def _is_pyrevit_ext_already_loaded(ext_asm_name):
     logger.debug('Asking Revit for previously loaded package assemblies: {}'.format(ext_asm_name))
-    return find_loaded_asm(ext_asm_name) is not None
+    return len(find_loaded_asm(ext_asm_name))
 
 
 def _is_any_ext_asm_loaded(extension):
@@ -177,4 +176,7 @@ def create_assembly(extension):
 
 
 def cleanup_assembly_files():
-    pass
+    if get_revit_instance_count() == 1:
+        for asm_file_path in appdata.list_data_files(file_ext='dll'):
+            if not find_loaded_asm(asm_file_path, by_location=True):
+                appdata.garbage_data_file(asm_file_path)

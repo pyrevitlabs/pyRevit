@@ -131,7 +131,7 @@ def cleanup_string(input_str):
     return input_str
 
 
-def get_revit_instances():
+def get_revit_instance_count():
     return len(list(Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
@@ -168,22 +168,34 @@ def inspect_calling_scope_global_var(variable_name):
     return frame.f_locals[variable_name]
 
 
-def find_loaded_asm(asm_name, by_partial_name=False):
+def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
+    """
+
+    Args:
+        asm_info (str): name or location of the assembly
+        by_partial_name (bool): returns all assemblies that include the asm_info
+        by_location (bool): returns all assemblies with their location matching asm_info
+
+    Returns:
+        list: List of all loaded assemblies matching the provided info
+              If only one assembly has been found, it returns the assembly.
+              None will be returned if assembly is not loaded.
+    """
     loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
-        if by_partial_name and asm_name.lower() in str(loaded_assembly.GetName().Name).lower():
-            loaded_asm_list.append(loaded_assembly)
-        elif asm_name.lower() == str(loaded_assembly.GetName().Name).lower():
+        if by_partial_name:
+            if asm_info.lower() in str(loaded_assembly.GetName().Name).lower():
+                loaded_asm_list.append(loaded_assembly)
+        elif by_location:
+            try:
+                if op.normpath(loaded_assembly.Location) == op.normpath(asm_info):
+                    loaded_asm_list.append(loaded_assembly)
+            except:
+                continue
+        elif asm_info.lower() == str(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
-    count = len(loaded_asm_list)
-    if count == 0:
-        return None
-    elif count == 1:
-        found_asm = loaded_asm_list[0]
-        return found_asm
-    elif count > 1:
-        return loaded_asm_list
+    return loaded_asm_list
 
 
 def load_asm(asm_name):

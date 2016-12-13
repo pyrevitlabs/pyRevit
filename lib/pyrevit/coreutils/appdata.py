@@ -2,9 +2,14 @@ import os
 import os.path as op
 
 from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP, PyRevitException
+from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
 from System.IO import IOException
+
+
+logger = get_logger(__name__)
+
 
 # pyrevit temp file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
@@ -21,6 +26,22 @@ APPDATA_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
 APPDATA_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
                                                    HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 APPDATA_TEMP_FILE_PREFIX = 'TEMP_'
+
+
+def _remove_app_file(file_path):
+    try:
+        os.remove(file_path)
+    except Exception as osremove_err:
+        logger.error('Error file cleanup on: {} | {}'.format(file_path, osremove_err))
+
+
+def _list_app_files(prefix, file_ext):
+    requested_files = []
+    for appdata_file in os.listdir(PYREVIT_APP_DIR):
+        if appdata_file.startswith(prefix) and appdata_file.endswith(file_ext):
+            requested_files.append(op.join(PYREVIT_APP_DIR, appdata_file))
+
+    return requested_files
 
 
 def _get_app_file(file_id, file_ext, filename_only=False, temp_file=False, stamped=False):
@@ -90,3 +111,21 @@ def get_session_data_file(file_id, file_ext, name_only=False):
 def is_data_file_available(file_id, file_ext):
     full_filename = _get_app_file(file_id, file_ext)
     return op.exists(full_filename)
+
+
+def list_data_files(file_ext):
+    return _list_app_files(APPDATA_FILE_PREFIX, file_ext)
+
+
+def list_session_data_files(file_ext):
+    return _list_app_files(APPDATA_FILE_PREFIX_STAMPED, file_ext)
+
+
+def cleanup_appdata_folder():
+    for appdata_file in os.listdir(PYREVIT_APP_DIR):
+        if appdata_file.startswith(APPDATA_TEMP_FILE_PREFIX):
+            _remove_app_file(op.join(PYREVIT_APP_DIR, appdata_file))
+
+
+def garbage_data_file(file_path):
+    _remove_app_file(file_path)

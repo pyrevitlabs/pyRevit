@@ -146,11 +146,17 @@ def _produce_ui_linkbutton(ui_maker_params):
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not linkbutton.command_class:
+        return None
+
     logger.debug('Producing button: {}'.format(linkbutton))
     try:
-        linked_asm = find_loaded_asm(linkbutton.assembly)
-        if not linked_asm or not linkbutton.command_class:
+        linked_asm_list = find_loaded_asm(linkbutton.assembly)
+        if not linked_asm_list:
             return None
+
+        linked_asm = linked_asm_list[0]
+
         parent_ui_item.create_push_button(linkbutton.name,
                                           linked_asm.Location,
                                           _make_full_class_name(linked_asm.GetName().Name, linkbutton.command_class),

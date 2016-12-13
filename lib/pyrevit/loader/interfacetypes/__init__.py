@@ -122,7 +122,7 @@ def _get_reference_file(ref_name):
     # Lastly try to find location of assembly if already loaded
     loaded_asm = find_loaded_asm(ref_name)
     if loaded_asm:
-        return loaded_asm.Location
+        return loaded_asm[0].Location
 
     # if not worked raise critical error
     logger.critical('Can not find required reference assembly: {}'.format(ref_name))
@@ -141,9 +141,13 @@ def _generate_base_classes_asm():
     source_list = list()
     source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
-        # fixme: handle read errors
-        with open(source_file, 'r') as code_file:
-            source_list.append(code_file.read())
+        try:
+            with open(source_file, 'r') as code_file:
+                source_list.append(code_file.read())
+        except Exception as read_err:
+            logger.error('Error reading source file: {} | {}'.format(source_file, read_err))
+
+    # now try to compile
     try:
         logger.debug('Compiling interface types to: {}'.format(BASE_CLASSES_ASM_FILE))
         compile_csharp(source_list, BASE_CLASSES_ASM_FILE,
@@ -162,8 +166,8 @@ def _get_base_classes_asm():
         return _generate_base_classes_asm()
 
 
-def _find_pyrevit_base_class(base_class_name):
-    base_class = BASE_CLASSES_ASM.GetType(base_class_name)
+def _find_pyrevit_base_type(baseclasses_asm, base_class_name):
+    base_class = baseclasses_asm.GetType(base_class_name)
     if base_class is not None:
         logger.debug('Base class type found: {}'.format(base_class))
         return base_class
@@ -172,16 +176,19 @@ def _find_pyrevit_base_class(base_class_name):
 
 
 # see it the assembly is already loaded
-BASE_CLASSES_ASM = find_loaded_asm(BASE_CLASSES_ASM_NAME)
-# else, let's generate the assembly and load it
-if not BASE_CLASSES_ASM:
+BASE_CLASSES_ASM = None
+assm_list = find_loaded_asm(BASE_CLASSES_ASM_NAME)
+if assm_list:
+    BASE_CLASSES_ASM = assm_list[0]
+else:
+    # else, let's generate the assembly and load it
     BASE_CLASSES_ASM = _get_base_classes_asm()
 
 
-CMD_EXECUTOR_CLASS = _find_pyrevit_base_class(CMD_EXECUTOR_CLASS_NAME)
-CMD_AVAIL_CLS = _find_pyrevit_base_class(CMD_AVAIL_CLS_NAME)
-CMD_AVAIL_CLS_CATEGORY = _find_pyrevit_base_class(CMD_AVAIL_CLS_NAME_CATEGORY)
-CMD_AVAIL_CLS_SELECTION = _find_pyrevit_base_class(CMD_AVAIL_CLS_NAME_SELECTION)
+CMD_EXECUTOR_CLASS = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_EXECUTOR_CLASS_NAME)
+CMD_AVAIL_CLS = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME)
+CMD_AVAIL_CLS_CATEGORY = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_CATEGORY)
+CMD_AVAIL_CLS_SELECTION = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_SELECTION)
 
 
 def _create_base_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
