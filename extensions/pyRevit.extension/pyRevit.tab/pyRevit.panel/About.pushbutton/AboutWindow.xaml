@@ -12,7 +12,7 @@
             	</InlineUIContainer></TextBlock>
             <TextBlock x:Name="pyrevit_subtitle" Margin="140,85,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="16" Text="IronPython Module and Scripts for Autodesk Revit"/>
             <TextBlock x:Name="credits_title" Margin="30,155,30,0" TextWrapping="Wrap" Text="pyRevit uses some fine tools made by awesome people:" VerticalAlignment="Top" FontSize="16" TextAlignment="Center"/>
-            <Image x:Name="image_credits" Height="134" Margin="30,180,30,0" VerticalAlignment="Top"/>
+            <Image x:Name="image_credits" Width="590" Margin="30,180,30,0" VerticalAlignment="Top"/>
             <Button x:Name="button_website" Content="Open Project on Github" Margin="30,0,30,140" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opengithubrepopage" Height="30" FontSize="16"/>
             <Button x:Name="button_revs_page" Content="Open Revision History Page" Margin="30,0,30,105" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="openrevisionhistory" Height="30" FontSize="16"/>
             <Button x:Name="button_credits_page" Content="Credits" Margin="30,0,30,70" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opencredits" Height="30" FontSize="16"/>
