@@ -1,0 +1,4 @@
+\\vmware-host\Shared Folders\Revit API\pyRevit\RevitPythonLoader\obj\Debug 2014\RevitPythonLoader.Properties.Resources.resources
+\\vmware-host\Shared Folders\Revit API\pyRevit\RevitPythonLoader\obj\Debug 2014\RevitPythonLoader.ScriptOutput.resources
+\\vmware-host\Shared Folders\Revit API\pyRevit\RevitPythonLoader\obj\Debug 2014\revitPythonLoader.csproj.GenerateResource.Cache
+\\vmware-host\Shared Folders\Revit API\pyRevit\RevitPythonLoader\obj\Debug 2014\revitPythonLoader.csprojResolveAssemblyReference.cache
