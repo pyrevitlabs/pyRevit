@@ -1,19 +1,16 @@
 For publish ------------------------------------------------------------------------------------------------------------
-[]. C# buttons
 [].	script info / create the template script that explains funcs available to each script
-
 []. Create base settings window with WPF
-[].	about window with WPF and list all links, and extensions w/ version
-
 
 After publish ----------------------------------------------------------------------------------------------------------
+[]. C# buttons
 []. sphinx documentation
-
-[].	user config: disabling tools
 
 [].	Pkg manager pushbutton:
 	window to list available packages, allows installation and removal
 	update is handled through main update module
+
+[].	user config: disabling tools
 
 [].	improving execution speed (caching or compiling scripts):
 	https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
