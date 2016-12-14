@@ -49,9 +49,9 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed 
 class MyWindow(Window):
     def __init__(self):
         wpf.LoadComponent(self, os.path.join(folder, 'AboutWindow.xaml'))
-        uri = Uri(os.path.join(folder, 'credits.png'))
-        self.image_credits.Source = BitmapImage(uri)
-        self.version_info.Text = PYREVIT_VERSION.get_formatted()
+        self.image_credits.Source = BitmapImage(Uri(os.path.join(folder, 'credits.png')))
+        self.pyrevit_logo.Source = BitmapImage(Uri(os.path.join(folder, 'pyRevitlogo.png')))
+        self.version_info.Text = 'v {}'.format(PYREVIT_VERSION.get_formatted())
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'.format(sys.version_info.major,
                                                                                 sys.version_info.minor,
                                                                                 sys.version_info.micro)
