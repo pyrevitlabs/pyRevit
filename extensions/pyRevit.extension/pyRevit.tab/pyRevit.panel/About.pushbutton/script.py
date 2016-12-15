@@ -33,7 +33,7 @@ clr.AddReference('IronPython.Wpf')
 # noinspection PyUnresolvedReferences
 from System import Uri
 # noinspection PyUnresolvedReferences
-from System.Windows import Application, Window
+from System.Windows import Window
 # noinspection PyUnresolvedReferences
 from System.Windows.Media.Imaging import BitmapImage
 # noinspection PyUnresolvedReferences
