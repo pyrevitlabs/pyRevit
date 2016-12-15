@@ -19,7 +19,6 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Activates selection tool that picks only Model elements.'
 
-__window__.Close()
 from Autodesk.Revit.DB import ElementId
 from Autodesk.Revit.UI.Selection import ISelectionFilter
 from System.Collections.Generic import List

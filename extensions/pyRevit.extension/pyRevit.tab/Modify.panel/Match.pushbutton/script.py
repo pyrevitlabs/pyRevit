@@ -17,7 +17,7 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 
-__doc__ = 'pick the interfacetypes object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics.'
+__doc__ = 'pick the source object that has the element graphics override you like to match to, and then pick the destination objects one by one and this tool will match the graphics.'
 
 from Autodesk.Revit.DB import Transaction, FilteredElementCollector, BuiltInCategory, ElementId
 from Autodesk.Revit.UI.Selection import ObjectType
@@ -30,17 +30,21 @@ verbose = True
 
 sel = []
 # fixme: modify to remember source style
-sourceElement = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick interfacetypes object.'))
-fromStyle = curview.GetElementOverrides(sourceElement.Id)
+try:
+    sourceElement = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick source object.'))
+    fromStyle = curview.GetElementOverrides(sourceElement.Id)
 
-while True:
-    try:
-        destElement = doc.GetElement(
-            uidoc.Selection.PickObject(ObjectType.Element, 'Pick objects to change their graphic overrides.'))
-        curview = doc.ActiveView
-        with Transaction(doc, 'Match Graphics Overrides') as t:
-            t.Start()
-            curview.SetElementOverrides(destElement.Id, fromStyle)
-            t.Commit()
-    except:
-        break
+    while True:
+        try:
+            destElement = doc.GetElement(
+                uidoc.Selection.PickObject(ObjectType.Element, 'Pick objects to change their graphic overrides.'))
+            curview = doc.ActiveView
+            with Transaction(doc, 'Match Graphics Overrides') as t:
+                t.Start()
+                curview.SetElementOverrides(destElement.Id, fromStyle)
+                t.Commit()
+        except:
+            break
+
+except:
+    pass

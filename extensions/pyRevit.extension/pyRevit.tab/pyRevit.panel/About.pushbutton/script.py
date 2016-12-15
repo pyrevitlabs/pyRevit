@@ -52,7 +52,6 @@ class MyWindow(Window):
         wpf.LoadComponent(self, os.path.join(folder, 'AboutWindow.xaml'))
         self.image_credits.Source = BitmapImage(Uri(os.path.join(folder, 'credits.png')))
         self.pyrevit_logo.Source = BitmapImage(Uri(os.path.join(folder, 'pyRevitlogo.png')))
-        self.github_profile.Source = BitmapImage(Uri(os.path.join(folder, 'octocat.png')))
         self.keybase_profile.Source = BitmapImage(Uri(os.path.join(folder, 'keybase.png')))
         self.version_info.Text = 'v {}'.format(PYREVIT_VERSION.get_formatted())
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'.format(sys.version_info.major,
@@ -78,11 +77,6 @@ class MyWindow(Window):
     # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
         webbrowser.open_new_tab('http://eirannejad.github.io/pyRevit/credits/')
-
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def opengithubprofile(self, sender, args):
-        webbrowser.open_new_tab('https://github.com/eirannejad')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
