@@ -17,6 +17,9 @@ class PyRevitConfigSectionParser(object):
         self._parser = config_parser
         self._section_name = section_name
 
+    def __iter__(self):
+        return self._parser.options(self._section_name)
+
     def __getattr__(self, param_name):
         try:
             value = self._parser.get(self._section_name, param_name)
