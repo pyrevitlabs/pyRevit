@@ -8,15 +8,17 @@
         <Grid>
             <Image x:Name="pyrevit_logo" HorizontalAlignment="Left" Width="100" Height="110" Margin="25,20,0,0" VerticalAlignment="Top" />
             <TextBlock x:Name="pyrevit_title" Margin="140,30,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="44"><Run Text="pyRevit"/><InlineUIContainer>
-            		<TextBlock x:Name="version_info" TextWrapping="Wrap" Text="v 4.0:0000000" FontSize="20" Margin="12,0,0,0"/>
+            		<TextBlock x:Name="version_info" TextWrapping="Wrap" Text="v 4.0:0000000" FontSize="20" Margin="12,0,0,0" MouseDown="opengithubcommits"/>
             	</InlineUIContainer></TextBlock>
-            <TextBlock x:Name="pyrevit_subtitle" Margin="140,85,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="16" Text="IronPython Module and Scripts for Autodesk Revit"/>
-            <TextBlock x:Name="credits_title" Margin="30,155,30,0" TextWrapping="Wrap" Text="pyRevit uses some fine tools made by awesome people:" VerticalAlignment="Top" FontSize="16" TextAlignment="Center"/>
-            <Image x:Name="image_credits" Width="590" Margin="30,180,30,0" VerticalAlignment="Top"/>
+            <TextBlock x:Name="pyrevit_subtitle" Margin="140,85,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" Text="IronPython Module and Scripts for Autodesk Revit"/>
+            <TextBlock x:Name="credits_title" Margin="30,155,30,0" TextWrapping="Wrap" Text="pyRevit uses some fine tools made by awesome people:" VerticalAlignment="Top" FontSize="14" TextAlignment="Center"/>
+            <Image x:Name="image_credits" Width="590" Margin="30,180,30,0" VerticalAlignment="Top" MouseDown="opencredits"/>
             <Button x:Name="button_website" Content="Open Project on Github" Margin="30,0,30,140" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opengithubrepopage" Height="30" FontSize="16"/>
             <Button x:Name="button_revs_page" Content="Open Revision History Page" Margin="30,0,30,105" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="openrevisionhistory" Height="30" FontSize="16"/>
             <Button x:Name="button_credits_page" Content="Credits" Margin="30,0,30,70" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opencredits" Height="30" FontSize="16"/>
-            <TextBlock x:Name="coded_with_love" Margin="145,0,145,25" TextWrapping="Wrap" VerticalAlignment="Bottom" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center"><Run Text="&lt;/&gt; with "/><Run FontSize="16" FontFamily="Lucida Console" Text="♥"/><Run Text=" in Portland, OR"/><Span FontFamily="Arial"><Run/></Span><LineBreak/><Span FontFamily="Arial"><Run Text="© "/></Span><Run Text="2014-2017 Ehsan Iran-Nejad"/></TextBlock>
+            <TextBlock x:Name="coded_with_love" Margin="145,0,145,25" TextWrapping="Wrap" VerticalAlignment="Bottom" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center"><Run Text="&lt;/&gt; with "/><Run FontSize="16" FontFamily="Lucida Console" Text="♥"/><Run Text=" in Portland, OR"/><LineBreak/><TextBlock Text="©2014-2017 Ehsan Iran-Nejad"/></TextBlock>
+            <Image x:Name="github_profile" Width="24" Height="24" Margin="0,0,180,20" HorizontalAlignment="Right" VerticalAlignment="Bottom" MouseDown="opengithubprofile"/>
+            <Image x:Name="keybase_profile" Width="24" Height="24" Margin="0,0,150,20" HorizontalAlignment="Right" VerticalAlignment="Bottom" MouseDown="openkeybaseprofile"/>
         </Grid>
     </Border>
 </Window>
