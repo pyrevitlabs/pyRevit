@@ -57,7 +57,7 @@ def _produce_ui_separator(ui_maker_params):
     """
     parent_ui_item = ui_maker_params.parent_ui
     ext_asm_info = ui_maker_params.asm_info
-    
+
     if not ext_asm_info.reloading:
         logger.debug('Adding separator to: {}'.format(parent_ui_item))
         try:
@@ -76,7 +76,7 @@ def _produce_ui_slideout(ui_maker_params):
     """
     parent_ui_item = ui_maker_params.parent_ui
     ext_asm_info = ui_maker_params.asm_info
-    
+
     if not ext_asm_info.reloading:
         logger.debug('Adding slide out to: {}'.format(parent_ui_item))
         try:
@@ -132,7 +132,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             logger.error('Error initializing smart button: {} | {}'.format(smartbutton, button_err))
         return parent_ui_item.button(smartbutton.name)
     except Exception as err:
-        logger.error('Smart button initialization error: {}'.format(err.message))
+        logger.error('Smart button initialization error on: {} | {}'.format(smartbutton, err.message))
         return None
 
 
@@ -243,7 +243,7 @@ def _produce_ui_splitpush(ui_maker_params):
     """
     parent_ribbon_panel = ui_maker_params.parent_ui
     splitpush = ui_maker_params.component
-    
+
     logger.debug('Producing splitpush button: {}'.format(splitpush))
     try:
         parent_ribbon_panel.create_splitpush_button(splitpush.name, splitpush.icon_file, update_if_exists=True)
