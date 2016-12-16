@@ -30,9 +30,9 @@ namespace PyRevitBaseClasses
         {
             this.txtStdOut = new System.Windows.Forms.WebBrowser();
             this.SuspendLayout();
-            // 
+            //
             // txtStdOut
-            // 
+            //
             this.txtStdOut.AllowWebBrowserDrop = false;
             this.txtStdOut.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtStdOut.Location = new System.Drawing.Point(3, 3);
@@ -42,13 +42,13 @@ namespace PyRevitBaseClasses
             this.txtStdOut.Size = new System.Drawing.Size(878, 455);
             this.txtStdOut.TabIndex = 0;
             this.txtStdOut.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.txtStdOut_Navigating);
-            // 
+            //
             // ScriptOutput
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(884, 461);
+            this.ClientSize = new System.Drawing.Size(900, 600);
             this.Controls.Add(this.txtStdOut);
             this.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);

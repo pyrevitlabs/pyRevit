@@ -4,7 +4,7 @@ import re
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils.emoji.code import emoji_file_dict
 
-HTML_EMOJI_SPAN = prepare_html_str('<span><img src="{}" style="margin-top:0.35em;margin-bottom:-0.35em;"></span>')
+HTML_EMOJI_SPAN = prepare_html_str('<span"><img src="{}" style="vertical-align:middle;margin:-4,0,-4,0;"></span>')
 
 
 def emojize(text):
