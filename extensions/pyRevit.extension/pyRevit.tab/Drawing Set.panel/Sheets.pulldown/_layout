@@ -1,5 +1,4 @@
-addSelectedViewportsToSelectedSheetsmoveSelectedViewportsToSelectedSheets
------
-setCropRegionToSelectedShaperenameAllSheetsToUpperCase
-openSelectedViewport-----
-shiftSelectedSheetsOneDownshiftSelectedSheetsOneUpshiftSelectedViewsBy30
+Add Selected Viewports To Selected SheetsMove Selected Viewports To Selected Sheets-----
+Open Selected ViewportRename All Sheets To UpperCase
+Set Crop Region To Selected Shape-----
+Shift Selected Sheets One DownShift Selected Sheets One Up

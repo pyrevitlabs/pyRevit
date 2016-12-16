@@ -18,15 +18,17 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
-import pyrevit.loader.session as session
-from pyrevit.config.config import ICON_LARGE
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.loader.sessionmgr import load_session
+from pyrevit.coreutils.ribbon import ICON_LARGE
 
 from pyrevit import updater
-from pyrevit.coreutils.logger import get_logger
+
 
 logger = get_logger(__commandname__)
 
-__doc__ = 'Downloads updates from the github repository.'
+
+__doc__ = 'Downloads updates from the remote git repositories (e.g github, bitbucket).'
 
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
@@ -48,9 +50,9 @@ if __name__ == '__main__':
         logger.info('Updating repo: {}'.format(repo_info.directory))
         updated_repo_info = updater.update_pyrevit(repo_info)
         if updated_repo_info:
-            logger.info(':thumbs-up: Successfully updated: {} to {}'.format(updated_repo_info.directory,
+            logger.info(':ok_hand_sign: Successfully updated: {} to {}'.format(updated_repo_info.directory,
                                                                             updated_repo_info.last_commit_hash[:7]))
 
     # now re-load pyrevit session.
     logger.info('Reloading...')
-    session.load()
+    load_session()

@@ -25,9 +25,13 @@ def _update_extension_syspaths(ui_ext, lib_ext_list):
         ui_ext.add_syspath(lib_ext.directory)
 
 
+def get_installed_lib_extensions(root_dir):
+    return [lib_ext for lib_ext in get_installed_lib_extension_data(root_dir, LibraryExtension)]
+
+
 def get_installed_ui_extensions(root_dir):
     ext_list = list()
-    lib_ext_list = [lib_ext for lib_ext in get_installed_lib_extension_data(root_dir, LibraryExtension)]
+    lib_ext_list = get_installed_lib_extensions(root_dir)
     for ext_info in get_installed_extension_data(root_dir, Extension):
         # test if cache is valid for this ui_extension
         # it might seem unusual to create a ui_extension and then re-load it from cache but minimum information about

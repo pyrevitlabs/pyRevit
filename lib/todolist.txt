@@ -1,6 +1,8 @@
 For publish ------------------------------------------------------------------------------------------------------------
-[].	script info / create the template script that explains funcs available to each script
-[]. Create base settings window with WPF
+[]. script info / create the template script that explains funcs available to each script
+[]. Create base settings window with WP
+[]. F
+
 
 After publish ----------------------------------------------------------------------------------------------------------
 []. C# buttons
