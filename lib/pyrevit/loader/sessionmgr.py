@@ -6,10 +6,10 @@ from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 
-from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.userconfig import user_config
 
-from pyrevit.extensions.extmanager import get_installed_ui_extensions
+from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
 from pyrevit.loader.interfacetypes import BASE_CLASSES_ASM, LOADER_BASE_NAMESPACE, BASE_CLASSES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
@@ -70,7 +70,7 @@ def _new_session():
     # collect all library extensions. Their dir paths need to be added to sys.path for all commands
     for root_dir in pkg_search_dirs:
         # Get a list of all installed extensions in this directory
-        # _parser.get_installed_extension_data() returns a list of extensions in given directory
+        # _parser.parse_dir_for_ext_type() returns a list of extensions in given directory
         # then iterater through extensions and load one by one
         for ui_ext in get_installed_ui_extensions(root_dir):
             # create a dll assembly and get assembly info

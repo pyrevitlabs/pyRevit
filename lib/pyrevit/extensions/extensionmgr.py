@@ -12,8 +12,7 @@ except AttributeError:
     user_config.save_changes()
     from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
 
-from pyrevit.extensions.parser import get_installed_extension_data, get_installed_lib_extension_data
-from pyrevit.extensions.parser import get_parsed_extension
+from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension
 from pyrevit.extensions.components import Extension, LibraryExtension
 
 
@@ -25,14 +24,21 @@ def _update_extension_syspaths(ui_ext, lib_ext_list):
         ui_ext.add_syspath(lib_ext.directory)
 
 
+def get_installed_extension_data(root_dir):
+    ext_data_list = []
+    ext_data_list.extend([ui_ext for ui_ext in parse_dir_for_ext_type(root_dir, Extension)])
+    ext_data_list.extend([lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)])
+    return ext_data_list
+
+
 def get_installed_lib_extensions(root_dir):
-    return [lib_ext for lib_ext in get_installed_lib_extension_data(root_dir, LibraryExtension)]
+    return [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)]
 
 
 def get_installed_ui_extensions(root_dir):
     ext_list = list()
     lib_ext_list = get_installed_lib_extensions(root_dir)
-    for ext_info in get_installed_extension_data(root_dir, Extension):
+    for ext_info in parse_dir_for_ext_type(root_dir, Extension):
         # test if cache is valid for this ui_extension
         # it might seem unusual to create a ui_extension and then re-load it from cache but minimum information about
         # the ui_extension needs to be passed to the cache module for proper hash calculation and ui_extension recovery.

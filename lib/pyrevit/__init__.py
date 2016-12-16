@@ -120,8 +120,8 @@ EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
 
 PYREVIT_ADDON_NAME = 'pyrevit'
-_VERSION_MAJOR = 4
-_VERSION_MINOR = 0
+VERSION_MAJOR = 4
+VERSION_MINOR = 0
 
 
 # user env paths

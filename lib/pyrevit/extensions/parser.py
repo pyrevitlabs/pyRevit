@@ -73,10 +73,10 @@ def get_parsed_extension(extension):
     return extension
 
 
-def get_installed_extension_data(root_dir, parent_cmp_type):
-    """Parses home directory and return a list of Extension objects for installed extensions.
-    The package objects won't be parsed at this level. This function onyl provides the basic info for the installed
-    extensions so the session can check the cache for each package and decide if they need to be parsed or not.
+def parse_dir_for_ext_type(root_dir, parent_cmp_type):
+    """Parses root_dir and return a list of objects of type parent_cmp_type for installed extensions.
+    The package objects won't be parsed at this level. This is useful for collecting basic info on an extension type
+    for cache cheching or updating extensions using their directory paths.
     """
     # making sure the provided directory exists. This is mainly for the user defined package directories
     if not op.exists(root_dir):
@@ -86,28 +86,9 @@ def get_installed_extension_data(root_dir, parent_cmp_type):
     # try creating extensions in given directory
     ext_data_list = []
 
-    logger.debug('Parsing directory for extensions...')
+    logger.debug('Parsing directory for extensions of type: {}'.format(parent_cmp_type))
     for ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
         logger.debug('Extension directory found: {}'.format(ext_data))
         ext_data_list.append(ext_data)
 
     return ext_data_list
-
-
-def get_installed_lib_extension_data(root_dir, parent_cmp_type):
-    """Parses home directory and return a list of LibraryExtension objects for installed library extensions."""
-
-    # making sure the provided directory exists. This is mainly for the user defined package directories
-    if not op.exists(root_dir):
-        logger.debug('Extension search directory does not exist: {}'.format(root_dir))
-        return []
-
-    # try creating extensions in given directory
-    lib_ext_data_list = []
-
-    logger.debug('Parsing directory for library extensions...')
-    for lib_ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
-        logger.info('Library package directory found: {}'.format(lib_ext_data.name))
-        lib_ext_data_list.append(lib_ext_data)
-
-    return lib_ext_data_list

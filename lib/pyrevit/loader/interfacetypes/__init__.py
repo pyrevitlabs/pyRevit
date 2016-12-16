@@ -8,7 +8,7 @@ from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_fil
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 
 # noinspection PyUnresolvedReferences

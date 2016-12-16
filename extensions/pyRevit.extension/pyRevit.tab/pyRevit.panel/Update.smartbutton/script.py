@@ -22,27 +22,28 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.sessionmgr import load_session
 from pyrevit.coreutils.ribbon import ICON_LARGE
 
-from pyrevit import updater
+import pyrevit.versionmgr.updater as updater
 
 
 logger = get_logger(__commandname__)
 
 
-__doc__ = 'Downloads updates from the remote git repositories (e.g github, bitbucket).'
+__doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
-    logger.info('Checking for updates...')
-    has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-
-    for repo in updater.get_all_available_repos():
-        if updater.has_pending_updates(repo):
-            commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
+    pass
+    # logger.info('Checking for updates...')
+    # has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
+    #
+    # for repo in updater.get_all_extension_repos():
+    #     if updater.has_pending_updates(repo):
+    #         commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
 
 
 if __name__ == '__main__':
     # collect a list of all repos to be updates
-    repo_info_list = updater.get_all_available_repos()
+    repo_info_list = updater.get_all_extension_repos()
     logger.debug('List of repos to be updated: {}'.format(repo_info_list))
 
     for repo_info in repo_info_list:

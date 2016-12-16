@@ -24,7 +24,7 @@ import sys
 import clr
 import os
 import webbrowser
-from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION
 
 clr.AddReference('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")

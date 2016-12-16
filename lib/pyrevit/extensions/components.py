@@ -12,7 +12,7 @@ from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFI
 from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
 from pyrevit.extensions import UI_EXTENSION_POSTFIX, LIB_EXTENSION_POSTFIX
 from pyrevit.extensions.genericcomps import GenericComponent, GenericUIContainer, GenericUICommand
-from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION
 
 logger = get_logger(__name__)
 
@@ -208,3 +208,6 @@ class LibraryExtension(GenericComponent):
             raise PyRevitException('Can not initialize from directory: {}'.format(ext_dir))
         self.directory = ext_dir
         self.name = op.splitext(op.basename(self.directory))[0]
+
+    def __repr__(self):
+        return '<type_id \'{}\' name \'{}\' @ \'{}\'>'.format(self.type_id, self.name, self.directory)

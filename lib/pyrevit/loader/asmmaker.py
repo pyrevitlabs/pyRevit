@@ -6,7 +6,7 @@ import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
 from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.repo import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
 

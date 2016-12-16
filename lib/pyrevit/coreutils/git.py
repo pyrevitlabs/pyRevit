@@ -25,8 +25,8 @@ clr.AddReferenceByName(GIT_LIB)
 logger = get_logger(__name__)
 
 
-# public git module
-git = importlib.import_module(GIT_LIB)
+# public libgit module
+libgit = importlib.import_module(GIT_LIB)
 
 
 class RepoInfo:
@@ -40,6 +40,9 @@ class RepoInfo:
         self.last_commit_hash = repo.Head.Tip.Id.Sha
         self.repo = repo
 
+    def __repr__(self):
+        return '<type \'RepoInfo\' head \'{}\' @ {}>'.format(self.last_commit_hash, self.directory)
+
 
 def get_repo(repo_dir):
     """
@@ -50,5 +53,5 @@ def get_repo(repo_dir):
     Returns:
         RepoInfo:
     """
-    repo = git.Repository(repo_dir)
+    repo = libgit.Repository(repo_dir)
     return RepoInfo(repo)

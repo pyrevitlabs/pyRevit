@@ -1,6 +1,6 @@
-import pyrevit.coreutils.git as git
-from pyrevit import HOME_DIR, _VERSION_MAJOR, _VERSION_MINOR
+from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR
 from pyrevit.coreutils.logger import get_logger
+import pyrevit.coreutils.git as git
 
 
 logger = get_logger(__name__)
@@ -8,8 +8,8 @@ logger = get_logger(__name__)
 
 class PyRevitVersion(object):
     """Contains current pyrevit version"""
-    major = _VERSION_MAJOR
-    minor = _VERSION_MINOR
+    major = VERSION_MAJOR
+    minor = VERSION_MINOR
     patch = ''
 
     def __init__(self, patch_number):
