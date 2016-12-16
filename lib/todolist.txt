@@ -1,7 +1,9 @@
 For publish ------------------------------------------------------------------------------------------------------------
 []. script info / create the template script that explains funcs available to each script
 []. Create base settings window with WP
-[]. F
+[]. Console / command search
+[]. Update system
+[]. Fix sync views
 
 
 After publish ----------------------------------------------------------------------------------------------------------
