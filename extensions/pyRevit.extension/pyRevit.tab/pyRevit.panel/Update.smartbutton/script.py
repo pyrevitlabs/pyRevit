@@ -32,13 +32,12 @@ __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bi
 
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
-    pass
-    # logger.info('Checking for updates...')
-    # has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-    #
-    # for repo in updater.get_all_extension_repos():
-    #     if updater.has_pending_updates(repo):
-    #         commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
+    logger.info('Checking for updates...')
+    has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
+
+    for repo in updater.get_all_extension_repos():
+        if updater.has_pending_updates(repo):
+            commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
 
 
 if __name__ == '__main__':
@@ -48,11 +47,11 @@ if __name__ == '__main__':
 
     for repo_info in repo_info_list:
         # update one by one
-        logger.info('Updating repo: {}'.format(repo_info.directory))
+        logger.debug('Updating repo: {}'.format(repo_info.directory))
         updated_repo_info = updater.update_pyrevit(repo_info)
         if updated_repo_info:
-            logger.info(':ok_hand_sign: Successfully updated: {} to {}'.format(updated_repo_info.directory,
-                                                                            updated_repo_info.last_commit_hash[:7]))
+            logger.info(':inbox_tray: Successfully updated: {} to {}'.format(updated_repo_info.name,
+                                                                             updated_repo_info.last_commit_hash[:7]))
 
     # now re-load pyrevit session.
     logger.info('Reloading...')

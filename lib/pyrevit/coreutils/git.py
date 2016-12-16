@@ -8,6 +8,7 @@ https://github.com/libgit2/libgit2sharp/wiki
 
 import clr
 import importlib
+import os.path as op
 
 # noinspection PyUnresolvedReferences
 import System
@@ -36,9 +37,11 @@ class RepoInfo:
     """
     def __init__(self, repo):
         self.directory = repo.Info.WorkingDirectory
+        self.name = op.basename(op.normpath(self.directory))
         self.head_name = repo.Head.Name
         self.last_commit_hash = repo.Head.Tip.Id.Sha
         self.repo = repo
+
 
     def __repr__(self):
         return '<type \'RepoInfo\' head \'{}\' @ {}>'.format(self.last_commit_hash, self.directory)
