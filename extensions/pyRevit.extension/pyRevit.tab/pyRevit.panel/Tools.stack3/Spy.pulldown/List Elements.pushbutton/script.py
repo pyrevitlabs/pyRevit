@@ -27,7 +27,8 @@ from Autodesk.Revit.DB import FilteredElementCollector, ElementMulticategoryFilt
 from Autodesk.Revit.DB.ExtensibleStorage import Schema
 from Autodesk.Revit.UI import TaskDialog, PostableCommand, RevitCommandId
 from System.Collections.Generic import List
-from pyrevit.scriptutils.userinput import CommandSwitchWindow
+
+from scriptutils.userinput import CommandSwitchWindow
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
