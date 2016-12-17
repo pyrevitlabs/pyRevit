@@ -16,6 +16,8 @@ LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{style}">{format}</div>')
 LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(style='background:#f9f2f4;color:#c7254e;padding:10;margin:10 0 10 0',
                                                   format=LOG_REC_FORMAT)
+LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format(style='background:#F7F3F2;color:#C64325;padding:10;margin:10 0 10 0',
+                                                  format=LOG_REC_FORMAT)
 LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(style='background:#c7254e;color:white;padding:10;margin:10 0 10 0',
                                                      format=LOG_REC_FORMAT)
 
@@ -94,6 +96,7 @@ class LoggerWrapper(logging.Logger):
 stdout_hndlr = logging.StreamHandler(sys.stdout)
 # e.g [_parser] DEBUG: Can not create command.
 stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
+                                                logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
                                                 logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL)},
                                                logging.Formatter(LOG_REC_FORMAT)))
 stdout_hndlr.setLevel(RUNTIME_LOGGING_LEVEL)
