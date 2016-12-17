@@ -22,7 +22,8 @@ __doc__ = 'Activates selection tool that picks a specific type of element.'
 from Autodesk.Revit.DB import ElementId
 from Autodesk.Revit.UI.Selection import ISelectionFilter
 from System.Collections.Generic import List
-from pyrevit.scriptutils.userinput import CommandSwitchWindow
+
+from scriptutils.userinput import CommandSwitchWindow
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
