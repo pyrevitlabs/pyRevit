@@ -75,6 +75,7 @@ def _get_default_config_parser():
 
     parser.add_section(INIT_SETTINGS_SECTION)
     parser.add_section(COMMAND_ALIAS_SECTION)
+    parser.init.checkupdates = True
     parser.init.verbose = False
     parser.init.debug = False
     parser.init.userextensions = '[]'

@@ -32,6 +32,8 @@ class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
 
+        logger.debug('Check updates is set to: {}'.format(user_config.init.checkupdates))
+        self.checkupdates_cb.IsChecked = user_config.init.checkupdates
         logger.debug('Verbose is set to: {}'.format(user_config.init.verbose))
         self.verbose_rb.IsChecked = user_config.init.verbose
         logger.debug('Debug is set to: {}'.format(user_config.init.debug))
@@ -93,6 +95,7 @@ class SettingsWindow(WPFWindow):
         if self.debug_rb.IsChecked:
             logger.set_debug_mode()
 
+        user_config.init.checkupdates = self.checkupdates_cb.IsChecked
         user_config.init.verbose = self.verbose_rb.IsChecked
         user_config.init.debug = self.debug_rb.IsChecked
         user_config.init.bincache = self.bincache_rb.IsChecked

@@ -36,7 +36,7 @@ __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bi
 
 def _setup_user_config():
     user_config.add_section('versionmgr')
-    user_config.versionmgr.checkupdates = False
+    user_config.init.checkupdates = False
     user_config.save_changes()
 
 
@@ -56,7 +56,7 @@ def _check_updates():
 def __selfinit__(script_cmp, commandbutton, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-        if user_config.versionmgr.checkupdates and _check_updates():
+        if user_config.init.checkupdates and _check_updates():
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
 
     except AttributeError:
