@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Copyright (c) 2014-2017 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
 This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit

@@ -3,7 +3,7 @@ Copyright (c) 2014-2016 Gui Talarico
 Written for pyRevit
 TESTED API: 2015 | 2016
 
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Copyright (c) 2014-2017 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 TESTED API: 2015 | 2016
 

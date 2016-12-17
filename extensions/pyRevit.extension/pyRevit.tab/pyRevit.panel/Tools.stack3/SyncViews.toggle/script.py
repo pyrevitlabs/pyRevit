@@ -1,5 +1,5 @@
 """
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
+Copyright (c) 2014-2017 Ehsan Iran-Nejad
 Python scripts for Autodesk Revit
 
 This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
@@ -16,27 +16,30 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
-
-__doc__ = 'Keep views synchronized. This means that as you pan and zoom and switch between Plan and RCP views, this ' \
-          'tool will keep the views in the same zoomed area so you can keep working in the same area without '        \
-          'the need to zoom and pan again.\n This tool works best when the views are maximized.'
-
 import os
 import os.path as op
 import pickle as pl
 import clr
 
-from pyrevit.coreutils.ribbon import get_current_ui
+import scriptutils
+
 clr.AddReference('PresentationCore')
 
-from System import EventHandler
+# noinspection PyUnresolvedReferences
+from System import EventHandler, Uri
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import ElementId, XYZ, ViewPlan
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, ViewActivatingEventArgs
-
-from System import Uri
+# noinspection PyUnresolvedReferences
 from System.Windows.Media.Imaging import BitmapImage, BitmapCacheOption
-
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import PulldownButton, SplitButton, RadioButtonGroup
+
+
+__doc__ = 'Keep views synchronized. This means that as you pan and zoom and switch between Plan and RCP views, this ' \
+          'tool will keep the views in the same zoomed area so you can keep working in the same area without '        \
+          'the need to zoom and pan again.\n This tool works best when the views are maximized.'
 
 
 class Point:
@@ -46,45 +49,6 @@ class Point:
 
 
 # todo: sync views - 3D
-
-
-class ButtonIcon:
-    def __init__(self, uri):
-        self.smallIcon = BitmapImage()
-        self.smallIcon.BeginInit()
-        self.smallIcon.UriSource = uri
-        self.smallIcon.CacheOption = BitmapCacheOption.OnLoad
-        self.smallIcon.DecodePixelHeight = 16
-        self.smallIcon.DecodePixelWidth = 16
-        self.smallIcon.EndInit()
-        self.largeIcon = BitmapImage()
-        self.largeIcon.BeginInit()
-        self.largeIcon.UriSource = uri
-        self.largeIcon.CacheOption = BitmapCacheOption.OnLoad
-        self.largeIcon.EndInit()
-
-
-class ToggleButtonIcons:
-    def __init__(self, script_directory):
-        enableduri = Uri(op.join(script_directory, 'on.png'))
-        disableduri = Uri(op.join(script_directory, 'off.png'))
-        self.enabledIcon = ButtonIcon(enableduri)
-        self.disabledIcon = ButtonIcon(disableduri)
-
-
-def findribbonsubitem(ribbonitem, itemname):
-    for item in ribbonitem.GetItems():
-        if isinstance(item, PulldownButton) or isinstance(item, SplitButton) or isinstance(item, RadioButtonGroup):
-            item = findribbonsubitem(item, itemname)
-            if item:
-                return item
-        elif item.Name == itemname:
-            return item
-
-
-def getcommandbutton(__rvt__, scriptaddress):
-    cui = get_current_ui()
-    return cui.ribbon_tab('pyRevit').ribbon_panel('pyRevit').button('SyncViews').get
 
 
 def copyzoomstate(sender, args):
@@ -143,44 +107,12 @@ def applyzoomstate(sender, args):
 
 
 def togglestate():
-    usertemp = os.getenv('Temp')
-    activestatefile = op.join(usertemp, 'syncviewsactive.pys')
-    inactivestatefile = op.join(usertemp, 'syncviewsinactive.pys')
 
-    commandbutton = getcommandbutton(__revit__, __file__)
-    icon = ToggleButtonIcons(op.dirname(__file__))
-
-    if op.isfile(activestatefile):
-        os.rename(activestatefile, inactivestatefile)
-        commandbutton.Image = icon.disabledIcon.smallIcon
-        commandbutton.LargeImage = icon.disabledIcon.largeIcon
-    elif op.isfile(inactivestatefile):
-        os.rename(inactivestatefile, activestatefile)
-        commandbutton.Image = icon.enabledIcon.smallIcon
-        commandbutton.LargeImage = icon.enabledIcon.largeIcon
-    else:
-        open(activestatefile, 'a').close()
-        commandbutton.Image = icon.enabledIcon.smallIcon
-        commandbutton.LargeImage = icon.enabledIcon.largeIcon
-
-
-def clearstate():
-    usertemp = os.getenv('Temp')
-    activestatefile = op.join(usertemp, 'syncviewsactive.pys')
-    inactivestatefile = op.join(usertemp, 'syncviewsinactive.pys')
-    if op.isfile(activestatefile):
-        os.rename(activestatefile, inactivestatefile)
-    else:
-        open(inactivestatefile, 'a').close()
 
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
-    clearstate()
     __rvt__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
     __rvt__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
-    icon = ToggleButtonIcons(op.dirname(scriptaddress))
-    commandbutton.Image = icon.disabledIcon.smallIcon
-    commandbutton.LargeImage = icon.disabledIcon.largeIcon
 
 
 if __name__ == '__main__':
