@@ -66,6 +66,8 @@ namespace PyRevitBaseClasses
 
                 // Get builtin scope to add custom variables
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
+                // add command path to builtins
+                builtin.SetVariable("__commandpath__", Path.GetDirectoryName(sourcePath));
                 builtin.SetVariable("__commandname__", cmdName);                    // add command name to builtins
                 builtin.SetVariable("__forceddebugmode__", forcedDebugMode);        // add forced debug mode to builtins
                 builtin.SetVariable("__shiftclick__", altScriptMode);               // set to true of alt script mode
