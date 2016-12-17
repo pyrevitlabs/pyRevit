@@ -132,7 +132,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             logger.error('Error initializing smart button: {} | {}'.format(smartbutton, button_err))
         return parent_ui_item.button(smartbutton.name)
     except Exception as err:
-        logger.error('Smart button initialization error on: {} | {}'.format(smartbutton, err.message))
+        logger.error('Smart button script import error: {} | {}'.format(smartbutton, err.message))
         return None
 
 
