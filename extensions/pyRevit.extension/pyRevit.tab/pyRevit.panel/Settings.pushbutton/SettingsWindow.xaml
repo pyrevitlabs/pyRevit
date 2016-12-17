@@ -1,0 +1,68 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="pyRevit Settings" Height="500" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+        <ScrollViewer>
+            <StackPanel>
+            <Expander Header="pyRevit Core Settings:" IsExpanded="False" Margin="10px">
+                <StackPanel Margin="10px">
+                    <GroupBox Header="Reporting Level:">
+                        <StackPanel>
+                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">Verbose (Info only)</RadioButton>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,0,0">Verbose reporting opens the output window and only prints the info messages.
+                                                                       These messages are meant to provide the most basic necessary information about
+                                                                       the current pyRevit session to the user.</TextBlock>
+
+                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode</RadioButton>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,0,10">This activates the pyRevit debug mode which enables all components and scripts to
+                                                                                         report their debug messages. Generally this causes a very lengthy report and
+                                                                                         increases the script running time, but it is very valuable for debugging.
+                                                                                         Activate this only for debugging purposes.</TextBlock>
+
+                            <Button Content="Reset Reporting Level to default" Click="resetreportinglevel" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Caching:" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,0,0">pyRevit caches the extension data so it can run faster. This section controls the type of caching:</TextBlock>
+                            <RadioButton x:Name="bincache_rb" GroupName="cache_type" Margin="10,10,0,5" IsChecked="False">Binary Cache</RadioButton>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,0,0">Binary cache is the fastest but the cache files are not human readable
+                                                                                         and not very useful for debugging.</TextBlock>
+
+                            <RadioButton x:Name="asciicache_rb" GroupName="cache_type" Margin="10,15,0,5" IsChecked="False">ASCII Cache</RadioButton>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,0,10">ASCII cache files are JSON files and are human readable.
+                                                                                          They are very helpful for debugging purposes.</TextBlock>
+
+                            <Button Content="Reset Caching to default" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </Expander>
+        <Expander Header="Custom user extension folders:" IsExpanded="True" Margin="10px">
+            <StackPanel Margin="10px">
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,0,0">pyRevit can search in custom folders for extensions.
+                                                                             You can setup your custom extensions in any directory and add the directory address here.
+                                                                             pyRevit searches these folders on startup and loads the extensions. This helps to decouple the
+                                                                             custom extensions from pyRevit's default extension folder so you can upgrade/remove pyRevit without
+                                                                             worrying about your own extension folders.</TextBlock>
+                <DockPanel HorizontalAlignment="Stretch" Margin="10px" Height="100px">
+                    <StackPanel MinWidth="150px" MaxWidth="200px" DockPanel.Dock="Right">
+                        <Button Content="Add folder" Click="addfolder" Margin="0,0,0,5"/>
+                        <Button Content="Remove folder" Click="removefolder" Margin="0,0,0,5"/>
+                        <Button Content="Remove All" Click="removeallfolders" Margin="0,0,0,5"/>
+                    </StackPanel>
+                    <ListBox x:Name="extfolders_lb" Margin="0,0,10,0">
+                    </ListBox>
+                </DockPanel>
+            </StackPanel>
+        </Expander>
+        <GroupBox Header="Import / Export Settings:" Margin="10px">
+            <StackPanel>
+                <Button Content="Import Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
+                <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
+            </StackPanel>
+        </GroupBox>
+        <Button x:Name="save_b" Click="savesettings" Content="Save Settings" HorizontalAlignment="Right" Width="200px" Margin="0,10,25,25"/>
+        </StackPanel>
+        </ScrollViewer>
+</Window>

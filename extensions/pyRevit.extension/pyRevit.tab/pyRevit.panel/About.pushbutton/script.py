@@ -18,41 +18,25 @@ GNU General Public License for more details.
 See this link for a copy of the GNU General Public License protecting this package.
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
-
-
 import sys
-import clr
-import os
 import webbrowser
+
+from scriptutils.userinput import WPFWindow
 from pyrevit.versionmgr import PYREVIT_VERSION
-
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
-clr.AddReference('IronPython.Wpf')
-
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-from System.Windows import Window
-# noinspection PyUnresolvedReferences
-from System.Windows.Media.Imaging import BitmapImage
-# noinspection PyUnresolvedReferences
-import wpf
-
-
-folder = os.path.dirname(__file__)
 
 
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
           'updates about the new tools and changes, and a lot of other information there.'
 
 
-class MyWindow(Window):
-    def __init__(self):
-        wpf.LoadComponent(self, os.path.join(folder, 'AboutWindow.xaml'))
-        self.image_credits.Source = BitmapImage(Uri(os.path.join(folder, 'credits.png')))
-        self.pyrevit_logo.Source = BitmapImage(Uri(os.path.join(folder, 'pyRevitlogo.png')))
-        self.keybase_profile.Source = BitmapImage(Uri(os.path.join(folder, 'keybase.png')))
+class AboutWindow(WPFWindow):
+    def __init__(self, xaml_file_name):
+        WPFWindow.__init__(self, xaml_file_name)
+
+        self.set_image_source('image_credits', 'credits.png')
+        self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
+        self.set_image_source('keybase_profile', 'keybase.png')
+
         self.version_info.Text = 'v {}'.format(PYREVIT_VERSION.get_formatted())
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'.format(sys.version_info.major,
                                                                                 sys.version_info.minor,
@@ -90,4 +74,4 @@ class MyWindow(Window):
 
 
 if __name__ == '__main__':
-    MyWindow().ShowDialog()
+    AboutWindow('AboutWindow.xaml').ShowDialog()
