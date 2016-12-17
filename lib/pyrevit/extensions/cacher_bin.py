@@ -64,3 +64,4 @@ def is_cache_valid(extension):
 
     except Exception as err:
         logger.debug('Error determining cache validity: {} | {}'.format(extension, err))
+        return False
