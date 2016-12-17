@@ -64,6 +64,10 @@ def _parse_for_components(component):
             _parse_for_components(new_cmp)
 
 
+def parse_comp_dir(comp_path, comp_class):
+    return _create_subcomponents(comp_path, get_all_subclasses([comp_class]))
+
+
 def get_parsed_extension(extension):
     """Parses package directory and creates and adds components to the package object
     Each package object is the root to a tree of components that exists under that package. (e.g. tabs, buttons, ...)

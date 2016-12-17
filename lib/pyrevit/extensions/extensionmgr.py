@@ -12,7 +12,8 @@ except AttributeError:
     user_config.save_changes()
     from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
 
-from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension
+from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension, parse_comp_dir
+from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.extensions.components import Extension, LibraryExtension
 
 
@@ -22,6 +23,10 @@ logger = get_logger(__name__)
 def _update_extension_syspaths(ui_ext, lib_ext_list):
     for lib_ext in lib_ext_list:
         ui_ext.add_syspath(lib_ext.directory)
+
+
+def get_command_from_path(comp_path):
+    return parse_comp_dir(comp_path, GenericUICommand)
 
 
 def get_installed_extension_data(root_dir):
