@@ -66,7 +66,10 @@ class _ExecutorParams(object):
     @property   # writeabe
     def window_handle(self):
         # noinspection PyUnresolvedReferences
-        return __window__ if __window__ else None
+        try:
+            return __window__ if __window__ else None
+        except:
+            return None
 
     @window_handle.setter
     def window_handle(self, value):
