@@ -14,6 +14,8 @@ from System import AppDomain
 from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
+# noinspection PyUnresolvedReferences
+from System.Net import WebClient
 
 
 def enum(**enums):
@@ -233,3 +235,12 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
 
 def prepare_html_str(input_string):
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
+
+
+def check_internet_connection():
+    client = WebClient()
+    try:
+        client.OpenRead("http://www.google.com")
+        return True
+    except:
+        return False
