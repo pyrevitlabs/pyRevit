@@ -3,13 +3,12 @@ import sys
 from pyrevit.coreutils.logger import get_logger
 logger = get_logger(__commandname__)
 
-
+logger.warning('Warning message test')
 
 try:
     print('__execversion__ is {}'.format(__execversion__))
 except:
     print('__execversion__ is not available')
-
 
 
 # # html test ------------------------------------------------------------------------------------------------------------
