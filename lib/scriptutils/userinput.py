@@ -1,13 +1,26 @@
+import os
 import clr
 
 from pyrevit.coreutils.logger import get_logger
 
-clr.AddReferenceByPartialName('PresentationCore')
+clr.AddReference('IronPython.Wpf')
+clr.AddReference('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('WindowsBase')
+
 # noinspection PyUnresolvedReferences
 import System.Windows
+# noinspection PyUnresolvedReferences
+from System import Uri
+# noinspection PyUnresolvedReferences
+from System.Windows import Window
+# noinspection PyUnresolvedReferences
+from System.Windows.Forms import FolderBrowserDialog, DialogResult
+# noinspection PyUnresolvedReferences
+from System.Windows.Media.Imaging import BitmapImage
+# noinspection PyUnresolvedReferences
+import wpf
 
 
 logger = get_logger(__name__)
@@ -76,3 +89,18 @@ class CommandSwitchWindow:
     def pick_cmd_switch(self):
         self.my_window.ShowDialog()
         return self.selected_switch
+
+
+class WPFWindow(Window):
+    def __init__(self, xaml_file_name):
+        wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file_name))
+
+    def set_image_source(self, element_name, image_file_name):
+        wpf_element = getattr(self, element_name)
+        wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file_name)))
+
+
+def pick_folder():
+    fb_dlg = FolderBrowserDialog()
+    if fb_dlg.ShowDialog() == DialogResult.OK:
+        return fb_dlg.SelectedPath
