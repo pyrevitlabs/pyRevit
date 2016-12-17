@@ -54,7 +54,7 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        msg = msg.replace(sep, '/')
+        msg = str(msg).replace(sep, '/')
         msg = emojize(str(msg))
         if level == logging.INFO:
             msg = prepare_html_str(str(msg))
@@ -78,9 +78,11 @@ class LoggerWrapper(logging.Logger):
 
     def set_verbose_mode(self):
         set_pyrevit_env_var(VERBOSE_ISC_NAME, True)
+        set_pyrevit_env_var(DEBUG_ISC_NAME, False)
         self.handlers[0].setLevel(logging.INFO)
 
     def set_debug_mode(self):
+        set_pyrevit_env_var(VERBOSE_ISC_NAME, False)
         set_pyrevit_env_var(DEBUG_ISC_NAME, True)
         self.handlers[0].setLevel(logging.DEBUG)
 
