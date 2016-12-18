@@ -1,7 +1,8 @@
 import os
 import os.path as op
 
-from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, HOST_APP, PyRevitException
+from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, PYREVIT_APP_DIR, HOST_APP, PyRevitException
+from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
@@ -10,9 +11,6 @@ from System.IO import IOException
 
 logger = get_logger(__name__)
 
-
-# pyrevit temp file directory
-PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
 
 if not op.isdir(PYREVIT_APP_DIR):
     try:
@@ -108,9 +106,24 @@ def get_session_data_file(file_id, file_ext, name_only=False):
     return _get_app_file(file_id, file_ext, filename_only=name_only, stamped=True)
 
 
+def is_pyrevit_data_file(file_name):
+    return APPDATA_FILE_PREFIX in file_name
+
+
+def is_file_available(file_name, file_ext):
+    full_filename = op.join(PYREVIT_APP_DIR, make_canonical_name(file_name, file_ext))
+    if op.exists(full_filename):
+        return full_filename
+    else:
+        return False
+
+
 def is_data_file_available(file_id, file_ext):
     full_filename = _get_app_file(file_id, file_ext)
-    return op.exists(full_filename)
+    if op.exists(full_filename):
+        return full_filename
+    else:
+        return False
 
 
 def list_data_files(file_ext):

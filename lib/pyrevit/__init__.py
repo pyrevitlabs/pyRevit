@@ -131,6 +131,9 @@ VERSION_MINOR = 0
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 
+# pyrevit temp file directory
+PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Base Exceptions
