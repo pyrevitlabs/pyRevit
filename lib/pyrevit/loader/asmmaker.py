@@ -39,6 +39,7 @@ class CommandExecutorParams:
         self.script_file_address = script_cmp.get_full_script_address()
         self.config_script_file_address = script_cmp.get_full_config_script_address()
         self.search_paths_str = join_strings(script_cmp.get_search_paths())
+        self.language = script_cmp.script_language
 
     def __repr__(self):
         return '<Class:{} AvailClass:{} Name:{} Context:{}>'.format(self.class_name,

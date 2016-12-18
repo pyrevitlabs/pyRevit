@@ -18,7 +18,6 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 import os
 
-from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 from scriptutils import logger
 from scriptutils.userinput import WPFWindow, pick_folder
@@ -74,7 +73,7 @@ class SettingsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def removefolder(self, sender, args):
-        selected_path =  self.extfolders_lb.SelectedItem
+        selected_path = self.extfolders_lb.SelectedItem
         if self.extfolders_lb.ItemsSource:
             uniq_items = set(self.extfolders_lb.ItemsSource)
             uniq_items.remove(selected_path)

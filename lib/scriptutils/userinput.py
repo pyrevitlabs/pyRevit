@@ -26,6 +26,17 @@ import wpf
 logger = get_logger(__name__)
 
 
+class WPFWindow(Window):
+    def __init__(self, xaml_file_name):
+        # noinspection PyUnresolvedReferences
+        wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file_name))
+
+    def set_image_source(self, element_name, image_file_name):
+        wpf_element = getattr(self, element_name)
+        # noinspection PyUnresolvedReferences
+        wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file_name)))
+
+
 class CommandSwitchWindow:
     def __init__(self, switches, message='Pick a command option:'):
         self.selected_switch = ''
@@ -89,15 +100,6 @@ class CommandSwitchWindow:
     def pick_cmd_switch(self):
         self.my_window.ShowDialog()
         return self.selected_switch
-
-
-class WPFWindow(Window):
-    def __init__(self, xaml_file_name):
-        wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file_name))
-
-    def set_image_source(self, element_name, image_file_name):
-        wpf_element = getattr(self, element_name)
-        wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file_name)))
 
 
 def pick_folder():
