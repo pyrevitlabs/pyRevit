@@ -42,10 +42,11 @@ class CommandExecutorParams:
         self.language = script_cmp.script_language
 
     def __repr__(self):
-        return '<Class:{} AvailClass:{} Name:{} Context:{}>'.format(self.class_name,
-                                                                    self.avail_class_name,
-                                                                    self.cmd_name,
-                                                                    self.cmd_context)
+        return '<Class \'{}\' AvailClass \'{}\' Name \'{}\' Context \'{}\' @ {}>'.format(self.class_name,
+                                                                                         self.avail_class_name,
+                                                                                         self.cmd_name,
+                                                                                         self.cmd_context,
+                                                                                         self.script_file_address)
 
 
 def _make_extension_hash(extension):
@@ -151,8 +152,21 @@ def _produce_asm_file(extension):
         return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, True)
     elif appdata.is_data_file_available(file_id=ext_asm_fileid, file_ext=ASSEMBLY_FILE_TYPE):
         logger.debug('Extension assembly file already exists: {}'.format(ext_asm_file_path))
-        load_asm_file(ext_asm_file_path)
-        return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, False)
+        try:
+            loaded_assm = load_asm_file(ext_asm_file_path)
+            for asm_name in loaded_assm.GetReferencedAssemblies():
+                logger.debug('Checking referenced assembly: {}'.format(asm_name))
+                ref_asm_file_path = appdata.is_file_available(file_name=asm_name.Name, file_ext=ASSEMBLY_FILE_TYPE)
+                if ref_asm_file_path:
+                    logger.debug('Loading referenced assembly: {}'.format(ref_asm_file_path))
+                    try:
+                        load_asm_file(ref_asm_file_path)
+                    except Exception as load_err:
+                        logger.error('Error loading referenced assembly: {} | {}'.format(ref_asm_file_path, load_err))
+
+            return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, False)
+        except Exception as ext_asm_load_err:
+            logger.error('Error loading extension assembly: {} | {}'.format(ext_asm_file_path, ext_asm_load_err))
     else:
         return _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path)
 

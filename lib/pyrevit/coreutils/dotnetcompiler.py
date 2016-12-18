@@ -14,12 +14,17 @@ from System.CodeDom import Compiler
 logger = get_logger(__name__)
 
 
-def compile_csharp(sourcecode_list, full_output_file_addr, reference_list=None, resource_list=None):
+def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=None, resource_list=None):
     logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
     logger.debug('References assemblies are: {}'.format(reference_list))
 
     compiler_params = Compiler.CompilerParameters()
-    compiler_params.OutputAssembly = full_output_file_addr
+
+    if full_output_file_addr is None:
+        compiler_params.GenerateInMemory = True
+    else:
+        compiler_params.GenerateInMemory = False
+        compiler_params.OutputAssembly = full_output_file_addr
 
     compiler_params.TreatWarningsAsErrors = False
     compiler_params.GenerateExecutable = False
@@ -42,5 +47,9 @@ def compile_csharp(sourcecode_list, full_output_file_addr, reference_list=None, 
         error_list = [str(err) for err in compiler.Errors.GetEnumerator()]
         raise PyRevitException("Compile error: {}".format(error_list))
 
-    logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
-    return compiler.PathToAssembly
+    if full_output_file_addr is None:
+        logger.debug('Compile to memory successful: {}'.format(compiler.CompiledAssembly))
+        return compiler.CompiledAssembly
+    else:
+        logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
+        return compiler.PathToAssembly

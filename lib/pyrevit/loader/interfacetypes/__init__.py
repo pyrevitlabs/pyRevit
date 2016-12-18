@@ -4,7 +4,7 @@ import sys
 import clr
 
 from pyrevit import PyRevitException
-from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash
+from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
@@ -14,6 +14,8 @@ from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.UI import IExternalCommand
 # noinspection PyUnresolvedReferences
 from System import Array, Type
 # noinspection PyUnresolvedReferences
@@ -59,6 +61,14 @@ BASE_CLASSES_ASM_FILE = get_data_file(BASE_CLASSES_ASM_FILE_ID, ASSEMBLY_FILE_TY
 # taking the name of the generated data file and use it as assembly name
 BASE_CLASSES_ASM_NAME = op.splitext(op.basename(BASE_CLASSES_ASM_FILE))[0]
 logger.debug('Interface types assembly file is: {}'.format(BASE_CLASSES_ASM_NAME))
+
+
+def _read_source(source_file_path):
+    try:
+        with open(source_file_path, 'r') as code_file:
+            return code_file.read()
+    except Exception as read_err:
+        logger.error('Error reading source file: {} | {}'.format(source_file_path, read_err))
 
 
 def _get_asm_attr_source():
@@ -142,11 +152,7 @@ def _generate_base_classes_asm():
     source_list = list()
     source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
-        try:
-            with open(source_file, 'r') as code_file:
-                source_list.append(code_file.read())
-        except Exception as read_err:
-            logger.error('Error reading source file: {} | {}'.format(source_file, read_err))
+        source_list.append(_read_source(source_file))
 
     # now try to compile
     try:
@@ -190,14 +196,6 @@ CMD_EXECUTOR_CLASS = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_EXECUTOR_CLAS
 CMD_AVAIL_CLS = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME)
 CMD_AVAIL_CLS_CATEGORY = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_CATEGORY)
 CMD_AVAIL_CLS_SELECTION = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_SELECTION)
-
-
-def _create_vb_type(module_builder, cmd_params):
-    pass
-
-
-def _create_csharp_type(module_builder, cmd_params):
-    pass
 
 
 def _create_base_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
@@ -270,12 +268,10 @@ def _create_cmd_loader_type(module_builder, cmd_params):
 
     # add RegenerationAttribute to type
     regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
-    regen_attr_builder = CustomAttributeBuilder(regen_const_info,
-                                                Array[object]((RegenerationOption.Manual,)))
+    regen_attr_builder = CustomAttributeBuilder(regen_const_info, Array[object]((RegenerationOption.Manual,)))
     # add TransactionAttribute to type
     trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
-    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info,
-                                                  Array[object]((TransactionMode.Manual,)))
+    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info, Array[object]((TransactionMode.Manual,)))
 
     _create_base_type(module_builder, CMD_EXECUTOR_CLASS, cmd_params.class_name,
                       [regen_attr_builder, trans_attrib_builder],
@@ -286,21 +282,73 @@ def _create_cmd_loader_type(module_builder, cmd_params):
                       PYREVIT_APP_DIR)
 
 
+def _create_vb_type(module_builder, cmd_params):
+    pass
+
+
+def _create_csharp_type(module_builder, cmd_params):
+
+    logger.debug('Compiling script: {}'.format(cmd_params))
+    source = _read_source(cmd_params.script_file_address)
+    script_hash = get_str_hash(source)[:HASH_CUTOFF_LENGTH]
+
+    command_assm_file_id = '{}_{}'.format(script_hash, cmd_params.class_name)
+    command_assm_file = get_data_file(command_assm_file_id, ASSEMBLY_FILE_TYPE)
+    logger.debug('Compiling script to: {}'.format(command_assm_file))
+
+    regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
+    regen_attr_builder = CustomAttributeBuilder(regen_const_info, Array[object]((RegenerationOption.Manual,)))
+    # add TransactionAttribute to type
+    trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
+    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info, Array[object]((TransactionMode.Manual,)))
+
+    compiled_assm_path = compile_csharp([source], command_assm_file, reference_list=_get_references())
+    compiled_assm = load_asm_file(compiled_assm_path)
+
+    for compiled_type in compiled_assm.GetTypes():
+        if IExternalCommand in compiled_type.GetInterfaces():
+            _create_base_type(module_builder,
+                              compiled_type,
+                              cmd_params.class_name,
+                              [regen_attr_builder, trans_attrib_builder])
+            return
+
+    logger.error('Could not find command interface: {}'.format(cmd_params))
+
+
 # public base class maker function -------------------------------------------------------------------------------------
 def make_cmd_classes(module_builder, cmd_params):
     # make command interface type for the given command
     if cmd_params.language == PYTHON_LANG:
-        _create_cmd_loader_type(module_builder, cmd_params)
+        logger.debug('Command is python: {}'.format(cmd_params))
+        logger.debug('Creating executor type: {}'.format(cmd_params))
+        try:
+            _create_cmd_loader_type(module_builder, cmd_params)
+        except Exception as cmd_exec_err:
+            logger.error('Error creating executor class: {} | {}'.format(cmd_params, cmd_exec_err))
 
         # create command availability class for this command
         if cmd_params.avail_class_name:
-            _create_cmd_avail_type(module_builder, cmd_params)
+            try:
+                _create_cmd_avail_type(module_builder, cmd_params)
+            except Exception as cmd_avail_err:
+                logger.error('Error creating availability class: {} | {}'.format(cmd_params, cmd_avail_err))
 
     elif cmd_params.language == CSHARP_LANG:
-        _create_csharp_type(module_builder, cmd_params)
+        logger.debug('Command is c-sharp: {}'.format(cmd_params))
+        logger.debug('Compiling script source: {}'.format(cmd_params))
+        try:
+            _create_csharp_type(module_builder, cmd_params)
+        except Exception as cmd_compile_err:
+            logger.error('Error compiling script: {} | {}'.format(cmd_params, cmd_compile_err))
 
     elif cmd_params.language == VB_LANG:
-        _create_vb_type(module_builder, cmd_params)
+        logger.debug('Command is visual-basic: {}'.format(cmd_params))
+        logger.debug('Compiling script source: {}'.format(cmd_params))
+        try:
+            _create_vb_type(module_builder, cmd_params)
+        except Exception as cmd_compile_err:
+            logger.error('Error compiling script: {} | {}'.format(cmd_params, cmd_compile_err))
 
 
 def make_shared_classes(module_builder):
