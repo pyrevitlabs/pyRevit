@@ -15,7 +15,7 @@ from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
 from System.Reflection import Assembly
 # noinspection PyUnresolvedReferences
-from System.Net import WebClient
+from System.Net import WebClient, WebRequest
 
 
 def enum(**enums):
@@ -237,10 +237,34 @@ def prepare_html_str(input_string):
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
 
 
-def check_internet_connection():
-    client = WebClient()
+# def check_internet_connection():
+#     client = WebClient()
+#     try:
+#         client.OpenRead("http://www.google.com")
+#         return True
+#     except:
+#         return False
+#
+
+
+# def check_internet_connection():
+    # import urllib2
+    #
+    # def internet_on():
+    #     try:
+    #         urllib2.urlopen('http://216.58.192.142', timeout=1)
+    #         return True
+    #     except urllib2.URLError as err:
+    #         return False
+
+
+def check_internet_connection(timeout=1000):
     try:
-        client.OpenRead("http://www.google.com")
+        client = WebRequest.Create("http://google.com/")
+        client.Method = "HEAD"
+        client.Timeout = timeout
+        response = client.GetResponse()
+        response.GetResponseStream()
         return True
     except:
         return False
