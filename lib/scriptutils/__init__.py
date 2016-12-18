@@ -1,13 +1,11 @@
 try:
-    temp_name = __commandname__
-    temp_path = __commandpath__
+    # noinspection PyUnresolvedReferences
+    COMMAND_NAME = __commandname__
+    # noinspection PyUnresolvedReferences
+    COMMAND_PATH = __commandpath__
 except:
     raise Exception('This is not a pyRevit script environment. These tools are irrelevant here.')
 
-import os.path as op
-
-from pyrevit import PyRevitException
-from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.appdata import get_temp_file, get_session_data_file
 from pyrevit.userconfig import user_config
@@ -20,21 +18,19 @@ SCRIPT_CONFIG_POSTFIX = 'config'
 
 
 def _make_script_file_id(file_id):
-    return '{}_{}'.format(__commandname__, file_id)
+    return '{}_{}'.format(COMMAND_NAME, file_id)
 
 
 def _get_script_info():
-    # noinspection PyUnresolvedReferences
-    return get_command_from_path(__commandpath__)
+    return get_command_from_path(COMMAND_PATH)
 
 
 def _get_script_config():
-    # noinspection PyUnresolvedReferences
     try:
-        return getattr(user_config, __commandname__ + SCRIPT_CONFIG_POSTFIX)
+        return getattr(user_config, COMMAND_NAME + SCRIPT_CONFIG_POSTFIX)
     except:
-        user_config.add_section(__commandname__ + SCRIPT_CONFIG_POSTFIX)
-        return getattr(user_config, __commandname__ + SCRIPT_CONFIG_POSTFIX)
+        user_config.add_section(COMMAND_NAME + SCRIPT_CONFIG_POSTFIX)
+        return getattr(user_config, COMMAND_NAME + SCRIPT_CONFIG_POSTFIX)
 
 
 def _save_script_config():
@@ -58,14 +54,13 @@ def get_script_temp_file(file_id):
 
 
 def get_script_data_file(file_id, file_ext):
-    """Returns a filename to be used by a user script to store temporary information.
-    Temporary files are saved in PYREVIT_APP_DIR and are cleaned up between Revit sessions.
+    """Returns a filename to be used by a user script to store data.
+    Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up between Revit sessions.
     """
     return get_session_data_file(_make_script_file_id(file_id), file_ext)
 
 
-# noinspection PyUnresolvedReferences
-logger = get_logger(__commandname__)
+logger = get_logger(COMMAND_NAME)
 my_info = _get_script_info()
 my_config = _get_script_config()
 save_my_config = _save_script_config
