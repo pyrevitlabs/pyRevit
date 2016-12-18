@@ -8,7 +8,10 @@ from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM
 from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
 from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
-from pyrevit.extensions import DEFAULT_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
+from pyrevit.extensions import DEFAULT_PYTHON_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
+from pyrevit.extensions import DEFAULT_CSHARP_SCRIPT_FILE, DEFAULT_VB_SCRIPT_FILE
+from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT, CSHARP_SCRIPT_FILE_FORMAT, VB_SCRIPT_FILE_FORMAT
+from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
 from pyrevit.extensions import MIN_PYREVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
 from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 from pyrevit.userconfig import user_config
@@ -51,6 +54,7 @@ class GenericUIComponent(GenericComponent):
         if not ext_dir.endswith(self.type_id):
             raise PyRevitException('Can not initialize from directory: {}'.format(ext_dir))
         self.directory = ext_dir
+        self.unique_name = self._get_unique_name()
 
     def __repr__(self):
         return '<type_id \'{}\' name \'{}\' @ \'{}\'>'.format(self.type_id, self.original_name, self.directory)
@@ -251,11 +255,18 @@ class GenericUICommand(GenericUIComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
 
-        full_file_path = op.join(self.directory, DEFAULT_SCRIPT_FILE)
-        self.script_file = full_file_path if op.exists(full_file_path) else None
+        for default_script_file in [DEFAULT_PYTHON_SCRIPT_FILE, DEFAULT_CSHARP_SCRIPT_FILE, DEFAULT_VB_SCRIPT_FILE]:
+            full_file_path = op.join(self.directory, default_script_file)
+            if op.exists(full_file_path):
+                self.script_file = full_file_path
+                break
+
         if self.script_file is None:
             logger.error('Command {}: Does not have script file.'.format(self))
             raise PyRevitException()
+
+        if self.script_language == PYTHON_LANG:
+            self._analyse_python_script()
 
         full_file_path = op.join(self.directory, DEFAULT_CONFIG_SCRIPT_FILE)
         self.config_script_file = full_file_path if op.exists(full_file_path) else None
@@ -263,6 +274,15 @@ class GenericUICommand(GenericUIComponent):
             logger.debug('Command {}: Does not have independent config script.'.format(self))
             self.config_script_file = self.script_file
 
+        # each command can store custom libraries under /Lib inside the command folder
+        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        self.library_path = lib_path if op.exists(lib_path) else None
+
+        # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
+        if self.library_path:
+            self.syspath_search_paths.append(self.library_path)
+
+    def _analyse_python_script(self):
         try:
             # reading script file content to extract parameters
             script_content = ScriptFileParser(self.get_full_script_address())
@@ -276,8 +296,8 @@ class GenericUICommand(GenericUIComponent):
             self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)  # type: list
             self.cmd_context = script_content.extract_param(COMMAND_CONTEXT_PARAM)  # type: str
-        except PyRevitException as err:
-            logger.error(err)
+        except PyRevitException as script_parse_err:
+            logger.error(script_parse_err)
 
         # fixme: logger reports module as 'ast' after a successfull param retrieval. Must be ast.literal_eval()
         logger.debug('Minimum pyRevit version: {}'.format(self.min_pyrevit_ver))
@@ -286,35 +306,33 @@ class GenericUICommand(GenericUIComponent):
         logger.debug('Command author: {}'.format(self.author))
         logger.debug('Command options: {}'.format(self.cmd_options))
 
-        # fixme: correct dependency check
-        # try:
-        #     # check minimum requirements
-        #     self._check_dependencies()
-        # except PyRevitException as err:
-        #     logger.warning(err)
-        #     raise err
-
-        # setting up a unique name for command. This name is especially useful for creating dll assembly
-        self.unique_name = self._get_unique_name()
+        # setting up a unique availability name for command.
         if self.cmd_context:
             self.unique_avail_name = self.unique_name + COMMAND_AVAILABILITY_NAME_POSTFIX
 
-        # each command can store custom libraries under /Lib inside the command folder
-        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
-        self.library_path = lib_path if op.exists(lib_path) else None
+        try:
+            # check minimum requirements
+            self._check_dependencies()
+        except PyRevitException as dependency_err:
+            logger.warning(dependency_err)
+            raise dependency_err
 
-        # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
-        if self.library_path:
-            self.syspath_search_paths.append(self.library_path)
+    @staticmethod
+    def _check_dependencies():
+        # fixme: correct dependency check
+        return True
 
-    # def _check_dependencies(self):
-    #     return True
-        # if self.min_revit_ver and HOST_APP.is_older_than(self.min_revit_ver):
-        #     raise PyRevitException('Command requires a newer host version ({}): {}'.format(self.min_revit_ver,
-        #                                                                                    self))
-        # elif self.min_pyrevit_ver and PYREVIT_VERSION.is_older_than(self.min_pyrevit_ver):
-        #     raise PyRevitException('Command requires a newer pyrevit version ({}): {}'.format(self.min_pyrevit_ver,
-        #                                                                                       self))
+    @property
+    def script_language(self):
+        if self.script_file is not None:
+            if self.script_file.endswith(PYTHON_SCRIPT_FILE_FORMAT):
+                return PYTHON_LANG
+            elif self.script_file.endswith(CSHARP_SCRIPT_FILE_FORMAT):
+                return CSHARP_LANG
+            elif self.script_file.endswith(VB_SCRIPT_FILE_FORMAT):
+                return VB_LANG
+        else:
+            return None
 
     @staticmethod
     def is_valid_cmd():

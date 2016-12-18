@@ -8,6 +8,7 @@ from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_fil
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR, get_data_file, is_data_file_available
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 
@@ -191,6 +192,14 @@ CMD_AVAIL_CLS_CATEGORY = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS
 CMD_AVAIL_CLS_SELECTION = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_SELECTION)
 
 
+def _create_vb_type(module_builder, cmd_params):
+    pass
+
+
+def _create_csharp_type(module_builder, cmd_params):
+    pass
+
+
 def _create_base_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     # create type builder
     type_builder = modulebuilder.DefineType(class_name, TypeAttributes.Class | TypeAttributes.Public, type_class)
@@ -280,11 +289,18 @@ def _create_cmd_loader_type(module_builder, cmd_params):
 # public base class maker function -------------------------------------------------------------------------------------
 def make_cmd_classes(module_builder, cmd_params):
     # make command interface type for the given command
-    _create_cmd_loader_type(module_builder, cmd_params)
+    if cmd_params.language == PYTHON_LANG:
+        _create_cmd_loader_type(module_builder, cmd_params)
 
-    # create command availability class for this command
-    if cmd_params.avail_class_name:
-        _create_cmd_avail_type(module_builder, cmd_params)
+        # create command availability class for this command
+        if cmd_params.avail_class_name:
+            _create_cmd_avail_type(module_builder, cmd_params)
+
+    elif cmd_params.language == CSHARP_LANG:
+        _create_csharp_type(module_builder, cmd_params)
+
+    elif cmd_params.language == VB_LANG:
+        _create_vb_type(module_builder, cmd_params)
 
 
 def make_shared_classes(module_builder):
