@@ -20,6 +20,10 @@ class PyRevitConfigSectionParser(object):
     def __iter__(self):
         return self._parser.options(self._section_name)
 
+    def __repr__(self):
+        return '<PyRevitConfigSectionParser object at 0x{0:016x} config section \'{1}\'>'.format(id(self),
+                                                                                                 self._section_name)
+
     def __getattr__(self, param_name):
         try:
             value = self._parser.get(self._section_name, param_name)
