@@ -79,6 +79,8 @@ def _get_default_config_parser():
     parser.init.verbose = False
     parser.init.debug = False
     parser.init.userextensions = '[]'
+    user_config.init.compilecsharp = True
+    user_config.init.compilevb = True
     return parser
 
 
