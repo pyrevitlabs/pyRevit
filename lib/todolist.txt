@@ -1,11 +1,10 @@
 For publish ------------------------------------------------------------------------------------------------------------
 []. create the template script that explains funcs available to each script
 []. Fix sync views
-[]. Console / command search
-
 
 After publish ----------------------------------------------------------------------------------------------------------
 []. C# buttons
+[]. Console / command search
 []. sphinx documentation
 
 [].	Pkg manager pushbutton:
@@ -16,5 +15,3 @@ After publish ------------------------------------------------------------------
 
 [].	improving execution speed (caching or compiling scripts):
 	https://blogs.msdn.microsoft.com/srivatsn/2008/08/06/static-compilation-of-ironpython-scripts/
-
-update system test 2
