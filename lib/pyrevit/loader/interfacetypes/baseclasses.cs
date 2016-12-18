@@ -36,9 +36,6 @@ namespace PyRevitBaseClasses
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // Get script executor
-            var executor = new ScriptExecutor( commandData, message, elements);
-
             // Default script is the main script unless it is changed by modifier buttons
             var _script = _scriptSource;
 
@@ -55,6 +52,19 @@ namespace PyRevitBaseClasses
                 _forcedDebugMode = true;
             }
 
+            // If Alt clicking on button, open the script in explorer and return.
+            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
+            {
+               // combine the arguments together
+               // it doesn't matter if there is a space after ','
+               string argument = "/select, \"" + _script +"\"";
+
+               System.Diagnostics.Process.Start("explorer.exe", argument);
+               return Result.Succeeded;
+            }
+
+            // Get script executor
+            var executor = new ScriptExecutor( commandData, message, elements);
 
             // Execute script
             var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
