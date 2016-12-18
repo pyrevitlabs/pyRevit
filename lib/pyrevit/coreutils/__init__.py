@@ -259,12 +259,19 @@ def prepare_html_str(input_string):
 
 
 def check_internet_connection(timeout=1000):
-    try:
-        client = WebRequest.Create("http://google.com/")
-        client.Method = "HEAD"
-        client.Timeout = timeout
-        response = client.GetResponse()
-        response.GetResponseStream()
-        return True
-    except:
-        return False
+    def can_access(url):
+        try:
+            client = WebRequest.Create(url)
+            client.Method = "HEAD"
+            client.Timeout = timeout
+            response = client.GetResponse()
+            response.GetResponseStream()
+            return True
+        except:
+            return False
+
+    for url in ["http://google.com/", "http://github.com/", "http://bitbucket.com/"]:
+        if can_access(url):
+            return url
+
+    return False
