@@ -34,12 +34,6 @@ logger = get_logger(__commandname__)
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
 
-def _setup_user_config():
-    user_config.add_section('versionmgr')
-    user_config.init.checkupdates = False
-    user_config.save_changes()
-
-
 def _check_updates():
     if check_internet_connection():
         logger.info('Checking for updates...')
@@ -58,10 +52,8 @@ def __selfinit__(script_cmp, commandbutton, __rvt__):
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.init.checkupdates and _check_updates():
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
-
-    except AttributeError:
-        _setup_user_config()
-
+    except:
+        return
 
 if __name__ == '__main__':
     # collect a list of all repos to be updates

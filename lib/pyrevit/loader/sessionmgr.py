@@ -63,27 +63,18 @@ def _perform_onsessionloadcomplete_ops():
 
 def _new_session():
     # for every extension of installed extensions, create an assembly, and create a ui
-    # get a list of all directories that could include extensions
-    pkg_search_dirs = user_config.get_ext_root_dirs()
-    logger.debug('Extension Directories: {}'.format(pkg_search_dirs))
+    for ui_ext in get_installed_ui_extensions():
+        # create a dll assembly and get assembly info
+        ext_asm_info = create_assembly(ui_ext)
+        if not ext_asm_info:
+            logger.critical('Failed to create assembly for: {}'.format(ui_ext))
+            continue
 
-    # collect all library extensions. Their dir paths need to be added to sys.path for all commands
-    for root_dir in pkg_search_dirs:
-        # Get a list of all installed extensions in this directory
-        # _parser.parse_dir_for_ext_type() returns a list of extensions in given directory
-        # then iterater through extensions and load one by one
-        for ui_ext in get_installed_ui_extensions(root_dir):
-            # create a dll assembly and get assembly info
-            ext_asm_info = create_assembly(ui_ext)
-            if not ext_asm_info:
-                logger.critical('Failed to create assembly for: {}'.format(ui_ext))
-                continue
+        logger.info('Extension assembly created: {}'.format(ui_ext.name))
 
-            logger.info('Extension assembly created: {}'.format(ui_ext.name))
-
-            # update/create ui (needs the assembly to link button actions to commands saved in the dll)
-            update_pyrevit_ui(ui_ext, ext_asm_info)
-            logger.info('UI created for extension: {}'.format(ui_ext.name))
+        # update/create ui (needs the assembly to link button actions to commands saved in the dll)
+        update_pyrevit_ui(ui_ext, ext_asm_info)
+        logger.info('UI created for extension: {}'.format(ui_ext.name))
 
     cleanup_pyrevit_ui()
 

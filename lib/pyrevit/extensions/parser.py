@@ -9,7 +9,27 @@ from pyrevit.coreutils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def _create_subcomponents(search_dir, component_types_list):
+def _get_discovered_comps(comp_path, component_types_list):
+    discovered_cmps = []
+    logger.debug('Testing _get_component(s) on: {} '.format(comp_path))
+    # comp_path might be a file or a dir, but its name should not start with . or _:
+    for component_type in component_types_list:
+        logger.debug('Testing sub_directory {} for {}'.format(comp_path, component_type))
+        try:
+            # if cmp_class can be created for this sub-dir, the add to list
+            # cmp_class will raise error if comp_path is not of cmp_class type.
+            component = component_type()
+            component.__init_from_dir__(comp_path)
+            discovered_cmps.append(component)
+            logger.debug('Successfuly created component: {} from: {}'.format(component, comp_path))
+            break
+        except PyRevitException:
+            logger.debug('Can not create component of type: {} from: {}'.format(component_type, comp_path))
+
+    return discovered_cmps
+
+
+def _create_subcomponents(search_dir, component_types_list, create_from_search_dir=False):
     """Parses the provided directory and returns a list of objects of the types in component_types_list.
     Arguments:
         search_dir: directory to parse
@@ -22,29 +42,18 @@ def _create_subcomponents(search_dir, component_types_list):
     Returns:
         list of created classes of types provided in component_types_list
     """
-    logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types_list))
-
     sub_cmp_list = []
 
-    for file_or_dir in os.listdir(search_dir):
-        full_path = op.join(search_dir, file_or_dir)
-        logger.debug('Testing _get_component(s) on: {} '.format(full_path))
-        # full_path might be a file or a dir, but its name should not start with . or _:
-        if not file_or_dir.startswith(('.', '_')):
-            for component_type in component_types_list:
-                logger.debug('Testing sub_directory {} for {}'.format(file_or_dir, component_type))
-                try:
-                    # if cmp_class can be created for this sub-dir, the add to list
-                    # cmp_class will raise error if full_path is not of cmp_class type.
-                    component = component_type()
-                    component.__init_from_dir__(full_path)
-                    sub_cmp_list.append(component)
-                    logger.debug('Successfuly created component: {} from: {}'.format(component, full_path))
-                    break
-                except PyRevitException:
-                    logger.debug('Can not create component of type: {} from: {}'.format(component_type, full_path))
-        else:
-            logger.debug('Skipping _get_component. Name can not start with . or _: {}'.format(full_path))
+    if not create_from_search_dir:
+        logger.debug('Searching directory: {} for components of type: {}'.format(search_dir, component_types_list))
+        for file_or_dir in os.listdir(search_dir):
+            full_path = op.join(search_dir, file_or_dir)
+            if not file_or_dir.startswith(('.', '_')):
+                sub_cmp_list.extend(_get_discovered_comps(full_path, component_types_list))
+            else:
+                logger.debug('Skipping _get_component. Name can not start with . or _: {}'.format(full_path))
+    else:
+        sub_cmp_list.extend(_get_discovered_comps(search_dir, component_types_list))
 
     return sub_cmp_list
 
@@ -65,7 +74,7 @@ def _parse_for_components(component):
 
 
 def parse_comp_dir(comp_path, comp_class):
-    return _create_subcomponents(comp_path, get_all_subclasses([comp_class]))
+    return _create_subcomponents(comp_path, get_all_subclasses([comp_class]), create_from_search_dir=True)
 
 
 def get_parsed_extension(extension):

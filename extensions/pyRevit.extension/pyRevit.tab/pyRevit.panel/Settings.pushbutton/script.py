@@ -32,14 +32,12 @@ class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
 
-        logger.debug('Check updates is set to: {}'.format(user_config.init.checkupdates))
         self.checkupdates_cb.IsChecked = user_config.init.checkupdates
-        logger.debug('Verbose is set to: {}'.format(user_config.init.verbose))
         self.verbose_rb.IsChecked = user_config.init.verbose
-        logger.debug('Debug is set to: {}'.format(user_config.init.debug))
         self.debug_rb.IsChecked = user_config.init.debug
+        self.compilecsharp_cb.IsChecked = user_config.init.compilecsharp
+        self.compilevb_cb.IsChecked = user_config.init.compilevb
 
-        logger.debug('Binary Cache is set to: {}'.format(user_config.init.bincache))
         if user_config.init.bincache:
             self.bincache_rb.IsChecked = True
         else:
@@ -99,6 +97,8 @@ class SettingsWindow(WPFWindow):
         user_config.init.verbose = self.verbose_rb.IsChecked
         user_config.init.debug = self.debug_rb.IsChecked
         user_config.init.bincache = self.bincache_rb.IsChecked
+        user_config.init.compilecsharp = self.compilecsharp_cb.IsChecked
+        user_config.init.compilevb = self.compilevb_cb.IsChecked
 
         if isinstance(self.extfolders_lb.ItemsSource, list):
             user_config.init.userextensions = self.extfolders_lb.ItemsSource
