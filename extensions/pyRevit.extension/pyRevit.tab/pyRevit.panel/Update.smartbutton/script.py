@@ -34,8 +34,17 @@ logger = get_logger(__commandname__)
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
 
+def _check_connection():
+    logger.info('Checking internet connection...')
+    successful_url = check_internet_connection()
+    if successful_url:
+        logger.debug('Url access successful: {}'.format(successful_url))
+        return True
+    else:
+        return False
+
 def _check_updates():
-    if check_internet_connection():
+    if _check_connection():
         logger.info('Checking for updates...')
 
         for repo in updater.get_all_extension_repos():
@@ -57,8 +66,7 @@ def __selfinit__(script_cmp, commandbutton, __rvt__):
 
 if __name__ == '__main__':
     # collect a list of all repos to be updates
-    logger.info('Checking internet connection...')
-    if check_internet_connection():
+    if _check_connection():
         repo_info_list = updater.get_all_extension_repos()
         logger.debug('List of repos to be updated: {}'.format(repo_info_list))
 
