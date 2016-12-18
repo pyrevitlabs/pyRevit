@@ -14,7 +14,13 @@ from System.CodeDom import Compiler
 logger = get_logger(__name__)
 
 
-def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=None, resource_list=None):
+def _compile_dotnet(code_provider,
+                    sourcecode_list,
+                    full_output_file_addr=None,
+                    reference_list=None,
+                    resource_list=None,
+                    ):
+
     logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
     logger.debug('References assemblies are: {}'.format(reference_list))
 
@@ -38,10 +44,8 @@ def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=N
         logger.debug('Adding resource to compiler: {}'.format(resource))
         compiler_params.EmbeddedResources.Add(resource)
 
-    logger.debug('Getting sourcecode_list provider.')
-    provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
     logger.debug('Compiling source sourcecode_list.')
-    compiler = provider.CompileAssemblyFromSource(compiler_params, Array[str](sourcecode_list))
+    compiler = code_provider.CompileAssemblyFromSource(compiler_params, Array[str](sourcecode_list))
 
     if compiler.Errors.HasErrors:
         error_list = [str(err) for err in compiler.Errors.GetEnumerator()]
@@ -53,3 +57,9 @@ def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=N
     else:
         logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
         return compiler.PathToAssembly
+
+
+def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=None, resource_list=None):
+    logger.debug('Getting sourcecode_list provider.')
+    provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
+    return _compile_dotnet(provider, sourcecode_list, full_output_file_addr, reference_list, resource_list)
