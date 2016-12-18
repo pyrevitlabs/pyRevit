@@ -1,6 +1,6 @@
 import logging
 import sys
-from os.path import sep
+import os.path
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit.coreutils import prepare_html_str
@@ -54,7 +54,7 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        msg = str(msg).replace(sep, '/')
+        msg = str(msg).replace(os.path.sep, '/')
         msg = emojize(str(msg))
         if level == logging.INFO:
             msg = prepare_html_str(str(msg))
@@ -103,12 +103,10 @@ stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter
                                                logging.Formatter(LOG_REC_FORMAT)))
 stdout_hndlr.setLevel(RUNTIME_LOGGING_LEVEL)
 
-# todo: file handler
-# file_hndlr = logging.FileHandler(file_address)
-# # Custom formater for file
+# fixme: add file logging
+# file_hndlr = logging.FileHandler('h:\\log.txt')
 # file_formatter = logging.Formatter(LOG_REC_FORMAT)
 # file_hndlr.setFormatter(file_formatter)
-
 
 # setting up public logger. this will be imported in with other modules ------------------------------------------------
 logging.setLoggerClass(LoggerWrapper)
