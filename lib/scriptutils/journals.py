@@ -1,27 +1,17 @@
-# void WriteJournalData(ExternalCommandData commandData)
-# {
-#     // Get the StringStringMap class which can write data into.
-#     IDictionary<String, String> dataMap = commandData.JournalData;
-#     dataMap.Clear();
-#
-#     // Begin to add the support data
-#     dataMap.Add("Name", "Autodesk.Revit");
-#     dataMap.Add("Information", "This is an example.");
-#     dataMap.Add("Greeting", "Hello Everyone.");
-# }
-#
-# /// <summary>
-# /// This sample shows how to get data from journal file.
-# /// </summary>
-# void ReadJournalData(ExternalCommandData commandData)
-# {
-#     // Get the StringStringMap class which can write data into.
-#     IDictionary<String, String> dataMap = commandData.JournalData;
-#
-#     // Begin to get the support data.
-#     String prompt = "Name: " + dataMap["Name"];
-#     prompt += "\nInformation: " + dataMap["Information"];
-#     prompt += "\nGreeting: " + dataMap["Greeting"];
-#
-#     TaskDialog.Show("Revit",prompt);
-# }
+def write(data_key, msg):
+    # Get the StringStringMap class which can write data into.
+    # noinspection PyUnresolvedReferences
+    data_map = __commandData__.JournalData
+    data_map.Clear()
+
+    # Begin to add the support data
+    data_map.Add(data_key, msg)
+
+
+def read(data_key):
+    # Get the StringStringMap class which can write data into.
+    # noinspection PyUnresolvedReferences
+    data_map = __commandData__.JournalData
+
+    # Begin to get the support data
+    return data_map[data_key]
