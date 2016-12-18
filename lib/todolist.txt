@@ -1,7 +1,7 @@
 For publish ------------------------------------------------------------------------------------------------------------
-[]. script info / create the template script that explains funcs available to each script
-[]. Console / command search
+[]. create the template script that explains funcs available to each script
 []. Fix sync views
+[]. Console / command search
 
 
 After publish ----------------------------------------------------------------------------------------------------------
