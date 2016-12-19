@@ -34,6 +34,7 @@ class SettingsWindow(WPFWindow):
         self.checkupdates_cb.IsChecked = user_config.init.checkupdates
         self.verbose_rb.IsChecked = user_config.init.verbose
         self.debug_rb.IsChecked = user_config.init.debug
+        self.filelogging_cb.IsChecked = user_config.init.filelogging
         self.compilecsharp_cb.IsChecked = user_config.init.compilecsharp
         self.compilevb_cb.IsChecked = user_config.init.compilevb
 
@@ -49,6 +50,7 @@ class SettingsWindow(WPFWindow):
     def resetreportinglevel(self, sender, args):
         self.verbose_rb.IsChecked = True
         self.debug_rb.IsChecked = False
+        self.filelogging_cb.IsChecked = False
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -95,6 +97,7 @@ class SettingsWindow(WPFWindow):
         user_config.init.checkupdates = self.checkupdates_cb.IsChecked
         user_config.init.verbose = self.verbose_rb.IsChecked
         user_config.init.debug = self.debug_rb.IsChecked
+        user_config.init.filelogging = self.filelogging_cb.IsChecked
         user_config.init.bincache = self.bincache_rb.IsChecked
         user_config.init.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.init.compilevb = self.compilevb_cb.IsChecked

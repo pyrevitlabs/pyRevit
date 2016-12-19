@@ -28,6 +28,7 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(style='background:#c7254e;c
 FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
 FILE_LOG_FILENAME = '{}_{}_{}_{}.log'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_APP_DIR, FILE_LOG_FILENAME)
+FILE_LOGGING_STATUS = False
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session
@@ -114,7 +115,7 @@ stdout_hndlr.setFormatter(DispatchingFormatter({logging.ERROR: logging.Formatter
                                                logging.Formatter(LOG_REC_FORMAT)))
 stdout_hndlr.setLevel(RUNTIME_LOGGING_LEVEL)
 
-file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH, mode='a')
+file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH, mode='a', delay=True)
 file_formatter = logging.Formatter(FILE_LOG_REC_FORMAT)
 file_hndlr.setFormatter(file_formatter)
 file_hndlr.setLevel(RUNTIME_FILE_LOGGING_LEVEL)
@@ -126,5 +127,11 @@ logging.setLoggerClass(LoggerWrapper)
 def get_logger(logger_name):
     logger = logging.getLogger(logger_name)    # type: LoggerWrapper
     logger.addHandler(stdout_hndlr)
-    logger.addHandler(file_hndlr)
+    if FILE_LOGGING_STATUS:
+        logger.addHandler(file_hndlr)
     return logger
+
+
+def set_file_logging(status):
+    global FILE_LOGGING_STATUS
+    FILE_LOGGING_STATUS = status

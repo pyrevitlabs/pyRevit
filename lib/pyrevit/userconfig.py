@@ -6,7 +6,7 @@ from System.IO import IOException
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, PyRevitIOError
 from pyrevit.coreutils.appdata import PYREVIT_APP_DIR
 from pyrevit.coreutils.configparser import PyRevitConfigParser
-from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils.logger import get_logger, set_file_logging
 
 
 logger = get_logger(__name__)
@@ -39,6 +39,8 @@ class PyRevitConfig(PyRevitConfigParser):
             elif self.init.verbose:
                 logger.set_verbose_mode()
 
+        set_file_logging(self.init.filelogging)
+
     def get_ext_root_dirs(self):
         dir_list = list()
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
@@ -57,6 +59,14 @@ class PyRevitConfig(PyRevitConfigParser):
 
     def save_changes(self):
         PyRevitConfigParser.save(self, self.config_file)
+        logger.reset_level()
+        if not EXEC_PARAMS.forced_debug_mode:
+            if self.init.debug:
+                logger.set_debug_mode()
+            elif self.init.verbose:
+                logger.set_verbose_mode()
+
+        # set_file_logging(self.init.filelogging)
 
 
 def _get_default_config_parser():
@@ -78,6 +88,7 @@ def _get_default_config_parser():
     parser.init.checkupdates = True
     parser.init.verbose = False
     parser.init.debug = False
+    parser.init.filelogging = False
     parser.init.userextensions = '[]'
     user_config.init.compilecsharp = True
     user_config.init.compilevb = True
