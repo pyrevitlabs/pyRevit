@@ -24,6 +24,7 @@ from pyrevit.coreutils.ribbon import ICON_LARGE
 from pyrevit.loader.sessionmgr import load_session
 
 import pyrevit.versionmgr.updater as updater
+import pyrevit.versionmgr.upgrade as upgrade
 from pyrevit.userconfig import user_config
 
 
@@ -77,6 +78,10 @@ if __name__ == '__main__':
             if upped_repo_info:
                 logger.info(':inbox_tray: Successfully updated: {} to {}'.format(upped_repo_info.name,
                                                                                  upped_repo_info.last_commit_hash[:7]))
+
+        # perform upgrade tasks
+        logger.info('Upgrading settings...')
+        upgrade.upgrade_existing_pyrevit()
 
         # now re-load pyrevit session.
         logger.info('Reloading...')
