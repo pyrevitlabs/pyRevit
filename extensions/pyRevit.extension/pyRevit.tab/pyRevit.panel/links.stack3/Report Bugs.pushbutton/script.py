@@ -20,6 +20,5 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Opens the issue tracker on github to report bugs and issues.'
 
 
-__window__.Close()
-import os
-os.system('start https://github.com/eirannejad/pyrevit/issues')
+from scriptutils import open_url
+open_url('https://github.com/eirannejad/pyrevit/issues')

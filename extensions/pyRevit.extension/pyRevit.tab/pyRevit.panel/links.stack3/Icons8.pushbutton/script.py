@@ -19,7 +19,5 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Opens the website that is providing the icons for the tools in the default browser.'
 
-
-__window__.Close()
-import os
-os.system('start https://icons8.com/web-app/new-icons/color') 
+from scriptutils import open_url
+open_url('https://icons8.com/web-app/new-icons/color') 

@@ -6,6 +6,7 @@ try:
 except:
     raise Exception('This is not a pyRevit script environment. These tools are irrelevant here.')
 
+import webbrowser
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -51,11 +52,16 @@ def _get_ui_button():
 # Utilities available to scripts
 # ----------------------------------------------------------------------------------------------------------------------
 
-def get_script_temp_file(file_id):
-    """Returns a filename to be used by a user script to store temporary information.
-    Temporary files are saved in PYREVIT_APP_DIR and are cleaned up between Revit sessions.
+def open_url(url):
+    """Opens url in a new tab in the default web browser."""
+    return webbrowser.open_new_tab(url)
+
+
+def get_script_data_file(file_id, file_ext):
+    """Returns a filename to be used by a user script to store data.
+    Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up between Revit sessions.
     """
-    return get_temp_file(_make_script_file_id(file_id))
+    return get_session_data_file(_make_script_file_id(file_id), file_ext)
 
 
 def get_script_data_file(file_id, file_ext):

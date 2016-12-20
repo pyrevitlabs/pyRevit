@@ -19,8 +19,8 @@ See this link for a copy of the GNU General Public License protecting this packa
 https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 """
 import sys
-import webbrowser
 
+from scriptutils import open_url
 from scriptutils.userinput import WPFWindow
 from pyrevit.versionmgr import PYREVIT_VERSION
 
@@ -45,27 +45,27 @@ class AboutWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubrepopage(self, sender, args):
-        webbrowser.open_new_tab('https://github.com/eirannejad/pyRevit')
+        open_url('https://github.com/eirannejad/pyRevit')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubcommits(self, sender, args):
-        webbrowser.open_new_tab('https://github.com/eirannejad/pyRevit/commits/master')
+        open_url('https://github.com/eirannejad/pyRevit/commits/master')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openrevisionhistory(self, sender, args):
-        webbrowser.open_new_tab('http://eirannejad.github.io/pyRevit/releasenotes/')
+        open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
-        webbrowser.open_new_tab('http://eirannejad.github.io/pyRevit/credits/')
+        open_url('http://eirannejad.github.io/pyRevit/credits/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openkeybaseprofile(self, sender, args):
-        webbrowser.open_new_tab('https://keybase.io/ein')
+        open_url('https://keybase.io/ein')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic

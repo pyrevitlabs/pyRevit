@@ -19,6 +19,5 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 
 __doc__ = 'Opens RegExr website that is used to create and test regular expressions in the default browser.'
 
-__window__.Close()
-import os
-os.system('start http://regexr.com/') 
+from scriptutils import open_url
+open_url('http://regexr.com/')
