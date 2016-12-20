@@ -63,10 +63,10 @@ def get_installed_ui_extensions():
     for root_dir in ext_search_dirs:
         for ext_info in parse_dir_for_ext_type(root_dir, Extension):
             # test if cache is valid for this ui_extension
-            # it might seem unusual to create a ui_extension and then re-load it from cache but minimum information about
-            # the ui_extension needs to be passed to the cache module for proper hash calculation and ui_extension recovery.
-            # at this point `ui_extension` does not include any sub-components (e.g, tabs, panels, etc)
-            # ui_extension object is very small and its creation doesn't add much overhead.
+            # it might seem unusual to create a ui_extension and then re-load it from cache but minimum information
+            # about the ui_extension needs to be passed to the cache module for proper hash calculation and
+            # ui_extension recovery. at this point `ui_extension` does not include any sub-components
+            #  (e.g, tabs, panels, etc) ui_extension object is very small and its creation doesn't add much overhead.
             try:
                 # raise error if ui_extension does not have a valid cache
                 if not is_cache_valid(ext_info):

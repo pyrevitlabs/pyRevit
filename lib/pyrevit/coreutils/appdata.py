@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit import USER_ROAMING_DIR, PYREVIT_ADDON_NAME, PYREVIT_APP_DIR, HOST_APP, PyRevitException
+from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_APP_DIR, HOST_APP, PyRevitException
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 

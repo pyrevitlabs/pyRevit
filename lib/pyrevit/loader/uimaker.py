@@ -7,7 +7,7 @@ from pyrevit.coreutils.ribbon import get_current_ui
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX, STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
                                PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
                                PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX, LINK_BUTTON_POSTFIX, \
-                               SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER, PYTHON_SCRIPT_FILE_FORMAT
+                               SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
 
 
 logger = get_logger(__name__)

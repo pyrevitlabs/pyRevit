@@ -10,7 +10,6 @@ from System.IO import IOException
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
-# fixme: errors if it can't find the config file or verbose, debug values
 
 class PyRevitConfigSectionParser(object):
     def __init__(self, config_parser, section_name):

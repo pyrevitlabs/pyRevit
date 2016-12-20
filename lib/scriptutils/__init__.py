@@ -8,13 +8,16 @@ except:
 
 import webbrowser
 
+# noinspection PyUnresolvedReferences
 from pyrevit import PyRevitException
+# noinspection PyUnresolvedReferences
+from pyrevit.versionmgr import PYREVIT_VERSION
+
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.appdata import get_session_data_file
 from pyrevit.coreutils.console import output_window
 from pyrevit.userconfig import user_config
 from pyrevit.extensions.extensionmgr import get_command_from_path
-from pyrevit.versionmgr import PYREVIT_VERSION
 
 from scriptutils import journals
 
@@ -55,13 +58,6 @@ def _get_ui_button():
 def open_url(url):
     """Opens url in a new tab in the default web browser."""
     return webbrowser.open_new_tab(url)
-
-
-def get_script_data_file(file_id, file_ext):
-    """Returns a filename to be used by a user script to store data.
-    Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up between Revit sessions.
-    """
-    return get_session_data_file(_make_script_file_id(file_id), file_ext)
 
 
 def get_script_data_file(file_id, file_ext):

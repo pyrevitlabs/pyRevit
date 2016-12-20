@@ -1,5 +1,3 @@
-import os.path as op
-
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata

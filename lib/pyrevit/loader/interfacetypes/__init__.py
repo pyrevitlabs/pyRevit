@@ -7,7 +7,7 @@ from pyrevit import PyRevitException
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm, load_asm_file, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
+from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 import pyrevit.coreutils.appdata as appdata
@@ -285,10 +285,6 @@ def _create_cmd_loader_type(module_builder, cmd_params):
                       appdata.PYREVIT_APP_DIR)
 
 
-def _create_vb_type(module_builder, cmd_params):
-    pass
-
-
 def _create_csharp_type(module_builder, cmd_params):
 
     logger.debug('Compiling script: {}'.format(cmd_params))
@@ -336,14 +332,6 @@ def make_cmd_classes(module_builder, cmd_params):
         logger.debug('Compiling script source: {}'.format(cmd_params))
         try:
             _create_csharp_type(module_builder, cmd_params)
-        except Exception as cmd_compile_err:
-            logger.error('Error compiling script: {} | {}'.format(cmd_params, cmd_compile_err))
-
-    elif cmd_params.language == VB_LANG:
-        logger.debug('Command is visual-basic: {}'.format(cmd_params))
-        logger.debug('Compiling script source: {}'.format(cmd_params))
-        try:
-            _create_vb_type(module_builder, cmd_params)
         except Exception as cmd_compile_err:
             logger.error('Error compiling script: {} | {}'.format(cmd_params, cmd_compile_err))
 

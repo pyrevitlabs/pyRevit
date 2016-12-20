@@ -259,9 +259,9 @@ def prepare_html_str(input_string):
 
 
 def check_internet_connection(timeout=1000):
-    def can_access(url):
+    def can_access(url_to_open):
         try:
-            client = WebRequest.Create(url)
+            client = WebRequest.Create(url_to_open)
             client.Method = "HEAD"
             client.Timeout = timeout
             response = client.GetResponse()
