@@ -275,3 +275,8 @@ def check_internet_connection(timeout=1000):
             return url
 
     return False
+
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
