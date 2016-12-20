@@ -62,6 +62,8 @@ class PyRevitConfigParser(object):
                     self._parser.readfp(cfg_file)
             except (OSError, IOError):
                 raise PyRevitIOError()
+            except Exception as read_err:
+                raise PyRevitException(read_err)
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
