@@ -11,6 +11,7 @@ from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT, DEFAULT_LAYOUT_FILE_NA
 from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX
 from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
 from pyrevit.extensions import UI_EXTENSION_POSTFIX, LIB_EXTENSION_POSTFIX
+from pyrevit.extensions import CSHARP_SCRIPT_FILE_FORMAT
 from pyrevit.extensions.genericcomps import GenericComponent, GenericUIContainer, GenericUICommand
 from pyrevit.versionmgr import PYREVIT_VERSION
 
@@ -190,6 +191,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + LINK_BUTTON_POSTFIX + ')'
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + PYTHON_SCRIPT_FILE_FORMAT + ')'
+        patfile = '(\\' + CSHARP_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
         return calculate_dir_hash(self.directory, pat, patfile)
 
