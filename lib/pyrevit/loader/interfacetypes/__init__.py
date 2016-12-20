@@ -15,7 +15,7 @@ import pyrevit.coreutils.appdata as appdata
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import IExternalCommand
+from Autodesk.Revit.UI import IExternalCommand, IExternalCommandAvailability
 # noinspection PyUnresolvedReferences
 from System import Array, Type
 # noinspection PyUnresolvedReferences
@@ -198,6 +198,22 @@ CMD_AVAIL_CLS_CATEGORY = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS
 CMD_AVAIL_CLS_SELECTION = _find_pyrevit_base_type(BASE_CLASSES_ASM, CMD_AVAIL_CLS_NAME_SELECTION)
 
 
+def _get_csharp_cmd_asm(cmd_params):
+    logger.debug('Compiling script: {}'.format(cmd_params))
+    source = _read_source(cmd_params.script_file_address)
+    script_hash = get_str_hash(source)[:HASH_CUTOFF_LENGTH]
+
+    command_assm_file_id = '{}_{}'.format(script_hash, cmd_params.class_name)
+    compiled_assm_path = appdata.is_data_file_available(file_id=command_assm_file_id, file_ext=ASSEMBLY_FILE_TYPE)
+
+    if not compiled_assm_path:
+        command_assm_file = appdata.get_data_file(file_id=command_assm_file_id, file_ext=ASSEMBLY_FILE_TYPE)
+        logger.debug('Compiling script to: {}'.format(command_assm_file))
+        compiled_assm_path = compile_csharp([source], command_assm_file, reference_list=_get_references())
+
+    return load_asm_file(compiled_assm_path)
+
+
 def _create_ext_command_attrs():
     regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
     regen_attr_builder = CustomAttributeBuilder(regen_const_info, Array[object]((RegenerationOption.Manual,)))
@@ -208,7 +224,7 @@ def _create_ext_command_attrs():
     return [regen_attr_builder, trans_attrib_builder]
 
 
-def _create_base_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
+def _create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     # create type builder
     type_builder = modulebuilder.DefineType(class_name, TypeAttributes.Class | TypeAttributes.Public, type_class)
 
@@ -245,7 +261,7 @@ def _create_base_type(modulebuilder, type_class, class_name, custom_attr_list, *
     type_builder.CreateType()
 
 
-def _create_cmd_avail_type(module_builder, cmd_params):
+def _produce_python_avail_type(module_builder, cmd_params):
     """
 
     Args:
@@ -257,14 +273,14 @@ def _create_cmd_avail_type(module_builder, cmd_params):
     """
     logger.debug('Creating availability type for: {}'.format(cmd_params))
     if cmd_params.cmd_context == 'Selection':
-        _create_base_type(module_builder, CMD_AVAIL_CLS_SELECTION,
-                          cmd_params.avail_class_name, [], cmd_params.cmd_context)
+        _create_type(module_builder, CMD_AVAIL_CLS_SELECTION,
+                     cmd_params.avail_class_name, [], cmd_params.cmd_context)
     else:
-        _create_base_type(module_builder, CMD_AVAIL_CLS_CATEGORY,
-                          cmd_params.avail_class_name, [], cmd_params.cmd_context)
+        _create_type(module_builder, CMD_AVAIL_CLS_CATEGORY,
+                     cmd_params.avail_class_name, [], cmd_params.cmd_context)
 
 
-def _create_cmd_loader_type(module_builder, cmd_params):
+def _produce_python_type(module_builder, cmd_params):
     """
 
     Args:
@@ -276,37 +292,35 @@ def _create_cmd_loader_type(module_builder, cmd_params):
     """
     logger.debug('Creating loader class type for: {}'.format(cmd_params))
 
-    _create_base_type(module_builder, CMD_EXECUTOR_CLASS, cmd_params.class_name,
-                      _create_ext_command_attrs(),
-                      cmd_params.script_file_address,
-                      cmd_params.config_script_file_address,
-                      cmd_params.search_paths_str,
-                      cmd_params.cmd_name,
-                      appdata.PYREVIT_APP_DIR)
+    _create_type(module_builder, CMD_EXECUTOR_CLASS, cmd_params.class_name,
+                 _create_ext_command_attrs(),
+                 cmd_params.script_file_address,
+                 cmd_params.config_script_file_address,
+                 cmd_params.search_paths_str,
+                 cmd_params.cmd_name,
+                 appdata.PYREVIT_APP_DIR)
 
 
-def _create_csharp_type(module_builder, cmd_params):
+def _produce_csharp_type(module_builder, cmd_params):
 
-    logger.debug('Compiling script: {}'.format(cmd_params))
-    source = _read_source(cmd_params.script_file_address)
-    script_hash = get_str_hash(source)[:HASH_CUTOFF_LENGTH]
+    compiled_assm = _get_csharp_cmd_asm(cmd_params)
 
-    command_assm_file_id = '{}_{}'.format(script_hash, cmd_params.class_name)
-    compiled_assm_path = appdata.is_data_file_available(file_id=command_assm_file_id, file_ext=ASSEMBLY_FILE_TYPE)
-
-    if not compiled_assm_path:
-        command_assm_file = appdata.get_data_file(file_id=command_assm_file_id, file_ext=ASSEMBLY_FILE_TYPE)
-        logger.debug('Compiling script to: {}'.format(command_assm_file))
-        compiled_assm_path = compile_csharp([source], command_assm_file, reference_list=_get_references())
-
-    compiled_assm = load_asm_file(compiled_assm_path)
+    iext_cmd = iext_cmd_avail = None
 
     for compiled_type in compiled_assm.GetTypes():
         if IExternalCommand in compiled_type.GetInterfaces():
-            _create_base_type(module_builder, compiled_type, cmd_params.class_name, _create_ext_command_attrs())
-            return
+            iext_cmd = compiled_type
+        elif IExternalCommandAvailability in compiled_type.GetInterfaces():
+            iext_cmd_avail = compiled_type
 
-    logger.error('Could not find command interface: {}'.format(cmd_params))
+    if iext_cmd:
+        _create_type(module_builder, iext_cmd, cmd_params.class_name, _create_ext_command_attrs())
+    else:
+        raise PyRevitException('Can not find IExternalCommand derivatives for: {}'.format(cmd_params))
+
+    if iext_cmd_avail:
+        _create_type(module_builder, iext_cmd_avail, cmd_params.avail_class_name, [])
+        logger.debug('Can not find IExternalCommandAvailability derivatives for: {}'.format(cmd_params))
 
 
 # public base class maker function -------------------------------------------------------------------------------------
@@ -316,14 +330,14 @@ def make_cmd_classes(module_builder, cmd_params):
         logger.debug('Command is python: {}'.format(cmd_params))
         logger.debug('Creating executor type: {}'.format(cmd_params))
         try:
-            _create_cmd_loader_type(module_builder, cmd_params)
+            _produce_python_type(module_builder, cmd_params)
         except Exception as cmd_exec_err:
             logger.error('Error creating executor class: {} | {}'.format(cmd_params, cmd_exec_err))
 
         # create command availability class for this command
         if cmd_params.avail_class_name:
             try:
-                _create_cmd_avail_type(module_builder, cmd_params)
+                _produce_python_avail_type(module_builder, cmd_params)
             except Exception as cmd_avail_err:
                 logger.error('Error creating availability class: {} | {}'.format(cmd_params, cmd_avail_err))
 
@@ -331,10 +345,10 @@ def make_cmd_classes(module_builder, cmd_params):
         logger.debug('Command is c-sharp: {}'.format(cmd_params))
         logger.debug('Compiling script source: {}'.format(cmd_params))
         try:
-            _create_csharp_type(module_builder, cmd_params)
+            _produce_csharp_type(module_builder, cmd_params)
         except Exception as cmd_compile_err:
             logger.error('Error compiling script: {} | {}'.format(cmd_params, cmd_compile_err))
 
 
 def make_shared_classes(module_builder):
-    _create_base_type(module_builder, CMD_AVAIL_CLS, CMD_AVAIL_CLS_NAME, [])
+    _create_type(module_builder, CMD_AVAIL_CLS, CMD_AVAIL_CLS_NAME, [])
