@@ -9,7 +9,7 @@ except:
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.appdata import get_temp_file, get_session_data_file
+from pyrevit.coreutils.appdata import get_session_data_file
 from pyrevit.coreutils.console import output_window
 from pyrevit.userconfig import user_config
 from pyrevit.extensions.extensionmgr import get_command_from_path
@@ -70,7 +70,6 @@ my_info = _get_script_info()
 my_config = _get_script_config()
 save_my_config = _save_script_config
 
-my_temp_file = get_script_temp_file('defaulttemp')
 my_data_file = get_script_data_file('defaultdata', 'data')
 my_journal = journals
 my_output = output_window
