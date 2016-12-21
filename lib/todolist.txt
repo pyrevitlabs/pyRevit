@@ -1,6 +1,5 @@
 For publish ------------------------------------------------------------------------------------------------------------
 []. create the template script that explains funcs available to each script
-[]. add command availability class creation for c# scripts
 []. Fix sync views
 
 After publish ----------------------------------------------------------------------------------------------------------
