@@ -335,7 +335,7 @@ def make_cmd_classes(module_builder, cmd_params):
             logger.error('Error creating executor class: {} | {}'.format(cmd_params, cmd_exec_err))
 
         # create command availability class for this command
-        if cmd_params.avail_class_name:
+        if cmd_params.cmd_context:
             try:
                 _produce_python_avail_type(module_builder, cmd_params)
             except Exception as cmd_avail_err:
