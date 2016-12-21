@@ -81,9 +81,10 @@ namespace PyRevitLoader
                     // ok, so the system exited. That was bound to happen...
                     return (int)Result.Succeeded;
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
-                    return (int)Result.Cancelled;
+                    _message = exception.ToString();
+                    return (int)Result.Failed;
                 }
 
             }
