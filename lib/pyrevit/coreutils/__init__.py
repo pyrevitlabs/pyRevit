@@ -6,6 +6,7 @@ import os.path as op
 import re
 import time
 import clr
+import subprocess
 
 from pyrevit import HOST_APP, PyRevitException
 
@@ -349,3 +350,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     gen.Emit(OpCodes.Nop)
     gen.Emit(OpCodes.Ret)
     type_builder.CreateType()
+
+
+def show_file_in_explorer(file_path):
+    subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(file_path)))
