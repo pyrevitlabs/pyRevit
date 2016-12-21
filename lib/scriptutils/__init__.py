@@ -12,6 +12,8 @@ import webbrowser
 from pyrevit import PyRevitException
 # noinspection PyUnresolvedReferences
 from pyrevit.versionmgr import PYREVIT_VERSION
+# noinspection PyUnresolvedReferences
+import pyrevit.coreutils as coreutils
 
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.appdata import get_session_data_file
