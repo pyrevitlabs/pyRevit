@@ -19,12 +19,12 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 import os
 
 from pyrevit.userconfig import user_config
-from scriptutils import logger
+from scriptutils import logger, coreutils
 from scriptutils.userinput import WPFWindow, pick_folder
 
 
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic '\
-          'parameters here.'
+          'parameters here.\n\nShift-Click: Shows config file in explorer.'
 
 
 class SettingsWindow(WPFWindow):
@@ -112,4 +112,7 @@ class SettingsWindow(WPFWindow):
 
 
 if __name__ == '__main__':
-    SettingsWindow('SettingsWindow.xaml').ShowDialog()
+    if __shiftclick__:
+        coreutils.show_file_in_explorer(user_config.config_file)
+    else:
+        SettingsWindow('SettingsWindow.xaml').ShowDialog()
