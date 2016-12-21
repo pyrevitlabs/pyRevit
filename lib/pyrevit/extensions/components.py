@@ -191,7 +191,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + LINK_BUTTON_POSTFIX + ')'
         # seach for scripts, setting files (future support), and layout files
         patfile = '(\\' + PYTHON_SCRIPT_FILE_FORMAT + ')'
-        patfile += '(\\' + CSHARP_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + CSHARP_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
         return calculate_dir_hash(self.directory, pat, patfile)
 
