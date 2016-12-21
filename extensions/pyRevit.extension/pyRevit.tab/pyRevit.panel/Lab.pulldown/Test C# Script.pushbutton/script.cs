@@ -14,4 +14,17 @@ namespace HelloWorld
          return Autodesk.Revit.UI.Result.Succeeded;
       }
    }
+
+   public class Test2CommandSelectionAvail : IExternalCommandAvailability
+   {
+       public Test2CommandSelectionAvail()
+       {
+       }
+
+       public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
+       {
+           if (selectedCategories.IsEmpty) return false;
+           return true;
+       }
+   }
 }
