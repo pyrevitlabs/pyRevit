@@ -195,6 +195,9 @@ class Extension(GenericUIContainer):
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
         return calculate_dir_hash(self.directory, pat, patfile)
 
+    def get_all_commands(self):
+        return self.get_components_of_type(GenericUICommand)
+
 
 # library extension class
 # ----------------------------------------------------------------------------------------------------------------------

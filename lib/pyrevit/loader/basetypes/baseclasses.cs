@@ -17,21 +17,18 @@ namespace PyRevitBaseClasses
         public string _alternateScriptSource = "";
         public string _syspaths;
         public string _cmdName;
-        public string _appdatapath;
         public bool _forcedDebugMode = false;
         public bool _altScriptMode = false;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
-                              string cmdName,
-                              string appdatapath)
+                              string cmdName)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
             _cmdName = cmdName;
-            _appdatapath = appdatapath;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)

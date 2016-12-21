@@ -11,7 +11,7 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
-from pyrevit.loader.interfacetypes import BASE_CLASSES_ASM, LOADER_BASE_NAMESPACE, BASE_CLASSES_ASM_NAME
+from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE, BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 def _setup_output_window():
     # import module with ScriptOutput and ScriptOutputStream types (base classes module)
-    clr.AddReference(BASE_CLASSES_ASM)
+    clr.AddReference(BASE_TYPES_ASM)
     base_module = __import__(LOADER_BASE_NAMESPACE)
 
     # create output window and assign handle
@@ -44,7 +44,7 @@ def _report_env():
     logger.info('pyRevit version: {} - :coded: with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Base assembly is: {}'.format(BASE_CLASSES_ASM_NAME))
+    logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
     logger.info('Config file is: {}'.format(user_config.config_file))
 
 

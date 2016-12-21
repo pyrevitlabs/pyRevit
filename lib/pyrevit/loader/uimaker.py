@@ -49,6 +49,24 @@ def _make_full_class_name(asm_name, class_name):
         return '{}.{}'.format(asm_name, class_name)
 
 
+def _get_effective_classname(button):
+    """
+    Verifies if button has class_name set. This means that typemaker has created a executor type for this command.
+    If class_name is not set, this function returns button.unique_name. This allows for the UI button to be created
+    and linked to the created assembly. The command type does not exist in the assembly and the UI button will not work,
+    however this allows updating the command with the correct executor type, once command script has been fixed and
+    pyrevit is reloaded.
+
+    Args:
+        button (pyrevit.extensions.genericcomps.GenericUICommand):
+
+    Returns:
+        str: class_name (or unique_name if class_name is None)
+
+    """
+    return button.class_name if button.class_name else button.unique_name
+
+
 def _produce_ui_separator(ui_maker_params):
     """
 
@@ -101,11 +119,11 @@ def _produce_ui_smartbutton(ui_maker_params):
     try:
         parent_ui_item.create_push_button(smartbutton.name,
                                           ext_asm_info.location,
-                                          smartbutton.unique_name,
+                                          _get_effective_classname(smartbutton),
                                           smartbutton.icon_file,
                                           _make_button_tooltip(smartbutton),
                                           _make_button_tooltip_ext(smartbutton, ext_asm_info.name),
-                                          smartbutton.unique_avail_name,
+                                          smartbutton.avail_class_name,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(smartbutton))
     except PyRevitException as err:
@@ -163,7 +181,7 @@ def _produce_ui_linkbutton(ui_maker_params):
                                           linkbutton.icon_file,
                                           _make_button_tooltip(linkbutton),
                                           _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
-                                          linkbutton.unique_avail_name,
+                                          None,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(linkbutton))
         return parent_ui_item.button(linkbutton.name)
@@ -186,11 +204,11 @@ def _produce_ui_pushbutton(ui_maker_params):
     try:
         parent_ui_item.create_push_button(pushbutton.name,
                                           ext_asm_info.location,
-                                          pushbutton.unique_name,
+                                          _get_effective_classname(pushbutton),
                                           pushbutton.icon_file,
                                           _make_button_tooltip(pushbutton),
                                           _make_button_tooltip_ext(pushbutton, ext_asm_info.name),
-                                          pushbutton.unique_avail_name,
+                                          pushbutton.avail_class_name,
                                           update_if_exists=True,
                                           ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)

@@ -26,6 +26,9 @@ class GenericComponent(object):
     def __init__(self):
         self.name = None
 
+    def __repr__(self):
+        return '<GenericComponent object with name \'{}\'>'.format(self.name)
+
     @property
     def is_container(self):
         return hasattr(self, '__iter__')
@@ -220,6 +223,16 @@ class GenericUIContainer(GenericUIComponent):
     def get_components(self):
         return self._sub_components
 
+    def get_components_of_type(self, cmp_type):
+        sub_comp_list = []
+        for sub_comp in self._sub_components:
+            if isinstance(sub_comp, cmp_type):
+                sub_comp_list.append(sub_comp)
+            elif sub_comp.is_container:
+                sub_comp_list.extend(sub_comp.get_components_of_type(cmp_type))
+
+        return sub_comp_list
+
 
 # superclass for all single command classes (link, push button, toggle button) -----------------------------------------
 # GenericUICommand is not derived from GenericUIContainer since a command can not contain other elements
@@ -249,6 +262,9 @@ class GenericUICommand(GenericUIComponent):
             self.name = alias
         else:
             self.name = self.original_name
+
+        # setting up a unique availability name for command.
+        self.unique_avail_name = self.unique_name + COMMAND_AVAILABILITY_NAME_POSTFIX
 
         self.ui_title = self.name
 
@@ -306,10 +322,6 @@ class GenericUICommand(GenericUIComponent):
         logger.debug('command tooltip: {}'.format(self.doc_string))
         logger.debug('Command author: {}'.format(self.author))
         logger.debug('Command options: {}'.format(self.cmd_options))
-
-        # setting up a unique availability name for command.
-        if self.cmd_context:
-            self.unique_avail_name = self.unique_name + COMMAND_AVAILABILITY_NAME_POSTFIX
 
         try:
             # check minimum requirements

@@ -3,12 +3,15 @@ from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME
 import pyrevit.coreutils.appdata as appdata
-from pyrevit.coreutils import join_strings, load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
+from pyrevit.coreutils import load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
 from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.versionmgr import PYREVIT_VERSION
+
+from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
-from pyrevit.loader.interfacetypes import make_cmd_classes, make_shared_classes, BASE_CLASSES_DIR_HASH
+from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
+from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
 
 clr.AddReference('PresentationCore')
 clr.AddReference('RevitAPI')
@@ -29,29 +32,9 @@ ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo', ['name', 'location',
 logger = get_logger(__name__)
 
 
-# Generic named tuple for passing loader class parameters to the assembly maker
-class CommandExecutorParams:
-    def __init__(self, script_cmp):
-        self.cmd_name = script_cmp.name
-        self.cmd_context = script_cmp.cmd_context
-        self.class_name = script_cmp.unique_name
-        self.avail_class_name = script_cmp.unique_avail_name
-        self.script_file_address = script_cmp.get_full_script_address()
-        self.config_script_file_address = script_cmp.get_full_config_script_address()
-        self.search_paths_str = join_strings(script_cmp.get_search_paths())
-        self.language = script_cmp.script_language
-
-    def __repr__(self):
-        return '<Class \'{}\' AvailClass \'{}\' Name \'{}\' Context \'{}\' @ {}>'.format(self.class_name,
-                                                                                         self.avail_class_name,
-                                                                                         self.cmd_name,
-                                                                                         self.cmd_context,
-                                                                                         self.script_file_address)
-
-
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that the extension is based upon
-    return get_str_hash(BASE_CLASSES_DIR_HASH + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
+    return get_str_hash(BASE_TYPES_DIR_HASH + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
 
 
 def _make_ext_asm_fileid(extension):
@@ -76,23 +59,6 @@ def _is_any_ext_asm_loaded(extension):
         if _is_pyrevit_ext_asm(loaded_asm.GetName().Name, extension):
             return True
     return False
-
-
-def _get_params_for_commands(parent_cmp):
-    logger.debug('Creating a list of commands for the assembly maker from: {}'.format(parent_cmp))
-    loader_params_for_all_cmds = []
-
-    for sub_cmp in parent_cmp:
-        if sub_cmp.is_container:
-            loader_params_for_all_cmds.extend(_get_params_for_commands(sub_cmp))
-        else:
-            try:
-                logger.debug('Command found: {}'.format(sub_cmp))
-                loader_params_for_all_cmds.append(CommandExecutorParams(sub_cmp))
-            except Exception as err:
-                logger.debug('Can not create class parameters from: {} | {}'.format(sub_cmp, err))
-
-    return loader_params_for_all_cmds
 
 
 def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
@@ -123,13 +89,13 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     # create classes that could be called from any button (shared classes)
     # currently only default availability class is implemented. default availability class is for resetting
     # buttons back to normal context state (when reloading and after their context has changed during a session).
-    make_shared_classes(module_builder)
+    make_shared_types(module_builder)
 
     # create command classes
-    for cmd_params in _get_params_for_commands(extension):  # type: CommandExecutorParams
+    for cmd_component in extension.get_all_commands():
         # create command executor class for this command
-        logger.debug('Creating types for command: {}'.format(cmd_params))
-        make_cmd_classes(module_builder, cmd_params)
+        logger.debug('Creating types for command: {}'.format(cmd_component))
+        make_cmd_types(module_builder, cmd_component)
 
     # save final assembly
     asm_builder.Save(ext_asm_full_file_name)

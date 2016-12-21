@@ -5,17 +5,23 @@ import os
 import os.path as op
 import re
 import time
+import clr
 
 from pyrevit import HOST_APP, PyRevitException
 
 # noinspection PyUnresolvedReferences
-from System import AppDomain
+from System import AppDomain,  Array, Type
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
-from System.Reflection import Assembly
+from System.Reflection import Assembly, TypeAttributes, MethodAttributes, CallingConventions
+# noinspection PyUnresolvedReferences
+from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 # noinspection PyUnresolvedReferences
 from System.Net import WebClient, WebRequest
+
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
 
 
 def enum(**enums):
@@ -208,6 +214,14 @@ def load_asm_file(asm_file):
     return Assembly.LoadFrom(asm_file)
 
 
+def find_type_by_name(assembly, type_name):
+    base_class = assembly.GetType(type_name)
+    if base_class is not None:
+        return base_class
+    else:
+        raise PyRevitException('Can not find base class type: {}'.format(type_name))
+
+
 def make_canonical_name(*args):
     return '.'.join(args)
 
@@ -280,3 +294,58 @@ def check_internet_connection(timeout=1000):
 def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
+
+
+def read_source_file(source_file_path):
+    try:
+        with open(source_file_path, 'r') as code_file:
+            return code_file.read()
+    except Exception as read_err:
+        raise PyRevitException('Error reading source file: {} | {}'.format(source_file_path, read_err))
+
+
+def create_ext_command_attrs():
+    regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
+    regen_attr_builder = CustomAttributeBuilder(regen_const_info, Array[object]((RegenerationOption.Manual,)))
+    # add TransactionAttribute to type
+    trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
+    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info, Array[object]((TransactionMode.Manual,)))
+
+    return [regen_attr_builder, trans_attrib_builder]
+
+
+def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
+    # create type builder
+    type_builder = modulebuilder.DefineType(class_name, TypeAttributes.Class | TypeAttributes.Public, type_class)
+
+    for custom_attr in custom_attr_list:
+        type_builder.SetCustomAttribute(custom_attr)
+
+    # prepare a list of input param types to find the matching constructor
+    type_list = []
+    param_list = []
+    for param in args:
+        if type(param) == str:
+            type_list.append(type(param))
+            param_list.append(param)
+
+    # call base constructor
+    ci = type_class.GetConstructor(Array[Type](type_list))
+    # create class constructor builder
+    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
+                                                   CallingConventions.Standard,
+                                                   Array[Type](()))
+    # add constructor parameters to stack
+    gen = const_builder.GetILGenerator()
+    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+
+    # add constructor input params to the stack
+    for param in param_list:
+        gen.Emit(OpCodes.Ldstr, param)
+
+    gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
+    gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Nop)
+    gen.Emit(OpCodes.Ret)
+    type_builder.CreateType()
