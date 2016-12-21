@@ -237,6 +237,7 @@ class GenericUICommand(GenericUIComponent):
         self.min_pyrevit_ver = self.min_revit_ver = None
         self.doc_string = self.author = self.cmd_options = self.cmd_context = None
         self.unique_name = self.unique_avail_name = None
+        self.class_name = self.avail_class_name = None
 
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
