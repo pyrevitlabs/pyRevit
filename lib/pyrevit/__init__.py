@@ -67,7 +67,7 @@ class _ExecutorParams(object):
         """
         try:
             # noinspection PyUnresolvedReferences
-            return __engine__
+            return __ipyengine__
         except:
             raise AttributeError()
 
@@ -135,7 +135,7 @@ EXEC_PARAMS = _ExecutorParams()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# config environment info 
+# config environment info
 # ----------------------------------------------------------------------------------------------------------------------
 def _find_home_directory():
     """Return the pyRevitLoader.py full directory address"""

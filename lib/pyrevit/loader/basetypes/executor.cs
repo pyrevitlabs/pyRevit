@@ -66,6 +66,8 @@ namespace PyRevitBaseClasses
 
                 // Get builtin scope to add custom variables
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
+                // add engine to builtins
+                builtin.SetVariable("__ipyengine__", engine);
                 // add command path to builtins
                 builtin.SetVariable("__commandpath__", Path.GetDirectoryName(sourcePath));
                 builtin.SetVariable("__commandname__", cmdName);                    // add command name to builtins
