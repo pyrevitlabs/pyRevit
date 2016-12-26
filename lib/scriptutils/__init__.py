@@ -22,8 +22,11 @@ from pyrevit.userconfig import user_config
 from pyrevit.extensions.extensionmgr import get_command_from_path
 
 from scriptutils import journals
+from pyrevit.coreutils import ipyengine
+
 
 scriptutils_logger = get_logger(__name__)
+
 
 SCRIPT_CONFIG_POSTFIX = 'config'
 
@@ -77,3 +80,8 @@ save_my_config = _save_script_config
 my_data_file = get_script_data_file('defaultdata', 'data')
 my_journal = journals
 my_output = output_window
+
+try:
+    my_engine = ipyengine.get_engine_wrapper()
+except:
+    scriptutils_logger.debug('__engine__ not found at script runtime: {}'.format(my_info))
