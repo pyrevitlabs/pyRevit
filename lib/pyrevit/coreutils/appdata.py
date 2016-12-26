@@ -1,7 +1,8 @@
 import os
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_APP_DIR, HOST_APP, PyRevitException
+from pyrevit import PYREVIT_APP_DIR, PyRevitException
+from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL, PYREVIT_FILE_PREFIX, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 
@@ -17,12 +18,6 @@ if not op.isdir(PYREVIT_APP_DIR):
         os.mkdir(PYREVIT_APP_DIR)
     except (OSError, IOException) as err:
         raise PyRevitException('Can not access pyRevit folder at: {} | {}'.format(PYREVIT_APP_DIR, err))
-
-APPDATA_UNIVERSAL_FILE_PREFIX = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
-APPDATA_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                        HOST_APP.version, HOST_APP.username)
-APPDATA_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                   HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 
 
 def _remove_app_file(file_path):
@@ -42,12 +37,12 @@ def _list_app_files(prefix, file_ext):
 
 
 def _get_app_file(file_id, file_ext, filename_only=False, stamped=False, universal=False):
-    file_prefix = APPDATA_FILE_PREFIX
+    file_prefix = PYREVIT_FILE_PREFIX
 
     if stamped:
-        file_prefix = APPDATA_FILE_PREFIX_STAMPED
+        file_prefix = PYREVIT_FILE_PREFIX_STAMPED
     elif universal:
-        file_prefix = APPDATA_UNIVERSAL_FILE_PREFIX
+        file_prefix = PYREVIT_FILE_PREFIX_UNIVERSAL
 
     full_filename = '{}_{}.{}'.format(file_prefix, file_id, file_ext)
 
@@ -106,7 +101,7 @@ def get_session_data_file(file_id, file_ext, name_only=False):
 
 
 def is_pyrevit_data_file(file_name):
-    return APPDATA_FILE_PREFIX in file_name
+    return PYREVIT_FILE_PREFIX in file_name
 
 
 def is_file_available(file_name, file_ext):
@@ -126,11 +121,11 @@ def is_data_file_available(file_id, file_ext):
 
 
 def list_data_files(file_ext):
-    return _list_app_files(APPDATA_FILE_PREFIX, file_ext)
+    return _list_app_files(PYREVIT_FILE_PREFIX, file_ext)
 
 
 def list_session_data_files(file_ext):
-    return _list_app_files(APPDATA_FILE_PREFIX_STAMPED, file_ext)
+    return _list_app_files(PYREVIT_FILE_PREFIX_STAMPED, file_ext)
 
 
 def cleanup_appdata_folder():

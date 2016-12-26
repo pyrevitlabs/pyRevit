@@ -8,7 +8,6 @@ from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.versionmgr import PYREVIT_VERSION
 
-from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
 from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
