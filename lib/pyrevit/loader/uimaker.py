@@ -53,9 +53,9 @@ def _get_effective_classname(button):
     """
     Verifies if button has class_name set. This means that typemaker has created a executor type for this command.
     If class_name is not set, this function returns button.unique_name. This allows for the UI button to be created
-    and linked to the created assembly. The command type does not exist in the assembly and the UI button will not work,
-    however this allows updating the command with the correct executor type, once command script has been fixed and
-    pyrevit is reloaded.
+    and linked to the previously created assembly. If the type does not exist in the assembly, the UI button
+    will not work, however this allows updating the command with the correct executor type, once command script
+    has been fixed and pyrevit is reloaded.
 
     Args:
         button (pyrevit.extensions.genericcomps.GenericUICommand):
