@@ -60,6 +60,11 @@ def _is_any_ext_asm_loaded(extension):
     return False
 
 
+def _update_component_cmd_types(extension):
+    for cmd_component in extension.get_all_commands():
+        make_cmd_types(cmd_component, module_builder=None)
+
+
 def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     # check to see if any older assemblies have been loaded for this package
     ext_asm_full_file_name = make_canonical_name(ext_asm_file_name, ASSEMBLY_FILE_TYPE)
@@ -94,7 +99,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     for cmd_component in extension.get_all_commands():
         # create command executor class for this command
         logger.debug('Creating types for command: {}'.format(cmd_component))
-        make_cmd_types(module_builder, cmd_component)
+        make_cmd_types(cmd_component, module_builder)
 
     # save final assembly
     asm_builder.Save(ext_asm_full_file_name)
@@ -114,6 +119,7 @@ def _produce_asm_file(extension):
 
     if _is_pyrevit_ext_already_loaded(ext_asm_file_name):
         logger.debug('Extension assembly is already loaded: {}'.format(ext_asm_file_name))
+        _update_component_cmd_types(extension)
         return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, True)
     elif appdata.is_data_file_available(file_id=ext_asm_fileid, file_ext=ASSEMBLY_FILE_TYPE):
         logger.debug('Extension assembly file already exists: {}'.format(ext_asm_file_path))
@@ -129,6 +135,7 @@ def _produce_asm_file(extension):
                     except Exception as load_err:
                         logger.error('Error loading referenced assembly: {} | {}'.format(ref_asm_file_path, load_err))
 
+            _update_component_cmd_types(extension)
             return ExtensionAssemblyInfo(ext_asm_file_name, ext_asm_file_path, False)
         except Exception as ext_asm_load_err:
             logger.error('Error loading extension assembly: {} | {}'.format(ext_asm_file_path, ext_asm_load_err))

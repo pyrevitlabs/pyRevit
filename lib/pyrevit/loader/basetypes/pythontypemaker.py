@@ -7,7 +7,7 @@ from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE, CMD_AVAIL_TYPE_SELECTION
 logger = get_logger(__name__)
 
 
-def _create_python_avail_type(module_builder, cmd_component):
+def _make_python_avail_type(module_builder, cmd_component):
     """
 
     Args:
@@ -27,7 +27,7 @@ def _create_python_avail_type(module_builder, cmd_component):
     return cmd_component.unique_avail_name
 
 
-def create_python_types(module_builder, cmd_component):
+def _make_python_types(module_builder, cmd_component):
     """
 
     Args:
@@ -53,8 +53,17 @@ def create_python_types(module_builder, cmd_component):
     if cmd_component.cmd_context:
         try:
             logger.debug('Creating availability type for: {}'.format(cmd_component))
-            cmd_component.avail_class_name = _create_python_avail_type(module_builder, cmd_component)
+            cmd_component.avail_class_name = _make_python_avail_type(module_builder, cmd_component)
             logger.debug('Successfully created availability type for: {}'.format(cmd_component))
         except Exception as cmd_avail_err:
             cmd_component.avail_class_name = None
             logger.error('Error creating availability type: {} | {}'.format(cmd_component, cmd_avail_err))
+
+
+def create_python_types(cmd_component, module_builder=None):
+    if module_builder:
+        _make_python_types(module_builder, cmd_component)
+    else:
+        cmd_component.class_name = cmd_component.unique_name
+        if cmd_component.cmd_context:
+            cmd_component.avail_class_name = cmd_component.unique_avail_name
