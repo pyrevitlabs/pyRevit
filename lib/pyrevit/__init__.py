@@ -1,3 +1,5 @@
+"""pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally."""
+
 import sys
 import os
 import os.path as op
@@ -52,9 +54,33 @@ HOST_APP = _HostApplication()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Testing the value of __forceddebugmode__ (set in builtins scope by C# Script Executor)
+# Testing the values of builtin parameters set in builtins scope by C# Script Executor.
 # ----------------------------------------------------------------------------------------------------------------------
 class _ExecutorParams(object):
+    @property   # read-only
+    def engine(self):
+        """
+        Reference to IronPython dotnet ScriptEngine that is executing this script.
+
+        Returns:
+            Microsoft.Scripting.Hosting.ScriptEngine: Reference to dotnet object of this type
+        """
+        try:
+            # noinspection PyUnresolvedReferences
+            return __engine__
+        except:
+            raise AttributeError()
+
+    @property   # read-only
+    def executor_version(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            for custom_attr in __assmcustomattrs__:
+                if 'AssemblyPyRevitVersion' in str(custom_attr.AttributeType):
+                    return str(custom_attr.ConstructorArguments[0]).replace('\"', '')
+        except:
+            raise AttributeError()
+
     @property   # read-only
     def forced_debug_mode(self):
         try:
@@ -89,6 +115,13 @@ class _ExecutorParams(object):
         __builtin__.__commandname__ = value
 
     @property   # read-only
+    def command_path(self):
+        try:
+            return __commandpath__
+        except:
+            return None
+
+    @property   # read-only
     def executor_version(self):
         try:
             # noinspection PyUnresolvedReferences
@@ -102,7 +135,7 @@ EXEC_PARAMS = _ExecutorParams()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# environment info
+# config environment info 
 # ----------------------------------------------------------------------------------------------------------------------
 def _find_home_directory():
     """Return the pyRevitLoader.py full directory address"""
@@ -134,6 +167,12 @@ USER_SYS_TEMP = os.getenv('temp')
 # pyrevit temp file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
 
+# pyrevit standard files prefix
+PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
+PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                        HOST_APP.version, HOST_APP.username)
+PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                   HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Base Exceptions

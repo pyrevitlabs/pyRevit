@@ -3,7 +3,7 @@ import sys
 import os.path
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
-from pyrevit import PYREVIT_APP_DIR, HOST_APP
+from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
@@ -26,7 +26,7 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:w
 
 
 FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
-FILE_LOG_FILENAME = '{}_{}_{}_{}.log'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
+FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED) 
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_STATUS = True
 
