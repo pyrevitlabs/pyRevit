@@ -42,7 +42,6 @@ class RepoInfo:
         self.last_commit_hash = repo.Head.Tip.Id.Sha
         self.repo = repo
 
-
     def __repr__(self):
         return '<type \'RepoInfo\' head \'{}\' @ {}>'.format(self.last_commit_hash, self.directory)
 

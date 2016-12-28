@@ -53,7 +53,7 @@ def _save_script_config():
 
 def _get_ui_button():
     # fixme: implement get_ui_button
-    pass
+    return 0
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -73,12 +73,17 @@ def get_script_data_file(file_id, file_ext):
 
 
 logger = get_logger(COMMAND_NAME)
+
 my_info = _get_script_info()
+
 my_config = _get_script_config()
 save_my_config = _save_script_config
 
+my_button = _get_ui_button()
+
 my_data_file = get_script_data_file('defaultdata', 'data')
 my_journal = journals
+
 my_output = output_window
 
 try:
