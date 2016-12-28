@@ -31,19 +31,19 @@ class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
 
-        self.checkupdates_cb.IsChecked = user_config.init.checkupdates
-        self.verbose_rb.IsChecked = user_config.init.verbose
-        self.debug_rb.IsChecked = user_config.init.debug
-        self.filelogging_cb.IsChecked = user_config.init.filelogging
-        self.compilecsharp_cb.IsChecked = user_config.init.compilecsharp
-        self.compilevb_cb.IsChecked = user_config.init.compilevb
+        self.checkupdates_cb.IsChecked = user_config.core.checkupdates
+        self.verbose_rb.IsChecked = user_config.core.verbose
+        self.debug_rb.IsChecked = user_config.core.debug
+        self.filelogging_cb.IsChecked = user_config.core.filelogging
+        self.compilecsharp_cb.IsChecked = user_config.core.compilecsharp
+        self.compilevb_cb.IsChecked = user_config.core.compilevb
 
-        if user_config.init.bincache:
+        if user_config.core.bincache:
             self.bincache_rb.IsChecked = True
         else:
             self.asciicache_rb.IsChecked = True
 
-        self.extfolders_lb.ItemsSource = user_config.init.userextensions
+        self.extfolders_lb.ItemsSource = user_config.core.userextensions
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -94,18 +94,18 @@ class SettingsWindow(WPFWindow):
         if self.debug_rb.IsChecked:
             logger.set_debug_mode()
 
-        user_config.init.checkupdates = self.checkupdates_cb.IsChecked
-        user_config.init.verbose = self.verbose_rb.IsChecked
-        user_config.init.debug = self.debug_rb.IsChecked
-        user_config.init.filelogging = self.filelogging_cb.IsChecked
-        user_config.init.bincache = self.bincache_rb.IsChecked
-        user_config.init.compilecsharp = self.compilecsharp_cb.IsChecked
-        user_config.init.compilevb = self.compilevb_cb.IsChecked
+        user_config.core.checkupdates = self.checkupdates_cb.IsChecked
+        user_config.core.verbose = self.verbose_rb.IsChecked
+        user_config.core.debug = self.debug_rb.IsChecked
+        user_config.core.filelogging = self.filelogging_cb.IsChecked
+        user_config.core.bincache = self.bincache_rb.IsChecked
+        user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
+        user_config.core.compilevb = self.compilevb_cb.IsChecked
 
         if isinstance(self.extfolders_lb.ItemsSource, list):
-            user_config.init.userextensions = self.extfolders_lb.ItemsSource
+            user_config.core.userextensions = self.extfolders_lb.ItemsSource
         else:
-            user_config.init.userextensions = []
+            user_config.core.userextensions = []
 
         user_config.save_changes()
         self.Close()

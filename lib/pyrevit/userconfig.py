@@ -20,7 +20,7 @@ CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config', file_ext='i
 logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 
 
-INIT_SETTINGS_SECTION = 'init'
+INIT_SETTINGS_SECTION = 'core'
 COMMAND_ALIAS_SECTION = 'alias'
 
 
@@ -40,13 +40,13 @@ class PyRevitConfig(PyRevitConfigParser):
 
         try:
             if not EXEC_PARAMS.forced_debug_mode:
-                if self.init.debug:
+                if self.core.debug:
                     logger.set_debug_mode()
                     logger.debug('Debug mode is enabled in user settings.')
-                elif self.init.verbose:
+                elif self.core.verbose:
                     logger.set_verbose_mode()
 
-            set_file_logging(self.init.filelogging)
+            set_file_logging(self.core.filelogging)
         except Exception as env_update_err:
             logger.error('Error updating env variable per user config. | {}'.format(env_update_err))
 
@@ -61,7 +61,7 @@ class PyRevitConfig(PyRevitConfigParser):
         dir_list = list()
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([p for p in self.init.userextensions])
+            dir_list.extend([p for p in self.core.userextensions])
         except Exception as read_err:
             logger.error('Error reading list of user extension folders. | {}'.format(read_err))
 
@@ -107,14 +107,14 @@ def _set_hardcoded_config_values(parser):
         None
     """
     # hard-coded values
-    parser.add_section('init')
-    parser.init.checkupdates = False
-    parser.init.verbose = True
-    parser.init.debug = False
-    parser.init.filelogging = False
-    parser.init.userextensions = '[]'
-    parser.init.compilecsharp = True
-    parser.init.compilevb = True
+    parser.add_section('core')
+    parser.core.checkupdates = False
+    parser.core.verbose = True
+    parser.core.debug = False
+    parser.core.filelogging = False
+    parser.core.userextensions = '[]'
+    parser.core.compilecsharp = True
+    parser.core.compilevb = True
     parser.add_section('alias')
 
 

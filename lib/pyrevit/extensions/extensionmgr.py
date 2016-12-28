@@ -3,12 +3,12 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
 try:
-    if user_config.init.bincache:
+    if user_config.core.bincache:
         from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
     else:
         from pyrevit.extensions.cacher_asc import is_cache_valid, get_cached_extension, update_cache
 except AttributeError:
-    user_config.init.bincache = True
+    user_config.core.bincache = True
     user_config.save_changes()
     from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
 

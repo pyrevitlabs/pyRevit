@@ -27,7 +27,7 @@ def archive_script_usage_logs():
     """Archives older script usage log files to the folder provided by user in user settings.
     :return: None
     """
-    if op.exists(user_config.init.archivelogfolder):
+    if op.exists(user_config.core.archivelogfolder):
         host_instances = list(Process.GetProcessesByName('Revit'))
         if len(host_instances) > 1:
             logger.debug('Multiple Revit instance are running...Skipping archiving old log files.')
@@ -38,7 +38,7 @@ def archive_script_usage_logs():
                 if f.startswith(PYREVIT_ADDON_NAME) and f.endswith(LOG_FILE_TYPE):
                     try:
                         current_file_path = op.join(PYREVIT_APP_DIR, f)
-                        newloc = op.join(user_config.init.archivelogfolder, f)
+                        newloc = op.join(user_config.core.archivelogfolder, f)
                         shutil.move(current_file_path, newloc)
                         logger.debug('Existing log file archived to: {}'.format(newloc))
                     except IOException as io_err:
@@ -46,7 +46,7 @@ def archive_script_usage_logs():
                     except Exception as err:
                         logger.warning('Error archiving log file: {} | {}'.format(f, err))
     else:
-        logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_config.init.archivelogfolder))
+        logger.debug('Archive log folder does not exist: {}. Skipping...'.format(user_config.core.archivelogfolder))
 
 
 # script usage database interface ---------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ class UsageDatabase:
         self._db = []           # list of UsageDataEntry objects
         self.files_processed = 0
         self._read_log_files(PYREVIT_APP_DIR)
-        self._read_log_files(user_config.init.archivelogfolder)
+        self._read_log_files(user_config.core.archivelogfolder)
 
     def __iter__(self):
         return iter(self._db)

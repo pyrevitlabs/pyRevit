@@ -4,7 +4,7 @@ from pyrevit.userconfig import user_config
 
 def upgrade_existing_pyrevit():
     try:
-        assert user_config.init.filelogging
+        assert user_config.core.filelogging
     except:
-        user_config.init.filelogging = False
+        user_config.core.filelogging = False
         user_config.save_changes()
