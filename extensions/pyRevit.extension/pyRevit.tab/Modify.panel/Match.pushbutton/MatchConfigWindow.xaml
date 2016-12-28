@@ -1,32 +1,47 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Match Configuration" Height="490" Width="280" ShowInTaskbar="False"
+        Title="Select Options to Match:" Height="530" Width="500" ShowInTaskbar="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center">
-         <StackPanel Margin="20">
-                <Label FontWeight="Bold">Select Options to Match:</Label>
-
-                <CheckBox x:Name="halftone" IsChecked="True">                       Halftone</CheckBox>
-                <CheckBox x:Name="transparency" IsChecked="True">                   Transparency</CheckBox>
-                <StackPanel Margin="20,0,0,0">
-                  <Label FontWeight="Bold">Projection Options:</Label>
-                  <CheckBox x:Name="proj_line_color" IsChecked="True">                Projection Line Color</CheckBox>
-                  <CheckBox x:Name="proj_line_pattern" IsChecked="True">              Projection Line Pattern</CheckBox>
-                  <CheckBox x:Name="proj_line_weight" IsChecked="True">               Projection Line Weight</CheckBox>
-                  <CheckBox x:Name="proj_fill_color" IsChecked="True">                Projection Fill Color</CheckBox>
-                  <CheckBox x:Name="proj_fill_pattern" IsChecked="True">              Projection Fill Pattern</CheckBox>
-                  <CheckBox x:Name="proj_fill_pattern_visibility" IsChecked="True">   Projection Fill Pattern Visibility</CheckBox>
-                </StackPanel>
-                <StackPanel Margin="20,0,0,0">
-                  <Label FontWeight="Bold">Cut Options:</Label>
-                  <CheckBox x:Name="cut_line_color" IsChecked="True">                 Cut Line Color</CheckBox>
-                  <CheckBox x:Name="cut_line_pattern" IsChecked="True">               Cut Line Pattern</CheckBox>
-                  <CheckBox x:Name="cut_line_weight" IsChecked="True">                Cut Line Weight</CheckBox>
-                  <CheckBox x:Name="cut_fill_color" IsChecked="True">                 Cut Fill Color</CheckBox>
-                  <CheckBox x:Name="cut_fill_pattern" IsChecked="True">               Cut Fill Pattern</CheckBox>
-                  <CheckBox x:Name="cut_fill_pattern_visibility" IsChecked="True">    Cut Fill Pattern Visibility</CheckBox>
-                </StackPanel>
-        <Button Margin="0,20,0,0" Click="check_all" Content="Check All"/>
-        <Button Margin="0,5,0,0" Click="check_none" Content="Check None"/>
-        <Button Margin="0,20,0,0" Click="save_options" Content="Save Options"/>
+        <StackPanel Margin="20" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <GroupBox Header="Element Graphics Overrides:" Margin="0,0,10,0">
+                    <StackPanel Margin="20">
+                        <CheckBox x:Name="halftone" IsChecked="True">                       Halftone</CheckBox>
+                        <CheckBox x:Name="transparency" IsChecked="True">                   Transparency</CheckBox>
+                        <StackPanel Margin="20,0,0,0">
+                            <Label FontWeight="Bold">Projection Options:</Label>
+                            <CheckBox x:Name="proj_line_color" IsChecked="True">                Projection Line Color</CheckBox>
+                            <CheckBox x:Name="proj_line_pattern" IsChecked="True">              Projection Line Pattern</CheckBox>
+                            <CheckBox x:Name="proj_line_weight" IsChecked="True">               Projection Line Weight</CheckBox>
+                            <CheckBox x:Name="proj_fill_color" IsChecked="True">                Projection Fill Color</CheckBox>
+                            <CheckBox x:Name="proj_fill_pattern" IsChecked="True">              Projection Fill Pattern</CheckBox>
+                            <CheckBox x:Name="proj_fill_pattern_visibility" IsChecked="True">   Projection Fill Pattern Visibility</CheckBox>
+                        </StackPanel>
+                        <StackPanel Margin="20,0,0,0">
+                            <Label FontWeight="Bold">Cut Options:</Label>
+                            <CheckBox x:Name="cut_line_color" IsChecked="True">                 Cut Line Color</CheckBox>
+                            <CheckBox x:Name="cut_line_pattern" IsChecked="True">               Cut Line Pattern</CheckBox>
+                            <CheckBox x:Name="cut_line_weight" IsChecked="True">                Cut Line Weight</CheckBox>
+                            <CheckBox x:Name="cut_fill_color" IsChecked="True">                 Cut Fill Color</CheckBox>
+                            <CheckBox x:Name="cut_fill_pattern" IsChecked="True">               Cut Fill Pattern</CheckBox>
+                            <CheckBox x:Name="cut_fill_pattern_visibility" IsChecked="True">    Cut Fill Pattern Visibility</CheckBox>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Dimension Overrides:">
+                    <StackPanel Margin="20">
+                        <CheckBox x:Name="dim_override" IsChecked="True">                       Replaced Value</CheckBox>
+                        <CheckBox x:Name="dim_above" IsChecked="True">                           Above Value</CheckBox>
+                        <CheckBox x:Name="dim_below" IsChecked="True">                           Below Value</CheckBox>
+                        <CheckBox x:Name="dim_prefix" IsChecked="True">                          Prefix Value</CheckBox>
+                        <CheckBox x:Name="dim_postfix" IsChecked="True">                         Postfix Value</CheckBox>
+                    </StackPanel>
+                </GroupBox>
+            </DockPanel>
+            <StackPanel>
+                <Button Margin="0,20,0,0" Click="check_all" Content="Check All"/>
+                <Button Margin="0,5,0,0" Click="check_none" Content="Check None"/>
+                <Button Margin="0,20,0,0" Click="save_options" Content="Save Options"/>
+            </StackPanel>
         </StackPanel>
 </Window>
