@@ -13,3 +13,6 @@ _gsdata_/
 __py*
 *.db
 .DS_Store
+
+# ignore uninstaller files that will be copied to this folder at installation
+unins*
