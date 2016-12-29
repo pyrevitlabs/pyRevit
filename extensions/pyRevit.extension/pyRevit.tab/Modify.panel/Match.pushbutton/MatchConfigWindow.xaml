@@ -30,11 +30,12 @@
                 </GroupBox>
                 <GroupBox Header="Dimension Overrides:">
                     <StackPanel Margin="20">
-                        <CheckBox x:Name="dim_override" IsChecked="True">                       Replaced Value</CheckBox>
+                        <CheckBox x:Name="dim_override" IsChecked="True">                        Replaced Value</CheckBox>
+                        <CheckBox x:Name="dim_textposition" IsChecked="True">                    Text Position</CheckBox>
                         <CheckBox x:Name="dim_above" IsChecked="True">                           Above Value</CheckBox>
                         <CheckBox x:Name="dim_below" IsChecked="True">                           Below Value</CheckBox>
                         <CheckBox x:Name="dim_prefix" IsChecked="True">                          Prefix Value</CheckBox>
-                        <CheckBox x:Name="dim_postfix" IsChecked="True">                         Postfix Value</CheckBox>
+                        <CheckBox x:Name="dim_suffix" IsChecked="True">                         Postfix Value</CheckBox>
                     </StackPanel>
                 </GroupBox>
             </DockPanel>
