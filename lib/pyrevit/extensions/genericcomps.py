@@ -309,8 +309,9 @@ class GenericUICommand(GenericUIComponent):
                 self.ui_title = extracted_ui_title
 
             self.doc_string = script_content.get_docstring()
-            if not self.doc_string:
-                self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
+            custom_docstring = script_content.extract_param(DOCSTRING_PARAM)  # type: str
+            if custom_docstring:
+                self.doc_string = custom_docstring
 
             self.author = script_content.extract_param(AUTHOR_PARAM)  # type: str
             self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
