@@ -136,6 +136,10 @@ this_script = PyRevitScriptUtils()
 
 logger = get_logger(COMMAND_NAME)
 
-doc = HOST_APP.uiapp.ActiveUIDocument.Document
-uidoc = HOST_APP.uiapp.ActiveUIDocument
-selection = CurrentElementSelection(doc, uidoc)
+doc = uidoc = selection = None
+try:
+    doc = HOST_APP.uiapp.ActiveUIDocument.Document
+    uidoc = HOST_APP.uiapp.ActiveUIDocument
+    selection = CurrentElementSelection(doc, uidoc)
+except:
+    pass

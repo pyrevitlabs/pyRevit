@@ -133,12 +133,15 @@ def _produce_ui_smartbutton(ui_maker_params):
     logger.debug('Importing smart button as module: {}'.format(smartbutton))
     # replacing EXEC_PARAMS.command_name value with button name so the init script can log under its own name
     orig_cmd_name = EXEC_PARAMS.command_name
+    orig_cmd_path = EXEC_PARAMS.command_path
     EXEC_PARAMS.command_name = smartbutton.name
+    EXEC_PARAMS.command_path = smartbutton.get_full_script_address()
     try:
         # importing smart button script as a module
         importedscript = imp.load_source(smartbutton.unique_name, smartbutton.script_file)
         # resetting EXEC_PARAMS.command_name to original
         EXEC_PARAMS.command_name = orig_cmd_name
+        EXEC_PARAMS.command_path = orig_cmd_path
         logger.debug('Import successful: {}'.format(importedscript))
         logger.debug('Running self initializer: {}'.format(smartbutton))
         try:

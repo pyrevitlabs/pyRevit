@@ -122,6 +122,11 @@ class _ExecutorParams(object):
         except:
             return None
 
+    @command_path.setter
+    def command_path(self, value):
+        # noinspection PyUnusedLocal
+        __builtin__.__commandpath__ = value
+
     @property   # read-only
     def executor_version(self):
         try:
