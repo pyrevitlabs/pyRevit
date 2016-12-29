@@ -1,12 +1,10 @@
-import ast
-import hashlib
-import inspect
 import os
 import os.path as op
 import re
+import ast
+import hashlib
 import time
 import clr
-import subprocess
 
 from pyrevit import HOST_APP, PyRevitException
 
@@ -49,6 +47,9 @@ class ScriptFileParser:
                 self.ast_tree = ast.parse(f.read())
         except Exception as err:
             raise PyRevitException('Error parsing script file: {} | {}'.format(self.file_addr, err))
+
+    def get_docstring(self):
+        return ast.get_docstring(self.ast_tree)
 
     def extract_param(self, param_name):
         try:
@@ -155,6 +156,8 @@ def inspect_calling_scope_local_var(variable_name):
     PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
     __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
     """
+    import inspect
+
     frame = inspect.stack()[1][0]
     while variable_name not in frame.f_locals:
         frame = frame.f_back
@@ -169,6 +172,8 @@ def inspect_calling_scope_global_var(variable_name):
     PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
     __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
     """
+    import inspect
+
     frame = inspect.stack()[1][0]
     while variable_name not in frame.f_globals:
         frame = frame.f_back
@@ -353,4 +358,11 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
 
 
 def show_file_in_explorer(file_path):
+    import subprocess
     subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(file_path)))
+
+
+def open_url(url):
+    """Opens url in a new tab in the default web browser."""
+    import webbrowser
+    return webbrowser.open_new_tab(url)
