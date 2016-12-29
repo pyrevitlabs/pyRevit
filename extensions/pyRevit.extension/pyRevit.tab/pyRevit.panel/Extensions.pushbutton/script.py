@@ -1,5 +1,4 @@
-__title__ = 'pyRevit\nLogs'
-__doc__ = 'Shows pyRevit runtime debug logs.'
+__doc__ = 'Add or remove pyRevit extensions.'
 
 from Autodesk.Revit.UI import TaskDialog
 

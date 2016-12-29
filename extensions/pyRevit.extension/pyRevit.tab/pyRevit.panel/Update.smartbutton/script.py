@@ -60,7 +60,7 @@ def _check_for_updates():
 def __selfinit__(script_cmp, commandbutton, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-        if user_config.init.checkupdates and _check_for_updates():
+        if user_config.core.checkupdates and _check_for_updates():
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
     except:
         return
