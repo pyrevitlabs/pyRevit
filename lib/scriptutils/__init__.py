@@ -7,7 +7,6 @@ except:
     raise Exception('This is not a pyRevit script environment. These tools are irrelevant here.')
 
 import os.path as op
-from pyrevit import HOST_APP
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -104,23 +103,6 @@ class PyRevitScriptUtils:
         # Begin to get the support data
         return data_map[data_key]
 
-
-class CurrentElementSelection:
-    def __init__(self, document, uidocument):
-        self.doc = document
-        self._uidoc = uidocument
-        self._uidoc_selection = self._uidoc.Selection
-
-        self.element_ids = list(self._uidoc_selection.GetElementIds())
-        self.elements = [self.doc.GetElement(el_id) for el_id in self.element_ids]
-
-        self.count = len(self.element_ids)
-        self.first = self.last = None
-        if self.count > 0:
-            self.first = self.elements[0]
-            self.last = self.elements[self.count-1]
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 # Utilities available to scripts
 # ----------------------------------------------------------------------------------------------------------------------
@@ -131,15 +113,7 @@ from pyrevit.coreutils import show_file_in_explorer, open_url
 from pyrevit.coreutils.envvars import get_pyrevit_env_var, set_pyrevit_env_var
 
 
+# logger for this script
+logger = get_logger(COMMAND_NAME)
 # setup this script services
 this_script = PyRevitScriptUtils()
-
-logger = get_logger(COMMAND_NAME)
-
-doc = uidoc = selection = None
-try:
-    doc = HOST_APP.uiapp.ActiveUIDocument.Document
-    uidoc = HOST_APP.uiapp.ActiveUIDocument
-    selection = CurrentElementSelection(doc, uidoc)
-except:
-    pass

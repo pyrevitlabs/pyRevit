@@ -1,4 +1,4 @@
-from scriptutils import doc, selection
+from revitutils import doc, selection
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area

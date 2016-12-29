@@ -5,7 +5,7 @@ lists all sketch based detail objects as:
         DetailLines/DetailArc/DetailEllipse/...     whatever_style_type_it_has
 """
 
-from scriptutils import doc, selection
+from revitutils import doc, selection
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory

@@ -1,6 +1,6 @@
 """Find all constraints attached to the selected element."""
 
-from scriptutils import doc, selection
+from revitutils import doc, selection
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
