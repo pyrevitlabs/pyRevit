@@ -57,8 +57,8 @@
                     <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
                                                                                   to machine code. These settings affect compiler behaviour.</TextBlock>
                     <StackPanel>
-                        <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True">Compile C# (.cs) source files into commands</CheckBox>
-                        <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True">Compile Visual Basic (.vb) source files into commands</CheckBox>
+                        <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
+                        <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands</CheckBox>
                     </StackPanel>
                 </StackPanel>
             </Expander>
