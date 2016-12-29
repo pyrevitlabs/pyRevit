@@ -1,99 +1,193 @@
-import sys
-import scriptutils as su
-
-__doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic ' \
-          'parameters here.'
+"""This is a quick look at a typical pyRevit script and the utilities that are available to it."""
 
 __title__ = 'Sample\nCommand'
+__author__ = 'Ehsan Iran-Nejad'
 
 
-su.logger.critical('Test Log Level')
-su.logger.warning('Test Log Level')
+from pyrevit.coreutils import prepare_html_str
+import scriptutils as su
+
+
+def print_code(code_str):
+    nbsp = '&nbsp;'
+    code_div = """<div style="font-family:courier new;border-style: solid;border-width:0 0 0 5;border-color:#87b012;background:#ececec;color:#3e3d3d;line-height: 150%;padding:10;margin:10 0 10 0">{}</div>"""
+    print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))))
+
+
+print("""This is a quick look at a typical pyRevit script and the utilities that are available to it.""")
+print_code("""\"\"\"You can place the docstring (tooltip) at the top of the script file. This serves both as python docstring
+and also button tooltip in pyRevit. You should use triple quotes for standard python docstrings.\"\"\"""")
+
+
+print("You can also explicitly define the tooltip for this script file, independent of the docstring defined at the top.")
+
+print_code("__doc__ = 'This is the text for the button tooltip associated with this script.'")
+
+
+
+
+print("""If you'd like the UI button to have a custom name different from the script name, you can define this variable.
+For example, the __title__ parameter is defined as shown below for this script.
+""")
+
+print_code("__title__ = 'Sample\\nCommand'")
+
+
+
+
+print("You can define the script author as shown below. This will show up on the button tooltip.")
+print_code("__author__ = 'Ehsan Iran-Nejad'")
+
+
+
+
+print("""
+For all logging, the 'scriptutils' module defines the default logger for each script. Here is how to use it:
+""")
+
+print_code("""from scriptutils import logger
+logger.info('Test Log Level :ok_hand_sign:')""")
+print 'This is how it looks like when printed in the output window:'
 su.logger.info('Test Log Level :ok_hand_sign:')
-su.logger.debug('Test Log Level')
+print '\n\n'
 
-print type(su.this_script.info)
-print su.this_script.info
-print su.this_script.info.name
-print su.this_script.info.ui_title
-print su.this_script.info.unique_name
-print su.this_script.info.unique_avail_name
-print su.this_script.info.doc_string
-print su.this_script.info.author
-print su.this_script.info.cmd_options
-print su.this_script.info.cmd_context
-print su.this_script.info.min_pyrevit_ver
-print su.this_script.info.min_revit_ver
-print su.this_script.info.cmd_options
-print su.this_script.info.script_file
-print su.this_script.info.config_script_file
-print su.this_script.info.icon_file
-print su.this_script.info.library_path
-print su.this_script.info.syspath_search_paths
+print_code("""logger.warning('Test Log Level')""")
+print 'This is how it looks like when printed in the output window:'
+su.logger.warning('Test Log Level')
+print '\n\n'
+
+print_code("""logger.critical('Test Log Level')""")
+print 'This is how it looks like when printed in the output window:'
+su.logger.critical('Test Log Level')
+print '\n\n'
 
 
-print type(su.this_script.config)
-print su.this_script.config
+print("""
+As you see, critical and warning messages are printed in colour for clarity.
 
 
-print su.this_script.data_filename
+Another logging function is available for logging DEBUG messages. Normally these messages are not printed.
+you can hold CTRL and click on a command button to put that command in DEBUG mode and see all its debug messages""")
+
+print_code("logger.debug('Yesss! Here is the debug message')")
+print("Now try CTRL-clicking this button you should see a DEBUG message printed here:")
+su.logger.debug('Yesss! Here is the debug message')
 
 
-su.this_script.output.set_height(600)
-print su.this_script.output.get_title()
-su.this_script.output.set_title('Beautiful title')
 
 
-su.this_script.pyrevit_version
+print("""
 
 
-__commandname__
-__commandpath__
-__shiftclick__
-__assmcustomattrs__
-__window__
-__file__
+
+You can create a script called 'config.py' in your button bundle.
+SHIFT-clicking on a ui button will run the configuration script.
+Try Shift clicking on the Match tool in pyRevit > Modify panel and see the configuration window.""")
+print_code("config.py\nscript.py")
+print("""If you don't define the configuration script, you can check the value of __shiftclick__ in your scripts
+to change script behaviour""")
+print_code("""if __shiftclick__:
+    do_task_A()
+else:
+    do_task_B()""")
 
 
-try:
-    print('__execversion__ is {}'.format(__execversion__))
-except:
-    print('__execversion__ is not available')
 
 
-print __builtins__['__name__']
-print globals()['__name__']
-print locals()['__name__']
-
-print '\nPATHS:'
-for path in sys.path:
-    print path
-
-__title__ = 'Master\nTests'
-__doc__ = "test tootip"
-__author__ = "test author"
-__cmdoptions__ = ['op1', 'op2', 'op3']
-__min_req_revit_ver__ = '2015'
-__min_req_pyrevit_ver__ = (3, 0, 0)
-
-# __assembly__ = ''
-# __commandclass = ''
-
-print 'Name: {}'.format(__name__)
-print 'Host: {}'.format(__revit__)
-print 'Command Data: {}'.format(__commandData__)
-try:
-    print 'UI App: {}'.format(__uiControlledApplication__)
-except:
-    su.logger.error('UI App is Null.')
-print 'Selection: {}'.format(__elements__)
-print 'Window hndlr: {}'.format(__window__)
-print 'File: {}'.format(__file__)
-print 'Forced Debug: {}'.format(__forceddebugmode__)
-print 'Message: {}'.format(__message__)
-print 'Result: {}'.format(__result__)
+print("""
 
 
-# smart button template ------------------------------------------------------------------------------------------------
-def __selfinit__(script_cmp, commandbutton, __rvt__):
-    pass
+'scriptutils' module also provides a class to access the running script information and utilities:
+""")
+
+print_code("""from scriptutils import this_script
+
+# script name
+this_script.info.name""")
+
+print_code("""# script ui title (value set by __title__)
+this_script.info.ui_title""")
+print_code("""# script unique name, generally used to create IExternalCommand class names
+this_script.info.unique_name""")
+print_code("""# script unique name, generally used to create IExternalCommandAvailability class names
+this_script.info.unique_avail_name""")
+print_code("""# script's command context (set by __context__)
+this_script.info.cmd_context""")
+
+print_code("""# script's tooltip (set by script docstring or __doc__)
+this_script.info.doc_string""")
+print_code("""# script's author (set by __author__)
+this_script.info.author""")
+
+print_code("""# script file address
+this_script.info.script_file""")
+print_code("""# script configuration file address
+this_script.info.config_script_file""")
+print_code("""# script default icon file
+this_script.info.icon_file""")
+
+print_code("""# script's library path if the script bundle includes a library
+this_script.info.library_path""")
+
+
+
+print("""
+
+
+Each script can save and load configuration pyRevit's user configuration file:
+""")
+print_code("""from scriptutils import this_script
+
+# set a new config parameter: firstparam
+this_script.config.firstparam = True
+
+# saving configurations
+this_script.save_config()
+
+# read the config parameter value
+if this_script.config.firstparam:
+    do_task_A()""")
+
+
+
+# this_script.data_filename
+#
+#
+# this_script.output.set_height(600)
+# this_script.output.get_title()
+# this_script.output.set_title('Beautiful title')
+#
+#
+# this_script.pyrevit_version
+#
+#
+# __commandname__
+# __commandpath__
+# __assmcustomattrs__
+# __window__
+# __file__
+#
+# __cmdoptions__ = ['op1', 'op2', 'op3']
+# __min_req_revit_ver__ = '2015'
+# __min_req_pyrevit_ver__ = (3, 0, 0)
+#
+# # __assembly__ = ''
+# # __commandclass = ''
+#
+# print 'Name: {}'.format(__name__)
+# print 'Host: {}'.format(__revit__)
+# print 'Command Data: {}'.format(__commandData__)
+# try:
+#     print 'UI App: {}'.format(__uiControlledApplication__)
+# except:
+#     su.logger.error('UI App is Null.')
+# print 'Selection: {}'.format(__elements__)
+# print 'File: {}'.format(__file__)
+# print 'Forced Debug: {}'.format(__forceddebugmode__)
+# print 'Message: {}'.format(__message__)
+# print 'Result: {}'.format(__result__)
+#
+#
+# # smart button template ------------------------------------------------------------------------------------------------
+# def __selfinit__(script_cmp, commandbutton, __rvt__):
+#     pass
