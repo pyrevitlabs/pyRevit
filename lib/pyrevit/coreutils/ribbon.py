@@ -149,6 +149,19 @@ class _GenericPyRevitUIContainer:
     def contains(self, pyrvt_cmp_name):
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
 
+    def find_child(self, child_name):
+        for sub_cmp in self._sub_pyrvt_components.values():
+            if child_name == sub_cmp.name:
+                return sub_cmp
+            elif hasattr(sub_cmp, 'ui_title') and child_name == sub_cmp.ui_title:
+                return sub_cmp
+
+            component = sub_cmp.find_child(child_name)
+            if component:
+                return component
+
+        return None
+
     def activate(self):
         if hasattr(self._rvtapi_object, 'Enabled') and hasattr(self._rvtapi_object, 'Visible'):
             self._rvtapi_object.Enabled = True
