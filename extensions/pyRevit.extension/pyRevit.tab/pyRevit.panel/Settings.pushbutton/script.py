@@ -1,25 +1,7 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
 import os
 
 from pyrevit.userconfig import user_config
-from scriptutils import logger, coreutils
+from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
 
@@ -112,7 +94,8 @@ class SettingsWindow(WPFWindow):
 
 
 if __name__ == '__main__':
+    # noinspection PyUnresolvedReferences
     if __shiftclick__:
-        coreutils.show_file_in_explorer(user_config.config_file)
+        show_file_in_explorer(user_config.config_file)
     else:
         SettingsWindow('SettingsWindow.xaml').ShowDialog()

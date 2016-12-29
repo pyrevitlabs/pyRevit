@@ -1,37 +1,15 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
 __doc__ = 'pick the source object that has the element graphics override you like to match to, '\
           'and then pick the destination objects one by one and this tool will match the graphics.'
 
-from scriptutils import logger, my_config
+from scriptutils import doc, uidoc, this_script
 
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, Dimension
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Selection import ObjectType
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-curview = doc.ActiveView
 
-verbose = True
-
-sel = []
+my_config = this_script.config
 
 
 def setup_dim_overrides_per_config(from_dim, to_dim):
@@ -99,7 +77,7 @@ def setup_style_per_config(from_style, to_style):
 
 def get_source_style(element_id):
     # get style of selected element
-    from_style = curview.GetElementOverrides(element_id)
+    from_style = doc.ActiveView.GetElementOverrides(element_id)
     # make a new clean element style
     src_style = OverrideGraphicSettings()
     # setup a new style per config and borrow from the selected element's style
@@ -140,12 +118,12 @@ def pick_and_match_styles(src_style):
 
 # fixme: modify to remember source style
 try:
-    src_element = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick source object.'))
+    source_element = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick source object.'))
 
-    if isinstance(src_element, Dimension):
-        pick_and_match_dim_overrides(src_element.Id)
+    if isinstance(source_element, Dimension):
+        pick_and_match_dim_overrides(source_element.Id)
     else:
-        src_style = get_source_style(src_element.Id)
-        pick_and_match_styles(src_style)
+        source_style = get_source_style(source_element.Id)
+        pick_and_match_styles(source_style)
 except:
     pass

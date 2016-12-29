@@ -307,7 +307,11 @@ class GenericUICommand(GenericUIComponent):
             extracted_ui_title = script_content.extract_param(UI_TITLE_PARAM)  # type: str
             if extracted_ui_title:
                 self.ui_title = extracted_ui_title
-            self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
+
+            self.doc_string = script_content.get_docstring()
+            if not self.doc_string:
+                self.doc_string = script_content.extract_param(DOCSTRING_PARAM)  # type: str
+
             self.author = script_content.extract_param(AUTHOR_PARAM)  # type: str
             self.min_pyrevit_ver = script_content.extract_param(MIN_PYREVIT_VERSION_PARAM)  # type: tuple
             self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str

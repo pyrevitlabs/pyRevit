@@ -1,36 +1,23 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from scriptutils import doc, selection
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB.Architecture import Room
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB.Mechanical import Space
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
 
 __doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select room, area or space and calculates ' \
           'the average area of that space type.'
 
-from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area
-from Autodesk.Revit.DB.Architecture import Room
-from Autodesk.Revit.DB.Mechanical import Space
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
+areas = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Areas)\
+                                     .WhereElementIsNotElementType().ToElements()
 
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
+rms = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms)\
+                                   .WhereElementIsNotElementType().ToElements()
 
-areas =  FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Areas).WhereElementIsNotElementType().ToElements()
-rms =    FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Rooms).WhereElementIsNotElementType().ToElements()
 spaces = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_MEPSpaces) \
                                       .WhereElementIsNotElementType().ToElements()
 
@@ -38,7 +25,7 @@ total = 0.0
 average = 0.0
 count = 0
 
-for el in selection:
+for el in selection.elements:
     if isinstance(el, Area):
         selareaname = el.LookupParameter('Name').AsString()
         print("AREA TYPE IS: {}".format(selareaname))

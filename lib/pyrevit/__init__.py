@@ -117,6 +117,7 @@ class _ExecutorParams(object):
     @property   # read-only
     def command_path(self):
         try:
+            # noinspection PyUnresolvedReferences
             return __commandpath__
         except:
             return None

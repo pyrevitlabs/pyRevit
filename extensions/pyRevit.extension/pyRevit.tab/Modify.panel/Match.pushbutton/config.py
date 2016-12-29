@@ -1,5 +1,8 @@
-from scriptutils import logger, my_config, save_my_config
+from scriptutils import this_script
 from scriptutils.userinput import WPFWindow
+
+
+my_config = this_script.config
 
 
 class MatchPropConfigWindow(WPFWindow):
@@ -52,7 +55,7 @@ class MatchPropConfigWindow(WPFWindow):
             self.dim_prefix.IsChecked = my_config.dim_prefix = True
             self.dim_suffix.IsChecked = my_config.dim_suffix = True
 
-            save_my_config()
+            this_script.save_config()
 
     def set_all(self, state):
         self.halftone.IsChecked = state
@@ -112,7 +115,7 @@ class MatchPropConfigWindow(WPFWindow):
         my_config.dim_prefix = self.dim_prefix.IsChecked
         my_config.dim_suffix = self.dim_suffix.IsChecked
 
-        save_my_config()
+        this_script.save_config()
         self.Close()
 
 
