@@ -1,4 +1,5 @@
 import os
+import os.path as op
 import clr
 
 from pyrevit.coreutils.logger import get_logger
@@ -27,15 +28,20 @@ logger = get_logger(__name__)
 
 
 class WPFWindow(Window):
-    def __init__(self, xaml_file_name):
-        # noinspection PyUnresolvedReferences
-        wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file_name))
+    def __init__(self, xaml_file):
+        if not op.exists(xaml_file):
+            # noinspection PyUnresolvedReferences
+            wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
+        else:
+            wpf.LoadComponent(self, xaml_file)
 
-    def set_image_source(self, element_name, image_file_name):
+    def set_image_source(self, element_name, image_file):
         wpf_element = getattr(self, element_name)
-        # noinspection PyUnresolvedReferences
-        wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file_name)))
-
+        if not op.exists(image_file):
+            # noinspection PyUnresolvedReferences
+            wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file)))
+        else:
+            wpf_element.Source = BitmapImage(Uri(image_file))
 
 class CommandSwitchWindow:
     def __init__(self, switches, message='Pick a command option:'):
