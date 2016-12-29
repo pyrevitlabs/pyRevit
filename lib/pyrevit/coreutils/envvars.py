@@ -7,6 +7,10 @@ PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
 CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
 
 
+def get_pyrevit_env_vars():
+    return CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+
+
 def get_pyrevit_env_var(param_name):
     """Gets value of a parameter shared between all scripts.
     Some settings needs to be set for the current session and should affect the behaviour of all individual scripts

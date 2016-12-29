@@ -1,5 +1,6 @@
 import os
 
+from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.userconfig import user_config
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
@@ -26,6 +27,15 @@ class SettingsWindow(WPFWindow):
             self.asciicache_rb.IsChecked = True
 
         self.extfolders_lb.ItemsSource = user_config.core.userextensions
+
+        class EnvVariable:
+            def __init__(self, id, value):
+                self.Id = id
+                self.Value = value
+
+        env_vars_list = [EnvVariable(k,v) for k,v in get_pyrevit_env_vars().items()]
+
+        self.envvars_lb.ItemsSource = env_vars_list
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
