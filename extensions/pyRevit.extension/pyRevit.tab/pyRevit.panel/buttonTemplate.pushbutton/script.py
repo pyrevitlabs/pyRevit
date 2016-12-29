@@ -6,7 +6,7 @@ __author__ = 'Ehsan Iran-Nejad'
 
 from pyrevit.coreutils import prepare_html_str
 import scriptutils as su
-
+import markdown
 
 def print_code(code_str):
     nbsp = '&nbsp;'
@@ -14,7 +14,15 @@ def print_code(code_str):
     print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))))
 
 
-print("""This is a quick look at a typical pyRevit script and the utilities that are available to it.""")
+def print_md(md_str):
+    print(prepare_html_str(markdown.markdown(md_str)))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+print_md("""### Basics:
+This is a quick look at a typical pyRevit script and the utilities that are available to it.""")
+
+print_md("#### Basic script parameters:")
 print_code("""\"\"\"You can place the docstring (tooltip) at the top of the script file. This serves both as python docstring
 and also button tooltip in pyRevit. You should use triple quotes for standard python docstrings.\"\"\"""")
 
@@ -24,8 +32,6 @@ print("You can also explicitly define the tooltip for this script file, independ
 print_code("__doc__ = 'This is the text for the button tooltip associated with this script.'")
 
 
-
-
 print("""If you'd like the UI button to have a custom name different from the script name, you can define this variable.
 For example, the __title__ parameter is defined as shown below for this script.
 """)
@@ -33,14 +39,12 @@ For example, the __title__ parameter is defined as shown below for this script.
 print_code("__title__ = 'Sample\\nCommand'")
 
 
-
-
 print("You can define the script author as shown below. This will show up on the button tooltip.")
 print_code("__author__ = 'Ehsan Iran-Nejad'")
 
-
-
-
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Logging:")
 print("""
 For all logging, the 'scriptutils' module defines the default logger for each script. Here is how to use it:
 """)
@@ -73,14 +77,10 @@ print_code("logger.debug('Yesss! Here is the debug message')")
 print("Now try CTRL-clicking this button you should see a DEBUG message printed here:")
 su.logger.debug('Yesss! Here is the debug message')
 
-
-
-
-print("""
-
-
-
-You can create a script called 'config.py' in your button bundle.
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Shift-Clicking: Script Configuration:")
+print("""You can create a script called 'config.py' in your button bundle.
 SHIFT-clicking on a ui button will run the configuration script.
 Try Shift clicking on the Match tool in pyRevit > Modify panel and see the configuration window.""")
 print_code("config.py\nscript.py")
@@ -92,12 +92,10 @@ else:
     do_task_B()""")
 
 
-
-
-print("""
-
-
-'scriptutils' module also provides a class to access the running script information and utilities:
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Script Information:")
+print("""'scriptutils' module also provides a class to access the running script information and utilities:
 """)
 
 print_code("""from scriptutils import this_script
@@ -129,12 +127,13 @@ this_script.info.icon_file""")
 print_code("""# script's library path if the script bundle includes a library
 this_script.info.library_path""")
 
+print_code("""# Accessing the running pyRevit version
+this_script.pyrevit_version""")
 
-
-print("""
-
-
-Each script can save and load configuration pyRevit's user configuration file:
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Custom User Configuration for Scripts:")
+print("""Each script can save and load configuration pyRevit's user configuration file:
 """)
 print_code("""from scriptutils import this_script
 
@@ -149,18 +148,25 @@ if this_script.config.firstparam:
     do_task_A()""")
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Using temporary files easily:")
+print_code('this_script.data_filename')
 
-# this_script.data_filename
-#
-#
-# this_script.output.set_height(600)
-# this_script.output.get_title()
-# this_script.output.set_title('Beautiful title')
-#
-#
-# this_script.pyrevit_version
-#
-#
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("""#### Controlling Output Window:
+Each script can control its own output window:""")
+print_code("""from scriptutils import this_script
+
+this_script.output.set_height(600)
+this_script.output.get_title()
+this_script.output.set_title('Beautiful title')""")
+
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Misc:")
+
 # __commandname__
 # __commandpath__
 # __assmcustomattrs__
@@ -191,3 +197,41 @@ if this_script.config.firstparam:
 # # smart button template ------------------------------------------------------------------------------------------------
 # def __selfinit__(script_cmp, commandbutton, __rvt__):
 #     pass
+
+
+
+
+# print_md("""
+# # Heading
+#
+# ## Sub-heading
+#
+# ### Another deeper heading
+#
+# Paragraphs are separated
+# by a blank line.
+#
+# Two spaces at the end of a line leave a
+# line break.
+#
+# Text attributes _italic_, *italic*, __bold__, **bold**, `monospace`.
+#
+# Horizontal rule:
+#
+# ---
+#
+# Bullet list:
+#
+#   * apples
+#   * oranges
+#   * pears
+#
+# Numbered list:
+#
+#   1. apples
+#   2. oranges
+#   3. pears
+#
+# A [very important link](http://example.com).
+#
+# """)
