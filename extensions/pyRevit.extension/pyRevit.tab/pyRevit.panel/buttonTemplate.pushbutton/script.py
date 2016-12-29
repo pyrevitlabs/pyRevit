@@ -1,3 +1,4 @@
+import sys
 import scriptutils as su
 
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic ' \
@@ -11,41 +12,39 @@ su.logger.warning('Test Log Level')
 su.logger.info('Test Log Level :ok_hand_sign:')
 su.logger.debug('Test Log Level')
 
-print type(su.my_info)
-print su.my_info
-print su.my_info.name
-print su.my_info.ui_title
-print su.my_info.unique_name
-print su.my_info.unique_avail_name
-print su.my_info.doc_string
-print su.my_info.author
-print su.my_info.cmd_options
-print su.my_info.cmd_context
-print su.my_info.min_pyrevit_ver
-print su.my_info.min_revit_ver
-print su.my_info.cmd_options
-print su.my_info.script_file
-print su.my_info.config_script_file
-print su.my_info.icon_file
-print su.my_info.library_path
-print su.my_info.syspath_search_paths
+print type(su.this_script.info)
+print su.this_script.info
+print su.this_script.info.name
+print su.this_script.info.ui_title
+print su.this_script.info.unique_name
+print su.this_script.info.unique_avail_name
+print su.this_script.info.doc_string
+print su.this_script.info.author
+print su.this_script.info.cmd_options
+print su.this_script.info.cmd_context
+print su.this_script.info.min_pyrevit_ver
+print su.this_script.info.min_revit_ver
+print su.this_script.info.cmd_options
+print su.this_script.info.script_file
+print su.this_script.info.config_script_file
+print su.this_script.info.icon_file
+print su.this_script.info.library_path
+print su.this_script.info.syspath_search_paths
 
 
-print type(su.my_config)
-print su.my_config
+print type(su.this_script.config)
+print su.this_script.config
 
 
-print su.my_temp_file
-print su.my_data_file
+print su.this_script.data_filename
 
 
-su.my_output.set_height(600)
-print su.my_output.get_title()
-su.my_output.set_title('Beautiful title')
+su.this_script.output.set_height(600)
+print su.this_script.output.get_title()
+su.this_script.output.set_title('Beautiful title')
 
 
-su.PYREVIT_VERSION
-su.PyRevitException
+su.this_script.pyrevit_version
 
 
 __commandname__
@@ -86,7 +85,7 @@ print 'Command Data: {}'.format(__commandData__)
 try:
     print 'UI App: {}'.format(__uiControlledApplication__)
 except:
-    logger.error('UI App is Null.')
+    su.logger.error('UI App is Null.')
 print 'Selection: {}'.format(__elements__)
 print 'Window hndlr: {}'.format(__window__)
 print 'File: {}'.format(__file__)
