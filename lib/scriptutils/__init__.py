@@ -6,6 +6,7 @@ try:
 except:
     raise Exception('This is not a pyRevit script environment. These tools are irrelevant here.')
 
+import os.path as op
 from pyrevit import HOST_APP
 from pyrevit.coreutils.logger import get_logger
 
@@ -59,8 +60,13 @@ class PyRevitScriptUtils:
 
     @property
     def ui_button(self):
-        # fixme: implement get_ui_button
-        return 0
+        from pyrevit.coreutils.ribbon import get_current_ui
+        pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
+        for tab in pyrvt_tabs:
+            button = tab.find_child(COMMAND_NAME)
+            if button:
+                return button
+        return None
 
     @staticmethod
     def get_script_data_file(file_id, file_ext):
@@ -76,6 +82,10 @@ class PyRevitScriptUtils:
         return self.get_script_data_file('defaultdata', 'data')
 
     @staticmethod
+    def get_bundle_file(file_name):
+        return op.join(__commandpath__, file_name)
+
+    @staticmethod
     def journal_write(data_key, msg):
         # Get the StringStringMap class which can write data into.
         # noinspection PyUnresolvedReferences
@@ -86,7 +96,7 @@ class PyRevitScriptUtils:
         data_map.Add(data_key, msg)
 
     @staticmethod
-    def journal_write(data_key):
+    def journal_read(data_key):
         # Get the StringStringMap class which can write data into.
         # noinspection PyUnresolvedReferences
         data_map = __commandData__.JournalData
@@ -117,6 +127,8 @@ class CurrentElementSelection:
 # import useful functions from pyrevit.coreutils but not everything
 # noinspection PyUnresolvedReferences
 from pyrevit.coreutils import show_file_in_explorer, open_url
+# noinspection PyUnresolvedReferences
+from pyrevit.coreutils.envvars import get_pyrevit_env_var, set_pyrevit_env_var
 
 
 # setup this script services
