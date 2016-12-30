@@ -8,9 +8,19 @@ from pyrevit.coreutils import prepare_html_str
 import scriptutils as su
 import markdown
 
+
 def print_code(code_str):
     nbsp = '&nbsp;'
-    code_div = """<div style="font-family:courier new;border-style: solid;border-width:0 0 0 5;border-color:#87b012;background:#ececec;color:#3e3d3d;line-height: 150%;padding:10;margin:10 0 10 0">{}</div>"""
+    code_div = '<div style="font-family:courier new;' \
+               'border-style: solid;' \
+               'border-width:0 0 0 5;' \
+               'border-color:#87b012;' \
+               'background:#ececec;' \
+               'color:#3e3d3d;' \
+               'line-height: 150%;' \
+               'padding:10;' \
+               'margin:10 0 10 0">{}</div>'
+
     print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))))
 
 
@@ -23,11 +33,13 @@ print_md("""### Basics:
 This is a quick look at a typical pyRevit script and the utilities that are available to it.""")
 
 print_md("#### Basic script parameters:")
-print_code("""\"\"\"You can place the docstring (tooltip) at the top of the script file. This serves both as python docstring
-and also button tooltip in pyRevit. You should use triple quotes for standard python docstrings.\"\"\"""")
+print_code("""\"\"\"You can place the docstring (tooltip) at the top of the script file.
+This serves both as python docstring and also button tooltip in pyRevit.
+You should use triple quotes for standard python docstrings.\"\"\"""")
 
 
-print("You can also explicitly define the tooltip for this script file, independent of the docstring defined at the top.")
+print("""You can also explicitly define the tooltip for this script file,
+independent of the docstring defined at the top.""")
 
 print_code("__doc__ = 'This is the text for the button tooltip associated with this script.'")
 
@@ -87,6 +99,19 @@ print_code("config.py\nscript.py")
 print("""If you don't define the configuration script, you can check the value of __shiftclick__ in your scripts
 to change script behaviour""")
 print_code("""if __shiftclick__:
+    do_task_A()
+else:
+    do_task_B()""")
+
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
+print_md("#### Ctrl-Clicking: Debug Mode:")
+print("""CTRL-clicking on a ui button will run the script in DEBUG mode and will allow the script
+to print all debug messages. Try CTRL Clicking on this button to see debug messages.""")
+print_code("config.py\nscript.py")
+print("""You can check the value of __forceddebugmode__ variable to see if the script is running in Debug mode
+to change script behaviour if neccessary""")
+print_code("""if __forceddebugmode__:
     do_task_A()
 else:
     do_task_B()""")
@@ -151,7 +176,40 @@ if this_script.config.firstparam:
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
 print_md("#### Using temporary files easily:")
-print_code('this_script.data_filename')
+print("Scripts can create 3 different types of data files:")
+print("""Universal files:
+These files are not marked by host Revit version and could be shared between all Revit versions and instances.
+These data files are saved in pyRevit appdata directory and are NOT cleaned up at Revit restarts.
+Script should manage cleaning up these data files.""")
+
+print_code("""# provide a unique file id and file extension
+# Method will return full path of the data file
+this_script.get_universal_data_file(file_id, file_ext)
+""")
+
+print("""Data files (Shared only between instances of host Revit version):
+These files are marked by host Revit version and could be shared between instances of host Revit version
+Data files are saved in pyRevit appdata directory and are NOT cleaned up at Revit restarts.
+Script should manage cleaning up these data files.""")
+
+print_code("""# provide a unique file id and file extension
+# Method will return full path of the data file
+this_script.get_data_file(file_id, file_ext)
+""")
+
+print("""Instance Data files (Accessible only to current Revit instance):
+These files are marked by host Revit version and process Id and are only available to current Revit instance.
+Data files are saved in pyRevit appdata directory and ARE cleaned up at Revit restarts.""")
+
+print_code("""# provide a unique file id and file extension
+# Method will return full path of the data file
+this_script.get_instance_data_file(file_id, file_ext)
+""")
+
+print_code("""# this is the standard instance data file that is setup by default for this script
+this_script.instance_data_filename""")
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
@@ -165,73 +223,13 @@ this_script.output.set_title('Beautiful title')""")
 
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
-print_md("#### Misc:")
+print_md("#### Misc Parameters:")
+print_code("""# Revit UIApplication is accessable through:
+__revit__
 
-# __commandname__
-# __commandpath__
-# __assmcustomattrs__
-# __window__
-# __file__
-#
-# __cmdoptions__ = ['op1', 'op2', 'op3']
-# __min_req_revit_ver__ = '2015'
-# __min_req_pyrevit_ver__ = (3, 0, 0)
-#
-# # __assembly__ = ''
-# # __commandclass = ''
-#
-# print 'Name: {}'.format(__name__)
-# print 'Host: {}'.format(__revit__)
-# print 'Command Data: {}'.format(__commandData__)
-# try:
-#     print 'UI App: {}'.format(__uiControlledApplication__)
-# except:
-#     su.logger.error('UI App is Null.')
-# print 'Selection: {}'.format(__elements__)
-# print 'File: {}'.format(__file__)
-# print 'Forced Debug: {}'.format(__forceddebugmode__)
-# print 'Message: {}'.format(__message__)
-# print 'Result: {}'.format(__result__)
-#
-#
-# # smart button template ------------------------------------------------------------------------------------------------
-# def __selfinit__(script_cmp, commandbutton, __rvt__):
-#     pass
+# Command data provided to this command by Revit is accessable through:
+__commandData__
 
-
-
-
-# print_md("""
-# # Heading
-#
-# ## Sub-heading
-#
-# ### Another deeper heading
-#
-# Paragraphs are separated
-# by a blank line.
-#
-# Two spaces at the end of a line leave a
-# line break.
-#
-# Text attributes _italic_, *italic*, __bold__, **bold**, `monospace`.
-#
-# Horizontal rule:
-#
-# ---
-#
-# Bullet list:
-#
-#   * apples
-#   * oranges
-#   * pears
-#
-# Numbered list:
-#
-#   1. apples
-#   2. oranges
-#   3. pears
-#
-# A [very important link](http://example.com).
-#
-# """)
+# and UI Controlled application is:
+__uiControlledApplication__
+""")

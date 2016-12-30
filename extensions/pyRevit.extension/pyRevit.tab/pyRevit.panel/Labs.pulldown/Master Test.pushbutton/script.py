@@ -32,7 +32,7 @@ print type(su.this_script.config)
 print su.this_script.config
 
 
-print su.this_script.data_filename
+print su.this_script.instance_data_file
 
 
 su.this_script.output.set_height(600)

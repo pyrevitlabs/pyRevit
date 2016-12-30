@@ -175,8 +175,7 @@ PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
 
 # pyrevit standard files prefix
 PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
-PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                        HOST_APP.version, HOST_APP.username)
+PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username)
 PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
                                                    HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
 
