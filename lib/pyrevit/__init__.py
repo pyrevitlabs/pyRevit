@@ -139,6 +139,9 @@ class _ExecutorParams(object):
 
 EXEC_PARAMS = _ExecutorParams()
 
+# if no output window is set by the executor, it means that pyRevit is loading at Revit startup (not reloading)
+FIRST_LOAD = True if EXEC_PARAMS.window_handle is None else False
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # config environment info

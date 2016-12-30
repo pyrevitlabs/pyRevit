@@ -7,7 +7,7 @@ The only public function is load_session() that loads a new session. Everything 
 import sys
 import clr
 
-from pyrevit import HOME_DIR, EXEC_PARAMS
+from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
@@ -60,7 +60,7 @@ def _report_env():
 def _perform_onsessionload_ops():
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
-    if EXEC_PARAMS.window_handle is None:
+    if FIRST_LOAD:
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
