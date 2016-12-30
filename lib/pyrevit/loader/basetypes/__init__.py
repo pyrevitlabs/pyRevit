@@ -138,8 +138,10 @@ def _generate_base_classes_asm():
     # now try to compile
     try:
         logger.debug('Compiling base types to: {}'.format(BASE_TYPES_ASM_FILE))
+        # compile_csharp(source_list, BASE_TYPES_ASM_FILE,
+        #                reference_list=_get_references(), resource_list=[_get_resource_file('python_27_lib.zip')])
         compile_csharp(source_list, BASE_TYPES_ASM_FILE,
-                       reference_list=_get_references(), resource_list=[_get_resource_file('python_27_lib.zip')])
+                       reference_list=_get_references())
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:

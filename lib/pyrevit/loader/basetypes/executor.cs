@@ -211,7 +211,7 @@ namespace PyRevitBaseClasses
             }
 
             // add the search paths
-            AddEmbeddedLib(engine);
+            //AddEmbeddedLib(engine);
 
             // reference RevitAPI and RevitAPIUI
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.DB.Document).Assembly);
