@@ -73,21 +73,42 @@ class PyRevitScriptUtils:
         return None
 
     @staticmethod
-    def get_script_data_file(file_id, file_ext):
+    def get_universal_data_file(file_id, file_ext):
         """Returns a filename to be used by a user script to store data.
-        Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up between Revit sessions.
+        These files are not marked by host Revit version and could be shared between all Revit versions and instances.
+        Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up at Revit restart.
+        Script should manage cleaning up these data files.
         """
-        from pyrevit.coreutils.appdata import get_session_data_file
+        from pyrevit.coreutils.appdata import get_universal_data_file
         script_file_id = '{}_{}'.format(COMMAND_NAME, file_id)
-        return get_session_data_file(script_file_id, file_ext)
+        return get_universal_data_file(script_file_id, file_ext)
+
+    @staticmethod
+    def get_data_file(file_id, file_ext):
+        """Returns a filename to be used by a user script to store data.
+        Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up at Revit restart.
+        Script should manage cleaning up these data files.
+        """
+        from pyrevit.coreutils.appdata import get_data_file
+        script_file_id = '{}_{}'.format(COMMAND_NAME, file_id)
+        return get_data_file(script_file_id, file_ext)
+
+    @staticmethod
+    def get_instance_data_file(file_id, file_ext):
+        """Returns a filename to be used by a user script to store data under current Revit instance.
+        Instance data files are saved in PYREVIT_APP_DIR and are cleaned up at Revit restart.
+        """
+        from pyrevit.coreutils.appdata import get_instance_data_file
+        script_file_id = '{}_{}'.format(COMMAND_NAME, file_id)
+        return get_instance_data_file(script_file_id, file_ext)
 
     @property
-    def data_filename(self):
-        return self.get_script_data_file('defaultdata', 'data')
+    def instance_data_file(self):
+        return self.get_instance_data_file('defaultdata', 'data')
 
     @staticmethod
     def get_bundle_file(file_name):
-        return op.join(__commandpath__, file_name)
+        return op.join(COMMAND_PATH, file_name)
 
     @staticmethod
     def journal_write(data_key, msg):

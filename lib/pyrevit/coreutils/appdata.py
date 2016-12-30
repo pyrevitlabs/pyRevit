@@ -55,6 +55,7 @@ def _get_app_file(file_id, file_ext, filename_only=False, stamped=False, univers
 def get_universal_data_file(file_id, file_ext, name_only=False):
     """
     Get full file path to a file that is shared between all host versions
+    These data files are not cleaned up at Revit restart.
     e.g pyrevit_eirannejad_file_id.file_ext
 
     Args:
@@ -70,7 +71,7 @@ def get_universal_data_file(file_id, file_ext, name_only=False):
 
 def get_data_file(file_id, file_ext, name_only=False):
     """
-    Get full file path to a file that will not be cleaned up between sessions.
+    Get full file path to a file that will not be cleaned up at Revit restart.
     e.g pyrevit_2016_eirannejad_file_id.file_ext
 
     Args:
@@ -84,9 +85,10 @@ def get_data_file(file_id, file_ext, name_only=False):
     return _get_app_file(file_id, file_ext, filename_only=name_only)
 
 
-def get_session_data_file(file_id, file_ext, name_only=False):
+def get_instance_data_file(file_id, file_ext, name_only=False):
     """
     Get full file path to a file that should be used by current host instance only.
+    These data files will be cleaned up at Revit restart.
     e.g pyrevit_2016_eirannejad_2353_file_id.file_ext
 
     Args:
