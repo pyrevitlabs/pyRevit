@@ -5,6 +5,9 @@ extensions/*
 # ignore pyCharm workspace settings
 .idea/
 
+# ignore third-party lib folder
+lib/*
+
 # ignore Goodsync cache folder
 _gsdata_/
 
