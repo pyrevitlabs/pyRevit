@@ -1,4 +1,4 @@
-# pyRevit for Autodesk Revit(R)
+# pyRevit for Autodesk Revit®
 
 [Browse to pyRevit blog to learn more and download the installation.](http://eirannejad.github.io/pyRevit/)
 
