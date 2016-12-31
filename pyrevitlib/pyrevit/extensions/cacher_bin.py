@@ -45,18 +45,22 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext = get_cached_extension(extension)
+        logger.debug('Extension cache directory is: {} for: {}'.format(extension.directory, extension))
+        cache_dir_valid = cached_ext.directory == extension.directory
+
         logger.debug('Extension cache version is: {} for: {}'.format(extension.pyrvt_version, extension))
         cache_version_valid = cached_ext.pyrvt_version == extension.pyrvt_version
 
         logger.debug('Extension hash value is: {} for: {}'.format(extension.dir_hash_value, extension))
         cache_hash_valid = cached_ext.dir_hash_value == extension.dir_hash_value
 
+        cache_valid = cache_dir_valid and cache_version_valid and cache_hash_valid
         # add loaded package to list so it can be recovered later
-        if cache_version_valid and cache_hash_valid:
+        if cache_valid:
             loaded_extensions.append(cached_ext)
 
         # cache is valid if both version and hash value match
-        return cache_version_valid and cache_hash_valid
+        return cache_valid
 
     except PyRevitException as err:
         logger.debug('Error reading cache file or file is not available: {}'.format(err))
