@@ -3,9 +3,6 @@ extensions/*
 !extensions/pyRevit.extension/
 !extensions/tests.extension/
 
-# ignore pyCharm project settings
-.idea/
-
 # ignore Goodsync cache folder
 _gsdata_/
 
