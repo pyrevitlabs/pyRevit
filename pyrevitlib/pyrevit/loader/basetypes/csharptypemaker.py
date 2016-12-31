@@ -56,7 +56,7 @@ def _verify_command_interfaces(compiled_assm):
         elif IExternalCommandAvailability in compiled_type.GetInterfaces():
             iextcmd_avail = compiled_type
 
-    return (iextcmd, iextcmd_avail)
+    return iextcmd, iextcmd_avail
 
 
 def _make_csharp_types(module_builder, cmd_component):
