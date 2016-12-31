@@ -15,8 +15,13 @@ class SettingsWindow(WPFWindow):
         WPFWindow.__init__(self, xaml_file_name)
 
         self.checkupdates_cb.IsChecked = user_config.core.checkupdates
-        self.verbose_rb.IsChecked = user_config.core.verbose
-        self.debug_rb.IsChecked = user_config.core.debug
+
+        if not user_config.core.verbose and not user_config.core.debug:
+            self.noreporting_rb.IsChecked = True
+        else:
+            self.debug_rb.IsChecked = user_config.core.debug
+            self.verbose_rb.IsChecked = user_config.core.verbose
+
         self.filelogging_cb.IsChecked = user_config.core.filelogging
         self.compilecsharp_cb.IsChecked = user_config.core.compilecsharp
         self.compilevb_cb.IsChecked = user_config.core.compilevb
@@ -41,6 +46,7 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def resetreportinglevel(self, sender, args):
         self.verbose_rb.IsChecked = True
+        self.noreporting_rb.IsChecked = False
         self.debug_rb.IsChecked = False
         self.filelogging_cb.IsChecked = False
 

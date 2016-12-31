@@ -15,12 +15,18 @@
                     </GroupBox>
                     <GroupBox Header="Reporting Level:" Margin="0,10,0,0">
                         <StackPanel>
-                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">Verbose (Info only)</RadioButton>
+                            <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">No Reporting (logging.WARNING and above)</RadioButton>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">No reports will be printed from the logging system.
+                                                                                          This means that pyRevit will not show the output window at
+                                                                                          Revit startup and all the INFO messages will be suppressed.
+                                                                                          Only Warnings, Errors, and Critical Errors will be printed.</TextBlock>
+
+                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="True">Verbose (logging.INFO and above)</RadioButton>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Verbose reporting opens the output window and only prints the info messages.
                                                                                           These messages are meant to provide the most basic necessary information about
                                                                                        the current pyRevit session to the user.</TextBlock>
 
-                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode</RadioButton>
+                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode (logging.DEBUG and above)</RadioButton>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">This activates the pyRevit debug mode which enables all components and scripts to
                                                                                            report their debug messages. Generally this causes a very lengthy report and
                                                                                            increases the script running time, but it is very valuable for debugging.
