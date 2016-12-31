@@ -26,13 +26,11 @@ LicenseFile=LICENSE
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\.git\*"; DestDir: "{app}\.git"; Flags: ignoreversion recursesubdirs
-Source: "..\..\extensions\*"; DestDir: "{app}\extensions"; Flags: ignoreversion recursesubdirs
-Source: "..\..\lib\*"; DestDir: "{app}\lib"; Flags: ignoreversion recursesubdirs
-Source: "..\..\release\*"; DestDir: "{app}\release"; Flags: ignoreversion recursesubdirs
-Source: "..\..\.gitattributes"; DestDir: "{app}"
-Source: "..\..\.gitignore"; DestDir: "{app}"
-Source: "..\..\README.md"; DestDir: "{app}"
+Source: "..\..\*"; DestDir: "{app}\"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\.git\*"; DestDir: "{app}\.git"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\.idea\*"; DestDir: "{app}\.idea"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\.gitignore"; DestDir: "{app}\"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\.gitattributes"; DestDir: "{app}\"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Dirs]
 Name: "{userappdata}\{#MyAppName}"
@@ -41,11 +39,11 @@ Name: "{userappdata}\{#MyAppName}"
 Type: filesandordirs; Name: "{app}\pyRevit"
 
 [Run]
-Filename: "{app}\release\setupmaker\removeold.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
-Filename: "{app}\release\setupmaker\makeaddins.bat"; Parameters: """{app}\lib\pyrevit\loader\addin\pyRevitLoader.dll"""; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{app}\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
+Filename: "{app}\release\install_addin.bat"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [UninstallRun]
-Filename: "{app}\release\setupmaker\removeaddins.bat";
+Filename: "{app}\release\uninstall_addin.bat";

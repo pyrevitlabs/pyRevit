@@ -8,6 +8,10 @@ extensions/*
 # ignore third-party lib folder
 lib/*
 
+# ignore release files
+release/*.exe
+release/setupmaker/output/*
+
 # ignore Goodsync cache folder
 _gsdata_/
 
