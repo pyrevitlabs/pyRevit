@@ -4,29 +4,8 @@ __title__ = 'Sample\nCommand'
 __author__ = 'Ehsan Iran-Nejad'
 
 
-from pyrevit.coreutils import prepare_html_str
 import scriptutils as su
-import markdown
-
-
-def print_code(code_str):
-    nbsp = '&nbsp;'
-    code_div = '<div style="font-family:courier new;' \
-               'border-style: solid;' \
-               'border-width:0 0 0 5;' \
-               'border-color:#87b012;' \
-               'background:#ececec;' \
-               'color:#3e3d3d;' \
-               'line-height: 150%;' \
-               'padding:10;' \
-               'margin:10 0 10 0">{}</div>'
-
-    print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))))
-
-
-def print_md(md_str):
-    print(prepare_html_str(markdown.markdown(md_str)))
-
+from scriptutils import print_code, print_md
 
 # ----------------------------------------------------------------------------------------------------------------------
 print_md("""### Basics:
@@ -210,7 +189,6 @@ print_code("""# this is the standard instance data file that is setup by default
 this_script.instance_data_filename""")
 
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
 print_md("""#### Controlling Output Window:
@@ -220,6 +198,7 @@ print_code("""from scriptutils import this_script
 this_script.output.set_height(600)
 this_script.output.get_title()
 this_script.output.set_title('Beautiful title')""")
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
