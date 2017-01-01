@@ -166,7 +166,7 @@ MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
 EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
 
-PYREVIT_ADDON_NAME = 'pyrevit'
+PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
 VERSION_MINOR = 0
 
@@ -176,7 +176,7 @@ USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 
 # pyrevit temp file directory
-PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, 'pyRevit')
+PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
 
 # pyrevit standard files prefix
 PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
