@@ -71,7 +71,10 @@
             <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
             <Expander Header="Environment Variables:" IsExpanded="False" Margin="10px">
                 <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Environment Variables that are available to all pyRevit scripts.</TextBlock>
+                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Environment Variables are set in current Application Domain (AppDomain) and
+                                                                                  are available to scripts. They're used as global flags for setting
+                                                                                  reporting mode and by scripts (e.g. Sync Views) to set their current toggle state.
+                                                                                  These variables are accessable by scripts through scriptutils module.</TextBlock>
                     <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="100">
                         <ListView.View>
                             <GridView>

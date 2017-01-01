@@ -98,6 +98,12 @@ else:
 
 # ----------------------------------------------------------------------------------------------------------------------
 print('\n\n\n')
+print_md("#### Alt-Clicking: Show Script file in Explorer:")
+print("ALT-clicking on a ui button will show the associated script file in windows explorer.")
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+print('\n\n\n')
 print_md("#### Script Information:")
 print("""'scriptutils' module also provides a class to access the running script information and utilities:
 """)
