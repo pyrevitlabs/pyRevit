@@ -2,6 +2,7 @@ import os
 
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.userconfig import user_config
+from pyrevit.versionmgr.addinfiles import get_addinfiles_state, set_addinfiles_state
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
@@ -13,7 +14,16 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrev
 class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
+        self._setup_core_options()
+        self._setup_user_extensions_list()
+        self._setup_env_vars_list()
+        self._addinfiles_checkboxes = {'2015':self.revit2015_cb,
+                                       '2016':self.revit2016_cb,
+                                       '2017':self.revit2017_cb}
 
+        self._setup_addinfiles()
+
+    def _setup_core_options(self):
         self.checkupdates_cb.IsChecked = user_config.core.checkupdates
 
         if not user_config.core.verbose and not user_config.core.debug:
@@ -31,8 +41,10 @@ class SettingsWindow(WPFWindow):
         else:
             self.asciicache_rb.IsChecked = True
 
+    def _setup_user_extensions_list(self):
         self.extfolders_lb.ItemsSource = user_config.core.userextensions
 
+    def _setup_env_vars_list(self):
         class EnvVariable:
             def __init__(self, id, value):
                 self.Id = id
@@ -41,6 +53,20 @@ class SettingsWindow(WPFWindow):
         env_vars_list = [EnvVariable(k,v) for k,v in get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
+
+    def _setup_addinfiles(self):
+        addinfiles_states = get_addinfiles_state()
+
+        for rvt_ver, checkbox in self._addinfiles_checkboxes.items():
+            if rvt_ver in addinfiles_states.keys():
+                checkbox.IsEnabled = True
+                checkbox.IsChecked = addinfiles_states[rvt_ver]
+            else:
+                checkbox.IsChecked = checkbox.IsEnabled = False
+
+    def update_addinfiles(self):
+        new_states = {rvt_ver:checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
+        set_addinfiles_state(new_states)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -106,6 +132,8 @@ class SettingsWindow(WPFWindow):
             user_config.core.userextensions = []
 
         user_config.save_changes()
+
+        self.update_addinfiles()
         self.Close()
 
 
