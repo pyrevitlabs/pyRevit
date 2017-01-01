@@ -1,0 +1,15 @@
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\pyRevitCloner.exe.config
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\win32\x64\git2-75db289.dll
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\win32\x64\git2-75db289.pdb
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\win32\x86\git2-75db289.dll
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\win32\x86\git2-75db289.pdb
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\osx\libgit2-75db289.dylib
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\lib\linux\x86_64\libgit2-75db289.so
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\LibGit2Sharp.dll.config
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\pyRevitCloner.exe
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\pyRevitCloner.pdb
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\LibGit2Sharp.dll
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\bin\Debug\LibGit2Sharp.xml
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\obj\Debug\pyRevitCloner.csprojResolveAssemblyReference.cache
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\obj\Debug\pyRevitCloner.exe
+C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\obj\Debug\pyRevitCloner.pdb
