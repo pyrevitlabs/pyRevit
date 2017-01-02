@@ -52,10 +52,9 @@ class PyRevitScriptUtils:
         script_cfg_postfix = 'config'
 
         try:
-            return getattr(user_config, COMMAND_NAME + script_cfg_postfix)
+            return user_config.get_section(COMMAND_NAME + script_cfg_postfix)
         except:
-            user_config.add_section(COMMAND_NAME + script_cfg_postfix)
-            return getattr(user_config, COMMAND_NAME + script_cfg_postfix)
+            return user_config.add_section(COMMAND_NAME + script_cfg_postfix)
 
     @staticmethod
     def save_config():

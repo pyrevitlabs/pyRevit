@@ -20,43 +20,41 @@ def _credentials_hndlr(username, password):
     return up
 
 
-def _hndlr(url, uname, types):
-    up = git.libgit.UsernamePasswordCredentials()
-    up.Username = 'eirannejad@gmail.com'
-    up.Password = 'testpassword1891'
-    return up
-
-
 def _get_credentials_hndlr(username, password):
     return git.libgit.Handlers.CredentialsHandler(lambda url, uname, types: _credentials_hndlr(username, password))
 
 
 def _get_credentials(repo_info):
     try:
-        repo_config = getattr(user_config, repo_info.name)
+        repo_config = user_config.get_section(repo_info.name)
         return repo_config.username, repo_config.password
     except:
         return None, None
 
 
 def _make_pull_options(repo_info):
+    logger.debug('Making pull options: {}'.format(repo_info))
     pull_ops = git.libgit.PullOptions()
     pull_ops.FetchOptions = git.libgit.FetchOptions()
     username, password = _get_credentials(repo_info)
     if username and password:
+        logger.debug('Username and password are available but cant\' log private info. Making Credentials handler.')
         pull_ops.FetchOptions.CredentialsProvider = _get_credentials_hndlr(username, password)
     return pull_ops
 
 
 def _make_fetch_options(repo_info):
+    logger.debug('Making fetch options: {}'.format(repo_info))
     fetch_ops = git.libgit.FetchOptions()
     username, password = _get_credentials(repo_info)
     if username and password:
+        logger.debug('Username and password are available but cant\' log private info. Making Credentials handler.')
         fetch_ops.CredentialsProvider = _get_credentials_hndlr(username, password)
     return fetch_ops
 
 
 def _make_pull_signature():
+    logger.debug('Creating pull signature for username: {}'.format(HOST_APP.username))
     return git.libgit.Signature(HOST_APP.username, HOST_APP.username, DateTimeOffset(DateTime.Now))
 
 
@@ -82,8 +80,10 @@ def get_thirdparty_ext_repos():
 
 
 def get_all_extension_repos():
+    logger.debug('Finding all extension repos.')
     repo_info_list = [get_pyrevit_repo()]               # pyrevit main repo
     repo_info_list.extend(get_thirdparty_ext_repos())   # add all thirdparty extension repos
+    logger.debug('Repos are: {}'.format(repo_info_list))
     return repo_info_list
 
 

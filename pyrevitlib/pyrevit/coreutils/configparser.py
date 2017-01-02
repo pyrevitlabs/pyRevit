@@ -74,6 +74,12 @@ class PyRevitConfigParser(object):
         self._parser.add_section(section_name)
         return PyRevitConfigSectionParser(self._parser, section_name)
 
+    def get_section(self, section_name):
+        if self._parser.has_section(section_name):
+            return PyRevitConfigSectionParser(self._parser, section_name)
+        else:
+            raise AttributeError('Section does not exist in config file.')
+
     def reload(self, cfg_file_path):
         try:
             with open(cfg_file_path, 'r') as cfg_file:
