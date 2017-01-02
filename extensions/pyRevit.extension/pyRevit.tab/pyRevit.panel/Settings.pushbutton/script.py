@@ -18,9 +18,9 @@ class SettingsWindow(WPFWindow):
         self._setup_core_options()
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
-        self._addinfiles_checkboxes = {'2015':self.revit2015_cb,
-                                       '2016':self.revit2016_cb,
-                                       '2017':self.revit2017_cb}
+        self._addinfiles_checkboxes = {'2015': self.revit2015_cb,
+                                       '2016': self.revit2016_cb,
+                                       '2017': self.revit2017_cb}
 
         self._setup_addinfiles()
 
@@ -47,11 +47,11 @@ class SettingsWindow(WPFWindow):
 
     def _setup_env_vars_list(self):
         class EnvVariable:
-            def __init__(self, id, value):
-                self.Id = id
+            def __init__(self, var_id, value):
+                self.Id = var_id
                 self.Value = value
 
-        env_vars_list = [EnvVariable(k,v) for k,v in get_pyrevit_env_vars().items()]
+        env_vars_list = [EnvVariable(k, v) for k, v in get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
 
@@ -72,7 +72,7 @@ class SettingsWindow(WPFWindow):
                 checkbox.IsChecked = checkbox.IsEnabled = False
 
     def update_addinfiles(self):
-        new_states = {rvt_ver:checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
+        new_states = {rvt_ver: checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
         new_states.pop(HOST_APP.version)
         set_addinfiles_state(new_states)
 
