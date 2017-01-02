@@ -17,7 +17,6 @@ release/setupmaker/output/*
 unins*.dat
 unins*.exe
 
-
 # ignore Goodsync cache folder
 _gsdata_/
 
