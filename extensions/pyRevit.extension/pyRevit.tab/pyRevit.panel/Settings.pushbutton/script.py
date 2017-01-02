@@ -1,5 +1,6 @@
 import os
 
+from pyrevit import HOST_APP
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr.addinfiles import get_addinfiles_state, set_addinfiles_state
@@ -59,13 +60,20 @@ class SettingsWindow(WPFWindow):
 
         for rvt_ver, checkbox in self._addinfiles_checkboxes.items():
             if rvt_ver in addinfiles_states.keys():
-                checkbox.IsEnabled = True
-                checkbox.IsChecked = addinfiles_states[rvt_ver]
+                if rvt_ver != HOST_APP.version:
+                    checkbox.IsEnabled = True
+                    checkbox.IsChecked = addinfiles_states[rvt_ver]
+                else:
+                    checkbox.Content = 'Revit {} (Current version. Can not disable.)'.format(rvt_ver)
+                    checkbox.IsEnabled = False
+                    checkbox.IsChecked = True
             else:
+                checkbox.Content = 'Revit {} (Not installed)'.format(rvt_ver)
                 checkbox.IsChecked = checkbox.IsEnabled = False
 
     def update_addinfiles(self):
         new_states = {rvt_ver:checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
+        new_states.pop(HOST_APP.version)
         set_addinfiles_state(new_states)
 
     # noinspection PyUnusedLocal
