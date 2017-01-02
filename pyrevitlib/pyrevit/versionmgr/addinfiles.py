@@ -16,17 +16,16 @@ ADDIN_CLASSNAME = LOADER_ADDON_NAMESPACE + 'Application'
 ADDIN_VENDORID = 'eirannejad'
 
 
-addinfile_contents =                                                                         \
-'<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'                                  \
- '<RevitAddIns>\n'                                                                          \
- '  <AddIn Type="Application">\n'                                                           \
- '    <Name>{addinname}</Name>\n'                                                           \
- '    <Assembly>{addinfolder}\\{addinname}.dll</Assembly>\n'                                \
- '    <AddInId>{addinguid}</AddInId>\n'                                                     \
- '    <FullClassName>{addinname}.{addinclassname}</FullClassName>\n'                             \
- '  <VendorId>{addinvendorid}</VendorId>\n'                                                      \
- '  </AddIn>\n'                                                                             \
- '</RevitAddIns>\n'
+addinfile_contents = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'            \
+                     '<RevitAddIns>\n'                                                     \
+                     '  <AddIn Type="Application">\n'                                      \
+                     '    <Name>{addinname}</Name>\n'                                      \
+                     '    <Assembly>{addinfolder}\\{addinname}.dll</Assembly>\n'           \
+                     '    <AddInId>{addinguid}</AddInId>\n'                                \
+                     '    <FullClassName>{addinname}.{addinclassname}</FullClassName>\n'   \
+                     '  <VendorId>{addinvendorid}</VendorId>\n'                            \
+                     '  </AddIn>\n'                                                        \
+                     '</RevitAddIns>\n'
 
 
 def _find_revit_addin_directory():
@@ -35,7 +34,7 @@ def _find_revit_addin_directory():
 
 def _get_installed_revit_addin_folders():
     revit_addin_dir = _find_revit_addin_directory()
-    return {x:op.join(revit_addin_dir, x) for x in os.listdir(revit_addin_dir)}
+    return {x: op.join(revit_addin_dir, x) for x in os.listdir(revit_addin_dir)}
 
 
 def _addin_def_exists(revit_version):
@@ -59,11 +58,12 @@ def _set_addin_state_for(revit_version, addin_state):
             if addin_state:
                 addinfile = op.join(revit_addin_dir, ADDIN_DEF_FILENAME)
                 with open(addinfile, 'w') as f:
-                    f.writelines(addinfile_contents.format(addinname = LOADER_ADDON_NAMESPACE,
-                                                           addinfolder = ADDIN_DIR,
-                                                           addinguid = ADDIN_GUID,
-                                                           addinvendorid = ADDIN_VENDORID,
-                                                           addinclassname = ADDIN_CLASSNAME))
+                    f.writelines(addinfile_contents.format(addinname=LOADER_ADDON_NAMESPACE,
+                                                           addinfolder=ADDIN_DIR,
+                                                           addinguid=ADDIN_GUID,
+                                                           addinvendorid=ADDIN_VENDORID,
+                                                           addinclassname=ADDIN_CLASSNAME))
+
 
 def get_addinfiles_state():
     addinfiles_state_dict = {}
@@ -71,6 +71,7 @@ def get_addinfiles_state():
         addinfiles_state_dict[revit_version] = _addin_def_exists(revit_version)
 
     return addinfiles_state_dict
+
 
 def set_addinfiles_state(states_dict):
     for revit_version, addin_state in states_dict.items():
