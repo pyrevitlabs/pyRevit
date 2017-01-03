@@ -29,7 +29,11 @@ INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
 DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
                          'Reference Assemblies', 'Microsoft', 'Framework', '.NETFramework')
 
-FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
+try:
+    FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
+except Exception as dotnet_sdk_err:
+    FRAMEWORK_DIRS = None
+    logger.debug('Dotnet SDK is not installed. | {}'.format(dotnet_sdk_err))
 
 
 # base classes for pyRevit commands ------------------------------------------------------------------------------------
@@ -107,9 +111,10 @@ def _get_reference_file(ref_name):
         return addin_file
 
     # Then try to find the dll in windows SDK
-    fw_module_file = _get_framework_module(ref_name)
-    if fw_module_file:
-        return fw_module_file
+    if FRAMEWORK_DIRS:
+        fw_module_file = _get_framework_module(ref_name)
+        if fw_module_file:
+            return fw_module_file
 
     # Lastly try to find location of assembly if already loaded
     loaded_asm = find_loaded_asm(ref_name)
