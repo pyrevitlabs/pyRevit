@@ -1,5 +1,6 @@
 __doc__ = 'pick the source object that has the element graphics override you like to match to, '\
-          'and then pick the destination objects one by one and this tool will match the graphics.'
+          'and then pick the destination objects one by one and this tool will match the graphics.'\
+          '\n\nShift-Click: Shows Match Config window.'
 
 from revitutils import doc, uidoc
 from scriptutils import this_script
