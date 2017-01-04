@@ -4,8 +4,9 @@
         {
         "name": "RevitPythonWrapper",
         "description": "A Python Wrapper For the Revit API",
-        "url": "https://github.com/gtalarico/revitpythonwrapper.git"
-        "website": "http://revitpythonwrapper.readthedocs.io/en/latest/"
+        "url": "https://github.com/gtalarico/revitpythonwrapper.git",
+        "website": "http://revitpythonwrapper.readthedocs.io/en/latest/",
+        "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png"
         }
    ]
 }
