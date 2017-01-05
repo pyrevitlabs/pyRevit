@@ -5,9 +5,12 @@ import os.path as op
 import json
 
 from pyrevit.userconfig import user_config
+from scriptutils import logger
+
+logger.info('----------------------- WORK IN PROGRESS ---------------------------')
+
 
 ext_dirs = user_config.get_ext_root_dirs()
-
 ext_def_dict = {'extensions':[]}
 
 for ext_dir in ext_dirs:
