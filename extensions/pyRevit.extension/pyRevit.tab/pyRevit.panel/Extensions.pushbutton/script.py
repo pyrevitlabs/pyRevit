@@ -1,6 +1,5 @@
 __doc__ = 'Add or remove pyRevit extensions.'
 
-import os
 import os.path as op
 import json
 
@@ -11,7 +10,7 @@ logger.info('----------------------- WORK IN PROGRESS --------------------------
 
 
 ext_dirs = user_config.get_ext_root_dirs()
-ext_def_dict = {'extensions':[]}
+ext_def_dict = {'extensions': []}
 
 for ext_dir in ext_dirs:
     ext_def_file = op.join(ext_dir, 'extensions.json')
