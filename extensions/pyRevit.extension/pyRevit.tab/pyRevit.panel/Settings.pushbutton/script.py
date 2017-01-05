@@ -2,8 +2,8 @@ import os
 
 from pyrevit import HOST_APP
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
+from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
-from pyrevit.versionmgr.addinfiles import get_addinfiles_state, set_addinfiles_state
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
