@@ -10,11 +10,17 @@ logger.info('----------------------- WORK IN PROGRESS --------------------------
 for plugin_ext in extpackages.get_ext_packages():
     print """Extension:
     {name}
+    Type: {type}
     {description}
 
     Extension git repo: {url}
     Extension website: {website}
-    Extension website: {image}
+    Extension image: {image}
 
 
-    """.format(**plugin_ext)
+    """.format(type=plugin_ext.type,
+               name=plugin_ext.name,
+               description=plugin_ext.description,
+               url=plugin_ext.url,
+               website=plugin_ext.website,
+               image=plugin_ext.image)

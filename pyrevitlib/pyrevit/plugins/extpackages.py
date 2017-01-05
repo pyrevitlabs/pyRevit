@@ -25,13 +25,8 @@ class ExtensionPackage:
             self.website = info_dict['website']
             self.image = info_dict['image']
         except Exception as ext_info_err:
+            self.website = self.image = None
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
-
-    def keys(self):
-        return self.__dict__.keys()
-
-    def __getitem__(self, item):
-        return self.__dict__[item]
 
     @property
     def is_installed(self):
