@@ -1,0 +1,1 @@
+PLUGIN_EXT_DEF_FILE = 'extensions.json'

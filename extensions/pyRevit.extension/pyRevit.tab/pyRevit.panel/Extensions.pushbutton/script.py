@@ -1,24 +1,13 @@
 __doc__ = 'Add or remove pyRevit extensions.'
 
-import os.path as op
-import json
-
-from pyrevit.userconfig import user_config
 from scriptutils import logger
+from pyrevit.plugins import extpackages
+
 
 logger.info('----------------------- WORK IN PROGRESS ---------------------------')
 
 
-ext_dirs = user_config.get_ext_root_dirs()
-ext_def_dict = {'extensions': []}
-
-for ext_dir in ext_dirs:
-    ext_def_file = op.join(ext_dir, 'extensions.json')
-    if op.exists(ext_def_file):
-        with open(ext_def_file, 'r') as ext_def:
-            ext_def_dict['extensions'].extend(json.load(ext_def)['extensions'])
-
-for ext in ext_def_dict['extensions']:
+for plugin_ext in extpackages.get_ext_packages():
     print """Extension:
     {name}
     {description}
@@ -28,4 +17,4 @@ for ext in ext_def_dict['extensions']:
     Extension website: {image}
 
 
-    """.format(**ext)
+    """.format(**plugin_ext)
