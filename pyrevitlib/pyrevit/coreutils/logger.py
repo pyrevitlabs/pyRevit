@@ -26,9 +26,9 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:w
 
 
 FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
-FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED) 
+FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_APP_DIR, FILE_LOG_FILENAME)
-FILE_LOGGING_STATUS = True
+FILE_LOGGING_STATUS = False
 
 # Setting session-wide debug/verbose status so other individual scripts know about it.
 # individual scripts are run at different time and the level settings need to be set inside current host session
