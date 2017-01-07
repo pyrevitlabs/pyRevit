@@ -10,7 +10,7 @@ from pyrevit.extensions import PUSH_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX
 from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT, DEFAULT_LAYOUT_FILE_NAME
 from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX
 from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE, DEFAULT_OFF_ICON_FILE
-from pyrevit.extensions import UI_EXTENSION_POSTFIX, LIB_EXTENSION_POSTFIX
+from pyrevit.extensions import ExtensionTypes
 from pyrevit.extensions import CSHARP_SCRIPT_FILE_FORMAT
 from pyrevit.extensions.genericcomps import GenericComponent, GenericUIContainer, GenericUICommand
 from pyrevit.versionmgr import PYREVIT_VERSION
@@ -155,7 +155,7 @@ class Tab(GenericUIContainer):
 # UI Tools extension class
 # ----------------------------------------------------------------------------------------------------------------------
 class Extension(GenericUIContainer):
-    type_id = UI_EXTENSION_POSTFIX
+    type_id = ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
     def __init__(self):
@@ -202,7 +202,7 @@ class Extension(GenericUIContainer):
 # library extension class
 # ----------------------------------------------------------------------------------------------------------------------
 class LibraryExtension(GenericComponent):
-    type_id = LIB_EXTENSION_POSTFIX
+    type_id = ExtensionTypes.LIB_EXTENSION.POSTFIX
 
     def __init__(self):
         GenericComponent.__init__(self)

@@ -3,6 +3,25 @@
 LIB_EXTENSION_POSTFIX = '.lib'
 UI_EXTENSION_POSTFIX = '.extension'
 
+
+# noinspection PyClassHasNoInit
+class UIExtensionType:
+    ID = 'uiextension'
+    POSTFIX = '.extension'
+
+
+# noinspection PyClassHasNoInit
+class LIBExtensionType:
+    ID = 'libextension'
+    POSTFIX = '.lib'
+
+
+# noinspection PyClassHasNoInit
+class ExtensionTypes:
+    UI_EXTENSION = UIExtensionType
+    LIB_EXTENSION = LIBExtensionType
+
+
 # UI_EXTENSION_POSTFIX components
 # ----------------------------------------------------------------------------------------------------------------------
 TAB_POSTFIX = '.tab'
