@@ -42,6 +42,9 @@ class ExtensionPackage:
             self.website = self.image = None
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
 
+    def __repr__(self):
+        return '<ExtensionPackage object. name \'{}\' url \'{}\'>'.format(self.name, self.url)
+
     @property
     def ext_dirname(self):
         return self.name + self.type.POSTFIX
@@ -51,17 +54,32 @@ class ExtensionPackage:
         for ext_dir in user_config.get_ext_root_dirs():
             for sub_dir in os.listdir(ext_dir):
                 if op.isdir(op.join(ext_dir, sub_dir)) and sub_dir == self.ext_dirname:
-                    return op.isdir(op.join(ext_dir, sub_dir))
+                    return op.join(ext_dir, sub_dir)
 
-        return False
+        return ''
 
     def install(self, install_dir):
-        clone_path = op.join(install_dir, self.ext_dirname)
-        git.git_clone(self.url, clone_path)
-        self.installed_dir = clone_path
+        is_installed_path = self.is_installed
+        if is_installed_path:
+            raise PyRevitException('Extension already installed under: {}'.format(is_installed_path))
+
+        if self.url:
+            clone_path = op.join(install_dir, self.ext_dirname)
+            git.git_clone(self.url, clone_path)
+            self.installed_dir = clone_path
+        else:
+            raise PyRevitException('Extension does not have url and can not be installed.')
 
     def remove(self):
-        shutil.rmtree(self.installed_dir)
+        if self.url:
+            dir_to_remove = self.is_installed
+            if dir_to_remove:
+                shutil.rmtree(dir_to_remove)
+                logger.debug('Successfully removed extension from: {}'.format(dir_to_remove))
+            else:
+                raise PyRevitException('Error removing extension. Can not find installed directory.')
+        else:
+            raise PyRevitException('Can not remove extension that does not have url and can not be installed later.')
 
 
 class ExtensionPackageDefinitionFile:
