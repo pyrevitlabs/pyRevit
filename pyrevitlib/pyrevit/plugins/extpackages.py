@@ -58,6 +58,10 @@ class ExtensionPackage:
 
         return ''
 
+    @property
+    def is_removable(self):
+        return True if self.url else False
+
     def install(self, install_dir):
         is_installed_path = self.is_installed
         if is_installed_path:
@@ -71,7 +75,7 @@ class ExtensionPackage:
             raise PyRevitException('Extension does not have url and can not be installed.')
 
     def remove(self):
-        if self.url:
+        if self.is_removable:
             dir_to_remove = self.is_installed
             if dir_to_remove:
                 shutil.rmtree(dir_to_remove)
