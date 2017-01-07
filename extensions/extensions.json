@@ -2,7 +2,7 @@
 "extensions":
     [
         {
-        "type": "libextension",
+        "type": "libextension"
         "name": "RevitPythonWrapper",
         "description": "A Python Wrapper For the Revit API",
         "url": "https://github.com/gtalarico/revitpythonwrapper.git",
