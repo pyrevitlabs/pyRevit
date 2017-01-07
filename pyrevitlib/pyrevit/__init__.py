@@ -197,12 +197,15 @@ class PyRevitException(Exception):
     """
     def __str__(self):
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
-        tb_report = traceback.format_tb(sys.exc_traceback)[0]
-        if self.args:
-            message = self.args[0]
-            return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
-        else:
-            return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
+        try:
+            tb_report = traceback.format_tb(sys.exc_traceback)[0]
+            if self.args:
+                message = self.args[0]
+                return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
+            else:
+                return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
+        except:
+            return Exception.__str__(self)
 
 
 class PyRevitIOError(PyRevitException):
