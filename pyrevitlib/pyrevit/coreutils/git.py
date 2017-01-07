@@ -10,7 +10,7 @@ import clr
 import importlib
 import os.path as op
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
@@ -67,7 +67,7 @@ def _make_pull_options(repo_info):
     pull_ops = libgit.PullOptions()
     pull_ops.FetchOptions = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
-        logger.debug('Username and password are available but cant\' log private info. Making Credentials handler.')
+        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
         pull_ops.FetchOptions.CredentialsProvider = _get_credentials_hndlr(repo_info.username, repo_info.password)
     return pull_ops
 
@@ -76,9 +76,18 @@ def _make_fetch_options(repo_info):
     logger.debug('Making fetch options: {}'.format(repo_info))
     fetch_ops = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
-        logger.debug('Username and password are available but cant\' log private info. Making Credentials handler.')
+        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
         fetch_ops.CredentialsProvider = _get_credentials_hndlr(repo_info.username, repo_info.password)
     return fetch_ops
+
+
+def _make_clone_options(username=None, password=None):
+    logger.debug('Making clone options.')
+    clone_ops = libgit.CloneOptions()
+    if username and password:
+        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
+        clone_ops.CredentialsProvider = _get_credentials_hndlr(username, password)
+    return clone_ops
 
 
 def _make_pull_signature():
@@ -124,3 +133,12 @@ def git_fetch(repo_info):
 
     except Exception as fetch_err:
         logger.error('Failed git fetch: {} | {}'.format(repo_info.directory, fetch_err))
+
+
+def git_clone(repo_url, clone_dir, username=None, password=None):
+    try:
+        libgit.Repository.Clone(repo_url, clone_dir, _make_clone_options(username=username,
+                                                                         password=password))
+        logger.debug('Completed git clone: {} @ {}'.format(repo_url, clone_dir))
+    except Exception as clone_err:
+        raise PyRevitException('Error cloning repo: {} to {} | {}'.format(repo_url, clone_dir, clone_err))
