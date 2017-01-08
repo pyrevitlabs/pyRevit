@@ -130,7 +130,7 @@ def git_pull(repo_info):
         return RepoInfo(repo)
 
     except Exception as pull_err:
-        logger.error('Failed git pull: {} | {}'.format(repo_info.directory, pull_err))
+        logger.debug('Failed git pull: {} | {}'.format(repo_info.directory, pull_err))
         _process_git_error(pull_err)
 
 
@@ -144,7 +144,7 @@ def git_fetch(repo_info):
         return RepoInfo(repo)
 
     except Exception as fetch_err:
-        logger.error('Failed git fetch: {} | {}'.format(repo_info.directory, fetch_err))
+        logger.debug('Failed git fetch: {} | {}'.format(repo_info.directory, fetch_err))
         _process_git_error(fetch_err)
 
 
