@@ -27,9 +27,7 @@ import pyrevit.versionmgr.updater as updater
 import pyrevit.versionmgr.upgrade as upgrade
 from pyrevit.userconfig import user_config
 
-
-# noinspection PyUnresolvedReferences
-logger = get_logger(__commandname__)
+from scriptutils import logger
 
 
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
@@ -43,6 +41,7 @@ def _check_connection():
         return True
     else:
         return False
+
 
 def _check_for_updates():
     if _check_connection():
@@ -64,6 +63,7 @@ def __selfinit__(script_cmp, commandbutton, __rvt__):
             commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
     except:
         return
+
 
 if __name__ == '__main__':
     # collect a list of all repos to be updates
