@@ -124,12 +124,21 @@ file_hndlr.setLevel(RUNTIME_FILE_LOGGING_LEVEL)
 logging.setLoggerClass(LoggerWrapper)
 
 
+loggers = {}
+
+
 def get_logger(logger_name):
-    logger = logging.getLogger(logger_name)    # type: LoggerWrapper
-    logger.addHandler(stdout_hndlr)
-    if FILE_LOGGING_STATUS:
-        logger.addHandler(file_hndlr)
-    return logger
+    if loggers.get(logger_name):
+        return loggers.get(logger_name)
+    else:
+        logger = logging.getLogger(logger_name)    # type: LoggerWrapper
+        logger.addHandler(stdout_hndlr)
+        logger.propagate = False
+        if FILE_LOGGING_STATUS:
+            logger.addHandler(file_hndlr)
+
+        loggers.update(dict(logger_name=logger))
+        return logger
 
 
 def set_file_logging(status):
