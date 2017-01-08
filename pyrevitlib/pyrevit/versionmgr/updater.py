@@ -27,6 +27,26 @@ def _fetch_remote(remote, repo_info):
     git.git_fetch(repo_info)
 
 
+def _compare_branch_heads(repo_info):
+    repo = repo_info.repo
+    repo_branches = repo.Branches
+
+    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+
+    for branch in repo_branches:
+        if not branch.IsRemote:
+            try:
+                if branch.TrackedBranch:
+                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
+                                                                    branch.TrackedBranch.CanonicalName))
+                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
+                    return hist_div
+            except Exception as compare_err:
+                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
+                                                                                 repo,
+                                                                                 str(compare_err).replace('\n', '')))
+
+
 def get_thirdparty_ext_repos():
     # get a list of all directories that could include extensions
     extensions = []
@@ -66,38 +86,41 @@ def update_pyrevit(repo_info):
         repo_info.username = username
         repo_info.password = password
 
-    updated_repo_info = git.git_pull(repo_info)
+    try:
+        updated_repo_info = git.git_pull(repo_info)
+        logger.debug('Successfully updated repo: {}'.format(updated_repo_info.directory))
+        return updated_repo_info
 
-    if not updated_repo_info:
+    except git.PyRevitGitAuthenticationError:
+        logger.error('Can not login to git repository to get updates.')
+        return False
+
+    except:
         logger.error('Failed updating: {}'.format(repo_info.directory))
         return False
-    else:
-        logger.debug('Successfully updated repo: {}'.format(repo_info.directory))
-        return updated_repo_info
 
 
 def has_pending_updates(repo_info):
     repo = repo_info.repo
+    at_least_one_fetch_was_successful = False
+
     logger.debug('Fetching updates for: {}'.format(repo_info.directory))
-
     for remote in repo.Network.Remotes:
-        _fetch_remote(remote, repo_info)
+        try:
+            _fetch_remote(remote, repo_info)
+            at_least_one_fetch_was_successful = True
 
-    repo_branches = repo.Branches
-    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+        except git.PyRevitGitAuthenticationError:
+            logger.debug('Failed fetching updates. Can not login to repo to get updates: {}'.format(repo_info))
+            continue
 
-    for branch in repo_branches:
-        if not branch.IsRemote:
-            try:
-                if branch.TrackedBranch:
-                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
-                                                                    branch.TrackedBranch.CanonicalName))
-                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
-                    if hist_div.BehindBy > 0:
-                        return True
-            except Exception as compare_err:
-                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
-                                                                                 repo,
-                                                                                 str(compare_err).replace('\n', '')))
+        except:
+            logger.debug('Failed fetching updates: {}'.format(repo_info))
+            continue
+
+    if at_least_one_fetch_was_successful:
+        hist_div = _compare_branch_heads(repo_info)
+        if hist_div.BehindBy > 0:
+            return True
 
     return False
