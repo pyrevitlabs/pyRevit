@@ -34,6 +34,10 @@ logger = get_logger(__name__)
 libgit = importlib.import_module(GIT_LIB)
 
 
+class PyRevitGitAuthenticationError(PyRevitException):
+    pass
+
+
 class RepoInfo:
     """
     Generic repo wrapper for passing repository information to other modules
@@ -95,6 +99,14 @@ def _make_pull_signature():
     return libgit.Signature(HOST_APP.username, HOST_APP.username, DateTimeOffset(DateTime.Now))
 
 
+def _process_git_error(exception_err):
+    exception_msg = str(exception_err)
+    if '401' in exception_msg:
+        raise PyRevitGitAuthenticationError(exception_msg)
+    else:
+        raise PyRevitException(exception_msg)
+
+
 def get_repo(repo_dir):
     """
 
@@ -119,7 +131,7 @@ def git_pull(repo_info):
 
     except Exception as pull_err:
         logger.error('Failed git pull: {} | {}'.format(repo_info.directory, pull_err))
-        return None
+        _process_git_error(pull_err)
 
 
 def git_fetch(repo_info):
@@ -133,6 +145,7 @@ def git_fetch(repo_info):
 
     except Exception as fetch_err:
         logger.error('Failed git fetch: {} | {}'.format(repo_info.directory, fetch_err))
+        _process_git_error(fetch_err)
 
 
 def git_clone(repo_url, clone_dir, username=None, password=None):
@@ -141,4 +154,5 @@ def git_clone(repo_url, clone_dir, username=None, password=None):
                                                                          password=password))
         logger.debug('Completed git clone: {} @ {}'.format(repo_url, clone_dir))
     except Exception as clone_err:
-        raise PyRevitException('Error cloning repo: {} to {} | {}'.format(repo_url, clone_dir, clone_err))
+        logger.debug('Error cloning repo: {} to {} | {}'.format(repo_url, clone_dir, clone_err))
+        _process_git_error(clone_err)
