@@ -362,6 +362,11 @@ def show_file_in_explorer(file_path):
     subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(file_path)))
 
 
+def open_folder_in_explorer(folder_path):
+    import subprocess
+    subprocess.Popen(r'explorer /open,"{}"'.format(os.path.normpath(folder_path)))
+
+
 def open_url(url):
     """Opens url in a new tab in the default web browser."""
     import webbrowser
