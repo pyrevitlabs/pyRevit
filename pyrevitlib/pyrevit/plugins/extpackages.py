@@ -29,7 +29,6 @@ class ExtensionPackage:
             self.description = info_dict['description']
             self.url = info_dict['url']
 
-            self.installed_dir = None
             self.def_file_path = def_file_path
         except KeyError as ext_info_err:
             raise PyRevitException('Required plugin ext info not available. | {}'.format(ext_info_err))
@@ -59,8 +58,21 @@ class ExtensionPackage:
         return ''
 
     @property
+    def installed_dir(self):
+        return self.is_installed
+
+    @property
     def is_removable(self):
         return True if self.url else False
+
+    @property
+    def version(self):
+        try:
+            if self.is_installed:
+                ext_pkg_repo = git.get_repo(self.installed_dir)
+                return ext_pkg_repo.last_commit_hash
+        except:
+            return None
 
     def install(self, install_dir):
         is_installed_path = self.is_installed
@@ -70,7 +82,6 @@ class ExtensionPackage:
         if self.url:
             clone_path = op.join(install_dir, self.ext_dirname)
             git.git_clone(self.url, clone_path)
-            self.installed_dir = clone_path
         else:
             raise PyRevitException('Extension does not have url and can not be installed.')
 
