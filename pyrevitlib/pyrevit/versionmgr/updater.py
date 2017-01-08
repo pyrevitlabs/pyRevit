@@ -92,7 +92,7 @@ def update_pyrevit(repo_info):
         return updated_repo_info
 
     except git.PyRevitGitAuthenticationError:
-        logger.error('Can not login to git repository to get updates.')
+        logger.error('Can not login to git repository to get updates: {}'.format(repo_info))
         return False
 
     except:
