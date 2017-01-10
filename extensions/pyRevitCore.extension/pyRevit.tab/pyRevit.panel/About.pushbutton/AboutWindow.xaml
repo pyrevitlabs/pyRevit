@@ -1,6 +1,10 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Foreground="#000" Height="550" Width="650" ShowInTaskbar="False" BorderThickness="0" Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center" UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None" KeyDown="handleclick" MouseDown="handleclick">
+        Title="MainWindow" Foreground="#000" Height="550" Width="650" ShowInTaskbar="False" BorderThickness="0"
+        Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0"
+        ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center"
+        UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None"
+        KeyDown="handleclick" MouseDown="handleclick" Activated="onactivated">
     <Border BorderThickness="1" CornerRadius="15" BorderBrush="#dfdfdf">
         <Border.Background>
             <SolidColorBrush Color="#fff"/>

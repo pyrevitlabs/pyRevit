@@ -53,6 +53,11 @@ class AboutWindow(WPFWindow):
     def handleclick(self, sender, args):
         self.Close()
 
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def onactivated(self, sender, args):
+        pass
+
 
 if __name__ == '__main__':
     AboutWindow('AboutWindow.xaml').ShowDialog()
