@@ -27,26 +27,6 @@ def _fetch_remote(remote, repo_info):
     git.git_fetch(repo_info)
 
 
-def _compare_branch_heads(repo_info):
-    repo = repo_info.repo
-    repo_branches = repo.Branches
-
-    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
-
-    for branch in repo_branches:
-        if not branch.IsRemote:
-            try:
-                if branch.TrackedBranch:
-                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
-                                                                    branch.TrackedBranch.CanonicalName))
-                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
-                    return hist_div
-            except Exception as compare_err:
-                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
-                                                                                 repo,
-                                                                                 str(compare_err).replace('\n', '')))
-
-
 def get_thirdparty_ext_repos():
     # get a list of all directories that could include extensions
     extensions = []
@@ -119,7 +99,7 @@ def has_pending_updates(repo_info):
             continue
 
     if at_least_one_fetch_was_successful:
-        hist_div = _compare_branch_heads(repo_info)
+        hist_div = git.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
             return True
 

@@ -156,3 +156,23 @@ def git_clone(repo_url, clone_dir, username=None, password=None):
     except Exception as clone_err:
         logger.debug('Error cloning repo: {} to {} | {}'.format(repo_url, clone_dir, clone_err))
         _process_git_error(clone_err)
+
+
+def compare_branch_heads(repo_info):
+    repo = repo_info.repo
+    repo_branches = repo.Branches
+
+    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+
+    for branch in repo_branches:
+        if not branch.IsRemote:
+            try:
+                if branch.TrackedBranch:
+                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
+                                                                    branch.TrackedBranch.CanonicalName))
+                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
+                    return hist_div
+            except Exception as compare_err:
+                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
+                                                                                 repo,
+                                                                                 str(compare_err).replace('\n', '')))
