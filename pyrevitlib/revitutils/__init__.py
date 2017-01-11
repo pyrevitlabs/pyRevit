@@ -21,6 +21,7 @@ doc = uidoc = selection = None
 try:
     doc = HOST_APP.uiapp.ActiveUIDocument.Document
     uidoc = HOST_APP.uiapp.ActiveUIDocument
+    all_docs = HOST_APP.uiapp.Application.Documents
     selection = CurrentElementSelection(doc, uidoc)
 except:
     pass
