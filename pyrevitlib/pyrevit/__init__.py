@@ -174,6 +174,7 @@ VERSION_MINOR = 0
 # user env paths
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
+USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
 
 # pyrevit temp file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
