@@ -14,12 +14,20 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,30,0,10">
+                <TextBlock x:Name="print_l" TextWrapping="WrapWithOverflow" Margin="0,30,0,10">
                     Select Sheets to be Printed:
                 </TextBlock>
-                <Button x:Name="print_b" Content="Print Selected Sheets (To: )" Click="print_sheets" HorizontalAlignment="Right" Width="350px" Margin="0,0,0,10"/>
+                <DockPanel Margin="0,0,0,10" LastChildFill="False">
+                    <Button x:Name="print_b" Content="Print Selected Sheets (Single)" IsEnabled="False"
+                            Click="print_sheets" Width="300" DockPanel.Dock="Left"/>
+                    <Button x:Name="printcombined_b" Content="Print Selected Sheets (Combined)" IsEnabled="False"
+                            Click="print_sheetscombined" Width="300" DockPanel.Dock="Right"/>
+                </DockPanel>
+                <GroupBox Header="Print Settings:" Margin="0,0,0,15">
+                    <CheckBox x:Name="collate_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Collate</CheckBox>
+                </GroupBox>
             </StackPanel>
-            <ListView x:Name="linkedsheets_lb" DockPanel.Dock="Bottom">
+            <ListView x:Name="linkedsheets_lb" DockPanel.Dock="Bottom" SelectionChanged="selection_changed">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Sheet Number" DisplayMemberBinding="{Binding SheetNumber}"/>
