@@ -5,6 +5,8 @@
         "type": "uiextension",
         "name": "pyRevitTools",
         "description": "IronPython Scripts for Autodesk Revit",
+        "author": "Ehsan Iran-Nejad",
+        "author-url": "https://keybase.io/ein",
         "url": "",
         "website": "",
         "image" : ""
@@ -13,6 +15,8 @@
         "type": "libextension",
         "name": "RevitPythonWrapper",
         "description": "A Python Wrapper For the Revit API",
+        "author": "Gui Talarico",
+        "author-url": "https://github.com/gtalarico",
         "url": "https://github.com/gtalarico/revitpythonwrapper.git",
         "website": "http://revitpythonwrapper.readthedocs.io/en/latest/",
         "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png"

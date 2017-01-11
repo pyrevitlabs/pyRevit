@@ -31,6 +31,8 @@ class ExtensionPackageData:
         self.Version = 'N/I'
         self.Installed = 'Yes' if ext_pkg.is_installed else 'No'
 
+        self.Author = ext_pkg.author
+
 
 class ExtensionsWindow(WPFWindow):
     def __init__(self, xaml_file_name):

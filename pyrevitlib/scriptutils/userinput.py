@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 
 class WPFWindow(Window):
     def __init__(self, xaml_file):
+        self.Parent = self
         if not op.exists(xaml_file):
             # noinspection PyUnresolvedReferences
             wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
