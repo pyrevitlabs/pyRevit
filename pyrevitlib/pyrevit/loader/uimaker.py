@@ -27,7 +27,8 @@ def _make_button_tooltip(button):
     tooltip = button.doc_string
     if tooltip:
         tooltip += '\n\nBundle Name:\n{0}'.format(button.name)
-        tooltip += '\n\nAuthor:\n{0}'.format(button.author)
+        if button.author:
+            tooltip += '\n\nAuthor:\n{0}'.format(button.author)
     return tooltip
 
 
