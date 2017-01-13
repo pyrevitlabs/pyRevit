@@ -95,6 +95,7 @@ def togglestate():
         this_script.ui_button.set_icon(off_icon)
 
 def __selfinit__(script_cmp, commandbutton, __rvt__):
+    # fixme: correct icon
     __rvt__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
     __rvt__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
 
