@@ -75,7 +75,7 @@ class PyRevitScriptUtils:
     def get_universal_data_file(file_id, file_ext):
         """Returns a filename to be used by a user script to store data.
         These files are not marked by host Revit version and could be shared between all Revit versions and instances.
-        Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up at Revit restart.
+        Data files are saved in app directory and are NOT cleaned up at Revit restart.
         Script should manage cleaning up these data files.
         """
         from pyrevit.coreutils.appdata import get_universal_data_file
@@ -85,7 +85,7 @@ class PyRevitScriptUtils:
     @staticmethod
     def get_data_file(file_id, file_ext):
         """Returns a filename to be used by a user script to store data.
-        Data files are saved in PYREVIT_APP_DIR and are NOT cleaned up at Revit restart.
+        Data files are saved in app directory and are NOT cleaned up at Revit restart.
         Script should manage cleaning up these data files.
         """
         from pyrevit.coreutils.appdata import get_data_file
@@ -95,7 +95,7 @@ class PyRevitScriptUtils:
     @staticmethod
     def get_instance_data_file(file_id, file_ext):
         """Returns a filename to be used by a user script to store data under current Revit instance.
-        Instance data files are saved in PYREVIT_APP_DIR and are cleaned up at Revit restart.
+        Instance data files are saved in app directory and are cleaned up at Revit restart.
         """
         from pyrevit.coreutils.appdata import get_instance_data_file
         script_file_id = '{}_{}'.format(COMMAND_NAME, file_id)

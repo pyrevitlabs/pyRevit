@@ -21,7 +21,6 @@ LOADER_DIR = op.dirname(op.dirname(__file__))
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
 sys.path.append(ADDIN_DIR)
-sys.path.append(appdata.PYREVIT_APP_DIR)
 
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
 INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')

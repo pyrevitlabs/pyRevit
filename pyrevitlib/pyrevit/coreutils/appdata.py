@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit import PYREVIT_APP_DIR, PyRevitException, FIRST_LOAD
+from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, PyRevitException, FIRST_LOAD
 from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL, PYREVIT_FILE_PREFIX, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
@@ -13,13 +13,6 @@ from System.IO import IOException
 logger = get_logger(__name__)
 
 
-if not op.isdir(PYREVIT_APP_DIR):
-    try:
-        os.mkdir(PYREVIT_APP_DIR)
-    except (OSError, IOException) as err:
-        raise PyRevitException('Can not access pyRevit folder at: {} | {}'.format(PYREVIT_APP_DIR, err))
-
-
 def _remove_app_file(file_path):
     try:
         os.remove(file_path)
@@ -27,21 +20,29 @@ def _remove_app_file(file_path):
         logger.error('Error file cleanup on: {} | {}'.format(file_path, osremove_err))
 
 
-def _list_app_files(prefix, file_ext):
+def _list_app_files(prefix, file_ext, universal=False):
     requested_files = []
-    for appdata_file in os.listdir(PYREVIT_APP_DIR):
+
+    if universal:
+        appdata_folder = PYREVIT_APP_DIR
+    else:
+        appdata_folder = PYREVIT_VERSION_APP_DIR
+
+    for appdata_file in os.listdir(appdata_folder):
         if appdata_file.startswith(prefix) and appdata_file.endswith(file_ext):
-            requested_files.append(op.join(PYREVIT_APP_DIR, appdata_file))
+            requested_files.append(op.join(appdata_folder, appdata_file))
 
     return requested_files
 
 
 def _get_app_file(file_id, file_ext, filename_only=False, stamped=False, universal=False):
+    appdata_folder = PYREVIT_VERSION_APP_DIR
     file_prefix = PYREVIT_FILE_PREFIX
 
     if stamped:
         file_prefix = PYREVIT_FILE_PREFIX_STAMPED
     elif universal:
+        appdata_folder = PYREVIT_APP_DIR
         file_prefix = PYREVIT_FILE_PREFIX_UNIVERSAL
 
     full_filename = '{}_{}.{}'.format(file_prefix, file_id, file_ext)
@@ -49,7 +50,7 @@ def _get_app_file(file_id, file_ext, filename_only=False, stamped=False, univers
     if filename_only:
         return full_filename
     else:
-        return op.join(PYREVIT_APP_DIR, full_filename)
+        return op.join(appdata_folder, full_filename)
 
 
 def get_universal_data_file(file_id, file_ext, name_only=False):
@@ -106,8 +107,11 @@ def is_pyrevit_data_file(file_name):
     return PYREVIT_FILE_PREFIX in file_name
 
 
-def is_file_available(file_name, file_ext):
-    full_filename = op.join(PYREVIT_APP_DIR, make_canonical_name(file_name, file_ext))
+def is_file_available(file_name, file_ext, universal=False):
+    if universal:
+        full_filename = op.join(PYREVIT_APP_DIR, make_canonical_name(file_name, file_ext))
+    else:
+        full_filename = op.join(PYREVIT_VERSION_APP_DIR, make_canonical_name(file_name, file_ext))
     if op.exists(full_filename):
         return full_filename
     else:
@@ -122,8 +126,8 @@ def is_data_file_available(file_id, file_ext):
         return False
 
 
-def list_data_files(file_ext):
-    return _list_app_files(PYREVIT_FILE_PREFIX, file_ext)
+def list_data_files(file_ext, universal=False):
+    return _list_app_files(PYREVIT_FILE_PREFIX, file_ext, universal=universal)
 
 
 def list_session_data_files(file_ext):

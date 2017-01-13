@@ -176,8 +176,18 @@ USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
 
-# pyrevit temp file directory
+# pyrevit file directory
 PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
+PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
+
+for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
+    if not op.isdir(pyrvt_app_dir):
+        try:
+            os.mkdir(pyrvt_app_dir)
+            sys.path.append(pyrvt_app_dir)
+        except (OSError, IOException) as err:
+            raise PyRevitException('Can not access pyRevit folder at: {} | {}'.format(pyrvt_app_dir, err))
+
 
 # pyrevit standard files prefix
 PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
