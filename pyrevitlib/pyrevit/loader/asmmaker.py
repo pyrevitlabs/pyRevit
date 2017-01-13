@@ -1,4 +1,5 @@
 import clr
+import os.path as op
 from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME
@@ -85,7 +86,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     # get assembly builder
     asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(win_asm_name,
                                                                 AssemblyBuilderAccess.RunAndSave,
-                                                                appdata.PYREVIT_APP_DIR)
+                                                                op.dirname(ext_asm_file_path))
 
     # get module builder
     module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name, ext_asm_full_file_name)
