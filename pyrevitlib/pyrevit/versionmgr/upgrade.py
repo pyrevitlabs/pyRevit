@@ -23,7 +23,7 @@ def _cleanup_cache_files():
     commit message:   Organized data files per Revit version in appdata folder
     commit hash:      44dd765c0f662f3faf5a40b92e3c5173804be37f
     """
-    cache_file_exts = ['pickle', 'json', 'pym']
+    cache_file_exts = ['pickle', 'json', 'log', 'pym']
     for cache_file_ext in cache_file_exts:
         for cache_file_path in appdata.list_data_files(file_ext=cache_file_ext, universal=True):
                 appdata.garbage_data_file(cache_file_path)
