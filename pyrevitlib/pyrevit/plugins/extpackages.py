@@ -40,7 +40,8 @@ class ExtensionPackage:
             self.author = info_dict['author']
             self.author_profile = info_dict['author-url']
         except Exception as ext_info_err:
-            self.website = self.image = None
+            self.website = self.url.replace('.git','')
+            self.image = None
             self.author = self.author_profile = None
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
 
