@@ -88,10 +88,16 @@ class ExtensionsWindow(WPFWindow):
         # Update the name
         self.ext_name_l.Content = ext_pkg_data.Name
         self.ext_desc_l.Text = '{}  '.format(ext_pkg_data.Desciption)
+
         # Update the description and web link
         if ext_pkg_data.URL:
             self.ext_gitlink_t.Text = '({})'.format(ext_pkg_data.URL)
             self.ext_gitlink_hl.NavigateUri = Uri(ext_pkg_data.URL)
+
+        # Update the author and profile link
+        if ext_pkg_data.Author:
+            self.ext_author_t.Text = ext_pkg_data.Author
+            self.ext_authorlink_hl.NavigateUri = Uri(ext_pkg_data.ext_pkg.author_profile)
 
         # Update Installed folder info
         if ext_pkg_data.ext_pkg.is_installed:
@@ -138,7 +144,7 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def handle_url_click(self, sender, args):
-        open_url(self.ext_gitlink_hl.NavigateUri.AbsoluteUri)
+        open_url(sender.NavigateUri.AbsoluteUri)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
