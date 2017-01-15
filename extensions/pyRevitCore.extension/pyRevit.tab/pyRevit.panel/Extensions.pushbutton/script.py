@@ -16,46 +16,34 @@ import System.Windows
 import System.Windows.Controls as wpfControls
 
 
-class ExtensionPackageListData:
-    def __init__(self, ext_pkg):
+class ExtensionPackageListItem:
+    def __init__(self, extension_package):
         """
 
         Args:
-            ext_pkg (pyrevit.plugins.extpackages.ExtensionPackage):
+            extension_package (pyrevit.plugins.extpackages.ExtensionPackage):
         """
 
-        self.ext_pkg = ext_pkg
+        self.ext_pkg = extension_package
         self.Type = 'Unknown'
 
-        if ext_pkg.type == extpackages.ExtensionTypes.LIB_EXTENSION:
+        if self.ext_pkg.type == extpackages.ExtensionTypes.LIB_EXTENSION:
             self.Type = 'IronPython Library'
-        elif ext_pkg.type == extpackages.ExtensionTypes.UI_EXTENSION:
+        elif self.ext_pkg.type == extpackages.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
-        self.Name = ext_pkg.name
-        self.Desciption = ext_pkg.description
-        self.Author = ext_pkg.author
+        self.Name = self.ext_pkg.name
+        self.Desciption = self.ext_pkg.description
+        self.Author = self.ext_pkg.author
 
-        self.GitURL = ext_pkg.url
-        self.URL = ext_pkg.website
+        self.GitURL = self.ext_pkg.url
+        self.URL = self.ext_pkg.website
 
-        self.Installed = 'Yes' if ext_pkg.is_installed else 'No'
-        if ext_pkg.is_installed:
-            self.Status = 'Enabled' if not self.config.disabled else 'Disabled'
+        self.Installed = 'Yes' if self.ext_pkg.is_installed else 'No'
+        if self.ext_pkg.is_installed:
+            self.Status = 'Enabled' if not self.ext_pkg.config.disabled else 'Disabled'
         else:
             self.Status = '--'
-
-
-    @property
-    def config(self):
-        try:
-            return user_config.get_section(self.ext_pkg.ext_dirname)
-        except:
-            cfg_section = user_config.add_section(self.ext_pkg.ext_dirname)
-            self.config.disabled = False
-            self.config.private_repo = False
-            self.config.username = self.config.password = ''
-            return cfg_section
 
 
 class InstallPackageMenuItem(wpfControls.MenuItem):
@@ -79,55 +67,54 @@ class ExtensionsWindow(WPFWindow):
     def _setup_ext_pkg_ui(self, ext_pkgs_list):
         cur_exts_list = []
         for plugin_ext in ext_pkgs_list:
-            cur_exts_list.append(ExtensionPackageListData(plugin_ext))
+            cur_exts_list.append(ExtensionPackageListItem(plugin_ext))
 
         self.extpkgs_lb.ItemsSource = cur_exts_list
         self.extpkgs_lb.SelectedIndex = 0
 
-    def _update_ext_info_panel(self, ext_pkg_data):
+    def _update_ext_info_panel(self, ext_pkg_item):
         # Update the name
-        self.ext_name_l.Content = ext_pkg_data.Name
-        self.ext_desc_l.Text = '{}  '.format(ext_pkg_data.Desciption)
+        self.ext_name_l.Content = ext_pkg_item.Name
+        self.ext_desc_l.Text = '{}  '.format(ext_pkg_item.Desciption)
 
         # Update the description and web link
-        if ext_pkg_data.URL:
-            self.ext_gitlink_t.Text = '({})'.format(ext_pkg_data.URL)
-            self.ext_gitlink_hl.NavigateUri = Uri(ext_pkg_data.URL)
+        if ext_pkg_item.URL:
+            self.ext_gitlink_t.Text = '({})'.format(ext_pkg_item.URL)
+            self.ext_gitlink_hl.NavigateUri = Uri(ext_pkg_item.URL)
 
         # Update the author and profile link
-        if ext_pkg_data.Author:
-            self.ext_author_t.Text = ext_pkg_data.Author
-            self.ext_authorlink_hl.NavigateUri = Uri(ext_pkg_data.ext_pkg.author_profile)
+        if ext_pkg_item.Author:
+            self.ext_author_t.Text = ext_pkg_item.Author
+            self.ext_authorlink_hl.NavigateUri = Uri(ext_pkg_item.ext_pkg.author_profile)
 
         # Update Installed folder info
-        if ext_pkg_data.ext_pkg.is_installed:
+        if ext_pkg_item.ext_pkg.is_installed:
             self.show_element(self.ext_installed_l)
-            self.ext_installed_l.Content = 'Installed under:\n{}'.format(ext_pkg_data.ext_pkg.is_installed)
+            self.ext_installed_l.Content = 'Installed under:\n{}'.format(ext_pkg_item.ext_pkg.is_installed)
         else:
             self.hide_element(self.ext_installed_l)
 
-    def _update_ext_action_buttons(self, ext_pkg_data):
-        if ext_pkg_data.ext_pkg.is_installed:
-            self.ext_install_b.IsEnabled = False
+    def _update_ext_action_buttons(self, ext_pkg_item):
+        if ext_pkg_item.ext_pkg.is_installed:
+            self.hide_element(self.ext_install_b)
 
-            self.ext_toggle_b.IsEnabled = True
-            if ext_pkg_data.config.disabled:
+            self.show_element(self.ext_toggle_b)
+            if ext_pkg_item.ext_pkg.config.disabled:
                 self.ext_toggle_b.Content = 'Enable Package'
             else:
                 self.ext_toggle_b.Content = 'Disable Package'
 
-            self.ext_remove_b.IsEnabled = True
+            self.show_element(self.ext_remove_b)
         else:
-            self.ext_install_b.IsEnabled = True
-            self.ext_toggle_b.IsEnabled = False
-            self.ext_remove_b.IsEnabled = False
+            self.show_element(self.ext_install_b)
+            self.hide_element(self.ext_toggle_b, self.ext_remove_b)
 
-    def _update_ext_settings_panel(self, ext_pkg_data):
+    def _update_ext_settings_panel(self, ext_pkg_item):
         try:
-            self.privaterepo_cb.IsChecked = ext_pkg_data.config.private_repo
+            self.privaterepo_cb.IsChecked = ext_pkg_item.ext_pkg.config.private_repo
             self.privaterepo_cb.UpdateLayout()
-            self.repousername_tb.Text = ext_pkg_data.config.username
-            self.repopassword_tb.Text = ext_pkg_data.config.password
+            self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
+            self.repopassword_tb.Text = ext_pkg_item.ext_pkg.config.password
         except:
             self.privaterepo_cb.IsChecked = False
             self.repopassword_tb.Text = self.repousername_tb.Text = ''
@@ -165,11 +152,11 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def save_pkg_settings(self, sender, args):
-        ext_pkg_data = self.extpkgs_lb.SelectedItem
+        ext_pkg_item = self.extpkgs_lb.SelectedItem
         try:
-            ext_pkg_data.config.private_repo = self.privaterepo_cb.IsChecked
-            ext_pkg_data.config.username = self.repousername_tb.Text
-            ext_pkg_data.config.password = self.repopassword_tb.Text
+            ext_pkg_item.ext_pkg.config.private_repo = self.privaterepo_cb.IsChecked
+            ext_pkg_item.ext_pkg.config.username = self.repousername_tb.Text
+            ext_pkg_item.ext_pkg.config.password = self.repopassword_tb.Text
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:
@@ -184,8 +171,8 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def toggle_ext_pkg(self, sender, args):
-        ext_pkg_data = self.extpkgs_lb.SelectedItem
-        ext_pkg_data.config.disabled = not ext_pkg_data.config.disabled
+        ext_pkg_item = self.extpkgs_lb.SelectedItem
+        ext_pkg_item.ext_pkg.config.disabled = not ext_pkg_item.ext_pkg.config.disabled
         user_config.save_changes()
         self.Close()
 

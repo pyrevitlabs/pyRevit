@@ -78,6 +78,17 @@ class ExtensionPackage:
         except:
             return None
 
+    @property
+    def config(self):
+        try:
+            return user_config.get_section(self.ext_dirname)
+        except:
+            cfg_section = user_config.add_section(self.ext_dirname)
+            self.config.disabled = False
+            self.config.private_repo = False
+            self.config.username = self.config.password = ''
+            return cfg_section
+
     def install(self, install_dir):
         is_installed_path = self.is_installed
         if is_installed_path:

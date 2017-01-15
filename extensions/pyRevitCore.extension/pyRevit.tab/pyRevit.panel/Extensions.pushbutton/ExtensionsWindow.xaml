@@ -56,6 +56,7 @@
                 	<Button Content="Update Package Settings" Click="save_pkg_settings"
                             Grid.Column="0" Grid.Row="0" Margin="3" />
                     <Button x:Name="ext_install_b" Content="Install Package" Click="handle_install_button_popup"
+                            Background="#3A9AFF" Foreground="#FFF"
                             Grid.Column="1" Grid.Row="0" Margin="3"
                             ContextMenuService.IsEnabled="False">
                         <Button.ContextMenu>
@@ -66,6 +67,7 @@
                     <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg"
                             Grid.Column="2" Grid.Row="0" Margin="3" />
                 	<Button x:Name="ext_remove_b" Content="Remove Package" Click="remove_ext_pkg"
+                            Background="#C7254E" Foreground="#FFF"
                             Grid.Column="3" Grid.Row="0" Margin="3" />
                 </Grid>
             </StackPanel>
