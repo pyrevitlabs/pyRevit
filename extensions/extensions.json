@@ -2,7 +2,7 @@
 "extensions":
     [
         {
-        "type": "uiextension",
+        "type": "extension",
         "name": "pyRevitTools",
         "description": "IronPython Scripts for Autodesk Revit",
         "author": "Ehsan Iran-Nejad",
@@ -12,7 +12,7 @@
         "image" : ""
         },
         {
-        "type": "libextension",
+        "type": "lib",
         "name": "RevitPythonWrapper",
         "description": "A Python Wrapper For the Revit API",
         "author": "Gui Talarico",

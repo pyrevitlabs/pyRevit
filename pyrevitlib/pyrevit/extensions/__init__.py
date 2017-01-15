@@ -6,13 +6,13 @@ UI_EXTENSION_POSTFIX = '.extension'
 
 # noinspection PyClassHasNoInit
 class UIExtensionType:
-    ID = 'uiextension'
+    ID = 'extension'
     POSTFIX = '.extension'
 
 
 # noinspection PyClassHasNoInit
 class LIBExtensionType:
-    ID = 'libextension'
+    ID = 'lib'
     POSTFIX = '.lib'
 
 
