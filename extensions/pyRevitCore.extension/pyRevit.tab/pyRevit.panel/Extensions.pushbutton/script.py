@@ -1,6 +1,7 @@
 """Add or remove pyRevit extensions."""
 
 from pyrevit.coreutils import open_folder_in_explorer
+from pyrevit.loader.sessionmgr import load_session
 from pyrevit.plugins import extpackages
 from pyrevit.userconfig import user_config
 
@@ -55,6 +56,15 @@ class ExtensionsWindow(WPFWindow):
         WPFWindow.__init__(self, xaml_file_name)
         self._setup_ext_dirs_ui(user_config.get_ext_root_dirs())
         self._setup_ext_pkg_ui(extpackages.get_ext_packages())
+
+    @property
+    def selected_pkg(self):
+        """
+        Returns the currently selected ExtensionPackageListItem in the extension packages list
+        Returns:
+            ExtensionPackageListItem:
+        """
+        return self.extpkgs_lb.SelectedItem
 
     def _setup_ext_dirs_ui(self, ext_dirs_list):
         for ext_dir in ext_dirs_list:
@@ -122,11 +132,9 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def update_ext_info(self, sender, args):
-        selected_ext = self.extpkgs_lb.SelectedItem
-        if selected_ext:
-            self._update_ext_info_panel(selected_ext)
-            self._update_ext_action_buttons(selected_ext)
-            self._update_ext_settings_panel(selected_ext)
+        self._update_ext_info_panel(self.selected_pkg)
+        self._update_ext_action_buttons(self.selected_pkg)
+        self._update_ext_settings_panel(self.selected_pkg)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -152,11 +160,10 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def save_pkg_settings(self, sender, args):
-        ext_pkg_item = self.extpkgs_lb.SelectedItem
         try:
-            ext_pkg_item.ext_pkg.config.private_repo = self.privaterepo_cb.IsChecked
-            ext_pkg_item.ext_pkg.config.username = self.repousername_tb.Text
-            ext_pkg_item.ext_pkg.config.password = self.repopassword_tb.Text
+            self.selected_pkg.ext_pkg.config.private_repo = self.privaterepo_cb.IsChecked
+            self.selected_pkg.ext_pkg.config.username = self.repousername_tb.Text
+            self.selected_pkg.ext_pkg.config.password = self.repopassword_tb.Text
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:
@@ -165,22 +172,30 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def install_ext_pkg(self, sender, args):
-        print('Work in progress.\nPackage will be cloned to:\n{}'.format(sender.install_path))
-        self.Close()
+        try:
+            self.selected_pkg.ext_pkg.install(sender.install_path)
+            self.Close()
+            load_session()
+        except Exception as pkg_install_err:
+            logger.error('Error installing package. | {}'.format(pkg_install_err))
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def toggle_ext_pkg(self, sender, args):
-        ext_pkg_item = self.extpkgs_lb.SelectedItem
-        ext_pkg_item.ext_pkg.config.disabled = not ext_pkg_item.ext_pkg.config.disabled
+        self.selected_pkg.ext_pkg.config.disabled = not self.selected_pkg.ext_pkg.config.disabled
         user_config.save_changes()
         self.Close()
+        load_session()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def remove_ext_pkg(self, sender, args):
-        print('Work in progress.\nPackage will be removed.')
-        self.Close()
+        try:
+            self.selected_pkg.ext_pkg.remove()
+            self.Close()
+            load_session()
+        except Exception as pkg_remove_err:
+            logger.error('Error removing package. | {}'.format(pkg_remove_err))
 
 
 def open_ext_dir_in_explorer(ext_dirs_list):
