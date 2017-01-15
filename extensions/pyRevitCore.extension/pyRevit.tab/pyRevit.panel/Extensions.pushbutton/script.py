@@ -40,7 +40,10 @@ class ExtensionPackageListData:
         self.URL = ext_pkg.website
 
         self.Installed = 'Yes' if ext_pkg.is_installed else 'No'
-        self.Status = 'Enabled' if not self.config.disabled else 'Disabled'
+        if ext_pkg.is_installed:
+            self.Status = 'Enabled' if not self.config.disabled else 'Disabled'
+        else:
+            self.Status = '--'
 
 
     @property
