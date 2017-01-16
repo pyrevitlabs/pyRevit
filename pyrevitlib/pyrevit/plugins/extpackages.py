@@ -168,3 +168,11 @@ def get_ext_packages():
             ext_pkgs.extend(ext_def_file.defined_ext_packages)
 
     return ext_pkgs
+
+
+def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
+    try:
+        pkg_config = user_config.get_section(ext_pkg_name + ext_pkg_type_postfix)
+        return not pkg_config.disabled
+    except:
+        return True

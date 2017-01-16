@@ -16,6 +16,8 @@ from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extensi
 from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.extensions.components import Extension, LibraryExtension
 
+from pyrevit.plugins.extpackages import is_ext_package_enabled
+
 
 logger = get_logger(__name__)
 
@@ -23,6 +25,21 @@ logger = get_logger(__name__)
 def _update_extension_syspaths(ui_ext, lib_ext_list):
     for lib_ext in lib_ext_list:
         ui_ext.add_syspath(lib_ext.directory)
+
+
+def _is_extension_enabled(ext_info):
+    return is_ext_package_enabled(ext_info.name, ext_info.type_id)
+
+
+def _remove_disabled_extensions(ext_list):
+    cleaned_ext_list = []
+    for extension in ext_list:
+        if _is_extension_enabled(extension):
+            cleaned_ext_list.append(extension)
+        else:
+            logger.info('Skipping disabled extension: {}'.format(extension.name))
+
+    return cleaned_ext_list
 
 
 def get_command_from_path(comp_path):
@@ -33,23 +50,54 @@ def get_command_from_path(comp_path):
     return None
 
 
+def parse_or_cache(ext_info):
+    try:
+        # raise error if ui_extension does not have a valid cache
+        if not is_cache_valid(ext_info):
+            raise PyRevitException('Cache is not valid for: {}'.format(ext_info))
+
+        # if cache is valid, load the cached ui_extension
+        logger.debug('Cache is valid for: {}'.format(ext_info))
+        # cacher module takes the ui_extension object and injects cache data into it.
+        ui_extension = get_cached_extension(ext_info)
+        logger.info('UI Extension successfuly loaded from cache: {}'.format(ui_extension.name))
+
+    except PyRevitException as cache_err:
+        logger.debug(cache_err)
+
+        # Either cache is not available, not valid, or cache load has failed.
+        # parse directory for components and return fully loaded ui_extension
+        logger.debug('Parsing for ui_extension...')
+        ui_extension = get_parsed_extension(ext_info)
+
+        # update cache with newly parsed ui_extension
+        logger.info('UI Extension successfuly parsed: {}'.format(ui_extension.name))
+        logger.info('Updating cache for ui_extension: {}'.format(ui_extension.name))
+        update_cache(ui_extension)
+
+    return ui_extension
+
+
 def get_installed_extension_data():
+    # fixme: reorganzie this code to use one single method to collect extension data for both lib and ui
     ext_data_list = []
 
     for root_dir in user_config.get_ext_root_dirs():
         ext_data_list.extend([ui_ext for ui_ext in parse_dir_for_ext_type(root_dir, Extension)])
         ext_data_list.extend([lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)])
 
-    return ext_data_list
+    return _remove_disabled_extensions(ext_data_list)
 
 
 def get_installed_lib_extensions(root_dir):
-    return [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)]
+    lib_ext_list = [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)]
+    return _remove_disabled_extensions(lib_ext_list)
 
 
 def get_installed_ui_extensions():
     ui_ext_list = list()
     lib_ext_list = list()
+
     # get a list of all directories that could include extensions
     ext_search_dirs = user_config.get_ext_root_dirs()
     logger.debug('Extension Directories: {}'.format(ext_search_dirs))
@@ -67,31 +115,12 @@ def get_installed_ui_extensions():
             # about the ui_extension needs to be passed to the cache module for proper hash calculation and
             # ui_extension recovery. at this point `ui_extension` does not include any sub-components
             #  (e.g, tabs, panels, etc) ui_extension object is very small and its creation doesn't add much overhead.
-            try:
-                # raise error if ui_extension does not have a valid cache
-                if not is_cache_valid(ext_info):
-                    raise PyRevitException('Cache is not valid for: {}'.format(ext_info))
 
-                # if cache is valid, load the cached ui_extension
-                logger.debug('Cache is valid for: {}'.format(ext_info))
-                # cacher module takes the ui_extension object and injects cache data into it.
-                ui_extension = get_cached_extension(ext_info)
-                logger.info('UI Extension successfuly loaded from cache: {}'.format(ui_extension.name))
-
-            except PyRevitException as cache_err:
-                logger.debug(cache_err)
-
-                # Either cache is not available, not valid, or cache load has failed.
-                # parse directory for components and return fully loaded ui_extension
-                logger.debug('Parsing for ui_extension...')
-                ui_extension = get_parsed_extension(ext_info)
-
-                # update cache with newly parsed ui_extension
-                logger.info('UI Extension successfuly parsed: {}'.format(ui_extension.name))
-                logger.info('Updating cache for ui_extension: {}'.format(ui_extension.name))
-                update_cache(ui_extension)
-
-            ui_ext_list.append(ui_extension)
+            if _is_extension_enabled(ext_info):
+                ui_extension = parse_or_cache(ext_info)
+                ui_ext_list.append(ui_extension)
+            else:
+                logger.info('Skipping disabled ui extension: {}'.format(ext_info.name))
 
     # update extension master syspaths with lib address of other lib extensions
     # this is to support extensions that provide library only to be used by other extensions
