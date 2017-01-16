@@ -89,6 +89,10 @@ class ExtensionPackage:
             self.config.username = self.config.password = ''
             return cfg_section
 
+    def remove_pkg_config(self):
+        user_config.remove_section(self.ext_dirname)
+        user_config.save_changes()
+
     def install(self, install_dir):
         is_installed_path = self.is_installed
         if is_installed_path:
@@ -109,6 +113,7 @@ class ExtensionPackage:
             dir_to_remove = self.is_installed
             if dir_to_remove:
                 fully_remove_tree(dir_to_remove)
+                self.remove_pkg_config()
                 logger.debug('Successfully removed extension from: {}'.format(dir_to_remove))
             else:
                 raise PyRevitException('Error removing extension. Can not find installed directory.')
