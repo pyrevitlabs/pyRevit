@@ -43,8 +43,10 @@ class ExtensionPackageListItem:
         self.Installed = 'Yes' if self.ext_pkg.is_installed else 'No'
         if self.ext_pkg.is_installed:
             self.Status = 'Enabled' if not self.ext_pkg.config.disabled else 'Disabled'
+            if self.ext_pkg.version:
+                self.Version = self.ext_pkg.version[:7]
         else:
-            self.Status = '--'
+            self.Status = self.Version = '--'
 
 
 class InstallPackageMenuItem(wpfControls.MenuItem):
@@ -178,6 +180,7 @@ class ExtensionsWindow(WPFWindow):
             load_session()
         except Exception as pkg_install_err:
             logger.error('Error installing package. | {}'.format(pkg_install_err))
+            self.Close()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
