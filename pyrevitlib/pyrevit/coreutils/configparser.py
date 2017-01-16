@@ -80,6 +80,10 @@ class PyRevitConfigParser(object):
         else:
             raise AttributeError('Section does not exist in config file.')
 
+    def remove_section(self, section_name):
+        self._parser.remove_section(section_name)
+        return PyRevitConfigSectionParser(self._parser, section_name)
+
     def reload(self, cfg_file_path):
         try:
             with open(cfg_file_path, 'r') as cfg_file:

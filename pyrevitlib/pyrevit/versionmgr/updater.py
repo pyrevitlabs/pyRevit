@@ -12,7 +12,9 @@ logger = get_logger(__name__)
 def _get_extension_credentials(repo_info):
     try:
         repo_config = user_config.get_section(repo_info.name)
-        return repo_config.username, repo_config.password
+        if repo_config.private_repo:
+            return repo_config.username, repo_config.password
+        return None, None
     except:
         return None, None
 

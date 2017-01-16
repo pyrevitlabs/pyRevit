@@ -1,30 +1,86 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Extension Manager" Height="500" Width="1000" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="pyRevit Extension Manager" Height="550" Width="900" ShowInTaskbar="False" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
-        <StackPanel Margin="10">
-            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+        <DockPanel Margin="10" LastChildFill="True">
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10" DockPanel.Dock="Top">
                 List of Registered Extension Packages:
             </TextBlock>
-            <ListView x:Name="extpkgs_lb" AllowDrop="True">
+            <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
+                <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
+                <TextBlock Margin="5,0,0,0" FontSize="14" >
+                    <Run x:Name="ext_desc_l"/>
+                    <Hyperlink x:Name="ext_gitlink_hl" Click="handle_url_click">
+                        <TextBlock x:Name="ext_gitlink_t"/>
+                    </Hyperlink>
+                </TextBlock>
+                <TextBlock Margin="5,0,0,0" FontSize="14" > Developed by:
+                    <Hyperlink x:Name="ext_authorlink_hl" Click="handle_url_click">
+                        <TextBlock x:Name="ext_author_t"/>
+                    </Hyperlink>
+                </TextBlock>
+                <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
+                <GroupBox Header="Extension Package Settings:" Margin="0,10,0,0">
+                    <StackPanel>
+                        <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,5" IsChecked="False"
+                                  Click="handle_private_repo"
+                                  Checked="handle_private_repo"
+                                  Unchecked="handle_private_repo">
+                            Git Repository is Private
+                        </CheckBox>
+                        <DockPanel x:Name="accountcreds_dp" Margin="23,0,0,10" IsEnabled="False" >
+                            <Label Content="Account Credentials:" DockPanel.Dock="Top" />
+                            <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
+                                    <Label Content="Username: " Width="80"/>
+                                    <TextBox x:Name="repousername_tb" Width="200"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Password: " Width="80"/>
+                                    <TextBox x:Name="repopassword_tb"  Width="200"/>
+                                </StackPanel>
+                            </WrapPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+                <Grid Margin="0,15,0,0" IsEnabled="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                		<ColumnDefinition Width="*" />
+                		<ColumnDefinition Width="*" />
+                		<ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                	<Button Content="Update Package Settings" Click="save_pkg_settings"
+                            Grid.Column="0" Grid.Row="0" Margin="3" />
+                    <Button x:Name="ext_install_b" Content="Install Package" Click="handle_install_button_popup"
+                            Grid.Column="1" Grid.Row="0" Margin="3"
+                            ContextMenuService.IsEnabled="False">
+                        <Button.ContextMenu>
+                            <ContextMenu >
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg"
+                            Grid.Column="2" Grid.Row="0" Margin="3" />
+                	<Button x:Name="ext_remove_b" Content="Remove Package" Click="remove_ext_pkg"
+                            Grid.Column="3" Grid.Row="0" Margin="3" />
+                </Grid>
+            </StackPanel>
+            <ListView x:Name="extpkgs_lb" SelectionMode="Single" SelectionChanged="update_ext_info">
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
                         <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Type}"/>
-                        <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding URL}"/>
+                        <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding GitURL}"/>
                         <GridViewColumn Header="Author" DisplayMemberBinding="{Binding Author}"/>
-                        <GridViewColumn Header="Version" DisplayMemberBinding="{Binding Version}"/>
                         <GridViewColumn Header="Installed" DisplayMemberBinding="{Binding Installed}"/>
+                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}"/>
+                        <GridViewColumn Header="Last Commit" DisplayMemberBinding="{Binding Version}"/>
                     </GridView>
                 </ListView.View>
-                <!--<ListView.ItemContainerStyle>-->
-                    <!--<Style TargetType="ListViewItem">-->
-                        <!--<EventSetter Event="PreviewMouseLeftButtonDown" Handler="handle_pkg_dclick" />-->
-                    <!--</Style>-->
-                <!--</ListView.ItemContainerStyle>-->
             </ListView>
-            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10" FontSize="18">
-                Work in progress
-            </TextBlock>
-        </StackPanel>
+        </DockPanel>
 </Window>

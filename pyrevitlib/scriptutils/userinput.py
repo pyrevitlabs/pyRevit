@@ -44,11 +44,15 @@ class WPFWindow(Window):
         else:
             wpf_element.Source = BitmapImage(Uri(image_file))
 
-    def hide_element(self, wpf_component):
-        wpf_component.Visibility = System.Windows.Visibility.Collapsed
+    @staticmethod
+    def hide_element(*wpf_elements):
+        for wpf_element in wpf_elements:
+            wpf_element.Visibility = System.Windows.Visibility.Collapsed
 
-    def show_element(self, wpf_component):
-        wpf_component.Visibility = System.Windows.Visibility.Visible
+    @staticmethod
+    def show_element(*wpf_elements):
+        for wpf_element in wpf_elements:
+            wpf_element.Visibility = System.Windows.Visibility.Visible
 
 
 class CommandSwitchWindow:
