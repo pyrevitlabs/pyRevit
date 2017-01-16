@@ -5,7 +5,6 @@ import shutil
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import git
 from pyrevit.coreutils import git, fully_remove_tree
 from pyrevit.userconfig import user_config
 
@@ -97,7 +96,11 @@ class ExtensionPackage:
 
         if self.url:
             clone_path = op.join(install_dir, self.ext_dirname)
-            git.git_clone(self.url, clone_path)
+
+            if self.config.username and self.config.password:
+                git.git_clone(self.url, clone_path, username=self.config.username, password=self.config.password)
+            else:
+                git.git_clone(self.url, clone_path)
         else:
             raise PyRevitException('Extension does not have url and can not be installed.')
 
@@ -105,7 +108,6 @@ class ExtensionPackage:
         if self.is_removable:
             dir_to_remove = self.is_installed
             if dir_to_remove:
-                shutil.rmtree(dir_to_remove)
                 fully_remove_tree(dir_to_remove)
                 logger.debug('Successfully removed extension from: {}'.format(dir_to_remove))
             else:
