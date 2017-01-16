@@ -63,7 +63,7 @@
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
-                    <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg"
+                    <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" IsEnabled="False"
                             Grid.Column="2" Grid.Row="0" Margin="3" />
                 	<Button x:Name="ext_remove_b" Content="Remove Package" Click="remove_ext_pkg"
                             Grid.Column="3" Grid.Row="0" Margin="3" />
