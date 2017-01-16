@@ -85,22 +85,23 @@ class LoggerWrapper(logging.Logger):
             logger = logger.parent
         return logging.NOTSET
 
+    def _reset_logger_env_vars(verbose=False, debug=False)
+        set_pyrevit_env_var(VERBOSE_ISC_NAME, verbose)
+        set_pyrevit_env_var(DEBUG_ISC_NAME, debug)
+
     def set_level(self, level):
         self.handlers[0].setLevel(level)
 
     def set_verbose_mode(self):
-        set_pyrevit_env_var(VERBOSE_ISC_NAME, True)
-        set_pyrevit_env_var(DEBUG_ISC_NAME, False)
+        self._reset_logger_env_vars(verbose=True, debug=False)
         self.handlers[0].setLevel(logging.INFO)
 
     def set_debug_mode(self):
-        set_pyrevit_env_var(VERBOSE_ISC_NAME, False)
-        set_pyrevit_env_var(DEBUG_ISC_NAME, True)
+        self._reset_logger_env_vars(verbose=False, debug=True)
         self.handlers[0].setLevel(logging.DEBUG)
 
     def reset_level(self):
-        set_pyrevit_env_var(VERBOSE_ISC_NAME, False)
-        set_pyrevit_env_var(DEBUG_ISC_NAME, False)
+        self._reset_logger_env_vars()
         self.handlers[0].setLevel(RUNTIME_LOGGING_LEVEL)
 
     def get_level(self):
