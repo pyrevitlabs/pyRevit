@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Settings" Height="630" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="pyRevit Settings" Height="630" Width="700" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <ScrollViewer>
             <StackPanel>
