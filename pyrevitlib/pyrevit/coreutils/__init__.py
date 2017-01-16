@@ -5,6 +5,7 @@ import ast
 import hashlib
 import time
 import clr
+import shutil
 
 from pyrevit import HOST_APP, PyRevitException
 
@@ -371,3 +372,10 @@ def open_url(url):
     """Opens url in a new tab in the default web browser."""
     import webbrowser
     return webbrowser.open_new_tab(url)
+
+def fully_remove_tree(dir_path):
+    import stat
+    def del_rw(action, name, exc):
+        os.chmod(name, stat.S_IWRITE)
+        os.remove(name)
+    shutil.rmtree(dir_path, onerror=del_rw)
