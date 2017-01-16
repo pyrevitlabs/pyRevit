@@ -85,7 +85,7 @@ class LoggerWrapper(logging.Logger):
             logger = logger.parent
         return logging.NOTSET
 
-    def _reset_logger_env_vars(verbose=False, debug=False)
+    def _reset_logger_env_vars(self, verbose=False, debug=False):
         set_pyrevit_env_var(VERBOSE_ISC_NAME, verbose)
         set_pyrevit_env_var(DEBUG_ISC_NAME, debug)
 
