@@ -73,13 +73,13 @@ def update_pyrevit(repo_info):
         logger.debug('Successfully updated repo: {}'.format(updated_repo_info.directory))
         return updated_repo_info
 
-    except git.PyRevitGitAuthenticationError:
-        logger.error('Can not login to git repository to get updates: {}'.format(repo_info))
-        return False
+    except git.PyRevitGitAuthenticationError as auth_err:
+        logger.debug('Can not login to git repository to get updates: {} | {}'.format(repo_info, auth_err))
+        raise auth_err
 
-    except:
-        logger.error('Failed updating: {}'.format(repo_info.directory))
-        return False
+    except Exception as update_err:
+        logger.debug('Failed updating repo: {} | {}'.format(repo_info, update_err))
+        raise update_err
 
 
 def has_pending_updates(repo_info):

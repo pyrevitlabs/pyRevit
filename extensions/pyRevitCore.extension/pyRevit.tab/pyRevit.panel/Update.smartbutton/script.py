@@ -74,10 +74,12 @@ if __name__ == '__main__':
         for repo_info in repo_info_list:
             # update one by one
             logger.debug('Updating repo: {}'.format(repo_info.directory))
-            upped_repo_info = updater.update_pyrevit(repo_info)
-            if upped_repo_info:
+            try:
+                upped_repo_info = updater.update_pyrevit(repo_info)
                 logger.info(':inbox_tray: Successfully updated: {} to {}'.format(upped_repo_info.name,
                                                                                  upped_repo_info.last_commit_hash[:7]))
+            except:
+                logger.info('Can not update repo: {}  (Run in debug to see why)'.format(repo_info.name))
 
         # perform upgrade tasks
         logger.info('Upgrading settings...')
