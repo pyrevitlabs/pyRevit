@@ -6,6 +6,7 @@ import shutil
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import git
+from pyrevit.coreutils import git, fully_remove_tree
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions import ExtensionTypes
@@ -105,6 +106,7 @@ class ExtensionPackage:
             dir_to_remove = self.is_installed
             if dir_to_remove:
                 shutil.rmtree(dir_to_remove)
+                fully_remove_tree(dir_to_remove)
                 logger.debug('Successfully removed extension from: {}'.format(dir_to_remove))
             else:
                 raise PyRevitException('Error removing extension. Can not find installed directory.')
