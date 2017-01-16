@@ -20,6 +20,15 @@
         "url": "https://github.com/gtalarico/revitpythonwrapper.git",
         "website": "http://revitpythonwrapper.readthedocs.io/en/latest/",
         "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png"
-        }
-   ]
+        },
+        {
+        "type": "extension",
+        "name": "PyRevitPlus",
+        "description": "Extensions for PyRevit",
+        "author": "Gui Talarico",
+        "author-url": "https://github.com/gtalarico",
+        "url": "https://github.com/gtalarico/pyrevitplus.git",
+        "website": "https://github.com/gtalarico/pyrevitplus",
+        "image" : ""
+        }   ]
 }
