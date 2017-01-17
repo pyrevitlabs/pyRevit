@@ -1,7 +1,11 @@
-__doc__ = 'Lists views that have not been references by any other view.'
+"""List all view that are referring the selected viewports."""
+
+from Autodesk.Revit.DB import FilteredElementCollector, Element, BuiltInCategory, \
+                              View, View3D, ViewDrafting, ViewPlan, ViewSection, Viewport
+
 
 __window__.Width = 1200
-from Autodesk.Revit.DB import FilteredElementCollector, Element, BuiltInCategory, View, View3D, ViewDrafting, ViewPlan, ViewSection
+
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
@@ -9,7 +13,10 @@ doc = __revit__.ActiveUIDocument.Document
 selection = list(__revit__.ActiveUIDocument.Selection.GetElementIds())
 views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
 
+
+all_views = []
 all_ref_els = []
+
 for el in FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements():
     if el.Category and el.__class__ == Element and str(el.Category.Name).startswith('View'):
         all_ref_els.append(el.Id)
@@ -51,7 +58,6 @@ class ReferencingView:
     def is_sheeted(self):
         return self.sheet_num != ''
 
-all_views = []
 
 print 'Collecting all view references in all view...'
 
@@ -67,10 +73,11 @@ print '{} views processed...'.format(len(all_views))
 
 for selid in selection:
     vp = doc.GetElement(selid)
-    v = doc.GetElement(vp.ViewId)
-    title = v.LookupParameter('Title on Sheet').AsString()
-    print '\n\nVIEW NAME: {}\n    References:'.format(title if title else v.ViewName)
+    if isinstance(vp, Viewport):
+        v = doc.GetElement(vp.ViewId)
+        title = v.LookupParameter('Title on Sheet').AsString()
+        print '\n\nVIEW NAME: {}\n    References:'.format(title if title else v.ViewName)
 
-    for r_view in all_views:
-        if r_view.is_sheeted() and r_view.is_referring_to(v.ViewName):
-            print '        {}/{} by view: {}'.format(r_view.ref_det, r_view.sheet_num, r_view.name)
+        for r_view in all_views:
+            if r_view.is_sheeted() and r_view.is_referring_to(v.ViewName):
+                print '        {}/{} by view: {}'.format(r_view.ref_det, r_view.sheet_num, r_view.name)
