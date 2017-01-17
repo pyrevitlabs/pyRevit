@@ -8,6 +8,41 @@ import __builtin__
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
+# noinspection PyUnresolvedReferences
+from System.IO import IOException
+
+
+PYREVIT_ADDON_NAME = 'pyRevit'
+VERSION_MAJOR = 4
+VERSION_MINOR = 1
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Base Exceptions
+# ----------------------------------------------------------------------------------------------------------------------
+TRACEBACK_TITLE = 'Traceback:'
+
+
+# General Exceptions
+class PyRevitException(Exception):
+    """Base class for all pyRevit Exceptions.
+    Parameters args and message are derived from Exception class.
+    """
+    def __str__(self):
+        sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+        try:
+            tb_report = traceback.format_tb(sys.exc_traceback)[0]
+            if self.args:
+                message = self.args[0]
+                return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
+            else:
+                return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
+        except:
+            return Exception.__str__(self)
+
+
+class PyRevitIOError(PyRevitException):
+    pass
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -165,12 +200,6 @@ MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
 # default extension extensions folder
 EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
-
-PYREVIT_ADDON_NAME = 'pyRevit'
-VERSION_MAJOR = 4
-VERSION_MINOR = 0
-
-
 # user env paths
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
@@ -194,30 +223,3 @@ PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.user
 PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username)
 PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
                                                    HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Base Exceptions
-# ----------------------------------------------------------------------------------------------------------------------
-TRACEBACK_TITLE = 'Traceback:'
-
-
-# General Exceptions
-class PyRevitException(Exception):
-    """Base class for all pyRevit Exceptions.
-    Parameters args and message are derived from Exception class.
-    """
-    def __str__(self):
-        sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
-        try:
-            tb_report = traceback.format_tb(sys.exc_traceback)[0]
-            if self.args:
-                message = self.args[0]
-                return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
-            else:
-                return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
-        except:
-            return Exception.__str__(self)
-
-
-class PyRevitIOError(PyRevitException):
-    pass
