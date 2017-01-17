@@ -56,11 +56,11 @@ def _check_for_updates():
 
 
 # noinspection PyUnusedLocal
-def __selfinit__(script_cmp, commandbutton, __rvt__):
+def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.core.checkupdates and _check_for_updates():
-            commandbutton.set_icon(has_update_icon, icon_size=ICON_LARGE)
+            ui_button_cmp.set_icon(has_update_icon, icon_size=ICON_LARGE)
     except:
         return
 
