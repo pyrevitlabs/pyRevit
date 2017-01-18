@@ -1,81 +1,63 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""List all views that have been placed on a sheet but are not referenced by any other views."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View, ViewType
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'List all views that have been placed on a sheet but are not referenced by any other views.'
 
 __window__.Width = 1200
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
+view_ref_prefixes = {ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
+                     ViewType.FloorPlan: 'Floor Plan: ',
+                     ViewType.EngineeringPlan: 'Structural Plan: ',
+                     ViewType.DraftingView: 'Drafting View: '}
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 
-views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
 
-mviews = []
+def find_sheeted_unrefed_views(view_list):
+    for v in view_list:
+        sheetnum = v.LookupParameter('Sheet Number')
+        detnum = v.LookupParameter('Detail Number')
+        refsheet = v.LookupParameter('Referencing Sheet')
+        refviewport = v.LookupParameter('Referencing Detail')
+        # is the view placed on a sheet?
+        if sheetnum and detnum and \
+           ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
+            # is the view referenced by at least one other view?
+            if refsheet and refviewport and \
+               refsheet.AsString() != '' and refviewport.AsString() != '' \
+               or (view_ref_prefixes[v.ViewType] + v.ViewName) in view_refs_names:
+                continue
+            else:
+                # print the view sheet and det number
+                print('-'*20)
+                print('NAME: {0}\nDET/SHEET: {1}\nID: {2}'.format(v.ViewName,
+                                                                  unicode(detnum.AsString() + '/' + sheetnum.AsString()),
+                                                                  str(v.Id)
+                                                                  ))
+
+
+views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
+view_refs = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ReferenceViewer).WhereElementIsNotElementType().ToElements()
+
+view_refs_names = set()
+for view_ref in view_refs:
+    ref_param = view_ref.LookupParameter('Target view')
+    view_refs_names.add(ref_param.AsValueString())
+
 dviews = []
+mviews = []
 
 # separating model view and drafting view from the full view list
 for v in views:
-    if 'drafting' in str(v.ViewType).lower() and not v.IsTemplate:
-        dviews.append(v)
-    elif not v.IsTemplate:
-        mviews.append(v)
+    if not v.IsTemplate:
+        if v.ViewType == ViewType.DraftingView:
+            dviews.append(v)
+        else:
+            mviews.append(v)
 
 print('DRAFTING VIEWS NOT ON ANY SHEETS' + '-' * 80)
-
-for v in dviews:
-    sheetnum = v.LookupParameter('Sheet Number')
-    detnum = v.LookupParameter('Detail Number')
-    refsheet = v.LookupParameter('Referencing Sheet')
-    refviewport = v.LookupParameter('Referencing Detail')
-    # is the view placed on a sheet?
-    if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
-        # is the view referenced by at least one other view?
-        if refsheet and refviewport and refsheet.AsString() != '' and refviewport.AsString() != '':
-            continue
-        else:
-            # print the view sheet and det number
-            print('DET/SHEET: {1}ID: {2}NAME: {0}'.format(v.ViewName,
-                                                          unicode(detnum.AsString() + '/' + sheetnum.AsString()).ljust(
-                                                              10),
-                                                          str(v.Id).ljust(10)
-                                                          ))
-
-print('\n'
-      '\n'
-      '\n'
-      'MODEL VIEWS NOT ON ANY SHEETS' + '-' * 80)
-
-for v in mviews:
-    sheetnum = v.LookupParameter('Sheet Number')
-    detnum = v.LookupParameter('Detail Number')
-    refsheet = v.LookupParameter('Referencing Sheet')
-    refviewport = v.LookupParameter('Referencing Detail')
-    # is the view placed on a sheet?
-    if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
-        # is the view referenced by at least one other view?
-        if refsheet and refviewport and refsheet.AsString() != '' and refviewport.AsString() != '':
-            continue
-        else:
-            # print the view sheet and det number
-            print('DET/SHEET: {1}ID: {2}NAME: {0}'.format(v.ViewName,
-                                                          str(detnum.AsString() + '/' + sheetnum.AsString()).ljust(10),
-                                                          str(v.Id).ljust(10)
-                                                          ))
+find_sheeted_unrefed_views(dviews)
+print('\n\n\n' + 'MODEL VIEWS NOT ON ANY SHEETS' + '-' * 80)
+find_sheeted_unrefed_views(mviews)
