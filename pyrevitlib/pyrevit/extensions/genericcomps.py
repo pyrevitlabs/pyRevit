@@ -1,3 +1,4 @@
+import os
 import os.path as op
 
 from pyrevit import MAIN_LIB_DIR, PYTHON_LIB_DIR, MISC_LIB_DIR, PyRevitException
@@ -8,8 +9,8 @@ from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM
 from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
 from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
-from pyrevit.extensions import DEFAULT_PYTHON_SCRIPT_FILE, DEFAULT_CONFIG_SCRIPT_FILE
-from pyrevit.extensions import DEFAULT_CSHARP_SCRIPT_FILE, DEFAULT_VB_SCRIPT_FILE
+from pyrevit.extensions import PYTHON_SCRIPT_POSTFIX, DEFAULT_CONFIG_SCRIPT_FILE
+from pyrevit.extensions import CSHARP_SCRIPT_POSTFIX, VB_SCRIPT_POSTFIX, RUBY_SCRIPT_POSTFIX
 from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT, CSHARP_SCRIPT_FILE_FORMAT, VB_SCRIPT_FILE_FORMAT
 from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
 from pyrevit.extensions import MIN_PYREVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
@@ -272,15 +273,7 @@ class GenericUICommand(GenericUIComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
 
-        for default_script_file in [DEFAULT_PYTHON_SCRIPT_FILE, DEFAULT_CSHARP_SCRIPT_FILE, DEFAULT_VB_SCRIPT_FILE]:
-            full_file_path = op.join(self.directory, default_script_file)
-            if op.exists(full_file_path):
-                self.script_file = full_file_path
-                break
-
-        if self.script_file is None:
-            logger.error('Command {}: Does not have script file.'.format(self))
-            raise PyRevitException()
+        self._find_script_file()
 
         if self.script_language == PYTHON_LANG:
             self._analyse_python_script()
@@ -298,6 +291,17 @@ class GenericUICommand(GenericUIComponent):
         # setting up search paths. These paths will be added to sys.path by the command loader for easy imports.
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
+
+    def _find_script_file(self):
+        for bundle_file in os.listdir(self.directory):
+            for script_pfix in [PYTHON_SCRIPT_POSTFIX, CSHARP_SCRIPT_POSTFIX, VB_SCRIPT_POSTFIX, RUBY_SCRIPT_POSTFIX]:
+                if bundle_file.endswith(script_pfix):
+                    self.script_file = op.join(self.directory, bundle_file)
+                    break
+
+        if self.script_file is None:
+            logger.error('Command {}: Does not have script file.'.format(self))
+            raise PyRevitException()
 
     def _analyse_python_script(self):
         try:
