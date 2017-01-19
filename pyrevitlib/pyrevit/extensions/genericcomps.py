@@ -273,13 +273,19 @@ class GenericUICommand(GenericUIComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         logger.debug('Command {}: Icon file is: {}'.format(self, self.icon_file))
 
-        self._find_script_file()
+        self.script_file = self._find_script_file([PYTHON_SCRIPT_POSTFIX,
+                                                   CSHARP_SCRIPT_POSTFIX,
+                                                   VB_SCRIPT_POSTFIX,
+                                                   RUBY_SCRIPT_POSTFIX])
 
+        if self.script_file is None:
+            logger.error('Command {}: Does not have script file.'.format(self))
+            raise PyRevitException()
         if self.script_language == PYTHON_LANG:
             self._analyse_python_script()
 
-        full_file_path = op.join(self.directory, DEFAULT_CONFIG_SCRIPT_FILE)
-        self.config_script_file = full_file_path if op.exists(full_file_path) else None
+        self.config_script_file = self._find_script_file([DEFAULT_CONFIG_SCRIPT_FILE])
+
         if self.config_script_file is None:
             logger.debug('Command {}: Does not have independent config script.'.format(self))
             self.config_script_file = self.script_file
@@ -292,16 +298,12 @@ class GenericUICommand(GenericUIComponent):
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
-    def _find_script_file(self):
+    def _find_script_file(self, script_postfixes):
         for bundle_file in os.listdir(self.directory):
-            for script_pfix in [PYTHON_SCRIPT_POSTFIX, CSHARP_SCRIPT_POSTFIX, VB_SCRIPT_POSTFIX, RUBY_SCRIPT_POSTFIX]:
-                if bundle_file.endswith(script_pfix):
-                    self.script_file = op.join(self.directory, bundle_file)
-                    break
-
-        if self.script_file is None:
-            logger.error('Command {}: Does not have script file.'.format(self))
-            raise PyRevitException()
+            for script_postfix in script_postfixes:
+                if bundle_file.endswith(script_postfix):
+                    return op.join(self.directory, bundle_file)
+        return None
 
     def _analyse_python_script(self):
         try:
