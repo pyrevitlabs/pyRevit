@@ -63,6 +63,14 @@ class _HostApplication:
         return self.uiapp.Application.VersionNumber
 
     @property
+    def version_name(self):
+        return self.uiapp.Application.VersionName
+
+    @property
+    def build(self):
+        return self.uiapp.Application.VersionBuild
+
+    @property
     def username(self):
         """Return the username from Revit API (Application.Username)"""
         uname = self.uiapp.Application.Username

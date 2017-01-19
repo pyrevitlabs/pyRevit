@@ -7,7 +7,7 @@ The only public function is load_session() that loads a new session. Everything 
 import sys
 import clr
 
-from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD
+from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
@@ -51,6 +51,7 @@ def _report_env():
     pyrvt_ver = PYREVIT_VERSION.get_formatted()
 
     logger.info('pyRevit version: {} - :coded: with :small-black-heart: in Portland, OR'.format(pyrvt_ver))
+    logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name, HOST_APP.build, HOST_APP.proc_id))
     logger.info('Running on: {}'.format(sys.version))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
     logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
