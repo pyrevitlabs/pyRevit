@@ -18,6 +18,7 @@
 
 import os
 import sys
+import imp
 import __builtin__
 
 doc_dir = os.path.dirname(__file__)
@@ -28,22 +29,24 @@ mocklib_dir = os.path.join(doc_dir, '_mocklibs')
 print('doc directory is: {}'.format(doc_dir))
 print('project directory is: {}'.format(root_dir))
 print('pyrevitlib directory is: {}'.format(lib_dir))
-print('mock lib directory is: {}'.format(doc_dir))
+print('mock/sphinx lib directory is: {}'.format(doc_dir))
 
+# append main pyrevit library path
 sys.path.append(lib_dir)
+
+# append mock/sphinx library path
+# this lib includes the sphinx related modules
 sys.path.append(mocklib_dir)
 
-# Create executor params
+# Create executor param for the host app
 __builtin__.__revit__ = None
+
 # Set environment to sphinx autodoc
 __builtin__.__sphinx_autodoc__ = True
 
 
 # based on:
 # http://blog.dowski.com/2008/07/31/customizing-the-python-import-system/
-import imp
-
-
 class DotNetImporter(object):
     domain_modules = ['System', 'Autodesk']
     found_mods = dict()
@@ -70,6 +73,7 @@ class DotNetImporter(object):
         mod.__path__ = [fullname]
         return mod
 
+# add importer to the list
 sys.meta_path.append(DotNetImporter())
 
 
@@ -135,12 +139,17 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-# html_theme = 'alabaster'
-import sphinx_rtd_theme
-html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+# try to load the readthedocs module. otherwise use a standard theme
+# this will cause the local sphinx to use a standard them (since readthedocs module is not installed),
+# and the readthedocs.com bulder engine will use the readthedocs theme
+
+try:
+    import sphinx_rtd_theme
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+except:
+    html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
