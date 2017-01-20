@@ -42,7 +42,7 @@ sys.path.append(mocklib_dir)
 __builtin__.__revit__ = None
 
 # Set environment to sphinx autodoc
-__builtin__.__sphinx_autodoc__ = True
+__builtin__.__sphinx__ = True
 
 
 # based on:
@@ -87,7 +87,6 @@ sys.meta_path.append(DotNetImporter())
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.githubpages',
               'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.

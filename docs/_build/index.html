@@ -1,145 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Welcome to pyRevit’s documentation! &mdash; pyRevit 0 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml" lang="python">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="pyRevit 0 documentation" href="#"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
+    <title>Welcome to pyRevit’s documentation! &#8212; pyRevit 0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
    
-  <div class="wy-grid-for-nav">
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
-    
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
+  </head>
+  <body role="document">
+  
 
-          
-            <a href="#" class="icon icon-home"> pyRevit
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                4
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <!-- Local TOC -->
-                <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Welcome to pyRevit&#8217;s documentation!</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a><ul>
-<li><a class="reference internal" href="#transaction">Transaction</a><ul>
-<li><a class="reference internal" href="#implementation">Implementation</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</div>
-            
-          
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">pyRevit</a>
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          
-
- 
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href="#">Docs</a> &raquo;</li>
-      
-    <li>Welcome to pyRevit&#8217;s documentation!</li>
-    <li class="wy-breadcrumbs-aside">
-      
-          
-          <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-        
-      
-    </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
   <div class="section" id="welcome-to-pyrevit-s-documentation">
 <h1>Welcome to pyRevit&#8217;s documentation!<a class="headerlink" href="#welcome-to-pyrevit-s-documentation" title="Permalink to this headline">¶</a></h1>
@@ -156,6 +56,131 @@
 <div class="section" id="transaction">
 <h2>Transaction<a class="headerlink" href="#transaction" title="Permalink to this headline">¶</a></h2>
 <p>Wrappers to make Revit Transactions work with Python Context Manager.</p>
+<span class="target" id="module-pyrevit"></span><p>pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally.</p>
+<dl class="exception">
+<dt id="pyrevit.PyRevitException">
+<em class="property">exception </em><code class="descclassname">pyrevit.</code><code class="descname">PyRevitException</code><a class="headerlink" href="#pyrevit.PyRevitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Base class for all pyRevit Exceptions.
+Parameters args and message are derived from Exception class.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="pyrevit.PyRevitIOError">
+<em class="property">exception </em><code class="descclassname">pyrevit.</code><code class="descname">PyRevitIOError</code><a class="headerlink" href="#pyrevit.PyRevitIOError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyrevit.PyRevitException" title="pyrevit.PyRevitException"><code class="xref py py-class docutils literal"><span class="pre">pyrevit.PyRevitException</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyrevit._ExecutorParams">
+<em class="property">class </em><code class="descclassname">pyrevit.</code><code class="descname">_ExecutorParams</code><a class="headerlink" href="#pyrevit._ExecutorParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.command_name">
+<code class="descname">command_name</code><a class="headerlink" href="#pyrevit._ExecutorParams.command_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.command_path">
+<code class="descname">command_path</code><a class="headerlink" href="#pyrevit._ExecutorParams.command_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.doc_mode">
+<code class="descname">doc_mode</code><a class="headerlink" href="#pyrevit._ExecutorParams.doc_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.engine">
+<code class="descname">engine</code><a class="headerlink" href="#pyrevit._ExecutorParams.engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference to IronPython dotnet ScriptEngine that is executing this script.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Reference to dotnet object of this type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Microsoft.Scripting.Hosting.ScriptEngine</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.executor_version">
+<code class="descname">executor_version</code><a class="headerlink" href="#pyrevit._ExecutorParams.executor_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.forced_debug_mode">
+<code class="descname">forced_debug_mode</code><a class="headerlink" href="#pyrevit._ExecutorParams.forced_debug_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._ExecutorParams.window_handle">
+<code class="descname">window_handle</code><a class="headerlink" href="#pyrevit._ExecutorParams.window_handle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyrevit._HostApplication">
+<em class="property">class </em><code class="descclassname">pyrevit.</code><code class="descname">_HostApplication</code><a class="headerlink" href="#pyrevit._HostApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains current host version and provides comparison functions.</p>
+<dl class="method">
+<dt id="pyrevit._HostApplication.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._HostApplication.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.build">
+<code class="descname">build</code><a class="headerlink" href="#pyrevit._HostApplication.build" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrevit._HostApplication.is_newer_than">
+<code class="descname">is_newer_than</code><span class="sig-paren">(</span><em>version</em><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._HostApplication.is_newer_than" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyrevit._HostApplication.is_older_than">
+<code class="descname">is_older_than</code><span class="sig-paren">(</span><em>version</em><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._HostApplication.is_older_than" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.proc_id">
+<code class="descname">proc_id</code><a class="headerlink" href="#pyrevit._HostApplication.proc_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.proc_name">
+<code class="descname">proc_name</code><a class="headerlink" href="#pyrevit._HostApplication.proc_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.username">
+<code class="descname">username</code><a class="headerlink" href="#pyrevit._HostApplication.username" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the username from Revit API (Application.Username)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.version">
+<code class="descname">version</code><a class="headerlink" href="#pyrevit._HostApplication.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.version_name">
+<code class="descname">version_name</code><a class="headerlink" href="#pyrevit._HostApplication.version_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyrevit._find_home_directory">
+<code class="descclassname">pyrevit.</code><code class="descname">_find_home_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._find_home_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the pyRevitLoader.py full directory address</p>
+</dd></dl>
+
 <hr class="docutils" />
 <div class="section" id="implementation">
 <h3>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h3>
@@ -341,6 +366,11 @@
         <span class="k">except</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">()</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">doc_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># noinspection PyUnresolvedReferences</span>
+        <span class="k">return</span> <span class="n">__sphinx__</span>
+
 <span class="n">EXEC_PARAMS</span> <span class="o">=</span> <span class="n">_ExecutorParams</span><span class="p">()</span>
 
 <span class="c1"># if no output window is set by the executor, it means that pyRevit is loading at Revit startup (not reloading)</span>
@@ -374,9 +404,13 @@
 <span class="n">USER_SYS_TEMP</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;temp&#39;</span><span class="p">)</span>
 <span class="n">USER_DESKTOP</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%u</span><span class="s1">serprofile%</span><span class="se">\\</span><span class="s1">desktop&#39;</span><span class="p">)</span>
 
-<span class="c1"># pyrevit file directory</span>
-<span class="n">PYREVIT_APP_DIR</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">USER_ROAMING_DIR</span><span class="p">,</span> <span class="n">PYREVIT_ADDON_NAME</span><span class="p">)</span>
-<span class="n">PYREVIT_VERSION_APP_DIR</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PYREVIT_APP_DIR</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">EXEC_PARAMS</span><span class="o">.</span><span class="n">doc_mode</span><span class="p">:</span>
+    <span class="n">PYREVIT_APP_DIR</span> <span class="o">=</span> <span class="n">PYREVIT_VERSION_APP_DIR</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># pyrevit file directory</span>
+    <span class="n">PYREVIT_APP_DIR</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">USER_ROAMING_DIR</span><span class="p">,</span> <span class="n">PYREVIT_ADDON_NAME</span><span class="p">)</span>
+    <span class="n">PYREVIT_VERSION_APP_DIR</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">PYREVIT_APP_DIR</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">pyrvt_app_dir</span> <span class="ow">in</span> <span class="p">[</span><span class="n">PYREVIT_APP_DIR</span><span class="p">,</span> <span class="n">PYREVIT_VERSION_APP_DIR</span><span class="p">]:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">op</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">pyrvt_app_dir</span><span class="p">):</span>
@@ -387,11 +421,14 @@
             <span class="k">raise</span> <span class="n">PyRevitException</span><span class="p">(</span><span class="s1">&#39;Can not access pyRevit folder at: </span><span class="si">{}</span><span class="s1"> | </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pyrvt_app_dir</span><span class="p">,</span> <span class="n">err</span><span class="p">))</span>
 
 
-<span class="c1"># pyrevit standard files prefix</span>
-<span class="n">PYREVIT_FILE_PREFIX_UNIVERSAL</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
-<span class="n">PYREVIT_FILE_PREFIX</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
-<span class="n">PYREVIT_FILE_PREFIX_STAMPED</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span>
-                                                   <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">proc_id</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">EXEC_PARAMS</span><span class="o">.</span><span class="n">doc_mode</span><span class="p">:</span>
+    <span class="n">PYREVIT_FILE_PREFIX_UNIVERSAL</span> <span class="o">=</span> <span class="n">PYREVIT_FILE_PREFIX</span> <span class="o">=</span> <span class="n">PYREVIT_FILE_PREFIX_STAMPED</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># pyrevit standard files prefix</span>
+    <span class="n">PYREVIT_FILE_PREFIX_UNIVERSAL</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
+    <span class="n">PYREVIT_FILE_PREFIX</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
+    <span class="n">PYREVIT_FILE_PREFIX_STAMPED</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">PYREVIT_ADDON_NAME</span><span class="p">,</span>
+                                                       <span class="n">HOST_APP</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">HOST_APP</span><span class="o">.</span><span class="n">proc_id</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -399,62 +436,64 @@
 </div>
 
 
-           </div>
           </div>
-          <footer>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2017, eirannejad.
-
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
-</footer>
-
         </div>
       </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to pyRevit&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a><ul>
+<li><a class="reference internal" href="#transaction">Transaction</a><ul>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, eirannejad.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
 
-    </section>
+    
 
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+    
+  </body>
 </html>

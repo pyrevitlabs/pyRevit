@@ -28,6 +28,7 @@ Wrappers to make Revit Transactions work with Python Context Manager.
 
 .. automodule:: pyrevit
     :members:
+    :undoc-members:
     :special-members: __init__, __getattr__, __enter__, __exit__
     :private-members:
     :show-inheritance:
