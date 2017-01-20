@@ -26,3 +26,6 @@ _gsdata_/
 __py*
 *.db
 .DS_Store
+
+# ignore sphinx files
+*.pyc

@@ -15,10 +15,30 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+import __builtin__
+
+doc_dir = os.path.dirname(__file__)
+root_dir = os.path.dirname(doc_dir)
+lib_dir = os.path.join(root_dir, 'pyrevitlib')
+mocklib_dir = os.path.join(doc_dir, '_mocklibs')
+
+print('doc directory is: {}'.format(doc_dir))
+print('project directory is: {}'.format(root_dir))
+print('pyrevitlib directory is: {}'.format(lib_dir))
+print('mock lib directory is: {}'.format(doc_dir))
+
+sys.path.append(lib_dir)
+sys.path.append(mocklib_dir)
+
+# Create executor params
+__builtin__.__revit__ = None
+# Set environment to sphinx autodoc
+__builtin__.__sphinx_autodoc__ = True
+
+
 
 
 # -- General configuration ------------------------------------------------
@@ -31,7 +51,8 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.githubpages']
+              'sphinx.ext.githubpages',
+              'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -83,7 +104,12 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+# html_theme = 'alabaster'
+# html_theme = 'alabaster'
+import sphinx_rtd_theme
+html_theme = "sphinx_rtd_theme"
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
