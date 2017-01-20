@@ -180,6 +180,11 @@ class _ExecutorParams(object):
         except:
             raise AttributeError()
 
+    @property
+    def doc_mode(self):
+        # noinspection PyUnresolvedReferences
+        return __sphinx__
+
 EXEC_PARAMS = _ExecutorParams()
 
 # if no output window is set by the executor, it means that pyRevit is loading at Revit startup (not reloading)
@@ -213,9 +218,13 @@ USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
 
-# pyrevit file directory
-PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
-PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
+
+if EXEC_PARAMS.doc_mode:
+    PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
+else:
+    # pyrevit file directory
+    PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
+    PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
 
 for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
     if not op.isdir(pyrvt_app_dir):
@@ -226,8 +235,11 @@ for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
             raise PyRevitException('Can not access pyRevit folder at: {} | {}'.format(pyrvt_app_dir, err))
 
 
-# pyrevit standard files prefix
-PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
-PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username)
-PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                   HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
+if EXEC_PARAMS.doc_mode:
+    PYREVIT_FILE_PREFIX_UNIVERSAL = PYREVIT_FILE_PREFIX = PYREVIT_FILE_PREFIX_STAMPED = None
+else:
+    # pyrevit standard files prefix
+    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
+    PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username)
+    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                       HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
