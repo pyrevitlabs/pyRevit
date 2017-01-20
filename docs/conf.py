@@ -39,6 +39,38 @@ __builtin__.__revit__ = None
 __builtin__.__sphinx_autodoc__ = True
 
 
+# based on:
+# http://blog.dowski.com/2008/07/31/customizing-the-python-import-system/
+import imp
+
+
+class DotNetImporter(object):
+    domain_modules = ['System', 'Autodesk']
+    found_mods = dict()
+
+    def find_module(self, fullname, path=None):
+        if fullname in self.domain_modules:
+            return self
+        if path:
+            for p in path:
+                if p in self.domain_modules:
+                    self.domain_modules.append(fullname)
+                    return self
+
+        return None
+
+    def load_module(self, fullname):
+        if fullname in sys.modules:
+            return sys.modules[fullname]
+
+        mod = imp.new_module(fullname)
+        mod.__loader__ = self
+        sys.modules[fullname] = mod
+        mod.__file__ = fullname
+        mod.__path__ = [fullname]
+        return mod
+
+sys.meta_path.append(DotNetImporter())
 
 
 # -- General configuration ------------------------------------------------
@@ -104,7 +136,6 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'alabaster'
 # html_theme = 'alabaster'
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"

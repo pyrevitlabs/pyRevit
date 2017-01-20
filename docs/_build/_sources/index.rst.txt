@@ -18,3 +18,23 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+==================
+Transaction
+==================
+
+Wrappers to make Revit Transactions work with Python Context Manager.
+
+.. automodule:: pyrevit
+    :members:
+    :special-members: __init__, __getattr__, __enter__, __exit__
+    :private-members:
+    :show-inheritance:
+
+----------------------------------------------
+
+Implementation
+**************
+
+.. literalinclude:: ../pyrevitlib/pyrevit/__init__.py

@@ -1,2 +1,0 @@
-def AddReference(ref):
-    pass
