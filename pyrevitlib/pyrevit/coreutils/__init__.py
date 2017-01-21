@@ -98,7 +98,7 @@ def verify_directory(folder):
             os.makedirs(folder)
         except OSError as err:
             raise err
-    return True
+    return folder
 
 
 def get_parent_directory(path):
