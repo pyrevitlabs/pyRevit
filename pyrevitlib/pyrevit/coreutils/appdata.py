@@ -14,6 +14,9 @@ from System.IO import IOException
 logger = get_logger(__name__)
 
 
+TEMP_FILE_EXT = 'tmp'
+
+
 def _remove_app_file(file_path):
     try:
         os.remove(file_path)
@@ -87,7 +90,7 @@ def get_data_file(file_id, file_ext, name_only=False):
     return _get_app_file(file_id, file_ext, filename_only=name_only)
 
 
-def get_instance_data_file(file_id, file_ext='tmp', name_only=False):
+def get_instance_data_file(file_id, file_ext=TEMP_FILE_EXT, name_only=False):
     """
     Get full file path to a file that should be used by current host instance only.
     These data files will be cleaned up at Revit restart.
@@ -144,5 +147,8 @@ def cleanup_appdata_folder():
         finder = re.compile('(.+)_(.+)_(.+)_(\d+).+')
         for appdata_file in os.listdir(PYREVIT_VERSION_APP_DIR):
             file_name_pieces = finder.findall(appdata_file)
-            if len(file_name_pieces[0]) == 4 and int(file_name_pieces[0][3]) > 0:
+            if file_name_pieces \
+            and len(file_name_pieces[0]) == 4 \
+            and int(file_name_pieces[0][3]) > 0 \
+            and appdata_file.endswith(TEMP_FILE_EXT):
                 _remove_app_file(op.join(PYREVIT_VERSION_APP_DIR, appdata_file))
