@@ -1,7 +1,8 @@
 import os
 import os.path as op
+import re
 
-from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, PyRevitException, FIRST_LOAD
+from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, FIRST_LOAD
 from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL, PYREVIT_FILE_PREFIX, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
@@ -86,7 +87,7 @@ def get_data_file(file_id, file_ext, name_only=False):
     return _get_app_file(file_id, file_ext, filename_only=name_only)
 
 
-def get_instance_data_file(file_id, file_ext, name_only=False):
+def get_instance_data_file(file_id, file_ext='tmp', name_only=False):
     """
     Get full file path to a file that should be used by current host instance only.
     These data files will be cleaned up at Revit restart.
@@ -134,11 +135,14 @@ def list_session_data_files(file_ext):
     return _list_app_files(PYREVIT_FILE_PREFIX_STAMPED, file_ext)
 
 
-def cleanup_appdata_folder():
-    # fixme: cleanup instance data files only when Revit instance changes (at Revit restart)
-    if FIRST_LOAD:
-        pass
-
-
 def garbage_data_file(file_path):
     _remove_app_file(file_path)
+
+
+def cleanup_appdata_folder():
+    if FIRST_LOAD:
+        finder = re.compile('(.+)_(.+)_(.+)_(\d+).+')
+        for appdata_file in os.listdir(PYREVIT_VERSION_APP_DIR):
+            file_name_pieces = finder.findall(appdata_file)
+            if len(file_name_pieces[0]) == 4 and int(file_name_pieces[0][3]) > 0:
+                _remove_app_file(op.join(PYREVIT_VERSION_APP_DIR, appdata_file))
