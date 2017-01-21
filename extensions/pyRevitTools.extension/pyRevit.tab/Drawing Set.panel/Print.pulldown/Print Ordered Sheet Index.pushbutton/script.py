@@ -116,18 +116,20 @@ class PrintSheetsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def selection_changed(self, sender, args):
-        ordered_sheets = PrintSheetsWindow._get_ordered_schedule_sheets(self.selected_schedule)
-        printable_sheets = [x for x in ordered_sheets if x.CanBePrinted]
-        if self.reverse_print:
-            ordered_sheets.reverse()
+        if self.selected_schedule:
+            ordered_sheets = PrintSheetsWindow._get_ordered_schedule_sheets(self.selected_schedule)
+            printable_sheets = [x for x in ordered_sheets if x.CanBePrinted]
+            if self.reverse_print:
+                ordered_sheets.reverse()
 
-        self.linkedsheets_lb.ItemsSource = ordered_sheets
+            self.linkedsheets_lb.ItemsSource = ordered_sheets
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def print_sheets(self, sender, args):
-        self.Close()
-        PrintSheetsWindow._print_sheets_in_order(self.linkedsheets_lb.ItemsSource)
+        if self.linkedsheets_lb.ItemsSource:
+            self.Close()
+            PrintSheetsWindow._print_sheets_in_order(self.linkedsheets_lb.ItemsSource)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
