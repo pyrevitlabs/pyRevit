@@ -51,7 +51,7 @@ class PrintSheetsWindow(WPFWindow):
 
     @staticmethod
     def _get_schedule_text_data(schedule_view):
-        schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue), 'data')
+        schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
         vseop = ViewScheduleExportOptions()
         vseop.TextQualifier = ExportTextQualifier.None
         schedule_view.Export(op.dirname(schedule_data_file), op.basename(schedule_data_file), vseop)

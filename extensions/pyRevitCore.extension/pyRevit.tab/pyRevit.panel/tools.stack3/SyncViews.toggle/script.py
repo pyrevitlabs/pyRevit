@@ -43,7 +43,7 @@ def copyzoomstate(sender, args):
 
         if isinstance(args.CurrentActiveView, ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState', 'pym')
+            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
 
             cornerlist = current_ui_view.GetZoomCorners()
 
@@ -74,7 +74,7 @@ def applyzoomstate(sender, args):
 
         if isinstance(args.CurrentActiveView, ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState', 'pym')
+            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
             f = open(data_file, 'r')
             p2 = pl.load(f)
             p1 = pl.load(f)
