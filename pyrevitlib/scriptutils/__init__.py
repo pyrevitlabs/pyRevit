@@ -93,17 +93,17 @@ class PyRevitScriptUtils:
         return get_data_file(script_file_id, file_ext)
 
     @staticmethod
-    def get_instance_data_file(file_id, file_ext):
+    def get_instance_data_file(file_id):
         """Returns a filename to be used by a user script to store data under current Revit instance.
         Instance data files are saved in app directory and are cleaned up at Revit restart.
         """
         from pyrevit.coreutils.appdata import get_instance_data_file
         script_file_id = '{}_{}'.format(COMMAND_NAME, file_id)
-        return get_instance_data_file(script_file_id, file_ext)
+        return get_instance_data_file(script_file_id)
 
     @property
     def instance_data_file(self):
-        return self.get_instance_data_file('defaultdata', 'data')
+        return self.get_instance_data_file('defaultdata')
 
     @staticmethod
     def get_bundle_file(file_name):
