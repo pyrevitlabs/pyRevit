@@ -14,12 +14,13 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 __title__ = 'Active View Creator'
 __author__ = 'Frederic Beaupere'
-__contact__ = 'github.com/frederic-beaupere'
+__contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
 __doc__ = """Shows the creator of the active view."""
 
 import clr
 clr.AddReference("RevitAPI")
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import WorksharingUtils
 from revitutils import doc
 

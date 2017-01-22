@@ -14,19 +14,21 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 __title__ = 'List Elements of selected Level(s)'
 __author__ = 'Frederic Beaupere'
-__contact__ = 'github.com/frederic-beaupere'
+__contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
 __doc__ = """Lists all Elements of the selected level(s)."""
 
 import clr
 clr.AddReference("RevitAPI")
-from Autodesk.Revit.DB import FilteredElementCollector
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import FilteredElementCollector as Fec
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog
 from revitutils import doc
 from revitutils import uidoc
 from collections import defaultdict
 
-all_elements = FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements()
+all_elements = Fec(doc).WhereElementIsNotElementType().ToElements()
 all_count = all_elements.Count
 selection = [doc.GetElement(elId) for elId in uidoc.Selection.GetElementIds()]
 
