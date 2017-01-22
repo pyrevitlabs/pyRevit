@@ -16,20 +16,24 @@ __title__ = 'Lines per view counter'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = """Lists sorted Detail Line Counts for all views with Detail Lines."""
+
+__doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 
 import clr
-clr.AddReference("RevitAPI")
-import Autodesk
-from Autodesk.Revit.DB import FilteredElementCollector as fec
-from Autodesk.Revit.DB import BuiltInCategory
-from Autodesk.Revit.DB import ElementId
-from Autodesk.Revit.DB import WorksharingUtils
-from revitutils import doc
 from collections import defaultdict
 
+from revitutils import doc
+
+clr.AddReference("RevitAPI")
+
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import FilteredElementCollector as Fec
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import BuiltInCategory, ElementId, WorksharingUtils
+
+
 detail_lines = defaultdict(int)
-all_lines = fec(doc).OfCategory(BuiltInCategory.OST_Lines).WhereElementIsNotElementType().ToElements()
+all_lines = Fec(doc).OfCategory(BuiltInCategory.OST_Lines).WhereElementIsNotElementType().ToElements()
 
 for line in all_lines:
     if line.CurveElementType.ToString() == "DetailCurve":

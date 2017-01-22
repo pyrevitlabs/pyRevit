@@ -16,18 +16,24 @@ __title__ = 'List DWGs'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = """Lists all linked and imported DWG instances with worksets and creator."""
+
+__doc__ = 'Lists all linked and imported DWG instances with worksets and creator.'
+
 
 import clr
-clr.AddReference("RevitAPI")
-import Autodesk
-from Autodesk.Revit.DB import FilteredElementCollector as fec
-from Autodesk.Revit.DB import ImportInstance
-from Autodesk.Revit.DB import WorksharingUtils
-from revitutils import doc
 from collections import defaultdict
 
-dwgs = fec(doc).OfClass(ImportInstance).WhereElementIsNotElementType().ToElements()
+from revitutils import doc
+
+clr.AddReference("RevitAPI")
+
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import FilteredElementCollector as Fec
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import ImportInstance, WorksharingUtils
+
+
+dwgs = Fec(doc).OfClass(ImportInstance).WhereElementIsNotElementType().ToElements()
 dwgInst = defaultdict(list)
 workset_table = doc.GetWorksetTable()
 
