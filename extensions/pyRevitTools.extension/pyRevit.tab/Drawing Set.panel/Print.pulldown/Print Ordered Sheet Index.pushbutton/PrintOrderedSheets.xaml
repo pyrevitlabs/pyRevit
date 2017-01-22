@@ -23,7 +23,8 @@
                         <CheckBox x:Name="collate_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Collate</CheckBox>
                         <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
                                   IsChecked="False" Click="selection_changed"
-                                  IsEnabled="True">Reverse Print Order</CheckBox>
+                                  IsEnabled="True">Reverse Print Order
+                        </CheckBox>
                     </WrapPanel>
                 </GroupBox>
                 <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
