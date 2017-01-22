@@ -33,7 +33,7 @@
             </StackPanel>
             <StatusBar DockPanel.Dock="Bottom" Height="25" Background="#ffb762">
                 <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
-                    Credits to Ryan McCullough for PrintFromIndex
+                    Kudos to Ryan McCullough for PrintFromIndex
                 </TextBlock>
             </StatusBar>
             <ListView x:Name="linkedsheets_lb" Margin="10,0,10,10" AllowDrop="True">
