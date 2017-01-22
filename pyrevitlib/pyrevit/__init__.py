@@ -182,8 +182,12 @@ class _ExecutorParams(object):
 
     @property
     def doc_mode(self):
-        # noinspection PyUnresolvedReferences
-        return __sphinx__
+        try:
+            # noinspection PyUnresolvedReferences
+            return __sphinx__
+        except:
+            return False
+
 
 EXEC_PARAMS = _ExecutorParams()
 
