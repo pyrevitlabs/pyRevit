@@ -4,7 +4,7 @@ import os.path as op
 import codecs
 import clr
 
-from pyrevit.coreutils import verify_directory
+from pyrevit.coreutils import verify_directory, cleanup_filename
 from scriptutils import this_script, open_url, logger
 from scriptutils.userinput import WPFWindow
 from revitutils import doc
@@ -106,9 +106,10 @@ class PrintSheetsWindow(WPFWindow):
         print_mgr = doc.PrintManager
         print_mgr.PrintToFile = True
         for index, sheet in enumerate(self.linkedsheets_lb.ItemsSource):
-            print_mgr.PrintToFileName = op.join(r'C:', '{:05} {} - {}.pdf'.format(index,
-                                                                                  sheet.SheetNumber,
-                                                                                  sheet.Name))
+            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(index,
+                                                                       sheet.SheetNumber,
+                                                                       sheet.Name))
+            print_mgr.PrintToFileName = op.join(r'C:', output_fname)
             print_mgr.SubmitPrint(sheet)
 
     # noinspection PyUnusedLocal

@@ -379,3 +379,6 @@ def fully_remove_tree(dir_path):
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
     shutil.rmtree(dir_path, onerror=del_rw)
+
+def cleanup_filename(file_name):
+    return re.sub('[^\w_.)( -]', '', file_name)
