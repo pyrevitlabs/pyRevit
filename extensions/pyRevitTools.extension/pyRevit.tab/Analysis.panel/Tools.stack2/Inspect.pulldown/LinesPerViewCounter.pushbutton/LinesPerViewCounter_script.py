@@ -12,9 +12,9 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 """
 
-__title__ = 'Lines per view counter'
+__title__ = 'Lines Per View Counter'
 __author__ = 'Frederic Beaupere'
-__contact__ = 'github.com/frederic-beaupere'
+__contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
 
 __doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
@@ -22,6 +22,7 @@ __doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 import clr
 from collections import defaultdict
 
+from scriptutils import print_md
 from revitutils import doc
 
 clr.AddReference("RevitAPI")
@@ -40,21 +41,20 @@ for line in all_lines:
         view_id_int = line.OwnerViewId.IntegerValue
         detail_lines[view_id_int] += 1
 
-print(9 * "_" + "Line count per view: ")
+print_md("####LINE COUNT IN CURRENT VIEW:")
+print_md('By: [{}]({})'.format(__author__, __contact__))
 
 for line_count, view_id_int in sorted(zip(detail_lines.values(), detail_lines.keys()), reverse=True):
     view_id = ElementId(view_id_int)
     view_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, view_id).Creator
-    
-    if doc.GetElement(view_id).Name:
-        view_name = doc.GetElement(view_id).Name
-    else:
-        view_name = "no view name available"
-    
-    print("{0} Lines in view id:{1} from view creator: {2} view name: {3}".format(
-        str(line_count).rjust(7),
-        str(view_id_int).rjust(9),
-        view_creator.ljust(15),
-        view_name.ljust(60)))
+
+    try:
+        view_name = doc.GetElement(view_id).ViewName
+    except:
+        view_name = "<no view name available>"
+
+    print_md("\n**{0} Lines in view:** {3}\n"    \
+             "View id:{1}\n"                     \
+             "View creator: {2}\n".format(line_count, view_id_int, view_creator, view_name))
 
 print("\n" + str(sum(detail_lines.values())) + " Lines in " + str(len(detail_lines)) + " Views.")
