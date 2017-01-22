@@ -144,6 +144,8 @@ class PrintSheetsWindow(WPFWindow):
     def _print_sheets_in_order(self):
         print_mgr = doc.PrintManager
         print_mgr.PrintToFile = True
+        print_mgr.CombinedFile = False
+        print_mgr.PrintRange = PrintRange.Current
         for index, sheet in enumerate(self.linkedsheets_lb.ItemsSource):
             output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(index,
                                                                        sheet.SheetNumber,
@@ -188,14 +190,15 @@ class PrintSheetsWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def drop_sheet(self, sender, args):
-        droppedData = args.Data.GetData(clr.GetClrType(ViewSheet))
+        dropped_data = args.Data.GetData(clr.GetClrType(ViewSheet))
         target = sender.DataContext
 
-        removedIdx = self.linkedsheets_lb.Items.IndexOf(droppedData)
-        targetIdx = self.linkedsheets_lb.Items.IndexOf(target)
+        dropped_idx = self.linkedsheets_lb.Items.IndexOf(dropped_data)
+        target_idx = self.linkedsheets_lb.Items.IndexOf(target)
 
         sheet_list = self.linkedsheets_lb.ItemsSource
-        sheet_list[removedIdx], sheet_list[targetIdx] = sheet_list[targetIdx], sheet_list[removedIdx]
+        sheet_list.remove(dropped_data)
+        sheet_list.insert(target_idx, dropped_data)
         self.linkedsheets_lb.Items.Refresh()
 
 
