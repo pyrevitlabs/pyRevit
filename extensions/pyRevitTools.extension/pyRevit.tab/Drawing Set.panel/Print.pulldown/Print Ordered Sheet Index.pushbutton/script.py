@@ -30,8 +30,13 @@ class PrintSheetsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
 
-        self.schedules_cb.ItemsSource = self._get_schedules_list()
+        for cat in doc.Settings.Categories:
+            if cat.Name == 'Sheets':
+                self.sheet_cat_id = cat.Id
+
+        self.schedules_cb.ItemsSource = self._get_sheet_index_list()
         self.schedules_cb.SelectedIndex = 0
+
 
         itemContainerStyle = Style(clr.GetClrType(ListViewItem))
         itemContainerStyle.Setters.Add(Setter(ListViewItem.AllowDropProperty, True))
@@ -49,8 +54,7 @@ class PrintSheetsWindow(WPFWindow):
     def reverse_print(self):
         return self.reverse_cb.IsChecked
 
-    @staticmethod
-    def _get_schedule_text_data(schedule_view):
+    def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
         vseop = ViewScheduleExportOptions()
         vseop.TextQualifier = ExportTextQualifier.None
@@ -63,9 +67,8 @@ class PrintSheetsWindow(WPFWindow):
         except:
             return sched_data
 
-    @staticmethod
-    def _order_sheets_by_schedule_data(schedule_view, sheet_list):
-        sched_data = PrintSheetsWindow._get_schedule_text_data(schedule_view)
+    def _order_sheets_by_schedule_data(self, schedule_view, sheet_list):
+        sched_data = self._get_schedule_text_data(schedule_view)
 
         if not sched_data:
             return sheet_list
@@ -83,31 +86,26 @@ class PrintSheetsWindow(WPFWindow):
         sorted_keys = sorted(ordered_sheets_dict.keys())
         return [ordered_sheets_dict[x] for x in sorted_keys]
 
-    @staticmethod
-    def _get_ordered_schedule_sheets(schedule_view):
+    def _get_ordered_schedule_sheets(self):
+        schedule_view = self.selected_schedule
         cl_sheets = FilteredElementCollector(doc, schedule_view.Id)
         sheets = cl_sheets.OfClass(clr.GetClrType(ViewSheet)).WhereElementIsNotElementType().ToElements()
 
-        return PrintSheetsWindow._order_sheets_by_schedule_data(schedule_view, sheets)
+        return self._order_sheets_by_schedule_data(schedule_view, sheets)
 
-    @staticmethod
-    def _is_sheet_index(schedule_view):
-        cl_sheets = FilteredElementCollector(doc, schedule_view.Id)
-        sheets = cl_sheets.OfClass(clr.GetClrType(ViewSheet)).WhereElementIsNotElementType().ToElements()
-        return len(sheets) > 0
+    def _is_sheet_index(self, schedule_view):
+        return self.sheet_cat_id == schedule_view.Definition.CategoryId
 
-    @staticmethod
-    def _get_schedules_list():
+    def _get_sheet_index_list(self):
         cl_schedules = FilteredElementCollector(doc)
         schedules = cl_schedules.OfClass(clr.GetClrType(ViewSchedule)).WhereElementIsNotElementType().ToElements()
 
-        return [sched for sched in schedules if PrintSheetsWindow._is_sheet_index(sched)]
+        return [sched for sched in schedules if self._is_sheet_index(sched)]
 
-    @staticmethod
-    def _print_sheets_in_order(sheet_list):
+    def _print_sheets_in_order(self):
         print_mgr = doc.PrintManager
         print_mgr.PrintToFile = True
-        for index, sheet in enumerate(sheet_list):
+        for index, sheet in enumerate(self.linkedsheets_lb.ItemsSource):
             print_mgr.PrintToFileName = op.join(r'C:', '{:05} {} - {}.pdf'.format(index,
                                                                                   sheet.SheetNumber,
                                                                                   sheet.Name))
@@ -117,19 +115,20 @@ class PrintSheetsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def selection_changed(self, sender, args):
         if self.selected_schedule:
-            ordered_sheets = PrintSheetsWindow._get_ordered_schedule_sheets(self.selected_schedule)
+            ordered_sheets = self._get_ordered_schedule_sheets()
             printable_sheets = [x for x in ordered_sheets if x.CanBePrinted]
-            if self.reverse_print:
-                ordered_sheets.reverse()
 
-            self.linkedsheets_lb.ItemsSource = ordered_sheets
+            if self.reverse_print:
+                printable_sheets.reverse()
+
+            self.linkedsheets_lb.ItemsSource = printable_sheets
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def print_sheets(self, sender, args):
         if self.linkedsheets_lb.ItemsSource:
             self.Close()
-            PrintSheetsWindow._print_sheets_in_order(self.linkedsheets_lb.ItemsSource)
+            self._print_sheets_in_order()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
