@@ -20,10 +20,9 @@
                         Click="print_sheets" HorizontalAlignment="Right" Width="350px" Margin="0,15,0,0"/>
                 <GroupBox Header="Print Settings:" Margin="0,15,0,15">
                     <WrapPanel>
-                        <CheckBox x:Name="collate_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Collate</CheckBox>
+                        <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Combine into one file</CheckBox>
                         <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
-                                  IsChecked="False" Click="selection_changed"
-                                  IsEnabled="True">Reverse Print Order
+                                  IsChecked="False" Click="selection_changed">Reverse Print Order
                         </CheckBox>
                     </WrapPanel>
                 </GroupBox>

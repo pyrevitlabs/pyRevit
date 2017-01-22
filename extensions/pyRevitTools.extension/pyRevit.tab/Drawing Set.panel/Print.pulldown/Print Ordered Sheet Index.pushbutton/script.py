@@ -11,7 +11,8 @@ from revitutils import doc
 
 import clr
 from Autodesk.Revit.DB import Element, FilteredElementCollector, ViewSchedule, ViewSheet,\
-                              ViewScheduleExportOptions, ExportTextQualifier
+                              ViewScheduleExportOptions, ExportTextQualifier, ViewSet, \
+                              PrintRange, Transaction, ViewSheetSet
 
 clr.AddReference('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
@@ -53,6 +54,10 @@ class PrintSheetsWindow(WPFWindow):
     @property
     def reverse_print(self):
         return self.reverse_cb.IsChecked
+
+    @property
+    def combine_print(self):
+        return self.combine_cb.IsChecked
 
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
@@ -102,6 +107,40 @@ class PrintSheetsWindow(WPFWindow):
 
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
+    def _print_combined_sheets_in_order(self):
+        # todo: Revit does not follow the order of sheets as set by ViewSet
+        print_mgr = doc.PrintManager
+        print_mgr.PrintRange = PrintRange.Select
+        viewsheet_settings = print_mgr.ViewSheetSetting
+
+        sheet_set = ViewSet()
+
+        for sheet in self.linkedsheets_lb.ItemsSource:
+            sheet_set.Insert(sheet)
+
+        # Collect existing sheet sets
+        cl = FilteredElementCollector(doc)
+        viewsheetsets = cl.OfClass(clr.GetClrType(ViewSheetSet)).WhereElementIsNotElementType().ToElements()
+        all_viewsheetsets = {vss.Name: vss for vss in viewsheetsets}
+
+        sheetsetname = 'OrderedPrintSet'
+
+        with Transaction(doc, 'Update Ordered Print Set') as t:
+            t.Start()
+            # Delete existing matching sheet set
+            if sheetsetname in all_viewsheetsets:
+                viewsheet_settings.CurrentViewSheetSet = all_viewsheetsets[sheetsetname]
+                viewsheet_settings.Delete()
+
+            viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
+            viewsheet_settings.SaveAs(sheetsetname)
+            t.Commit()
+
+        print_mgr.PrintToFile = True
+        print_mgr.CombinedFile = True
+        print_mgr.PrintToFileName = op.join(r'C:', 'Ordered Sheet Set.pdf')
+        print_mgr.SubmitPrint()
+
     def _print_sheets_in_order(self):
         print_mgr = doc.PrintManager
         print_mgr.PrintToFile = True
@@ -129,7 +168,10 @@ class PrintSheetsWindow(WPFWindow):
     def print_sheets(self, sender, args):
         if self.linkedsheets_lb.ItemsSource:
             self.Close()
-            self._print_sheets_in_order()
+            if self.combine_print:
+                self._print_combined_sheets_in_order()
+            else:
+                self._print_sheets_in_order()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
