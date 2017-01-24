@@ -66,8 +66,8 @@
             <ListView x:Name="sheets_lb" Margin="10,0,10,10" AllowDrop="True">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Print Index" CellTemplate="{StaticResource IndexColumnStyle}"/>
-                        <GridViewColumn Header="Sheet Number" DisplayMemberBinding="{Binding number}" />
+                        <GridViewColumn Header="Print Index" Width="70" CellTemplate="{StaticResource IndexColumnStyle}"/>
+                        <GridViewColumn Header="Sheet Number" Width="90" DisplayMemberBinding="{Binding number}" />
                         <GridViewColumn Header="Sheet Name" DisplayMemberBinding="{Binding name}" />
                     </GridView>
                 </ListView.View>

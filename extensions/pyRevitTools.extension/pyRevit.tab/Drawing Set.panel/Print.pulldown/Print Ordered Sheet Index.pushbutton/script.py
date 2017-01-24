@@ -167,8 +167,8 @@ class PrintSheetsWindow(WPFWindow):
         print_mgr.PrintToFile = True
         # print_mgr.CombinedFile = False
         print_mgr.PrintRange = PrintRange.Current
-        for index, sheet in enumerate(self.sheets_lb.ItemsSource):
-            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(index,
+        for sheet in self.sheets_lb.ItemsSource:
+            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(sheet.print_index,
                                                                        sheet.number,
                                                                        sheet.name))
             print_mgr.PrintToFileName = op.join(r'C:', output_fname)
