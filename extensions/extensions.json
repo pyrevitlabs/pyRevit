@@ -2,6 +2,7 @@
 "extensions":
     [
         {
+        "builtin": "True",
         "type": "extension",
         "name": "pyRevitTools",
         "description": "IronPython Scripts for Autodesk Revit",
@@ -12,6 +13,7 @@
         "image" : ""
         },
         {
+        "builtin": "False",
         "type": "lib",
         "name": "RevitPythonWrapper",
         "description": "A Python Wrapper For the Revit API",
@@ -22,6 +24,7 @@
         "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png"
         },
         {
+        "builtin": "False",
         "type": "extension",
         "name": "PyRevitPlus",
         "description": "Extensions for PyRevit",

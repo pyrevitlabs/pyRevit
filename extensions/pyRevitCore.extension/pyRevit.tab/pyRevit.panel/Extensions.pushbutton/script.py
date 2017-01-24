@@ -33,6 +33,7 @@ class ExtensionPackageListItem:
         elif self.ext_pkg.type == extpackages.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
+        self.Builtin = self.ext_pkg.builtin
         self.Name = self.ext_pkg.name
         self.Desciption = self.ext_pkg.description
         self.Author = self.ext_pkg.author
@@ -110,13 +111,17 @@ class ExtensionsWindow(WPFWindow):
         if ext_pkg_item.ext_pkg.is_installed:
             self.hide_element(self.ext_install_b)
 
+            if ext_pkg_item.ext_pkg.builtin:
+                self.hide_element(self.ext_remove_b)
+            else:
+                self.show_element(self.ext_remove_b)
+
             self.show_element(self.ext_toggle_b)
             if ext_pkg_item.ext_pkg.config.disabled:
                 self.ext_toggle_b.Content = 'Enable Package'
             else:
                 self.ext_toggle_b.Content = 'Disable Package'
 
-            self.show_element(self.ext_remove_b)
         else:
             self.show_element(self.ext_install_b)
             self.hide_element(self.ext_toggle_b, self.ext_remove_b)
