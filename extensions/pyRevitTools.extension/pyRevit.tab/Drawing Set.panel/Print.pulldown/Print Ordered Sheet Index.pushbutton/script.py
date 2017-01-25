@@ -27,6 +27,20 @@ from System.Windows.Input import MouseButtonEventHandler
 from System.Windows.Controls import ListViewItem
 
 
+class ViewSheetListItem(object):
+    def __init__(self, view_sheet):
+        self._sheet = view_sheet
+        self.name = self._sheet.Name
+        self.number = self._sheet.SheetNumber
+        self.printable = self._sheet.CanBePrinted
+        self.print_index = 0
+
+    @property
+    def revit_sheet(self):
+        return self._sheet
+
+
+
 class PrintSheetsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
@@ -39,13 +53,12 @@ class PrintSheetsWindow(WPFWindow):
         self.schedules_cb.SelectedIndex = 0
 
 
-        itemContainerStyle = Style(clr.GetClrType(ListViewItem))
-        itemContainerStyle.Setters.Add(Setter(ListViewItem.AllowDropProperty, True))
-        itemContainerStyle.Setters.Add(EventSetter(ListViewItem.PreviewMouseLeftButtonDownEvent,
+        item_cstyle = self.sheets_lb.ItemContainerStyle
+        item_cstyle.Setters.Add(Setter(ListViewItem.AllowDropProperty, True))
+        item_cstyle.Setters.Add(EventSetter(ListViewItem.PreviewMouseLeftButtonDownEvent,
                                                    MouseButtonEventHandler(self.preview_mouse_down)))
-        itemContainerStyle.Setters.Add(EventSetter(ListViewItem.DropEvent,
+        item_cstyle.Setters.Add(EventSetter(ListViewItem.DropEvent,
                                                    DragEventHandler(self.drop_sheet)))
-        self.linkedsheets_lb.ItemContainerStyle = itemContainerStyle
 
     @property
     def selected_schedule(self):
@@ -58,6 +71,14 @@ class PrintSheetsWindow(WPFWindow):
     @property
     def combine_print(self):
         return self.combine_cb.IsChecked
+
+    @property
+    def show_placeholders(self):
+        return self.placeholder_cb.IsChecked
+
+    @property
+    def include_placeholders(self):
+        return self.indexspace_cb.IsChecked
 
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
@@ -115,8 +136,8 @@ class PrintSheetsWindow(WPFWindow):
 
         sheet_set = ViewSet()
 
-        for sheet in self.linkedsheets_lb.ItemsSource:
-            sheet_set.Insert(sheet)
+        for sheet in self.sheets_lb.ItemsSource:
+            sheet_set.Insert(sheet.revit_sheet)
 
         # Collect existing sheet sets
         cl = FilteredElementCollector(doc)
@@ -144,31 +165,58 @@ class PrintSheetsWindow(WPFWindow):
     def _print_sheets_in_order(self):
         print_mgr = doc.PrintManager
         print_mgr.PrintToFile = True
-        print_mgr.CombinedFile = False
+        # print_mgr.CombinedFile = False
         print_mgr.PrintRange = PrintRange.Current
-        for index, sheet in enumerate(self.linkedsheets_lb.ItemsSource):
-            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(index,
-                                                                       sheet.SheetNumber,
-                                                                       sheet.Name))
+        for sheet in self.sheets_lb.ItemsSource:
+            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(sheet.print_index,
+                                                                       sheet.number,
+                                                                       sheet.name))
             print_mgr.PrintToFileName = op.join(r'C:', output_fname)
-            print_mgr.SubmitPrint(sheet)
+            if sheet.printable:
+                print_mgr.SubmitPrint(sheet.revit_sheet)
+
+    def _update_print_indices(self, sheet_list):
+        for idx, sheet in enumerate(sheet_list):
+            sheet.print_index = idx
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def selection_changed(self, sender, args):
         if self.selected_schedule:
-            ordered_sheets = self._get_ordered_schedule_sheets()
-            printable_sheets = [x for x in ordered_sheets if x.CanBePrinted]
+            sheet_list = [ViewSheetListItem(x) for x in self._get_ordered_schedule_sheets()]
 
+            # reverse sheet if reverse is set
             if self.reverse_print:
-                printable_sheets.reverse()
+                sheet_list.reverse()
 
-            self.linkedsheets_lb.ItemsSource = printable_sheets
+            if not self.show_placeholders:
+                self.indexspace_cb.IsEnabled = True
+                # update print indices with placeholder sheets
+                self._update_print_indices(sheet_list)
+                # remove placeholders if requested
+                printable_sheets = []
+                for sheet in sheet_list:
+                    if sheet.printable:
+                        printable_sheets.append(sheet)
+
+                # update print indices without placeholder sheets
+                if not self.include_placeholders:
+                    self._update_print_indices(printable_sheets)
+
+                self.sheets_lb.ItemsSource = printable_sheets
+
+            else:
+                self.indexspace_cb.IsChecked = True
+                self.indexspace_cb.IsEnabled = False
+                # update print indices
+                self._update_print_indices(sheet_list)
+                # Show all sheets
+                self.sheets_lb.ItemsSource = sheet_list
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def print_sheets(self, sender, args):
-        if self.linkedsheets_lb.ItemsSource:
+        if self.sheets_lb.ItemsSource:
             self.Close()
             if self.combine_print:
                 self._print_combined_sheets_in_order()
@@ -184,22 +232,25 @@ class PrintSheetsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def preview_mouse_down(self, sender, args):
        if isinstance(sender, ListViewItem):
-           DragDrop.DoDragDrop(sender, sender.DataContext, DragDropEffects.Move)
+           if sender.DataContext.printable:
+               DragDrop.DoDragDrop(sender, sender.DataContext, DragDropEffects.Move)
+
            sender.IsSelected = False
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def drop_sheet(self, sender, args):
-        dropped_data = args.Data.GetData(clr.GetClrType(ViewSheet))
+        dropped_data = args.Data.GetData(ViewSheetListItem)
         target = sender.DataContext
 
-        dropped_idx = self.linkedsheets_lb.Items.IndexOf(dropped_data)
-        target_idx = self.linkedsheets_lb.Items.IndexOf(target)
+        dropped_idx = self.sheets_lb.Items.IndexOf(dropped_data)
+        target_idx = self.sheets_lb.Items.IndexOf(target)
 
-        sheet_list = self.linkedsheets_lb.ItemsSource
+        sheet_list = self.sheets_lb.ItemsSource
         sheet_list.remove(dropped_data)
         sheet_list.insert(target_idx, dropped_data)
-        self.linkedsheets_lb.Items.Refresh()
+        self._update_print_indices(sheet_list)
+        self.sheets_lb.Items.Refresh()
 
 
 if __name__ == '__main__':

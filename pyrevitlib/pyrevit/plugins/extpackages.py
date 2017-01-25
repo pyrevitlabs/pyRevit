@@ -25,6 +25,7 @@ class ExtensionPackage:
             elif ext_type == ExtensionTypes.LIB_EXTENSION.ID:
                 self.type = ExtensionTypes.LIB_EXTENSION
 
+            self.builtin = True if info_dict['builtin'].lower() == 'true' else False
             self.name = info_dict['name']
             self.description = info_dict['description']
             self.url = info_dict['url']
