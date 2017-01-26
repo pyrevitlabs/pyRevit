@@ -12,7 +12,6 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 """
 
-__title__ = 'Active View Creator'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
