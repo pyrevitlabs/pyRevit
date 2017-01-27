@@ -1,4 +1,5 @@
-"""Decreases the sheet number of the selected sheets by one."""
+"""Decreases the sheet number of the selected sheets by one.
+The sheet name change will be printed if logging is set to Verbose in pyRevit settings."""
 
 from scriptutils import logger, coreutils
 from revitutils import doc, uidoc, selection
