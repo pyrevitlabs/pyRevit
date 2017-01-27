@@ -12,6 +12,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import os.path as op
+import pyrevit.coreutils as coreutils
 from pyrevit.coreutils.logger import get_logger
 
 
