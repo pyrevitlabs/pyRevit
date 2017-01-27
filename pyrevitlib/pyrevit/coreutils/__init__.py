@@ -382,3 +382,59 @@ def fully_remove_tree(dir_path):
 
 def cleanup_filename(file_name):
     return re.sub('[^\w_.)( -]', '', file_name)
+
+
+def _inc_or_dec_string(st, shift):
+    next_str = ""
+    index = len(st) -1
+    carry = shift
+    curr_digit = 0
+    while(index>=0):
+        if st[index].isalpha():
+            if st[index].islower():
+                RESET_A = 'a'
+                RESET_Z = 'z'
+            else:
+                RESET_A = 'A'
+                RESET_Z = 'Z'
+
+            curr_digit = (ord(st[index]) + carry)
+            if curr_digit < ord(RESET_A):
+                curr_digit = ord(RESET_Z) - ((ord(RESET_A) - curr_digit) - 1)
+                carry = shift
+            elif curr_digit > ord(RESET_Z):
+                curr_digit = ord(RESET_A) + ((curr_digit - ord(RESET_Z)) - 1)
+                carry = shift
+            else:
+                carry = 0
+
+            curr_digit = chr(curr_digit)
+            next_str += curr_digit
+
+        elif (st[index].isdigit()):
+
+            curr_digit = int(st[index]) + carry
+            if curr_digit > 9:
+                curr_digit = 0 + ((curr_digit - 9)-1)
+                carry = shift
+            elif curr_digit < 0:
+                curr_digit = 9 - ((0 - curr_digit)-1)
+                carry = shift
+            else:
+                carry = 0
+            next_str += str(curr_digit)
+
+        else:
+            next_str += st[index]
+
+        index -= 1
+
+    return next_str[::-1]
+
+
+def increment_str(input_str, step):
+    return _inc_or_dec_string(input_str, abs(step))
+
+
+def decrement_str(input_str, step):
+    return _inc_or_dec_string(input_str, -abs(step))
