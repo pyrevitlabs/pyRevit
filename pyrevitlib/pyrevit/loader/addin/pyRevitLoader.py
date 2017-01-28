@@ -1,8 +1,10 @@
 """
-This is the starting point for pyRevit. At host startup, host loads the PyRevitLoader.dll addon. This dll then creates
- an ironpython engine and runs pyRevitLoader.py (This script). It's the job of this script to setup the environment for
- the pyrevit module (lib\pyrevit) and load a new pyRevit session. This script needs to add the directory path of the
- pyrevit lib folder so the lib\pyrevit module can be imported and used.
+This is the starting point for pyRevit. At host startup, host loads the
+ PyRevitLoader.dll addon. This dll then creates an ironpython engine and runs
+ pyRevitLoader.py (This script). It's the job of this script to setup the
+ environment for the pyrevit module (lib\pyrevit) and load a new pyRevit
+ session. This script needs to add the directory path of the pyrevit lib folder
+ so the lib\pyrevit module can be imported and used.
 
 >>> from pyrevit.loader.sessionmgr import load_session
 >>> load_session()     # start loading a new pyRevit session

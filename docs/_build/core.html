@@ -26,6 +26,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyRevit Panel" href="coretoolset.html" />
     <link rel="prev" title="Welcome to pyRevit’s documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -47,10 +48,12 @@
 <div class="section" id="the-revit-addon-and-loader-script">
 <h2>The Revit Addon and Loader Script<a class="headerlink" href="#the-revit-addon-and-loader-script" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">This is the starting point for pyRevit. At host startup, host loads the PyRevitLoader.dll addon. This dll then creates</span>
-<span class="sd"> an ironpython engine and runs pyRevitLoader.py (This script). It&#39;s the job of this script to setup the environment for</span>
-<span class="sd"> the pyrevit module (lib\pyrevit) and load a new pyRevit session. This script needs to add the directory path of the</span>
-<span class="sd"> pyrevit lib folder so the lib\pyrevit module can be imported and used.</span>
+<span class="sd">This is the starting point for pyRevit. At host startup, host loads the</span>
+<span class="sd"> PyRevitLoader.dll addon. This dll then creates an ironpython engine and runs</span>
+<span class="sd"> pyRevitLoader.py (This script). It&#39;s the job of this script to setup the</span>
+<span class="sd"> environment for the pyrevit module (lib\pyrevit) and load a new pyRevit</span>
+<span class="sd"> session. This script needs to add the directory path of the pyrevit lib folder</span>
+<span class="sd"> so the lib\pyrevit module can be imported and used.</span>
 
 <span class="sd">&gt;&gt;&gt; from pyrevit.loader.sessionmgr import load_session</span>
 <span class="sd">&gt;&gt;&gt; load_session()     # start loading a new pyRevit session</span>
@@ -90,6 +93,7 @@
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">Welcome to pyRevit&#8217;s documentation!</a></li>
+      <li>Next: <a href="coretoolset.html" title="next chapter">pyRevit Panel</a></li>
   </ul></li>
 </ul>
 </div>
