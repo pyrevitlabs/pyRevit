@@ -6,8 +6,7 @@
 Welcome to pyRevit's documentation!
 ===================================
 
-..  note::
-This documentation is work-in-progress now. I'm working on the documentation of
+..  note:: This documentation is work-in-progress now. I'm working on the documentation of
 the loader module as the moment and will continue working on documenting
 the tools after this step. Thanks for your patience.
 
