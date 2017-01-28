@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="pyRevit Panel" href="coretoolset.html" />
+    <link rel="next" title="pyRevit Control Panel" href="coretoolset.html" />
     <link rel="prev" title="Welcome to pyRevit’s documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -45,18 +45,40 @@
             
   <div class="section" id="pyrevit-core">
 <h1>pyRevit Core<a class="headerlink" href="#pyrevit-core" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="the-revit-addon-and-loader-script">
-<h2>The Revit Addon and Loader Script<a class="headerlink" href="#the-revit-addon-and-loader-script" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-complex-relationship-of-a-c-addin-and-a-python-script">
+<h2>The Complex Relationship of a C# Addin and a Python Script<a class="headerlink" href="#the-complex-relationship-of-a-c-addin-and-a-python-script" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>Let&#8217;s talk basics:</dt>
+<dd><ol class="first last arabic simple">
+<li>Revit Addons are written in C# and are windows <code class="docutils literal"><span class="pre">.dll</span></code> files.</li>
+<li>pyRevit is written as an IronPython module. (a bit more complex than that)</li>
+<li>Revit doesn&#8217;t have an option to run external python scripts.</li>
+</ol>
+</dd>
+</dl>
+<p>Thus, we need a way to teach Revit how to run a python script when it&#8217;s starting up.</p>
+<p>The solution was to create a custom C# addin to create a python engine and run a script. We&#8217;ll call this addin <code class="docutils literal"><span class="pre">pyRevitLoader.dll</span></code>. I wanted to keep this addin as simple as possible since it&#8217;s the only statically-compiled piece of code in this project. The rest of the task of loading pyRevit were assigned to a loader python script that is being run by the loader addin.</p>
+<dl class="docutils">
+<dt>So:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal"><span class="pre">pyRevitLoader.dll</span></code> is a simple C# addin for Revit</li>
+<li><code class="docutils literal"><span class="pre">pyRevitLoader.dll</span></code> loads <code class="docutils literal"><span class="pre">pyRevitLoader.py</span></code> at startup.</li>
+<li><code class="docutils literal"><span class="pre">pyRevitLoader.py</span></code> sets up the environment and loads pyRevit.</li>
+</ul>
+</dd>
+</dl>
+<p>It&#8217;s that simple really.</p>
+</div>
+<div class="section" id="pyrevit-loader-implementation">
+<h2>pyRevit Loader Implementation<a class="headerlink" href="#pyrevit-loader-implementation" title="Permalink to this headline">¶</a></h2>
+<p>Here is the full source of <code class="docutils literal"><span class="pre">pyRevitLoader.py</span></code>. The docstring explains how it works.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">This is the starting point for pyRevit. At host startup, host loads the</span>
-<span class="sd"> PyRevitLoader.dll addon. This dll then creates an ironpython engine and runs</span>
-<span class="sd"> pyRevitLoader.py (This script). It&#39;s the job of this script to setup the</span>
-<span class="sd"> environment for the pyrevit module (lib\pyrevit) and load a new pyRevit</span>
+<span class="sd">This is the starting point for pyRevit. At Revit loads the PyRevitLoader.dll</span>
+<span class="sd"> addon at startup. This dll then creates an ironpython engine and runs</span>
+<span class="sd"> pyRevitLoader.py (this script). It&#39;s the job of this script to setup the</span>
+<span class="sd"> environment for the pyrevit module (pyrevitlib\pyrevit) and load a new pyRevit</span>
 <span class="sd"> session. This script needs to add the directory path of the pyrevit lib folder</span>
-<span class="sd"> so the lib\pyrevit module can be imported and used.</span>
-
-<span class="sd">&gt;&gt;&gt; from pyrevit.loader.sessionmgr import load_session</span>
-<span class="sd">&gt;&gt;&gt; load_session()     # start loading a new pyRevit session</span>
+<span class="sd"> so the pyrevit module can be imported and used.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -68,10 +90,15 @@
 <span class="c1"># now pyrevit can be imported</span>
 <span class="kn">from</span> <span class="nn">pyrevit.loader.sessionmgr</span> <span class="k">import</span> <span class="n">load_session</span>
 
-<span class="c1"># start a new session </span>
+<span class="c1"># ask sessionmgr to start a new session</span>
 <span class="n">load_session</span><span class="p">()</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="pyrevitloader-addin-implementation">
+<h2>pyRevitLoader Addin Implementation<a class="headerlink" href="#pyrevitloader-addin-implementation" title="Permalink to this headline">¶</a></h2>
+<p>The source code for pyRevitLoader addin is under:
+<code class="docutils literal"><span class="pre">pyrevitlib/pyrevit/addin/Source</span></code></p>
 </div>
 </div>
 
@@ -84,7 +111,9 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">pyRevit Core</a><ul>
-<li><a class="reference internal" href="#the-revit-addon-and-loader-script">The Revit Addon and Loader Script</a></li>
+<li><a class="reference internal" href="#the-complex-relationship-of-a-c-addin-and-a-python-script">The Complex Relationship of a C# Addin and a Python Script</a></li>
+<li><a class="reference internal" href="#pyrevit-loader-implementation">pyRevit Loader Implementation</a></li>
+<li><a class="reference internal" href="#pyrevitloader-addin-implementation">pyRevitLoader Addin Implementation</a></li>
 </ul>
 </li>
 </ul>
@@ -93,7 +122,7 @@
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">Welcome to pyRevit&#8217;s documentation!</a></li>
-      <li>Next: <a href="coretoolset.html" title="next chapter">pyRevit Panel</a></li>
+      <li>Next: <a href="coretoolset.html" title="next chapter">pyRevit Control Panel</a></li>
   </ul></li>
 </ul>
 </div>
