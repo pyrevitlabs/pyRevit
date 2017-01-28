@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="python">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Loader Module (pyrevit.loader) &#8212; pyRevit 0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyRevit Control Panel" href="coretoolset.html" />
+    <link rel="prev" title="pyRevit Core" href="core.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="the-loader-module-pyrevit-loader">
+<h1>The Loader Module (pyrevit.loader)<a class="headerlink" href="#the-loader-module-pyrevit-loader" title="Permalink to this headline">¶</a></h1>
+<p>The loader module manages the workflow of loading a new pyRevit session. It&#8217;s main purpose is to orchestrate the process of finding pyRevit extensions, creating dll assemblies for them, and creating a user interface in the host application.</p>
+<p>Everything starts from <code class="docutils literal"><span class="pre">sessionmgr.load_session()</span></code> function...</p>
+<span class="target" id="module-pyrevit"></span><p>pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally.</p>
+<dl class="exception">
+<dt id="pyrevit.PyRevitException">
+<em class="property">exception </em><code class="descclassname">pyrevit.</code><code class="descname">PyRevitException</code><a class="headerlink" href="#pyrevit.PyRevitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Base class for all pyRevit Exceptions.
+Parameters args and message are derived from Exception class.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyrevit._HostApplication">
+<em class="property">class </em><code class="descclassname">pyrevit.</code><code class="descname">_HostApplication</code><a class="headerlink" href="#pyrevit._HostApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains current host version and provides comparison functions.</p>
+<dl class="attribute">
+<dt id="pyrevit._HostApplication.username">
+<code class="descname">username</code><a class="headerlink" href="#pyrevit._HostApplication.username" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the username from Revit API (Application.Username)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyrevit._find_home_directory">
+<code class="descclassname">pyrevit.</code><code class="descname">_find_home_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._find_home_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the pyRevitLoader.py full directory address</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="core.html">pyRevit Core</a><ul>
+      <li>Previous: <a href="core.html" title="previous chapter">pyRevit Core</a></li>
+      <li>Next: <a href="coretoolset.html" title="next chapter">pyRevit Control Panel</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/loader.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, eirannejad.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/loader.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
