@@ -1,16 +1,18 @@
-from pyrevit import PyRevitException
+from pyrevit import PyRevitException, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
-try:
-    if user_config.core.bincache:
+
+if not EXEC_PARAMS.doc_mode:
+    try:
+        if user_config.core.bincache:
+            from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
+        else:
+            from pyrevit.extensions.cacher_asc import is_cache_valid, get_cached_extension, update_cache
+    except AttributeError:
+        user_config.core.bincache = True
+        user_config.save_changes()
         from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
-    else:
-        from pyrevit.extensions.cacher_asc import is_cache_valid, get_cached_extension, update_cache
-except AttributeError:
-    user_config.core.bincache = True
-    user_config.save_changes()
-    from pyrevit.extensions.cacher_bin import is_cache_valid, get_cached_extension, update_cache
 
 from pyrevit.extensions.parser import parse_dir_for_ext_type, get_parsed_extension, parse_comp_dir
 from pyrevit.extensions.genericcomps import GenericUICommand

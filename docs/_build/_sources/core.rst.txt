@@ -2,13 +2,6 @@
 pyRevit Core
 ============
 
-..  toctree::
-    :maxdepth: 2
-    :caption: Contents:
-    :hidden:
-
-    loader
-
 
 The Complex Relationship of a C# Addin and a Python Script
 **********************************************************
@@ -44,3 +37,10 @@ pyRevitLoader Addin Implementation
 
 The source code for pyRevitLoader addin is under:
 ``pyrevitlib/pyrevit/addin/Source``
+
+
+..  toctree::
+    :maxdepth: 2
+    :hidden:
+
+    loader

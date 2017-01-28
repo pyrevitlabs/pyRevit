@@ -30,19 +30,21 @@ FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_STATUS = False
 
-# Setting session-wide debug/verbose status so other individual scripts know about it.
-# individual scripts are run at different time and the level settings need to be set inside current host session
-# so they can be retreieved later.
-if get_pyrevit_env_var(VERBOSE_ISC_NAME):
-    RUNTIME_LOGGING_LEVEL = logging.INFO
 
-if get_pyrevit_env_var(DEBUG_ISC_NAME):
-    RUNTIME_LOGGING_LEVEL = logging.DEBUG
+if not EXEC_PARAMS.doc_mode:
+    # Setting session-wide debug/verbose status so other individual scripts know about it.
+    # individual scripts are run at different time and the level settings need to be set inside current host session
+    # so they can be retreieved later.
+    if get_pyrevit_env_var(VERBOSE_ISC_NAME):
+        RUNTIME_LOGGING_LEVEL = logging.INFO
 
-# the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if user Shift-clicks on the button
-# EXEC_PARAMS.forced_debug_mode will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
-if EXEC_PARAMS.forced_debug_mode:
-    RUNTIME_LOGGING_LEVEL = logging.DEBUG
+    if get_pyrevit_env_var(DEBUG_ISC_NAME):
+        RUNTIME_LOGGING_LEVEL = logging.DEBUG
+
+    # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if user Shift-clicks on the button
+    # EXEC_PARAMS.forced_debug_mode will be set by the LOADER_ADDIN_COMMAND_INTERFACE_CLASS_EXT at script runtime
+    if EXEC_PARAMS.forced_debug_mode:
+        RUNTIME_LOGGING_LEVEL = logging.DEBUG
 
 
 # custom logger methods (for module consistency and custom adjustments) ------------------------------------------------

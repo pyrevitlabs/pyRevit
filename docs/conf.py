@@ -48,7 +48,7 @@ __builtin__.__sphinx__ = True
 # based on:
 # http://blog.dowski.com/2008/07/31/customizing-the-python-import-system/
 class DotNetImporter(object):
-    domain_modules = ['System', 'Autodesk']
+    domain_modules = ['clr', 'System', 'Autodesk', 'Microsoft']
     found_mods = dict()
 
     def find_module(self, fullname, path=None):

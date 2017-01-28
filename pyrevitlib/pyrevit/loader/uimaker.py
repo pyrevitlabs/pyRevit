@@ -3,7 +3,10 @@ import imp
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import find_loaded_asm
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.ribbon import get_current_ui
+
+if not EXEC_PARAMS.doc_mode:
+    from pyrevit.coreutils.ribbon import get_current_ui
+
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX, STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
                                PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
                                PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX, LINK_BUTTON_POSTFIX, \
@@ -386,7 +389,8 @@ def _recursively_produce_ui_items(parent_ui_item, component, ext_asm_info):
                 _recursively_produce_ui_items(ui_item, sub_cmp, ext_asm_info)
 
 
-current_ui = get_current_ui()
+if not EXEC_PARAMS.doc_mode:
+    current_ui = get_current_ui()
 
 
 def update_pyrevit_ui(parsed_ext, ext_asm_info):

@@ -43,35 +43,27 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="the-loader-module-pyrevit-loader">
-<h1>The Loader Module (pyrevit.loader)<a class="headerlink" href="#the-loader-module-pyrevit-loader" title="Permalink to this headline">¶</a></h1>
-<p>The loader module manages the workflow of loading a new pyRevit session. It&#8217;s main purpose is to orchestrate the process of finding pyRevit extensions, creating dll assemblies for them, and creating a user interface in the host application.</p>
+  <div class="section" id="module-pyrevit.loader.sessionmgr">
+<span id="the-loader-module-pyrevit-loader"></span><h1>The Loader Module (pyrevit.loader)<a class="headerlink" href="#module-pyrevit.loader.sessionmgr" title="Permalink to this headline">¶</a></h1>
+<p>The loader module manages the workflow of loading a new pyRevit session.
+It&#8217;s main purpose is to orchestrate the process of finding pyRevit extensions,
+creating dll assemblies for them, and creating a user interface
+in the host application.</p>
 <p>Everything starts from <code class="docutils literal"><span class="pre">sessionmgr.load_session()</span></code> function...</p>
-<span class="target" id="module-pyrevit"></span><p>pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally.</p>
-<dl class="exception">
-<dt id="pyrevit.PyRevitException">
-<em class="property">exception </em><code class="descclassname">pyrevit.</code><code class="descname">PyRevitException</code><a class="headerlink" href="#pyrevit.PyRevitException" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
-<p>Base class for all pyRevit Exceptions.
-Parameters args and message are derived from Exception class.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="pyrevit._HostApplication">
-<em class="property">class </em><code class="descclassname">pyrevit.</code><code class="descname">_HostApplication</code><a class="headerlink" href="#pyrevit._HostApplication" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contains current host version and provides comparison functions.</p>
-<dl class="attribute">
-<dt id="pyrevit._HostApplication.username">
-<code class="descname">username</code><a class="headerlink" href="#pyrevit._HostApplication.username" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the username from Revit API (Application.Username)</p>
-</dd></dl>
-
-</dd></dl>
-
+<p>The only public function is load_session() that loads a new session.
+Everything else is private.</p>
 <dl class="function">
-<dt id="pyrevit._find_home_directory">
-<code class="descclassname">pyrevit.</code><code class="descname">_find_home_directory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit._find_home_directory" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the pyRevitLoader.py full directory address</p>
+<dt id="pyrevit.loader.sessionmgr.load_session">
+<code class="descclassname">pyrevit.loader.sessionmgr.</code><code class="descname">load_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyrevit.loader.sessionmgr.load_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles loading/reloading of the pyRevit addin and extensions.
+To create a proper ui, pyRevit extensions needs to be properly parsed and
+a dll assembly needs to be created. This function handles these tasks
+through interactions with .extensions, loader.asmmaker, and .loader.uimaker</p>
+<p class="rubric">Example</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyrevit.loader.sessionmgr</span> <span class="k">import</span> <span class="n">load_session</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">load_session</span><span class="p">()</span>     <span class="c1"># start loading a new pyRevit session</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>

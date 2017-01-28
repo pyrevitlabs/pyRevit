@@ -1,9 +1,12 @@
 """
-Manages the workflow of loading a new pyRevit session. It's main purpose is to
-orchestrate the process of finding pyRevit extensions, creating dll assemblies
-for them, and creating a user interface in host application.
+The loader module manages the workflow of loading a new pyRevit session.
+It's main purpose is to orchestrate the process of finding pyRevit extensions,
+creating dll assemblies for them, and creating a user interface
+in the host application.
 
-The only public function is load_session() that loads a new session.
+Everything starts from ``sessionmgr.load_session()`` function...
+
+The only public function is ``load_session()`` that loads a new session.
 Everything else is private.
 """
 
@@ -88,9 +91,14 @@ def _perform_onsessionloadcomplete_ops():
 
 
 def _new_session():
-    # get all installed extensions (UI extension only)
-    # for every extension of installed extensions,
-    # create an assembly,and create a ui
+    """
+    Get all installed extensions (UI extension only) and creates an assembly,
+    and a ui for each.
+
+    Returns:
+        None
+    """
+    # get all installed ui extensions
     for ui_ext in get_installed_ui_extensions():
         # create a dll assembly and get assembly info
         ext_asm_info = create_assembly(ui_ext)
