@@ -2,6 +2,14 @@
 pyRevit Core
 ============
 
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents:
+    :hidden:
+
+    loader
+
+
 The Complex Relationship of a C# Addin and a Python Script
 **********************************************************
 
@@ -20,7 +28,7 @@ So:
     * ``pyRevitLoader.py`` sets up the environment and loads pyRevit.
 
 
-It's that simple really.
+It's that simple really. See the sources below. From here on, the documentation page for the `pyrevit.loader` module will take you through all the steps of parsing extensions, making dll assemblies and creating the user interface for the parsed extensions.
 
 
 pyRevit Loader Implementation

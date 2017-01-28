@@ -1,7 +1,7 @@
 """
 Manages the workflow of loading a new pyRevit session. It's main purpose is to
-orchestrate the process of finding pyRevit extensions, create .net assemblies
-for them, and then creates a user interface in host application.
+orchestrate the process of finding pyRevit extensions, creating dll assemblies
+for them, and creating a user interface in host application.
 
 The only public function is load_session() that loads a new session.
 Everything else is private.

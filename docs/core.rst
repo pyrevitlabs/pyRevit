@@ -2,6 +2,14 @@
 pyRevit Core
 ============
 
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents:
+    :hidden:
+
+    loader
+
+
 The Complex Relationship of a C# Addin and a Python Script
 **********************************************************
 
