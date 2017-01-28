@@ -6,6 +6,10 @@
 Welcome to pyRevit's documentation!
 ===================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents:
+
+    core
+    coretoolset
+    standardtoolset
