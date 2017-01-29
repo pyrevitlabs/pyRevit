@@ -6,7 +6,7 @@
 Welcome to pyRevit's documentation!
 ===================================
 
-..  note:: This documentation is work-in-progress now. I'm working on the documentation of the loader module as the moment and will continue working on documenting the tools after this step. Thanks for your patience.
+..  note:: This documentation is a work-in-progress. I'm working on the documentation of the loader module at the moment and will continue with  documenting the tools after this step. Thanks for your patience.
 
 ..  toctree::
     :maxdepth: 2
