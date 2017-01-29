@@ -12,5 +12,7 @@ Welcome to pyRevit's documentation!
     :maxdepth: 2
 
     core
+    scriptutils
+    revitutils
     coretoolset
     standardtoolset
