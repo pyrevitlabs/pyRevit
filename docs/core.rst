@@ -38,7 +38,6 @@ The source code for pyRevitLoader addin is under:
 ``pyrevitlib/pyrevit/addin/Source``
 
 
-Core modules
 ************
 
 ..  toctree::
