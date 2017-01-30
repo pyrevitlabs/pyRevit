@@ -57,6 +57,7 @@ class WPFWindow(Window):
 
 class CommandSwitchWindow:
     def __init__(self, switches, message='Pick a command option:'):
+        self.Parent = self
         self.selected_switch = ''
         # Create window
         self.my_window = System.Windows.Window()

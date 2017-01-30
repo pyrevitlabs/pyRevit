@@ -16,6 +16,10 @@ class CurrentElementSelection:
             self.first = self.elements[0]
             self.last = self.elements[self.count-1]
 
+    @property
+    def is_empty(self):
+        return len(self.elements) == 0
+
 
 doc = uidoc = selection = None
 try:
