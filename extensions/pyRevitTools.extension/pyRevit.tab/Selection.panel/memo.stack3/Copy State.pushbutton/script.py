@@ -20,7 +20,7 @@ https://github.com/eirannejad/pyRevit/blob/master/LICENSE
 __doc__ = 'Copies the state of desired parameter of the active view to memory. ' \
           'e.g. Visibility Graphics settings or Zoom state. Run it how see how it works.'
 
-__author__ = 'Gui Talarico | gtalarico@gmail.com\nEhsan Iran-Nejad | eirannejad@gmail.com'
+__author__ = 'Gui Talarico | github.com/gtalarico\nEhsan Iran-Nejad | eirannejad@gmail.com'
 
 import os
 import os.path as op
@@ -210,7 +210,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
 
     CopyPasteViewportPlacemenet
     Copy and paste the placement of viewports across sheets
-    github.com/gtalarico | gtalarico@gmail.com
+    github.com/gtalarico
 
     --------------------------------------------------------
     pyrevit Notice:

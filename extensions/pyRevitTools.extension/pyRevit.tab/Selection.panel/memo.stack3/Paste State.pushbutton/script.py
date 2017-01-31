@@ -207,7 +207,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
 
     CopyPasteViewportPlacemenet
     Copy and paste the placement of viewports across sheets
-    github.com/gtalarico | gtalarico@gmail.com
+    github.com/gtalarico
 
     --------------------------------------------------------
     pyrevit Notice:
