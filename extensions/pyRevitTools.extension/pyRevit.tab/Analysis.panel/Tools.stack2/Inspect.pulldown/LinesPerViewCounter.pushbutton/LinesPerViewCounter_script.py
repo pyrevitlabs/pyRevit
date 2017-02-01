@@ -22,6 +22,7 @@ __doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 import clr
 from collections import defaultdict
 
+from pyrevit.coreutils import make_id_url
 from scriptutils import print_md
 from revitutils import doc
 
@@ -55,6 +56,6 @@ for line_count, view_id_int in sorted(zip(detail_lines.values(), detail_lines.ke
 
     print_md("\n**{0} Lines in view:** {3}\n"    \
              "View id:{1}\n"                     \
-             "View creator: {2}\n".format(line_count, view_id_int, view_creator, view_name))
+             "View creator: {2}\n".format(line_count, make_id_url(view_id_int), view_creator, view_name))
 
 print("\n" + str(sum(detail_lines.values())) + " Lines in " + str(len(detail_lines)) + " Views.")

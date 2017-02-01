@@ -23,6 +23,7 @@ __doc__ = 'Lists all linked and imported DWG instances with worksets and creator
 import clr
 from collections import defaultdict
 
+from pyrevit.coreutils import make_id_url
 from scriptutils import print_md
 from revitutils import doc
 
@@ -60,4 +61,4 @@ for link_mode in dwgInst:
         print_md("\n**DWG name:** {2}\n"    \
                  "DWG created by:{0}\n"     \
                  "DWG id: {1}\n"            \
-                 "DWG workset: {3}\n".format(dwg_instance_creator, dwg_id, dwg_name, dwg_workset))
+                 "DWG workset: {3}\n".format(dwg_instance_creator, make_id_url(dwg_id), dwg_name, dwg_workset))

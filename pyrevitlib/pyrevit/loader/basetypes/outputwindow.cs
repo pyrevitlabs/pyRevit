@@ -1,12 +1,19 @@
 using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
 
 namespace PyRevitBaseClasses
 {
-    public partial class ScriptOutput : Form
+    public partial class ScriptOutput : System.Windows.Forms.Form
     {
-        public ScriptOutput()
+        private readonly UIApplication _revit;
+
+        public ScriptOutput(UIApplication uiApplication)
         {
+            _revit = uiApplication;
+
             Application.EnableVisualStyles();
             InitializeComponent();
             txtStdOut.DocumentText = "<html><body></body></html>";
@@ -30,7 +37,16 @@ namespace PyRevitBaseClasses
         {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
-                System.Diagnostics.Process.Start(e.Url.ToString());
+                var commandStr = e.Url.ToString();
+                if (commandStr.StartsWith("http")) {
+                    System.Diagnostics.Process.Start(e.Url.ToString());
+                }
+                else if (commandStr.StartsWith("id")){
+                    var reg = new System.Text.RegularExpressions.Regex(@"\d+");
+                    var elid = Int32.Parse( reg.Match(commandStr).Value );
+                    _revit.ActiveUIDocument.Selection.SetElementIds(new List<ElementId>{ new ElementId(elid) });
+                }
+
                 e.Cancel = true;
             }
         }

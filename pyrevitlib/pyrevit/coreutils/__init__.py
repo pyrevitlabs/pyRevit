@@ -442,3 +442,7 @@ def decrement_str(input_str, step):
 
 def filter_null_items(src_list):
     return list(filter(bool, src_list))
+
+
+def make_id_url(element_id):
+    return prepare_html_str('<a href="id:{0}">{0}</a>'.format(element_id))
