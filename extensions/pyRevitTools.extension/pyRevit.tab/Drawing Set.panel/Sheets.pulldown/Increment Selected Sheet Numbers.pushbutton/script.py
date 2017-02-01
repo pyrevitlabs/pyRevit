@@ -14,7 +14,7 @@ for sheet in selection.elements:
     if isinstance(sheet, ViewSheet):
         selected_sheets.append(sheet)
 
-sorted_sheet_list = sorted(selected_sheets)
+sorted_sheet_list = sorted(selected_sheets, key=lambda x: x.SheetNumber)
 
 if shift >= 0:
     sorted_sheet_list.reverse()
