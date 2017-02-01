@@ -32,26 +32,18 @@ class ExtensionPackage:
         ext_dirname (str): The name that should be used for the installation directory (based on the extension type)
         is_installed (bool): Checked whether this extension is installed or not.
         installed_dir (str): Installed directory path or empty string if not installed
-        is_removable (bool): Checks whether it is safe to remove this extension
         version (str): Last commit hash of the extension git repo
-        config (pyrevit.coreutils.configparser.PyRevitConfigSectionParser): See below
     """
 
     def __init__(self, info_dict, def_file_path=None):
         """
         Initialized the extension class based on provide information (info_dict).
 
-        Required info (dictionary key name):
-            type = info_dict['type']
-            name = info_dict['name']
-            description = info_dict['description']
-            url = info_dict['url']
+        Required info (Dictionary keys):
+            type, name, description , url
 
         Optional info:
-            website = info_dict['website']
-            icon = info_dict['image']
-            author = info_dict['author']
-            author_profile = info_dict['author-url']
+            website, image, author, author-url
 
         Args:
             info_dict (dict): A dictionary containing the required information for initializing the extension.
