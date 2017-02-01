@@ -1,4 +1,4 @@
-"""Print Sheets from a linked model."""
+"""Create views in current model and set the Revit link visibility graphics to show a view from the linked model."""
 
 import clr
 import os.path as op
