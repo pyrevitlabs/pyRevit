@@ -26,13 +26,9 @@ class ExtensionPackage:
         description (str): Extension description
         url (str): Url of online git repository
         website (str): Url of extension website
-        icon (str): Url of extension icon image (.png file)
+        image (str): Url of extension icon image (.png file)
         author (str): Name of extension author
         author_profile (str): Url of author profile
-        ext_dirname (str): The name that should be used for the installation directory (based on the extension type)
-        is_installed (bool): Checked whether this extension is installed or not.
-        installed_dir (str): Installed directory path or empty string if not installed
-        version (str): Last commit hash of the extension git repo
     """
 
     def __init__(self, info_dict, def_file_path=None):
@@ -73,7 +69,7 @@ class ExtensionPackage:
             self.author = info_dict['author']
             self.author_profile = info_dict['author-url']
         except Exception as ext_info_err:
-            self.website = self.url.replace('.git','')
+            self.website = self.url.replace('.git', '')
             self.image = None
             self.author = self.author_profile = None
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
@@ -83,10 +79,16 @@ class ExtensionPackage:
 
     @property
     def ext_dirname(self):
+        """
+            str: The name that should be used for the installation directory (based on the extension type)
+        """
         return self.name + self.type.POSTFIX
 
     @property
     def is_installed(self):
+        """
+            bool: Checked whether this extension is installed or not.
+        """
         for ext_dir in user_config.get_ext_root_dirs():
             for sub_dir in os.listdir(ext_dir):
                 if op.isdir(op.join(ext_dir, sub_dir)) and sub_dir == self.ext_dirname:
@@ -96,6 +98,9 @@ class ExtensionPackage:
 
     @property
     def installed_dir(self):
+        """
+            str: Installed directory path or empty string if not installed
+        """
         return self.is_installed
 
     @property
@@ -111,6 +116,9 @@ class ExtensionPackage:
 
     @property
     def version(self):
+        """
+            str: Last commit hash of the extension git repo
+        """
         try:
             if self.is_installed:
                 ext_pkg_repo = git.get_repo(self.installed_dir)
