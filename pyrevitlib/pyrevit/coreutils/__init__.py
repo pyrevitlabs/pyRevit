@@ -438,3 +438,7 @@ def increment_str(input_str, step):
 
 def decrement_str(input_str, step):
     return _inc_or_dec_string(input_str, -abs(step))
+
+
+def filter_null_items(src_list):
+    return list(filter(bool, src_list))

@@ -1,6 +1,7 @@
 import os
 
 from pyrevit import HOST_APP
+from pyrevit.coreutils import filter_null_items
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
@@ -135,7 +136,7 @@ class SettingsWindow(WPFWindow):
         user_config.core.compilevb = self.compilevb_cb.IsChecked
 
         if isinstance(self.extfolders_lb.ItemsSource, list):
-            user_config.core.userextensions = self.extfolders_lb.ItemsSource
+            user_config.core.userextensions = filter_null_items(self.extfolders_lb.ItemsSource)
         else:
             user_config.core.userextensions = []
 
