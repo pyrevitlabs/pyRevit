@@ -22,7 +22,6 @@ __doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 import clr
 from collections import defaultdict
 
-from pyrevit.coreutils import make_id_url
 from scriptutils import print_md
 from revitutils import doc
 

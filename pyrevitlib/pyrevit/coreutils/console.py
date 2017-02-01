@@ -1,6 +1,7 @@
 import clr
 
 from pyrevit import EXEC_PARAMS
+from pyrevit.coreutils import rvtprotocol
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
@@ -9,6 +10,7 @@ clr.AddReferenceByPartialName('System.Drawing')
 import System.Drawing
 # noinspection PyUnresolvedReferences
 import System.Windows
+from Autodesk.Revit.UI import TaskDialog
 
 
 class PyRevitConsoleWindow:
@@ -18,6 +20,7 @@ class PyRevitConsoleWindow:
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
         self.__winhandle__.Width = 1100
+        self.__winhandle__.UrlHandler = rvtprotocol.process_url
         # self.__winhandle__.Show()
 
     def set_title(self, new_title):
@@ -58,6 +61,8 @@ class PyRevitConsoleWindow:
     def show(self):
         self.__winhandle__.Show()
 
+    def linkify(*args):
+        return rvtprotocol.make_url(args)
 
 # __window__ used to be added to local scope by pyRevitLoader.dll, thus it needed to be extracted from caller scope
 # pyRevitLoader.dll has been modified to add __window__ to globals. This snippet is for backup only

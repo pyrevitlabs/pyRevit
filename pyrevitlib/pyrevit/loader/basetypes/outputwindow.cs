@@ -9,6 +9,8 @@ namespace PyRevitBaseClasses
     public partial class ScriptOutput : System.Windows.Forms.Form
     {
         private readonly UIApplication _revit;
+        public delegate int CustomProtocolHandler(String url);
+        public CustomProtocolHandler UrlHandler;
 
         public ScriptOutput(UIApplication uiApplication)
         {
@@ -42,9 +44,7 @@ namespace PyRevitBaseClasses
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
                 else if (commandStr.StartsWith("id")){
-                    var reg = new System.Text.RegularExpressions.Regex(@"\d+");
-                    var elid = Int32.Parse( reg.Match(commandStr).Value );
-                    _revit.ActiveUIDocument.Selection.SetElementIds(new List<ElementId>{ new ElementId(elid) });
+                    UrlHandler(commandStr);
                 }
 
                 e.Cancel = true;

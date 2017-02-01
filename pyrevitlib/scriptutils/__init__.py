@@ -167,3 +167,4 @@ def print_md(md_str):
 logger = get_logger(COMMAND_NAME)
 # setup this script services
 this_script = PyRevitScriptUtils()
+this_script.output.set_title(COMMAND_NAME)
