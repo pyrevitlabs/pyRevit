@@ -80,6 +80,7 @@ class ExtensionPackage:
     @property
     def ext_dirname(self):
         """
+        Returns:
             str: The name that should be used for the installation directory (based on the extension type)
         """
         return self.name + self.type.POSTFIX
@@ -87,6 +88,7 @@ class ExtensionPackage:
     @property
     def is_installed(self):
         """
+        Returns:
             bool: Checked whether this extension is installed or not.
         """
         for ext_dir in user_config.get_ext_root_dirs():
@@ -99,6 +101,7 @@ class ExtensionPackage:
     @property
     def installed_dir(self):
         """
+        Returns:
             str: Installed directory path or empty string if not installed
         """
         return self.is_installed
@@ -117,6 +120,7 @@ class ExtensionPackage:
     @property
     def version(self):
         """
+        Returns:
             str: Last commit hash of the extension git repo
         """
         try:
