@@ -11,6 +11,9 @@ lib/*
 # ignore pyCharm workspace settings
 .idea/workspace.xml
 
+# ignore sphinx build files
+docs/_*
+
 # ignore release files
 release/*.exe
 release/setupmaker/output/*
