@@ -121,11 +121,14 @@ def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
     To create a proper ui, pyRevit extensions needs to be properly parsed and
     a dll assembly needs to be created. This function handles these tasks
-    through interactions with .extensions, loader.asmmaker, and .loader.uimaker
+    through interactions with .extensions, .loader.asmmaker, and .loader.uimaker
 
     Example:
         >>> from pyrevit.loader.sessionmgr import load_session
         >>> load_session()     # start loading a new pyRevit session
+
+    Returns:
+        None
     """
 
     # initialize timer to measure load time

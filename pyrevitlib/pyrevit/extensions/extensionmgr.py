@@ -1,3 +1,16 @@
+"""
+The extension module is in charge of finding, parsing, and caching extensions.
+There are two types of extensions: UI Extensions (components.Extension) and
+Library Extensions (components.LibraryExtension)
+
+This module, finds the ui extensions installed and parses their directory for tools or loads them from cache.
+It also finds the library extensions and adds their directory address to the ui extensions so the python tools can
+use the shared libraries.
+
+To do its job correctly, this module needs to communicate with pyrevit.userconfig to get a list of user extension
+folder and also pyrevit.plugins.extpackages to check whether an extension is active or not.
+"""
+
 from pyrevit import PyRevitException, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
@@ -44,15 +57,7 @@ def _remove_disabled_extensions(ext_list):
     return cleaned_ext_list
 
 
-def get_command_from_path(comp_path):
-    cmds = parse_comp_dir(comp_path, GenericUICommand)
-    if len(cmds) > 0:
-        return cmds[0]
-
-    return None
-
-
-def parse_or_cache(ext_info):
+def _parse_or_cache(ext_info):
     try:
         # raise error if ui_extension does not have a valid cache
         if not is_cache_valid(ext_info):
@@ -80,7 +85,30 @@ def parse_or_cache(ext_info):
     return ui_extension
 
 
+def get_command_from_path(comp_path):
+    """
+    Returns a pyRevit command object from the given bundle directory.
+
+    Args:
+        comp_path (str): Full directory address of the command bundle
+
+    Returns:
+        genericcomps.GenericUICommand: A subclass of pyRevit command object.
+    """
+    cmds = parse_comp_dir(comp_path, GenericUICommand)
+    if len(cmds) > 0:
+        return cmds[0]
+
+    return None
+
+
 def get_installed_extension_data():
+    """
+    Returns a list of all UI and Library extensions (not parsed) that are installed and active.
+
+    Returns:
+        list: list of components.Extension or components.LibraryExtension objects
+    """
     # fixme: reorganzie this code to use one single method to collect extension data for both lib and ui
     ext_data_list = []
 
@@ -92,11 +120,28 @@ def get_installed_extension_data():
 
 
 def get_installed_lib_extensions(root_dir):
+    """
+    Returns a list of all Library extensions (not parsed) under the given directory
+    that are installed and active.
+
+    Args:
+        root_dir (str): Extensions directory address
+
+    Returns:
+        list: list of components.LibraryExtension objects
+    """
     lib_ext_list = [lib_ext for lib_ext in parse_dir_for_ext_type(root_dir, LibraryExtension)]
     return _remove_disabled_extensions(lib_ext_list)
 
 
 def get_installed_ui_extensions():
+    """
+    Returns a list of all UI extensions (fully parsed) under the given directory. This will also process the
+    Library extensions and will add their path to the syspath of the UI extensions.
+
+    Returns:
+        list: list of components.Extension objects
+    """
     ui_ext_list = list()
     lib_ext_list = list()
 
@@ -119,7 +164,7 @@ def get_installed_ui_extensions():
             #  (e.g, tabs, panels, etc) ui_extension object is very small and its creation doesn't add much overhead.
 
             if _is_extension_enabled(ext_info):
-                ui_extension = parse_or_cache(ext_info)
+                ui_extension = _parse_or_cache(ext_info)
                 ui_ext_list.append(ui_extension)
             else:
                 logger.info('Skipping disabled ui extension: {}'.format(ext_info.name))
