@@ -1,12 +1,10 @@
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using Autodesk.Revit.DB;
-using Autodesk.Revit.UI;
 
 namespace PyRevitBaseClasses
 {
-    public partial class ScriptOutput : System.Windows.Forms.Form
+    public partial class ScriptOutput : Form
     {
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
