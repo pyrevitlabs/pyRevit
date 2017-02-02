@@ -34,7 +34,7 @@ def _setup_output_window():
     base_module = __import__(LOADER_BASE_NAMESPACE)
 
     # create output window and assign handle
-    out_window = base_module.ScriptOutput(HOST_APP.uiapp)
+    out_window = base_module.ScriptOutput()
     EXEC_PARAMS.window_handle = out_window.Handle
 
     # create output stream and set stdout to it

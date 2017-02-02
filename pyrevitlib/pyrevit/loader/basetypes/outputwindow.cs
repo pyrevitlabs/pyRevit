@@ -8,14 +8,11 @@ namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : System.Windows.Forms.Form
     {
-        private readonly UIApplication _revit;
-        public delegate int CustomProtocolHandler(String url);
+        public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
 
-        public ScriptOutput(UIApplication uiApplication)
+        public ScriptOutput()
         {
-            _revit = uiApplication;
-
             Application.EnableVisualStyles();
             InitializeComponent();
             txtStdOut.DocumentText = "<html><body></body></html>";
@@ -43,8 +40,8 @@ namespace PyRevitBaseClasses
                 if (commandStr.StartsWith("http")) {
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
-                else if (commandStr.StartsWith("id")){
-                    UrlHandler(commandStr);
+                else {
+                    UrlHandler(e.Url.OriginalString);
                 }
 
                 e.Cancel = true;

@@ -77,7 +77,7 @@ namespace PyRevitBaseClasses
                 // Add assembly's custom attributes
                 builtin.SetVariable("__assmcustomattrs__", typeof(ScriptExecutor).Assembly.CustomAttributes);
 
-                var scriptOutput = new ScriptOutput(_revit);  // New output window
+                var scriptOutput = new ScriptOutput();  // New output window
                 var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
                 scriptOutput.Text = cmdName;            // Set output window title to command name
                 builtin.SetVariable("__window__", scriptOutput);

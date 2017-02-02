@@ -10,7 +10,6 @@ clr.AddReferenceByPartialName('System.Drawing')
 import System.Drawing
 # noinspection PyUnresolvedReferences
 import System.Windows
-from Autodesk.Revit.UI import TaskDialog
 
 
 class PyRevitConsoleWindow:
