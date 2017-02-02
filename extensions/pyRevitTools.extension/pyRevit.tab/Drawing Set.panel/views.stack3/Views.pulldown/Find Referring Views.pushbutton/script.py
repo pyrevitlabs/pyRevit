@@ -1,14 +1,12 @@
 """List all view that are referring the selected viewports."""
 
+
+from scriptutils import this_script
+from revitutils import doc, uidoc
+
 from Autodesk.Revit.DB import FilteredElementCollector, Element, BuiltInCategory, \
                               View, View3D, ViewDrafting, ViewPlan, ViewSection, Viewport
 
-
-__window__.Width = 1200
-
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 selection = list(__revit__.ActiveUIDocument.Selection.GetElementIds())
 views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
@@ -76,8 +74,11 @@ for selid in selection:
     if isinstance(vp, Viewport):
         v = doc.GetElement(vp.ViewId)
         title = v.LookupParameter('Title on Sheet').AsString()
-        print '\n\nVIEW NAME: {}\n    References:'.format(title if title else v.ViewName)
+        print '\n\nVIEW NAME: {}\n    Referenced by:'.format(title if title else v.ViewName)
 
         for r_view in all_views:
             if r_view.is_sheeted() and r_view.is_referring_to(v.ViewName):
-                print '        {}/{} by view: {}'.format(r_view.ref_det, r_view.sheet_num, r_view.name)
+                print('\t\t{} : {}/{} : {}'.format(this_script.output.linkify(r_view.element.Id),
+                                                   r_view.ref_det,
+                                                   r_view.sheet_num,
+                                                   r_view.name))
