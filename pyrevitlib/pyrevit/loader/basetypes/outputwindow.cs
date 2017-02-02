@@ -1,10 +1,14 @@
 using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : Form
     {
+        public delegate void CustomProtocolHandler(String url);
+        public CustomProtocolHandler UrlHandler;
+
         public ScriptOutput()
         {
             Application.EnableVisualStyles();
@@ -30,7 +34,14 @@ namespace PyRevitBaseClasses
         {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
-                System.Diagnostics.Process.Start(e.Url.ToString());
+                var commandStr = e.Url.ToString();
+                if (commandStr.StartsWith("http")) {
+                    System.Diagnostics.Process.Start(e.Url.ToString());
+                }
+                else {
+                    UrlHandler(e.Url.OriginalString);
+                }
+
                 e.Cancel = true;
             }
         }

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 try:
     # noinspection PyUnresolvedReferences
     COMMAND_NAME = __commandname__
@@ -155,12 +157,12 @@ def print_code(code_str):
                '{}' \
                '</div>'
 
-    print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))))
+    print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))), end="")
 
 
 def print_md(md_str):
     import markdown
-    print(prepare_html_str(markdown.markdown(md_str)))
+    print(prepare_html_str(markdown.markdown(md_str)), end="")
 
 
 # logger for this script
