@@ -6,8 +6,14 @@ from pyrevit.coreutils import prepare_html_str
 # noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId
+from Autodesk.Revit.DB import ElementId, View
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog
+
+
+doc = HOST_APP.uiapp.ActiveUIDocument.Document
+uidoc = HOST_APP.uiapp.ActiveUIDocument
+
 
 DEFAULT_LINK = '<a style="background-color: #f5f7f2; ' \
                          'color: #649417; ' \
@@ -55,7 +61,18 @@ class SelectElementsCommand(GenericProtocolCommand):
         for arg in self._args:
             if type(arg) == int:
                 el_list.Add(ElementId(arg))
-        HOST_APP.uiapp.ActiveUIDocument.Selection.SetElementIds(el_list)
+
+        uidoc.Selection.SetElementIds(el_list)
+
+        for ei_id in el_list:
+            try:
+                el = doc.GetElement(ei_id)
+                if isinstance(el, View):
+                    uidoc.ActiveView = el
+                else:
+                    uidoc.ActiveView = doc.GetElement(el.OwnerViewId)
+            except Exception as err:
+                print(err)
 
 
 def _get_command_from_arg(cmd_args):
