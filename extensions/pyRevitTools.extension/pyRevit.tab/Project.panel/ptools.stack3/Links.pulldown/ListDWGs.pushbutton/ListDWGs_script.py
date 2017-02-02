@@ -23,8 +23,7 @@ __doc__ = 'Lists all linked and imported DWG instances with worksets and creator
 import clr
 from collections import defaultdict
 
-from pyrevit.coreutils import make_id_url
-from scriptutils import print_md
+from scriptutils import print_md, this_script
 from revitutils import doc
 
 clr.AddReference("RevitAPI")
@@ -53,12 +52,15 @@ for dwg in dwgs:
 for link_mode in dwgInst:
     print_md("####{}".format(link_mode))
     for dwg in dwgInst[link_mode]:
-        dwg_id = dwg.Id.ToString()
+        dwg_id = dwg.Id
         dwg_name = dwg.LookupParameter("Name").AsString()
         dwg_workset = workset_table.GetWorkset(dwg.WorksetId).Name
         dwg_instance_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, dwg.Id).Creator
 
-        print_md("\n**DWG name:** {2}\n"    \
-                 "DWG created by:{0}\n"     \
-                 "DWG id: {1}\n"            \
-                 "DWG workset: {3}\n".format(dwg_instance_creator, make_id_url(dwg_id), dwg_name, dwg_workset))
+        print_md("\n**DWG name:** {}\n"    \
+                 "DWG created by:{}\n"     \
+                 "DWG id: {}\n"            \
+                 "DWG workset: {}\n".format(dwg_name,
+                                            dwg_instance_creator,
+                                            this_script.output.linkify(dwg_id),
+                                            dwg_workset))
