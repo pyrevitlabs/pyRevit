@@ -1,7 +1,6 @@
 import json
 
 from pyrevit import HOST_APP
-from pyrevit.coreutils import prepare_html_str
 
 # noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
@@ -91,15 +90,9 @@ def _make_protocol_url(url_data, url_title):
 
 def make_url(args):
     cmd = _get_command_from_arg(args)
-    return prepare_html_str(_make_protocol_url(cmd.url_data, cmd.url_title))
+    return _make_protocol_url(cmd.url_data, cmd.url_title)
 
 
-def process_url(url):
-    try:
-        if PROTOCOL_NAME in url:
-            url_data = url.split(PROTOCOL_NAME)[1]
-            url_data = url_data.replace('/', '').replace('\'','\"')
-            cmd = _get_command_from_data(url_data)
-            cmd.execute()
-    except Exception as exec_err:
-        logger.error('Error handling link | {}'.format(exec_err))
+def process_url(url_data):
+    cmd = _get_command_from_data(url_data)
+    return cmd.execute()
