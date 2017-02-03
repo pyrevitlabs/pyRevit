@@ -1,42 +1,46 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Lists views that have an active underlay."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from pyrevit import HOST_APP
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Lists views that have an active underlay.'
-
-__window__.Width = 1100
+from scriptutils import this_script
+from revitutils import doc, uidoc
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 cl_views = FilteredElementCollector(doc)
 views = cl_views.OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
 
 for v in views:
     phasep = v.LookupParameter('Phase')
-    underlayp = v.LookupParameter('Underlay')
-    if underlayp and underlayp.AsValueString() != 'None':
-        print('TYPE: {1}ID: {2}TEMPLATE: {3}PHASE:{4} UNDERLAY:{5}  {0}'.format(
-            v.ViewName,
-            str(v.ViewType).ljust(20),
-            str(v.Id).ljust(10),
-            str(v.IsTemplate).ljust(10),
-            phasep.AsValueString().ljust(25) if phasep else '---'.ljust(25),
-            underlayp.AsValueString().ljust(25) if underlayp else '---'.ljust(25)
-        ))
+    try:
+        if HOST_APP.version == '2017':
+            base_underlay_param = v.LookupParameter('Range: Base Level')
+            top_underlay_param = v.LookupParameter('Range: Top Level')
+            if base_underlay_param \
+            and top_underlay_param \
+            and base_underlay_param.AsValueString() != 'None' \
+            and top_underlay_param.AsValueString() != 'None':
+                print('TYPE: {1}\n' \
+                      'ID: {2}\n' \
+                      'TEMPLATE: {3}\n' \
+                      'UNDERLAY (BASE):{4}\n' \
+                      'UNDERLAY (TOP):{5}\n' \
+                      '{0}\n\n'.format(v.ViewName,
+                                       str(v.ViewType).ljust(20),
+                                       this_script.output.linkify(v.Id),
+                                       str(v.IsTemplate).ljust(10),
+                                       base_underlay_param.AsValueString().ljust(25),
+                                       top_underlay_param.AsValueString().ljust(25)))
+        else:
+            underlayp = v.LookupParameter('Underlay')
+            if underlayp and underlayp.AsValueString() != 'None':
+                print('TYPE: {1}\n' \
+                      'ID: {2}\n' \
+                      'TEMPLATE: {3}\n' \
+                      'UNDERLAY:{4}\n' \
+                      '{0}\n\n'.format(v.ViewName,
+                                       str(v.ViewType).ljust(20),
+                                       this_script.output.linkify(v.Id),
+                                       str(v.IsTemplate).ljust(10),
+                                       underlayp.AsValueString().ljust(25)))
+    except:
+        continue

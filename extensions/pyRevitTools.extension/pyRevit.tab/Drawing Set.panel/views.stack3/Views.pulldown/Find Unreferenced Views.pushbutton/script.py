@@ -1,18 +1,13 @@
 """Lists views that have not been references by any other view."""
 
-
+from scriptutils import this_script
+from revitutils import doc, uidoc
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View, ViewType
-
-
-__window__.Width = 1200
 
 view_ref_prefixes = {ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
                      ViewType.FloorPlan: 'Floor Plan: ',
                      ViewType.EngineeringPlan: 'Structural Plan: ',
                      ViewType.DraftingView: 'Drafting View: '}
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 
 def find_unrefed_views(view_list):
@@ -31,7 +26,7 @@ def find_unrefed_views(view_list):
             print('NAME: {0}\nTYPE: {1}\nID: {2}\nPLACED ON DETAIL/SHEET: {4} / {3}'.format(
                 v.ViewName,
                 str(v.ViewType).ljust(20),
-                str(v.Id).ljust(10),
+                this_script.output.linkify(v.Id),
                 sheetnum.AsString() if sheetnum else '-',
                 detnum.AsString() if detnum else '-',
             ))

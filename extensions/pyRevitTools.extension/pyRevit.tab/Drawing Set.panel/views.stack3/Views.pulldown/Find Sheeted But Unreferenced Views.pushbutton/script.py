@@ -1,18 +1,14 @@
 """List all views that have been placed on a sheet but are not referenced by any other views."""
 
-
+from scriptutils import this_script
+from revitutils import doc, uidoc
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View, ViewType
 
-
-__window__.Width = 1200
 
 view_ref_prefixes = {ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
                      ViewType.FloorPlan: 'Floor Plan: ',
                      ViewType.EngineeringPlan: 'Structural Plan: ',
                      ViewType.DraftingView: 'Drafting View: '}
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 
 def find_sheeted_unrefed_views(view_list):
@@ -34,7 +30,7 @@ def find_sheeted_unrefed_views(view_list):
                 print('-'*20)
                 print('NAME: {0}\nDET/SHEET: {1}\nID: {2}'.format(v.ViewName,
                                                                   unicode(detnum.AsString() + '/' + sheetnum.AsString()),
-                                                                  str(v.Id)
+                                                                  this_script.output.linkify(v.Id)
                                                                   ))
 
 
