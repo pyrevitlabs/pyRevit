@@ -1,6 +1,7 @@
 import clr
 
 from pyrevit import EXEC_PARAMS
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import rvtprotocol
 from pyrevit.coreutils import prepare_html_str
 
@@ -11,6 +12,9 @@ clr.AddReferenceByPartialName('System.Drawing')
 import System.Drawing
 # noinspection PyUnresolvedReferences
 import System.Windows
+
+
+logger = get_logger(__name__)
 
 
 class PyRevitConsoleWindow:
@@ -63,11 +67,25 @@ class PyRevitConsoleWindow:
 
     @staticmethod
     def handle_protocol_url(url):
+        """
+        This is a function assgined to the __winhandle__.UrlHandler which
+         is a delegate. Everytime WebBrowser is asked to handle a link with
+         a protocol other than http, it'll call this function.
+        System.Windows.Forms.WebBrowser returns a string with misc stuff
+         before the actual link, when it can't recognize the protocol.
+        This function cleans up the link for the pyRevit protocol handler.
+
+        Args:
+            url (str): the url coming from Forms.WebBrowser
+        """
         try:
             if rvtprotocol.PROTOCOL_NAME in url:
                 cleaned_url = url.split(rvtprotocol.PROTOCOL_NAME)[1]
-                # cleanup / and change single quotes back to double quotes
-                cleaned_url = cleaned_url.replace('/', '').replace('\'','\"')
+                # get rid of the slash at the end
+                if cleaned_url.endswith('/'):
+                    cleaned_url = cleaned_url.replace('/', '')
+
+                # process cleaned data
                 rvtprotocol.process_url(cleaned_url)
         except Exception as exec_err:
             logger.error('Error handling link | {}'.format(exec_err))
