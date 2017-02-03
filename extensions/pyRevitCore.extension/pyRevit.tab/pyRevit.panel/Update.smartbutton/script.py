@@ -1,23 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from time import sleep
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
 from pyrevit.coreutils import check_internet_connection
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.ribbon import ICON_LARGE
@@ -86,6 +70,7 @@ if __name__ == '__main__':
         upgrade.upgrade_existing_pyrevit()
 
         # now re-load pyrevit session.
+        sleep(1)
         logger.info('Reloading...')
         load_session()
     else:
