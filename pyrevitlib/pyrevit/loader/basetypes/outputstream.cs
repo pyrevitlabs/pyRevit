@@ -70,6 +70,7 @@ namespace PyRevitBaseClasses
                     text = text.Replace("<", "&lt;").Replace(">", "&gt;");
                     text = text.Replace("&clt;", "<").Replace("&cgt;", ">");
                     text = text.Replace("\n", "<br/>");
+                    text = text.Replace("\t", "&emsp;&emsp;");
                     div.InnerHtml = text;
                     _gui.txtStdOut.Document.Body.AppendChild(div);
                 });
