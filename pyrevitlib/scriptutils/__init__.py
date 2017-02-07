@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 try:
     # noinspection PyUnresolvedReferences
     COMMAND_NAME = __commandname__
@@ -143,29 +141,13 @@ from pyrevit.coreutils import show_file_in_explorer, open_url
 from pyrevit.coreutils.envvars import get_pyrevit_env_var, set_pyrevit_env_var
 
 
-def print_code(code_str):
-    nbsp = '&nbsp;'
-    code_div = '<div style="font-family:courier new;' \
-               'border-style: solid;' \
-               'border-width:0 0 0 5;' \
-               'border-color:#87b012;' \
-               'background:#ececec;' \
-               'color:#3e3d3d;' \
-               'line-height: 150%;' \
-               'padding:10;' \
-               'margin:10 0 10 0">' \
-               '{}' \
-               '</div>'
-
-    print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))), end="")
-
-
-def print_md(md_str):
-    import markdown
-    print(prepare_html_str(markdown.markdown(md_str)), end="")
-
-
 # logger for this script
 logger = get_logger(COMMAND_NAME)
 # setup this script services
 this_script = PyRevitScriptUtils()
+
+
+# quick output functions for ease of use
+linkify = this_script.output.linkify
+print_code = this_script.output.print_code
+print_md = this_script.output.print_md

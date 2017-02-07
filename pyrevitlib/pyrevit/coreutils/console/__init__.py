@@ -1,3 +1,4 @@
+from __future__ import print_function
 import clr
 
 from pyrevit import EXEC_PARAMS
@@ -89,6 +90,28 @@ class PyRevitConsoleWindow:
                 rvtprotocol.process_url(cleaned_url)
         except Exception as exec_err:
             logger.error('Error handling link | {}'.format(exec_err))
+
+    @staticmethod
+    def print_code(code_str):
+        nbsp = '&nbsp;'
+        code_div = '<div style="font-family:courier new;' \
+                   'border-style: solid;' \
+                   'border-width:0 0 0 5;' \
+                   'border-color:#87b012;' \
+                   'background:#ececec;' \
+                   'color:#3e3d3d;' \
+                   'line-height: 150%;' \
+                   'padding:10;' \
+                   'margin:10 0 10 0">' \
+                   '{}' \
+                   '</div>'
+
+        print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))), end="")
+
+    @staticmethod
+    def print_md(md_str):
+        import pyrevit.coreutils.console.markdown
+        print(prepare_html_str(markdown.markdown(md_str)), end="")
 
     @staticmethod
     def linkify(*args):
