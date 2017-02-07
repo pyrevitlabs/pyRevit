@@ -22,6 +22,7 @@ namespace PyRevitBaseClasses
             }
 
             txtStdOut.Document.Body.Style = ExternalConfig.htmlstyle;
+            // txtStdOut.Document.Body.ScrollIntoView(false);
         }
 
         private void ScriptOutput_Load(object sender, EventArgs e)
@@ -29,6 +30,16 @@ namespace PyRevitBaseClasses
 
         }
 
+        public void ScrollToBottom()
+        {
+            // MOST IMP : processes all windows messages queue
+            Application.DoEvents();
+
+            if (txtStdOut.Document != null)
+            {
+                txtStdOut.Document.Window.ScrollTo(0, txtStdOut.Document.Body.ScrollRectangle.Height);
+            }
+        }
 
         private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {

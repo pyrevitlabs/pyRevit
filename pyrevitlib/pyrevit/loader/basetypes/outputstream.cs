@@ -74,7 +74,7 @@ namespace PyRevitBaseClasses
                     div.InnerHtml = text;
                     _gui.txtStdOut.Document.Body.AppendChild(div);
                 });
-                Application.DoEvents();
+                _gui.ScrollToBottom();
             }
         }
 
