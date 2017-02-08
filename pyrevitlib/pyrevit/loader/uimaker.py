@@ -20,10 +20,11 @@ CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 
 class UIMakerParams:
-    def __init__(self, parent_ui, component, asm_info):
+    def __init__(self, parent_ui, component, asm_info, create_beta=False):
         self.parent_ui = parent_ui
         self.component = component
         self.asm_info = asm_info
+        self.create_beta_cmds = create_beta
 
 
 def _make_button_tooltip(button):
@@ -119,6 +120,9 @@ def _produce_ui_smartbutton(ui_maker_params):
     smartbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+        return None
+
     logger.debug('Producing smart button: {}'.format(smartbutton))
     try:
         parent_ui_item.create_push_button(smartbutton.name,
@@ -171,6 +175,9 @@ def _produce_ui_linkbutton(ui_maker_params):
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+        return None
+
     if not linkbutton.command_class:
         return None
 
@@ -206,6 +213,9 @@ def _produce_ui_pushbutton(ui_maker_params):
     parent_ui_item = ui_maker_params.parent_ui
     pushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
+
+    if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+        return None
 
     logger.debug('Producing button: {}'.format(pushbutton))
     try:
@@ -301,7 +311,10 @@ def _produce_ui_stacks(ui_maker_params):
 
         # capturing and logging any errors on stack item
         # (e.g when parent_ui_panel's stack is full and can not add any more items it will raise an error)
-        _recursively_produce_ui_items(parent_ui_panel, stack_cmp, ext_asm_info)
+        _recursively_produce_ui_items(UIMakerParams(parent_ui_panel,
+                                                    stack_cmp,
+                                                    ext_asm_info,
+                                                    ui_maker_params.create_beta_cmds))
 
         if HOST_APP.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = _produce_ui_split
@@ -375,29 +388,35 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             }
 
 
-def _recursively_produce_ui_items(parent_ui_item, component, ext_asm_info):
-    for sub_cmp in component:
+def _recursively_produce_ui_items(ui_maker_params):
+    for sub_cmp in ui_maker_params.component:
         try:
             logger.debug('Calling create func {} for: {}'.format(_component_creation_dict[sub_cmp.type_id], sub_cmp))
-            ui_item = _component_creation_dict[sub_cmp.type_id](UIMakerParams(parent_ui_item, sub_cmp, ext_asm_info))
+            ui_item = _component_creation_dict[sub_cmp.type_id](UIMakerParams(ui_maker_params.parent_ui,
+                                                                              sub_cmp,
+                                                                              ui_maker_params.asm_info,
+                                                                              ui_maker_params.create_beta_cmds))
         except KeyError:
             logger.debug('Can not find create function for: {}'.format(sub_cmp))
 
         logger.debug('UI item created by create func is: {}'.format(ui_item))
 
         if ui_item and sub_cmp.is_container:
-                _recursively_produce_ui_items(ui_item, sub_cmp, ext_asm_info)
+                _recursively_produce_ui_items(UIMakerParams(ui_item,
+                                                            sub_cmp,
+                                                            ui_maker_params.asm_info,
+                                                            ui_maker_params.create_beta_cmds))
 
 
 if not EXEC_PARAMS.doc_mode:
     current_ui = get_current_ui()
 
 
-def update_pyrevit_ui(parsed_ext, ext_asm_info):
+def update_pyrevit_ui(parsed_ext, ext_asm_info, create_beta=False):
     """Updates/Creates pyRevit ui for the given extension and provided assembly dll address.
     """
     logger.debug('Creating/Updating ui for extension: {}'.format(parsed_ext))
-    _recursively_produce_ui_items(current_ui, parsed_ext, ext_asm_info)
+    _recursively_produce_ui_items(UIMakerParams(current_ui, parsed_ext, ext_asm_info, create_beta))
 
 
 def cleanup_pyrevit_ui():

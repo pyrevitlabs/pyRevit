@@ -6,7 +6,7 @@ from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
-from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM
+from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM, BETA_SCRIPT_PARAM
 from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
 from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
 from pyrevit.extensions import PYTHON_SCRIPT_POSTFIX, DEFAULT_CONFIG_SCRIPT_FILE
@@ -252,6 +252,7 @@ class GenericUICommand(GenericUIComponent):
         self.doc_string = self.author = self.cmd_options = self.cmd_context = None
         self.unique_name = self.unique_avail_name = None
         self.class_name = self.avail_class_name = None
+        self.beta_cmd = False
 
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
@@ -324,6 +325,7 @@ class GenericUICommand(GenericUIComponent):
             self.min_revit_ver = script_content.extract_param(MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_options = script_content.extract_param(COMMAND_OPTIONS_PARAM)  # type: list
             self.cmd_context = script_content.extract_param(COMMAND_CONTEXT_PARAM)  # type: str
+            self.beta_cmd = script_content.extract_param(BETA_SCRIPT_PARAM)  # type: bool
         except PyRevitException as script_parse_err:
             logger.error(script_parse_err)
 
@@ -333,6 +335,9 @@ class GenericUICommand(GenericUIComponent):
         logger.debug('command tooltip: {}'.format(self.doc_string))
         logger.debug('Command author: {}'.format(self.author))
         logger.debug('Command options: {}'.format(self.cmd_options))
+
+        if self.beta_cmd:
+            logger.debug('Command is in beta.')
 
         try:
             # check minimum requirements

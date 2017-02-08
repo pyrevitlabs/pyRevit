@@ -115,6 +115,7 @@ def _set_hardcoded_config_values(parser):
     parser.core.userextensions = '[]'
     parser.core.compilecsharp = True
     parser.core.compilevb = True
+    parser.core.loadbeta = False
     parser.add_section('alias')
 
 
