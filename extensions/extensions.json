@@ -10,7 +10,8 @@
         "author-url": "https://keybase.io/ein",
         "url": "https://github.com/eirannejad/pyRevit.git",
         "website": "http://eirannejad.github.io/pyRevit/",
-        "image" : ""
+        "image" : "",
+        "dependencies": []
         },
         {
         "builtin": "False",
@@ -21,7 +22,8 @@
         "author-url": "https://github.com/gtalarico",
         "url": "https://github.com/gtalarico/revitpythonwrapper.git",
         "website": "http://revitpythonwrapper.readthedocs.io/en/latest/",
-        "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png"
+        "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png",
+        "dependencies": []
         },
         {
         "builtin": "False",
@@ -32,6 +34,7 @@
         "author-url": "https://github.com/gtalarico",
         "url": "https://github.com/gtalarico/pyrevitplus.git",
         "website": "https://github.com/gtalarico/pyrevitplus",
-        "image" : ""
+        "image" : "",
+        "dependencies": ["RevitPythonWrapper"]
         }   ]
 }

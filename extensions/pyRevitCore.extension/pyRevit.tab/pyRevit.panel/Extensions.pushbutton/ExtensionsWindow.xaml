@@ -20,6 +20,7 @@
                     </Hyperlink>
                 </TextBlock>
                 <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
+                <Label x:Name="ext_dependencies_l" Margin="0,10,0,0"/>
                 <GroupBox Header="Extension Package Settings:" Margin="0,10,0,0">
                     <StackPanel>
                         <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,5" IsChecked="False"

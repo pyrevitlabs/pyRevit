@@ -69,10 +69,12 @@ class ExtensionPackage:
             self.image = info_dict['image']
             self.author = info_dict['author']
             self.author_profile = info_dict['author-url']
+            self.dependencies = info_dict['dependencies']
         except Exception as ext_info_err:
             self.website = self.url.replace('.git', '')
             self.image = None
             self.author = self.author_profile = None
+            self.dependencies = []
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
 
     def __repr__(self):

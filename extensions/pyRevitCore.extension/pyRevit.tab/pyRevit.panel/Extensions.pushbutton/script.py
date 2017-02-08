@@ -107,6 +107,13 @@ class ExtensionsWindow(WPFWindow):
         else:
             self.hide_element(self.ext_installed_l)
 
+        # Update dependencies
+        if ext_pkg_item.ext_pkg.dependencies:
+            self.show_element(self.ext_dependencies_l)
+            self.ext_dependencies_l.Content = 'Dependencies:\n' + ', '.join(ext_pkg_item.ext_pkg.dependencies)
+        else:
+            self.hide_element(self.ext_dependencies_l)
+
     def _update_ext_action_buttons(self, ext_pkg_item):
         if ext_pkg_item.ext_pkg.is_installed:
             self.hide_element(self.ext_install_b)
