@@ -1,7 +1,7 @@
 import sys
 import clr
 
-from scriptutils import logger, this_script, print_md
+from scriptutils import logger, this_script
 from scriptutils.userinput import CommandSwitchWindow
 from revitutils import doc, selection
 
@@ -198,7 +198,7 @@ with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
     tg.IsFailureHandlingForcedModal = False
 
     for src_view in drafting_views:
-        print_md('-----\n**Converting: {}**'.format(src_view.ViewName))
+        this_script.output.print_md('-----\n**Converting: {}**'.format(src_view.ViewName))
         dest_view_successfully_setup = False
         try:
             dest_view = create_dest_view(dest_view_type, src_view.ViewName, src_view.Scale)
@@ -220,4 +220,5 @@ with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
 
     tg.Assimilate()
 
-print_md('**{} out of {} views were successfully converted.**'.format(successfully_converted, len(drafting_views)))
+this_script.output.print_md('**{} out of {} views were successfully converted.**'.format(successfully_converted,
+                                                                                         len(drafting_views)))

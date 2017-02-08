@@ -21,7 +21,7 @@ __doc__ = 'Lists all Elements of the selected level(s).'
 import clr
 from collections import defaultdict
 
-from scriptutils import print_md
+from scriptutils import this_script
 from revitutils import doc, uidoc
 
 clr.AddReference('RevitAPI')
@@ -31,8 +31,8 @@ from Autodesk.Revit.DB import FilteredElementCollector as Fec
 from Autodesk.Revit.UI import TaskDialog
 
 
-print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
-print_md('By: [{}]({})'.format(__author__, __contact__))
+this_script.output.print_md("####LIST ALL ELEMENTS ON SELECTED LEVEL(S):")
+this_script.output.print_md('By: [{}]({})'.format(__author__, __contact__))
 
 
 all_elements = Fec(doc).WhereElementIsNotElementType().ToElements()

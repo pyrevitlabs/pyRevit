@@ -21,7 +21,7 @@ __doc__ = 'Lists all legends with revision clouds on them. Legends with revision
 import clr
 from collections import defaultdict
 
-from scriptutils import print_md, this_script
+from scriptutils import this_script
 from revitutils import doc
 
 clr.AddReference("RevitAPI")
@@ -47,13 +47,13 @@ for rev_cloud in rev_clouds:
         clouded_views[rev_view_id].append(rev_cloud)
 
 
-print_md("####LEGENDS WITH REVISION CLOUDS:")
-print_md('By: [{}]({})'.format(__author__, __contact__))
+this_script.output.print_md("####LEGENDS WITH REVISION CLOUDS:")
+this_script.output.print_md('By: [{}]({})'.format(__author__, __contact__))
 
 for view_id in clouded_views:
     view = doc.GetElement(view_id)
-    print_md("{1} **Legend: {0}**".format(view.Name,
-                                          this_script.output.linkify(view_id)))
+    this_script.output.print_md("{1} **Legend: {0}**".format(view.Name,
+                                                             this_script.output.linkify(view_id)))
 
     for rev_cloud in clouded_views[view_id]:
         rev_cloud_id = rev_cloud.Id
@@ -70,6 +70,6 @@ for view_id in clouded_views:
                                                                   rev_date,
                                                                   rev_creator,
                                                                   rev_comments))
-    print_md('----')
+    this_script.output.print_md('----')
 
 print(notification)

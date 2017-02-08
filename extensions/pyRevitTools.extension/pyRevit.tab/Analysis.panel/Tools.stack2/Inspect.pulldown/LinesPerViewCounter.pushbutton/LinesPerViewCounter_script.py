@@ -22,7 +22,7 @@ __doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 import clr
 from collections import defaultdict
 
-from scriptutils import print_md, this_script
+from scriptutils import this_script
 from revitutils import doc
 
 clr.AddReference("RevitAPI")
@@ -41,8 +41,8 @@ for line in all_lines:
         view_id_int = line.OwnerViewId.IntegerValue
         detail_lines[view_id_int] += 1
 
-print_md("####LINE COUNT IN CURRENT VIEW:")
-print_md('By: [{}]({})'.format(__author__, __contact__))
+this_script.output.print_md("####LINE COUNT IN CURRENT VIEW:")
+this_script.output.print_md('By: [{}]({})'.format(__author__, __contact__))
 
 for line_count, view_id_int in sorted(zip(detail_lines.values(), detail_lines.keys()), reverse=True):
     view_id = ElementId(view_id_int)
@@ -53,11 +53,11 @@ for line_count, view_id_int in sorted(zip(detail_lines.values(), detail_lines.ke
     except:
         view_name = "<no view name available>"
 
-    print_md("\n**{0} Lines in view:** {3}\n"    \
-             "View id:{1}\n"                     \
-             "View creator: {2}\n".format(line_count,
-                                          this_script.output.linkify(view_id),
-                                          view_creator,
-                                          view_name))
+    this_script.output.print_md("\n**{0} Lines in view:** {3}\n"    \
+                                "View id:{1}\n"                     \
+                                "View creator: {2}\n".format(line_count,
+                                                             this_script.output.linkify(view_id),
+                                                             view_creator,
+                                                             view_name))
 
 print("\n" + str(sum(detail_lines.values())) + " Lines in " + str(len(detail_lines)) + " Views.")

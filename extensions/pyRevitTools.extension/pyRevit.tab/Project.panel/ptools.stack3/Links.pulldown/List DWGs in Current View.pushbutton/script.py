@@ -3,7 +3,7 @@
 import clr
 from collections import defaultdict
 
-from scriptutils import print_md, this_script
+from scriptutils import this_script
 from revitutils import doc, uidoc
 
 clr.AddReference("RevitAPI")
@@ -28,7 +28,7 @@ for dwg in dwgs:
 cview =uidoc.ActiveGraphicalView
 
 for link_mode in dwgInst:
-    print_md("####{}".format(link_mode))
+    this_script.output.print_md("####{}".format(link_mode))
     for dwg in dwgInst[link_mode]:
         dwg_id = dwg.Id
         dwg_name = dwg.LookupParameter("Name").AsString()
@@ -36,10 +36,10 @@ for link_mode in dwgInst:
         dwg_instance_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, dwg.Id).Creator
 
         if cview.Id == dwg.OwnerViewId:
-            print_md("\n**DWG name:** {}\n"    \
-                     "DWG created by:{}\n"     \
-                     "DWG id: {}\n"            \
-                     "DWG workset: {}\n".format(dwg_name,
-                                                dwg_instance_creator,
-                                                this_script.output.linkify(dwg_id),
-                                                dwg_workset))
+            this_script.output.print_md("\n**DWG name:** {}\n"    \
+                                        "DWG created by:{}\n"     \
+                                        "DWG id: {}\n"            \
+                                        "DWG workset: {}\n".format(dwg_name,
+                                                                   dwg_instance_creator,
+                                                                   this_script.output.linkify(dwg_id),
+                                                                   dwg_workset))

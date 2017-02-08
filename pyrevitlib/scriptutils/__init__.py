@@ -132,9 +132,6 @@ class PyRevitScriptUtils:
 # ----------------------------------------------------------------------------------------------------------------------
 # Utilities available to scripts
 # ----------------------------------------------------------------------------------------------------------------------
-# import useful functions from pyrevit.coreutils but not everything
-from pyrevit.coreutils import prepare_html_str
-
 # noinspection PyUnresolvedReferences
 from pyrevit.coreutils import show_file_in_explorer, open_url
 # noinspection PyUnresolvedReferences
@@ -147,7 +144,10 @@ logger = get_logger(COMMAND_NAME)
 this_script = PyRevitScriptUtils()
 
 
-# quick output functions for ease of use
-linkify = this_script.output.linkify
-print_code = this_script.output.print_code
-print_md = this_script.output.print_md
+def print_md(md_str):
+    logger.warning('print_md is deprecated and will be removed soon. Please use this_script.output.print_md')
+    this_script.output.print_md(md_str)
+
+def print_code(code_str):
+    logger.warning('print_code is deprecated and will be removed soon. Please use this_script.output.print_code')
+    this_script.output.print_code(code_str)
