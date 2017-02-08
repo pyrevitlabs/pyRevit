@@ -68,7 +68,7 @@
                     <GroupBox Header="Development:" Margin="0,10,0,0">
                         <StackPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
-                            <CheckBox x:Name="loadbetatools_cb" Margin="10,10,0,10" IsChecked="False">Load Beta Tools (ignores __beta__ parameter)</CheckBox>
+                            <CheckBox x:Name="loadbetatools_cb" Margin="10,10,0,10" IsChecked="False">Load Beta Tools (Ignores beta parameters in scripts, Reload is required)</CheckBox>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
