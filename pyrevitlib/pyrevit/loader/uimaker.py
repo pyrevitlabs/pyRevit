@@ -30,14 +30,32 @@ class UIMakerParams:
 def _make_button_tooltip(button):
     tooltip = button.doc_string
     if tooltip:
-        tooltip += '\n\nBundle Name:\n{0}'.format(button.name)
+        tooltip += '\n\nBundle Name:\n{}'.format(button.name)
         if button.author:
-            tooltip += '\n\nAuthor:\n{0}'.format(button.author)
+            tooltip += '\n\nAuthor:\n{}'.format(button.author)
     return tooltip
 
 
 def _make_button_tooltip_ext(button, asm_name):
-    return 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
+    tooltip_ext = ''
+    if button.min_revit_ver and not button.max_revit_ver:
+        tooltip_ext += 'Compatible with {} {} and above\n\n'.format(HOST_APP.proc_name,
+                                                                    button.min_revit_ver)
+    if button.max_revit_ver and not button.min_revit_ver:
+        tooltip_ext += 'Compatible with {} {} and earlier\n\n'.format(HOST_APP.proc_name,
+                                                                      button.max_revit_ver)
+    if button.min_revit_ver and button.max_revit_ver:
+        if not int(button.min_revit_ver) == int(button.max_revit_ver):
+            tooltip_ext += 'Compatible with {} {} to {}\n\n'.format(HOST_APP.proc_name,
+                                                                    button.min_revit_ver,
+                                                                    button.max_revit_ver)
+        else:
+            tooltip_ext += 'Compatible with {} {} only\n\n'.format(HOST_APP.proc_name,
+                                                                   button.min_revit_ver)
+
+    tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(button.unique_name, asm_name)
+
+    return tooltip_ext
 
 
 def _make_ui_title(button):

@@ -74,8 +74,8 @@ AUTHOR_PARAM = '__author__'
 
 COMMAND_OPTIONS_PARAM = '__cmdoptions__'
 COMMAND_CONTEXT_PARAM = '__context__'
-MIN_REVIT_VERSION_PARAM = '__min_req_revit_ver__'
-MIN_PYREVIT_VERSION_PARAM = '__min_req_pyrevit_ver__'
+MIN_REVIT_VERSION_PARAM = '__min_revit_ver__'
+MAX_REVIT_VERSION_PARAM = '__max_revit_ver__'
 SHIFT_CLICK_PARAM = '__shiftclick__'
 BETA_SCRIPT_PARAM = '__beta__'
 
