@@ -65,6 +65,12 @@
                             <CheckBox x:Name="revit2017_cb" Margin="10,5,0,10" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
                         </StackPanel>
                     </GroupBox>
+                    <GroupBox Header="Development:" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
+                            <CheckBox x:Name="loadbetatools_cb" Margin="10,10,0,10" IsChecked="False">Load Beta Tools (ignores __beta__ parameter)</CheckBox>
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
             </Expander>
             <Separator Margin="10,0,10,0" Background="#dfdfdf"/>

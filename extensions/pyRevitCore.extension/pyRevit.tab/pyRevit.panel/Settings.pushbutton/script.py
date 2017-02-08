@@ -43,6 +43,8 @@ class SettingsWindow(WPFWindow):
         else:
             self.asciicache_rb.IsChecked = True
 
+        self.loadbetatools_cb.IsChecked = user_config.core.loadbeta
+
     def _setup_user_extensions_list(self):
         self.extfolders_lb.ItemsSource = user_config.core.userextensions
 
@@ -134,6 +136,7 @@ class SettingsWindow(WPFWindow):
         user_config.core.bincache = self.bincache_rb.IsChecked
         user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.core.compilevb = self.compilevb_cb.IsChecked
+        user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
 
         if isinstance(self.extfolders_lb.ItemsSource, list):
             user_config.core.userextensions = filter_null_items(self.extfolders_lb.ItemsSource)
