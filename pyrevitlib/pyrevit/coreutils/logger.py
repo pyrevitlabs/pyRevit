@@ -64,6 +64,7 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
+        msg = msg.encode('ascii', 'ignore')
         msg = str(msg).replace(os.path.sep, '/')
         msg = emojize(str(msg))
         if level == logging.INFO:
