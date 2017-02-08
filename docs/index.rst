@@ -6,15 +6,14 @@
 Welcome to pyRevit's documentation!
 ===================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+..  note:: This documentation is a work-in-progress. I'm working on the documentation of the loader module at the moment and will continue with  documenting the tools after this step. Thanks for your patience.
 
+..  toctree::
+    :maxdepth: 2
+    :hidden:
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    core
+    scriptutils
+    revitutils
+    coretoolset
+    standardtoolset

@@ -2,7 +2,7 @@ import clr
 import os.path as op
 from collections import namedtuple
 
-from pyrevit import PYREVIT_ADDON_NAME
+from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import load_asm_file, find_loaded_asm, get_file_name, make_canonical_name
 from pyrevit.coreutils import get_str_hash, get_revit_instance_count
@@ -13,10 +13,12 @@ from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
 from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
 
-clr.AddReference('PresentationCore')
-clr.AddReference('RevitAPI')
-clr.AddReference('RevitAPIUI')
-clr.AddReference('System.Xml.Linq')
+
+if not EXEC_PARAMS.doc_mode:
+    clr.AddReference('PresentationCore')
+    clr.AddReference('RevitAPI')
+    clr.AddReference('RevitAPIUI')
+    clr.AddReference('System.Xml.Linq')
 
 # noinspection PyUnresolvedReferences
 from System import AppDomain, Version

@@ -1,7 +1,6 @@
 import os
 import os.path as op
 import json
-import shutil
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -16,7 +15,37 @@ logger = get_logger(__name__)
 
 
 class ExtensionPackage:
-    def __init__(self, info_dict, def_file_path):
+    """
+    Extension package class. This class contains the extension information and also manages installation,
+    user configuration, and removal of the extension. See the ``__init__`` class documentation for the required and
+    optional extension information.
+
+    Attributes:
+        type (extensions.ExtensionTypes): Extension type
+        name (str): Extension name
+        description (str): Extension description
+        url (str): Url of online git repository
+        website (str): Url of extension website
+        image (str): Url of extension icon image (.png file)
+        author (str): Name of extension author
+        author_profile (str): Url of author profile
+    """
+
+    def __init__(self, info_dict, def_file_path=None):
+        """
+        Initialized the extension class based on provide information (info_dict).
+
+        Required info (Dictionary keys):
+            type, name, description , url
+
+        Optional info:
+            website, image, author, author-url
+
+        Args:
+            info_dict (dict): A dictionary containing the required information for initializing the extension.
+            def_file_path (str): The file path of the extension definition file
+        """
+
         # Setting required attributes
         try:
             ext_type = info_dict['type']
@@ -41,7 +70,7 @@ class ExtensionPackage:
             self.author = info_dict['author']
             self.author_profile = info_dict['author-url']
         except Exception as ext_info_err:
-            self.website = self.url.replace('.git','')
+            self.website = self.url.replace('.git', '')
             self.image = None
             self.author = self.author_profile = None
             logger.debug('Missing extended plugin ext info. | {}'.format(ext_info_err))
@@ -51,10 +80,18 @@ class ExtensionPackage:
 
     @property
     def ext_dirname(self):
+        """
+        Returns:
+            str: The name that should be used for the installation directory (based on the extension type)
+        """
         return self.name + self.type.POSTFIX
 
     @property
     def is_installed(self):
+        """
+        Returns:
+            bool: Checked whether this extension is installed or not.
+        """
         for ext_dir in user_config.get_ext_root_dirs():
             for sub_dir in os.listdir(ext_dir):
                 if op.isdir(op.join(ext_dir, sub_dir)) and sub_dir == self.ext_dirname:
@@ -64,14 +101,29 @@ class ExtensionPackage:
 
     @property
     def installed_dir(self):
+        """
+        Returns:
+            str: Installed directory path or empty string if not installed
+        """
         return self.is_installed
 
     @property
     def is_removable(self):
+        """
+        Checks whether it is safe to remove this extension by confirming if a git url is provided
+        for this extension for later re-install.
+
+        Returns:
+            bool: True if removable, False if not
+        """
         return True if self.url else False
 
     @property
     def version(self):
+        """
+        Returns:
+            str: Last commit hash of the extension git repo
+        """
         try:
             if self.is_installed:
                 ext_pkg_repo = git.get_repo(self.installed_dir)
@@ -81,6 +133,13 @@ class ExtensionPackage:
 
     @property
     def config(self):
+        """
+        Returns a valid config manager for this extension. All config parameters will be saved in user config file.
+
+        Returns:
+            pyrevit.coreutils.configparser.PyRevitConfigSectionParser: Config section handler
+        """
+
         try:
             return user_config.get_section(self.ext_dirname)
         except:
@@ -91,10 +150,25 @@ class ExtensionPackage:
             return cfg_section
 
     def remove_pkg_config(self):
+        """
+        Removes the installed extension configuration.
+        """
+
         user_config.remove_section(self.ext_dirname)
         user_config.save_changes()
 
     def install(self, install_dir):
+        """
+        Installed the extension in the given parent directory. This method uses .installed_dir property of this
+        extension object as installation directory name for this extension.
+
+        Args:
+            install_dir (str): Parent directory that the extension should be installed in.
+
+        Raises:
+            PyRevitException: on install error with error message
+        """
+
         is_installed_path = self.is_installed
         if is_installed_path:
             raise PyRevitException('Extension already installed under: {}'.format(is_installed_path))
@@ -110,6 +184,13 @@ class ExtensionPackage:
             raise PyRevitException('Extension does not have url and can not be installed.')
 
     def remove(self):
+        """
+        Removes the extension from its installed directory and clears its configuration.
+
+        Raises:
+            PyRevitException: on remove error with error message
+        """
+
         if self.is_removable:
             dir_to_remove = self.is_installed
             if dir_to_remove:
@@ -122,7 +203,7 @@ class ExtensionPackage:
             raise PyRevitException('Can not remove extension that does not have url and can not be installed later.')
 
 
-class ExtensionPackageDefinitionFile:
+class _ExtensionPackageDefinitionFile:
     def __init__(self, file_path):
         self.file_path = file_path
 
@@ -165,13 +246,23 @@ def get_ext_packages():
     for ext_dir in user_config.get_ext_root_dirs():
         ext_pkg_def_file_path = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
         if op.exists(ext_pkg_def_file_path):
-            ext_def_file = ExtensionPackageDefinitionFile(ext_pkg_def_file_path)
+            ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_def_file_path)
             ext_pkgs.extend(ext_def_file.defined_ext_packages)
 
     return ext_pkgs
 
 
 def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
+    """
+    Checks whether an extension is enabled or has been disable by the user.
+
+    Args:
+        ext_pkg_name (str): Extension package name
+        ext_pkg_type_postfix (str): Postfix of extension type (.lib or .extension)
+
+    Returns:
+        bool: True if enabled, False if not
+    """
     try:
         pkg_config = user_config.get_section(ext_pkg_name + ext_pkg_type_postfix)
         return not pkg_config.disabled

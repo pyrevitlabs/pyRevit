@@ -10,7 +10,7 @@ import clr
 import importlib
 import os.path as op
 
-from pyrevit import HOST_APP, PyRevitException
+from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
@@ -21,17 +21,19 @@ from System import DateTime, DateTimeOffset
 
 GIT_LIB = 'LibGit2Sharp'
 
-# todo: figure out how to import extensions on the caller's scope.
-clr.AddReference("System.Core")
-clr.ImportExtensions(System.Linq)
-clr.AddReferenceByName(GIT_LIB)
+if not EXEC_PARAMS.doc_mode:
+    # todo: figure out how to import extensions on the caller's scope.
+    clr.AddReference("System.Core")
+    clr.ImportExtensions(System.Linq)
+    clr.AddReferenceByName(GIT_LIB)
 
 
 logger = get_logger(__name__)
 
 
-# public libgit module
-libgit = importlib.import_module(GIT_LIB)
+if not EXEC_PARAMS.doc_mode:
+    # public libgit module
+    libgit = importlib.import_module(GIT_LIB)
 
 
 class PyRevitGitAuthenticationError(PyRevitException):

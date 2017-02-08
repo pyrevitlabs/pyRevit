@@ -1,10 +1,14 @@
-from pyrevit import PYREVIT_ADDON_NAME
+from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 
 # noinspection PyUnresolvedReferences
 from System import AppDomain
 
 PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
-CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
+
+if not EXEC_PARAMS.doc_mode:
+    CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
+else:
+    CURRENT_REVIT_APPDOMAIN = None
 
 
 def get_pyrevit_env_vars():

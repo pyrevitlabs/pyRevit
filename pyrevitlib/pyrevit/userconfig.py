@@ -149,10 +149,13 @@ def _get_default_config_parser(config_file_path):
     return parser
 
 
-# read user config, or setup default config file if not available
-# this pushes reading settings at first import of this module.
-try:
-    user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE_PATH)
-except Exception as cfg_err:
-    logger.debug('Can not read existing confing file at: {} | {}'.format(CONFIG_FILE_PATH, cfg_err))
-    user_config = _get_default_config_parser(CONFIG_FILE_PATH)
+if not EXEC_PARAMS.doc_mode:
+    # read user config, or setup default config file if not available
+    # this pushes reading settings at first import of this module.
+    try:
+        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE_PATH)
+    except Exception as cfg_err:
+        logger.debug('Can not read existing confing file at: {} | {}'.format(CONFIG_FILE_PATH, cfg_err))
+        user_config = _get_default_config_parser(CONFIG_FILE_PATH)
+else:
+    user_config = None

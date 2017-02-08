@@ -1,4 +1,4 @@
-from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR
+from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.coreutils.git as git
 
@@ -36,9 +36,11 @@ def get_pyrevit_repo():
     except Exception as repo_err:
         logger.error('Can not create repo from directory: {} | {}'.format(HOME_DIR, repo_err))
 
-
-try:
-    PYREVIT_VERSION = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
-except Exception as ver_err:
-    logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
-    PYREVIT_VERSION = PyRevitVersion('?')
+if not EXEC_PARAMS.doc_mode:
+    try:
+        PYREVIT_VERSION = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
+    except Exception as ver_err:
+        logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
+        PYREVIT_VERSION = PyRevitVersion('?')
+else:
+    PYREVIT_VERSION = None

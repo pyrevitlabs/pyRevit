@@ -15,10 +15,66 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+import imp
+import __builtin__
+
+doc_dir = os.path.dirname(__file__)
+root_dir = os.path.dirname(doc_dir)
+lib_dir = os.path.join(root_dir, 'pyrevitlib')
+mocklib_dir = os.path.join(doc_dir, '_mocklibs')
+
+print('doc directory is: {}'.format(doc_dir))
+print('project directory is: {}'.format(root_dir))
+print('pyrevitlib directory is: {}'.format(lib_dir))
+print('mock/sphinx lib directory is: {}'.format(doc_dir))
+
+# append main pyrevit library path
+sys.path.append(lib_dir)
+
+# append mock/sphinx library path
+# this lib includes the sphinx related modules
+sys.path.append(mocklib_dir)
+
+# Create executor param for the host app
+__builtin__.__revit__ = None
+
+# Set environment to sphinx autodoc
+__builtin__.__sphinx__ = True
+
+
+# based on:
+# http://blog.dowski.com/2008/07/31/customizing-the-python-import-system/
+class DotNetImporter(object):
+    domain_modules = ['clr', 'System', 'Autodesk', 'Microsoft']
+    found_mods = dict()
+
+    def find_module(self, fullname, path=None):
+        if fullname in self.domain_modules:
+            return self
+        if path:
+            for p in path:
+                if p in self.domain_modules:
+                    self.domain_modules.append(fullname)
+                    return self
+
+        return None
+
+    def load_module(self, fullname):
+        if fullname in sys.modules:
+            return sys.modules[fullname]
+
+        mod = imp.new_module(fullname)
+        mod.__loader__ = self
+        sys.modules[fullname] = mod
+        mod.__file__ = fullname
+        mod.__path__ = [fullname]
+        return mod
+
+# add importer to the list
+sys.meta_path.append(DotNetImporter())
 
 
 # -- General configuration ------------------------------------------------
@@ -31,7 +87,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.githubpages']
+              'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -82,8 +138,17 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'alabaster'
+
+# try to load the readthedocs module. otherwise use a standard theme
+# this will cause the local sphinx to use a standard them (since readthedocs module is not installed),
+# and the readthedocs.com bulder engine will use the readthedocs theme
+
+try:
+    import sphinx_rtd_theme
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+except:
+    html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -154,4 +219,5 @@ texinfo_documents = [
 ]
 
 
-
+# autodoc settings
+# autodoc_member_order = 'bysource'
