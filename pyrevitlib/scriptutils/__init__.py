@@ -12,7 +12,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import os.path as op
-import pyrevit.coreutils as coreutils
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -147,6 +146,7 @@ this_script = PyRevitScriptUtils()
 def print_md(md_str):
     logger.warning('print_md is deprecated and will be removed soon. Please use this_script.output.print_md')
     this_script.output.print_md(md_str)
+
 
 def print_code(code_str):
     logger.warning('print_code is deprecated and will be removed soon. Please use this_script.output.print_code')

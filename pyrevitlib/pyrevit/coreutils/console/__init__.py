@@ -110,7 +110,7 @@ class PyRevitConsoleWindow:
 
     @staticmethod
     def print_md(md_str):
-        import pyrevit.coreutils.console.markdown
+        from pyrevit.coreutils.console import markdown
         print(prepare_html_str(markdown.markdown(md_str)), end="")
 
     @staticmethod
