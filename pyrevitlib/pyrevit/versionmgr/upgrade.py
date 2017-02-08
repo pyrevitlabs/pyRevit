@@ -34,7 +34,21 @@ def _cleanup_cache_files():
             if not find_loaded_asm(asm_file_path, by_location=True):
                 appdata.garbage_data_file(asm_file_path)
 
+def _loadbeta_config_upgrade():
+    """ Upgrades local files and settings per this commit changes.
+    commit message:   Added support for __beta__ Issue# 155
+    commit hash:      d1237aa50a430f86a9362af5c2471c16254fd20e
+    """
+
+    try:
+        assert user_config.core.loadbeta
+    except:
+        user_config.core.loadbeta = False
+        user_config.save_changes()
+
+
 
 def upgrade_existing_pyrevit():
     _filelogging_config_upgrade()
     _cleanup_cache_files()
+    _loadbeta_config_upgrade()
