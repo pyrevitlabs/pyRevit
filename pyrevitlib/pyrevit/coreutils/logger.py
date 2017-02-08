@@ -64,12 +64,13 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        msg = msg.encode('ascii', 'ignore')
-        msg = str(msg).replace(os.path.sep, '/')
-        msg = emojize(str(msg))
+        msg_str = str(msg)
+        msg_str = msg_str.encode('ascii', 'ignore')
+        msg_str = msg_str.replace(os.path.sep, '/')
+        msg_str = emojize(msg_str)
         if level == logging.INFO:
-            msg = prepare_html_str(str(msg))
-        logging.Logger._log(self, level, msg, args, exc_info=None, extra=None)
+            msg_str = prepare_html_str(msg_str)
+        logging.Logger._log(self, level, msg_str, args, exc_info=None, extra=None)
 
     def getEffectiveLevel(self):
         """Overrides the parent class method to check handler.level instead of self.level.
