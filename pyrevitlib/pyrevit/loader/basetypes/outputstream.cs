@@ -65,6 +65,8 @@ namespace PyRevitBaseClasses
                 {
                     // Cleanup output for html
                     var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
+                    // if (text.StartsWith("\n"))
+                    //     text = text.Remove(0);
                     if (text.EndsWith("\n"))
                         text = text.Remove(text.Length - 1);
                     text = text.Replace("<", "&lt;").Replace(">", "&gt;");

@@ -24,9 +24,7 @@ class PyRevitConsoleWindow:
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
-        self.__winhandle__.Width = 1100
         self.__winhandle__.UrlHandler = self.handle_protocol_url
-        # self.__winhandle__.Show()
 
     def set_title(self, new_title):
         self.__winhandle__.Text = new_title
@@ -65,6 +63,9 @@ class PyRevitConsoleWindow:
 
     def show(self):
         self.__winhandle__.Show()
+
+    def update_progress(self, cur_value, max_value):
+        self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
     @staticmethod
     def handle_protocol_url(url):

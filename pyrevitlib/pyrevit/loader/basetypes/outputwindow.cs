@@ -13,7 +13,7 @@ namespace PyRevitBaseClasses
         {
             Application.EnableVisualStyles();
             InitializeComponent();
-            txtStdOut.DocumentText = "<html><body></body></html>";
+            txtStdOut.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
 
             // Let's leave the WebBrowser control working alone.
             while (txtStdOut.Document.Body == null)
@@ -22,13 +22,10 @@ namespace PyRevitBaseClasses
             }
 
             txtStdOut.Document.Body.Style = ExternalConfig.htmlstyle;
-            // txtStdOut.Document.Body.ScrollIntoView(false);
-        }
-
-        private void ScriptOutput_Load(object sender, EventArgs e)
-        {
 
         }
+
+        private void ScriptOutput_Load(object sender, EventArgs e) {}
 
         public void ScrollToBottom()
         {
@@ -54,6 +51,39 @@ namespace PyRevitBaseClasses
                 }
 
                 e.Cancel = true;
+            }
+        }
+
+        public void ShowProgressBar()
+        {
+            // MOST IMP : processes all windows messages queue
+            Application.DoEvents();
+
+            if (txtStdOut.Document != null)
+            {
+                var pbar = txtStdOut.Document.CreateElement(ExternalConfig.progressbar);
+                var pbargraph = txtStdOut.Document.CreateElement("div");
+                pbargraph.Id = ExternalConfig.progressbargraphid;
+                pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, 10);
+                pbar.AppendChild(pbargraph);
+                txtStdOut.Document.Body.AppendChild(pbar);
+            }
+        }
+
+        public void UpdateProgressBar(float curValue, float maxValue)
+        {
+            // MOST IMP : processes all windows messages queue
+            Application.DoEvents();
+
+            if (txtStdOut.Document != null)
+            {
+                HtmlElement pbargraph;
+                pbargraph = txtStdOut.Document.GetElementById(ExternalConfig.progressbargraphid);
+                if (pbargraph == null) {
+                    ShowProgressBar();
+                    pbargraph = txtStdOut.Document.GetElementById(ExternalConfig.progressbargraphid);
+                }
+                pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, (curValue/maxValue)*100);
             }
         }
     }
