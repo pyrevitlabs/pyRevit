@@ -1,6 +1,7 @@
 import os
 import os.path as op
 import json
+from collections import defaultdict
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -9,9 +10,29 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.extensions import ExtensionTypes
 from pyrevit.plugins import PLUGIN_EXT_DEF_FILE
+from pyrevit.plugins import PyRevitPluginAlreadyInstalledException, PyRevitPluginNoInstallLinkException, \
+                            PyRevitPluginRemoveException
 
 
 logger = get_logger(__name__)
+
+
+class DependencyGraph:
+    def __init__(self, ext_pkg_list):
+        self.dep_dict = defaultdict(list)
+        self.ext_pkgs = ext_pkg_list
+        for ext_pkg in ext_pkg_list:
+            if ext_pkg.dependencies:
+                for dep_pkg_name in ext_pkg.dependencies:
+                    self.dep_dict[dep_pkg_name].append(ext_pkg)
+
+    def has_installed_dependents(self, ext_pkg_name):
+        if ext_pkg_name in self.dep_dict:
+            for dep_pkg in self.dep_dict[ext_pkg_name]:
+                if dep_pkg.is_installed:
+                    return True
+        else:
+            return False
 
 
 class ExtensionPackage:
@@ -159,51 +180,6 @@ class ExtensionPackage:
         user_config.remove_section(self.ext_dirname)
         user_config.save_changes()
 
-    def install(self, install_dir):
-        """
-        Installed the extension in the given parent directory. This method uses .installed_dir property of this
-        extension object as installation directory name for this extension.
-
-        Args:
-            install_dir (str): Parent directory that the extension should be installed in.
-
-        Raises:
-            PyRevitException: on install error with error message
-        """
-
-        is_installed_path = self.is_installed
-        if is_installed_path:
-            raise PyRevitException('Extension already installed under: {}'.format(is_installed_path))
-
-        if self.url:
-            clone_path = op.join(install_dir, self.ext_dirname)
-
-            if self.config.username and self.config.password:
-                git.git_clone(self.url, clone_path, username=self.config.username, password=self.config.password)
-            else:
-                git.git_clone(self.url, clone_path)
-        else:
-            raise PyRevitException('Extension does not have url and can not be installed.')
-
-    def remove(self):
-        """
-        Removes the extension from its installed directory and clears its configuration.
-
-        Raises:
-            PyRevitException: on remove error with error message
-        """
-
-        if self.is_removable:
-            dir_to_remove = self.is_installed
-            if dir_to_remove:
-                fully_remove_tree(dir_to_remove)
-                self.remove_pkg_config()
-                logger.debug('Successfully removed extension from: {}'.format(dir_to_remove))
-            else:
-                raise PyRevitException('Error removing extension. Can not find installed directory.')
-        else:
-            raise PyRevitException('Can not remove extension that does not have url and can not be installed later.')
-
 
 class _ExtensionPackageDefinitionFile:
     def __init__(self, file_path):
@@ -234,6 +210,54 @@ class _ExtensionPackageDefinitionFile:
         return ext_pkgs
 
 
+def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
+    is_installed_path = ext_pkg.is_installed
+    if is_installed_path:
+        raise PyRevitPluginAlreadyInstalledException(ext_pkg)
+
+    # if package is installable
+    if ext_pkg.url:
+        clone_path = op.join(install_dir, ext_pkg.ext_dirname)
+        logger.info('Installing {} to {}'.format(ext_pkg.name, clone_path))
+
+        if ext_pkg.config.username and ext_pkg.config.password:
+            git.git_clone(ext_pkg.url, clone_path, username=ext_pkg.config.username, password=ext_pkg.config.password)
+        else:
+            git.git_clone(ext_pkg.url, clone_path)
+        logger.info('Extension successfully installed :thumbs_up:')
+    else:
+        raise PyRevitPluginNoInstallLinkException()
+
+    if install_dependencies:
+        if ext_pkg.dependencies:
+            logger.info('Installing dependencies for {}'.format(ext_pkg.name))
+            for dep_pkg_name in ext_pkg.dependencies:
+                dep_pkg = get_ext_package_by_name(dep_pkg_name)
+                if dep_pkg:
+                    _install_ext_pkg(dep_pkg, install_dir, install_dependencies=True)
+
+
+def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
+    if ext_pkg.is_removable:
+        dir_to_remove = ext_pkg.is_installed
+        if dir_to_remove:
+            fully_remove_tree(dir_to_remove)
+            ext_pkg.remove_pkg_config()
+            logger.info('Successfully removed extension from: {}'.format(dir_to_remove))
+        else:
+            raise PyRevitPluginRemoveException('Can not find installed directory.')
+    else:
+        raise PyRevitPluginRemoveException('Extension does not have url and can not be installed later.')
+
+    if remove_dependencies:
+        dg = get_dependency_graph()
+        logger.info('Removing dependencies for {}'.format(ext_pkg.name))
+        for dep_pkg_name in ext_pkg.dependencies:
+            dep_pkg = get_ext_package_by_name(dep_pkg_name)
+            if dep_pkg and not dg.has_installed_dependents(dep_pkg_name):
+                _remove_ext_pkg(dep_pkg, remove_dependencies=True)
+
+
 def get_ext_packages():
     """
     Reads the list of registered plug-in extensions and returns a list of ExtensionPackage classes which contain
@@ -254,6 +278,17 @@ def get_ext_packages():
     return ext_pkgs
 
 
+def get_ext_package_by_name(ext_pkg_name):
+    for ext_pkg in get_ext_packages():
+        if ext_pkg.name == ext_pkg_name:
+            return ext_pkg
+    return None
+
+
+def get_dependency_graph():
+    return DependencyGraph(get_ext_packages())
+
+
 def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
     """
     Checks whether an extension is enabled or has been disable by the user.
@@ -270,3 +305,37 @@ def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
         return not pkg_config.disabled
     except:
         return True
+
+
+def install(ext_pkg, install_dir, install_dependencies=True):
+    """
+    Installed the extension in the given parent directory. This method uses .installed_dir property of
+    extension object as installation directory name for this extension. This method also handles installation
+    of extension dependencies.
+
+    Args:
+        install_dir (str): Parent directory that the extension should be installed in.
+
+    Raises:
+        PyRevitException: on install error with error message
+    """
+    try:
+        _install_ext_pkg(ext_pkg, install_dir, install_dependencies)
+    except PyRevitPluginAlreadyInstalledException as already_installed_err:
+        logger.warning('{} extension is already installed under {}'.format(already_installed_err.ext_pkg.name,
+                                                                           already_installed_err.ext_pkg.is_installed))
+    except PyRevitPluginNoInstallLinkException:
+        logger.error('Extension does not have an install link and can not be installed.')
+
+
+def remove(ext_pkg, remove_dependencies=True):
+    """
+    Removes the extension from its installed directory and clears its configuration.
+
+    Raises:
+        PyRevitException: on remove error with error message
+    """
+    try:
+        _remove_ext_pkg(ext_pkg, remove_dependencies)
+    except PyRevitPluginRemoveException as remove_err:
+        logger.error('Error removing extension: {} | {}'.format(ext_pkg.name, remove_err))

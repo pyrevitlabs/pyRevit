@@ -110,7 +110,12 @@ class ExtensionsWindow(WPFWindow):
         # Update dependencies
         if ext_pkg_item.ext_pkg.dependencies:
             self.show_element(self.ext_dependencies_l)
-            self.ext_dependencies_l.Content = 'Dependencies:\n' + ', '.join(ext_pkg_item.ext_pkg.dependencies)
+            if ext_pkg_item.ext_pkg.is_installed:
+                dep_msg = '(Already installed with this extension)'
+            else:
+                dep_msg = '(Will be installed with this extension)'
+            self.ext_dependencies_l.Content = 'Dependencies {}:\n'.format(dep_msg) + \
+                                              ', '.join(ext_pkg_item.ext_pkg.dependencies)
         else:
             self.hide_element(self.ext_dependencies_l)
 
@@ -187,7 +192,7 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def install_ext_pkg(self, sender, args):
         try:
-            self.selected_pkg.ext_pkg.install(sender.install_path)
+            extpackages.install(self.selected_pkg.ext_pkg, sender.install_path)
             self.Close()
             load_session()
         except Exception as pkg_install_err:
@@ -206,7 +211,7 @@ class ExtensionsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def remove_ext_pkg(self, sender, args):
         try:
-            self.selected_pkg.ext_pkg.remove()
+            extpackages.remove(self.selected_pkg.ext_pkg)
             self.Close()
             load_session()
         except Exception as pkg_remove_err:
