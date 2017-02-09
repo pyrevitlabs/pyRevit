@@ -10,7 +10,7 @@ from Autodesk.Revit.DB import Element, ElementId, View, ViewType, FilteredElemen
                               CopyPasteOptions, ElementTransformUtils, ElevationMarker, \
                               Transaction, TransactionGroup, IDuplicateTypeNamesHandler, ViewDuplicateOption, \
                               ViewPlan, ViewDrafting, ViewSection, BoundingBoxXYZ, ElementTypeGroup, XYZ, \
-                              IFailuresPreprocessor, FailureProcessingResult
+                              IFailuresPreprocessor, FailureProcessingResult, Transform
 from Autodesk.Revit.UI import TaskDialog
 
 
@@ -113,7 +113,13 @@ def create_dest_view(view_type, view_name, view_scale):
                 dest_view = ViewPlan.Create(doc, view_fam_typeid, level.Id)
             elif view_type == 'Section':
                 view_fam_typeid = doc.GetDefaultElementTypeId(ElementTypeGroup.ViewTypeSection)
-                dest_view = ViewSection.CreateSection(doc, view_fam_typeid, BoundingBoxXYZ())
+                view_direction = BoundingBoxXYZ()
+                trans_identity = Transform.Identity
+                trans_identity.BasisX = -XYZ.BasisX    # x direction
+                trans_identity.BasisY = XYZ.BasisZ    # up direction
+                trans_identity.BasisZ = XYZ.BasisY    # view direction
+                view_direction.Transform = trans_identity
+                dest_view = ViewSection.CreateSection(doc, view_fam_typeid, view_direction)
                 scale_param = dest_view.LookupParameter('Hide at scales coarser than')
                 scale_param.Set(1)
             elif view_type == 'Elevation':
