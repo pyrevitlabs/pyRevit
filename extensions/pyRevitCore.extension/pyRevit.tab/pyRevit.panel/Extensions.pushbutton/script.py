@@ -110,11 +110,7 @@ class ExtensionsWindow(WPFWindow):
         # Update dependencies
         if ext_pkg_item.ext_pkg.dependencies:
             self.show_element(self.ext_dependencies_l)
-            if ext_pkg_item.ext_pkg.is_installed:
-                dep_msg = '(Already installed with this extension)'
-            else:
-                dep_msg = '(Will be installed with this extension)'
-            self.ext_dependencies_l.Content = 'Dependencies {}:\n'.format(dep_msg) + \
+            self.ext_dependencies_l.Content = 'Dependencies:\n' + \
                                               ', '.join(ext_pkg_item.ext_pkg.dependencies)
         else:
             self.hide_element(self.ext_dependencies_l)
