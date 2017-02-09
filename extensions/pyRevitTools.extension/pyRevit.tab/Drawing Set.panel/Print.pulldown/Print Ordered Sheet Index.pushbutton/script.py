@@ -4,6 +4,7 @@ import os.path as op
 import codecs
 import clr
 
+from pyrevit import USER_DESKTOP
 from pyrevit.coreutils import verify_directory, cleanup_filename
 from scriptutils import this_script, open_url, logger
 from scriptutils.userinput import WPFWindow
@@ -103,7 +104,7 @@ class PrintSheetsWindow(WPFWindow):
         for sheet in sheet_list:
             for line_no, data_line in enumerate(sched_data):
                 try:
-                    if sheet.SheetNumber in data_line.split('\t'):
+                    if sheet.SheetNumber in data_line:
                         ordered_sheets_dict[line_no] = sheet
                         break
                 except:
@@ -171,7 +172,7 @@ class PrintSheetsWindow(WPFWindow):
             output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(sheet.print_index,
                                                                        sheet.number,
                                                                        sheet.name))
-            print_mgr.PrintToFileName = op.join(r'C:', output_fname)
+            print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
             if sheet.printable:
                 print_mgr.SubmitPrint(sheet.revit_sheet)
 
