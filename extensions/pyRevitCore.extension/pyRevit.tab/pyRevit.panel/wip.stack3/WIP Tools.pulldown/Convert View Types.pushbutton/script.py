@@ -51,7 +51,7 @@ class ViewConverterFailurePreProcessor(IFailuresPreprocessor):
         if trans_name == self.transaction_name:
             # DeleteWarning mimics clicking 'Ok' button
             for fma in fmas:
-                logger.warning('Revit failure occured | {}'.format(fma.GetDescriptionText()))
+                logger.warning('Revit failure occured | {}: {}'.format(fma.GetId().Guid, fma.GetDescriptionText()))
                 failures_accessor.DeleteWarning(fma)
 
             return FailureProcessingResult.ProceedWithCommit
@@ -202,12 +202,17 @@ successfully_converted = 0
 with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
     tg.Start()
     tg.IsFailureHandlingForcedModal = False
+    view_count = 1
+    total_view_count = len(drafting_views)
 
     for src_view in drafting_views:
-        this_script.output.print_md('-----\n**Converting: {}**'.format(src_view.ViewName))
+        this_script.output.print_md('-----\n**{} of {}**\n**Converting: {}**'.format(view_count,
+                                                                                 total_view_count,
+                                                                                 src_view.ViewName))
         dest_view_successfully_setup = False
         try:
             dest_view = create_dest_view(dest_view_type, src_view.ViewName, src_view.Scale)
+            print('View created: {}'.format(dest_view.ViewName))
             dest_view_successfully_setup = True
         except Exception as err:
             logger.error('Error creating model view for: {}. Conversion unsuccessful. | {}'.format(src_view.ViewName,
@@ -223,6 +228,8 @@ with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
             else:
                 print('Conversion cancelled. No elements were copied.\n\n')
 
+        view_count +=1
+        this_script.output.update_progress(view_count, total_view_count)
 
     tg.Assimilate()
 
