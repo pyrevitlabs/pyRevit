@@ -43,7 +43,7 @@ class SettingsWindow(WPFWindow):
         else:
             self.asciicache_rb.IsChecked = True
 
-        self.loadbetatools_cb.IsChecked = user_config.core.loadbeta
+        self.loadbetatools_cb.IsChecked = user_config.core.get_option('loadbeta', default_value=False)
 
     def _setup_user_extensions_list(self):
         self.extfolders_lb.ItemsSource = user_config.core.userextensions

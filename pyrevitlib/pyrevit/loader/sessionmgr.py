@@ -110,7 +110,8 @@ def _new_session():
 
         # update/create ui (needs the assembly to link button actions
         # to commands saved in the dll)
-        update_pyrevit_ui(ui_ext, ext_asm_info, user_config.core.loadbeta)
+
+        update_pyrevit_ui(ui_ext, ext_asm_info, user_config.core.get_option('loadbeta', default_value=False))
         logger.info('UI created for extension: {}'.format(ui_ext.name))
 
     # cleanup existing UI. This is primarily for cleanups after reloading
