@@ -48,8 +48,15 @@ class PyRevitConfigSectionParser(object):
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. | {}'.format(set_err))
 
-    def get_option(self, op_name):
-        return self.__getattr__(op_name)
+    def get_option(self, op_name, default_value=None):
+        try:
+            return self.__getattr__(op_name)
+        except Exception as opt_get_err:
+            if default_value != None:
+                self.__setattr__(op_name, default_value)
+                return default_value
+            else:
+                raise opt_get_err
 
 
 class PyRevitConfigParser(object):
