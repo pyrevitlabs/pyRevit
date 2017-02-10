@@ -34,6 +34,7 @@ def _cleanup_cache_files():
             if not find_loaded_asm(asm_file_path, by_location=True):
                 appdata.garbage_data_file(asm_file_path)
 
+
 def _loadbeta_config_upgrade():
     """ Upgrades local files and settings per this commit changes.
     commit message:   Added support for __beta__ Issue# 155
