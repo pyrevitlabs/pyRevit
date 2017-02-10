@@ -78,7 +78,9 @@ class SelectElementsCommand(GenericProtocolCommand):
                 if isinstance(el, View):
                     uidoc.ActiveView = el
                 else:
-                    uidoc.ActiveView = doc.GetElement(el.OwnerViewId)
+                    owner_view = doc.GetElement(el.OwnerViewId)
+                    if owner_view:
+                        uidoc.ActiveView = owner_view
             except Exception as err:
                 print(err)
 
