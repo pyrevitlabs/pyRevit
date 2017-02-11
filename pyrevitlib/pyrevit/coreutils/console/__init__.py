@@ -24,7 +24,32 @@ class PyRevitConsoleWindow:
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
-        self.__winhandle__.UrlHandler = self.handle_protocol_url
+        self.__winhandle__.UrlHandler = self._handle_protocol_url
+
+    @staticmethod
+    def _handle_protocol_url(url):
+        """
+        This is a function assgined to the __winhandle__.UrlHandler which
+         is a delegate. Everytime WebBrowser is asked to handle a link with
+         a protocol other than http, it'll call this function.
+        System.Windows.Forms.WebBrowser returns a string with misc stuff
+         before the actual link, when it can't recognize the protocol.
+        This function cleans up the link for the pyRevit protocol handler.
+
+        Args:
+            url (str): the url coming from Forms.WebBrowser
+        """
+        try:
+            if rvtprotocol.PROTOCOL_NAME in url:
+                cleaned_url = url.split(rvtprotocol.PROTOCOL_NAME)[1]
+                # get rid of the slash at the end
+                if cleaned_url.endswith('/'):
+                    cleaned_url = cleaned_url.replace('/', '')
+
+                # process cleaned data
+                rvtprotocol.process_url(cleaned_url)
+        except Exception as exec_err:
+            logger.error('Error handling link | {}'.format(exec_err))
 
     def set_title(self, new_title):
         self.__winhandle__.Text = new_title
@@ -54,9 +79,8 @@ class PyRevitConsoleWindow:
     def get_height(self):
         return self.__winhandle__.Height
 
-    # user is not supposed to completely close the window but can always hide it.
-    # def close(self):
-    #     self.__winhandle__.Close()
+    def close(self):
+        self.__winhandle__.Close()
 
     def hide(self):
         self.__winhandle__.Hide()
@@ -71,33 +95,11 @@ class PyRevitConsoleWindow:
         with open(dest_file, 'w') as output_file:
             output_file.write(full_html)
 
+    def open_url(self, dest_url):
+        self.__winhandle__.txtStdOut.Navigate(dest_url, False)
+
     def update_progress(self, cur_value, max_value):
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
-
-    @staticmethod
-    def handle_protocol_url(url):
-        """
-        This is a function assgined to the __winhandle__.UrlHandler which
-         is a delegate. Everytime WebBrowser is asked to handle a link with
-         a protocol other than http, it'll call this function.
-        System.Windows.Forms.WebBrowser returns a string with misc stuff
-         before the actual link, when it can't recognize the protocol.
-        This function cleans up the link for the pyRevit protocol handler.
-
-        Args:
-            url (str): the url coming from Forms.WebBrowser
-        """
-        try:
-            if rvtprotocol.PROTOCOL_NAME in url:
-                cleaned_url = url.split(rvtprotocol.PROTOCOL_NAME)[1]
-                # get rid of the slash at the end
-                if cleaned_url.endswith('/'):
-                    cleaned_url = cleaned_url.replace('/', '')
-
-                # process cleaned data
-                rvtprotocol.process_url(cleaned_url)
-        except Exception as exec_err:
-            logger.error('Error handling link | {}'.format(exec_err))
 
     @staticmethod
     def print_code(code_str):
@@ -125,12 +127,13 @@ class PyRevitConsoleWindow:
     def linkify(*args):
         return prepare_html_str(rvtprotocol.make_url(args))
 
+# creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
+output_window = PyRevitConsoleWindow(EXEC_PARAMS.window_handle)
+
+# This snippet is for backup only:
 # __window__ used to be added to local scope by pyRevitLoader.dll, thus it needed to be extracted from caller scope
-# pyRevitLoader.dll has been modified to add __window__ to globals. This snippet is for backup only
+# pyRevitLoader.dll has been modified to add __window__ to globals.
 # from .coreutils import inspect_calling_scope_local_var
 # win_handler = pyrevit.coreutils.inspect_calling_scope_local_var('__window__')
 # if win_handler:
 #     output_window = PyRevitConsoleWindow(win_handler)
-
-# creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
-output_window = PyRevitConsoleWindow(EXEC_PARAMS.window_handle)
