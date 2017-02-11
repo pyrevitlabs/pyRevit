@@ -212,6 +212,7 @@ HOME_DIR = _find_home_directory()
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
 PYTHON_LIB_DIR = op.join(HOME_DIR, 'pylib')
+PYTHON_LIB_SITEPKGS_DIR = op.join(PYTHON_LIB_DIR, 'site-packages')
 MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
 
 # default extension extensions folder

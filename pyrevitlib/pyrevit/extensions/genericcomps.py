@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit import HOST_APP, MAIN_LIB_DIR, PYTHON_LIB_DIR, MISC_LIB_DIR, PyRevitException
+from pyrevit import HOST_APP, MAIN_LIB_DIR, PYTHON_LIB_DIR, MISC_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR, PyRevitException
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM
@@ -51,7 +51,7 @@ class GenericUIComponent(GenericComponent):
         self.original_name = self.name = None
         self.unique_name = None
         self.library_path = None
-        self.syspath_search_paths = [MAIN_LIB_DIR, PYTHON_LIB_DIR, MISC_LIB_DIR]
+        self.syspath_search_paths = [MAIN_LIB_DIR, PYTHON_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR, MISC_LIB_DIR]
         self.icon_file = None
 
     def __init_from_dir__(self, ext_dir):
