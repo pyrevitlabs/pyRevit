@@ -64,6 +64,13 @@ class PyRevitConsoleWindow:
     def show(self):
         self.__winhandle__.Show()
 
+    def save_contents(self, dest_file):
+        html = self.__winhandle__.txtStdOut.Document.Body.OuterHtml.encode('ascii', 'ignore')
+        doc_txt = self.__winhandle__.txtStdOut.DocumentText
+        full_html = doc_txt.lower().replace('<body></body>', html)
+        with open(dest_file, 'w') as output_file:
+            output_file.write(full_html)
+
     def update_progress(self, cur_value, max_value):
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
