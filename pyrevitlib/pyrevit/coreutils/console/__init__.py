@@ -102,6 +102,10 @@ class PyRevitConsoleWindow:
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
     @staticmethod
+    def print_html(html_str):
+        print(prepare_html_str(html_str), end="")
+
+    @staticmethod
     def print_code(code_str):
         nbsp = '&nbsp;'
         code_div = '<div style="font-family:courier new;' \
