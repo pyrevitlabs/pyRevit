@@ -50,7 +50,10 @@ class ScriptFileParser:
             raise PyRevitException('Error parsing script file: {} | {}'.format(self.file_addr, err))
 
     def get_docstring(self):
-        return ast.get_docstring(self.ast_tree)
+        doc_str = ast.get_docstring(self.ast_tree)
+        if doc_str:
+            return doc_str.decode('utf-8')
+        return None
 
     def extract_param(self, param_name):
         try:
@@ -58,7 +61,10 @@ class ScriptFileParser:
                 if hasattr(child, 'targets'):
                     for target in child.targets:
                         if hasattr(target, 'id') and target.id == param_name:
-                            return ast.literal_eval(child.value)
+                            param_value = ast.literal_eval(child.value)
+                            if isinstance(param_value, str):
+                                param_value = param_value.decode('utf-8')
+                            return param_value
         except Exception as err:
             raise PyRevitException('Error parsing parameter: {} in script file for : {} | {}'.format(param_name,
                                                                                                      self.file_addr,

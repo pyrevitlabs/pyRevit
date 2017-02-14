@@ -28,11 +28,10 @@ class UIMakerParams:
 
 
 def _make_button_tooltip(button):
-    tooltip = button.doc_string
-    if tooltip:
-        tooltip += '\n\nBundle Name:\n{}'.format(button.name)
-        if button.author:
-            tooltip += '\n\nAuthor:\n{}'.format(button.author)
+    tooltip = button.doc_string + '\n\n' if button.doc_string else ''
+    tooltip += 'Bundle Name:\n{}'.format(button.name)
+    if button.author:
+        tooltip += '\n\nAuthor:\n{}'.format(button.author)
     return tooltip
 
 
