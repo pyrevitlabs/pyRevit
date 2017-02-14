@@ -64,7 +64,12 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        msg_str = str(msg)
+        msg_str = ''
+        if not isinstance(msg, str):
+            msg_str = str(msg)
+        else:
+            msg_str = msg
+        # get rid of unicode characters
         msg_str = msg_str.encode('ascii', 'ignore')
         msg_str = msg_str.replace(os.path.sep, '/')
         msg_str = emojize(msg_str)
