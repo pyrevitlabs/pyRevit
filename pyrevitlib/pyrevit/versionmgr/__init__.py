@@ -17,7 +17,11 @@ class PyRevitVersion(object):
 
     def as_int_tuple(self):
         """Returns version as an int tuple (major, minor, patch)"""
-        ver_tuple = (PyRevitVersion.major, PyRevitVersion.minor, int(self.patch, 16))
+        try:
+            patch_number = int(self.patch, 16)
+        except:
+            patch_number = 0
+        ver_tuple = (PyRevitVersion.major, PyRevitVersion.minor, patch_number)
         return ver_tuple
 
     def as_str_tuple(self):
