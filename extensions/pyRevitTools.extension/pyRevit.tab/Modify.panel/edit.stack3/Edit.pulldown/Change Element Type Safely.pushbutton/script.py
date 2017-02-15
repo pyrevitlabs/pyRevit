@@ -1,3 +1,4 @@
+from scriptutils import logger
 from revitutils import doc, uidoc, selection
 
 # noinspection PyUnresolvedReferences
@@ -8,7 +9,7 @@ __doc__ = 'Changes element type of the selected elements to a the element type o
           'while maintaining the values of all instance parameters. First select all the elements that you want '\
           'to change the type for and run this tool. Then select the element that has the source element type.'
 
-exclude_params = ['Family', 'Family and Type', 'Type', 'Type Name']
+exclude_params = ['Family', 'Family Name', 'Family and Type', 'Type', 'Type Name', 'Image']
 
 
 def get_param_values(element):
@@ -16,14 +17,21 @@ def get_param_values(element):
     for param in element.Parameters:
         param_name = param.Definition.Name
         if not param.IsReadOnly and param_name not in exclude_params:
+            logger.debug('Getting param value: {}'.format(param_name))
             if param.StorageType == StorageType.Integer:
                 value_dict[param_name] = param.AsInteger()
+                logger.debug('Param value is Integer: {}'.format(value_dict[param_name]))
             elif param.StorageType == StorageType.Double:
                 value_dict[param_name] = param.AsDouble()
+                logger.debug('Param value is Double: {}'.format(value_dict[param_name]))
             elif param.StorageType == StorageType.String:
                 value_dict[param_name] = param.AsString()
+                logger.debug('Param value is String: {}'.format(value_dict[param_name]))
             elif param.StorageType == StorageType.ElementId:
                 value_dict[param_name] = param.AsElementId()
+                logger.debug('Param value is ElementId: {}'.format(value_dict[param_name]))
+        else:
+            logger.debug('Skipping param: {}'.format(param_name))
 
     return value_dict
 
@@ -33,7 +41,12 @@ def set_param_values(element, value_dict):
         param_name = param.Definition.Name
         if not param.IsReadOnly and param_name not in exclude_params:
             if param_name in value_dict.keys():
-                param.Set(value_dict[param_name])
+                param_value = value_dict[param_name]
+                if param_value:
+                    logger.debug('Setting param: {} to value: {}'.format(param_name, param_value))
+                    param.Set(param_value)
+                else:
+                    logger.debug('Param: {} Value is not settable: {}'.format(param_name, param_value))
 
 
 with Transaction(doc, 'Change Element Types') as t:
@@ -43,6 +56,7 @@ with Transaction(doc, 'Change Element Types') as t:
         src_type = src_element.GetTypeId()
 
         for dest_element in selection.elements:
+            logger.debug('Converting: {} | {}'.format(dest_element.Id, dest_element))
             value_dict = get_param_values(dest_element)
             new_element = dest_element.ChangeTypeId(src_type)
             if new_element != ElementId.InvalidElementId:
