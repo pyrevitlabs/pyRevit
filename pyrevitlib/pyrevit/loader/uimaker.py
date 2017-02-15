@@ -29,7 +29,7 @@ class UIMakerParams:
 
 def _make_button_tooltip(button):
     tooltip = button.doc_string + '\n\n' if button.doc_string else ''
-    tooltip += 'Bundle Name:\n{}'.format(button.name)
+    tooltip += 'Bundle Name:\n{} ({})'.format(button.name, button.type_id.replace('.', ''))
     if button.author:
         tooltip += '\n\nAuthor:\n{}'.format(button.author)
     return tooltip
