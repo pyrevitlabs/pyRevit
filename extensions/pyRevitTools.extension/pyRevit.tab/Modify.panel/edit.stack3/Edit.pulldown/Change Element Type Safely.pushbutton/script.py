@@ -42,10 +42,10 @@ def set_param_values(element, value_dict):
         if not param.IsReadOnly and param_name not in exclude_params:
             if param_name in value_dict.keys():
                 param_value = value_dict[param_name]
-                if param_value:
+                try:
                     logger.debug('Setting param: {} to value: {}'.format(param_name, param_value))
                     param.Set(param_value)
-                else:
+                except:
                     logger.debug('Param: {} Value is not settable: {}'.format(param_name, param_value))
 
 
