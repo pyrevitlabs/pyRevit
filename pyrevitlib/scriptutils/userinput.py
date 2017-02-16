@@ -17,7 +17,7 @@ from System import Uri
 # noinspection PyUnresolvedReferences
 from System.Windows import Window
 # noinspection PyUnresolvedReferences
-from System.Windows.Forms import FolderBrowserDialog, DialogResult
+from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
 # noinspection PyUnresolvedReferences
 from System.Windows.Media.Imaging import BitmapImage
 # noinspection PyUnresolvedReferences
@@ -125,3 +125,11 @@ def pick_folder():
     fb_dlg = FolderBrowserDialog()
     if fb_dlg.ShowDialog() == DialogResult.OK:
         return fb_dlg.SelectedPath
+
+def pick_file(file_ext='', multi_file=False):
+    of_dlg = OpenFileDialog()
+    of_dlg.Filter = '|*.{}'.format(file_ext)
+    of_dlg.RestoreDirectory = True
+    of_dlg.Multiselect = multi_file
+    if of_dlg.ShowDialog() == DialogResult.OK:
+        return of_dlg.FileName
