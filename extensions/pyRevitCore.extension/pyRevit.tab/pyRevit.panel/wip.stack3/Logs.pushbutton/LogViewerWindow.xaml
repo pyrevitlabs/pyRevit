@@ -101,8 +101,13 @@
                         <GridViewColumn Header="Date" DisplayMemberBinding="{Binding date}"/>
                         <GridViewColumn Header="Time" DisplayMemberBinding="{Binding time}" />
                         <GridViewColumn Header="Reporting Module" DisplayMemberBinding="{Binding module}" />
-                        <GridViewColumn Header="Message Contents" DisplayMemberBinding="{Binding message}" />
-                    </GridView>
+                        <GridViewColumn DisplayMemberBinding="{Binding message}">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Message Contents" HorizontalContentAlignment="Left"
+                                                      Padding="5,0,0,0"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                   </GridView>
                 </ListView.View>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
