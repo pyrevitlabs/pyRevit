@@ -216,7 +216,9 @@ class LogViewerWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def load_log_file(self, sender, args):
-        self._append_log_file(pick_file('log'))
+        selected_file = pick_file('log')
+        if selected_file:
+            self._append_log_file(selected_file)
 
 
 if __name__ == '__main__':
