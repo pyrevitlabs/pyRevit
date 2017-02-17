@@ -44,7 +44,8 @@ class EntryFilter:
         for entry in entry_list:
             if getattr(entry, self.type_id) == self.filter_type:
                 if search_term:
-                    if search_term in entry.message:
+                    if search_term.lower() in entry.message.lower() \
+                    or search_term.lower() in entry.clean_msg.lower():
                         filtered_list.append(entry)
                 else:
                     filtered_list.append(entry)
@@ -60,7 +61,8 @@ class EntryNoneFilter(EntryFilter):
         if search_term:
             filtered_list = []
             for entry in entry_list:
-                if search_term in entry.message:
+                if search_term.lower() in entry.message.lower() \
+                or search_term.lower() in entry.clean_msg.lower():
                     filtered_list.append(entry)
             return filtered_list
         else:
@@ -172,11 +174,14 @@ class LogViewerWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def filter_changed(self, sender, args):
         cur_filter = self.current_filter
+        # self.logitems_lb.UnselectAll()
         if cur_filter:
             filtered_list = cur_filter.filter_entries(self._current_entry_list, search_term=self.search_tb.Text)
             self.logitems_lb.ItemsSource = filtered_list
         else:
             self.logitems_lb.ItemsSource = self._current_entry_list
+
+        self.logitems_lb.ScrollIntoView(self.current_log_entry)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
