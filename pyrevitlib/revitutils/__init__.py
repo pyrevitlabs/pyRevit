@@ -5,6 +5,7 @@ from Autodesk.Revit.DB import ElementId
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Selection import ObjectType
 
+
 class SelectionUtils:
     def __init__(self, document, uidocument):
         self._doc = document
