@@ -1,8 +1,10 @@
+from pyrevit import EXEC_PARAMS
+
 try:
     # noinspection PyUnresolvedReferences
-    COMMAND_NAME = __commandname__
+    COMMAND_NAME = EXEC_PARAMS.command_name
     # noinspection PyUnresolvedReferences
-    COMMAND_PATH = __commandpath__
+    COMMAND_PATH = EXEC_PARAMS.command_path
 except:
     raise Exception('This is not a pyRevit script environment. These tools are irrelevant here.')
 
