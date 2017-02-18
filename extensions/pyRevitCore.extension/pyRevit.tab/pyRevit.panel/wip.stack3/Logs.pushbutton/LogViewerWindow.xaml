@@ -8,7 +8,7 @@
             </Style>
 
             <DataTemplate x:Key="LogEntryStyle">
-                <TextBlock Foreground="Gray" Text="{Binding type}"/>
+                <TextBlock Foreground="Gray" Text="{Binding level}"/>
             </DataTemplate>
 
             <ControlTemplate x:Key="Default" TargetType='{x:Type ListViewItem}'>
@@ -83,7 +83,7 @@
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding filter_type}" />
+                                    <TextBlock Text="{Binding filter_name}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
@@ -97,10 +97,11 @@
             <ListView x:Name="logitems_lb" Margin="10,0,10,0" SelectionChanged="log_entry_changed">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Message Type" DisplayMemberBinding="{Binding type}" />
+                        <GridViewColumn Header="Level" DisplayMemberBinding="{Binding level}" />
                         <GridViewColumn Header="Date" DisplayMemberBinding="{Binding date}"/>
                         <GridViewColumn Header="Time" DisplayMemberBinding="{Binding time}" />
-                        <GridViewColumn Header="Reporting Module" DisplayMemberBinding="{Binding module}" />
+                        <GridViewColumn Header="Module" DisplayMemberBinding="{Binding module}" />
+                        <GridViewColumn Header="Command" DisplayMemberBinding="{Binding command}" />
                         <GridViewColumn DisplayMemberBinding="{Binding message}">
                             <GridViewColumn.Header>
                                 <GridViewColumnHeader Content="Message Contents" HorizontalContentAlignment="Left"
@@ -113,23 +114,23 @@
                     <Style TargetType="ListViewItem">
                         <Setter Property="Template" Value="{StaticResource Default}"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding type}" Value="CRITICAL">
+                            <DataTrigger Binding="{Binding level}" Value="CRITICAL">
                                 <Setter Property="Template" Value="{StaticResource CriticalEntry}"/>
                                 <Setter Property="Foreground" Value="White" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding type}" Value="ERROR">
+                            <DataTrigger Binding="{Binding level}" Value="ERROR">
                                 <Setter Property="Template" Value="{StaticResource ErrorEntry}"/>
                                 <Setter Property="Foreground" Value="#c7254e" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding type}" Value="WARNING">
+                            <DataTrigger Binding="{Binding level}" Value="WARNING">
                                 <Setter Property="Template" Value="{StaticResource WarningEntry}"/>
                                 <Setter Property="Foreground" Value="#d47a10" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding type}" Value="INFO">
+                            <DataTrigger Binding="{Binding level}" Value="INFO">
                                 <Setter Property="Template" Value="{StaticResource InfoEntry}"/>
                                 <Setter Property="Foreground" Value="Black" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding type}" Value="DEBUG">
+                            <DataTrigger Binding="{Binding level}" Value="DEBUG">
                                 <Setter Property="Template" Value="{StaticResource DebugEntry}"/>
                                 <Setter Property="Foreground" Value="#878787" />
                             </DataTrigger>
