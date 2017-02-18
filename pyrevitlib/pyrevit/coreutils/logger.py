@@ -25,7 +25,11 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:w
                                                      LOG_REC_FORMAT)
 
 
-FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
+if EXEC_PARAMS.command_mode:
+    FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s".format(EXEC_PARAMS.command_name)
+else:
+    FILE_LOG_REC_FORMAT = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
+
 FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_STATUS = False
