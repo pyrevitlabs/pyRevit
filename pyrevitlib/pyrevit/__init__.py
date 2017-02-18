@@ -188,6 +188,9 @@ class _ExecutorParams(object):
         except:
             return False
 
+    @property
+    def command_mode(self):
+        return self.command_name
 
 EXEC_PARAMS = _ExecutorParams()
 
