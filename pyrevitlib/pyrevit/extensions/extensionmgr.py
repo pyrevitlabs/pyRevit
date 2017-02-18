@@ -58,18 +58,8 @@ def _remove_disabled_extensions(ext_list):
 
 
 def _parse_or_cache(ext_info):
-    try:
-        # raise error if ui_extension does not have a valid cache
-        if not is_cache_valid(ext_info):
-            raise PyRevitException()
-
-        # if cache is valid, load the cached ui_extension
-        logger.debug('Cache is valid for: {}'.format(ext_info))
-        # cacher module takes the ui_extension object and injects cache data into it.
-        ui_extension = get_cached_extension(ext_info)
-        logger.info('UI Extension successfuly loaded from cache: {}'.format(ui_extension.name))
-
-    except PyRevitException as cache_err:
+    # parse the extension if ui_extension does not have a valid cache
+    if not is_cache_valid(ext_info):
         logger.debug('Cache is not valid for: {}'.format(ext_info))
 
         # Either cache is not available, not valid, or cache load has failed.
@@ -81,6 +71,14 @@ def _parse_or_cache(ext_info):
         logger.info('UI Extension successfuly parsed: {}'.format(ui_extension.name))
         logger.info('Updating cache for ui_extension: {}'.format(ui_extension.name))
         update_cache(ui_extension)
+
+    # otherwise load the cache
+    else:
+        logger.debug('Cache is valid for: {}'.format(ext_info))
+        # if cache is valid, load the cached ui_extension
+        # cacher module takes the ui_extension object and injects cache data into it.
+        ui_extension = get_cached_extension(ext_info)
+        logger.info('UI Extension successfuly loaded from cache: {}'.format(ui_extension.name))
 
     return ui_extension
 
