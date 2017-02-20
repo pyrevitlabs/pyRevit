@@ -117,6 +117,7 @@ namespace PyRevitBaseClasses
                                                         ExternalConfig.ipyerrtitle,
                                                         string.Join("\n", errors.Errors.ToArray())));
                     _message = "";
+                    engine.Runtime.Shutdown();
                     return (int)Result.Cancelled;
                 }
 
@@ -127,11 +128,13 @@ namespace PyRevitBaseClasses
                     script.Execute(scope);
 
                     _message = (scope.GetVariable("__message__") ?? "").ToString();
+                    engine.Runtime.Shutdown();
                     return (int)(scope.GetVariable("__result__") ?? Result.Succeeded);
                 }
                 catch (SystemExitException)
                 {
                     // ok, so the system exited. That was bound to happen...
+                    engine.Runtime.Shutdown();
                     return (int)Result.Succeeded;
                 }
                 catch (Exception exception)
@@ -148,6 +151,7 @@ namespace PyRevitBaseClasses
 
                     outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
                     _message = "";
+                    engine.Runtime.Shutdown();
                     return (int)Result.Cancelled;
                 }
 
