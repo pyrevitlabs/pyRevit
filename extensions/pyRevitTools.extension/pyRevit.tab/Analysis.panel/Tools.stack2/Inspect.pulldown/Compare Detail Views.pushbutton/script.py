@@ -6,12 +6,12 @@ from Autodesk.Revit.DB import View
 from Autodesk.Revit.UI import TaskDialog
 
 
-__doc__ = 'Compared two views by comparing the contents against each other. by default, This tool does not '      \
+__doc__ = 'Compared two views by comparing the contents against each other. By default this tool does not '      \
           'pay attention to the element types. For example, two text elements having the same contents '          \
-          'but with different styles are considered equal. This however can be overriden using the SHIFT-Click. ' \
+          'but with different styles are considered equal. This however can be overridden using the SHIFT-Click. ' \
           'If the views do not match, all the different elements will be selected. '                              \
           'This tool is helpful when comparing duplicate detail views.'                                           \
-          '\n\nSHIFT-Click: Include Element Types in Comparison'
+          '\n\nSHIFT-Click: Include Element Types in comparing views'
 
 
 view_list = []
