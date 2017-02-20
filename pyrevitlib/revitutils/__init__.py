@@ -1,6 +1,8 @@
 from pyrevit import HOST_APP
 
 # noinspection PyUnresolvedReferences
+from System.Collections.Generic import List
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import ElementId
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Selection import ObjectType
@@ -17,6 +19,9 @@ class SelectionUtils:
             return doc.GetElement(self._uidoc_selection.PickObject(ObjectType.Element, pick_message))
         except:
             return None
+
+    def replace_selection(self, el_id_list):
+        self._uidoc_selection.SetElementIds(List[ElementId](el_id_list))
 
 
 class CurrentElementSelection:
