@@ -6,6 +6,7 @@ import hashlib
 import time
 import clr
 import shutil
+from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
 
@@ -244,7 +245,7 @@ def get_file_name(file_path):
 
 
 def get_str_hash(source_str):
-    return hashlib.md5(source_str.encode('utf-8')).hexdigest()
+    return hashlib.md5(source_str.encode('utf-8', 'ignore')).hexdigest()
 
 
 def calculate_dir_hash(dir_path, dir_filter, file_filter):
@@ -453,3 +454,10 @@ def decrement_str(input_str, step):
 
 def filter_null_items(src_list):
     return list(filter(bool, src_list))
+
+
+def reverse_dict(input_dict):
+    output_dict = defaultdict(list)
+    for key, value in input_dict.items():
+        output_dict[value].append(key)
+    return output_dict
