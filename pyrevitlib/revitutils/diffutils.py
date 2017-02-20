@@ -1,41 +1,117 @@
+import re
+
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import reverse_dict, get_str_hash
+
 from revitutils import doc
-from pyrevit.coreutils.console import output_window
 
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import FilteredElementCollector
+from Autodesk.Revit.DB import FilteredElementCollector, ElementId, TextNote, Dimension
 
 
-def element_hash(rvt_element, include_type=False):
+logger = get_logger(__name__)
+
+
+type_param_exclude_list = ['Type', 'Type Name', 'Type Id', 'Family', 'Family Name', 'Family and Type']
+
+domain_param_exclude_list = ['Workset', 'Edited by', 'Design Option', 'Drawn By', 'Level',
+                             'Comments', 'Copyright', 'Image']
+
+custom_attrs = {TextNote: ['LeaderCount', 'LeaderLeftAttachment', 'LeaderRightAttachment', 'Text'],
+                Dimension: ['Above', 'Below', 'Prefix', 'Suffix',
+                            'ValueOverride', 'AreSegmentsEqual', 'NumberOfSegments']}
+
+class DiffResults:
+    def __init__(self):
+        self.processed_params = set()
+        self.rvt_element_types = set()
+        self.diff_elements = list()
+
+
+def cleanup_repr_str(repr_str):
+    repr_str = repr_str.strip('\n,\r')
+    return re.sub(' +',' ', repr_str)
+
+
+def element_hash(rvt_element, include_type=False, diff_results=None):
+
     def param_hash(param):
         repr_str = '{} {}'.format(str(param.Definition.Name).ljust(30), param.AsValueString())
-        return hash(repr_str)
+        if diff_results:
+            diff_results.processed_params.add(param.Definition.Name)
+        return get_str_hash(cleanup_repr_str(repr_str))
 
-    domain_param_exclude_list = ['Workset', 'Edited by', 'Design Option']
-    type_param_exclude_list = ['Type', 'Type Name', 'Type Id', 'Family', 'Family Name', 'Family and Type']
-    hash_value = 0
-    for param in rvt_element.Parameters:
+    def attribute_hash(el, el_attr):
+        try:
+            repr_str = unicode(getattr(el, el_attr))
+        except:
+            logger.debug('Error reading attribute: {} form element {} with id: {}'.format(el_attr, el, el.Id))
+            return ''
+
+        if diff_results:
+            diff_results.processed_params.add(el_attr)
+
+        return get_str_hash(cleanup_repr_str(repr_str))
+
+    sorted_params = sorted(rvt_element.Parameters, key=lambda x: x.Definition.Name)
+    if diff_results:
+        diff_results.rvt_element_types.add(type(rvt_element))
+
+    hash_value = ''
+    for param in sorted_params:
         if param.Definition.Name not in domain_param_exclude_list:
             if include_type:
                 hash_value += param_hash(param)
             elif param.Definition.Name not in type_param_exclude_list:
                 hash_value += param_hash(param)
-    return hash_value
+
+    if type(rvt_element) in custom_attrs:
+        for el_attr in custom_attrs[type(rvt_element)]:
+            hash_value += attribute_hash(rvt_element, el_attr)
+
+    return get_str_hash(hash_value)
 
 
-def element_list_hash(element_list, include_type=False):
-    hashes = [element_hash(el, include_type) for el in element_list]
-    return sum(sorted(hashes))
+def element_hash_dict(element_list, include_type=False, diff_results=None):
+    return {el.Id.IntegerValue:element_hash(el, include_type, diff_results) for el in element_list}
 
 
-def compare(element_a, element_b, compare_types=False):
-    return element_hash(element_a, compare_types) == element_hash(element_b, compare_types)
+def compare(element_a, element_b, compare_types=False, diff_results=None):
+    return element_hash(element_a, compare_types, diff_results) == element_hash(element_b, compare_types, diff_results)
 
 
-def compare_elmnt_sets(elementset_a, elementset_b, compare_types=False):
-    return element_list_hash(elementset_a, compare_types) == element_list_hash(elementset_b, compare_types)
+def compare_elmnt_sets(elementset_a, elementset_b, compare_types=False, diff_results=None):
+    dict_a = element_hash_dict(elementset_a, compare_types, diff_results)
+    hash_list_a = sorted(dict_a.values())
+
+    dict_b = element_hash_dict(elementset_b, compare_types, diff_results)
+    hash_list_b = sorted(dict_b.values())
+
+    if hash_list_a == hash_list_b:
+        return True
+
+    elif diff_results:
+        rdict_a = reverse_dict(dict_a)
+        rdict_b = reverse_dict(dict_b)
+        for el_hash in set(hash_list_a) ^ set(hash_list_b):
+            if el_hash in rdict_a:
+                for el_id in rdict_a[el_hash]:
+                    diff_results.diff_elements.append(ElementId(el_id))
+
+            if el_hash in rdict_b:
+                for el_id in rdict_b[el_hash]:
+                    diff_results.diff_elements.append(ElementId(el_id))
+
+    return False
 
 
-def compare_views(view_a, view_b, compare_types=False):
+def compare_views(view_a, view_b, compare_types=False, diff_results=None):
     view_a_elmts = FilteredElementCollector(doc).OwnedByView(view_a.Id).WhereElementIsNotElementType().ToElements()
     view_b_elmts = FilteredElementCollector(doc).OwnedByView(view_b.Id).WhereElementIsNotElementType().ToElements()
-    return compare_elmnt_sets(view_a_elmts, view_b_elmts, compare_types)
+
+    # pick the detail elements only
+    det_elmts_a = [el for el in view_a_elmts if el.ViewSpecific]
+    det_elmts_b = [el for el in view_b_elmts if el.ViewSpecific]
+
+    # compare and return result
+    return compare_elmnt_sets(det_elmts_a, det_elmts_b, compare_types, diff_results)
