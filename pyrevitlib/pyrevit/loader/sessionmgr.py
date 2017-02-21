@@ -60,7 +60,7 @@ def _report_env():
     pyrvt_ver = PYREVIT_VERSION.get_formatted()
 
     logger.info('pyRevit version: {} - '
-                ':coded: with :small-black-heart:'
+                ':coded: with :small-black-heart: '
                 'in Portland, OR'.format(pyrvt_ver))
     logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
                                                        HOST_APP.build,

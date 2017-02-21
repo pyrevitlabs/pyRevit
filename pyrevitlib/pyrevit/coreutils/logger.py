@@ -17,12 +17,12 @@ RUNTIME_FILE_LOGGING_LEVEL = logging.DEBUG
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{0}">{1}</div>')
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format('background:#f9f2f4;color:#c7254e;padding:10;margin:10 0 10 0',
-                                                  LOG_REC_FORMAT)
-LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format('background:#F7F3F2;color:#C64325;padding:10;margin:10 0 10 0',
-                                                    LOG_REC_FORMAT)
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:white;padding:10;margin:10 0 10 0',
-                                                     LOG_REC_FORMAT)
+LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format('background:#f9f2f4;color:#c7254e; '  \
+                                                  'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
+LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format('background:#F7F3F2;color:#C64325;' \
+                                                    'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
+LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:white;'  \
+                                                     'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
 
 
 if EXEC_PARAMS.command_mode:
