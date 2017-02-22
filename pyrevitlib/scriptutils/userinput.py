@@ -126,6 +126,7 @@ def pick_folder():
     if fb_dlg.ShowDialog() == DialogResult.OK:
         return fb_dlg.SelectedPath
 
+
 def pick_file(file_ext='', multi_file=False):
     of_dlg = OpenFileDialog()
     of_dlg.Filter = '|*.{}'.format(file_ext)
