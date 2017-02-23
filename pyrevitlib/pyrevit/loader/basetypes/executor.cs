@@ -146,6 +146,8 @@ namespace PyRevitBaseClasses
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
+                    _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
                     _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
                     _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
