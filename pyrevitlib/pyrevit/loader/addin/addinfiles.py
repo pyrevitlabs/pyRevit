@@ -72,8 +72,9 @@ def _set_addin_state_for(revit_version, addin_state):
 
 def get_addinfiles_state():
     addinfiles_state_dict = {}
-    for revit_version in _get_installed_revit_addin_folders().keys():
-        addinfiles_state_dict[revit_version] = _addin_def_exists(revit_version)
+    installed_revits_dict = _get_installed_revit_addin_folders()
+    for revit_version, revit_addin_dir in installed_revits_dict.items():
+        addinfiles_state_dict[revit_version] = _addin_def_exists(revit_addin_dir)
 
     return addinfiles_state_dict
 
