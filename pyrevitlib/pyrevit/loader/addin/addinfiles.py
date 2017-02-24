@@ -37,32 +37,37 @@ def _get_installed_revit_addin_folders():
     return {x: op.join(revit_addin_dir, x) for x in os.listdir(revit_addin_dir)}
 
 
-def _addin_def_exists(revit_version):
-    revit_addin_dir = _find_revit_addin_directory()
-    for fname in os.listdir(op.join(revit_addin_dir, revit_version)):
+def _addin_def_exists(revit_addin_dir):
+    for fname in os.listdir(revit_addin_dir):
         if fname.lower().endswith('addin'):
-            fullfname = op.join(revit_addin_dir, revit_version, fname)
+            fullfname = op.join(revit_addin_dir, fname)
             with open(fullfname, 'r') as f:
                 for line in f.readlines():
                     if (LOADER_ADDON_NAMESPACE + '.dll').lower() in line.lower():
-                        return True
+                        logger.debug('Addin file exists for pyRevit: {}'.format(fullfname))
+                        return fullfname
     return False
 
 
 def _set_addin_state_for(revit_version, addin_state):
-    for installed_revit_version, revit_addin_dir in _get_installed_revit_addin_folders().items():
-        if installed_revit_version in revit_version:
-            if _addin_def_exists(installed_revit_version):
-                os.remove(op.join(revit_addin_dir, ADDIN_DEF_FILENAME))
+    installed_revits_dict = _get_installed_revit_addin_folders()
+    if revit_version in installed_revits_dict:
+        revit_addin_dir = installed_revits_dict[revit_version]
+        existing_addin_file = _addin_def_exists(revit_addin_dir)
+        if existing_addin_file:
+            try:
+                os.remove(existing_addin_file)
+            except Exception as del_err:
+                logger.debug('Error removing {} | {}'.format(existing_addin_file, del_err))
 
-            if addin_state:
-                addinfile = op.join(revit_addin_dir, ADDIN_DEF_FILENAME)
-                with open(addinfile, 'w') as f:
-                    f.writelines(addinfile_contents.format(addinname=LOADER_ADDON_NAMESPACE,
-                                                           addinfolder=ADDIN_DIR,
-                                                           addinguid=ADDIN_GUID,
-                                                           addinvendorid=ADDIN_VENDORID,
-                                                           addinclassname=ADDIN_CLASSNAME))
+        if addin_state:
+            new_addin_file = op.join(revit_addin_dir, ADDIN_DEF_FILENAME)
+            with open(new_addin_file, 'w') as f:
+                f.writelines(addinfile_contents.format(addinname=LOADER_ADDON_NAMESPACE,
+                                                       addinfolder=ADDIN_DIR,
+                                                       addinguid=ADDIN_GUID,
+                                                       addinvendorid=ADDIN_VENDORID,
+                                                       addinclassname=ADDIN_CLASSNAME))
 
 
 def get_addinfiles_state():
