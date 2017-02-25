@@ -1,4 +1,4 @@
-from math import sqrt, pi, sin, cos, tan
+from math import sqrt, pi, sin, cos, tan, radians
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -16,12 +16,14 @@ logger = get_logger(__name__)
 
 PI = pi
 HALF_PI = PI/2.0
-RESOLUTION = 4
+RESOLUTION = 6
 COORD_RESOLUTION = 10
 ZERO_TOL = 5 / 10.0**RESOLUTION
+POINT_MATCH_TOLERANCE = 0.01
 MAX_TRY = 20000
-MAX_DOMAIN = 200
-MAX_JIGGLE = 16
+MAX_DOMAIN = 800
+ANGLE_TOLERANCE = radians(3)
+MAX_JIGGLE_STEPS = (ANGLE_TOLERANCE*2)/0.001
 
 
 class CanNotDetermineSpanException(PyRevitException):
@@ -32,13 +34,21 @@ class CanNotDetermineNextGridException(PyRevitException):
     pass
 
 
+class CanNotDetermineApproximateException(PyRevitException):
+    pass
+
+
+class LinesDoNotIntersectException(PyRevitException):
+    pass
+
+
 class PatternPoint:
     def __init__(self, u_point, v_point):
         self.u = round(u_point, COORD_RESOLUTION)
         self.v = round(v_point, COORD_RESOLUTION)
 
     def __repr__(self):
-        return '<PatternPoint U:{} V:{}>'.format(self.u, self.v)
+        return '<PatternPoint U:{0:.10f} V:{1:.10f}>'.format(self.u, self.v)
 
     def __eq__(self, other):
         return self.u == other.u and self.v == other.v
@@ -49,6 +59,13 @@ class PatternPoint:
     def distance_to(self, point):
         return sqrt((point.u - self.u)**2 + (point.v - self.v)**2)
 
+    def rotate(self, origin, angle):
+        tu = self.u - origin.u
+        tv = self.v - origin.v
+        self.u = origin.u + (tu*cos(angle) - tv*sin(angle))
+        self.v = origin.v + (tu*sin(angle) + tv*cos(angle))
+        return True
+
 
 class PatternLine:
     def __init__(self, start_p, end_p, line_id=None):
@@ -57,7 +74,8 @@ class PatternLine:
         self.id = line_id
 
     def __repr__(self):
-        return '<PatternLine Start:{} End:{} Length:{}>'.format(self.start_point, self.end_point, self.length)
+        return '<PatternLine Start:{} End:{} Length:{} Angle:{}>'.format(self.start_point,
+                                                                         self.end_point, self.length, self.angle)
 
     @property
     def direction(self):
@@ -94,13 +112,17 @@ class PatternLine:
 
         div = det(xdiff, ydiff)
         if div == 0:
-           raise Exception('lines do not intersect')
+           raise LinesDoNotIntersectException()
 
         d = PatternPoint(det(self.start_point, self.end_point), det(pat_line.start_point, pat_line.end_point))
         int_point_x = det(d, xdiff) / div
         int_point_y = det(d, ydiff) / div
 
         return PatternPoint(int_point_x, int_point_y)
+
+    def rotate(self, origin, angle):
+        self.start_point.rotate(origin, angle)
+        self.end_point.rotate(origin, angle)
 
 
 class PatternGridAxis:
@@ -113,26 +135,22 @@ class PatternGridAxis:
 
         # setup initial line to base axis on
         self._init_line = line
-        self._pivot_point = self._init_line.center_point
-
-        # set default values
-        self.tile_count_prep = self.tile_count_base = 1
-        self._shift_direction = self._offset_direction = 1
 
         # try finding axis
         try_count = 0
         self._setup_axis()
-        while not self._determite_tri_params() and try_count < MAX_JIGGLE:
+        while try_count < MAX_JIGGLE_STEPS and not self._determite_tri_params():
             # if cant jiggle init line and try again
             try_count += 1
             self._jiggle_axis(try_count)
             self._setup_axis()
 
-        if try_count >= MAX_JIGGLE:
-            raise PyRevitException('Can not find a decent approximate axis.')
+        if try_count >= MAX_JIGGLE_STEPS:
+            raise CanNotDetermineApproximateException('Can not find a decent approximate axis.')
         else:
             self.jiggle_count = try_count
 
+        # once successful, add the final init line to the segments
         self.segment_lines = [self._init_line]
 
     def __repr__(self):
@@ -150,41 +168,6 @@ class PatternGridAxis:
             return 0.0 <= self.axis.angle < ZERO_TOL or PI - ZERO_TOL < self.axis.angle <= PI
         else:
             return HALF_PI - ZERO_TOL < abs(HALF_PI - self.axis.angle) < HALF_PI + ZERO_TOL
-
-    def _determine_relative_vectors(self):
-        if self._is_small_angle_u_side():
-            self.dom_base_length = self._pat_domain.u
-            self.dom_prep_length = self._pat_domain.v
-
-            if self.axis.angle <= self._quarter_angle:
-                self._offset_direction = -1.0
-                self._shift_direction = 1.0
-                if self._is_almost_right_angle():
-                    self.angle = 0.0
-                else:
-                    self.angle = abs(self.axis.angle)
-            elif self.axis.angle >= self._threequart_angle:
-                self._offset_direction = 1.0
-                self._shift_direction = 1.0
-                if self._is_almost_right_angle():
-                    self.angle = 0.0
-                else:
-                    self.angle = abs(PI - self.axis.angle)
-        else:
-            self.dom_base_length = self._pat_domain.v
-            self.dom_prep_length = self._pat_domain.u
-
-            if self._quarter_angle < self.axis.angle < HALF_PI:
-                self._offset_direction = 1.0
-                self._shift_direction = 1.0
-            elif HALF_PI < self.axis.angle < self._threequart_angle:
-                self._offset_direction = -1.0
-                self._shift_direction = 1.0
-
-            if self._is_almost_right_angle():
-                self.angle = 0.0
-            else:
-                self.angle = abs(HALF_PI - self.axis.angle)
 
     def _intersect_with_domain(self, line):
         boundary_lines = [PatternLine(PatternPoint(0, 0), PatternPoint(self._pat_domain.u, 0)),
@@ -210,19 +193,73 @@ class PatternGridAxis:
         logger.debug('For axis: {} Intersect points are: {}'.format(line, extent_points))
         return sorted(extent_points)
 
+    def _determine_relative_vectors(self):
+        if self._is_small_angle_u_side():
+            self.dom_base_length = self._pat_domain.u
+            self.dom_prep_length = self._pat_domain.v
+
+            # Quarter 1
+            if self.axis.angle <= self._quarter_angle:
+                self._offset_direction = -1.0
+                self._shift_direction = 1.0
+                if self._is_almost_right_angle():
+                    self.angle = 0.0
+                else:
+                    self.angle = abs(self.axis.angle)
+                    self.abstract_axis = PatternLine(PatternPoint(0.0, 0.0),
+                                                     PatternPoint(self.axis.direction.u, self.axis.direction.v))
+            # Quarter 4
+            elif self.axis.angle >= self._threequart_angle:
+                self._offset_direction = 1.0
+                self._shift_direction = 1.0
+                if self._is_almost_right_angle():
+                    self.angle = 0.0
+                else:
+                    self.angle = abs(PI - self.axis.angle)
+                    self.abstract_axis = PatternLine(PatternPoint(0.0, 0.0),
+                                                     PatternPoint(-self.axis.direction.u, self.axis.direction.v))
+        else:
+            self.dom_base_length = self._pat_domain.v
+            self.dom_prep_length = self._pat_domain.u
+
+            # Quarter 2
+            if self._quarter_angle < self.axis.angle <= HALF_PI:
+                self._offset_direction = 1.0
+                self._shift_direction = 1.0
+                self.abstract_axis = PatternLine(PatternPoint(0.0, 0.0),
+                                                 PatternPoint(self.axis.direction.v, self.axis.direction.u))
+            # Quarter 3
+            elif HALF_PI < self.axis.angle < self._threequart_angle:
+                self._offset_direction = -1.0
+                self._shift_direction = 1.0
+                self.abstract_axis = PatternLine(PatternPoint(0.0, 0.0),
+                                                 PatternPoint(self.axis.direction.v, -self.axis.direction.u))
+
+            if self._is_almost_right_angle():
+                self.angle = 0.0
+            else:
+                self.angle = abs(HALF_PI - self.axis.angle)
+
+    def _setup_axis(self):
+        start_point, end_point = self._intersect_with_domain(self._init_line)
+        self.axis = PatternLine(start_point, end_point)
+        self._determine_relative_vectors()
+
     def _get_span(self):
+        # set default values
+        self.tile_count_prep = self.tile_count_base = 1
         if self.angle == 0.0:
             return self.dom_base_length
-        elif round(self.angle, RESOLUTION) == round(self._quarter_angle, RESOLUTION):
+        elif self.angle == self._quarter_angle:
             return self._dom_diag.length
 
         def calc_span_rem(rep_count):
             dom_prep_rep = self.dom_prep_length * rep_count
             return dom_prep_rep * tan(HALF_PI - self.angle)
 
-        tolerance = self.dom_base_length / 100.0
-        pos_tolerance = tolerance
-        neg_tolerance = self.dom_base_length - tolerance
+        pos_tolerance = POINT_MATCH_TOLERANCE
+        neg_tolerance = self.dom_base_length - POINT_MATCH_TOLERANCE
+
         def is_not_within_tolerance(dom_base_rep):
             rem = dom_base_rep % self.dom_base_length
             return not (neg_tolerance <= rem <= self.dom_base_length or 0.0 <= rem <= pos_tolerance)
@@ -233,82 +270,100 @@ class PatternGridAxis:
 
         if rep_count < MAX_TRY:
             self.tile_count_prep = rep_count
-            self.tile_count_base = round(calc_span_rem(rep_count) / self.dom_base_length, 0)
-            return abs(calc_span_rem(rep_count) / cos(self.angle))
+            self.matched_prep_length = self.tile_count_prep * self.dom_prep_length
+            self.matched_base_length = calc_span_rem(rep_count)
+            self.tile_count_base = round(self.matched_base_length / self.dom_base_length, 0)
+
+            # re-adjust axis to this new matched point
+            new_axis = PatternLine(self.abstract_axis.start_point,
+                                   PatternPoint(self.matched_base_length, self.matched_prep_length))
+            if self.axis.angle <= self._quarter_angle:
+                adjust_angle = new_axis.angle - self._init_line.angle
+            elif self._quarter_angle < self.axis.angle <= HALF_PI:
+                adjust_angle = (HALF_PI - new_axis.angle) - self._init_line.angle
+            elif HALF_PI < self.axis.angle < self._threequart_angle:
+                adjust_angle = (HALF_PI + new_axis.angle) - self._init_line.angle
+            elif self.axis.angle >= self._threequart_angle:
+                adjust_angle = (PI - new_axis.angle) - self._init_line.angle
+
+            self._init_line.rotate(self._init_line.center_point, adjust_angle)
+            self._setup_axis()
+
+            return new_axis.length  # return abs(self.matched_base_length / cos(self.angle))
         else:
             raise CanNotDetermineSpanException()
 
     def _get_offset(self):
         if self.angle == 0.0:
             return self.dom_prep_length
-
-        # offset_value = abs(self.dom_base_length * self.tile_count_base * sin(self.angle) / self.tile_count_prep)
-        # return  offset_value * self._offset_direction
-        return  abs(self.dom_base_length * sin(self.angle) / self.tile_count_prep) * self._offset_direction
+        return abs(self.dom_base_length * sin(self.angle) / self.tile_count_prep) * self._offset_direction
 
     def _get_shift(self):
-        def find_nxt_grid_point(offset_line, domain_u, domain_v, tol=5.0/10**RESOLUTION):
+        def find_nxt_grid_point(offset_line, domain_u, domain_v, max_u, max_v, tol=ZERO_TOL):
             u_mult = 0
-            u_max = MAX_TRY
-            while u_mult < u_max:
-                for v_mult in range(0, MAX_TRY):
+            while u_mult < max_u:
+                for v_mult in range(0, max_v):
                     grid_point = PatternPoint(domain_u * u_mult, domain_v * v_mult)
                     if offset_line.point_on_line(grid_point, tolerance=tol):
                         return grid_point
                 u_mult +=1
-            if u_mult >= u_max:
+            if u_mult >= max_u:
                 raise CanNotDetermineNextGridException()
 
-        offset_u = abs(self.offset * sin(self.angle))
-        offset_v = -abs(self.offset * cos(self.angle))
-        offset_vector_start = PatternPoint(self.axis.start_point.u + offset_u, self.axis.start_point.v + offset_v)
-        offset_vector_end = PatternPoint(self.axis.end_point.u + offset_u, self.axis.end_point.v + offset_v)
-        offset_vector = PatternLine(offset_vector_start, offset_vector_end)
 
-        if self.tile_count_prep > 1:
+        if self.tile_count_prep == 1:
+            return abs(self.dom_base_length * cos(self.angle)) * self._shift_direction
+        else:
+            # calculate the abstract offset axis
+            offset_u = abs(self.offset * sin(self.angle))
+            offset_v = -abs(self.offset * cos(self.angle))
+            offset_vector_start = PatternPoint(self.abstract_axis.start_point.u + offset_u,
+                                               self.abstract_axis.start_point.v + offset_v)
+            offset_vector_end = PatternPoint(self.abstract_axis.end_point.u + offset_u,
+                                             self.abstract_axis.end_point.v + offset_v)
+            offset_vector = PatternLine(offset_vector_start, offset_vector_end)
+
+            # try to find the next occurance on the abstract offset axis
             nxt_grid_point = find_nxt_grid_point(offset_vector,
                                                  self.dom_base_length,
-                                                 self.dom_prep_length)
+                                                 self.dom_prep_length,
+                                                 self.tile_count_base,
+                                                 self.tile_count_prep)
 
-            total_shift = offset_vector_start.distance_to(nxt_grid_point)
+            total_shift = offset_vector.start_point.distance_to(nxt_grid_point)
             return total_shift * self._shift_direction
-        else:
-            return abs(self.dom_base_length * cos(self.angle)) * self._shift_direction
-
-    def _setup_axis(self):
-        start_point, end_point = self._intersect_with_domain(self._init_line)
-        self.axis = PatternLine(start_point, end_point)
-        self._determine_relative_vectors()
 
     def _determite_tri_params(self):
         try:
             self.span = self._get_span()
             self.offset = self._get_offset()
             self.shift = self._get_shift()
-            if self.span > MAX_DOMAIN or self.shift > MAX_DOMAIN:
+
+            if self.span > MAX_DOMAIN:
                 logger.debug('Calculated span is too wide for line id: {} | {}'.format(self._init_line.id, self.span))
                 return False
-            else:
-                return True
+            elif self.shift > MAX_DOMAIN:
+                logger.debug('Calculated shift is too wide for line id: {} | {}'.format(self._init_line.id, self.span))
+                return False
+
+            return True
+        except CanNotDetermineNextGridException as shift_err:
+            logger.debug('Can not determine shift value for line id: {}'.format(self._init_line.id))
+            return False
         except Exception as calc_err:
             logger.debug('Error calculating tri params | {}'.format(calc_err))
             return False
 
     def _jiggle_axis(self, try_count):
-        def rotate_point(origin, point, angle):
-            qx = origin.u + cos(angle) * (point.u - origin.u) - sin(angle) * (point.v - origin.v)
-            qy = origin.v + sin(angle) * (point.u - origin.u) + cos(angle) * (point.v - origin.v)
-            return PatternPoint(qx, qy)
-
         if try_count%2 == 0:
-            jiggle_mult = -try_count
+            jiggle_step = -try_count
         else:
-            jiggle_mult = try_count
+            jiggle_step = try_count
 
-        rotate_increment = 0.01 * jiggle_mult
-        new_start = rotate_point(self._init_line.center_point, self._init_line.start_point, rotate_increment)
-        new_end = rotate_point(self._init_line.center_point, self._init_line.end_point, rotate_increment)
-        self._init_line = PatternLine(new_start, new_end)
+        origin = self._init_line.center_point
+        jiggle_angle = ANGLE_TOLERANCE/MAX_JIGGLE_STEPS * jiggle_step
+        self._init_line.rotate(origin, jiggle_angle)
+        logger.debug('Init line jiggled by angle: {} {}'.format(jiggle_angle, self._init_line))
 
     def _overlap_line(self, pat_line):
         # see if pat_line overlaps, if yes:
@@ -334,7 +389,7 @@ class PatternGridAxis:
         least_dist = self.axis.length
         closest_point = None
         for point in point_list:
-            dist = point.distance_to(self.axis.start_point)
+            dist = self.axis.start_point.distance_to(point)
             if dist < least_dist:
                 least_dist = dist
                 closest_point = point
@@ -379,7 +434,6 @@ def make_pattern(pat_name, line_list, pat_domain, model_pattern=True, dot_thresh
         for grid_axis in grid_axes_list:
             if grid_axis.add_segment(line):
                 line_accepted = True
-                print 'accepted {}'.format(line)
                 break
         # if not, then define a new grid axis
         if not line_accepted:
@@ -388,6 +442,11 @@ def make_pattern(pat_name, line_list, pat_domain, model_pattern=True, dot_thresh
                 print new_axis
                 logger.debug('New pattern axis: {}'.format(new_axis))
                 grid_axes_list.append(new_axis)
+                CanNotDetermineSpanException
+            except CanNotDetermineApproximateException as approx_err:
+                logger.error('Line id is at illegal angle: {} | {}'.format(line.id, approx_err))
+            except CanNotDetermineSpanException as span_err:
+                logger.error('Error determining span on line id: {} | {}'.format(line.id, span_err))
             except Exception as gridaxis_err:
                 logger.error('Error determining axis on line id: {} | {}'.format(line.id, gridaxis_err))
 

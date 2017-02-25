@@ -1,6 +1,7 @@
 from itertools import tee, izip
 
 from scriptutils import this_script, logger
+from scriptutils.userinput import WPFWindow
 from revitutils import doc, selection, patmaker
 
 # noinspection PyUnresolvedReferences
@@ -16,6 +17,30 @@ accpeted_lines = [DetailLine, DetailArc, DetailEllipse, DetailNurbSpline]
 accpeted_curves = [Arc, Ellipse, NurbSpline]
 
 
+
+class MakePatternWindow(WPFWindow):
+    def __init__(self, xaml_file_name):
+        WPFWindow.__init__(self, xaml_file_name)
+        self.pat_name_tb.Focus()
+
+    @property
+    def is_detail_pat(self):
+        return self.is_detail_cb.IsChecked
+
+    @property
+    def is_model_pat(self):
+        return self.is_model_cb.IsChecked
+
+    @property
+    def pat_name(self):
+        return self.pat_name_tb.Text
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def make_pattern(self, sender, args):
+        self.Close()
+
+
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
@@ -23,12 +48,12 @@ def pairwise(iterable):
     return izip(a, b)
 
 
-def make_pattern_line(rvt_start_p, rvt_end_p, rvt_origin):
+def make_pattern_line(rvt_start_p, rvt_end_p, rvt_origin, id):
     relative_start_p = rvt_start_p - rvt_origin
     relative_end_p = rvt_end_p - rvt_origin
     start_p = patmaker.PatternPoint(relative_start_p.X, relative_start_p.Y)
     end_p = patmaker.PatternPoint(relative_end_p.X, relative_end_p.Y)
-    return patmaker.PatternLine(start_p, end_p, line_id=det_line.Id.IntegerValue)
+    return patmaker.PatternLine(start_p, end_p, line_id=id)
 
 
 def cleanup_selection():
@@ -39,10 +64,7 @@ def cleanup_selection():
     return lines
 
 
-det_lines = cleanup_selection()
-
-
-if len(det_lines) > 0:
+def create_pattern(det_lines, pat_name, is_model_pat):
     # ask user for origin and max domain points
     pat_bottomleft = selection.utils.pick_point('Pick origin point (bottom-right corner of the pattern area):')
     if pat_bottomleft:
@@ -57,17 +79,26 @@ if len(det_lines) > 0:
                 if type(geom_curve) in accpeted_curves:
                     tes_points = [tp for tp in geom_curve.Tessellate()]
                     for p1, p2 in pairwise(tes_points):
-                        pat_lines.append(make_pattern_line(p1, p2, pat_bottomleft))
+                        pat_lines.append(make_pattern_line(p1, p2, pat_bottomleft, det_line.Id.IntegerValue))
 
                 elif isinstance(geom_curve, Line):
                     pat_lines.append(make_pattern_line(geom_curve.GetEndPoint(0),
                                                        geom_curve.GetEndPoint(1),
-                                                       pat_bottomleft))
+                                                       pat_bottomleft,
+                                                       det_line.Id.IntegerValue))
 
             logger.debug('Pattern domain is: {}'.format(pat_domain))
             logger.debug('Pattern lines are: {}'.format(pat_lines))
 
-            patmaker.make_pattern('Test Pattern 17', pat_lines, pat_domain, model_pattern=True)
+            patmaker.make_pattern(pat_name, pat_lines, pat_domain, model_pattern=is_model_pat)
 
-else:
-    TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
+
+if __name__ == '__main__':
+    det_lines = cleanup_selection()
+    if len(det_lines) > 0:
+        pat_info = MakePatternWindow('MakePatternWindow.xaml')
+        pat_info.ShowDialog()
+        create_pattern(det_lines, pat_info.pat_name, pat_info.is_model_pat)
+        # create_pattern(det_lines, 'Test Pattern 18', True)
+    else:
+        TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
