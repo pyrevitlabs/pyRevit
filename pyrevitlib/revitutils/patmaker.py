@@ -17,13 +17,13 @@ logger = get_logger(__name__)
 PI = pi
 HALF_PI = PI/2.0
 RESOLUTION = 6
-COORD_RESOLUTION = 10
+COORD_RESOLUTION = 20
 ZERO_TOL = 5 / 10.0**RESOLUTION
 POINT_MATCH_TOLERANCE = 0.01
 MAX_TRY = 20000
 MAX_DOMAIN = 800
 ANGLE_TOLERANCE = radians(3)
-MAX_JIGGLE_STEPS = (ANGLE_TOLERANCE*2)/0.001
+MAX_JIGGLE_STEPS = (ANGLE_TOLERANCE)/0.000001
 
 
 class CanNotDetermineSpanException(PyRevitException):
@@ -44,8 +44,8 @@ class LinesDoNotIntersectException(PyRevitException):
 
 class PatternPoint:
     def __init__(self, u_point, v_point):
-        self.u = round(u_point, COORD_RESOLUTION)
-        self.v = round(v_point, COORD_RESOLUTION)
+        self.u = u_point
+        self.v = v_point
 
     def __repr__(self):
         return '<PatternPoint U:{0:.10f} V:{1:.10f}>'.format(self.u, self.v)
@@ -123,6 +123,28 @@ class PatternLine:
     def rotate(self, origin, angle):
         self.start_point.rotate(origin, angle)
         self.end_point.rotate(origin, angle)
+
+
+class PatternDomain:
+    def __init__(self, max_u, max_v):
+        self.max_u = round(max_u, COORD_RESOLUTION)
+        self.max_v = round(max_v, COORD_RESOLUTION)
+        self.safe_angles = set()
+        self._calculate_safe_angles()
+
+    def __repr__(self):
+        return '<PatternDomain U:{0:.10f} V:{1:.10f}>'.format(self.max_u, self.max_v)
+
+    def _calculate_safe_angles(self):
+        u_mult = 1
+        v_mult = 1
+        while self.max_u * u_mult <= MAX_DOMAIN:
+            while self.max_v * v_mult <= MAX_DOMAIN:
+                axis = PatternLine(PatternPoint(0.0, 0.0), PatternPoint(self.max_u * u_mult, self.max_v * v_mult))
+                self.safe_angles.add(axis.angle)
+                v_mult += 1
+            v_mult = 1
+            u_mult += 1
 
 
 class PatternGridAxis:
@@ -363,7 +385,7 @@ class PatternGridAxis:
         origin = self._init_line.center_point
         jiggle_angle = ANGLE_TOLERANCE/MAX_JIGGLE_STEPS * jiggle_step
         self._init_line.rotate(origin, jiggle_angle)
-        logger.debug('Init line jiggled by angle: {} {}'.format(jiggle_angle, self._init_line))
+        logger.debug('Init line rotated by angle: {} {}'.format(jiggle_angle, self._init_line))
 
     def _overlap_line(self, pat_line):
         # see if pat_line overlaps, if yes:

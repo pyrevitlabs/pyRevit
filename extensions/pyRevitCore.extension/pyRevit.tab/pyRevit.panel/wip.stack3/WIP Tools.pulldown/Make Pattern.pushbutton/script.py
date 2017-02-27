@@ -40,6 +40,11 @@ class MakePatternWindow(WPFWindow):
     def make_pattern(self, sender, args):
         self.Close()
 
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def fix_angles(self, sender, args):
+        self.Close()
+
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
@@ -71,6 +76,7 @@ def create_pattern(det_lines, pat_name, is_model_pat):
         pat_topright = selection.utils.pick_point('Pick top-right corner of the pattern area:')
         if pat_topright:
             domain = pat_topright - pat_bottomleft
+            print('Calculating safe angles for this tile size...')
             pat_domain = patmaker.PatternPoint(domain.X, domain.Y)
 
             pat_lines = []
@@ -99,6 +105,5 @@ if __name__ == '__main__':
         pat_info = MakePatternWindow('MakePatternWindow.xaml')
         pat_info.ShowDialog()
         create_pattern(det_lines, pat_info.pat_name, pat_info.is_model_pat)
-        # create_pattern(det_lines, 'Test Pattern 18', True)
     else:
         TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
