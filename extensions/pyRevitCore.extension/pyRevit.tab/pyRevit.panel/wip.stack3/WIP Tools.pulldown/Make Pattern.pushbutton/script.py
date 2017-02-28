@@ -75,9 +75,12 @@ def create_pattern(det_lines, pat_name, is_model_pat):
     if pat_bottomleft:
         pat_topright = selection.utils.pick_point('Pick top-right corner of the pattern area:')
         if pat_topright:
-            domain = pat_topright - pat_bottomleft
             print('Calculating safe angles for this tile size...')
-            pat_domain = patmaker.PatternPoint(domain.X, domain.Y)
+            print('Maximum pattern size is {}'.format(patmaker.MAX_DOMAIN))
+            domain = pat_topright - pat_bottomleft
+            pat_domain = patmaker.PatternDomain(domain.X, domain.Y)
+            print('Pattern domain is {0:.6f} x {1:.6f}'.format(pat_domain.max_u, pat_domain.max_v))
+            print pat_domain
 
             pat_lines = []
             for det_line in det_lines:

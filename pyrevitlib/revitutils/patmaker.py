@@ -17,13 +17,14 @@ logger = get_logger(__name__)
 PI = pi
 HALF_PI = PI/2.0
 RESOLUTION = 6
-COORD_RESOLUTION = 20
+DOMAIN_RESOLUTION = 10
 ZERO_TOL = 5 / 10.0**RESOLUTION
 POINT_MATCH_TOLERANCE = 0.01
 MAX_TRY = 20000
-MAX_DOMAIN = 800
+MAX_DOMAIN = 100.0
 ANGLE_TOLERANCE = radians(3)
-MAX_JIGGLE_STEPS = (ANGLE_TOLERANCE)/0.000001
+ANGLE_MATCH_TOLERANCE = 1e-10
+MAX_JIGGLE_STEPS = (ANGLE_TOLERANCE)/0.001
 
 
 class CanNotDetermineSpanException(PyRevitException):
@@ -48,7 +49,7 @@ class PatternPoint:
         self.v = v_point
 
     def __repr__(self):
-        return '<PatternPoint U:{0:.10f} V:{1:.10f}>'.format(self.u, self.v)
+        return '<PatternPoint U:{0:.20f} V:{1:.20f}>'.format(self.u, self.v)
 
     def __eq__(self, other):
         return self.u == other.u and self.v == other.v
@@ -127,33 +128,66 @@ class PatternLine:
 
 class PatternDomain:
     def __init__(self, max_u, max_v):
-        self.max_u = round(max_u, COORD_RESOLUTION)
-        self.max_v = round(max_v, COORD_RESOLUTION)
-        self.safe_angles = set()
+        self.max_u = round(abs(max_u), DOMAIN_RESOLUTION)
+        self.max_v = round(abs(max_v), DOMAIN_RESOLUTION)
+        self.diagonal = PatternLine(PatternPoint(0.0, 0.0), PatternPoint(self.max_u, self.max_v))
+        self.origin = PatternPoint(0, 0)
+        self.max_u_point = PatternPoint(self.max_u, 0)
+        self.max_v_point = PatternPoint(0, self.max_v)
+        self.top_right = PatternPoint(self.max_u, self.max_v)
+        self.boundary_lines = [PatternLine(self.origin, self.max_u_point),
+                               PatternLine(self.origin, self.max_v_point),
+                               PatternLine(self.max_u_point, self.top_right),
+                               PatternLine(self.max_v_point, self.top_right)]
+
         self._calculate_safe_angles()
 
     def __repr__(self):
-        return '<PatternDomain U:{0:.10f} V:{1:.10f}>'.format(self.max_u, self.max_v)
+        return '<PatternDomain U:{0:.20f} V:{1:.20f}>'.format(self.max_u, self.max_v)
 
     def _calculate_safe_angles(self):
-        u_mult = 1
-        v_mult = 1
-        while self.max_u * u_mult <= MAX_DOMAIN:
-            while self.max_v * v_mult <= MAX_DOMAIN:
-                axis = PatternLine(PatternPoint(0.0, 0.0), PatternPoint(self.max_u * u_mult, self.max_v * v_mult))
-                self.safe_angles.add(axis.angle)
+        u_mult = v_mult = 1
+        self.safe_angles = [0.0, self.diagonal.angle, HALF_PI, PI - self.diagonal.angle, PI]
+        while self.max_u * u_mult <= MAX_DOMAIN/2.0:
+            while self.max_v * v_mult <= MAX_DOMAIN/2.0:
+                if v_mult != u_mult:
+                    axis = PatternLine(PatternPoint(0.0, 0.0), PatternPoint(self.max_u * u_mult, self.max_v * v_mult))
+                    self.safe_angles.append(axis.angle)
+                    self.safe_angles.append(PI - axis.angle)
                 v_mult += 1
             v_mult = 1
             u_mult += 1
+
+    def contains(self, point):
+        return 0.0 <= point.u <= self.max_u and 0.0 <= point.v <= self.max_v
+
+    def intersect(self, line):
+        intersect_points = set()
+        for boundary_line in self.boundary_lines:
+            try:
+                xpoint = boundary_line.intersect(line)
+                if self.contains(xpoint):
+                    intersect_points.add(xpoint)
+            except Exception as intersect_err:
+                logger.debug(intersect_err)
+
+        if len(intersect_points) == 2:
+            logger.debug('For axis: {} Intersect points are: {}'.format(line, intersect_points))
+            intersect_points = sorted(intersect_points)
+            return PatternLine(intersect_points[0], intersect_points[1])
+        else:
+            raise LinesDoNotIntersectException()
+
+    def get_safe_angle(self, bad_angle):
+        return min(self.safe_angles, key=lambda x:abs(x-bad_angle))
 
 
 class PatternGridAxis:
     def __init__(self, line, pat_domain):
         # setting up domain bounds
         self._pat_domain = pat_domain
-        self._dom_diag = PatternLine(PatternPoint(0.0, 0.0), PatternPoint(self._pat_domain.u, self._pat_domain.v))
-        self._quarter_angle = self._dom_diag.angle
-        self._threequart_angle = PI - self._dom_diag.angle
+        self._quarter_angle = self._pat_domain.diagonal.angle
+        self._threequart_angle = PI - self._pat_domain.diagonal.angle
 
         # setup initial line to base axis on
         self._init_line = line
@@ -191,34 +225,10 @@ class PatternGridAxis:
         else:
             return HALF_PI - ZERO_TOL < abs(HALF_PI - self.axis.angle) < HALF_PI + ZERO_TOL
 
-    def _intersect_with_domain(self, line):
-        boundary_lines = [PatternLine(PatternPoint(0, 0), PatternPoint(self._pat_domain.u, 0)),
-                          PatternLine(PatternPoint(0, 0), PatternPoint(0, self._pat_domain.v)),
-                          PatternLine(PatternPoint(self._pat_domain.u, 0),
-                                      PatternPoint(self._pat_domain.u, self._pat_domain.v)),
-                          PatternLine(PatternPoint(0, self._pat_domain.v),
-                                      PatternPoint(self._pat_domain.u, self._pat_domain.v))]
-        intersect_points = []
-        for boundary_line in boundary_lines:
-            try:
-                intersect_points.append(line.intersect(boundary_line))
-            except Exception as intersect_err:
-                logger.debug(intersect_err)
-
-        extent_points = set()
-        for point in intersect_points:
-            # only two point should pass this test
-            if 0 <= point.u <= self._pat_domain.u \
-            and 0 <= point.v <= self._pat_domain.v:
-                extent_points.add(point)
-
-        logger.debug('For axis: {} Intersect points are: {}'.format(line, extent_points))
-        return sorted(extent_points)
-
     def _determine_relative_vectors(self):
         if self._is_small_angle_u_side():
-            self.dom_base_length = self._pat_domain.u
-            self.dom_prep_length = self._pat_domain.v
+            self.dom_base_length = self._pat_domain.max_u
+            self.dom_prep_length = self._pat_domain.max_v
 
             # Quarter 1
             if self.axis.angle <= self._quarter_angle:
@@ -241,8 +251,8 @@ class PatternGridAxis:
                     self.abstract_axis = PatternLine(PatternPoint(0.0, 0.0),
                                                      PatternPoint(-self.axis.direction.u, self.axis.direction.v))
         else:
-            self.dom_base_length = self._pat_domain.v
-            self.dom_prep_length = self._pat_domain.u
+            self.dom_base_length = self._pat_domain.max_v
+            self.dom_prep_length = self._pat_domain.max_u
 
             # Quarter 2
             if self._quarter_angle < self.axis.angle <= HALF_PI:
@@ -263,8 +273,11 @@ class PatternGridAxis:
                 self.angle = abs(HALF_PI - self.axis.angle)
 
     def _setup_axis(self):
-        start_point, end_point = self._intersect_with_domain(self._init_line)
-        self.axis = PatternLine(start_point, end_point)
+        safe_angle = self._pat_domain.get_safe_angle(self._init_line.angle)
+        adjust_angle = safe_angle - self._init_line.angle
+        if abs(adjust_angle) > ANGLE_MATCH_TOLERANCE:
+            self._init_line.rotate(self._init_line.center_point, adjust_angle)
+        self.axis = self._pat_domain.intersect(self._init_line)
         self._determine_relative_vectors()
 
     def _get_span(self):
@@ -408,7 +421,7 @@ class PatternGridAxis:
         for seg_line in self.segment_lines:
             point_list.extend([seg_line.start_point, seg_line.end_point])
 
-        least_dist = self.axis.length
+        least_dist = self._pat_domain.diagonal.length
         closest_point = None
         for point in point_list:
             dist = self.axis.start_point.distance_to(point)
