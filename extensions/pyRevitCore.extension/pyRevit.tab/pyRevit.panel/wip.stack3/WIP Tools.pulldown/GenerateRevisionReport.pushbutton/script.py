@@ -1,36 +1,12 @@
-'''
-Copyright (c) 2014-2016 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
-
-__doc__ = 'Generates a report of all changes for a specific revision.'
+"""Generates a report of all changes for a specific revision."""
 
 import os.path as op
 
-# todo: look into exporting excel file maybe? http://www.ironpython.info/index.php?title=Interacting_with_Excel
-# import clr
-# clr.AddReferenceByName('Microsoft.Office.Interop.Excel')
-# from Microsoft.Office.Interop import Excel
+from scriptutils import this_script
+from revitutils import doc, uidoc
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, WorksharingUtils, WorksharingTooltipInfo, ElementId, ViewSheet
 from Autodesk.Revit.UI import TaskDialog
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 # collect data:
 revClouds = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
@@ -58,7 +34,7 @@ for revc in revClouds:
 
 for desc in descSet:
 	for revc in revClouds:
-		revcDesc = revc.LookupParameter('Comments').AsString() 
+		revcDesc = revc.LookupParameter('Comments').AsString()
 		if revcDesc is not None and revcDesc == desc:
 			if revcDesc not in revDict.keys():
 				revDict[revcDesc] = (set(), set(), set())
@@ -85,31 +61,31 @@ destDir = op.expandvars('%userprofile%\\desktop')
 reportfname = op.join(destDir, 'Revision Report.txt')
 revisionline = ''
 
-with open(reportfname, 'w+') as reportfile:
-	print('PRINTING REVISIONS GROUPED BY COMMENT:')
-	reportfile.writelines('DESCRIPTION\tREVISION\tDRAWING/SHEET\tREVISED BY\n')
-	for k,v in revDict.items():
-		revisionline = ''
-		print('\n' + '-'*100)
-		print('REVISION COMMENT:\n{0}'.format(k))
-		print('\n\tREVISIONS WITH THIS COMMENTS:')
-		revisionline += ('\"' + k + '\"\t')
-		for rid in v[2]:
-			rev = doc.GetElement(ElementId(rid))
-			print('\t\t{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format( rev.SequenceNumber, str(rev.RevisionNumber).ljust(5), str(rev.RevisionDate).ljust(10), str(rev.NumberType.ToString()).ljust(15), rev.Description))
-			revisionline += (rev.RevisionNumber + ', ')
-		revisionline = revisionline[:len(revisionline)-2] + '\t'
-		print('\n\tREVISED SHEETS:')
-		for s in v[0]:
-			print('\t\t'+s[1])
-			revisionline += (s[1] + ', ')
-		revisionline = revisionline[:len(revisionline)-2] + '\t'
-		print('\n\tREVISED BY:')
-		for b in v[1]:
-			print('\t\t'+b)
-			revisionline += (b + ', ')
-		revisionline = revisionline[:len(revisionline)-2] + '\n'
-		reportfile.writelines(revisionline)
+# with open(reportfname, 'w+') as reportfile:
+print('PRINTING REVISIONS GROUPED BY COMMENT:')
+print('DESCRIPTION\tREVISION\tDRAWING/SHEET\tREVISED BY\n')
+for k,v in revDict.items():
+	revisionline = ''
+	print('\n' + '-'*100)
+	print('REVISION COMMENT:\n{0}'.format(k))
+	print('\n\tREVISIONS WITH THIS COMMENTS:')
+	revisionline += ('\"' + k + '\"\t')
+	for rid in v[2]:
+		rev = doc.GetElement(ElementId(rid))
+		print('\t\t{0}\tREV#: {1}DATE: {2}TYPE:{3}DESC: {4}'.format( rev.SequenceNumber, str(rev.RevisionNumber).ljust(5), str(rev.RevisionDate).ljust(10), str(rev.NumberType.ToString()).ljust(15), rev.Description))
+		revisionline += (rev.RevisionNumber + ', ')
+	revisionline = revisionline[:len(revisionline)-2] + '\t'
+	print('\n\tREVISED SHEETS:')
+	for s in v[0]:
+		print('\t\t'+s[1])
+		revisionline += (s[1] + ', ')
+	revisionline = revisionline[:len(revisionline)-2] + '\t'
+	print('\n\tREVISED BY:')
+	for b in v[1]:
+		print('\t\t'+b)
+		revisionline += (b + ', ')
+	revisionline = revisionline[:len(revisionline)-2] + '\n'
+	print(revisionline)
 
 print('\n\n' + '-'*100 + '\n' + '-'*100)
 print('REVISION CLOUDS WITH NO COMMENT:\n')
@@ -121,3 +97,8 @@ for rid in noneDescClouds:
 	print('REV#: {0}\t\tID: {3}\t\tON SHEET: {1} {2}'.format( doc.GetElement( revc.RevisionId ).RevisionNumber, parent.SheetNumber, parent.Name, revc.Id ))
 	print('\tCREATED BY:\t{0}\n\tLAST EDITED BY:\t{1}\n'.format(wti.Creator, wti.LastChangedBy))
 
+
+# todo: look into exporting excel file maybe? http://www.ironpython.info/index.php?title=Interacting_with_Excel
+# import clr
+# clr.AddReferenceByName('Microsoft.Office.Interop.Excel')
+# from Microsoft.Office.Interop import Excel
