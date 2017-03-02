@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 PI = pi
 HALF_PI = PI/2.0
-ZERO_TOL = 5 / 10.0**RESOLUTION
+ZERO_TOL = 5e-06
 
 MAX_DOMAIN = 100.0
 
