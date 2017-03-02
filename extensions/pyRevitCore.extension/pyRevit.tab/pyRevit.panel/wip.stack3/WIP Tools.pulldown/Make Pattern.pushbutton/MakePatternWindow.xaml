@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Make Pattern" Height="350" Width="300" ShowInTaskbar="False" ResizeMode="NoResize"
+        Title="Make Pattern" Height="435" Width="300" ShowInTaskbar="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center">
         <StackPanel Margin="10" HorizontalAlignment="Stretch">
             <Label FontWeight="Bold">Pattern Name:</Label>
@@ -17,11 +17,22 @@
             </GroupBox>
             <GroupBox Header="Resolver Options:" Margin="0,10,0,0">
                 <StackPanel>
-                    <CheckBox x:Name="allow_jiggle_cb" Margin="10,10,0,5" IsChecked="False">Adjust angles automatically</CheckBox>
-                    <Button Margin="25,10,10,10" Click="fix_angles" Content="Fix Angles"/>
                     <CheckBox x:Name="createfilledregion_cb" Margin="10,10,0,5" IsChecked="False">Create Filled Region</CheckBox>
+                    <CheckBox x:Name="allow_jiggle_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Adjust angles automatically</CheckBox>
+                    <Button Margin="25,10,10,10" Click="fix_angles" Content="Fix Angles"/>
+                    <WrapPanel Margin="10">
+                        <StackPanel Width="150px">
+                            <Label FontWeight="Bold">Dot Type:</Label>
+                            <ComboBox x:Name="dottypes_cb" IsEnabled="False"/>
+                        </StackPanel>
+                        <StackPanel Margin="10,0,0,0">
+                            <Label FontWeight="Bold">Dot Scale:</Label>
+                            <TextBox x:Name="dot_scale_tb" Height="25px" IsEnabled="False"/>
+                        </StackPanel>
+                    </WrapPanel>
                 </StackPanel>
             </GroupBox>
-            <Button Margin="0,15,0,0" Click="make_pattern" Content="Create Pattern" IsDefault="True"/>
+            <Button Margin="0,15,0,0" Click="make_pattern" Content="Create Pattern" IsDefault="True" Height="35"/>
+            <Button Margin="200,-30,0,5" Click="open_help" Content="Help" Width="50"/>
         </StackPanel>
 </Window>
