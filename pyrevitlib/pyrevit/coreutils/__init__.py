@@ -461,3 +461,11 @@ def reverse_dict(input_dict):
     for key, value in input_dict.items():
         output_dict[value].append(key)
     return output_dict
+
+
+def pairwise(iterable):
+    from itertools import tee, izip
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
