@@ -19,7 +19,7 @@
                 <StackPanel>
                     <CheckBox x:Name="createfilledregion_cb" Margin="10,10,0,5" IsChecked="False">Create Filled Region</CheckBox>
                     <CheckBox x:Name="allow_jiggle_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Adjust angles automatically</CheckBox>
-                    <Button Margin="25,10,10,10" Click="fix_angles" Content="Fix Angles"/>
+                    <Button Margin="25,10,10,10" Click="fix_angles" Content="Fix Angles" IsEnabled="False"/>
                     <WrapPanel Margin="10">
                         <StackPanel Width="150px">
                             <Label FontWeight="Bold">Dot Type:</Label>
@@ -33,6 +33,6 @@
                 </StackPanel>
             </GroupBox>
             <Button Margin="0,15,0,0" Click="make_pattern" Content="Create Pattern" IsDefault="True" Height="35"/>
-            <Button Margin="200,-30,0,5" Click="open_help" Content="Help" Width="50"/>
+            <!-- <Button Margin="200,-30,0,5" Click="open_help" Content="Help" Width="50"/> -->
         </StackPanel>
 </Window>

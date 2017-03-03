@@ -18,6 +18,9 @@ accpeted_lines = [DetailLine, DetailArc, DetailEllipse, DetailNurbSpline]
 accpeted_curves = [Arc, Ellipse, NurbSpline]
 
 
+PICK_COORD_RESOLUTION = 10
+
+
 class MakePatternWindow(WPFWindow):
     def __init__(self, xaml_file_name, rvt_elements):
         # cleanup selection (pick only acceptable curves)
@@ -58,12 +61,16 @@ class MakePatternWindow(WPFWindow):
         return lines
 
     def _pick_domain(self):
+        def round_domain_coord(coord):
+            return round(coord, PICK_COORD_RESOLUTION)
+
         # ask user for origin and max domain points
         pat_bottomleft = selection.utils.pick_point('Pick origin point (bottom-right corner of the pattern area):')
         if pat_bottomleft:
             pat_topright = selection.utils.pick_point('Pick top-right corner of the pattern area:')
             if pat_topright:
-                return pat_bottomleft, pat_topright
+                return (round_domain_coord(pat_bottomleft.X), round_domain_coord(pat_bottomleft.Y)), \
+                       (round_domain_coord(pat_topright.X), round_domain_coord(pat_topright.Y))
 
         return False
 
@@ -82,8 +89,12 @@ class MakePatternWindow(WPFWindow):
             elif isinstance(geom_curve, Line):
                 pat_lines.append(self._make_pattern_line(geom_curve.GetEndPoint(0), geom_curve.GetEndPoint(1)))
 
-        # patmaker.make_pattern(self.pat_name, pat_lines, domain, model_pattern=self.is_model_pat)
-        print(self.pat_name, pat_lines, domain, self.is_model_pat, self.allow_jiggle, self.create_filledregion)
+        call_params = 'Name:{} Model:{} FilledRegion:{} Domain:{} Lines:{}'.format(self.pat_name, self.is_model_pat,
+                                                                                   self.create_filledregion,
+                                                                                   domain, pat_lines)
+        logger.debug(call_params)
+        patmaker.make_pattern(self.pat_name, pat_lines, domain, model_pattern=self.is_model_pat)
+        TaskDialog.Show('pyRevit', 'Pattern {} created.'.format(self.pat_name))
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
