@@ -18,7 +18,7 @@
             <GroupBox Header="Resolver Options:" Margin="0,10,0,0">
                 <StackPanel>
                     <CheckBox x:Name="createfilledregion_cb" Margin="10,10,0,5" IsChecked="False">Create Filled Region</CheckBox>
-                    <CheckBox x:Name="allow_jiggle_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Adjust angles automatically</CheckBox>
+                    <CheckBox x:Name="allow_jiggle_cb" Margin="10,10,0,5" IsChecked="True" IsEnabled="False">Adjust angles automatically</CheckBox>
                     <Button Margin="25,10,10,10" Click="fix_angles" Content="Fix Angles" IsEnabled="False"/>
                     <WrapPanel Margin="10">
                         <StackPanel Width="150px">

@@ -14,6 +14,14 @@ from Autodesk.Revit.DB import Line, Arc, Ellipse, NurbSpline
 from Autodesk.Revit.UI import TaskDialog
 
 
+__doc__ = 'Draw your pattern tile in a detail view using detail lines, curves, circles or ellipses; '\
+          'select the pattern lines and curves and run this tool. Give the pattern a name and hit '\
+          '"Create Pattern". The tool asks you to pick the boundary corners of the pattern. The tool will '\
+          'process the input lines, approximates the curves and splines with smaller lines and finds the best '\
+          'angles for these lines and will generate a pattern. You can also check the option to create a '\
+          'filled region type for this new pattern.'
+
+
 accpeted_lines = [DetailLine, DetailArc, DetailEllipse, DetailNurbSpline]
 accpeted_curves = [Arc, Ellipse, NurbSpline]
 
@@ -93,7 +101,8 @@ class MakePatternWindow(WPFWindow):
                                                                                    self.create_filledregion,
                                                                                    domain, pat_lines)
         logger.debug(call_params)
-        patmaker.make_pattern(self.pat_name, pat_lines, domain, model_pattern=self.is_model_pat)
+        patmaker.make_pattern(self.pat_name, pat_lines, domain,
+                              model_pattern=self.is_model_pat, create_filledregion=self.create_filledregion)
         TaskDialog.Show('pyRevit', 'Pattern {} created.'.format(self.pat_name))
 
     # noinspection PyUnusedLocal

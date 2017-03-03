@@ -3,6 +3,7 @@ from math import sqrt, pi, sin, cos, tan, radians
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from revitutils import doc
+from revitutils import typeutils
 
 # noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
@@ -382,6 +383,7 @@ class _RevitPattern:
                          'Origin:{} Angle:{} Shift:{} Offset:{} Segments:{}'.format(idx, fg.Origin,
                                                                                     fg.Angle, fg.Shift,
                                                                                     fg.Offset, fg.GetSegments()))
+        return fill_pat_element
 
     def create_pattern(self):
         fill_grids = [self._make_fill_grid(pat_grid, self._scale) for pat_grid in self._pattern_grids]
@@ -394,10 +396,10 @@ class _RevitPattern:
         fill_pat.SetFillGrids(List[FillGrid](fill_grids))
 
         # Create the FillPatternElement in current document
-        self._make_fillpattern_element(fill_pat)
+        return self._make_fillpattern_element(fill_pat)
 
 
-def make_pattern(pat_name, pat_lines, domain, model_pattern, scale=1.0):
+def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledregion=False, scale=1.0):
     pat_domain = _PatternDomain(domain[0][0], domain[0][1], domain[1][0], domain[1][1])
     logger.debug('New pattern domain: {}'.format(pat_domain))
 
@@ -414,7 +416,10 @@ def make_pattern(pat_name, pat_lines, domain, model_pattern, scale=1.0):
             logger.error('Error adding line: {} | {}'.format(line_coords, pat_line_err))
 
     try:
-        revit_pat.create_pattern()
+        fillpat_element = revit_pat.create_pattern()
+        if create_filledregion:
+            typeutils.make_filledregion(fillpat_element.Name, fillpat_element.Id)
+        return fillpat_element
     except Exception as create_pat_err:
         logger.error('Error creating pattern element. | {}'.format(create_pat_err))
 
