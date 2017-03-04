@@ -45,7 +45,7 @@ class PyRevitScriptUtils:
 
     @property
     def output(self):
-        from pyrevit.coreutils.console import output_window
+        from pyrevit.coreutils.console.output import output_window
         return output_window
 
     @property

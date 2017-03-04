@@ -4,6 +4,7 @@ import re
 import ast
 import hashlib
 import time
+import datetime
 import clr
 import shutil
 from collections import defaultdict
@@ -469,3 +470,7 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return izip(a, b)
+
+
+def timestamp():
+    return datetime.datetime.now().strftime("%m%j%H%M%S%f")

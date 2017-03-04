@@ -1,11 +1,11 @@
 import logging
-import sys
 import os.path
+import sys
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils.emoji import emojize
+from pyrevit.coreutils.console.emoji import emojize
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
 
 DEBUG_ISC_NAME = PYREVIT_ADDON_NAME + '_debugISC'
@@ -17,11 +17,11 @@ RUNTIME_FILE_LOGGING_LEVEL = logging.DEBUG
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 
 LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{0}">{1}</div>')
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format('background:#f9f2f4;color:#c7254e; '  \
+LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format('background:#f9f2f4;color:#c7254e;'
                                                   'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
-LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format('background:#F7F3F2;color:#C64325;' \
+LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format('background:#F7F3F2;color:#C64325;'
                                                     'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:white;'  \
+LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format('background:#c7254e;color:white;'
                                                      'padding:10px;margin:10px 0px 10px 0px', LOG_REC_FORMAT)
 
 
@@ -68,7 +68,6 @@ class LoggerWrapper(logging.Logger):
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
-        msg_str = ''
         if not isinstance(msg, str):
             msg_str = str(msg)
         else:
@@ -98,7 +97,8 @@ class LoggerWrapper(logging.Logger):
             logger = logger.parent
         return logging.NOTSET
 
-    def _reset_logger_env_vars(self, verbose=False, debug=False):
+    @staticmethod
+    def _reset_logger_env_vars(verbose=False, debug=False):
         set_pyrevit_env_var(VERBOSE_ISC_NAME, verbose)
         set_pyrevit_env_var(DEBUG_ISC_NAME, debug)
 
