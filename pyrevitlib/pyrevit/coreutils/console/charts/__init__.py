@@ -60,10 +60,58 @@ class PyRevitOutputChartData:
 class PyRevitOutputChart:
     def __init__(self, output, chart_type=LINE_CHART):
         self._output = output
+        self._style = None
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
+
         self.options = PyRevitOutputChartOptions()
+        # # common chart options and their default values
+        # chart.options.responsive = True
+        # chart.options.responsiveAnimationDuration = 0
+        # chart.options.maintainAspectRatio = True
+        #
+        # # layout options
+        # chart.options.layout = {'padding': 0}
+        #
+        # # title options
+        # # position:
+        # # Position of the title. Possible values are 'top', 'left', 'bottom' and 'right'.
+        # chart.options.title = {'display': False,
+        #                        'position': 'top',
+        #                        'fullWidth': True,
+        #                        'fontSize': 12,
+        #                        'fontFamily': 'Arial',
+        #                        'fontColor': '#666',
+        #                        'fontStyle': 'bold',
+        #                        'padding': 10,
+        #                        'text': ''
+        #                        }
+        #
+        # # legend options
+        # chart.options.legend = {'display': True,
+        #                         'position': 'top',
+        #                         'fullWidth': True,
+        #                         'reverse': False,
+        #                         'labels': {'boxWidth': 40,
+        #                                    'fontSize': 12,
+        #                                    'fontStyle': 'normal',
+        #                                    'fontColor': '#666',
+        #                                    'fontFamily': 'Arial',
+        #                                    'padding': 10,
+        #                                    'usePointStyle': True
+        #                                    }
+        #                         }
+        #
+        # # tooltips options
+        # # intersect:
+        # # if true, the tooltip mode applies only when the mouse position intersects with an element.
+        # # If false, the mode will be applied at all times
+        # chart.options.tooltips = {'enabled': True,
+        #                           'intersect': True,
+        #                           'backgroundColor': 'rgba(0,0,0,0.8)',
+        #                           'caretSize': 5,
+        #                           'displayColors': True}
 
     def _setup_charts(self):
         cur_head = self._output.get_head_html()
@@ -74,12 +122,17 @@ class PyRevitOutputChart:
     def _make_canvas_unique_id():
         return 'chart{}'.format(timestamp())
 
-    @staticmethod
-    def _make_canvas_code(canvas_id):
-        return '<canvas id="{}"></canvas>'.format(canvas_id)
+    def _make_canvas_code(self, canvas_id):
+        if self._style:
+            return '<canvas id="{}" style="{}"></canvas>'.format(canvas_id, self._style)
+        else:
+            return '<canvas id="{}"></canvas>'.format(canvas_id)
 
     def _make_charts_script(self, canvas_id):
         return SCRIPT_TEMPLATE.format(canvas_id, ChartsDataSetEncode().encode(self))
+
+    def set_style(self, html_style):
+        self._style = html_style
 
     def draw(self):
         self._setup_charts()

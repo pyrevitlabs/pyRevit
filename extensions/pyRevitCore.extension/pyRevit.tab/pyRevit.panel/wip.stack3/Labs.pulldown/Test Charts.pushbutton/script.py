@@ -1,10 +1,7 @@
 from pyrevit.coreutils.console import charts
 
 from scriptutils import this_script
-this_script.output.set_width(500)
-
-
-print('Testing Charts.js charts...')
+this_script.output.set_width(600)
 
 
 test1_types = [charts.LINE_CHART,
@@ -19,16 +16,24 @@ test3_types = [charts.POLAR_CHART,
 
 
 def get_test_chart(chart_type):
-    print('\nTesting {} charts...'.format(chart_type))
     chart = this_script.output.make_chart()
     chart.type = chart_type
+    # chart.set_style('height:150px')
+
+    # chart.options.maintainAspectRatio = True
+    chart.options.title = {'display': True,
+                           'text': '{} chart'.format(chart_type).upper(),
+                           'fontSize': 18,
+                           'fontColor': '#000',
+                           'fontStyle': 'bold'}
+
     return chart
 
 
 def test1_chart(chart_type):
     chart = get_test_chart(chart_type)
 
-    chart.data.labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+    chart.data.labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
     apples = chart.data.new_dataset('apples')
     apples.data = [12, 19, 3, 17, 6, 3, 7]
@@ -37,7 +42,7 @@ def test1_chart(chart_type):
     oranges = chart.data.new_dataset('oranges')
     oranges.data = [2, 29, 5, 5, 2, 3, 10]
     oranges.set_background(255, 153, 0, 0.4)
-    oranges.fill = False
+    # oranges.fill = False
 
     pears = chart.data.new_dataset('pears')
     pears.data = [55, 12, 2, 20, 18, 6, 22]
@@ -76,6 +81,7 @@ def test3_chart(chart_type):
     oranges = chart.data.new_dataset('oranges')
     oranges.data = [50, 30, 80]
     oranges.backgroundColor = ["#FF6384", "#36A2EB", "#FFCE56"]
+    oranges.fill = False
 
     pears = chart.data.new_dataset('pears')
     pears.data = [40, 20, 10]
