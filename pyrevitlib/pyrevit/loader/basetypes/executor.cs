@@ -93,7 +93,7 @@ namespace PyRevitBaseClasses
                 // Setup IO streams
                 engine.Runtime.IO.SetOutput(outputStream, Encoding.UTF8);
                 engine.Runtime.IO.SetErrorOutput(outputStream, Encoding.UTF8);
-                engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
+                // engine.Runtime.IO.SetInput(outputStream, Encoding.UTF8);
 
                 scope.SetVariable("__file__", sourcePath);
 
