@@ -45,7 +45,7 @@ namespace PyRevitBaseClasses
         {
             // Copy written data to new buffer and add to output queue
             byte[] data = new byte[count];
-            Buffer.BlockCopy(buffer, offset, data, 0, count);
+            Array.Copy(buffer, offset, data, 0, count);
             _outputBuffer.Enqueue(data);
         }
 
@@ -71,21 +71,17 @@ namespace PyRevitBaseClasses
                     text += Encoding.UTF8.GetString(curr);
                 }
 
-                _gui.BeginInvoke((Action)delegate()
-                {
-                    // Cleanup output for html
-                    var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
-                    // if (text.StartsWith("\n"))
-                    //     text = text.Remove(0);
-                    if (text.EndsWith("\n"))
-                        text = text.Remove(text.Length - 1);
-                    text = text.Replace("<", "&lt;").Replace(">", "&gt;");
-                    text = text.Replace("&clt;", "<").Replace("&cgt;", ">");
-                    text = text.Replace("\n", "<br/>");
-                    text = text.Replace("\t", "&emsp;&emsp;");
-                    div.InnerHtml = text;
-                    _gui.txtStdOut.Document.Body.AppendChild(div);
-                });
+                // Cleanup output for html
+                if (text.EndsWith("\n"))
+                    text = text.Remove(text.Length - 1);
+                text = text.Replace("<", "&lt;").Replace(">", "&gt;");
+                text = text.Replace("&clt;", "<").Replace("&cgt;", ">");
+                text = text.Replace("\n", "<br/>");
+                text = text.Replace("\t", "&emsp;&emsp;");
+
+                var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
+                div.InnerHtml = text;
+                _gui.txtStdOut.Document.Body.AppendChild(div);
                 _gui.ScrollToBottom();
             }
         }
