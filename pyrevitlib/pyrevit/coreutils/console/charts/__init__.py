@@ -3,6 +3,7 @@ from json import JSONEncoder
 
 from pyrevit import MAIN_LIB_DIR
 from pyrevit.coreutils import timestamp
+from pyrevit.coreutils.console.utils import random_rgba_color
 
 
 # chart.js chart types
@@ -130,6 +131,14 @@ class PyRevitOutputChart:
 
     def _make_charts_script(self, canvas_id):
         return SCRIPT_TEMPLATE.format(canvas_id, ChartsDataSetEncode().encode(self))
+
+    def randomize_colors(self):
+        if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
+            for dataset in self.data.datasets:
+                dataset.backgroundColor = [random_rgba_color() for x in range(0, len(dataset.data))]
+        else:
+            for dataset in self.data.datasets:
+                dataset.backgroundColor = random_rgba_color()
 
     def set_style(self, html_style):
         self._style = html_style
