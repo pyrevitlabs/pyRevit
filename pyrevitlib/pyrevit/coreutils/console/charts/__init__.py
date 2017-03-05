@@ -42,7 +42,7 @@ class PyRevitOutputChartDataset:
         self.data = []
         self.backgroundColor = ''
 
-    def set_background(self, r, g, b, a):
+    def set_color(self, r, g, b, a):
         self.backgroundColor = 'rgba({},{},{},{})'.format(r, g, b, a)
 
 

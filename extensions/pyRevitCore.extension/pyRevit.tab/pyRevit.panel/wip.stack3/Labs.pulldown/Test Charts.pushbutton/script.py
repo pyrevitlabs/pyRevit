@@ -10,8 +10,9 @@ test1_types = [charts.LINE_CHART,
 
 test2_types = [charts.BUBBLE_CHART]
 
-test3_types = [charts.POLAR_CHART,
-               charts.PIE_CHART,
+test3_types = [charts.POLAR_CHART]
+
+test4_types = [charts.PIE_CHART,
                charts.DOUGHNUT_CHART]
 
 
@@ -35,36 +36,56 @@ def test1_chart(chart_type):
 
     chart.data.labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-    apples = chart.data.new_dataset('apples')
-    apples.data = [12, 19, 3, 17, 6, 3, 7]
-    apples.set_background(153, 255, 51, 0.4)
+    set_a = chart.data.new_dataset('set_a')
+    set_a.data = [12, 19, 3, 17, 6, 3, 7]
+    set_a.set_color(0xFF, 0x8C, 0x8D, 0.8)
 
-    oranges = chart.data.new_dataset('oranges')
-    oranges.data = [2, 29, 5, 5, 2, 3, 10]
-    oranges.set_background(255, 153, 0, 0.4)
-    # oranges.fill = False
+    set_b = chart.data.new_dataset('set_b')
+    set_b.data = [2, 29, 5, 5, 2, 3, 10]
+    set_b.set_color(0xFF, 0xCE, 0x56, 0.8)
+    # set_b.fill = False
 
-    pears = chart.data.new_dataset('pears')
-    pears.data = [55, 12, 2, 20, 18, 6, 22]
-    pears.set_background(0, 153, 255, 0.4)
+    set_c = chart.data.new_dataset('set_c')
+    set_c.data = [55, 12, 2, 20, 18, 6, 22]
+    set_c.set_color(0x36, 0xA2, 0xEB, 0.8)
 
     chart.draw()
 
 
 def test2_chart(chart_type):
+    import random
+
     chart = get_test_chart(chart_type)
 
-    apples = chart.data.new_dataset('apples')
-    apples.data = [{'x': 1, 'y': 2, 'r': 3}, {'x': 4, 'y': 5, 'r': 6}, {'x': 7, 'y': 8, 'r': 9}]
-    apples.set_background(153, 255, 51, 0.4)
+    set_a = chart.data.new_dataset('set_a')
+    set_a.set_color(0xFF, 0x8C, 0x8D, 0.8)
+    set_a.data = []
+    for idx in range(1, 10):
+        x = random.randint(1, 40)
+        y = random.randint(1, 10)
+        r = random.randint(1, 20)
+        value = {'x': x, 'y': y, 'r': r}
+        set_a.data.append(value)
 
-    oranges = chart.data.new_dataset('oranges')
-    oranges.data = [{'x': 10, 'y': 11, 'r': 12}, {'x': 13, 'y': 14, 'r': 15}, {'x': 16, 'y': 17, 'r': 18}]
-    oranges.set_background(255, 153, 0, 0.4)
+    set_b = chart.data.new_dataset('set_b')
+    set_b.set_color(0xFF, 0xCE, 0x56, 0.8)
+    set_b.data = []
+    for idx in range(1, 10):
+        x = random.randint(1, 40)
+        y = random.randint(1, 10)
+        r = random.randint(1, 20)
+        value = {'x': x, 'y': y, 'r': r}
+        set_b.data.append(value)
 
-    pears = chart.data.new_dataset('pears')
-    pears.data = [{'x': 19, 'y': 20, 'r': 21}, {'x': 22, 'y': 23, 'r': 24}]
-    pears.set_background(0, 153, 255, 0.4)
+    set_c = chart.data.new_dataset('set_c')
+    set_c.set_color(0x36, 0xA2, 0xEB, 0.8)
+    set_c.data = []
+    for idx in range(1, 10):
+        x = random.randint(1, 40)
+        y = random.randint(1, 10)
+        r = random.randint(1, 20)
+        value = {'x': x, 'y': y, 'r': r}
+        set_c.data.append(value)
 
     chart.draw()
 
@@ -72,23 +93,34 @@ def test2_chart(chart_type):
 def test3_chart(chart_type):
     chart = get_test_chart(chart_type)
 
-    chart.data.labels = ['Red', 'Blue', 'Green']
+    chart.data.labels = ['A', 'B', 'C', 'D', 'E', 'F']
 
-    apples = chart.data.new_dataset('apples')
-    apples.data = [300, 20, 50]
-    apples.backgroundColor = ["#FF6384", "#36A2EB", "#FFCE56"]
-
-    oranges = chart.data.new_dataset('oranges')
-    oranges.data = [50, 30, 80]
-    oranges.backgroundColor = ["#FF6384", "#36A2EB", "#FFCE56"]
-    oranges.fill = False
-
-    pears = chart.data.new_dataset('pears')
-    pears.data = [40, 20, 10]
-    pears.backgroundColor = ["#FF6384", "#36A2EB", "#FFCE56"]
+    set_a = chart.data.new_dataset('set_a')
+    set_a.data = [100, 20, 50, 35, 70, 20]
+    set_a.backgroundColor = ["#446119", "#547720", "#6b942d", "#7cad31", "#86c12b", "#8dd61c"]
 
     chart.draw()
 
+
+def test4_chart(chart_type):
+    chart = get_test_chart(chart_type)
+
+    chart.data.labels = ['A', 'B', 'C']
+
+    set_a = chart.data.new_dataset('set_a')
+    set_a.data = [100, 20, 50]
+    set_a.backgroundColor = ["#560764", "#1F6CB0", "#F98B60"]
+
+    set_b = chart.data.new_dataset('set_b')
+    set_b.data = [50, 30, 80]
+    set_b.backgroundColor = ["#913175", "#70A3C4", "#FFC057"]
+    set_b.fill = False
+
+    set_c = chart.data.new_dataset('set_c')
+    set_c.data = [40, 20, 10]
+    set_c.backgroundColor = ["#DD5B82", "#E7E8F5", "#FFE084"]
+
+    chart.draw()
 
 for ct_type in test1_types:
     test1_chart(ct_type)
@@ -98,3 +130,6 @@ for ct_type in test2_types:
 
 for ct_type in test3_types:
     test3_chart(ct_type)
+
+for ct_type in test4_types:
+    test4_chart(ct_type)
