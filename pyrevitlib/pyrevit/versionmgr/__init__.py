@@ -42,9 +42,11 @@ def get_pyrevit_repo():
 
 if not EXEC_PARAMS.doc_mode:
     try:
-        PYREVIT_VERSION = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
+        PYREVIT_REPO = get_pyrevit_repo()
+        PYREVIT_VERSION = PyRevitVersion(PYREVIT_REPO.last_commit_hash)
     except Exception as ver_err:
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
         PYREVIT_VERSION = PyRevitVersion('?')
 else:
+    PYREVIT_REPO = None
     PYREVIT_VERSION = None
