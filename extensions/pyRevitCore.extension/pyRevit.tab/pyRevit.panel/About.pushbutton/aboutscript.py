@@ -4,7 +4,7 @@ import sys
 from scriptutils import open_url
 from scriptutils.userinput import WPFWindow
 from pyrevit.coreutils.git import compare_branch_heads
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
 from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
 
 
@@ -20,7 +20,12 @@ class AboutWindow(WPFWindow):
         self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
         self.set_image_source('keybase_profile', 'keybase.png')
 
-        self.version_info.Text = 'v {}'.format(PYREVIT_VERSION.get_formatted())
+        try:
+            self.version_info.Text = 'v{}'.format(PYREVIT_VERSION.get_formatted())
+            if PYREVIT_REPO.branch != 'master':
+                self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
+        except:
+            self.version_info.Text = ''
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'.format(sys.version_info.major,
                                                                                 sys.version_info.minor,
                                                                                 sys.version_info.micro)
