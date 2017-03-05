@@ -16,22 +16,18 @@ namespace PyRevitBaseClasses
     public class ScriptOutputStream: Stream
     {
         private readonly ScriptOutput _gui;
-        private int _bomCharsLeft; // we want to get rid of pesky UTF8-BOM-Chars on write
-        private readonly Queue<MemoryStream> _completedLines; // one memorystream per line of input
-        private MemoryStream _inputBuffer;
+        private readonly Queue<byte[]> _outputBuffer = new Queue<byte[]>();
 
         public ScriptOutputStream(ScriptOutput gui)
         {
             _gui = gui;
             _gui.txtStdOut.Focus();
-
-            _completedLines = new Queue<MemoryStream>();
-            _inputBuffer = new MemoryStream();
         }
 
         public void write(string s)
         {
             Write(Encoding.ASCII.GetBytes(s), 0, s.Length);
+            Flush();
         }
 
         public void WriteError(string error_msg)
@@ -41,10 +37,19 @@ namespace PyRevitBaseClasses
 
             var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
             Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
+            Flush();
         }
 
         /// Append the text in the buffer to gui.txtStdOut
         public override void Write(byte[] buffer, int offset, int count)
+        {
+            // Copy written data to new buffer and add to output queue
+            byte[] data = new byte[count];
+            Buffer.BlockCopy(buffer, offset, data, 0, count);
+            _outputBuffer.Enqueue(data);
+        }
+
+        public override void Flush()
         {
             lock (this)
             {
@@ -58,9 +63,14 @@ namespace PyRevitBaseClasses
                     _gui.Show();
                 }
 
-                var actualBuffer = new byte[count];
-                Array.Copy(buffer, offset, actualBuffer, 0, count);
-                var text = Encoding.UTF8.GetString(actualBuffer);
+                // pull everything out of the queue and create a string to be processed for html output
+                byte[] curr;
+                String text = String.Empty;
+                while (_outputBuffer.Count > 0) {
+                    curr = _outputBuffer.Dequeue();
+                    text += Encoding.UTF8.GetString(curr);
+                }
+
                 _gui.BeginInvoke((Action)delegate()
                 {
                     // Cleanup output for html
@@ -80,10 +90,6 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public override void Flush()
-        {
-        }
-
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotImplementedException();
@@ -94,26 +100,14 @@ namespace PyRevitBaseClasses
             throw new NotImplementedException();
         }
 
-        /// Read from the _inputBuffer, block until a new line has been entered...
         public override int Read(byte[] buffer, int offset, int count)
         {
-            while (_completedLines.Count < 1)
-            {
-                if (_gui.Visible == false)
-                {
-                    throw new EndOfStreamException();
-                }
-                // wait for user to complete a line
-                Application.DoEvents();
-                Thread.Sleep(10);
-            }
-            var line = _completedLines.Dequeue();
-            return line.Read(buffer, offset, count);
+            throw new NotImplementedException();
         }
 
         public override bool CanRead
         {
-            get { return !_gui.IsDisposed; }
+            get { return false; }
         }
 
         public override bool CanSeek
@@ -133,8 +127,8 @@ namespace PyRevitBaseClasses
 
         public override long Position
         {
-            get { return 0; }
-            set { }
+            get { return _gui.txtStdOut.DocumentText.Length; }
+            set {}
         }
     }
 }
