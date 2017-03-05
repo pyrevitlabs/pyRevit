@@ -51,6 +51,7 @@ class RepoInfo:
         self.head_name = repo.Head.Name
         self.last_commit_hash = repo.Head.Tip.Id.Sha
         self.repo = repo
+        self.branch = repo.Head.Name
         self.username = self.password = None
 
     def __repr__(self):
