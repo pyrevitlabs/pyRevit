@@ -12,8 +12,7 @@
         <Grid>
             <Image x:Name="pyrevit_logo" HorizontalAlignment="Left" Width="100" Height="110" Margin="25,20,0,0" VerticalAlignment="Top" />
             <TextBlock x:Name="pyrevit_title" Margin="140,30,30,0" VerticalAlignment="Top" FontSize="44" MouseDown="opengithubcommits">
-                <Run Text="pyRevit"/>
-                <Run x:Name="version_info" Text="" FontSize="20"/><Run x:Name="branch_info" Text="" FontSize="14"/>
+                <Run Text="pyRevit"/><Run x:Name="version_info" Text="" FontSize="20"/><Run x:Name="branch_info" Text="" FontSize="14"/>
             </TextBlock>
             <Separator VerticalAlignment="Top" Margin="30,155,30,0" Background="#dfdfdf"/>
             <TextBlock x:Name="pyrevit_subtitle" Margin="140,85,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" Text="python module and scripts for Autodesk Revit®" LineHeight="20"/>

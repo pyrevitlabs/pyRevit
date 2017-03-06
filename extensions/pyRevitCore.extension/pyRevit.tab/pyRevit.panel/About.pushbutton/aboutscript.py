@@ -21,7 +21,7 @@ class AboutWindow(WPFWindow):
         self.set_image_source('keybase_profile', 'keybase.png')
 
         try:
-            self.version_info.Text = 'v{}'.format(PYREVIT_VERSION.get_formatted())
+            self.version_info.Text = ' v{}'.format(PYREVIT_VERSION.get_formatted())
             if PYREVIT_REPO.branch != 'master':
                 self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
         except:
