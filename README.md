@@ -1,3 +1,4 @@
+<img src="http://eirannejad.github.io/pyRevit/pyRevitLogo.svg" width="160"/>
 # pyRevit for Autodesk Revit®
 
 [![GitHub issues](https://img.shields.io/github/issues/eirannejad/pyRevit.svg)](https://github.com/eirannejad/pyRevit/issues)
