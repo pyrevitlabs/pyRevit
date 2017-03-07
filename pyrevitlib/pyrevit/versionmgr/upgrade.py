@@ -48,8 +48,21 @@ def _loadbeta_config_upgrade():
         user_config.save_changes()
 
 
+def _startuplogtimeout_config_upgrade():
+    """ Upgrades local files and settings per this commit changes.
+    commit message:   Updated settings window to allow adjusting the startup window timeout
+    commit hash:      75ffba6d19e98862a28d5d180345c124df696246
+    """
+
+    try:
+        assert user_config.core.startuplogtimeout
+    except:
+        user_config.core.startuplogtimeout = 5
+        user_config.save_changes()
+
 
 def upgrade_existing_pyrevit():
     _filelogging_config_upgrade()
     _cleanup_cache_files()
     _loadbeta_config_upgrade()
+    _startuplogtimeout_config_upgrade()
