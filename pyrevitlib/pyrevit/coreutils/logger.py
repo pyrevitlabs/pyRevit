@@ -65,9 +65,12 @@ class DispatchingFormatter:
 class LoggerWrapper(logging.Logger):
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
+        self._has_errors = False
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         # any report other than logging.INFO level reports, need to cleanup < and > character to avoid html conflict
+        self._has_errors = (self._has_errors or level >= logging.ERROR)
+
         if not isinstance(msg, str):
             msg_str = str(msg)
         else:
@@ -101,6 +104,9 @@ class LoggerWrapper(logging.Logger):
     def _reset_logger_env_vars(verbose=False, debug=False):
         set_pyrevit_env_var(VERBOSE_ISC_NAME, verbose)
         set_pyrevit_env_var(DEBUG_ISC_NAME, debug)
+
+    def has_errors(self):
+        return self._has_errors
 
     def set_level(self, level):
         self.handlers[0].setLevel(level)
@@ -151,10 +157,17 @@ def get_logger(logger_name):
         if FILE_LOGGING_STATUS:
             logger.addHandler(file_hndlr)
 
-        loggers.update(dict(logger_name=logger))
+        loggers.update({logger_name: logger})
         return logger
 
 
 def set_file_logging(status):
     global FILE_LOGGING_STATUS
     FILE_LOGGING_STATUS = status
+
+
+def logger_has_errors():
+    for logger in loggers.values():
+        if logger.has_errors():
+            return True
+    return False
