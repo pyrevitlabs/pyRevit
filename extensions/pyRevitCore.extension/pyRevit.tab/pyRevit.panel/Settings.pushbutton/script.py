@@ -16,7 +16,11 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrev
 class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
-        self._setup_core_options()
+        try:
+            self._setup_core_options()
+        except Exception as setup_params_err:
+            logger.error('Error setting up a parameter. Please update pyRevit again. | {}'.format(setup_params_err))
+
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
         self._addinfiles_checkboxes = {'2015': self.revit2015_cb,

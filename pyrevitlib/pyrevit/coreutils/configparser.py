@@ -40,7 +40,7 @@ class PyRevitConfigSectionParser(object):
             except:
                 return value
         except (NoOptionError, NoSectionError):
-            raise AttributeError('Parameter does not exist in config file.')
+            raise AttributeError('Parameter does not exist in config file: {}'.format(param_name))
 
     def __setattr__(self, param_name, value):
         if param_name in ['_parser', '_section_name']:
