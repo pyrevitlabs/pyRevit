@@ -1,4 +1,4 @@
-from math import sqrt, pi, sin, cos, tan, radians
+from math import sqrt, pi, sin, cos
 
 from pyrevit import PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -58,13 +58,19 @@ class _PatternPoint:
 
 class _PatternLine:
     def __init__(self, start_p, end_p):
+        """
+
+        Args:
+            start_p (_PatternPoint):
+            end_p (_PatternPoint):
+        """
         self.start_point = start_p if start_p.v <= end_p.v else end_p
         self.end_point = end_p if start_p.v <= end_p.v else start_p
-        self.u_vector = UV(1,0)
+        self.u_vector = UV(1, 0)
 
     def __repr__(self):
         return '<_PatternLine Start:{} End:{} Length:{} Angle:{}>'.format(self.start_point, self.end_point,
-                                                                         self.length, self.angle)
+                                                                          self.length, self.angle)
 
     @property
     def direction(self):
@@ -102,7 +108,7 @@ class _PatternLine:
 
         div = det(xdiff, ydiff)
         if div == 0:
-           raise PyRevitException('Lines do not intersect.')
+            raise PyRevitException('Lines do not intersect.')
 
         d = _PatternPoint(det(self.start_point, self.end_point), det(pat_line.start_point, pat_line.end_point))
         int_point_x = det(d, xdiff) / div
@@ -195,7 +201,7 @@ class _PatternSafeGrid:
                     grid_point = _PatternPoint(self._domain_u * u_mult, self._domain_v * v_mult)
                     if offset_line.point_on_line(grid_point):
                         return grid_point
-                u_mult +=1
+                u_mult += 1
             if u_mult >= self._u_tiles:
                 raise PyRevitException('Can not determine next repeating grid.')
 
@@ -228,8 +234,8 @@ class _PatternDomain:
         if self._zero_domain():
             raise PyRevitException('Can not process zero domain.')
 
-        self.u_vec = _PatternLine(_PatternPoint(0,0), _PatternPoint(self._domain.u, 0))
-        self.v_vec = _PatternLine(_PatternPoint(0,0), _PatternPoint(0, self._domain.v))
+        self.u_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(self._domain.u, 0))
+        self.v_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(0, self._domain.v))
 
         self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0), _PatternPoint(self._domain.u, self._domain.v))
 
@@ -267,7 +273,7 @@ class _PatternDomain:
                         self.safe_angles.append(angle1)
                         self.safe_angles.append(angle2)
                         processed_ratios.append(float(v_mult)/float(u_mult))
-                    except PyRevitException as repeatability_err:
+                    except PyRevitException:
                         logger.warning('Skipping safe angle for grid point U:{} V:{}'.format(u_mult, v_mult))
                 v_mult += 1
             v_mult = 1
@@ -277,7 +283,7 @@ class _PatternDomain:
         return _PatternLine(pat_line.start_point - self._origin, pat_line.end_point - self._origin)
 
     def get_grid_params(self, axis_angle):
-        return min(self.safe_angles, key=lambda x:abs(x.grid_angle - axis_angle))
+        return min(self.safe_angles, key=lambda x: abs(x.grid_angle - axis_angle))
 
 
 class _PatternGrid:
@@ -296,6 +302,8 @@ class _PatternGrid:
         return '<_PatternGrid Angle:{} Span:{} Offset:{} Shift:{}>'.format(self.angle, self.span,
                                                                            self.offset, self.shift)
 
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
     def adopt_line(self, pat_line):
         # todo: optimise grid creation. check overlap and combine overlapping lines into one grid
         return False
@@ -309,9 +317,9 @@ class _PatternGrid:
 
         # origin is the point that is closest to zero
         if self.angle <= HALF_PI:
-            return min(point_list, key=lambda x:x.distance_to(_PatternPoint(0,0)))
+            return min(point_list, key=lambda x: x.distance_to(_PatternPoint(0, 0)))
         else:
-            return min(point_list, key=lambda x:x.distance_to(_PatternPoint(self._domain.u_vec.length,0)))
+            return min(point_list, key=lambda x: x.distance_to(_PatternPoint(self._domain.u_vec.length, 0)))
 
     @property
     def segments(self):
@@ -321,7 +329,7 @@ class _PatternGrid:
     @property
     def segments_as_lines(self):
         # todo: see _RevitPattern.adjust_line()
-        pass
+        return self.segment_lines
 
 
 class _RevitPattern:
@@ -379,7 +387,7 @@ class _RevitPattern:
         fp = fill_pat_element.GetFillPattern()
         logger.debug('Fill Grids Count: {}'.format(len(fp.GetFillGrids())))
         for idx, fg in enumerate(fp.GetFillGrids()):
-            logger.debug('FillGrid #{} ' \
+            logger.debug('FillGrid #{} '
                          'Origin:{} Angle:{} Shift:{} Offset:{} Segments:{}'.format(idx, fg.Origin,
                                                                                     fg.Angle, fg.Shift,
                                                                                     fg.Offset, fg.GetSegments()))
@@ -424,6 +432,7 @@ def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledr
         logger.error('Error creating pattern element. | {}'.format(create_pat_err))
 
 
+# noinspection PyUnusedLocal
 def adjust_pattern_lines(pat_lines, domain):
     # create the domain
     # create pattern
