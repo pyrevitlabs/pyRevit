@@ -15,7 +15,7 @@ import clr
 
 from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
 from pyrevit.coreutils import Timer
-from pyrevit.coreutils.logger import get_logger, stdout_hndlr
+from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 
 from pyrevit.versionmgr import PYREVIT_VERSION
@@ -153,6 +153,7 @@ def load_session():
     try:
         from pyrevit.coreutils.console.output import output_window
         timeout = user_config.core.get_option('startuplogtimeout', default_value=5)
-        output_window.self_destruct(timeout)
+        if timeout > 0 and not logger_has_errors():
+            output_window.self_destruct(timeout)
     except Exception as imp_err:
         logger.error('Error setting up self_destruct on output window | {}'.format(imp_err))
