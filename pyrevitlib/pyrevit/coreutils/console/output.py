@@ -55,6 +55,9 @@ class PyRevitConsoleWindow:
     def _get_head_element(self):
         return self.__winhandle__.txtStdOut.Document.GetElementsByTagName('head')[0]
 
+    def self_destruct(self, seconds):
+        self.__winhandle__.SelfDestructTimer(seconds*1000)
+
     def inject_script(self, script_code, attribs=None):
         script_element = self.__winhandle__.txtStdOut.Document.CreateElement("<script></script>")
         if script_code:
