@@ -57,7 +57,7 @@ def _startuplogtimeout_config_upgrade():
     try:
         assert user_config.core.startuplogtimeout
     except:
-        user_config.core.startuplogtimeout = 5
+        user_config.core.startuplogtimeout = 0
         user_config.save_changes()
 
 
