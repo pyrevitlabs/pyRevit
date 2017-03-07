@@ -21,6 +21,7 @@ custom_attrs = {TextNote: ['LeaderCount', 'LeaderLeftAttachment', 'LeaderRightAt
                 Dimension: ['Above', 'Below', 'Prefix', 'Suffix',
                             'ValueOverride', 'AreSegmentsEqual', 'NumberOfSegments']}
 
+
 class DiffResults:
     def __init__(self):
         self.processed_params = set()
@@ -30,7 +31,7 @@ class DiffResults:
 
 def cleanup_repr_str(repr_str):
     repr_str = repr_str.strip('\n,\r')
-    return re.sub(' +',' ', repr_str)
+    return re.sub(' +', ' ', repr_str)
 
 
 def element_hash(rvt_element, include_type=False, diff_results=None):
@@ -41,15 +42,15 @@ def element_hash(rvt_element, include_type=False, diff_results=None):
             diff_results.processed_params.add(param.Definition.Name)
         return get_str_hash(cleanup_repr_str(repr_str))
 
-    def attribute_hash(el, el_attr):
+    def attribute_hash(el, attribute):
         try:
-            repr_str = unicode(getattr(el, el_attr))
+            repr_str = unicode(getattr(el, attribute))
         except:
-            logger.debug('Error reading attribute: {} form element {} with id: {}'.format(el_attr, el, el.Id))
+            logger.debug('Error reading attribute: {} form element {} with id: {}'.format(attribute, el, el.Id))
             return ''
 
         if diff_results:
-            diff_results.processed_params.add(el_attr)
+            diff_results.processed_params.add(attribute)
 
         return get_str_hash(cleanup_repr_str(repr_str))
 
@@ -58,12 +59,12 @@ def element_hash(rvt_element, include_type=False, diff_results=None):
         diff_results.rvt_element_types.add(type(rvt_element))
 
     hash_value = ''
-    for param in sorted_params:
-        if param.Definition.Name not in domain_param_exclude_list:
+    for parameter in sorted_params:
+        if parameter.Definition.Name not in domain_param_exclude_list:
             if include_type:
-                hash_value += param_hash(param)
-            elif param.Definition.Name not in type_param_exclude_list:
-                hash_value += param_hash(param)
+                hash_value += param_hash(parameter)
+            elif parameter.Definition.Name not in type_param_exclude_list:
+                hash_value += param_hash(parameter)
 
     if type(rvt_element) in custom_attrs:
         for el_attr in custom_attrs[type(rvt_element)]:
@@ -73,7 +74,7 @@ def element_hash(rvt_element, include_type=False, diff_results=None):
 
 
 def element_hash_dict(element_list, include_type=False, diff_results=None):
-    return {el.Id.IntegerValue:element_hash(el, include_type, diff_results) for el in element_list}
+    return {el.Id.IntegerValue: element_hash(el, include_type, diff_results) for el in element_list}
 
 
 def compare(element_a, element_b, compare_types=False, diff_results=None):

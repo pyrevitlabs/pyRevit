@@ -86,5 +86,20 @@ namespace PyRevitBaseClasses
                 pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, (curValue/maxValue)*100);
             }
         }
+
+        public void SelfDestructTimer(int miliseconds)
+        {
+
+            // Create a 30 min timer
+            var timer = new System.Timers.Timer(miliseconds);
+            // Hook up the Elapsed event for the timer.
+            timer.Elapsed += (sender, e) => SelfDestructTimerEvent(sender, e, this);
+            timer.Enabled = true;
+        }
+
+        private static void SelfDestructTimerEvent(object source, System.Timers.ElapsedEventArgs e, ScriptOutput output_window)
+        {
+            output_window.Close();
+        }
     }
 }

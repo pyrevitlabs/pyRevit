@@ -16,7 +16,11 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrev
 class SettingsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
-        self._setup_core_options()
+        try:
+            self._setup_core_options()
+        except Exception as setup_params_err:
+            logger.error('Error setting up a parameter. Please update pyRevit again. | {}'.format(setup_params_err))
+
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
         self._addinfiles_checkboxes = {'2015': self.revit2015_cb,
@@ -35,6 +39,8 @@ class SettingsWindow(WPFWindow):
             self.verbose_rb.IsChecked = user_config.core.verbose
 
         self.filelogging_cb.IsChecked = user_config.core.filelogging
+
+        self.startup_log_timeout.Text = str(user_config.core.startuplogtimeout)
         self.compilecsharp_cb.IsChecked = user_config.core.compilecsharp
         self.compilevb_cb.IsChecked = user_config.core.compilevb
 
@@ -137,6 +143,7 @@ class SettingsWindow(WPFWindow):
         user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.core.compilevb = self.compilevb_cb.IsChecked
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
+        user_config.core.startuplogtimeout = self.startup_log_timeout.Text
 
         if isinstance(self.extfolders_lb.ItemsSource, list):
             user_config.core.userextensions = filter_null_items(self.extfolders_lb.ItemsSource)

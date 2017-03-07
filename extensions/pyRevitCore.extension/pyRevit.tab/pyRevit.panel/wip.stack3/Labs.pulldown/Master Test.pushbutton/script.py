@@ -113,3 +113,8 @@ for i in range(100):
     sleep(0.01)
     su.this_script.output.update_progress(i+1, 100)
 print('Progress bar test completed.')
+
+print('Has logger for this script reported errors? {}'.format(su.logger.has_errors()))
+
+from pyrevit.coreutils.logger import logger_has_errors
+print('Has any logger reported errors? {}'.format(logger_has_errors()))

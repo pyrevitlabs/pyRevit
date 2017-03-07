@@ -26,12 +26,17 @@
                                                                                           These messages are meant to provide the most basic necessary information about
                                                                                        the current pyRevit session to the user.</TextBlock>
 
+                           <WrapPanel Margin="10,15,0,5">
+                               <Label>If no errors, close startup window after</Label>
+                               <TextBox x:Name="startup_log_timeout" Width="50px" Height="25px"/>
+                               <Label>seconds. (Set to 0 to keep it open anyways)</Label>
+                           </WrapPanel>
+
                             <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode (logging.DEBUG and above)</RadioButton>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">This activates the pyRevit debug mode which enables all components and scripts to
                                                                                            report their debug messages. Generally this causes a very lengthy report and
                                                                                            increases the script running time, but it is very valuable for debugging.
                                                                                            Activate this only for debugging purposes.</TextBlock>
-
                             <CheckBox x:Name="filelogging_cb" Margin="10,10,0,5" IsChecked="False">File debug logging</CheckBox>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">This activates the pyRevit file debug mode. All debug messages during a session
                                                                                            (from loader or tools) will be written to a log file in pyRevit appdata folder.</TextBlock>
