@@ -1,6 +1,7 @@
 import json
 
 from pyrevit import HOST_APP
+from pyrevit.coreutils.logger import get_logger
 
 # noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
@@ -10,8 +11,7 @@ from Autodesk.Revit.DB import ElementId, View
 from Autodesk.Revit.UI import TaskDialog
 
 
-doc = HOST_APP.uiapp.ActiveUIDocument.Document
-uidoc = HOST_APP.uiapp.ActiveUIDocument
+logger = get_logger(__name__)
 
 
 PROTOCOL_NAME = 'revit://'
@@ -30,6 +30,13 @@ DEFAULT_LINK = '<a title="Click to select or show element" style="background-col
                          'text-align: center; ' \
                          'text-decoration: none; ' \
                          'display: inline-block;" href="{}{}">{}</a>'
+
+
+try:
+    doc = HOST_APP.uiapp.ActiveUIDocument.Document
+    uidoc = HOST_APP.uiapp.ActiveUIDocument
+except:
+    logger.debug('Active document does not exist in Revit. Can not get doc and uidoc.')
 
 
 # noinspection PyClassHasNoInit

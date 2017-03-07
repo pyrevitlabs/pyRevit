@@ -43,7 +43,7 @@ def _setup_output_window():
 
     # create output window and assign handle
     out_window = base_module.ScriptOutput()
-    EXEC_PARAMS.window_handle = out_window.Handle
+    EXEC_PARAMS.window_handle = out_window
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
@@ -148,3 +148,11 @@ def load_session():
     endtime = timer.get_time()
     success_emoji = ':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'
     logger.info('Load time: {} seconds {}'.format(endtime, success_emoji))
+
+    # if everything went well, self destruct
+    try:
+        from pyrevit.coreutils.console.output import output_window
+        timeout = user_config.core.get_option('startuplogtimeout', default_value=5)
+        output_window.self_destruct(timeout)
+    except Exception as imp_err:
+        logger.error('Error setting up self_destruct on output window | {}'.format(imp_err))

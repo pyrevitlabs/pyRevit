@@ -33,6 +33,9 @@ class PyRevitConfigSectionParser(object):
                 elif value.lower() == KEY_VALUE_FALSE:
                     value = 'False'
 
+                if value.isdecimal():
+                    value = int(value)
+
                 return eval(value)
             except:
                 return value
