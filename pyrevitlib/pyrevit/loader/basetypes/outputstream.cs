@@ -21,8 +21,9 @@ namespace PyRevitBaseClasses
         public ScriptOutputStream(ScriptOutput gui)
         {
             _gui = gui;
-            _gui.txtStdOut.Focus();
+            _gui.FocusOutput();
         }
+
 
         public void write(string s)
         {
@@ -30,15 +31,25 @@ namespace PyRevitBaseClasses
             Flush();
         }
 
+
         public void WriteError(string error_msg)
         {
-            var err_div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.errordiv);
-            err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
+            lock (this)
+            {
+                if (_gui.IsDisposed)
+                {
+                    return;
+                }
 
-            var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
-            Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
-            Flush();
+                if (!_gui.Visible)
+                {
+                    _gui.Show();
+                }
+
+                _gui.Write(error_msg.Replace("\n", "<br/>"), ExternalConfig.errordiv);
+            }
         }
+
 
         /// Append the text in the buffer to gui.txtStdOut
         public override void Write(byte[] buffer, int offset, int count)
@@ -48,6 +59,7 @@ namespace PyRevitBaseClasses
             Array.Copy(buffer, offset, data, 0, count);
             _outputBuffer.Enqueue(data);
         }
+
 
         public override void Flush()
         {
@@ -79,47 +91,52 @@ namespace PyRevitBaseClasses
                 text = text.Replace("\n", "<br/>");
                 text = text.Replace("\t", "&emsp;&emsp;");
 
-                var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
-                div.InnerHtml = text;
-                _gui.txtStdOut.Document.Body.AppendChild(div);
-                _gui.ScrollToBottom();
+                _gui.Write(text, ExternalConfig.defaultelement);
             }
         }
+
 
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotImplementedException();
         }
 
+
         public override void SetLength(long value)
         {
             throw new NotImplementedException();
         }
+
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
         }
 
+
         public override bool CanRead
         {
             get { return false; }
         }
+
 
         public override bool CanSeek
         {
             get { return false; }
         }
 
+
         public override bool CanWrite
         {
             get { return true; }
         }
 
+
         public override long Length
         {
             get { return _gui.txtStdOut.DocumentText.Length; }
         }
+
 
         public override long Position
         {

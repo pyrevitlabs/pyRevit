@@ -12,16 +12,18 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using System.Collections.Generic;
 
+
 namespace PyRevitBaseClasses
 {
     /// Executes a script
     public class ScriptExecutor
     {
         private readonly ExternalCommandData _commandData;
-        private string _message;
         private readonly ElementSet _elements;
         private readonly UIApplication _revit;
         private readonly UIControlledApplication _uiControlledApplication;
+        private readonly PyRevitCommand _thisCommand;
+
 
         public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
         {
@@ -30,27 +32,18 @@ namespace PyRevitBaseClasses
 
             _commandData = null;
             _elements = null;
-            _message = null;
 
         }
 
-        public ScriptExecutor(ExternalCommandData commandData, string message, ElementSet elements)
+
+        public ScriptExecutor(PyRevitCommand cmd, ExternalCommandData commandData, string message, ElementSet elements)
         {
+            _thisCommand = cmd;
             _revit = commandData.Application;
             _commandData = commandData;
             _elements = elements;
-            _message = message;
 
             _uiControlledApplication = null;
-        }
-
-
-        public string Message
-        {
-            get
-            {
-                return _message;
-            }
         }
 
 
@@ -62,12 +55,13 @@ namespace PyRevitBaseClasses
             {
                 // Setup engine and set __file__
                 var engine = CreateEngine();
-                var scope = SetupEnvironment(engine);
+                var scope = CreateScope(engine);
 
                 // Get builtin scope to add custom variables
                 var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
                 // add engine to builtins
                 builtin.SetVariable("__ipyengine__", engine);
+                builtin.SetVariable("__externalcommand__", _thisCommand);
                 // add command path to builtins
                 builtin.SetVariable("__commandpath__", Path.GetDirectoryName(sourcePath));
                 builtin.SetVariable("__commandname__", cmdName);                    // add command name to builtins
@@ -116,8 +110,6 @@ namespace PyRevitBaseClasses
                     outputStream.WriteError(string.Join("\n",
                                                         ExternalConfig.ipyerrtitle,
                                                         string.Join("\n", errors.Errors.ToArray())));
-                    _message = "";
-                    engine.Runtime.Shutdown();
                     return (int)Result.Cancelled;
                 }
 
@@ -127,14 +119,11 @@ namespace PyRevitBaseClasses
                 {
                     script.Execute(scope);
 
-                    _message = (scope.GetVariable("__message__") ?? "").ToString();
-                    engine.Runtime.Shutdown();
-                    return (int)(scope.GetVariable("__result__") ?? Result.Succeeded);
+                    return (int)Result.Succeeded;
                 }
                 catch (SystemExitException)
                 {
                     // ok, so the system exited. That was bound to happen...
-                    engine.Runtime.Shutdown();
                     return (int)Result.Succeeded;
                 }
                 catch (Exception exception)
@@ -152,18 +141,16 @@ namespace PyRevitBaseClasses
                     _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
                     outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
-                    _message = "";
-                    engine.Runtime.Shutdown();
                     return (int)Result.Cancelled;
                 }
 
             }
             catch (Exception ex)
             {
-                _message = ex.ToString();
                 return (int)Result.Failed;
             }
         }
+
 
         private ScriptEngine CreateEngine()
         {
@@ -173,6 +160,7 @@ namespace PyRevitBaseClasses
             });
             return engine;
         }
+
 
         private void AddEmbeddedLib(ScriptEngine engine)
         {
@@ -189,22 +177,21 @@ namespace PyRevitBaseClasses
 
 
         /// Set up an IronPython environment - for interactive shell or for canned scripts
-        public ScriptScope SetupEnvironment(ScriptEngine engine)
+        public ScriptScope CreateScope(ScriptEngine engine)
         {
             var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
 
-            SetupEnvironment(engine, scope);
+            SetupScope(engine, scope);
 
             return scope;
         }
 
-        public void SetupEnvironment(ScriptEngine engine, ScriptScope scope)
+
+        public void SetupScope(ScriptEngine engine, ScriptScope scope)
         {
             // these variables refer to the signature of the IExternalCommand.Execute method
             scope.SetVariable("__commandData__", _commandData);
-            scope.SetVariable("__message__", _message);
             scope.SetVariable("__elements__", _elements);
-            scope.SetVariable("__result__", (int)Result.Succeeded);
 
             // add two special variables: __revit__ and __vars__ to be globally visible everywhere:
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
