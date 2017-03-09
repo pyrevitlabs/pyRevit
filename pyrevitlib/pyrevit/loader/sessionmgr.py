@@ -19,6 +19,7 @@ from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 
 from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
@@ -79,6 +80,9 @@ def _perform_onsessionload_ops():
 
     # once pre-load is complete, report environment conditions
     _report_env()
+
+    # apply Upgrades
+    upgrade_existing_pyrevit()
 
 
 def _perform_onsessionloadcomplete_ops():
