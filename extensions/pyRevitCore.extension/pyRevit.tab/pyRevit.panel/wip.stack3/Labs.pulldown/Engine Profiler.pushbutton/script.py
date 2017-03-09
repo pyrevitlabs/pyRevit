@@ -7,9 +7,10 @@ from scriptutils import this_script
 
 clr.AddReference('System')
 clr.AddReference('IronPython')
+# noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
-import IronPython as ipy
-import IronPython.Hosting as ipyh
+# noinspection PyUnresolvedReferences
+import IronPython.Hosting
 
 
 TEST_UNIT = 100
@@ -19,8 +20,8 @@ script = "import random; random.randint(1,10)"
 
 def run():
     # set up script environment
-    options = { "Frames": True , "FullFrames": True }
-    engine = ipyh.Python.CreateEngine(options)
+    options = {"Frames": True, "FullFrames": True}
+    engine = IronPython.Hosting.Python.CreateEngine(options)
     engine.SetSearchPaths(List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
     runtime = engine.Runtime
     scope = runtime.CreateScope()
