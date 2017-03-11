@@ -1,0 +1,16 @@
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\win32\x64\git2-a5cf255.dll
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\win32\x64\git2-a5cf255.pdb
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\win32\x86\git2-a5cf255.dll
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\win32\x86\git2-a5cf255.pdb
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\osx\libgit2-a5cf255.dylib
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\lib\linux\x86_64\libgit2-a5cf255.so
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.dll.config
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\pyRevitCoreUpdater.exe.config
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\pyRevitCoreUpdater.exe
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\pyRevitCoreUpdater.pdb
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.dll
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.pdb
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.xml
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.csprojResolveAssemblyReference.cache
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.exe
+C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.pdb
