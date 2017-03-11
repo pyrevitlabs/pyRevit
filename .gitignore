@@ -3,6 +3,7 @@ extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitTools.extension/
 !extensions/extensions.json
+!extensions/README.md
 
 # ignore third-party lib folder
 lib/*
