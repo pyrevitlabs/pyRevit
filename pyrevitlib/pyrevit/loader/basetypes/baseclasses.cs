@@ -61,11 +61,10 @@ namespace PyRevitBaseClasses
             }
 
             // Get script executor
-            var executor = new ScriptExecutor( commandData, message, elements);
+            var executor = new ScriptExecutor(this, commandData, message, elements);
 
             // Execute script
             var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
-            message = executor.Message;
 
 
             // Return results

@@ -1,3 +1,4 @@
+from scriptutils import this_script
 from revitutils import doc
 
 # noinspection PyUnresolvedReferences
@@ -17,12 +18,15 @@ for el in rooflist:
     if p:
         s = p.AsValueString()
         if s in slopes.keys():
-            slopes[s].append(el.Id.IntegerValue)
+            slopes[s].append(el.Id)
         else:
-            slopes[s] = [el.Id.IntegerValue]
+            slopes[s] = [el.Id]
 
-for sl, elid in slopes.items():
+for sl, elids in slopes.items():
     print('SLOPE: {0}'.format(sl))
     print('ROOF ELEMENTS WITH THIS SLOPE:')
-    print(elid)
+    el_links = ''
+    for elid in elids:
+        el_links += this_script.output.linkify(elid)
+    print(el_links)
     print('\n')

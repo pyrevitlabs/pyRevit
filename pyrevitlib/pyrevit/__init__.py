@@ -14,7 +14,7 @@ from System.IO import IOException
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
-VERSION_MINOR = 1
+VERSION_MINOR = 2
 
 
 # ----------------------------------------------------------------------------------------------------------------------

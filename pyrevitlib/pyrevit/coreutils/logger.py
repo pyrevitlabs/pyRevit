@@ -75,8 +75,6 @@ class LoggerWrapper(logging.Logger):
             msg_str = str(msg)
         else:
             msg_str = msg
-        # get rid of unicode characters
-        msg_str = msg_str.encode('ascii', 'ignore')
         msg_str = msg_str.replace(os.path.sep, '/')
         msg_str = emojize(msg_str)
         if level == logging.INFO:

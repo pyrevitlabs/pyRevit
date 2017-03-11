@@ -5,5 +5,5 @@ from revitutils import selection
 
 this_script.output.set_width(200)
 
-for elid in selection.element_ids:
-    print(this_script.output.linkify(elid))
+for idx, elid in enumerate(selection.element_ids):
+    print('{}: {}'.format(idx+1, this_script.output.linkify(elid)))

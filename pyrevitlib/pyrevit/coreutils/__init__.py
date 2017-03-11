@@ -266,6 +266,10 @@ def prepare_html_str(input_string):
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
 
 
+def reverse_html(input_html):
+    return input_html.replace('&clt;', '<').replace('&cgt;', '>')
+
+
 # def check_internet_connection():
 #     client = WebClient()
 #     try:

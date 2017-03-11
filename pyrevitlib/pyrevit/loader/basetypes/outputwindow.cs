@@ -9,6 +9,7 @@ namespace PyRevitBaseClasses
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
 
+
         public ScriptOutput()
         {
             Application.EnableVisualStyles();
@@ -25,6 +26,7 @@ namespace PyRevitBaseClasses
 
         }
 
+
         private void ScriptOutput_Load(object sender, EventArgs e) {}
 
         public void ScrollToBottom()
@@ -37,6 +39,22 @@ namespace PyRevitBaseClasses
                 txtStdOut.Document.Window.ScrollTo(0, txtStdOut.Document.Body.ScrollRectangle.Height);
             }
         }
+
+
+        public void FocusOutput()
+        {
+            txtStdOut.Focus();
+        }
+
+
+        public void Write(String OutputText, String HtmlElementType)
+        {
+            var div = txtStdOut.Document.CreateElement(HtmlElementType);
+            div.InnerHtml = OutputText;
+            txtStdOut.Document.Body.AppendChild(div);
+            ScrollToBottom();
+        }
+
 
         private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
@@ -54,6 +72,7 @@ namespace PyRevitBaseClasses
             }
         }
 
+
         public void ShowProgressBar()
         {
             // MOST IMP : processes all windows messages queue
@@ -69,6 +88,7 @@ namespace PyRevitBaseClasses
                 txtStdOut.Document.Body.AppendChild(pbar);
             }
         }
+
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
@@ -87,6 +107,7 @@ namespace PyRevitBaseClasses
             }
         }
 
+
         public void SelfDestructTimer(int miliseconds)
         {
 
@@ -96,6 +117,7 @@ namespace PyRevitBaseClasses
             timer.Elapsed += (sender, e) => SelfDestructTimerEvent(sender, e, this);
             timer.Enabled = true;
         }
+
 
         private static void SelfDestructTimerEvent(object source, System.Timers.ElapsedEventArgs e, ScriptOutput output_window)
         {
