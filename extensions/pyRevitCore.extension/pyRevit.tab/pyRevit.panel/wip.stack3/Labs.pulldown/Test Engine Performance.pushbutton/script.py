@@ -11,6 +11,7 @@ clr.AddReference('IronPython')
 from System.Collections.Generic import List
 # noinspection PyUnresolvedReferences
 import IronPython.Hosting
+import IronPython.Runtime
 
 
 TEST_UNIT = 100
@@ -18,16 +19,24 @@ MAX_TESTS = 5 * TEST_UNIT
 script = "import random; random.randint(1,10)"
 
 
-def run():
-    # set up script environment
-    options = {"Frames": True, "FullFrames": True}
-    engine = IronPython.Hosting.Python.CreateEngine(options)
-    engine.SetSearchPaths(List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
-    runtime = engine.Runtime
+def run(engine, runtime):
     scope = runtime.CreateScope()
+    co = engine.GetCompilerOptions(scope)
+    # co.Module &= ~IronPython.Runtime.ModuleOptions.Optimized
     source = engine.CreateScriptSourceFromString(script)
     comped = source.Compile()
     comped.Execute(scope)
+
+
+def make_engine():
+    options = {"Frames": True, "FullFrames": True, "LightweightScopes": True}
+    engine = IronPython.Hosting.Python.CreateEngine(options)
+    engine.SetSearchPaths(List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
+    runtime = engine.Runtime
+    return engine, runtime
+
+
+def shutdown(runtime):
     runtime.Shutdown()
 
 
@@ -35,9 +44,11 @@ engine_times = []
 output_times = []
 
 for idx in range(1, MAX_TESTS):
+    engine, runtime = make_engine()
     engine_timer = Timer()
-    run()
+    run(engine, runtime)
     eng_time = engine_timer.get_time()
+    shutdown(runtime)
     engine_times.append(eng_time)
 
     output_timer = Timer()

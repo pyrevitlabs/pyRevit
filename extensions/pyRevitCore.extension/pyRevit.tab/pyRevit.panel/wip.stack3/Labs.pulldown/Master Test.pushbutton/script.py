@@ -100,8 +100,6 @@ print 'Selection: {}'.format(__elements__)
 print 'Window hndlr: {}'.format(__window__)
 print 'File: {}'.format(__file__)
 print 'Forced Debug: {}'.format(__forceddebugmode__)
-print 'Message: {}'.format(__message__)
-print 'Result: {}'.format(__result__)
 
 su.this_script.output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'.format(su.this_script.output.linkify(ElementId(1557))))
