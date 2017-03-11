@@ -169,7 +169,7 @@ namespace PyRevitBaseClasses
         {
             var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
             {
-                { "Frames", true }, { "FullFrames", true }
+                { "Frames", true }, { "FullFrames", true }, {"LightweightScopes", true} 
             });
             return engine;
         }
