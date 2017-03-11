@@ -1,4 +1,4 @@
-<img src="http://eirannejad.github.io/pyRevit/pyRevitLogo.svg" width="160"/>
+<a href="http://eirannejad.github.io/pyRevit/" target="_blank" style="border:0"><img src="http://eirannejad.github.io/pyRevit/pyRevitLogo.svg" width="160"/></a>
 # pyRevit for Autodesk Revit®
 
 [![GitHub issues](https://img.shields.io/github/issues/eirannejad/pyRevit.svg)](https://github.com/eirannejad/pyRevit/issues)
