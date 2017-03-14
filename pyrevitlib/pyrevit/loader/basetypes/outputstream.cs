@@ -16,11 +16,12 @@ namespace PyRevitBaseClasses
     public class ScriptOutputStream: Stream
     {
         private readonly ScriptOutput _gui;
+        private string _outputBuffer;
 
         public ScriptOutputStream(ScriptOutput gui)
         {
+            _outputBuffer = String.Empty;
             _gui = gui;
-            _gui.txtStdOut.Focus();
         }
 
         public void write(string s)
@@ -50,27 +51,31 @@ namespace PyRevitBaseClasses
                 if (!_gui.Visible)
                 {
                     _gui.Show();
+                    _gui.Focus();
                 }
 
                 var actualBuffer = new byte[count];
                 Array.Copy(buffer, offset, actualBuffer, 0, count);
                 var text = Encoding.UTF8.GetString(actualBuffer);
-                _gui.BeginInvoke((Action)delegate()
-                {
+
+                // append output to the buffer
+                _outputBuffer += text;
+
+                if (count % 1024 != 0) {
                     // Cleanup output for html
-                    var div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.defaultelement);
-                    // if (text.StartsWith("\n"))
-                    //     text = text.Remove(0);
-                    if (text.EndsWith("\n"))
-                        text = text.Remove(text.Length - 1);
-                    text = text.Replace("<", "&lt;").Replace(">", "&gt;");
-                    text = text.Replace("&clt;", "<").Replace("&cgt;", ">");
-                    text = text.Replace("\n", "<br/>");
-                    text = text.Replace("\t", "&emsp;&emsp;");
-                    div.InnerHtml = text;
-                    _gui.txtStdOut.Document.Body.AppendChild(div);
-                });
-                _gui.ScrollToBottom();
+                    if (_outputBuffer.EndsWith("\n"))
+                        _outputBuffer = _outputBuffer.Remove(_outputBuffer.Length - 1);
+                    _outputBuffer = _outputBuffer.Replace("<", "&lt;").Replace(">", "&gt;");
+                    _outputBuffer = _outputBuffer.Replace("&clt;", "<").Replace("&cgt;", ">");
+                    _outputBuffer = _outputBuffer.Replace("\n", "<br/>");
+                    _outputBuffer = _outputBuffer.Replace("\t", "&emsp;&emsp;");
+
+                    // write to output window
+                    _gui.AppendText(_outputBuffer, ExternalConfig.defaultelement);
+
+                    // reset buffer and flush state for next time
+                    _outputBuffer = String.Empty;
+                }
             }
         }
 
@@ -111,7 +116,7 @@ namespace PyRevitBaseClasses
 
         public override long Length
         {
-            get { return _gui.txtStdOut.DocumentText.Length; }
+            get { return 0; }
         }
 
         public override long Position

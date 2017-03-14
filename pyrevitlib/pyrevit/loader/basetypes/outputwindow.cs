@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PyRevitBaseClasses
 {
@@ -27,15 +28,33 @@ namespace PyRevitBaseClasses
 
         private void ScriptOutput_Load(object sender, EventArgs e) {}
 
+        public void WaitReadyBrowser() {
+            // while(txtStdOut.ReadyState != WebBrowserReadyState.Complete)
+            // {
+               Application.DoEvents();
+            // }
+        }
+
         public void ScrollToBottom()
         {
-            // MOST IMP : processes all windows messages queue
-            Application.DoEvents();
-
             if (txtStdOut.Document != null)
             {
                 txtStdOut.Document.Window.ScrollTo(0, txtStdOut.Document.Body.ScrollRectangle.Height);
             }
+        }
+
+        public void FocusOutput()
+        {
+            txtStdOut.Focus();
+        }
+
+        public void AppendText(String OutputText, String HtmlElementType)
+        {
+            WaitReadyBrowser();
+            var div = txtStdOut.Document.CreateElement(HtmlElementType);
+            div.InnerHtml = OutputText;
+            txtStdOut.Document.Body.AppendChild(div);
+            ScrollToBottom();
         }
 
         private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
@@ -56,9 +75,7 @@ namespace PyRevitBaseClasses
 
         public void ShowProgressBar()
         {
-            // MOST IMP : processes all windows messages queue
-            Application.DoEvents();
-
+            WaitReadyBrowser();
             if (txtStdOut.Document != null)
             {
                 var pbar = txtStdOut.Document.CreateElement(ExternalConfig.progressbar);
@@ -72,9 +89,7 @@ namespace PyRevitBaseClasses
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
-            // MOST IMP : processes all windows messages queue
-            Application.DoEvents();
-
+            WaitReadyBrowser();
             if (txtStdOut.Document != null)
             {
                 HtmlElement pbargraph;
@@ -89,7 +104,6 @@ namespace PyRevitBaseClasses
 
         public void SelfDestructTimer(int miliseconds)
         {
-
             // Create a 30 min timer
             var timer = new System.Timers.Timer(miliseconds);
             // Hook up the Elapsed event for the timer.
