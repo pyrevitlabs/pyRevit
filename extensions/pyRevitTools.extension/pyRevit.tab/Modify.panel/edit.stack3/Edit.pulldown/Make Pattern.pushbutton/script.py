@@ -3,7 +3,7 @@ import re
 from pyrevit.coreutils import pairwise
 
 from scriptutils import this_script, logger
-from scriptutils.userinput import WPFWindow
+from scriptutils.userinput import WPFWindow, pick_folder
 from revitutils import doc, selection, patmaker
 
 # noinspection PyUnresolvedReferences
@@ -85,7 +85,7 @@ class MakePatternWindow(WPFWindow):
     def _make_pattern_line(self, start_xyz, end_xyz):
         return (start_xyz.X, start_xyz.Y), (end_xyz.X, end_xyz.Y)
 
-    def _create_pattern(self, domain):
+    def _create_pattern(self, domain, export_only=False, export_path=None):
         pat_lines = []
         for det_line in self.selected_lines:
             geom_curve = det_line.GeometryCurve
@@ -101,9 +101,23 @@ class MakePatternWindow(WPFWindow):
                                                                                    self.create_filledregion,
                                                                                    domain, pat_lines)
         logger.debug(call_params)
-        patmaker.make_pattern(self.pat_name, pat_lines, domain,
-                              model_pattern=self.is_model_pat, create_filledregion=self.create_filledregion)
-        TaskDialog.Show('pyRevit', 'Pattern {} created.'.format(self.pat_name))
+
+        if export_only:
+            patmaker.export_pattern(self.pat_name, pat_lines, domain, export_path, model_pattern=self.is_model_pat)
+            TaskDialog.Show('pyRevit', 'Pattern {} exported.'.format(self.pat_name))
+        else:
+            patmaker.make_pattern(self.pat_name, pat_lines, domain, model_pattern=self.is_model_pat,
+                                  create_filledregion=self.create_filledregion)
+            TaskDialog.Show('pyRevit', 'Pattern {} created.'.format(self.pat_name))
+
+    def _verify_name(self):
+        if not self.pat_name:
+            TaskDialog.Show('pyRevit', 'Type a name for the pattern first')
+            return False
+        elif not re.search('[a-zA-Z0-9]', self.pat_name):
+            TaskDialog.Show('pyRevit', 'Pattern name must have at least one character or digit')
+            return False
+        return True
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -112,12 +126,19 @@ class MakePatternWindow(WPFWindow):
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
+    def export_pat(self, sender, args):
+        if self._verify_name():
+            self.Hide()
+            domain = self._pick_domain()
+            export_dir = pick_folder()
+            if domain and export_dir:
+                self._create_pattern(domain, export_only=True, export_path=export_dir)
+            self.Close()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
     def make_pattern(self, sender, args):
-        if not self.pat_name:
-            TaskDialog.Show('pyRevit', 'Type a name for the pattern first')
-        elif not re.search('[a-zA-Z0-9]', self.pat_name):
-            TaskDialog.Show('pyRevit', 'Pattern name must have at least one character or digit')
-        else:
+        if self._verify_name():
             self.Hide()
             domain = self._pick_domain()
             if domain:
