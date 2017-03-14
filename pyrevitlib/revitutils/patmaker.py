@@ -1,6 +1,8 @@
-from math import sqrt, pi, sin, cos
+import os.path as op
+from math import sqrt, pi, sin, cos, degrees
 
 from pyrevit import PyRevitException
+from pyrevit.coreutils import cleanup_filename
 from pyrevit.coreutils.logger import get_logger
 from revitutils import doc
 from revitutils import typeutils
@@ -22,6 +24,18 @@ ZERO_TOL = 5e-06
 MAX_DOMAIN = 100.0
 
 DOT_TYPES = ['Line Segment', u'\u2795', u'\u274C', u'Diamond \u25C7', u'\u25EF']
+
+
+PAT_SEPARATOR = ', '
+PAT_FILE_TEMPLATE = ";        Written by \"Make Pattern\" tool for pyRevit\n"                             \
+                    ";          http://eirannejad.github.io/pyRevit/\n"                                   \
+                    ";-Date                                   : {date}\n"                                 \
+                    ";-Time                                   : {time}\n"                                 \
+                    ";-pyRevit Version                        : {version}\n"                              \
+                    ";-----------------------------------------------------------------------------\n"    \
+                    ";%UNITS=INCH\n"                                                                      \
+                    "*{name},created by pyRevit\n"                                                        \
+                    ";%TYPE={type}\n"
 
 
 class _PatternPoint:
@@ -363,6 +377,10 @@ class _RevitPattern:
         # ask for segments_as_lines and return first line
         pass
 
+    @property
+    def name(self):
+        return self._name
+
     @staticmethod
     def _make_fill_grid(pattern_grid, scale):
         rvt_fill_grid = FillGrid()
@@ -406,8 +424,46 @@ class _RevitPattern:
         # Create the FillPatternElement in current document
         return self._make_fillpattern_element(fill_pat)
 
+    def get_pat_data(self):
+        pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
+        pattern_desc = PAT_FILE_TEMPLATE.format(time='0', date='0', version='0', name=self._name, type=pat_type)
+        for pat_grid in self._pattern_grids:
+            grid_desc = PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
+                                            str(pat_grid.origin.u * self._scale), str(pat_grid.origin.v * self._scale),
+                                            str(pat_grid.shift * self._scale),
+                                            str(pat_grid.offset * self._scale)])
+            grid_desc += PAT_SEPARATOR
+            if pat_grid.segments:
+                scaled_segments = []
+                for idx, seg in enumerate(pat_grid.segments):
+                    if idx%2 != 0:
+                        seg = seg * -1
+                    scaled_segments.append(seg * self._scale)
 
-def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledregion=False, scale=1.0):
+                grid_desc += PAT_SEPARATOR.join([str(seg_l) for seg_l in scaled_segments])
+
+            pattern_desc += grid_desc + '\n'
+
+        return pattern_desc
+
+
+def _export_pat(revit_pat, export_dir):
+    pat_file_contents = revit_pat.get_pat_data()
+    with open(op.join(export_dir, '{}.pat'.format(cleanup_filename(revit_pat.name))), 'w') as pat_file:
+        pat_file.write(pat_file_contents)
+
+
+def _create_fill_pattern(revit_pat, create_filledregion=False):
+    try:
+        fillpat_element = revit_pat.create_pattern()
+        if create_filledregion:
+            typeutils.make_filledregion(fillpat_element.Name, fillpat_element.Id)
+        return fillpat_element
+    except Exception as create_pat_err:
+        logger.error('Error creating pattern element. | {}'.format(create_pat_err))
+
+
+def _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern=True, scale=1.0):
     pat_domain = _PatternDomain(domain[0][0], domain[0][1], domain[1][0], domain[1][1])
     logger.debug('New pattern domain: {}'.format(pat_domain))
 
@@ -423,13 +479,17 @@ def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledr
         except Exception as pat_line_err:
             logger.error('Error adding line: {} | {}'.format(line_coords, pat_line_err))
 
-    try:
-        fillpat_element = revit_pat.create_pattern()
-        if create_filledregion:
-            typeutils.make_filledregion(fillpat_element.Name, fillpat_element.Id)
-        return fillpat_element
-    except Exception as create_pat_err:
-        logger.error('Error creating pattern element. | {}'.format(create_pat_err))
+    return revit_pat
+
+
+def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledregion=False, scale=1.0):
+    revit_pat = _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+    return _create_fill_pattern(revit_pat, create_filledregion)
+
+
+def export_pattern(pat_name, pat_lines, domain, export_dir, model_pattern=True, scale=12.0):
+    revit_pat = _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+    return _export_pat(revit_pat, export_dir)
 
 
 # noinspection PyUnusedLocal
