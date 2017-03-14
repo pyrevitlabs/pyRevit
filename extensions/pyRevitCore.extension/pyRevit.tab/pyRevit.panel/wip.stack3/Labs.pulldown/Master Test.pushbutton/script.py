@@ -101,6 +101,9 @@ print 'Window hndlr: {}'.format(__window__)
 print 'File: {}'.format(__file__)
 print 'Forced Debug: {}'.format(__forceddebugmode__)
 
+su.this_script.output.print_md('**Testing large buffer output (>1023 chars):**')
+su.this_script.output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
+
 su.this_script.output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'.format(su.this_script.output.linkify(ElementId(1557))))
 
