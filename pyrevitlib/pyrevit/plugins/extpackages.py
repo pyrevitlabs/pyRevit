@@ -17,6 +17,9 @@ from pyrevit.plugins import PyRevitPluginAlreadyInstalledException, PyRevitPlugi
 logger = get_logger(__name__)
 
 
+EXTENSION_PACKAGES = []
+
+
 class DependencyGraph:
     def __init__(self, ext_pkg_list):
         self.dep_dict = defaultdict(list)
@@ -76,6 +79,11 @@ class ExtensionPackage:
                 self.type = ExtensionTypes.LIB_EXTENSION
 
             self.builtin = True if info_dict['builtin'].lower() == 'true' else False
+            if self.builtin:
+                self._enable_default = True if info_dict['enable'].lower() == 'true' else False
+            else:
+                self._enable_default = True
+
             self.name = info_dict['name']
             self.description = info_dict['description']
             self.url = info_dict['url']
@@ -167,9 +175,10 @@ class ExtensionPackage:
             return user_config.get_section(self.ext_dirname)
         except:
             cfg_section = user_config.add_section(self.ext_dirname)
-            self.config.disabled = False
-            self.config.private_repo = False
+            self.config.disabled = not self._enable_default
+            self.config.private_repo = self.builtin
             self.config.username = self.config.password = ''
+            user_config.save_changes()
             return cfg_section
 
     def remove_pkg_config(self):
@@ -266,16 +275,19 @@ def get_ext_packages():
     Returns:
         list: list of registered plugin extensions (ExtensionPackage)
     """
+    global EXTENSION_PACKAGES
 
-    ext_pkgs = []
+    if EXTENSION_PACKAGES:
+        return EXTENSION_PACKAGES
+    else:
+        EXTENSION_PACKAGES = []
+        for ext_dir in user_config.get_ext_root_dirs():
+            ext_pkg_def_file_path = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
+            if op.exists(ext_pkg_def_file_path):
+                ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_def_file_path)
+                EXTENSION_PACKAGES.extend(ext_def_file.defined_ext_packages)
 
-    for ext_dir in user_config.get_ext_root_dirs():
-        ext_pkg_def_file_path = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
-        if op.exists(ext_pkg_def_file_path):
-            ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_def_file_path)
-            ext_pkgs.extend(ext_def_file.defined_ext_packages)
-
-    return ext_pkgs
+        return EXTENSION_PACKAGES
 
 
 def get_ext_package_by_name(ext_pkg_name):
@@ -301,9 +313,17 @@ def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
         bool: True if enabled, False if not
     """
     try:
-        pkg_config = user_config.get_section(ext_pkg_name + ext_pkg_type_postfix)
-        return not pkg_config.disabled
-    except:
+        ext_pkg = get_ext_package_by_name(ext_pkg_name)
+        if ext_pkg:
+            return not ext_pkg.config.disabled
+        else:
+            logger.debug('Extension package is not defined: {}.{}'.format(ext_pkg_name, ext_pkg_type_postfix))
+            # Lets be nice and load the package if it is not defined
+            return True
+    except Exception as ext_check_err:
+        logger.error('Error checking state for extension: {} of type: {} | {}'.format(ext_pkg_name,
+                                                                                      ext_pkg_type_postfix,
+                                                                                      ext_check_err))
         return True
 
 
