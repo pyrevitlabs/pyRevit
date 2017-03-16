@@ -155,6 +155,9 @@ class PyRevitConsoleWindow:
         from pyrevit.coreutils.console import markdown
         print(prepare_html_str(markdown.markdown(emojize(md_str))), end="")
 
+    def next_page(self):
+        self.print_html('<div style="page-break-after:always;"></div><div>&nbsp</div>')
+
     @staticmethod
     def linkify(*args):
         return prepare_html_str(rvtprotocol.make_url(args))
