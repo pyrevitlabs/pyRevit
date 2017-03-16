@@ -21,7 +21,9 @@ PI = pi
 HALF_PI = PI/2.0
 ZERO_TOL = 5e-06
 
-MAX_DOMAIN = 100.0
+MAX_MODEL_DOMAIN = 100.0
+MAX_DETAIL_DOMAIN = 10.0
+
 
 DOT_TYPES = ['Line Segment', u'\u2795', u'\u274C', u'Diamond \u25C7', u'\u25EF']
 
@@ -241,7 +243,7 @@ class _PatternSafeGrid:
 
 
 class _PatternDomain:
-    def __init__(self, start_u, start_v, end_u, end_v):
+    def __init__(self, start_u, start_v, end_u, end_v, model_pattern):
         self._origin = _PatternPoint(min(start_u, end_u), min(start_v, end_v))
         self._corner = _PatternPoint(max(start_u, end_u), max(start_v, end_v))
         self._domain = self._corner - self._origin
@@ -250,6 +252,11 @@ class _PatternDomain:
 
         self.u_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(self._domain.u, 0))
         self.v_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(0, self._domain.v))
+
+        if model_pattern:
+            self._max_domain = MAX_MODEL_DOMAIN
+        else:
+            self._max_domain = MAX_DETAIL_DOMAIN
 
         self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0), _PatternPoint(self._domain.u, self._domain.v))
 
@@ -277,8 +284,8 @@ class _PatternDomain:
 
         # traverse the tile space and add safe grids to the list
         processed_ratios = [1.0]
-        while self._domain.u * u_mult <= MAX_DOMAIN/2.0:
-            while self._domain.v * v_mult <= MAX_DOMAIN/2.0:
+        while self._domain.u * u_mult <= self._max_domain/2.0:
+            while self._domain.v * v_mult <= self._max_domain/2.0:
                 if float(v_mult)/float(u_mult) not in processed_ratios:
                     # for every tile, also add the mirrored tile
                     try:
@@ -464,7 +471,7 @@ def _create_fill_pattern(revit_pat, create_filledregion=False):
 
 
 def _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern=True, scale=1.0):
-    pat_domain = _PatternDomain(domain[0][0], domain[0][1], domain[1][0], domain[1][1])
+    pat_domain = _PatternDomain(domain[0][0], domain[0][1], domain[1][0], domain[1][1], model_pattern)
     logger.debug('New pattern domain: {}'.format(pat_domain))
 
     revit_pat = _RevitPattern(pat_domain, pat_name, model_pattern, scale)
