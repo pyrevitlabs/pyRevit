@@ -5,6 +5,8 @@ For example, as the git module grows, new tests will be added to the git test su
 of that module, although only a subset of functions are used during startup and normal operations of pyRevit.
 """
 import unittest
+import warnings
+warnings.filterwarnings("ignore")
 
 
 test_runner = unittest.TextTestRunner(verbosity=3, buffer=False)
