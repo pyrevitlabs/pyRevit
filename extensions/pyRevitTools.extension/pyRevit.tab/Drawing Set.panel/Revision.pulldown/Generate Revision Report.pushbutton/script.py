@@ -3,15 +3,15 @@
 from scriptutils import this_script
 from revitutils import doc, uidoc
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, WorksharingUtils, WorksharingTooltipInfo, \
-							  ElementId, ViewSheet
+from Autodesk.Revit.DB import FilteredElementCollector as Fec
+from Autodesk.Revit.DB import BuiltInCategory, WorksharingUtils, WorksharingTooltipInfo, ElementId, ViewSheet
 from Autodesk.Revit.UI import TaskDialog
 
-# collect data:
-revClouds = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
-sheetsnotsorted = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
-sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
-all_revisions = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
+# Collect sheet and revisions ------------------------------------------------------------------------------------------
+sheetsnotsorted = Fec(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+all_sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
+all_clouds = Fec(doc).OfCategory(BuiltInCategory.OST_RevisionClouds).WhereElementIsNotElementType()
+all_revisions = Fec(doc).OfCategory(BuiltInCategory.OST_Revisions).WhereElementIsNotElementType()
 
 
 console = this_script.output
@@ -28,7 +28,7 @@ console.add_style('table { border-collapse: collapse; width:100% }' \
 
 
 # Print Title and Report Info ------------------------------------------------------------------------------------------
-console.print_md('## {}'.format(report_title))
+console.print_md('# {}'.format(report_title))
 print('Project Name: {project}\nDate: {date}'.format(project=report_project, date=report_date))
 console.insert_divider()
 
@@ -46,5 +46,10 @@ for rev in all_revisions:
 
 # print revision table
 console.print_md(rev_table)
+
+
+# Print revision clouds per sheet
+for sheet in all_sheets:
+	console.print_md('** Sheet {}**'.format(sheet.SheetNumber))
 
 # console.save_contents(r'H:\report.html')
