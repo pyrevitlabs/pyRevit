@@ -6,6 +6,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import rvtprotocol
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils.console import charts
+from pyrevit.coreutils.console import markdown
 from pyrevit.coreutils.console.emoji import emojize
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
@@ -59,18 +60,24 @@ class PyRevitConsoleWindow:
     def self_destruct(self, seconds):
         self.__winhandle__.SelfDestructTimer(seconds*1000)
 
-    def inject_script(self, script_code, attribs=None):
-        script_element = self.__winhandle__.txtStdOut.Document.CreateElement("<script></script>")
-        if script_code:
-            script_element.InnerHtml = script_code
+    def inject_to_head(self, element_tag, element_contents, attribs=None):
+        html_element = self.__winhandle__.txtStdOut.Document.CreateElement(element_tag)
+        if element_contents:
+            html_element.InnerHtml = element_contents
 
         if attribs:
             for attribute, value in attribs.items():
-                script_element.SetAttribute(attribute, value)
+                html_element.SetAttribute(attribute, value)
 
         # inject the script into head
         head_el = self._get_head_element()
-        head_el.AppendChild(script_element)
+        head_el.AppendChild(html_element)
+
+    def inject_script(self, script_code, attribs=None):
+        self.inject_to_head("<script></script>", script_code, attribs=attribs)
+
+    def add_style(self, style_code, attribs=None):
+        self.inject_to_head("<style></style>", style_code, attribs=attribs)
 
     def get_head_html(self):
         return self._get_head_element().InnerHtml
@@ -152,8 +159,14 @@ class PyRevitConsoleWindow:
 
     @staticmethod
     def print_md(md_str):
-        from pyrevit.coreutils.console import markdown
-        print(prepare_html_str(markdown.markdown(emojize(md_str))), end="")
+        tables_ext = 'pyrevit.coreutils.console.markdown.extensions.tables'
+        markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
+        markdown_html = markdown_html.replace('\n', '').replace('\r', '')
+        html_code = emojize(prepare_html_str(markdown_html))
+        print(html_code, end="")
+
+    def insert_divider(self):
+        self.print_md('-----')
 
     def next_page(self):
         self.print_html('<div style="page-break-after:always;"></div><div>&nbsp</div>')
