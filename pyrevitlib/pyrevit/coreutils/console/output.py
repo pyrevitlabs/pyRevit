@@ -6,6 +6,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import rvtprotocol
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils.console import charts
+from pyrevit.coreutils.console.emoji import emojize
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
@@ -125,8 +126,12 @@ class PyRevitConsoleWindow:
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
     @staticmethod
+    def emojize(md_str):
+        print(emojize(md_str), end="")
+
+    @staticmethod
     def print_html(html_str):
-        print(prepare_html_str(html_str), end="")
+        print(prepare_html_str(emojize(html_str)), end="")
 
     @staticmethod
     def print_code(code_str):
@@ -148,7 +153,7 @@ class PyRevitConsoleWindow:
     @staticmethod
     def print_md(md_str):
         from pyrevit.coreutils.console import markdown
-        print(prepare_html_str(markdown.markdown(md_str)), end="")
+        print(prepare_html_str(markdown.markdown(emojize(md_str))), end="")
 
     @staticmethod
     def linkify(*args):
