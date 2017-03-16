@@ -1,13 +1,10 @@
-import unittest
+from unittest import TestCase
 from pyrevit.coreutils.console.output import output_window
 
 
-class TestConsoleWindow(unittest.TestCase):
+class TestConsoleWindow(TestCase):
     def setUp(self):
         self._console = output_window
-
-    def tearDown(self):
-        pass
 
     def test_progressbar(self):
         from time import sleep

@@ -4,12 +4,18 @@ This module is created to provide a platform to perform complete tests on differ
 For example, as the git module grows, new tests will be added to the git test suite to test the full functionality
 of that module, although only a subset of functions are used during startup and normal operations of pyRevit.
 """
-
-
 import unittest
-import pyrevit.unittests.consoletests
 
+
+test_runner = unittest.TextTestRunner(verbosity=3, buffer=False)
+test_loader = unittest.TestLoader()
+
+
+def _run_module_tests(test_module):
+    test_suite = test_loader.loadTestsFromModule(test_module)
+    test_result = test_runner.run(test_suite)
 
 def perform_tests():
-    testsuite = unittest.TestLoader().loadTestsFromModule(pyrevit.unittests.consoletests)
-    test_result = unittest.TextTestRunner(verbosity=3, buffer=False).run(testsuite)
+    # Perform console tests
+    import pyrevit.unittests.consoletests
+    _run_module_tests(pyrevit.unittests.consoletests)
