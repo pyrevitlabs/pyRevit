@@ -1,6 +1,7 @@
 # ignore everything in extension/ folder except for the native pyRevit.extension
 extensions/*
 !extensions/pyRevitCore.extension/
+!extensions/pyRevitDevTools.extension/
 !extensions/pyRevitTools.extension/
 !extensions/extensions.json
 !extensions/README.md
