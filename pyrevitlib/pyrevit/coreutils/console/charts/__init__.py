@@ -43,9 +43,11 @@ class PyRevitOutputChartDataset:
         self.data = []
         self.backgroundColor = ''
 
-    def set_color(self, r, g, b, a):
-        self.backgroundColor = 'rgba({},{},{},{})'.format(r, g, b, a)
-
+    def set_color(self, *args):
+        if len(args) == 4:
+            self.backgroundColor = 'rgba({},{},{},{})'.format(args[0], args[1], args[2], args[3])
+        elif len(args) == 1:
+            self.backgroundColor = '{}'.format(args[0])
 
 class PyRevitOutputChartData:
     def __init__(self):
@@ -62,6 +64,7 @@ class PyRevitOutputChart:
     def __init__(self, output, chart_type=LINE_CHART):
         self._output = output
         self._style = None
+        self._width = self._height = None
 
         self.type = chart_type
         self.data = PyRevitOutputChartData()
@@ -124,10 +127,16 @@ class PyRevitOutputChart:
         return 'chart{}'.format(timestamp())
 
     def _make_canvas_code(self, canvas_id):
+        attribs = ''
+        attribs += ' id="{}"'.format(canvas_id)
+        if self._width:
+            attribs += ' width="{}px"'.format(self._width)
+        if self._height:
+            attribs += ' height="{}px"'.format(self._height)
         if self._style:
-            return '<canvas id="{}" style="{}"></canvas>'.format(canvas_id, self._style)
-        else:
-            return '<canvas id="{}"></canvas>'.format(canvas_id)
+            return 'style="{}"'.format(style=self._style)
+
+        return '<canvas {}></canvas>'.format(attribs)
 
     def _make_charts_script(self, canvas_id):
         return SCRIPT_TEMPLATE.format(canvas_id, ChartsDataSetEncode().encode(self))
@@ -139,6 +148,12 @@ class PyRevitOutputChart:
         else:
             for dataset in self.data.datasets:
                 dataset.backgroundColor = random_rgba_color()
+
+    def set_width(self, width):
+        self._width = width
+
+    def set_height(self, height):
+        self._height = height
 
     def set_style(self, html_style):
         self._style = html_style
