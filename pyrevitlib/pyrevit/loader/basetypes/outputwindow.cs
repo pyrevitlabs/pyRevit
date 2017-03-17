@@ -35,6 +35,12 @@ namespace PyRevitBaseClasses
             // }
         }
 
+        public void LockSize()
+        {
+            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+        }
+
         public void ScrollToBottom()
         {
             if (txtStdOut.Document != null)

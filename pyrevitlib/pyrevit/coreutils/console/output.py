@@ -119,6 +119,9 @@ class PyRevitConsoleWindow:
     def show(self):
         self.__winhandle__.Show()
 
+    def lock_size(self):
+        self.__winhandle__.LockSize()
+
     def save_contents(self, dest_file):
         html = self.__winhandle__.txtStdOut.Document.Body.OuterHtml.encode('ascii', 'ignore')
         doc_txt = self.__winhandle__.txtStdOut.DocumentText
