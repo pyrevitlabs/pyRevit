@@ -21,8 +21,8 @@ PI = pi
 HALF_PI = PI/2.0
 ZERO_TOL = 5e-06
 
-MAX_MODEL_DOMAIN = 100.0
-MAX_DETAIL_DOMAIN = 10.0
+MAX_MODEL_DOMAIN = 100.0                    # 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
+MAX_DETAIL_DOMAIN = MAX_MODEL_DOMAIN/10.0   # 0.002 < DRAFTING < 84.85 inches
 
 
 DOT_TYPES = ['Line Segment', u'\u2795', u'\u274C', u'Diamond \u25C7', u'\u25EF']
