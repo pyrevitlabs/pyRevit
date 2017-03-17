@@ -1,4 +1,4 @@
-import pyrevit.coreutils.py2compat
+# import pyrevit.coreutils.py2compat
 
 from pyrevit import EXEC_PARAMS
 
