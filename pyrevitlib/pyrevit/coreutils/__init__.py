@@ -113,9 +113,9 @@ def get_parent_directory(path):
     return op.dirname(path)
 
 
-def join_strings(path_list):
+def join_strings(path_list, separator=';'):
     if path_list:
-        return ';'.join(path_list)
+        return separator.join(path_list)
     return ''
 
 
@@ -484,3 +484,8 @@ def current_time():
 
 def current_date():
     return datetime.datetime.now().strftime("%Y-%m-%d")
+
+def is_blank(input_string):
+    if input_string and input_string.strip():
+        return False
+    return True
