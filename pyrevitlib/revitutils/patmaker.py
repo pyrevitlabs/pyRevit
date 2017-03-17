@@ -2,7 +2,7 @@ import os.path as op
 from math import sqrt, pi, sin, cos, degrees
 
 from pyrevit import PyRevitException
-from pyrevit.coreutils import cleanup_filename
+from pyrevit.coreutils import cleanup_filename, current_time, current_date
 from pyrevit.coreutils.logger import get_logger
 from revitutils import doc
 from revitutils import typeutils
@@ -433,7 +433,10 @@ class _RevitPattern:
 
     def get_pat_data(self):
         pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
-        pattern_desc = PAT_FILE_TEMPLATE.format(time='0', date='0', version='0', name=self._name, type=pat_type)
+        from pyrevit.versionmgr import PYREVIT_VERSION
+        pattern_desc = PAT_FILE_TEMPLATE.format(time=current_time(), date=current_date(),
+                                                version=PYREVIT_VERSION.get_formatted(),
+                                                name=self._name, type=pat_type)
         for pat_grid in self._pattern_grids:
             grid_desc = PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
                                             str(pat_grid.origin.u * self._scale), str(pat_grid.origin.v * self._scale),
