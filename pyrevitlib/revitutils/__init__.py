@@ -29,10 +29,17 @@ class CurrentElementSelection:
         return len(self.elements) == 0
 
 
+class CurrentProject:
+    def __init__(self, document):
+        self._doc = document
+        self._info=self._doc.ProjectInformation
+        self.name = self._info.Name
+
 try:
     doc = HOST_APP.uiapp.ActiveUIDocument.Document
     uidoc = HOST_APP.uiapp.ActiveUIDocument
     all_docs = HOST_APP.uiapp.Application.Documents
     selection = CurrentElementSelection(doc, uidoc)
+    project = CurrentProject(doc)
 except Exception as ru_setup_err:
     logger.error('Error setting up revitutils | {}'.format(ru_setup_err))
