@@ -24,6 +24,7 @@ ZERO_TOL = 5e-06
 MAX_MODEL_DOMAIN = 100.0                    # 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
 MAX_DETAIL_DOMAIN = MAX_MODEL_DOMAIN/10.0   # 0.002 < DRAFTING < 84.85 inches
 
+RATIO_RESOLUTION = 2
 
 DOT_TYPES = ['Line Segment', u'\u2795', u'\u274C', u'Diamond \u25C7', u'\u25EF']
 
@@ -147,7 +148,6 @@ class _PatternSafeGrid:
                                        _PatternPoint(self._domain.u * u_tiles, self._domain.v * v_tiles))
         # now determine the parameters necessary to calculate span, offset, and shift
         self._determine_abstract_params(u_tiles, v_tiles)
-        self._verify_repeatability()
 
     def __eq__(self, other):
         return 0 <= self.grid_angle - other.grid_angle <= ZERO_TOL
@@ -180,7 +180,7 @@ class _PatternSafeGrid:
             self._domain_u = self._domain.v
             self._domain_v = self._domain.u
 
-    def _verify_repeatability(self):
+    def is_valid(self):
         return self.shift
 
     def __repr__(self):
@@ -219,7 +219,8 @@ class _PatternSafeGrid:
                         return grid_point
                 u_mult += 1
             if u_mult >= self._u_tiles:
-                raise PyRevitException('Can not determine next repeating grid.')
+                logger.debug('Can not determine next repeating grid.')
+                return None
 
         if self._u_tiles == self._v_tiles == 1:
             return abs(self._domain_u * cos(self._angle))
@@ -238,8 +239,11 @@ class _PatternSafeGrid:
             # try to find the next occurance on the abstract offset axis
             nxt_grid_point = find_nxt_grid_point(offset_axis)
 
-            total_shift = offset_axis.start_point.distance_to(nxt_grid_point)
-            return total_shift
+            if nxt_grid_point:
+                total_shift = offset_axis.start_point.distance_to(nxt_grid_point)
+                return total_shift
+            else:
+                return None
 
 
 class _PatternDomain:
@@ -283,18 +287,19 @@ class _PatternDomain:
         self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, 0, v_mult))
 
         # traverse the tile space and add safe grids to the list
-        processed_ratios = [1.0]
+        processed_ratios = set([1.0])
         while self._domain.u * u_mult <= self._max_domain/2.0:
             while self._domain.v * v_mult <= self._max_domain/2.0:
-                if float(v_mult)/float(u_mult) not in processed_ratios:
+                ratio = round(v_mult/float(u_mult), RATIO_RESOLUTION)
+                if  ratio not in processed_ratios:
                     # for every tile, also add the mirrored tile
-                    try:
-                        angle1 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult)
-                        angle2 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult, flipped=True)
+                    angle1 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult)
+                    angle2 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult, flipped=True)
+                    if angle1.is_valid() and angle2.is_valid():
                         self.safe_angles.append(angle1)
                         self.safe_angles.append(angle2)
-                        processed_ratios.append(float(v_mult)/float(u_mult))
-                    except PyRevitException:
+                        processed_ratios.add(ratio)
+                    else:
                         logger.warning('Skipping safe angle for grid point U:{} V:{}'.format(u_mult, v_mult))
                 v_mult += 1
             v_mult = 1
