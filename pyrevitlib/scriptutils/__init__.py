@@ -137,6 +137,8 @@ class PyRevitScriptUtils:
 # Utilities available to scripts
 # ----------------------------------------------------------------------------------------------------------------------
 # noinspection PyUnresolvedReferences
+import pyrevit.coreutils as coreutils
+# noinspection PyUnresolvedReferences
 from pyrevit.coreutils import show_file_in_explorer, open_url
 # noinspection PyUnresolvedReferences
 from pyrevit.coreutils.envvars import get_pyrevit_env_var, set_pyrevit_env_var
