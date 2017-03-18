@@ -16,6 +16,7 @@ all_revisions = Fec(doc).OfCategory(BuiltInCategory.OST_Revisions).WhereElementI
 
 
 console = this_script.output
+console.set_height(800)
 console.lock_size()
 
 report_title = 'Revision Report'
@@ -107,17 +108,20 @@ for sheet in all_sheets:
 
 # draw a revision chart
 chart = console.make_bar_chart()
-chart.options.scales = {'yAxes': [{'stacked': True, }]}
-chart.data.labels = [rs.sheet_number for rs in revised_sheets]
+chart.options.scales = {'type': 'linear',
+                        'yAxes': [{'stacked': True}],
+                        'xAxes': [{'ticks': {'minRotation': 90}}]}
+
+chart.data.labels = [rs.sheet_number for rs in revised_sheets if rs.cloud_count > 0]
 chart.set_height(100)
 
 cloudcount_dataset = chart.data.new_dataset('Revision Clouds per sheet')
 cloudcount_dataset.set_color('black')
-cloudcount_dataset.data = [rs.cloud_count for rs in revised_sheets]
+cloudcount_dataset.data = [rs.cloud_count for rs in revised_sheets if rs.cloud_count > 0]
 
 cloudcount_dataset = chart.data.new_dataset('Revision Numbers per sheet')
 cloudcount_dataset.set_color('red')
-cloudcount_dataset.data = [rs.rev_count for rs in revised_sheets]
+cloudcount_dataset.data = [rs.rev_count for rs in revised_sheets if rs.cloud_count > 0]
 
 chart.draw()
 
