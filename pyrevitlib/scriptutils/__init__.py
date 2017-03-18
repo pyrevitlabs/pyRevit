@@ -1,5 +1,3 @@
-# import pyrevit.coreutils.py2compat
-
 from pyrevit import EXEC_PARAMS
 
 try:
