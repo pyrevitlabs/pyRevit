@@ -13,7 +13,7 @@ class PyRevitVersion(object):
     patch = ''
 
     def __init__(self, patch_number):
-        self.patch = str(patch_number)[:7]
+        self.patch = unicode(patch_number)[:7]
 
     def as_int_tuple(self):
         """Returns version as an int tuple (major, minor, patch)"""
@@ -26,7 +26,7 @@ class PyRevitVersion(object):
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')"""
-        ver_tuple = (str(PyRevitVersion.major), str(PyRevitVersion.minor), self.patch)
+        ver_tuple = (unicode(PyRevitVersion.major), unicode(PyRevitVersion.minor), self.patch)
         return ver_tuple
 
     def get_formatted(self):

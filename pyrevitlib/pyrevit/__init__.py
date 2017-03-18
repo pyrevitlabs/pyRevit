@@ -119,8 +119,8 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in str(custom_attr.AttributeType):
-                    return str(custom_attr.ConstructorArguments[0]).replace('\"', '')
+                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
+                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
         except:
             raise AttributeError()
 
@@ -175,8 +175,8 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in str(custom_attr.AttributeType):
-                    return str(custom_attr.ConstructorArguments[0]).replace('\"', '')
+                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
+                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
         except:
             raise AttributeError()
 

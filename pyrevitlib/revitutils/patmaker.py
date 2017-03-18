@@ -428,10 +428,11 @@ class _RevitPattern:
         pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
         pattern_desc = PAT_FILE_TEMPLATE.format(time='0', date='0', version='0', name=self._name, type=pat_type)
         for pat_grid in self._pattern_grids:
-            grid_desc = PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
-                                            str(pat_grid.origin.u * self._scale), str(pat_grid.origin.v * self._scale),
-                                            str(pat_grid.shift * self._scale),
-                                            str(pat_grid.offset * self._scale)])
+            grid_desc = PAT_SEPARATOR.join([unicode(degrees(pat_grid.angle)),
+                                            unicode(pat_grid.origin.u * self._scale),
+                                            unicode(pat_grid.origin.v * self._scale),
+                                            unicode(pat_grid.shift * self._scale),
+                                            unicode(pat_grid.offset * self._scale)])
             grid_desc += PAT_SEPARATOR
             if pat_grid.segments:
                 scaled_segments = []
@@ -440,7 +441,7 @@ class _RevitPattern:
                         seg = seg * -1
                     scaled_segments.append(seg * self._scale)
 
-                grid_desc += PAT_SEPARATOR.join([str(seg_l) for seg_l in scaled_segments])
+                grid_desc += PAT_SEPARATOR.join([unicode(seg_l) for seg_l in scaled_segments])
 
             pattern_desc += grid_desc + '\n'
 

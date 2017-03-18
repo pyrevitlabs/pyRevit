@@ -47,7 +47,7 @@ class PyRevitConfigSectionParser(object):
             super(PyRevitConfigSectionParser, self).__setattr__(param_name, value)
         else:
             try:
-                return self._parser.set(self._section_name, param_name, str(value))
+                return self._parser.set(self._section_name, param_name, unicode(value))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. | {}'.format(set_err))
 

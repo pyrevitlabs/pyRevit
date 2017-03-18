@@ -171,7 +171,7 @@ class Extension(GenericUIContainer):
 
     @property
     def ext_hash_value(self):
-        return get_str_hash(str(self.get_cache_data()))
+        return get_str_hash(unicode(self.get_cache_data()))
 
     def _calculate_extension_dir_hash(self):
         """Creates a unique hash # to represent state of directory."""

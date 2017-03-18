@@ -72,10 +72,10 @@ class LoggerWrapper(logging.Logger):
         self._has_errors = (self._has_errors or level >= logging.ERROR)
 
         if not isinstance(msg, str):
-            msg_str = str(msg)
+            msg_str = unicode(msg)
         else:
             msg_str = msg
-        # get rid of unicode characters 
+        # get rid of unicode characters
         msg_str = msg_str.encode('ascii', 'ignore')
         msg_str = msg_str.replace(os.path.sep, '/')
         msg_str = emojize(msg_str)

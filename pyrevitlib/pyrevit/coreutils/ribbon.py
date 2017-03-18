@@ -212,7 +212,7 @@ class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
     def __init__(self, adskwnd_ribbon_button):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = str(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
+        self.name = unicode(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
         self._rvtapi_object = adskwnd_ribbon_button
 
 
