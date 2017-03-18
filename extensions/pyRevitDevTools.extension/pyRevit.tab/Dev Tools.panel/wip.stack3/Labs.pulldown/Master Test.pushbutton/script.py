@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import clr
 import sys
 import scriptutils as su
@@ -119,3 +120,23 @@ print('Has logger for this script reported errors? {}'.format(su.logger.has_erro
 
 from pyrevit.coreutils.logger import logger_has_errors
 print('Has any logger reported errors? {}'.format(logger_has_errors()))
+
+su.this_script.output.print_md('**Testing unicode:**')
+print id(str)
+print id(unicode)
+
+dstr = 'Ehsan is bad / \'\'\''
+ustr = '中國哲學書電子化計劃'
+ustr2 = 'A200•'
+
+print(isinstance(ustr, str))
+print(isinstance(ustr, unicode))
+
+print dstr.replace('Ehsan', 'sahar').replace('/', '').replace('\'', '\"')
+print dstr.split('is')
+print dstr.endswith('d')
+print 'is' in dstr
+print(unicode(ustr))
+print(str(ustr))
+print(unicode(ustr2))
+print(str(ustr2))
