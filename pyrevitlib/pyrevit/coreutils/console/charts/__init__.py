@@ -6,6 +6,9 @@ from pyrevit.coreutils import timestamp
 from pyrevit.coreutils.console.utils import random_rgba_color
 
 
+# CHARTS_ENGINE = 'Chart.js'
+CHARTS_ENGINE = 'Chart.bundle.js'
+
 # chart.js chart types
 LINE_CHART = 'line'
 BAR_CHART = 'bar'
@@ -16,7 +19,7 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-CHARTS_JS_PATH = op.join(MAIN_LIB_DIR, 'pyrevit', 'coreutils', 'console', 'charts', 'Chart.js')
+CHARTS_JS_PATH = op.join(MAIN_LIB_DIR, 'pyrevit', 'coreutils', 'console', 'charts', CHARTS_ENGINE)
 
 
 SCRIPT_TEMPLATE = "var ctx = document.getElementById('{}').getContext('2d');var chart = new Chart(ctx, {});"
