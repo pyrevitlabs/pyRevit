@@ -48,7 +48,7 @@ def _compile_dotnet(code_provider,
     compiler = code_provider.CompileAssemblyFromSource(compiler_params, Array[str](sourcecode_list))
 
     if compiler.Errors.HasErrors:
-        error_list = [str(err) for err in compiler.Errors.GetEnumerator()]
+        error_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
         raise PyRevitException("Compile error: {}".format(error_list))
 
     if full_output_file_addr is None:

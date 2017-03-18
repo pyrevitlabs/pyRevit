@@ -113,9 +113,9 @@ def get_parent_directory(path):
     return op.dirname(path)
 
 
-def join_strings(path_list):
+def join_strings(path_list, separator=';'):
     if path_list:
-        return ';'.join(path_list)
+        return separator.join(path_list)
     return ''
 
 
@@ -207,7 +207,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
     loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
-            if asm_info.lower() in str(loaded_assembly.GetName().Name).lower():
+            if asm_info.lower() in unicode(loaded_assembly.GetName().Name).lower():
                 loaded_asm_list.append(loaded_assembly)
         elif by_location:
             try:
@@ -215,7 +215,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
                     loaded_asm_list.append(loaded_assembly)
             except:
                 continue
-        elif asm_info.lower() == str(loaded_assembly.GetName().Name).lower():
+        elif asm_info.lower() == unicode(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
     return loaded_asm_list
@@ -259,7 +259,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
                 if re.search(file_filter, filename, flags=re.IGNORECASE):
                     modtime = op.getmtime(op.join(root, filename))
                     mtime_sum += modtime
-    return get_str_hash(str(mtime_sum))
+    return get_str_hash(unicode(mtime_sum))
 
 
 def prepare_html_str(input_string):
@@ -439,7 +439,7 @@ def _inc_or_dec_string(st, shift):
                 carry = shift
             else:
                 carry = 0
-            next_str += str(curr_digit)
+            next_str += unicode(curr_digit)
 
         else:
             next_str += st[index]

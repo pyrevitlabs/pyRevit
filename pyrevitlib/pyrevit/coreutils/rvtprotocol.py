@@ -56,7 +56,7 @@ class GenericProtocolCommand(object):
 
     @property
     def url_title(self):
-        title_str = str(self.get_elements())
+        title_str = unicode(self.get_elements())
         title_str = title_str.replace('[', '').replace(']', '')
         return title_str
 

@@ -6,6 +6,8 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import rvtprotocol
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils.console import charts
+from pyrevit.coreutils.console import markdown
+from pyrevit.coreutils.console.emoji import emojize
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
@@ -58,18 +60,24 @@ class PyRevitConsoleWindow:
     def self_destruct(self, seconds):
         self.__winhandle__.SelfDestructTimer(seconds*1000)
 
-    def inject_script(self, script_code, attribs=None):
-        script_element = self.__winhandle__.txtStdOut.Document.CreateElement("<script></script>")
-        if script_code:
-            script_element.InnerHtml = script_code
+    def inject_to_head(self, element_tag, element_contents, attribs=None):
+        html_element = self.__winhandle__.txtStdOut.Document.CreateElement(element_tag)
+        if element_contents:
+            html_element.InnerHtml = element_contents
 
         if attribs:
             for attribute, value in attribs.items():
-                script_element.SetAttribute(attribute, value)
+                html_element.SetAttribute(attribute, value)
 
         # inject the script into head
         head_el = self._get_head_element()
-        head_el.AppendChild(script_element)
+        head_el.AppendChild(html_element)
+
+    def inject_script(self, script_code, attribs=None):
+        self.inject_to_head("<script></script>", script_code, attribs=attribs)
+
+    def add_style(self, style_code, attribs=None):
+        self.inject_to_head("<style></style>", style_code, attribs=attribs)
 
     def get_head_html(self):
         return self._get_head_element().InnerHtml
@@ -111,6 +119,9 @@ class PyRevitConsoleWindow:
     def show(self):
         self.__winhandle__.Show()
 
+    def lock_size(self):
+        self.__winhandle__.LockSize()
+
     def save_contents(self, dest_file):
         html = self.__winhandle__.txtStdOut.Document.Body.OuterHtml.encode('ascii', 'ignore')
         doc_txt = self.__winhandle__.txtStdOut.DocumentText
@@ -125,8 +136,12 @@ class PyRevitConsoleWindow:
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
     @staticmethod
+    def emojize(md_str):
+        print(emojize(md_str), end="")
+
+    @staticmethod
     def print_html(html_str):
-        print(prepare_html_str(html_str), end="")
+        print(prepare_html_str(emojize(html_str)), end="")
 
     @staticmethod
     def print_code(code_str):
@@ -147,8 +162,17 @@ class PyRevitConsoleWindow:
 
     @staticmethod
     def print_md(md_str):
-        from pyrevit.coreutils.console import markdown
-        print(prepare_html_str(markdown.markdown(md_str)), end="")
+        tables_ext = 'pyrevit.coreutils.console.markdown.extensions.tables'
+        markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
+        markdown_html = markdown_html.replace('\n', '').replace('\r', '')
+        html_code = emojize(prepare_html_str(markdown_html))
+        print(html_code, end="")
+
+    def insert_divider(self):
+        self.print_md('-----')
+
+    def next_page(self):
+        self.print_html('<div style="page-break-after:always;"></div><div>&nbsp</div>')
 
     @staticmethod
     def linkify(*args):
@@ -159,6 +183,11 @@ class PyRevitConsoleWindow:
 
     def make_line_chart(self):
         return charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
+
+    def make_stacked_chart(self):
+        chart = charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
+        chart.options.scales = {'yAxes': [{'stacked': True, }]}
+        return chart
 
     def make_bar_chart(self):
         return charts.PyRevitOutputChart(self, chart_type=charts.BAR_CHART)

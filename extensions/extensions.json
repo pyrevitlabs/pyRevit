@@ -3,6 +3,20 @@
     [
         {
         "builtin": "True",
+        "enable": "False",
+        "type": "extension",
+        "name": "pyRevitDevTools",
+        "description": "Development Tools for pyRevit",
+        "author": "Ehsan Iran-Nejad",
+        "author-url": "https://keybase.io/ein",
+        "url": "https://github.com/eirannejad/pyRevit.git",
+        "website": "http://eirannejad.github.io/pyRevit/",
+        "image" : "",
+        "dependencies": []
+        },
+        {
+        "builtin": "True",
+        "enable": "True",
         "type": "extension",
         "name": "pyRevitTools",
         "description": "IronPython Scripts for Autodesk Revit",

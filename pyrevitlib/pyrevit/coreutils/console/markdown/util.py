@@ -16,7 +16,7 @@ if PY3:  # pragma: no cover
     int2str = chr
 else:  # pragma: no cover
     string_type = basestring   # noqa
-    text_type = unicode        # noqa
+    # text_type = unicode        # noqa
     int2str = unichr           # noqa
 
 
@@ -32,7 +32,7 @@ BLOCK_LEVEL_ELEMENTS = re.compile(
     "|hr|hr/|style|li|dt|dd|thead|tbody"
     "|tr|th|td|section|footer|header|group|figure"
     "|figcaption|aside|article|canvas|output"
-    "|progress|video|nav)$",
+    "|progress|video|nav|main)$",
     re.IGNORECASE
 )
 # Placeholders
@@ -117,7 +117,7 @@ MISC AUXILIARY CLASSES
 """
 
 
-class AtomicString(text_type):
+class AtomicString(unicode):
     """A string which should not be further processed."""
     pass
 
@@ -172,6 +172,6 @@ class HtmlStash(object):
         self.tag_data.append({'tag': tag, 'attrs': attrs,
                               'left_index': left_index,
                               'right_index': right_index})
-        placeholder = TAG_PLACEHOLDER % str(self.tag_counter)
+        placeholder = TAG_PLACEHOLDER % unicode(self.tag_counter)
         self.tag_counter += 1  # equal to the tag's index in self.tag_data
         return placeholder

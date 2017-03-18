@@ -1,37 +1,10 @@
 from pyrevit import HOST_APP
 from pyrevit.coreutils.logger import get_logger
 
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Selection import ObjectType
+from revitutils.selectutils import SelectionUtils
 
 
 logger = get_logger(__name__)
-
-
-class SelectionUtils:
-    def __init__(self, document, uidocument):
-        self._doc = document
-        self._uidoc = uidocument
-        self._uidoc_selection = self._uidoc.Selection
-
-    def pick_element(self, pick_message=''):
-        try:
-            return doc.GetElement(self._uidoc_selection.PickObject(ObjectType.Element, pick_message))
-        except:
-            return None
-
-    def pick_point(self, pick_message=''):
-        try:
-            return self._uidoc_selection.PickPoint(pick_message)
-        except:
-            return None
-
-    def replace_selection(self, el_id_list):
-        self._uidoc_selection.SetElementIds(List[ElementId](el_id_list))
 
 
 class CurrentElementSelection:
@@ -56,10 +29,17 @@ class CurrentElementSelection:
         return len(self.elements) == 0
 
 
+class CurrentProject:
+    def __init__(self, document):
+        self._doc = document
+        self._info=self._doc.ProjectInformation
+        self.name = self._info.Name
+
 try:
     doc = HOST_APP.uiapp.ActiveUIDocument.Document
     uidoc = HOST_APP.uiapp.ActiveUIDocument
     all_docs = HOST_APP.uiapp.Application.Documents
     selection = CurrentElementSelection(doc, uidoc)
+    project = CurrentProject(doc)
 except Exception as ru_setup_err:
     logger.error('Error setting up revitutils | {}'.format(ru_setup_err))

@@ -89,6 +89,19 @@ def _get_source_files():
     return source_files
 
 
+def _get_xaml_files():
+    xaml_files = list()
+    source_dir = op.dirname(__file__)
+    logger.debug('Xaml files location: {}'.format(source_dir))
+    for source_file in os.listdir(source_dir):
+        if op.splitext(source_file)[1].lower() == '.xaml':
+            logger.debug('Xaml file found: {}'.format(source_file))
+            xaml_files.append(op.join(source_dir, source_file))
+
+    logger.debug('Xaml files to be compiled: {}'.format(xaml_files))
+    return xaml_files
+
+
 def _get_resource_file(resource_name):
     return op.join(ADDIN_RESOURCE_DIR, resource_name)
 
@@ -151,10 +164,8 @@ def _generate_base_classes_asm():
     # now try to compile
     try:
         logger.debug('Compiling base types to: {}'.format(BASE_TYPES_ASM_FILE))
-        # compile_csharp(source_list, BASE_TYPES_ASM_FILE,
-        #                reference_list=_get_references(), resource_list=[_get_resource_file('python_27_lib.zip')])
         compile_csharp(source_list, BASE_TYPES_ASM_FILE,
-                       reference_list=_get_references())
+                       reference_list=_get_references(), resource_list=[])
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:

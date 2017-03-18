@@ -33,6 +33,9 @@ def get_test_chart(chart_type):
 
 def test1_chart(chart_type):
     chart = get_test_chart(chart_type)
+    # chart.options.scales = {'yAxes': [{'stacked': True}]}
+    # chart.set_height(100)
+
 
     chart.data.labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 

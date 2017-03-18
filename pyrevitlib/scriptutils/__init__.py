@@ -13,6 +13,7 @@ except:
 import warnings
 warnings.filterwarnings("ignore")
 
+
 import os.path as op
 from pyrevit.coreutils.logger import get_logger
 
@@ -133,6 +134,8 @@ class PyRevitScriptUtils:
 # ----------------------------------------------------------------------------------------------------------------------
 # Utilities available to scripts
 # ----------------------------------------------------------------------------------------------------------------------
+# noinspection PyUnresolvedReferences
+import pyrevit.coreutils as coreutils
 # noinspection PyUnresolvedReferences
 from pyrevit.coreutils import show_file_in_explorer, open_url
 # noinspection PyUnresolvedReferences

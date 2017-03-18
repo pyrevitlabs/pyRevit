@@ -103,7 +103,7 @@ def _make_pull_signature():
 
 
 def _process_git_error(exception_err):
-    exception_msg = str(exception_err)
+    exception_msg = unicode(exception_err)
     if '401' in exception_msg:
         raise PyRevitGitAuthenticationError(exception_msg)
     else:
@@ -128,7 +128,7 @@ def git_pull(repo_info):
     try:
         repo.Network.Pull(_make_pull_signature(), _make_pull_options(repo_info))
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = str(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
         return RepoInfo(repo)
 
@@ -142,7 +142,7 @@ def git_fetch(repo_info):
     try:
         repo.Network.Pull(_make_pull_signature(), _make_pull_options(repo_info))
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = str(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
         return RepoInfo(repo)
 
@@ -178,4 +178,4 @@ def compare_branch_heads(repo_info):
             except Exception as compare_err:
                 logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
                                                                                  repo,
-                                                                                 str(compare_err).replace('\n', '')))
+                                                                                 unicode(compare_err).replace('\n', '')))

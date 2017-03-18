@@ -37,7 +37,7 @@ def cleanup_repr_str(repr_str):
 def element_hash(rvt_element, include_type=False, diff_results=None):
 
     def param_hash(param):
-        repr_str = '{} {}'.format(str(param.Definition.Name).ljust(30), param.AsValueString())
+        repr_str = '{} {}'.format(unicode(param.Definition.Name).ljust(30), param.AsValueString())
         if diff_results:
             diff_results.processed_params.add(param.Definition.Name)
         return get_str_hash(cleanup_repr_str(repr_str))
