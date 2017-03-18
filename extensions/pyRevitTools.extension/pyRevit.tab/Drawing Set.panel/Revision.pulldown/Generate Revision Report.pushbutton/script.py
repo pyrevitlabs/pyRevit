@@ -140,5 +140,3 @@ for rev_sheet in revised_sheets:
             print('\t\tRevision comments:\n{}'.format('\n'.join(['\t\t{}'.format(cmt) for cmt in comments])))
 
         console.insert_divider()
-
-# console.save_contents(r'H:\report.html')
