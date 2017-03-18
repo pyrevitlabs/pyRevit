@@ -184,6 +184,11 @@ class PyRevitConsoleWindow:
     def make_line_chart(self):
         return charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
 
+    def make_stacked_chart(self):
+        chart = charts.PyRevitOutputChart(self, chart_type=charts.LINE_CHART)
+        chart.options.scales = {'yAxes': [{'stacked': True, }]}
+        return chart
+
     def make_bar_chart(self):
         return charts.PyRevitOutputChart(self, chart_type=charts.BAR_CHART)
 
