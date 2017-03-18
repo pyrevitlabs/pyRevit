@@ -479,8 +479,16 @@ def pairwise(iterable):
 def timestamp():
     return datetime.datetime.now().strftime("%m%j%H%M%S%f")
 
+
 def current_time():
     return datetime.datetime.now().strftime("%H:%M:%S")
 
+
 def current_date():
     return datetime.datetime.now().strftime("%Y-%m-%d")
+
+
+def is_blank(input_string):
+    if input_string and input_string.strip():
+        return False
+    return True

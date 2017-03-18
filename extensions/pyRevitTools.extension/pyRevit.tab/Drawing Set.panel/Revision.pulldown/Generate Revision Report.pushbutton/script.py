@@ -2,10 +2,13 @@
 """Generates a report from all revisions in current project."""
 
 from scriptutils import this_script, coreutils
-from revitutils import doc, uidoc, project
+from revitutils import doc, project
 
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector as Fec
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import BuiltInCategory, WorksharingUtils, WorksharingTooltipInfo, ElementId, ViewSheet
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog
 
 # Collect sheet and revisions ------------------------------------------------------------------------------------------
@@ -25,9 +28,9 @@ report_project = project.name
 
 
 # setup element styling ------------------------------------------------------------------------------------------------
-console.add_style('table { border-collapse: collapse; width:100% }' \
-                  'table, th, td { border-bottom: 1px solid #aaa; padding: 5px;}' \
-                  'th { background-color: #545454; color: white; }' \
+console.add_style('table { border-collapse: collapse; width:100% }'
+                  'table, th, td { border-bottom: 1px solid #aaa; padding: 5px;}'
+                  'th { background-color: #545454; color: white; }'
                   'tr:nth-child(odd) {background-color: #f2f2f2}')
 
 
@@ -90,12 +93,12 @@ class RevisedSheet:
         return self._clouds
 
     def get_comments(self):
-        comments = set()
+        all_comments = set()
         for cloud in self._clouds:
             comment = cloud.LookupParameter('Comments').AsString()
             if not coreutils.is_blank(comment):
-                comments.add(comment)
-        return comments
+                all_comments.add(comment)
+        return all_comments
 
     def get_revision_numbers(self):
         return self._rev_numbers
@@ -128,8 +131,8 @@ chart.draw()
 # print info on sheets
 for rev_sheet in revised_sheets:
     if rev_sheet.cloud_count > 0:
-        console.print_md('** Sheet {}: {}**\n\n' \
-                         'No. of Changes: {}\n\n' \
+        console.print_md('** Sheet {}: {}**\n\n'
+                         'No. of Changes: {}\n\n'
                          'Revision Numbers: {}'.format(rev_sheet.sheet_number,
                                                        rev_sheet.sheet_name,
                                                        rev_sheet.cloud_count,
