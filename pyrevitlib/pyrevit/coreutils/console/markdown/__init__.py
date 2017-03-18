@@ -356,7 +356,7 @@ class Markdown(object):
             return ''  # a blank unicode string
 
         try:
-            source = util.text_type(source)
+            source = unicode(source)
         except UnicodeDecodeError as e:
             # Customise error message while maintaining original trackback
             e.reason += '. -- Note: Markdown only accepts unicode input!'

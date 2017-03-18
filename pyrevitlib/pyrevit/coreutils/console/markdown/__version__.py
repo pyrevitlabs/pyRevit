@@ -22,9 +22,9 @@ def _get_version():
         sub = '.dev'
     elif version_info[3] != 'final':
         mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'c'}
-        sub = mapping[version_info[3]] + str(version_info[4])
+        sub = mapping[version_info[3]] + unicode(version_info[4])
 
-    return str(main + sub)
+    return unicode(main + sub)
 
 
 version = _get_version()

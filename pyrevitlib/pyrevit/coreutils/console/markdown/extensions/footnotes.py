@@ -317,7 +317,7 @@ class FootnotePattern(Pattern):
             if self.footnotes.md.output_format not in ['html5', 'xhtml5']:
                 a.set('rel', 'footnote')  # invalid in HTML5
             a.set('class', 'footnote-ref')
-            a.text = util.text_type(self.footnotes.footnotes.index(id) + 1)
+            a.text = unicode(self.footnotes.footnotes.index(id) + 1)
             return sup
         else:
             return None
