@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Generates a report from all revisions in current project."""
 
 from scriptutils import this_script, coreutils
@@ -110,11 +111,11 @@ chart.options.scales = {'yAxes': [{'stacked': True, }]}
 chart.data.labels = [rs.sheet_number for rs in revised_sheets]
 chart.set_height(100)
 
-cloudcount_dataset = chart.data.new_dataset('Changes per Sheet')
+cloudcount_dataset = chart.data.new_dataset('Revision Clouds per sheet')
 cloudcount_dataset.set_color('black')
 cloudcount_dataset.data = [rs.cloud_count for rs in revised_sheets]
 
-cloudcount_dataset = chart.data.new_dataset('Revisions per Sheet')
+cloudcount_dataset = chart.data.new_dataset('Revision Numbers per sheet')
 cloudcount_dataset.set_color('red')
 cloudcount_dataset.data = [rs.rev_count for rs in revised_sheets]
 
