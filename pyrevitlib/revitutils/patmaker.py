@@ -287,11 +287,11 @@ class _PatternDomain:
         self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, 0, v_mult))
 
         # traverse the tile space and add safe grids to the list
-        processed_ratios = set([1.0])
+        processed_ratios = {1.0}
         while self._domain.u * u_mult <= self._max_domain/2.0:
             while self._domain.v * v_mult <= self._max_domain/2.0:
                 ratio = round(v_mult/float(u_mult), RATIO_RESOLUTION)
-                if  ratio not in processed_ratios:
+                if ratio not in processed_ratios:
                     # for every tile, also add the mirrored tile
                     angle1 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult)
                     angle2 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult, flipped=True)
@@ -451,8 +451,8 @@ class _RevitPattern:
             if pat_grid.segments:
                 scaled_segments = []
                 for idx, seg in enumerate(pat_grid.segments):
-                    if idx%2 != 0:
-                        seg = seg * -1
+                    if idx % 2 != 0:
+                        seg *= -1
                     scaled_segments.append(seg * self._scale)
 
                 grid_desc += PAT_SEPARATOR.join([str(seg_l) for seg_l in scaled_segments])
