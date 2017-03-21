@@ -6,6 +6,8 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using System.Collections.Generic;
 using System.Windows.Input;
+using System.Threading.Tasks;
+
 
 namespace PyRevitBaseClasses
 {
@@ -15,20 +17,23 @@ namespace PyRevitBaseClasses
     {
         public string _scriptSource = "";
         public string _alternateScriptSource = "";
-        public string _syspaths;
-        public string _cmdName;
+        public string _syspaths = "";
+        public string _cmdName = "";
+        public string _pyRevitVersion = "";
         public bool _forcedDebugMode = false;
         public bool _altScriptMode = false;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
-                              string cmdName)
+                              string cmdName,
+                              string pyRevitVersion)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
             _cmdName = cmdName;
+            _pyRevitVersion = pyRevitVersion;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -66,19 +71,16 @@ namespace PyRevitBaseClasses
             // Execute script
             var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
 
+            // log usage
+            var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
+                                               _forcedDebugMode, _altScriptMode, result, _pyRevitVersion);
+            new Task(logger.LogUsage).Start();
 
             // Return results
-            switch (result)
-            {
-                case (int)Result.Succeeded:
-                    return Result.Succeeded;
-                case (int)Result.Cancelled:
-                    return Result.Cancelled;
-                case (int)Result.Failed:
-                    return Result.Failed;
-                default:
-                    return Result.Succeeded;
-            }
+            if (result == 0)
+                return Result.Succeeded;
+            else
+                return Result.Cancelled;
         }
     }
 

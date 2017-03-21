@@ -3,6 +3,8 @@ from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE, CMD_AVAIL_TYPE_SELECTION, CMD_AVAIL_TYPE_CATEGORY
 
+from pyrevit.versionmgr import PYREVIT_VERSION
+
 
 logger = get_logger(__name__)
 
@@ -44,7 +46,8 @@ def _make_python_types(module_builder, cmd_component):
                 cmd_component.get_full_script_address(),
                 cmd_component.get_full_config_script_address(),
                 join_strings(cmd_component.get_search_paths()),
-                cmd_component.name)
+                cmd_component.name,
+                PYREVIT_VERSION.get_formatted())
 
     logger.debug('Successfully created executor type for: {}'.format(cmd_component))
     cmd_component.class_name = cmd_component.unique_name
