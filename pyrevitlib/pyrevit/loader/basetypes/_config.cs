@@ -12,4 +12,13 @@ namespace PyRevitBaseClasses
         public static string progressbargraphstyle = "font-size:1pt;width:{0}%;height:8px;background:#b5d54b;border:0px;";
         public static string progressbargraphid = "graph";
     }
+
+    public static class ExecutionErrorCodes
+    {
+        public static int Succeeded = 0;
+        public static int SysExited = 1;
+        public static int ExecutionException = 2;
+        public static int CompileException = 3;
+        public static int UnknownException = 9;
+    }
 }

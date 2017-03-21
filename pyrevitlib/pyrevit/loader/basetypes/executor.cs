@@ -110,7 +110,7 @@ namespace PyRevitBaseClasses
                     outputStream.WriteError(string.Join("\n",
                                                         ExternalConfig.ipyerrtitle,
                                                         string.Join("\n", errors.Errors.ToArray())));
-                    return (int)Result.Cancelled;
+                    return ExecutionErrorCodes.CompileException;
                 }
 
 
@@ -119,12 +119,12 @@ namespace PyRevitBaseClasses
                 {
                     script.Execute(scope);
 
-                    return (int)Result.Succeeded;
+                    return ExecutionErrorCodes.Succeeded;
                 }
                 catch (SystemExitException)
                 {
                     // ok, so the system exited. That was bound to happen...
-                    return (int)Result.Succeeded;
+                    return ExecutionErrorCodes.SysExited;
                 }
                 catch (Exception exception)
                 {
@@ -141,13 +141,13 @@ namespace PyRevitBaseClasses
                     _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
                     outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
-                    return (int)Result.Cancelled;
+                    return ExecutionErrorCodes.ExecutionException;
                 }
 
             }
             catch (Exception ex)
             {
-                return (int)Result.Failed;
+                return ExecutionErrorCodes.UnknownException;
             }
         }
 
@@ -156,7 +156,7 @@ namespace PyRevitBaseClasses
         {
             var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
             {
-                { "Frames", true }, { "FullFrames", true }, {"LightweightScopes", true} 
+                { "Frames", true }, { "FullFrames", true }, {"LightweightScopes", true}
             });
             return engine;
         }
