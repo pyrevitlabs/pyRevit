@@ -9,6 +9,9 @@ from pyrevit.extensions.extensionmgr import get_installed_extension_data
 logger = get_logger(__name__)
 
 
+CORE_UPDATE_TRIGGER = 'COREUPDATE'
+
+
 def _get_extension_credentials(repo_info):
     try:
         repo_config = user_config.get_section(repo_info.name)
@@ -82,7 +85,7 @@ def update_pyrevit(repo_info):
         raise update_err
 
 
-def has_pending_updates(repo_info):
+def get_updates(repo_info):
     repo = repo_info.repo
     at_least_one_fetch_was_successful = False
 
@@ -101,8 +104,29 @@ def has_pending_updates(repo_info):
             continue
 
     if at_least_one_fetch_was_successful:
+            return True
+
+    return False
+
+
+def has_pending_updates(repo_info):
+    fetched = get_updates(repo_info)
+    if fetched:
         hist_div = git.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
+            return True
+
+
+def has_core_updates():
+    pyrevit_repo = get_pyrevit_repo()
+    fetched = get_updates(pyrevit_repo)
+    new_commits = git.get_all_new_commits(pyrevit_repo)
+
+    logger.debug('Checking new commits on pyrevit repo.')
+    for cmt_sha, cmt_msg in new_commits.items():
+        logger.debug('{}: {}'.format(cmt_sha, cmt_msg))
+        if CORE_UPDATE_TRIGGER in cmt_msg:
+            logger.debug('pyrevit repo has core update at {}: {}'.format(cmt_sha, cmt_msg))
             return True
 
     return False

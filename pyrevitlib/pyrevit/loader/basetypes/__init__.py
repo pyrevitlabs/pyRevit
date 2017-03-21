@@ -191,7 +191,6 @@ if not EXEC_PARAMS.doc_mode:
         # else, let's generate the assembly and load it
         BASE_TYPES_ASM = _get_base_classes_asm()
 
-
     CMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM, CMD_EXECUTOR_TYPE_NAME)
     CMD_AVAIL_TYPE = find_type_by_name(BASE_TYPES_ASM, CMD_AVAIL_TYPE_NAME)
     CMD_AVAIL_TYPE_CATEGORY = find_type_by_name(BASE_TYPES_ASM, CMD_AVAIL_TYPE_NAME_CATEGORY)

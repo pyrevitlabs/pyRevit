@@ -10,7 +10,8 @@ namespace pyRevitCoreUpdater
             var repo = new Repository(args[0]);
             PullOptions options = new PullOptions();
             options.FetchOptions = new FetchOptions();
-            Commands.Pull(repo, new Signature("pyRevitCoreUpdater", "eirannejad@gmail.com", new DateTimeOffset(DateTime.Now)), options);
+            var res = Commands.Pull(repo, new Signature("pyRevitCoreUpdater", "eirannejad@gmail.com", new DateTimeOffset(DateTime.Now)), options);
+            Console.WriteLine(String.Format("Result: {0}", res.Status.ToString()));
         }
     }
 }

@@ -11,6 +11,5 @@ C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCo
 C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.dll
 C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.pdb
 C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\LibGit2Sharp.xml
-C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.csprojResolveAssemblyReference.cache
 C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.exe
 C:\Users\eirannejad\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyRevitCoreUpdater\pyRevitCoreUpdater\obj\Release\pyRevitCoreUpdater.pdb

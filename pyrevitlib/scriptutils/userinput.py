@@ -19,7 +19,11 @@ from System.Windows import Window
 # noinspection PyUnresolvedReferences
 from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
 # noinspection PyUnresolvedReferences
+from System.Windows.Controls import SelectionMode
+# noinspection PyUnresolvedReferences
 from System.Windows.Media.Imaging import BitmapImage
+# noinspection PyUnresolvedReferences
+from System.IO import StringReader
 # noinspection PyUnresolvedReferences
 import wpf
 
@@ -28,13 +32,16 @@ logger = get_logger(__name__)
 
 
 class WPFWindow(Window):
-    def __init__(self, xaml_file):
+    def __init__(self, xaml_file, literal_string=False):
         self.Parent = self
-        if not op.exists(xaml_file):
-            # noinspection PyUnresolvedReferences
-            wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
+        if not literal_string:
+            if not op.exists(xaml_file):
+                # noinspection PyUnresolvedReferences
+                wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
+            else:
+                wpf.LoadComponent(self, xaml_file)
         else:
-            wpf.LoadComponent(self, xaml_file)
+            wpf.LoadComponent(self, StringReader(xaml_file))
 
     def set_image_source(self, element_name, image_file):
         wpf_element = getattr(self, element_name)
@@ -53,6 +60,40 @@ class WPFWindow(Window):
     def show_element(*wpf_elements):
         for wpf_element in wpf_elements:
             wpf_element.Visibility = System.Windows.Visibility.Visible
+
+
+class SelectFromList(WPFWindow):
+    layout = """
+    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            ShowInTaskbar="False" ResizeMode="NoResize"
+            WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+            <DockPanel Margin="10">
+                <Button Content="Select" Click="button_select" DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
+                <ListView x:Name="list_lb" />
+            </DockPanel>
+    </Window>
+    """
+    def __init__(self, option_list, title, width, height, multiselect):
+        WPFWindow.__init__(self, SelectFromList.layout, literal_string=True)
+        self.Title = title
+        self.Width = width
+        self.Height = height
+        self.list_lb.SelectionMode = SelectionMode.Extended if multiselect else SelectionMode.Single
+        self.list_lb.ItemsSource = option_list
+        self.selected = None
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def button_select(self, sender, args):
+        self.selected = self.list_lb.SelectedItems
+        self.Close()
+
+    @classmethod
+    def show(cls, option_list, title='Select from list', width=300, height=400, multiselect=True):
+        dlg = cls(option_list, title, width, height, multiselect)
+        dlg.ShowDialog()
+        return dlg.selected
 
 
 class CommandSwitchWindow:

@@ -334,7 +334,9 @@ def install(ext_pkg, install_dir, install_dependencies=True):
     of extension dependencies.
 
     Args:
+        ext_pkg (ExtensionPackage): Extension package to be installed
         install_dir (str): Parent directory that the extension should be installed in.
+        install_dependencies (bool): If true, this method will install the dependencies as well
 
     Raises:
         PyRevitException: on install error with error message

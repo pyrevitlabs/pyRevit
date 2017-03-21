@@ -52,6 +52,7 @@ class PyRevitOutputChartDataset:
         elif len(args) == 1:
             self.backgroundColor = '{}'.format(args[0])
 
+
 class PyRevitOutputChartData:
     def __init__(self):
         self.labels = ''
@@ -137,7 +138,7 @@ class PyRevitOutputChart:
         if self._height:
             attribs += ' height="{}px"'.format(self._height)
         if self._style:
-            return 'style="{}"'.format(style=self._style)
+            return 'style="{}"'.format(self._style)
 
         return '<canvas {}></canvas>'.format(attribs)
 
@@ -147,7 +148,7 @@ class PyRevitOutputChart:
     def randomize_colors(self):
         if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
             for dataset in self.data.datasets:
-                dataset.backgroundColor = [random_rgba_color() for x in range(0, len(dataset.data))]
+                dataset.backgroundColor = [random_rgba_color() for _ in range(0, len(dataset.data))]
         else:
             for dataset in self.data.datasets:
                 dataset.backgroundColor = random_rgba_color()

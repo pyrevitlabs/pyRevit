@@ -23,14 +23,14 @@ class SelectionUtils:
                 self._refs.append(self._uidoc_selection.PickObject(obj_type, pick_message))
 
             if obj_type == ObjectType.Element:
-                return [doc.GetElement(ref) for ref in self._refs]
+                return [self._doc.GetElement(ref) for ref in self._refs]
             elif obj_type == ObjectType.PointOnElement:
                 if world:
                     return [ref.GlobalPoint for ref in self._refs]
                 else:
                     return [ref.UVPoint for ref in self._refs]
             else:
-                return [doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in self._refs]
+                return [self._doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in self._refs]
         except:
             return None
 

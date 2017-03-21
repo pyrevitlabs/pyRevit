@@ -140,7 +140,7 @@ def git_pull(repo_info):
 def git_fetch(repo_info):
     repo = repo_info.repo
     try:
-        repo.Network.Pull(_make_pull_signature(), _make_pull_options(repo_info))
+        repo.Network.Fetch(repo.Head.TrackedBranch.Remote, _make_fetch_options(repo_info)) 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
         head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
@@ -179,3 +179,28 @@ def compare_branch_heads(repo_info):
                 logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
                                                                                  repo,
                                                                                  unicode(compare_err).replace('\n', '')))
+
+
+def get_all_new_commits(repo_info):
+    from collections import OrderedDict
+
+    repo = repo_info.repo
+    current_commit = repo_info.last_commit_hash
+    ref_commit = repo.Lookup(libgit.ObjectId(current_commit), libgit.ObjectType.Commit)
+
+    # Let's only consider the refs that lead to this commit...
+    refs = repo.Refs.ReachableFrom([ref_commit])
+
+    # ...and create a filter that will retrieve all the commits...
+    commit_filter = libgit.CommitFilter()
+    commit_filter.Since = refs
+    commit_filter.Until = ref_commit
+    commit_filter.SortBy = libgit.CommitSortStrategies.Time
+
+    commits = repo.Commits.QueryBy(commit_filter)
+    commitsdict = OrderedDict()
+    for c in commits:
+        if c in repo.Head.Commits or c in repo.Head.TrackedBranch.Commits:
+            commitsdict[c.Id.ToString()] = c.MessageShort
+
+    return commitsdict

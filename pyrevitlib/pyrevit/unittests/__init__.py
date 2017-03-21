@@ -15,7 +15,8 @@ test_loader = unittest.TestLoader()
 
 def _run_module_tests(test_module):
     test_suite = test_loader.loadTestsFromModule(test_module)
-    test_result = test_runner.run(test_suite)
+    return test_runner.run(test_suite)
+
 
 def perform_tests():
     # Perform console tests

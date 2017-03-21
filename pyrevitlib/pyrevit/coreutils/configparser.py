@@ -55,7 +55,7 @@ class PyRevitConfigSectionParser(object):
         try:
             return self.__getattr__(op_name)
         except Exception as opt_get_err:
-            if default_value != None:
+            if default_value is not None:
                 self.__setattr__(op_name, default_value)
                 return default_value
             else:
