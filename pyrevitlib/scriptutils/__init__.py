@@ -1,3 +1,4 @@
+import sys
 from pyrevit import EXEC_PARAMS
 
 try:
@@ -58,6 +59,10 @@ class PyRevitScriptUtils:
             return user_config.get_section(COMMAND_NAME + script_cfg_postfix)
         except:
             return user_config.add_section(COMMAND_NAME + script_cfg_postfix)
+
+    @staticmethod
+    def exit():
+        sys.exit()
 
     @staticmethod
     def save_config():
