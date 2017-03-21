@@ -11,11 +11,16 @@ import pyrevit.versionmgr.updater as updater
 import pyrevit.versionmgr.upgrade as upgrade
 from pyrevit.userconfig import user_config
 
-from scriptutils import logger
+from scriptutils import logger, this_script
 
 
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
+
+CORE_UPDATE_DIV = '<div style="background:#c7254e;color:white;padding:10px;margin:10px 0px 10px 0px">{}</div>'
+COREUPDATE_MESSAGE = 'pyRevit has a major core update. This update can not be applied when Revit is running.'    \
+                     'Please close all Revit instances, and run the tool listed below to update the repository.' \
+                     'Start Revit again after the update and pyRevit will load with the new core changes.'
 
 def _check_connection():
     logger.info('Checking internet connection...')
@@ -82,6 +87,7 @@ if __name__ == '__main__':
             logger.info('Reloading...')
             load_session()
         else:
-            logger.error('core updates')
+            this_script.output.print_html(CORE_UPDATE_DIV.format(COREUPDATE_MESSAGE))
+            logger.debug('core updates')
     else:
         logger.warning('No internet access detected. Skipping update.')
