@@ -2,6 +2,7 @@
 
 from time import sleep
 
+from pyrevit import HOME_DIR
 from pyrevit.coreutils import check_internet_connection
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.ribbon import ICON_LARGE
@@ -17,10 +18,14 @@ from scriptutils import logger, this_script
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
 
-CORE_UPDATE_DIV = '<div style="background:#c7254e;color:white;padding:10px;margin:10px 0px 10px 0px">{}</div>'
-COREUPDATE_MESSAGE = 'pyRevit has a major core update. This update can not be applied when Revit is running.'    \
-                     'Please close all Revit instances, and run the tool listed below to update the repository.' \
-                     'Start Revit again after the update and pyRevit will load with the new core changes.'
+COREUPDATE_MESSAGE = '<div style="background:#F7F3F2; color:#C64325; padding:20px; margin:10px 0px 10px 0px; ' \
+                                 'border: 2px solid #C64325; border-radius:10px;">' \
+                     ':warning_sign:\n\nIMPORTANT:\n' \
+                     'pyRevit has a major core update. This update <u>can not</u> be applied when Revit is running. ' \
+                     'Please close all Revit instances, and run the tool listed below to update the repository. ' \
+                     'Start Revit again after the update and pyRevit will load with the new core changes:\n\n' \
+                     '{home}\\release\\<strong>upgrade.bat</strong>' \
+                     '</div>'
 
 def _check_connection():
     logger.info('Checking internet connection...')
@@ -87,7 +92,7 @@ if __name__ == '__main__':
             logger.info('Reloading...')
             load_session()
         else:
-            this_script.output.print_html(CORE_UPDATE_DIV.format(COREUPDATE_MESSAGE))
-            logger.debug('core updates')
+            this_script.output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
+            logger.debug('Core updates. Skippin update and reload.')
     else:
         logger.warning('No internet access detected. Skipping update.')
