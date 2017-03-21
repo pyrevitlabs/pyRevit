@@ -12,3 +12,6 @@ REM Pull (fetch and merge) the remote head
 "%current%\release\pyRevitCoreUpdater\pyRevitCoreUpdater\bin\Release\pyRevitCoreUpdater.exe" "%current%"
 REM cd back to script folder
 cd /D %current%\release
+echo Successfully updated pyRevit core. You can close this window now.
+pause
+exit
