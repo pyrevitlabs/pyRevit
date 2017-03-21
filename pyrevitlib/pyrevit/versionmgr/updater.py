@@ -122,10 +122,11 @@ def has_core_updates():
     fetched = get_updates(pyrevit_repo)
     new_commits = git.get_all_new_commits(pyrevit_repo)
 
-    commit_messages = new_commits.values()
-
-    for commit_msg in commit_messages:
-        if CORE_UPDATE_TRIGGER in commit_msg:
+    logger.debug('Checking new commits on pyrevit repo.')
+    for cmt_sha, cmt_msg in new_commits.items():
+        logger.debug('{}: {}'.format(cmt_sha, cmt_msg))
+        if CORE_UPDATE_TRIGGER in cmt_msg:
+            logger.debug('pyrevit repo has core update at {}: {}'.format(cmt_sha, cmt_msg))
             return True
 
     return False
