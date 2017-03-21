@@ -59,7 +59,7 @@ namespace PyRevitBaseClasses
                    String.Format(", \"pyrevit\":\"{0}\"", _pyRevitVersion) +
                    String.Format(", \"debug\":\"{0}\"", _forcedDebugMode) +
                    String.Format(", \"alternate\":\"{0}\"", _altScriptMode) +
-                   String.Format(", \"name\":\"{0}\"", _cmdName) +
+                   String.Format(", \"commandname\":\"{0}\"", _cmdName) +
                    String.Format(", \"result\":\"{0}\"", _execResult) +
                    String.Format(", \"source\":\"{0}\"", _scriptSource.Replace("\\", "\\\\")) +
                    '}';
