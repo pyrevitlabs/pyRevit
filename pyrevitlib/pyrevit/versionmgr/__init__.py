@@ -1,5 +1,7 @@
+from pyrevit import PYREVIT_ADDON_NAME
 from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils.envvars import set_pyrevit_env_var
 import pyrevit.coreutils.git as git
 
 
@@ -47,6 +49,9 @@ if not EXEC_PARAMS.doc_mode:
     except Exception as ver_err:
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
         PYREVIT_VERSION = PyRevitVersion('?')
+
+    set_pyrevit_env_var(PYREVIT_ADDON_NAME + '_versionISC', PYREVIT_VERSION.get_formatted())
+
 else:
     PYREVIT_REPO = None
     PYREVIT_VERSION = None
