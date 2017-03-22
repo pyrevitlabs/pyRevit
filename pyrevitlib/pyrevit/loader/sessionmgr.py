@@ -25,8 +25,7 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
-from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE, \
-                                     BASE_TYPES_ASM_NAME
+from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
@@ -38,19 +37,15 @@ logger = get_logger(__name__)
 
 
 def _setup_output_window():
-    # import module with ScriptOutput and ScriptOutputStream types
-    # (base classes module)
-    clr.AddReference(BASE_TYPES_ASM)
-    base_module = __import__(LOADER_BASE_NAMESPACE)
-
+    from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
     # create output window and assign handle
-    out_window = base_module.ScriptOutput()
+    out_window = ScriptOutput()
     EXEC_PARAMS.window_handle = out_window
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = base_module.ScriptOutputStream(out_window)
+    outstr = ScriptOutputStream(out_window)
     sys.stdout = outstr
     sys.stderr = outstr
     stdout_hndlr.stream = outstr
@@ -75,8 +70,9 @@ def _report_env():
 
 def _perform_onsessionload_ops():
     # setup usage log file name
-    setup_usage_logfile()
-    
+    setup_usage_logfile(logfilepath=user_config.usagelogging.logfilepath,
+                        logserverurl=user_config.usagelogging.logserverurl)
+
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if FIRST_LOAD:
