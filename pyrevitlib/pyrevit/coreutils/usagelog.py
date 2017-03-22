@@ -26,13 +26,13 @@ class CommandCustomResults:
         pass
 
     def __getattr__(self, key):
-        if not isinstance(key, str):
+        if not isinstance(key, unicode):
             logger.error('Key must be of type string (str).')
         else:
-            return str(EXEC_PARAMS.result_dict[key])
+            return unicode(EXEC_PARAMS.result_dict[key])
 
     def __setattr__(self, key, value):
-        if not isinstance(key, str) or not isinstance(value, str):
+        if not isinstance(key, unicode) or not isinstance(value, unicode):
             logger.error('Both key and value must be of type string (str).')
         elif key in STANDARD_USAGE_LOG_PARAMS:
             logger.error('{} is a standard log param. Can not override this value.'.format(key))
