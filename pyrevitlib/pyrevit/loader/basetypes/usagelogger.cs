@@ -44,14 +44,6 @@ namespace PyRevitBaseClasses
             _resultDict = resultDict;
         }
 
-        public string MakeFileLogEntry()
-        {
-            return String.Format("{0}, {1}, {2}:{3}, {4}, {5}, {6}, {7}, {8}, {9}",
-                   DateTime.Now.ToString("yyyy/MM/dd@HH:mm:ss:ffff"),
-                   _username, _revitVerNum, _revitBuild, _pyRevitVersion,
-                   _forcedDebugMode, _altScriptMode, _cmdName, _execResult, _scriptSource);
-        }
-
         public string MakeJSONLogEntry()
         {
             // Create json package and add the standard log data
