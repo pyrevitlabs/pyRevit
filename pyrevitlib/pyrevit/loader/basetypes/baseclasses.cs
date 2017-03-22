@@ -19,21 +19,18 @@ namespace PyRevitBaseClasses
         public string _alternateScriptSource = "";
         public string _syspaths = "";
         public string _cmdName = "";
-        public string _pyRevitVersion = "";
         public bool _forcedDebugMode = false;
         public bool _altScriptMode = false;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
-                              string cmdName,
-                              string pyRevitVersion)
+                              string cmdName)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
             _cmdName = cmdName;
-            _pyRevitVersion = pyRevitVersion;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -71,18 +68,18 @@ namespace PyRevitBaseClasses
             // create result Dictionary
             var resultDict = new Dictionary<String, String>();
             // Execute script
-            var result = executor.ExecuteScript(_script, _syspaths, _cmdName,
+            var resultCode = executor.ExecuteScript(_script, _syspaths, _cmdName,
                                                 _forcedDebugMode, _altScriptMode,
                                                 ref resultDict);
 
             // log usage
             var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
-                                               _forcedDebugMode, _altScriptMode, result, _pyRevitVersion,
+                                               _forcedDebugMode, _altScriptMode, resultCode,
                                                ref resultDict);
             new Task(logger.LogUsage).Start();
 
             // Return results
-            if (result == 0)
+            if (resultCode == 0)
                 return Result.Succeeded;
             else
                 return Result.Cancelled;

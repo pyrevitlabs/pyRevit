@@ -46,8 +46,7 @@ def _make_python_types(module_builder, cmd_component):
                 cmd_component.get_full_script_address(),
                 cmd_component.get_full_config_script_address(),
                 join_strings(cmd_component.get_search_paths()),
-                cmd_component.name,
-                PYREVIT_VERSION.get_formatted())
+                cmd_component.name)
 
     logger.debug('Successfully created executor type for: {}'.format(cmd_component))
     cmd_component.class_name = cmd_component.unique_name
