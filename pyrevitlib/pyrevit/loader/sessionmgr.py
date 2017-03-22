@@ -17,6 +17,7 @@ from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
+from pyrevit.coreutils.usagelog import setup_usage_logfile
 
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
@@ -73,6 +74,9 @@ def _report_env():
 
 
 def _perform_onsessionload_ops():
+    # setup usage log file name
+    setup_usage_logfile()
+    
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if FIRST_LOAD:
