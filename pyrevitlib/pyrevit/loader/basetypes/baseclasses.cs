@@ -68,12 +68,17 @@ namespace PyRevitBaseClasses
             // Get script executor
             var executor = new ScriptExecutor(this, commandData, message, elements);
 
+            // create result Dictionary
+            var resultDict = new Dictionary<String, String>();
             // Execute script
-            var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
+            var result = executor.ExecuteScript(_script, _syspaths, _cmdName,
+                                                _forcedDebugMode, _altScriptMode,
+                                                ref resultDict);
 
             // log usage
             var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
-                                               _forcedDebugMode, _altScriptMode, result, _pyRevitVersion);
+                                               _forcedDebugMode, _altScriptMode, result, _pyRevitVersion,
+                                               ref resultDict);
             new Task(logger.LogUsage).Start();
 
             // Return results

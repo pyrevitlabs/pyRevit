@@ -192,6 +192,15 @@ class _ExecutorParams(object):
     def command_mode(self):
         return self.command_name
 
+    @property
+    def result_dict(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __result__
+        except:
+            return False
+
+
 EXEC_PARAMS = _ExecutorParams()
 
 # if no output window is set by the executor, it means that pyRevit is loading at Revit startup (not reloading)

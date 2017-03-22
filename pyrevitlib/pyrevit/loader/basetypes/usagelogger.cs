@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Net;
@@ -23,10 +24,12 @@ namespace PyRevitBaseClasses
         public bool _altScriptMode = false;
         public bool _forcedDebugMode = false;
         public int _execResult = 0;
+        public Dictionary<String, String> _resultDict;
 
         public ScriptUsageLogger(ExternalCommandData commandData,
                                  string cmdName, string scriptSource,
-                                 bool forcedDebugMode, bool altScriptMode, int execResult, string pyRevitVersion)
+                                 bool forcedDebugMode, bool altScriptMode, int execResult, string pyRevitVersion,
+                                 ref Dictionary<String, String> resultDict)
         {
             _cmdName = cmdName;
             _scriptSource = scriptSource;
@@ -38,6 +41,7 @@ namespace PyRevitBaseClasses
             _altScriptMode = altScriptMode;
             _execResult = execResult;
             _pyRevitVersion = pyRevitVersion;
+            _resultDict = resultDict;
         }
 
         public string MakeFileLogEntry()
@@ -50,7 +54,8 @@ namespace PyRevitBaseClasses
 
         public string MakeJSONLogEntry()
         {
-            return '{' +
+            // Create json package and add the standard log data
+            var json_log_pkg =  '{' +
                    String.Format("\"date\":\"{0}\"", DateTime.Now.ToString("yyyy/MM/dd")) +
                    String.Format(", \"time\":\"{0}\"", DateTime.Now.ToString("HH:mm:ss:ffff")) +
                    String.Format(", \"username\":\"{0}\"", _username) +
@@ -61,8 +66,18 @@ namespace PyRevitBaseClasses
                    String.Format(", \"alternate\":\"{0}\"", _altScriptMode) +
                    String.Format(", \"commandname\":\"{0}\"", _cmdName) +
                    String.Format(", \"result\":\"{0}\"", _execResult) +
-                   String.Format(", \"source\":\"{0}\"", _scriptSource.Replace("\\", "\\\\")) +
-                   '}';
+                   String.Format(", \"source\":\"{0}\"", _scriptSource.Replace("\\", "\\\\"));
+
+           foreach(KeyValuePair<string, string> entry in _resultDict)
+           {
+               // Add custom script data to log package
+               json_log_pkg += String.Format(", \"{0}\":\"{1}\"", entry.Key, entry.Value);
+           }
+
+           // Close the json package
+           json_log_pkg += '}';
+
+           return json_log_pkg;
         }
 
         public void PostUsageLogToServer(string serverUrl)
@@ -93,7 +108,7 @@ namespace PyRevitBaseClasses
 
         public void LogUsage()
         {
-            // PostUsageLogToServer(" ");
+            PostUsageLogToServer(" ");
         }
     }
 }

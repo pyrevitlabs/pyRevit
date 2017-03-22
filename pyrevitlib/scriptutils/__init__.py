@@ -25,7 +25,8 @@ scriptutils_logger.debug('Executing script: {} @ {}'.format(COMMAND_NAME, COMMAN
 
 class PyRevitScriptUtils:
     def __init__(self):
-        pass
+        from pyrevit.coreutils.usagelog import CommandCustomResults
+        self._custom_results = CommandCustomResults()
 
     @property
     def info(self):
@@ -78,6 +79,10 @@ class PyRevitScriptUtils:
             if button:
                 return button
         return None
+
+    @property
+    def results(self):
+        return self._custom_results
 
     @staticmethod
     def get_universal_data_file(file_id, file_ext):

@@ -49,7 +49,8 @@ namespace PyRevitBaseClasses
 
         /// Run the script and print the output to a new output window.
         public int ExecuteScript(string sourcePath, string syspaths, string cmdName,
-                                 bool forcedDebugMode, bool altScriptMode)
+                                 bool forcedDebugMode, bool altScriptMode,
+                                 ref Dictionary<String, String> resultDict)
         {
             try
             {
@@ -75,6 +76,9 @@ namespace PyRevitBaseClasses
                 var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
                 scriptOutput.Text = cmdName;            // Set output window title to command name
                 builtin.SetVariable("__window__", scriptOutput);
+
+                // add engine to builtins
+                builtin.SetVariable("__result__", resultDict);
 
                 // Create output stream
                 var outputStream = new ScriptOutputStream(scriptOutput);
