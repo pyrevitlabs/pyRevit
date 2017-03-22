@@ -8,6 +8,9 @@ from pyrevit.userconfig import user_config
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
+# noinspection PyUnresolvedReferences
+from System.Windows.Forms import Clipboard
+
 
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic '\
           'parameters here.\n\nShift-Click: Shows config file in explorer.'
@@ -97,6 +100,16 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def resetcache(self, sender, args):
         self.bincache_rb.IsChecked = True
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_envvar_value(self, sender, args):
+        Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_envvar_id(self, sender, args):
+        Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic

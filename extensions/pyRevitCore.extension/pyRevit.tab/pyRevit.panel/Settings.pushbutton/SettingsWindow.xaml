@@ -96,11 +96,28 @@
                                                                                   are available to scripts. They're used as global flags for setting
                                                                                   reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
                                                                                   These variables are accessible by scripts through scriptutils module.</TextBlock>
-                    <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="100">
+                    <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="150">
+                        <ListView.Resources>
+                            <ContextMenu x:Key="ItemContextMenu">
+                                <MenuItem x:Name="menuItem_CopyValue"
+                                         Click="copy_envvar_value"
+                                         Header="Copy Variable Value">
+                                </MenuItem>
+                                <MenuItem x:Name="menuItem_CopyId"
+                                         Click="copy_envvar_id"
+                                         Header="Copy Variable Name">
+                                </MenuItem>
+                            </ContextMenu>
+                        </ListView.Resources>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}">
+                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Variable Name" Width="410" DisplayMemberBinding="{Binding Id}"/>
-                                <GridViewColumn Header="Value" Width="100" DisplayMemberBinding="{Binding Value}"/>
+                                <GridViewColumn Header="Variable Name" Width="150" DisplayMemberBinding="{Binding Id}"/>
+                                <GridViewColumn Header="Value" DisplayMemberBinding="{Binding Value}"/>
                             </GridView>
                         </ListView.View>
                     </ListView>
