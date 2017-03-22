@@ -3,7 +3,7 @@
 import clr
 import os.path as op
 
-from scriptutils import logger, this_script
+from scriptutils import logger, this_script, coreutils
 from scriptutils.userinput import SelectFromList
 from revitutils import doc, selection
 
@@ -44,7 +44,12 @@ logger.debug('Existing symbols are: {}'.format(loaded_symbols))
 fam_doc = doc.EditFamily(fam_symbol)
 fam_doc_path = fam_doc.PathName
 if not op.exists(fam_doc_path):
-    TaskDialog.Show('pyRevit', 'Can not file original family file at\n{}'.format(fam_doc_path))
+    if coreutils.is_blank(fam_doc_path):
+        err_msg = 'This Revit family does not provide the original family file (.rfa) location.'
+    else:
+        err_msg = 'Can not file original family file at\n{}'.format(fam_doc_path)
+
+    TaskDialog.Show('pyRevit', err_msg)
     logger.debug('Can not file original family file at {}'.format(fam_doc_path))
     this_script.exit()
 else:
