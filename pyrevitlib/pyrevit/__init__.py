@@ -114,15 +114,15 @@ class _ExecutorParams(object):
         except:
             raise AttributeError()
 
-    @property   # read-only
-    def executor_version(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
-                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
-        except:
-            raise AttributeError()
+    # @property   # read-only
+    # def executor_version(self):
+    #     try:
+    #         # noinspection PyUnresolvedReferences
+    #         for custom_attr in __assmcustomattrs__:
+    #             if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
+    #                 return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
+    #     except:
+    #         raise AttributeError()
 
     @property   # read-only
     def forced_debug_mode(self):
@@ -169,16 +169,6 @@ class _ExecutorParams(object):
     def command_path(self, value):
         # noinspection PyUnusedLocal
         __builtin__.__commandpath__ = value
-
-    @property   # read-only
-    def executor_version(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
-                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
-        except:
-            raise AttributeError()
 
     @property
     def doc_mode(self):
