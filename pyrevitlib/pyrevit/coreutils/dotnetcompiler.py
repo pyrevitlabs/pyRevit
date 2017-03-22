@@ -15,13 +15,13 @@ logger = get_logger(__name__)
 
 
 def _compile_dotnet(code_provider,
-                    sourcecode_list,
+                    sourcefiles_list,
                     full_output_file_addr=None,
                     reference_list=None,
                     resource_list=None,
                     ):
 
-    logger.debug('Compiling source sourcecode_list to: {}'.format(full_output_file_addr))
+    logger.debug('Compiling source files to: {}'.format(full_output_file_addr))
     logger.debug('References assemblies are: {}'.format(reference_list))
 
     compiler_params = Compiler.CompilerParameters()
@@ -44,8 +44,8 @@ def _compile_dotnet(code_provider,
         logger.debug('Adding resource to compiler: {}'.format(resource))
         compiler_params.EmbeddedResources.Add(resource)
 
-    logger.debug('Compiling source sourcecode_list.')
-    compiler = code_provider.CompileAssemblyFromSource(compiler_params, Array[str](sourcecode_list))
+    logger.debug('Compiling source files.')
+    compiler = code_provider.CompileAssemblyFromFile(compiler_params, Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
         error_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
@@ -59,7 +59,8 @@ def _compile_dotnet(code_provider,
         return compiler.PathToAssembly
 
 
-def compile_csharp(sourcecode_list, full_output_file_addr=None, reference_list=None, resource_list=None):
-    logger.debug('Getting sourcecode_list provider.')
+def compile_csharp(sourcefiles_list, full_output_file_addr=None, reference_list=None, resource_list=None):
+    logger.debug('Getting csharp provider.')
+    cleanedup_source_list = [src.replace('\\','\\\\') for src in sourcefiles_list]
     provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
-    return _compile_dotnet(provider, sourcecode_list, full_output_file_addr, reference_list, resource_list)
+    return _compile_dotnet(provider, cleanedup_source_list, full_output_file_addr, reference_list, resource_list)

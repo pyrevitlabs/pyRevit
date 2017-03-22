@@ -25,7 +25,8 @@ def _get_csharp_cmd_asm(cmd_component):
     Returns:
 
     """
-    source = read_source_file(cmd_component.get_full_script_address())
+    script_path = cmd_component.get_full_script_address()
+    source = read_source_file(script_path)
     script_hash = get_str_hash(source)[:HASH_CUTOFF_LENGTH]
 
     command_assm_file_id = '{}_{}'.format(script_hash, cmd_component.unique_name)
@@ -43,7 +44,7 @@ def _get_csharp_cmd_asm(cmd_component):
     # else, let's compile the script and make the types
     command_assm_file = appdata.get_data_file(file_id=command_assm_file_id, file_ext=ASSEMBLY_FILE_TYPE)
     logger.debug('Compiling script {} to {}'.format(cmd_component, command_assm_file))
-    compiled_assm_path = compile_csharp([source], command_assm_file, reference_list=_get_references())
+    compiled_assm_path = compile_csharp([script_path], command_assm_file, reference_list=_get_references())
     return load_asm_file(compiled_assm_path)
 
 

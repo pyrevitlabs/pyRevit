@@ -247,10 +247,10 @@ namespace PyRevitBaseClasses
     }
 
     // Custom attribute to carry the pyrevit version that compiles this assembly
-    [AttributeUsage(AttributeTargets.Assembly)]
-    public class AssemblyPyRevitVersion : Attribute {
-        string pyrevit_ver;
-        public AssemblyPyRevitVersion() : this(string.Empty) {}
-        public AssemblyPyRevitVersion(string txt) { pyrevit_ver = txt; }
-    }
+    // [AttributeUsage(AttributeTargets.Assembly)]
+    // public class AssemblyPyRevitVersion : Attribute {
+    //     string pyrevit_ver;
+    //     public AssemblyPyRevitVersion() : this(string.Empty) {}
+    //     public AssemblyPyRevitVersion(string txt) { pyrevit_ver = txt; }
+    // }
 }

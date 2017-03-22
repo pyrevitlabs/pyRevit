@@ -149,7 +149,7 @@ def _get_reference_file(ref_name):
 def _get_references():
     ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'System', 'System.Core', 'System.Drawing', 'System.Windows.Forms',
+                'System', 'System.Core', 'System.Drawing', 'System.Windows.Forms', 'System.Web.Extensions',
                 'PresentationCore', 'PresentationFramework', 'WindowsBase']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
@@ -157,9 +157,10 @@ def _get_references():
 
 def _generate_base_classes_asm():
     source_list = list()
-    source_list.append(_get_asm_attr_source())
+    # source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
-        source_list.append(read_source_file(source_file))
+        # source_list.append(read_source_file(source_file))
+        source_list.append(source_file)
 
     # now try to compile
     try:
@@ -169,7 +170,8 @@ def _generate_base_classes_asm():
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
-        logger.critical('Can not compile base types code into assembly. | {}'.format(compile_err))
+        errors = '\n'.join(eval(unicode(compile_err).replace('Compile error: ', '')))
+        logger.critical('Can not compile base types code into assembly.\n{}'.format(errors))
         raise compile_err
 
 
