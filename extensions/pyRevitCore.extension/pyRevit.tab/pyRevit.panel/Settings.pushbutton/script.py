@@ -63,6 +63,9 @@ class SettingsWindow(WPFWindow):
                 self.Id = var_id
                 self.Value = value
 
+            def __repr__(self):
+                return '<EnvVariable Name: {} Value: {}>'.format(self.Id, self.Value)
+
         env_vars_list = [EnvVariable(k, v) for k, v in get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
