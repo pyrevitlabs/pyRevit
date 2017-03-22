@@ -8,7 +8,7 @@ from revitutils import doc
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, TransactionGroup, FilteredElementCollector, \
-                              BuiltInCategory, Element, ViewSheet
+                              BuiltInCategory, Element, ElementId, ViewSheet
 
 
 class BatchSheetMakerWindow(WPFWindow):
@@ -34,14 +34,18 @@ class BatchSheetMakerWindow(WPFWindow):
         return True
 
     def _ask_for_titleblock(self):
+        no_tb_option = 'No Title Block'
         titleblocks = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_TitleBlocks) \
                                                    .WhereElementIsElementType().ToElements()
         tblock_dict = {Element.Name.GetValue(tb):tb for tb in titleblocks}
-        # for tb in titleblocks:
-        #     print(tb)
-        selected_titleblocks = SelectFromList.show(tblock_dict.keys(), multiselect=False)
+        options = [no_tb_option]
+        options.extend(tblock_dict.keys())
+        selected_titleblocks = SelectFromList.show(options, multiselect=False)
         if selected_titleblocks:
-            self._titleblock_id = tblock_dict[selected_titleblocks[0]].Id
+            if no_tb_option not in selected_titleblocks:
+                self._titleblock_id = tblock_dict[selected_titleblocks[0]].Id
+            else:
+                self._titleblock_id = ElementId.InvalidElementId
             return True
 
         return False
@@ -86,12 +90,14 @@ class BatchSheetMakerWindow(WPFWindow):
 
             if self.sheet_cb.IsChecked:
                 create_func = self._create_sheet
+                transaction_msg = 'Batch Create Sheets'
                 if not self._ask_for_titleblock():
                     this_script.exit()
             else:
                 create_func = self._create_placeholder
+                transaction_msg = 'Batch Create Placeholders'
 
-            with TransactionGroup(doc, 'Batch Create Sheets') as tg:
+            with TransactionGroup(doc, transaction_msg) as tg:
                 tg.Start()
 
                 for sheet_num, sheet_name in self._sheet_dict.items():
