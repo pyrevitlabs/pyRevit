@@ -48,7 +48,7 @@ class PyRevitConfig(PyRevitConfigParser):
 
             set_file_logging(self.core.filelogging)
         except Exception as env_update_err:
-            logger.error('Error updating env variable per user config. | {}'.format(env_update_err))
+            logger.debug('Error updating env variable per user config. | {}'.format(env_update_err))
 
     def get_ext_root_dirs(self):
         """
@@ -111,8 +111,9 @@ def _set_hardcoded_config_values(parser):
     parser.core.checkupdates = False
     parser.core.verbose = True
     parser.core.debug = False
-    parser.core.filelogging = False
-    parser.core.userextensions = '[]'
+    parser.core.filelogging = True
+    parser.core.startuplogtimeout = 10
+    parser.core.userextensions = []
     parser.core.compilecsharp = True
     parser.core.compilevb = True
     parser.core.loadbeta = False
@@ -137,7 +138,7 @@ def _get_default_config_parser(config_file_path):
         parser = PyRevitConfig(cfg_file_path=config_file_path)
     except Exception as read_err:
         # can not create default user config file under appdata folder
-        logger.error('Can not create config file under: {} | {}'.format(config_file_path, read_err))
+        logger.debug('Can not create config file under: {} | {}'.format(config_file_path, read_err))
         parser = PyRevitConfig()
 
     # set hard-coded values
