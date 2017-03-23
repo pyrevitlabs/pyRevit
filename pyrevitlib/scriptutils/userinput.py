@@ -68,7 +68,19 @@ class SelectFromList(WPFWindow):
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             ShowInTaskbar="False" ResizeMode="NoResize"
             WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+            <Window.Resources>
+                <Style x:Key="ClearButton" TargetType="Button">
+                    <Setter Property="Background" Value="White"/>
+                </Style>
+            </Window.Resources>
             <DockPanel Margin="10">
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <TextBlock FontSize="14" Margin="0,3,10,0">Filter:</TextBlock>
+                    <TextBox x:Name="search_tb" Width="220px" Height="25px" TextChanged="search_txt_changed"/>
+                    <Button Style="{StaticResource ClearButton}"
+                            x:Name="clrsearch_b" Content="x" Margin="-25,0,0,0" Padding="0,-4,0,0"
+                            Click="clear_search" Width="15px" Height="15px"/>
+                </WrapPanel>
                 <Button Content="Select" Click="button_select" DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
                 <ListView x:Name="list_lb" />
             </DockPanel>
@@ -79,15 +91,50 @@ class SelectFromList(WPFWindow):
         self.Title = title
         self.Width = width
         self.Height = height
+
+        self._option_list = option_list
+
+        self.hide_element(self.clrsearch_b)
+        self.clear_search(None, None)
+        self.search_tb.Focus()
+
         self.list_lb.SelectionMode = SelectionMode.Extended if multiselect else SelectionMode.Single
-        self.list_lb.ItemsSource = option_list
+        self._list_options()
         self.selected = None
+
+    def _list_options(self, option_filter=None):
+        if option_filter:
+            option_filter = option_filter.lower()
+            self.list_lb.ItemsSource = [str(option) for option in self._option_list
+                                                    if option_filter in str(option).lower()]
+        else:
+            self.list_lb.ItemsSource = [str(option) for option in self._option_list]
+
+    def _get_options(self):
+        return [option for option in self._option_list if str(option) in self.list_lb.SelectedItems]
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def button_select(self, sender, args):
-        self.selected = self.list_lb.SelectedItems
+        self.selected = self._get_options()
         self.Close()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def search_txt_changed(self, sender, args):
+        if self.search_tb.Text == '':
+            self.hide_element(self.clrsearch_b)
+        else:
+            self.show_element(self.clrsearch_b)
+
+        self._list_options(option_filter=self.search_tb.Text)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def clear_search(self, sender, args):
+        self.search_tb.Text = ' '
+        self.search_tb.Clear()
+        self.list_lb.ItemsSource = self._option_list
 
     @classmethod
     def show(cls, option_list, title='Select from list', width=300, height=400, multiselect=True):
