@@ -39,6 +39,9 @@ class CommandCustomResults:
 
 
 def setup_usage_logfile():
+    if not user_config.has_section('usagelogging'):
+        user_config.add_section('usagelogging')
+    
     usageloggingactive = user_config.usagelogging.get_option('active', default_value=False)
     set_pyrevit_env_var(USAGELOGSTATE_ISC_NAME, usageloggingactive)
 
