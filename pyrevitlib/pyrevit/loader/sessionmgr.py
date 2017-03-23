@@ -25,6 +25,7 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
+# import the basetypes first to get all the c-sharp code to compile
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
@@ -155,7 +156,7 @@ def load_session():
     # if everything went well, self destruct
     try:
         from pyrevit.coreutils.console.output import output_window
-        timeout = user_config.core.get_option('startuplogtimeout', default_value=5)
+        timeout = user_config.core.startuplogtimeout
         if timeout > 0 and not logger_has_errors():
             output_window.self_destruct(timeout)
     except Exception as imp_err:
