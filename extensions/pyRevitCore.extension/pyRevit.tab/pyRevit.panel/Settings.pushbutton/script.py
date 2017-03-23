@@ -1,8 +1,9 @@
 import os
 
 from pyrevit import HOST_APP
-from pyrevit.coreutils import filter_null_items
+from pyrevit.coreutils import filter_null_items, is_url_valid
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
+from pyrevit.coreutils.usagelog import setup_usage_logfile
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
 from scriptutils import logger, show_file_in_explorer
@@ -30,6 +31,7 @@ class SettingsWindow(WPFWindow):
                                        '2016': self.revit2016_cb,
                                        '2017': self.revit2017_cb}
 
+        self._setup_usagelogging()
         self._setup_addinfiles()
 
     def _setup_core_options(self):
@@ -70,6 +72,11 @@ class SettingsWindow(WPFWindow):
 
         self.envvars_lb.ItemsSource = env_vars_list
 
+    def _setup_usagelogging(self):
+        self.usagelogging_cb.IsChecked = user_config.usagelogging.get_option('active', default_value=False)
+        self.usagelogfile_tb.Text = user_config.usagelogging.get_option('logfilepath', default_value='')
+        self.usagelogserver_tb.Text = user_config.usagelogging.get_option('logserverurl', default_value='')
+
     def _setup_addinfiles(self):
         addinfiles_states = get_addinfiles_state()
 
@@ -85,6 +92,9 @@ class SettingsWindow(WPFWindow):
             else:
                 checkbox.Content = 'Revit {} (Not installed)'.format(rvt_ver)
                 checkbox.IsChecked = checkbox.IsEnabled = False
+
+    def update_usagelogging(self):
+        setup_usage_logfile()
 
     def update_addinfiles(self):
         new_states = {rvt_ver: checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
@@ -166,8 +176,13 @@ class SettingsWindow(WPFWindow):
         else:
             user_config.core.userextensions = []
 
+        user_config.usagelogging.active = self.usagelogging_cb.IsChecked
+        user_config.usagelogging.logfilepath = self.usagelogfile_tb.Text
+        user_config.usagelogging.logserverurl = self.usagelogserver_tb.Text
+
         user_config.save_changes()
 
+        self.update_usagelogging()
         self.update_addinfiles()
         self.Close()
 
