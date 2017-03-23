@@ -70,8 +70,7 @@ def _report_env():
 
 def _perform_onsessionload_ops():
     # setup usage log file name
-    setup_usage_logfile(logfilepath=user_config.usagelogging.logfilepath,
-                        logserverurl=user_config.usagelogging.logserverurl)
+    setup_usage_logfile()
 
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
