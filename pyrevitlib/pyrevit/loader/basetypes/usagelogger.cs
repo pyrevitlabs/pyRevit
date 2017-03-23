@@ -17,27 +17,29 @@ namespace PyRevitBaseClasses
 {
     public class LogEntry
     {
-        public string date;
-        public string time;
-        public string username;
-        public string revit;
-        public string revitbuild;
-        public int sessionid;
-        public string pyrevit;
-        public bool debug;
-        public bool alternate;
-        public string commandname;
-        public int resultcode;
-        public Dictionary<String, String> commandresults;
-        public string scriptpath;
+        public string date { get; set; }
+        public string time { get; set; }
+        public string username { get; set; }
+        public string revit { get; set; }
+        public string revitbuild { get; set; }
+        public int sessionid { get; set; }
+        public string pyrevit { get; set; }
+        public bool debug { get; set; }
+        public bool alternate { get; set; }
+        public string commandname { get; set; }
+        public int resultcode { get; set; }
+        public Dictionary<String, String> commandresults { get; set; }
+        public string scriptpath { get; set; }
+
+        public LogEntry() {
+
+        }
 
         public LogEntry(string revitUsername, string revitVersion, string revitBuild, int revitProcessId,
                         string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, int executorResultCode, ref Dictionary<String, String> resultDict,
                         string pyRevitCommandPath)
         {
-            // date = logDate;
-            // time = logTime;
             username = revitUsername;
             revit = revitVersion;
             revitbuild = revitBuild;
@@ -50,7 +52,14 @@ namespace PyRevitBaseClasses
             commandresults = resultDict;
             scriptpath = pyRevitCommandPath;
         }
+
+        public void TimeStamp()
+        {
+            date = DateTime.Now.ToString("yyyy/MM/dd");
+            time = DateTime.Now.ToString("HH:mm:ss:ffff");
+        }
     }
+
 
     public class ScriptUsageLogger
     {
@@ -75,15 +84,13 @@ namespace PyRevitBaseClasses
                                   _revit.Application.VersionNumber, _revit.Application.VersionBuild,
                                   Process.GetCurrentProcess().Id, envdict.GetPyRevitVersion(),
                                   forcedDebugMode, altScriptMode, cmdName, execResult, ref resultDict,
-                                  scriptSource.Replace("\\", "\\\\"));
+                                  scriptSource);
         }
 
         public string MakeJSONLogEntry()
         {
-            _entry.date = DateTime.Now.ToString("yyyy/MM/dd");
-            _entry.time = DateTime.Now.ToString("HH:mm:ss:ffff");
-
-             return new JavaScriptSerializer().Serialize(_entry);
+            _entry.TimeStamp();
+            return new JavaScriptSerializer().Serialize(_entry);
         }
 
         public void PostUsageLogToServer(string usageLogServerUrl)
@@ -110,14 +117,32 @@ namespace PyRevitBaseClasses
 
         public void WriteUsageLogToFile(string usageLogFilePath)
         {
-            string json = MakeJSONLogEntry();
+            // Read existing json data
+            string jsonData = "[]";
+            if(File.Exists(usageLogFilePath)) {
+                jsonData = System.IO.File.ReadAllText(usageLogFilePath);
+            }
+            else {
+                System.IO.File.WriteAllText(usageLogFilePath, jsonData);
+            }
+
+            // De-serialize to object or create new list
+            var logData = new JavaScriptSerializer().Deserialize<List<LogEntry>>(jsonData);
+
+            // Add any new employees
+            _entry.TimeStamp();
+            logData.Add(_entry);
+
+            // Update json data string
+            jsonData = new JavaScriptSerializer().Serialize(logData);
+            System.IO.File.WriteAllText(usageLogFilePath, jsonData);
         }
 
         public void LogUsage()
         {
             if(!String.IsNullOrEmpty(_usageLogServerUrl))
                 PostUsageLogToServer(_usageLogServerUrl);
-            if(!String.IsNullOrEmpty(_usageLogServerUrl))
+            if(!String.IsNullOrEmpty(_usageLogFilePath))
                 WriteUsageLogToFile(_usageLogFilePath);
         }
     }

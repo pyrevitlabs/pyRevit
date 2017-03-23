@@ -14,6 +14,7 @@ namespace PyRevitBaseClasses
 		// keep updated from pyrevit.versionmgr
 		public static string addonVersion = String.Format("{0}_versionISC", EnvDictionaryKeys.addonName);
 		// keep updated from pyrevit.coreutils.usagelog
+		public static string usageLogState = String.Format("{0}_usagelogstateISC", EnvDictionaryKeys.addonName);
 		public static string usageLogFilePath = String.Format("{0}_usagelogfileISC", EnvDictionaryKeys.addonName);
 		public static string usageLogServerUrl = String.Format("{0}_usagelogserverISC", EnvDictionaryKeys.addonName);
 	}
@@ -29,6 +30,10 @@ namespace PyRevitBaseClasses
 
 		public string GetPyRevitVersion() {
 			return (string)_envData[EnvDictionaryKeys.addonVersion];
+		}
+
+		public bool GetUsageLogState() {
+			return (bool)_envData[EnvDictionaryKeys.usageLogState];
 		}
 
 		public string GetUsageLogFilePath() {

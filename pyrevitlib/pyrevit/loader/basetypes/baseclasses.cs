@@ -72,11 +72,15 @@ namespace PyRevitBaseClasses
                                                 _forcedDebugMode, _altScriptMode,
                                                 ref resultDict);
 
-            // log usage
-            var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
-                                               _forcedDebugMode, _altScriptMode, resultCode,
-                                               ref resultDict);
-            new Task(logger.LogUsage).Start();
+            // log usage if usage logging in enabled
+            // get usage log state data from python dictionary saved in appdomain
+            var envdict = new EnvDictionary();
+            if(envdict.GetUsageLogState()) {
+                var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
+                                                   _forcedDebugMode, _altScriptMode, resultCode,
+                                                   ref resultDict);
+                new Task(logger.LogUsage).Start();
+            }
 
             // Return results
             if (resultCode == 0)
