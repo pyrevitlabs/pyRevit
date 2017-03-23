@@ -80,6 +80,9 @@ class PyRevitConfigParser(object):
         else:
             raise AttributeError('Section does not exist in config file.')
 
+    def has_section(self, section_name):
+        return self._parser.has_section(section_name)
+
     def add_section(self, section_name):
         self._parser.add_section(section_name)
         return PyRevitConfigSectionParser(self._parser, section_name)
