@@ -108,6 +108,10 @@ def setup_usage_logfile():
         set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, logserverurl)
 
 
+def get_default_usage_logfilepath():
+    return PYREVIT_VERSION_APP_DIR
+
+
 def get_current_usage_logfile():
     return get_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME)
 
