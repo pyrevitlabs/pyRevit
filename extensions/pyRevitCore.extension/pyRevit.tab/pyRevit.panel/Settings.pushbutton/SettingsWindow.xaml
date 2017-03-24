@@ -60,9 +60,6 @@
                          <Setter Property="Background" Value="#d4d9d0" />
                          <Setter Property="Foreground" Value="#4f693a" />
                      </Trigger>
-                     <Trigger Property="IsReadOnly" Value="False">
-                         <Setter Property="Background" Value="White" />
-                     </Trigger>
                  </Style.Triggers>
              </Style>
         </Window.Resources>
@@ -207,10 +204,9 @@
                             <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="usagelogging_cb" IsChecked="False"/>
                             <TextBlock Margin="30,4,0,0">Log Tool Usage</TextBlock>
                         </WrapPanel>
-                        <DockPanel Margin="10,10,10,0">
+                        <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Current usage log file:</TextBlock>
-                            <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Courier New" IsReadOnly="True"
-                                     IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}" Margin="15,0,0,0" Height="20"/>
+                            <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
                         </DockPanel>
                         <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Log usage to folder (e.g. C:\pyRevitUsageLogs):</TextBlock>
@@ -222,7 +218,7 @@
                         </DockPanel>
                         <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Current usage server url:</TextBlock>
-                            <TextBox x:Name="cur_usageserverurl_tb" FontFamily="Courier New" IsReadOnly="True" Margin="15,0,0,0" Height="20"/>
+                            <TextBox x:Name="cur_usageserverurl_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
                         </DockPanel>
                         <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Log usage to webserver (e.g. http://logserver.io):</TextBlock>

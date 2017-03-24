@@ -79,7 +79,9 @@ class SettingsWindow(WPFWindow):
         self.usagelogserver_tb.Text = user_config.usagelogging.get_option('logserverurl', default_value='')
 
         self.cur_usagelogfile_tb.Text = get_current_usage_logfile()
+        self.cur_usagelogfile_tb.IsReadOnly = True
         self.cur_usageserverurl_tb.Text = get_current_usage_serverurl()
+        self.cur_usageserverurl_tb.IsReadOnly = True
 
     def _setup_addinfiles(self):
         addinfiles_states = get_addinfiles_state()
