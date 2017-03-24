@@ -69,26 +69,25 @@ namespace PyRevitBaseClasses
     public class ScriptUsageLogger
     {
         private readonly UIApplication _revit;
-        public LogEntry _entry;
-        public string _usageLogFilePath;
-        public string _usageLogServerUrl;
+        private string _usageLogFilePath;
+        private string _usageLogServerUrl;
+        public LogEntry logEntry;
 
-        public ScriptUsageLogger(ExternalCommandData commandData,
+        public ScriptUsageLogger(ref EnvDictionary envdict, ExternalCommandData commandData,
                                  string cmdName, string cmdBundle, string cmdExtension,
                                  string scriptSource,
-                                 bool forcedDebugMode, bool altScriptMode, int execResult,
-                                 ref Dictionary<String, String> resultDict)
+                                 bool forcedDebugMode, bool altScriptMode,
+                                 int execResult, ref Dictionary<String, String> resultDict)
         {
             _revit = commandData.Application;
 
             // get live data from python dictionary saved in appdomain
-            var envdict = new EnvDictionary();
-            _usageLogFilePath = envdict.GetUsageLogFilePath();
-            _usageLogServerUrl = envdict.GetUsageLogServerUrl();
+            _usageLogFilePath = envdict.usageLogFilePath;
+            _usageLogServerUrl = envdict.usageLogServerUrl;
 
-            _entry = new LogEntry(_revit.Application.Username,
+            logEntry = new LogEntry(_revit.Application.Username,
                                   _revit.Application.VersionNumber, _revit.Application.VersionBuild,
-                                  envdict.GetPyRevitSessionId(), envdict.GetPyRevitVersion(),
+                                  envdict.sessionUUID, envdict.addonVersion,
                                   forcedDebugMode, altScriptMode, cmdName, cmdBundle, cmdExtension,
                                   execResult, ref resultDict,
                                   scriptSource);
@@ -96,8 +95,8 @@ namespace PyRevitBaseClasses
 
         public string MakeJSONLogEntry()
         {
-            _entry.TimeStamp();
-            return new JavaScriptSerializer().Serialize(_entry);
+            logEntry.TimeStamp();
+            return new JavaScriptSerializer().Serialize(logEntry);
         }
 
         public void PostUsageLogToServer(string usageLogServerUrl)
@@ -137,8 +136,8 @@ namespace PyRevitBaseClasses
             var logData = new JavaScriptSerializer().Deserialize<List<LogEntry>>(jsonData);
 
             // Add any new employees
-            _entry.TimeStamp();
-            logData.Add(_entry);
+            logEntry.TimeStamp();
+            logData.Add(logEntry);
 
             // Update json data string
             jsonData = new JavaScriptSerializer().Serialize(logData);

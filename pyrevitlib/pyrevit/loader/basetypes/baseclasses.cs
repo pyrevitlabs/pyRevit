@@ -68,6 +68,10 @@ namespace PyRevitBaseClasses
                return Result.Succeeded;
             }
 
+            // get usage log state data from python dictionary saved in appdomain
+            // this needs to happen before command exection to get the values before the command changes them
+            var envdict = new EnvDictionary();
+
             // Get script executor
             var executor = new ScriptExecutor(this, commandData, message, elements);
 
@@ -79,10 +83,9 @@ namespace PyRevitBaseClasses
                                                 ref resultDict);
 
             // log usage if usage logging in enabled
-            // get usage log state data from python dictionary saved in appdomain
-            var envdict = new EnvDictionary();
-            if(envdict.GetUsageLogState()) {
-                var logger = new ScriptUsageLogger(commandData, _cmdName, _cmdBundle, _cmdExtension, _script,
+            if(envdict.usageLogState) {
+                var logger = new ScriptUsageLogger(ref envdict, commandData,
+                                                   _cmdName, _cmdBundle, _cmdExtension, _script,
                                                    _forcedDebugMode, _altScriptMode, resultCode,
                                                    ref resultDict);
                 new Task(logger.LogUsage).Start();

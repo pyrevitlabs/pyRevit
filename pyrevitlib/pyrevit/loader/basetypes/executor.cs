@@ -149,7 +149,7 @@ namespace PyRevitBaseClasses
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return ExecutionErrorCodes.UnknownException;
             }

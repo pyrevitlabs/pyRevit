@@ -24,30 +24,20 @@ namespace PyRevitBaseClasses
 	public class EnvDictionary
 	{
 		private readonly PythonDictionary _envData;
+		public string sessionUUID;
+		public string addonVersion;
+		public bool usageLogState;
+		public string usageLogFilePath;
+		public string usageLogServerUrl;
 
 		public EnvDictionary() {
 			// get the dictionary from appdomain
 			_envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.root);
-		}
-
-		public string GetPyRevitVersion() {
-			return (string)_envData[EnvDictionaryKeys.addonVersion];
-		}
-
-		public string GetPyRevitSessionId() {
-			return (string)_envData[EnvDictionaryKeys.sessionUUID];
-		}
-
-		public bool GetUsageLogState() {
-			return (bool)_envData[EnvDictionaryKeys.usageLogState];
-		}
-
-		public string GetUsageLogFilePath() {
-			return (string)_envData[EnvDictionaryKeys.usageLogFilePath];
-		}
-
-		public string GetUsageLogServerUrl() {
-			return (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
+			addonVersion = (string)_envData[EnvDictionaryKeys.addonVersion];
+			sessionUUID = (string)_envData[EnvDictionaryKeys.sessionUUID];
+			usageLogState = (bool)_envData[EnvDictionaryKeys.usageLogState];
+			usageLogFilePath = (string)_envData[EnvDictionaryKeys.usageLogFilePath];
+			usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
 		}
 	}
 }
