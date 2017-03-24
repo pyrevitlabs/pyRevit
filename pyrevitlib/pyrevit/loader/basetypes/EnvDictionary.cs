@@ -11,6 +11,8 @@ namespace PyRevitBaseClasses
 		public static string addonName = "pyRevit";
 		// keep updated from pyrevit.coreutils.envvars
 		public static string root = String.Format("{0}_envvardict", EnvDictionaryKeys.addonName);
+		// keep updated from pyrevit.loader.sessioninfo
+		public static string sessionUUID = String.Format("{0}_uuidISC", EnvDictionaryKeys.addonName);
 		// keep updated from pyrevit.versionmgr
 		public static string addonVersion = String.Format("{0}_versionISC", EnvDictionaryKeys.addonName);
 		// keep updated from pyrevit.usagelog
@@ -30,6 +32,10 @@ namespace PyRevitBaseClasses
 
 		public string GetPyRevitVersion() {
 			return (string)_envData[EnvDictionaryKeys.addonVersion];
+		}
+
+		public string GetPyRevitSessionId() {
+			return (string)_envData[EnvDictionaryKeys.sessionUUID];
 		}
 
 		public bool GetUsageLogState() {

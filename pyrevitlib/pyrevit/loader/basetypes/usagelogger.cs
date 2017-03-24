@@ -22,7 +22,7 @@ namespace PyRevitBaseClasses
         public string username { get; set; }
         public string revit { get; set; }
         public string revitbuild { get; set; }
-        public int sessionid { get; set; }
+        public string sessionid { get; set; }
         public string pyrevit { get; set; }
         public bool debug { get; set; }
         public bool alternate { get; set; }
@@ -37,7 +37,7 @@ namespace PyRevitBaseClasses
 
         }
 
-        public LogEntry(string revitUsername, string revitVersion, string revitBuild, int revitProcessId,
+        public LogEntry(string revitUsername, string revitVersion, string revitBuild, string revitProcessId,
                         string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension,
                         int executorResultCode, ref Dictionary<String, String> resultDict,
@@ -88,7 +88,7 @@ namespace PyRevitBaseClasses
 
             _entry = new LogEntry(_revit.Application.Username,
                                   _revit.Application.VersionNumber, _revit.Application.VersionBuild,
-                                  Process.GetCurrentProcess().Id, envdict.GetPyRevitVersion(),
+                                  envdict.GetPyRevitSessionId(), envdict.GetPyRevitVersion(),
                                   forcedDebugMode, altScriptMode, cmdName, cmdBundle, cmdExtension,
                                   execResult, ref resultDict,
                                   scriptSource);

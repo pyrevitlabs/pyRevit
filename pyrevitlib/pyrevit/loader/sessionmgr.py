@@ -13,12 +13,11 @@ Everything else is private.
 import sys
 import clr
 
-from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
+from pyrevit import EXEC_PARAMS, FIRST_LOAD
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 
-from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 from pyrevit.userconfig import user_config
 
@@ -30,6 +29,7 @@ from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
 from pyrevit.usagelog import setup_usage_logfile
+from pyrevit.loader import sessioninfo
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -53,23 +53,6 @@ def _setup_output_window():
     stdout_hndlr.stream = outstr
 
 
-def _report_env():
-    # log python version, home directory, config file, ...
-    # get python version that includes last commit hash
-    pyrvt_ver = PYREVIT_VERSION.get_formatted()
-
-    logger.info('pyRevit version: {} - '
-                ':coded: with :small-black-heart: '
-                'in Portland, OR'.format(pyrvt_ver))
-    logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
-                                                       HOST_APP.build,
-                                                       HOST_APP.proc_id))
-    logger.info('Running on: {}'.format(sys.version))
-    logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
-    logger.info('Config file is: {}'.format(user_config.config_file))
-
-
 def _perform_onsessionload_ops():
     # setup usage log file name
     setup_usage_logfile()
@@ -80,7 +63,7 @@ def _perform_onsessionload_ops():
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
-    _report_env()
+    sessioninfo.report_env()
 
     # apply Upgrades
     upgrade_existing_pyrevit()
