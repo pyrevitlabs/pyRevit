@@ -17,7 +17,6 @@ from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
-from pyrevit.coreutils.usagelog import setup_usage_logfile
 
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
@@ -29,6 +28,8 @@ from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+
+from pyrevit.usagelog import setup_usage_logfile
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process

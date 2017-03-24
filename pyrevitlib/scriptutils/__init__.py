@@ -25,7 +25,7 @@ scriptutils_logger.debug('Executing script: {} @ {}'.format(COMMAND_NAME, COMMAN
 
 class PyRevitScriptUtils:
     def __init__(self):
-        from pyrevit.coreutils.usagelog import CommandCustomResults
+        from pyrevit.usagelog import CommandCustomResults
         self._custom_results = CommandCustomResults()
 
     @property

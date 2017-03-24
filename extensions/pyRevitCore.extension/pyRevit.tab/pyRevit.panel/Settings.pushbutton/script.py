@@ -3,9 +3,9 @@ import os
 from pyrevit import HOST_APP
 from pyrevit.coreutils import filter_null_items, is_url_valid
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
-from pyrevit.coreutils.usagelog import setup_usage_logfile
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
+from pyrevit.usagelog import setup_usage_logfile
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
