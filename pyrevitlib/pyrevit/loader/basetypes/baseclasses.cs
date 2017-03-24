@@ -15,22 +15,28 @@ namespace PyRevitBaseClasses
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand
     {
-        public string _scriptSource = "";
-        public string _alternateScriptSource = "";
-        public string _syspaths = "";
-        public string _cmdName = "";
-        public bool _forcedDebugMode = false;
-        public bool _altScriptMode = false;
+        public string _scriptSource;
+        public string _alternateScriptSource;
+        public string _syspaths;
+        public string _cmdName;
+        public string _cmdBundle;
+        public string _cmdExtension;
+        public bool _forcedDebugMode;
+        public bool _altScriptMode;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
-                              string cmdName)
+                              string cmdName,
+                              string cmdBundle,
+                              string cmdExtension)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
             _cmdName = cmdName;
+            _cmdBundle = cmdBundle;
+            _cmdExtension = cmdExtension;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -76,7 +82,7 @@ namespace PyRevitBaseClasses
             // get usage log state data from python dictionary saved in appdomain
             var envdict = new EnvDictionary();
             if(envdict.GetUsageLogState()) {
-                var logger = new ScriptUsageLogger(commandData, _cmdName, _script,
+                var logger = new ScriptUsageLogger(commandData, _cmdName, _cmdBundle, _cmdExtension, _script,
                                                    _forcedDebugMode, _altScriptMode, resultCode,
                                                    ref resultDict);
                 new Task(logger.LogUsage).Start();

@@ -79,7 +79,7 @@ def _make_csharp_types(module_builder, cmd_component):
         logger.debug('Can not find IExternalCommandAvailability derivatives for: {}'.format(cmd_component))
 
 
-def create_csharp_types(cmd_component, module_builder=None):
+def create_csharp_types(extension, cmd_component, module_builder=None):
     if module_builder:
         _make_csharp_types(module_builder, cmd_component)
     else:

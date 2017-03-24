@@ -29,7 +29,7 @@ def _make_python_avail_type(module_builder, cmd_component):
     return cmd_component.unique_avail_name
 
 
-def _make_python_types(module_builder, cmd_component):
+def _make_python_types(extension, module_builder, cmd_component):
     """
 
     Args:
@@ -46,7 +46,9 @@ def _make_python_types(module_builder, cmd_component):
                 cmd_component.get_full_script_address(),
                 cmd_component.get_full_config_script_address(),
                 join_strings(cmd_component.get_search_paths()),
-                cmd_component.name)
+                cmd_component.name,
+                cmd_component.bundle_name,
+                extension.name)
 
     logger.debug('Successfully created executor type for: {}'.format(cmd_component))
     cmd_component.class_name = cmd_component.unique_name
@@ -62,9 +64,9 @@ def _make_python_types(module_builder, cmd_component):
             logger.error('Error creating availability type: {} | {}'.format(cmd_component, cmd_avail_err))
 
 
-def create_python_types(cmd_component, module_builder=None):
+def create_python_types(extension, cmd_component, module_builder=None):
     if module_builder:
-        _make_python_types(module_builder, cmd_component)
+        _make_python_types(extension, module_builder, cmd_component)
     else:
         cmd_component.class_name = cmd_component.unique_name
         if cmd_component.cmd_context:

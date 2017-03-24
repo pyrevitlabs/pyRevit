@@ -27,6 +27,8 @@ namespace PyRevitBaseClasses
         public bool debug { get; set; }
         public bool alternate { get; set; }
         public string commandname { get; set; }
+        public string commandbundle { get; set; }
+        public string commandextension { get; set; }
         public int resultcode { get; set; }
         public Dictionary<String, String> commandresults { get; set; }
         public string scriptpath { get; set; }
@@ -37,7 +39,8 @@ namespace PyRevitBaseClasses
 
         public LogEntry(string revitUsername, string revitVersion, string revitBuild, int revitProcessId,
                         string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
-                        string pyRevitCommandName, int executorResultCode, ref Dictionary<String, String> resultDict,
+                        string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension,
+                        int executorResultCode, ref Dictionary<String, String> resultDict,
                         string pyRevitCommandPath)
         {
             username = revitUsername;
@@ -48,6 +51,8 @@ namespace PyRevitBaseClasses
             debug = debugModeEnabled;
             alternate = alternateModeEnabled;
             commandname = pyRevitCommandName;
+            commandbundle = pyRevitCommandBundle;
+            commandextension = pyRevitCommandExtension;
             resultcode = executorResultCode;
             commandresults = resultDict;
             scriptpath = pyRevitCommandPath;
@@ -69,7 +74,8 @@ namespace PyRevitBaseClasses
         public string _usageLogServerUrl;
 
         public ScriptUsageLogger(ExternalCommandData commandData,
-                                 string cmdName, string scriptSource,
+                                 string cmdName, string cmdBundle, string cmdExtension,
+                                 string scriptSource,
                                  bool forcedDebugMode, bool altScriptMode, int execResult,
                                  ref Dictionary<String, String> resultDict)
         {
@@ -83,7 +89,8 @@ namespace PyRevitBaseClasses
             _entry = new LogEntry(_revit.Application.Username,
                                   _revit.Application.VersionNumber, _revit.Application.VersionBuild,
                                   Process.GetCurrentProcess().Id, envdict.GetPyRevitVersion(),
-                                  forcedDebugMode, altScriptMode, cmdName, execResult, ref resultDict,
+                                  forcedDebugMode, altScriptMode, cmdName, cmdBundle, cmdExtension,
+                                  execResult, ref resultDict,
                                   scriptSource);
         }
 
