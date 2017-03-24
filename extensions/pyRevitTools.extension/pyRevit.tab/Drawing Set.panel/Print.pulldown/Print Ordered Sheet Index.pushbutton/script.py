@@ -2,7 +2,6 @@
 
 import os.path as op
 import codecs
-import clr
 
 from pyrevit import USER_DESKTOP
 from pyrevit.coreutils import verify_directory, cleanup_filename
@@ -10,7 +9,9 @@ from scriptutils import this_script, open_url, logger
 from scriptutils.userinput import WPFWindow
 from revitutils import doc
 
+# noinspection PyUnresolvedReferences
 import clr
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Element, FilteredElementCollector, ViewSchedule, ViewSheet,\
                               ViewScheduleExportOptions, ExportTextQualifier, ViewSet, \
                               PrintRange, Transaction, ViewSheetSet
