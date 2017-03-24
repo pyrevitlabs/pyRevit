@@ -5,7 +5,8 @@ from pyrevit.coreutils import filter_null_items, is_url_valid
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
-from pyrevit.usagelog import setup_usage_logfile
+from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile, get_current_usage_serverurl, \
+                             get_default_usage_logfilepath
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
 
@@ -76,6 +77,9 @@ class SettingsWindow(WPFWindow):
         self.usagelogging_cb.IsChecked = user_config.usagelogging.get_option('active', default_value=False)
         self.usagelogfile_tb.Text = user_config.usagelogging.get_option('logfilepath', default_value='')
         self.usagelogserver_tb.Text = user_config.usagelogging.get_option('logserverurl', default_value='')
+
+        self.cur_usagelogfile_tb.Text = get_current_usage_logfile()
+        self.cur_usageserverurl_tb.Text = get_current_usage_serverurl()
 
     def _setup_addinfiles(self):
         addinfiles_states = get_addinfiles_state()
@@ -152,6 +156,19 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def removeallfolders(self, sender, args):
         self.extfolders_lb.ItemsSource = []
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def pick_usagelog_folder(self, sender, args):
+        new_path = pick_folder()
+
+        if new_path:
+            self.usagelogfile_tb.Text = os.path.normpath(new_path)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def reset_usagelog_folder(self, sender, args):
+        self.usagelogfile_tb.Text = get_default_usage_logfilepath()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
