@@ -188,7 +188,7 @@
                     <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Usage logging system, records each use of tools under any of the pyRevit extensions.
                                                                                   You can activate usage logging to a local or network log file, or logging to an outside
                                                                                   webserver, or both. If activated, the system will log usage to any of the outputs provided
-                                                                                  here.</TextBlock>
+                                                                                  here. Leave any of the fields blank to disable logging to that destination.</TextBlock>
                     <StackPanel>
                         <WrapPanel Margin="10,10,10,0">
                             <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="usagelogging_cb" IsChecked="False"/>
