@@ -72,6 +72,7 @@ class TemplateUserInputWindow(WPFWindow):
             WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     </Window>
     """
+
     def __init__(self, context, title, width, height, **kwargs):
         WPFWindow.__init__(self, self.layout, literal_string=True)
         self.Title = title
@@ -119,6 +120,7 @@ class SelectFromList(TemplateUserInputWindow):
             </DockPanel>
     </Window>
     """
+
     def _setup(self, **kwargs):
         self.hide_element(self.clrsearch_b)
         self.clear_search(None, None)
@@ -135,7 +137,7 @@ class SelectFromList(TemplateUserInputWindow):
         if option_filter:
             option_filter = option_filter.lower()
             self.list_lb.ItemsSource = [str(option) for option in self._context
-                                                    if option_filter in str(option).lower()]
+                                        if option_filter in str(option).lower()]
         else:
             self.list_lb.ItemsSource = [str(option) for option in self._context]
 
@@ -218,6 +220,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
             </DockPanel>
     </Window>
     """
+
     def _setup(self, **kwargs):
         self.hide_element(self.clrsearch_b)
         self.clear_search(None, None)
@@ -239,7 +242,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
             self.toggleall_b.Content = 'Toggle'
             checkbox_filter = checkbox_filter.lower()
             self.list_lb.ItemsSource = [checkbox for checkbox in self._context
-                                                 if checkbox_filter in checkbox.name.lower()]
+                                        if checkbox_filter in checkbox.name.lower()]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'

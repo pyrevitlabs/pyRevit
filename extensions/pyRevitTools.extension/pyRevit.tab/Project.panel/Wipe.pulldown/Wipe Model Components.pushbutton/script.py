@@ -1,8 +1,6 @@
-import clr
 import inspect
-import StringIO
 
-from scriptutils import this_script, logger
+from scriptutils import logger
 from scriptutils.userinput import SelectFromCheckBoxes
 
 # noinspection PyUnresolvedReferences
@@ -35,7 +33,10 @@ class WipeOption:
 
 # generate wipe options based on functions in wipeactions module
 wipe_options = []
+
+# noinspection PyUnresolvedReferences
 import wipeactions
+
 for mem in inspect.getmembers(wipeactions):
     moduleobject = mem[1]
     if inspect.isfunction(moduleobject):
