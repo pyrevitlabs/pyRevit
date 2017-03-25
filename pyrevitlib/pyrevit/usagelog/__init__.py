@@ -31,7 +31,7 @@ class CommandCustomResults:
     # list of standard usage log record params provided by the c-sharp logger
     # scripts should not use these names
     RESERVED_NAMES = ['time', 'username', 'revit', 'revitbuild', 'sessionid', 'pyrevit', 'debug',
-                       'alternate', 'commandname', 'result', 'source']
+                      'alternate', 'commandname', 'result', 'source']
 
     def __init__(self):
         pass
@@ -44,6 +44,12 @@ class CommandCustomResults:
             logger.error('{} is a standard log param. Can not override this value.'.format(key))
         else:
             EXEC_PARAMS.result_dict.Add(key, unicode(value))
+
+
+def _init_usagelogging_envvars():
+    set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, False)
+    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, '')
+    set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, '')
 
 
 def _disable_usage_logging():
@@ -70,6 +76,9 @@ def _setup_default_logfile():
 
 
 def setup_usage_logfile():
+    # initialize env variables related to usage logging
+    _init_usagelogging_envvars()
+
     # setup config section if does not exist
     if not user_config.has_section('usagelogging'):
         user_config.add_section('usagelogging')
