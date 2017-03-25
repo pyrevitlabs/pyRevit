@@ -33,11 +33,17 @@ namespace PyRevitBaseClasses
 		public EnvDictionary() {
 			// get the dictionary from appdomain
 			_envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.root);
-			addonVersion = (string)_envData[EnvDictionaryKeys.addonVersion];
-			sessionUUID = (string)_envData[EnvDictionaryKeys.sessionUUID];
-			usageLogState = (bool)_envData[EnvDictionaryKeys.usageLogState];
-			usageLogFilePath = (string)_envData[EnvDictionaryKeys.usageLogFilePath];
-			usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
+
+			if (_envData.Contains(EnvDictionaryKeys.addonVersion))
+    			addonVersion = (string)_envData[EnvDictionaryKeys.addonVersion];
+			if (_envData.Contains(EnvDictionaryKeys.sessionUUID))
+    			sessionUUID = (string)_envData[EnvDictionaryKeys.sessionUUID];
+			if (_envData.Contains(EnvDictionaryKeys.usageLogState))
+    			usageLogState = (bool)_envData[EnvDictionaryKeys.usageLogState];
+			if (_envData.Contains(EnvDictionaryKeys.usageLogFilePath))
+    			usageLogFilePath = (string)_envData[EnvDictionaryKeys.usageLogFilePath];
+			if (_envData.Contains(EnvDictionaryKeys.usageLogServerUrl))
+    			usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
 		}
 	}
 }
