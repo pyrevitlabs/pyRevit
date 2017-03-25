@@ -1,6 +1,7 @@
 import clr
 from scriptutils import this_script, logger
 from revitutils import doc, uidoc
+from revitutils.transaction import Action
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import *
@@ -30,6 +31,23 @@ def print_error(el_type='', el_id=0, delete_err=None):
     logger.error('Error Removing Element with Id: {} Type: {} | {}'.format(el_type, el_id, err_msg))
 
 
+def remove_action(action_title, action_cat, elements_to_remove, validity_func=None):
+    def remove_element(rem_el):
+        try:
+            doc.Delete(rem_el.Id)
+            return True
+        except Exception as e:
+            return False
+
+    with Action(action_title):
+        for element in elements_to_remove:
+            if validity_func:
+                if validity_func(element):
+                    remove_element(element)
+            else:
+                remove_element(element)
+
+
 @notdependent
 def call_purge():
     """Call Revit "Purge Unused" after completion."""
@@ -52,7 +70,7 @@ def remove_all_constraints():
             try:
                 doc.Delete(cnst.Id)
             except Exception as e:
-                print_error('Constraint', cnst.Id, e)
+                print_error('Constraint', None, e)
                 continue
     t.Commit()
 
@@ -103,7 +121,7 @@ def remove_all_external_links():
                 if isinstance(lnk, RevitLinkType) or isinstance(lnk, CADLinkType):
                     doc.Delete(refId)
             except Exception as e:
-                print_error('External Link', refId, e)
+                print_error('External Link', None, e)
                 continue
     else:
         print_error('Model must be saved for external links to be removed.')
@@ -129,7 +147,7 @@ def remove_all_sheets():
                                             s.LookupParameter('Sheet Name').AsString().ljust(50), s.Id))
                 doc.Delete(s.Id)
             except Exception as e:
-                print_error('Sheet', s.Id, e)
+                print_error('Sheet', None, e)
                 continue
     t.Commit()
 
@@ -151,7 +169,7 @@ def remove_all_rooms():
             ))
             doc.Delete(r.Id)
         except Exception as e:
-            print_error('Room', r.Id, e)
+            print_error('Room', None, e)
             continue
     t.Commit()
 
@@ -172,7 +190,7 @@ def remove_all_areas():
                 a.Id))
             doc.Delete(a.Id)
         except Exception as e:
-            print_error('Area', a.Id, e)
+            print_error('Area', None, e)
             continue
     t.Commit()
 
@@ -190,7 +208,7 @@ def remove_all_room_separation_lines():
             # print_info('ID: {0}'.format( line.Id ))
             doc.Delete(line.Id)
         except Exception as e:
-            print_error('Room Separation Line', line.Id, e)
+            print_error('Room Separation Line', None, e)
             continue
     t.Commit()
 
@@ -207,7 +225,7 @@ def remove_all_area_separation_lines():
         try:
             doc.Delete(line.Id)
         except Exception as e:
-            print_error('Area Separation Line', line.Id, e)
+            print_error('Area Separation Line', None, e)
             continue
     t.Commit()
 
@@ -225,7 +243,7 @@ def remove_all_scope_boxes():
             print_info('ID: {0}'.format(s.Id))
             doc.Delete(s.Id)
         except Exception as e:
-            print_error('Scope Box', s.Id)
+            print_error('Scope Box', None, e)
             continue
     t.Commit()
 
@@ -243,7 +261,7 @@ def remove_all_reference_planes():
             print_info('ID: {0}'.format(s.Id))
             doc.Delete(s.Id)
         except Exception as e:
-            print_error('Reference Plane', s.Id)
+            print_error('Reference Plane', None, e)
             continue
     t.Commit()
 
@@ -262,7 +280,7 @@ def remove_all_materials():
         try:
             doc.Delete(m.Id)
         except Exception as e:
-            print_error('Material', m.Id, e)
+            print_error('Material', None, e)
             continue
     t.Commit()
 
@@ -298,7 +316,7 @@ def remove_all_views():
                 try:
                     doc.Delete(v.Id)
                 except Exception as e:
-                    print_error('View', v.Id, e)
+                    print_error('View', None, e)
                     continue
     t.Commit()
 
@@ -326,7 +344,7 @@ def remove_all_view_templates():
                 try:
                     doc.Delete(v.Id)
                 except Exception as e:
-                    print_error('View Template', v.Id, e)
+                    print_error('View Template', None, e)
                     continue
     t.Commit()
 
@@ -344,7 +362,7 @@ def remove_all_elevation_markers():
             if em.CurrentViewCount == 0:
                 doc.Delete(em.Id)
         except Exception as e:
-            print_error('Elevation Marker', em.Id, e)
+            print_error('Elevation Marker', None, e)
             continue
     t.Commit()
 
@@ -352,26 +370,25 @@ def remove_all_elevation_markers():
 @notdependent
 def remove_all_filters():
     """Remove All Filters"""
-    t = Transaction(doc, 'Remove All Filters')
-    t.Start()
-    print_header('REMOVING ALL FILTERS')
     cl = FilteredElementCollector(doc)
     filters = cl.OfClass(FilterElement).WhereElementIsNotElementType().ToElements()
-    for f in filters:
-        try:
-            print_info('ID: {0}'.format(f.Id))
-            doc.Delete(f.Id)
-        except Exception as e:
-            print_error('View Filter', f.Id, e)
-            continue
-    t.Commit()
+
+    print_header('REMOVING ALL FILTERS')
+    remove_action('Remove All Filters', 'View Filter', filters)
 
 
 # dynamically generate function that remove all elements on a workset, based on current model worksets
 @notdependent
 def template_workset_remover(workset_name=None):
-    print workset_name
-    workset_filter = ElementParameterFilter(FilterValueRule())
+    workset_list = FilteredWorksetCollector(doc).OfKind(WorksetKind.UserWorkset)
+    workset_dict = {workset.Name:workset.Id for workset in workset_list}
+
+    element_workset_filter = ElementWorksetFilter(workset_dict[workset_name], False)
+    workset_elements = FilteredElementCollector(doc).WherePasses(element_workset_filter).ToElements()
+
+    print_header('REMOVING ALL ELEMENTS ON WORKSET "{}"'.format(workset_name))
+    remove_action('Remove All on WS: {}'.format(workset_name), 'Workset Element', workset_elements)
+
 
 import types
 def copy_func(f, workset_name):
