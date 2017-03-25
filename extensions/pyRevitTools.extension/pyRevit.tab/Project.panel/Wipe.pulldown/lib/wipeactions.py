@@ -365,3 +365,29 @@ def remove_all_filters():
             print_error('View Filter', f.Id, e)
             continue
     t.Commit()
+
+
+# dynamically generate function that remove all elements on a workset, based on current model worksets
+@notdependent
+def template_workset_remover(workset_name=None):
+    print workset_name
+    workset_filter = ElementParameterFilter(FilterValueRule())
+
+import types
+def copy_func(f, workset_name):
+    new_func = types.FunctionType(f.func_code, f.func_globals,
+                                  '{}_{}'.format(f.func_name, workset_name),            # function name
+                                  tuple([workset_name]),                                # function name
+                                  f.func_closure)
+    # set the docstring
+    new_func.__doc__ = 'Remove All Elements on Workset "{}"'.format(workset_name)
+    new_func.is_dependent = False
+    return new_func
+
+# if model is workshared, get a list of current worksets
+if doc.IsWorkshared:
+    cl = FilteredWorksetCollector(doc)
+    worksetlist = cl.OfKind(WorksetKind.UserWorkset)
+    # duplicate the workset element remover function for each workset
+    for workset in worksetlist:
+        locals()[workset.Name] = copy_func(template_workset_remover, workset.Name)

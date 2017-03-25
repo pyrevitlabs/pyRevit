@@ -44,7 +44,8 @@ for mem in inspect.getmembers(wipeactions):
 
 
 # ask user for wipe actions
-return_options = SelectFromCheckBoxes.show(wipe_options, title='Wipe Options', width=500, button_name='Wipe Model')
+return_options = SelectFromCheckBoxes.show(sorted(wipe_options, key=lambda x: x.name),
+                                           title='Wipe Options', width=500, button_name='Wipe Model')
 
 if return_options:
     dependent_actions = [wipe_act for wipe_act in return_options if wipe_act.is_dependent]
