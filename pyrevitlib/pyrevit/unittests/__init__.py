@@ -19,6 +19,10 @@ def _run_module_tests(test_module):
 
 
 def perform_tests():
-    # Perform console tests
+    # Perform revitutilstests
+    import pyrevit.unittests.revitutilstests
+    _run_module_tests(pyrevit.unittests.revitutilstests)
+
+    # Perform consoletests
     import pyrevit.unittests.consoletests
     _run_module_tests(pyrevit.unittests.consoletests)
