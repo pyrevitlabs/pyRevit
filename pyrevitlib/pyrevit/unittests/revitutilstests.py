@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 
-class TestRevitUtils(TestCase):
+class TestRevitUtilsImports(TestCase):
     def test_docAccess(self):
         try:
             from revitutils import doc, uidoc, all_docs
