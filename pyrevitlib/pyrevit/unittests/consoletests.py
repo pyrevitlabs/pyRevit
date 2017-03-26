@@ -7,6 +7,7 @@ class TestConsoleWindow(TestCase):
         self._console = output_window
 
     def test_progressbar(self):
+        """Output window progress bar test"""
         from time import sleep
         for i in range(100):
             sleep(0.01)
