@@ -22,17 +22,14 @@ class Action:
     def __exit__(self, exception, exception_value, traceback):
         if exception:
             self.transaction.RollBack()
-            logger.error('Error in Transactio Context: has rolled back.')
-            logger.error('{}:{}'.format(exception, exception_value))
-            raise exception(exception_value, '')
+            logger.error('Error in Transaction Context. Rolling back changes. | {}:{}'.format(exception,
+                                                                                              exception_value))
         else:
             try:
                 self.transaction.Commit()
             except Exception as errmsg:
                 self.transaction.RollBack()
-                logger.error('Error in Transactio Commit: has rolled back.')
-                logger.error('Error: {}'.format(errmsg))
-                raise
+                logger.error('Error in Transaction Commit. Rolling back changes. | {}'.format(errmsg))
 
     @staticmethod
     def carryout(name):
