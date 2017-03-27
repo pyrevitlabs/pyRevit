@@ -1,14 +1,27 @@
 import time
-
-from unittest import TestResult
+from unittest import TestResult, TestLoader
 
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils.console.output import output_window
 
 
 logger = get_logger(__name__)
 
 
-DEBUG_OKAY_RESULT = 'OK'
+DEBUG_OKAY_RESULT = 'PASSED'
+DEBUG_FAIL_RESULT = 'FAILED'
+
+RESULT_TEST_SUITE_START = '<div style="background:#e8e8e8; height:20px;">Test Suite: {suite}</div>'
+
+RESULT_DIV_OKAY = '<div style="border-bottom: 1px solid gray; height:20px;">:white_heavy_check_mark: PASSED {test}</div>'
+RESULT_DIV_FAIL = '<div style="border-bottom: 1px solid gray; height:20px;">:cross_mark: FAILED {test}</div>'
+RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">:heavy_large_circle: ERROR {test}</div>'
+
+
+class OutputWriter:
+    @staticmethod
+    def write(output_str):
+        output_window.print_html(output_str)
 
 
 class PyRevitTestResult(TestResult):
@@ -29,64 +42,32 @@ class PyRevitTestResult(TestResult):
     def addSuccess(self, test):
         super(PyRevitTestResult, self).addSuccess(test)
         logger.debug(DEBUG_OKAY_RESULT)
+        OutputWriter.write(RESULT_DIV_OKAY.format(test=self.getDescription(test)))
 
-    # def addError(self, test, err):
-    #     super(PyRevitTestResult, self).addError(test, err)
-    #     if self.showAll:
-    #         self.stream.writeln("ERROR")
-    #     elif self.dots:
-    #         self.stream.write('E')
-    #         self.stream.flush()
-    #
-    # def addFailure(self, test, err):
-    #     super(PyRevitTestResult, self).addFailure(test, err)
-    #     if self.showAll:
-    #         self.stream.writeln("FAIL")
-    #     elif self.dots:
-    #         self.stream.write('F')
-    #         self.stream.flush()
-    #
+    def addError(self, test, err):
+        super(PyRevitTestResult, self).addError(test, err)
+        logger.debug(DEBUG_FAIL_RESULT)
+        OutputWriter.write(RESULT_DIV_ERROR.format(test=self.getDescription(test)))
+
+    def addFailure(self, test, err):
+        super(PyRevitTestResult, self).addFailure(test, err)
+        logger.debug(DEBUG_FAIL_RESULT)
+        OutputWriter.write(RESULT_DIV_FAIL.format(test=self.getDescription(test)))
+
     # def addSkip(self, test, reason):
     #     super(PyRevitTestResult, self).addSkip(test, reason)
-    #     if self.showAll:
-    #         self.stream.writeln("skipped {0!r}".format(reason))
-    #     elif self.dots:
-    #         self.stream.write("s")
-    #         self.stream.flush()
-    #
+
     # def addExpectedFailure(self, test, err):
     #     super(PyRevitTestResult, self).addExpectedFailure(test, err)
-    #     if self.showAll:
-    #         self.stream.writeln("expected failure")
-    #     elif self.dots:
-    #         self.stream.write("x")
-    #         self.stream.flush()
-    #
+
     # def addUnexpectedSuccess(self, test):
     #     super(PyRevitTestResult, self).addUnexpectedSuccess(test)
-    #     if self.showAll:
-    #         self.stream.writeln("unexpected success")
-    #     elif self.dots:
-    #         self.stream.write("u")
-    #         self.stream.flush()
-    #
-    # def printErrors(self):
-    #     if self.dots or self.showAll:
-    #         self.stream.writeln()
-    #     self.printErrorList('ERROR', self.errors)
-    #     self.printErrorList('FAIL', self.failures)
-    #
-    # def printErrorList(self, flavour, errors):
-    #     for test, err in errors:
-    #         self.stream.writeln("%s: %s" % (flavour,self.getDescription(test)))
-    #         self.stream.writeln("%s" % err)
 
 
 class PyRevitTestRunner(object):
     resultclass = PyRevitTestResult
 
-    def __init__(self, descriptions=True, verbosity=1, failfast=False, use_buffer=False, resultclass=None):
-        self.descriptions = descriptions
+    def __init__(self, verbosity=1, failfast=False, use_buffer=False, resultclass=None):
         self.verbosity = verbosity
         self.failfast = failfast
         self.use_buffer = use_buffer
@@ -156,3 +137,16 @@ class PyRevitTestRunner(object):
             logger.debug(" (%s)" % (", ".join(infos),))
 
         return result
+
+
+test_runner = PyRevitTestRunner()
+test_loader = TestLoader()
+
+
+def run_module_tests(test_module):
+    # load all testcases from the given module into a testsuite
+    test_suite = test_loader.loadTestsFromModule(test_module)
+    # run the test suite
+    logger.debug('Running test suite for module: %s' % test_module)
+    OutputWriter.write(RESULT_TEST_SUITE_START.format(suite=test_module.__name__))
+    return test_runner.run(test_suite)

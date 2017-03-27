@@ -8,32 +8,22 @@ of that module, although only a subset of functions are used during startup and 
 import warnings
 warnings.filterwarnings("ignore")
 
-from unittest import TestLoader
-
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.unittests.testrunner import PyRevitTestRunner
+from pyrevit.unittests.testrunner import run_module_tests
 
 
 logger = get_logger(__name__)
 
 
-test_runner = PyRevitTestRunner()
-test_loader = TestLoader()
-
-
-def _run_module_tests(test_module):
-    # load all testcases from the given module into a testsuite
-    test_suite = test_loader.loadTestsFromModule(test_module)
-    # run the test suite
-    logger.debug('Running test suite for module: %s' % test_module)
-    return test_runner.run(test_suite)
-
-
 def perform_tests():
+    # Perform ipycoretests
+    import pyrevit.unittests.ipycoretests as ipycoretests
+    run_module_tests(ipycoretests)
+
     # Perform revitutilstests
-    import pyrevit.unittests.revitutilstests
-    _run_module_tests(pyrevit.unittests.revitutilstests)
+    import pyrevit.unittests.revitutilstests as revitutilstests
+    run_module_tests(revitutilstests)
 
     # Perform consoletests
-    import pyrevit.unittests.consoletests
-    _run_module_tests(pyrevit.unittests.consoletests)
+    import pyrevit.unittests.consoletests as consoletests
+    run_module_tests(consoletests)
