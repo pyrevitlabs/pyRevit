@@ -94,11 +94,15 @@ class ExtensionsWindow(WPFWindow):
         if ext_pkg_item.URL:
             self.ext_gitlink_t.Text = '({})'.format(ext_pkg_item.URL)
             self.ext_gitlink_hl.NavigateUri = Uri(ext_pkg_item.URL)
+        else:
+            self.ext_gitlink_t.Text = ''
 
         # Update the author and profile link
         if ext_pkg_item.Author:
             self.ext_author_t.Text = ext_pkg_item.Author
             self.ext_authorlink_hl.NavigateUri = Uri(ext_pkg_item.ext_pkg.author_profile)
+        else:
+            self.ext_author_t.Text = ''
 
         # Update Installed folder info
         if ext_pkg_item.ext_pkg.is_installed:
