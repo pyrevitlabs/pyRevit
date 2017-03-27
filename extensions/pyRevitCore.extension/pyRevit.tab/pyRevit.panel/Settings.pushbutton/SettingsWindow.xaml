@@ -206,13 +206,16 @@
                         </WrapPanel>
                         <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Current usage log file:</TextBlock>
+                            <WrapPanel DockPanel.Dock="Right">
+                                <Button Content="Open Folder" Width="86" Margin="6,0,0,0" Click="open_usagelog_folder" ToolTip="Open the current usage log folder"/>
+                            </WrapPanel>
                             <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
                         </DockPanel>
                         <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
                             <TextBlock DockPanel.Dock="Left">Log usage to folder (e.g. C:\pyRevitUsageLogs):</TextBlock>
                             <WrapPanel DockPanel.Dock="Right">
-                                <Button Content="..." Width="40" Margin="6,0,3,0" Click="pick_usagelog_folder" />
-                                <Button Content="Reset" Width="40" Margin="3,0,0,0" Click="reset_usagelog_folder" />
+                                <Button Content="..." Width="40" Margin="6,0,3,0" Click="pick_usagelog_folder" ToolTip="Pick a folder for usage logging"/>
+                                <Button Content="Reset" Width="40" Margin="3,0,0,0" Click="reset_usagelog_folder" ToolTip="Reset usage logging folder back to default"/>
                             </WrapPanel>
                             <TextBox x:Name="usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
                         </DockPanel>

@@ -1,7 +1,8 @@
 import os
+import os.path as op
 
 from pyrevit import HOST_APP
-from pyrevit.coreutils import filter_null_items, is_url_valid
+from pyrevit.coreutils import filter_null_items, is_url_valid, open_folder_in_explorer
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
@@ -171,6 +172,12 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def reset_usagelog_folder(self, sender, args):
         self.usagelogfile_tb.Text = get_default_usage_logfilepath()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def open_usagelog_folder(self, sender, args):
+        cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
+        open_folder_in_explorer(cur_log_folder)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
