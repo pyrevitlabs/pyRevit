@@ -4,222 +4,74 @@ import os.path as op
 import re
 import clr
 
-from pyrevit import USER_DESKTOP
-from pyrevit.coreutils.logger import FILE_LOG_FILENAME
 from pyrevit.coreutils import verify_directory, cleanup_filename
-from pyrevit.coreutils import appdata
-from scriptutils import this_script, open_url, logger
-from scriptutils.userinput import WPFWindow, pick_file
-
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
+import pyrevit.usagelog as usagelog
+import pyrevit.usagelog.db as logdb
+from scriptutils import this_script, logger
+from scriptutils.userinput import WPFWindow, pick_folder
 
 # noinspection PyUnresolvedReferences
-from System.Windows import DragDrop, DragDropEffects
+from System.Windows.Forms import Clipboard
 # noinspection PyUnresolvedReferences
-from System.Windows import Setter, EventSetter, DragEventHandler, Style
-# noinspection PyUnresolvedReferences
-from System.Windows.Input import MouseButtonEventHandler
-# noinspection PyUnresolvedReferences
-from System.Windows.Controls import ListViewItem
+from Autodesk.Revit.UI import TaskDialog
 
 
 __title__ = 'Usage\nRecords'
 
 
-log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s{1}(\d{2}:\d{2}:\d{2},\d{3})\s{1}(.*)\:\s{1}\[(.*?)\]\s{1}(.+)')
-logging_command_parser = re.compile('<(.*)>\s(.*)')
-
-
-class EntryFilter:
-    type_id = ''
-    name_template = ''
-
-    def __init__(self, filter_value):
-        self.filter_value = filter_value
-        self.filter_name = self.name_template.format(self.filter_value)
-
-    def __eq__(self, other):
-        return self.filter_value == other.filter_value
-
-    def __ne__(self, other):
-        return self.filter_value != other.filter_value
-
-    def __hash__(self):
-        return hash(self.filter_value)
-
-    def __lt__(self, other):
-        return self.filter_value < other.filter_value
-
-    def filter_entries(self, entry_list, search_term=None):
-        filtered_list = []
-        for entry in entry_list:
-            if getattr(entry, self.type_id) == self.filter_value:
-                if search_term:
-                    if search_term.lower() in entry.message.lower() \
-                    or search_term.lower() in entry.clean_msg.lower():
-                        filtered_list.append(entry)
-                else:
-                    filtered_list.append(entry)
-        return filtered_list
-
-
-class EntryNoneFilter(EntryFilter):
-    type_id = 'none'
-
-    def __init__(self):
-        self.filter_value = 'None'
-        self.filter_name = 'No Filter'
-
-    def filter_entries(self, entry_list, search_term=None):
-        if search_term:
-            filtered_list = []
-            for entry in entry_list:
-                if search_term.lower() in entry.message.lower() \
-                or search_term.lower() in entry.clean_msg.lower():
-                    filtered_list.append(entry)
-            return filtered_list
-        else:
-            return entry_list
-
-
-class EntryLevelFilter(EntryFilter):
-    type_id = 'level'
-    name_template = 'Level: {}'
-
-
-class EntryDateFilter(EntryFilter):
-    type_id = 'date'
-    name_template = 'Date: {}'
-
-
-class EntryModuleFilter(EntryFilter):
-    type_id = 'module'
-    name_template = 'Module: {}'
-
-
-class EntryCommandFilter(EntryFilter):
-    type_id = 'command'
-    name_template = 'Command: {}'
-
-
-class LogMessageListItem(object):
-    def __init__(self, log_entry):
-        self._log_entry = log_entry
-        self.date, self.time, self.level, self.module, self.message = log_entry_parser.findall(self._log_entry)[0]
-        try:
-            self.command, self.module = logging_command_parser.findall(self.module)[0]
-        except Exception as err:
-            self.command = None
-
-    @property
-    def clean_msg(self):
-        return self.message.replace('&clt;', '<').replace('&cgt;', '>')
-
-    @property
-    def is_command(self):
-        return self.command
-
-
-class LogViewerWindow(WPFWindow):
+class UsageRecordsWindow(WPFWindow):
     def __init__(self, xaml_file_name):
         WPFWindow.__init__(self, xaml_file_name)
 
         self.hide_element(self.clrsearch_b)
-        self._current_entry_list = list()
-        self._log_files = {op.basename(f):f for f in appdata.list_data_files('log')}
-        self.logfiles_cb.ItemsSource = self._log_files.keys()
-        if FILE_LOG_FILENAME in self._log_files.keys():
-            self.logfiles_cb.SelectedIndex = self.logfiles_cb.ItemsSource.index(FILE_LOG_FILENAME)
-        else:
-            self.logfiles_cb.SelectedIndex = 0
+        self.hide_element(self.commandresults_dg)
+        self.usagelogdir_tb.IsReadOnly = True
+
+        self._update_cur_logpath()
 
     @property
-    def current_log_file(self):
-        return self.logfiles_cb.SelectedItem
+    def cur_logfile_path(self):
+        return self.usagelogdir_tb.Text
+
+    @cur_logfile_path.setter
+    def cur_logfile_path(self, value):
+        self.usagelogdir_tb.Text = value
+        self._update_records()
+        self._update_filters()
 
     @property
-    def current_log_entry(self):
-        return self.logitems_lb.SelectedItem
+    def record_list(self):
+        return self.records_lb.ItemsSource
+
+    @record_list.setter
+    def record_list(self, value):
+        self.records_lb.ItemsSource = value
 
     @property
     def current_filter(self):
         return self.filter_cb.SelectedItem
 
-    def _read_log_file(self, file_path):
-        entry_list = []
-        log_file_line = 1
-        prev_entry = None
-        try:
-            with open(file_path, 'r') as log_file:
-                for log_entry in log_file.readlines():
-                    try:
-                        new_entry = LogMessageListItem(log_entry)
-                        entry_list.append(new_entry)
-                        log_file_line += 1
-                        prev_entry = new_entry
-                    except Exception as err:
-                        logger.debug('Error processing entry at {}:{}'.format(op.basename(file_path), log_file_line))
-                        prev_entry.message += log_entry
-                        log_file_line += 1
-        except Exception as read_err:
-            logger.error('Error reading log file: {} | {}'.format(file_path, read_err))
+    @property
+    def current_search_term(self):
+        return self.search_tb.Text
 
-        return entry_list
+    @property
+    def current_record(self):
+        return self.records_lb.SelectedItem
 
-    def _append_log_file(self, log_file):
-        base_name = op.basename(log_file)
-        self._log_files[base_name] = log_file
-        self.logfiles_cb.ItemsSource = self._log_files.keys()
-        self.logfiles_cb.SelectedIndex = self.logfiles_cb.ItemsSource.index(base_name)
+    def _update_cur_logpath(self, logfile_path=None):
+        self.cur_logfile_path = usagelog.get_current_usage_logpath() if not logfile_path else logfile_path
 
-    @staticmethod
-    def _extract_filters(log_entry_list):
-        filter_list = [EntryNoneFilter()]
-        entry_types = set()
-        entry_modules = set()
-        entry_dates = set()
-        entry_commands = set()
+    def _update_records(self):
+        recordfilter = self.current_filter
+        search_term = self.current_search_term
+        source_path = self.cur_logfile_path
+        self.record_list = logdb.get_records(source_path=source_path,
+                                             recordfilter=recordfilter, search_term=search_term)
 
-        for log_entry in log_entry_list:
-            entry_types.add(EntryLevelFilter(log_entry.level))
-            entry_modules.add(EntryModuleFilter(log_entry.module))
-            entry_dates.add(EntryDateFilter(log_entry.date))
-            if log_entry.command:
-                entry_commands.add(EntryCommandFilter(log_entry.command))
-
-        filter_list.extend(sorted(entry_types))
-        filter_list.extend(sorted(entry_modules))
-        filter_list.extend(sorted(entry_dates))
-        filter_list.extend(sorted(entry_commands))
-
-        return filter_list
-
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def log_file_changed(self, sender, args):
-        self._current_entry_list = self._read_log_file(self._log_files[self.current_log_file])
-        if self._current_entry_list:
-            filter_list = self._extract_filters(self._current_entry_list)
-
-            self.logitems_lb.ItemsSource = self._current_entry_list
-            self.logitems_lb.ScrollIntoView(self.logitems_lb.Items[0])
-
-            self.filter_cb.ItemsSource = filter_list
-            self.filter_cb.SelectedIndex = 0
-
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def filter_changed(self, sender, args):
-        cur_filter = self.current_filter
-        # self.logitems_lb.UnselectAll()
-        if cur_filter:
-            filtered_list = cur_filter.filter_entries(self._current_entry_list, search_term=self.search_tb.Text)
-            self.logitems_lb.ItemsSource = filtered_list
-        else:
-            self.logitems_lb.ItemsSource = self._current_entry_list
-
-        self.logitems_lb.ScrollIntoView(self.current_log_entry)
+    def _update_filters(self):
+        self.filter_cb.ItemsSource = logdb.get_auto_filters(self.record_list)
+        self.filter_cb.SelectedIndex = 0
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -229,12 +81,7 @@ class LogViewerWindow(WPFWindow):
         else:
             self.show_element(self.clrsearch_b)
 
-        cur_filter = self.current_filter
-        if cur_filter:
-            filtered_list = cur_filter.filter_entries(self._current_entry_list, search_term=self.search_tb.Text)
-            self.logitems_lb.ItemsSource = filtered_list
-        else:
-            self.logitems_lb.ItemsSource = self._current_entry_list
+        self._update_records()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -244,20 +91,64 @@ class LogViewerWindow(WPFWindow):
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
-    def log_entry_changed(self, sender, args):
-        # self.entrymsg_tb.Navigate("about:blank")
-        # self.entrymsg_tb.Document.Write('<html><head></head><body>')
-        # self.entrymsg_tb.Document.Write(self.current_log_entry.clean_msg)
-        if self.current_log_entry:
-            self.entrymsg_tb.Text = self.current_log_entry.clean_msg
+    def filter_changed(self, sender, args):
+        self._update_records()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def record_entry_changed(self, sender, args):
+        class TableData:
+            pass
+
+        if self.current_record and self.current_record.commandresults:
+            table_data = []
+            for k,v in self.current_record.commandresults.items():
+                td = TableData()
+                td.key = k
+                td.value = v
+                table_data.append(td)
+            self.commandresults_dg.ItemsSource = sorted(table_data, key=lambda d: d.key)
+            self.show_element(self.commandresults_dg)
+        else:
+            self.hide_element(self.commandresults_dg)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_revit(self, sender, args):
+        Clipboard.SetText(self.current_record.revit)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_revitbuild(self, sender, args):
+        Clipboard.SetText(self.current_record.revitbuild)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_pyrevit(self, sender, args):
+        Clipboard.SetText(self.current_record.pyrevit)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_script(self, sender, args):
+        Clipboard.SetText(self.current_record.scriptpath)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_commandresults(self, sender, args):
+        Clipboard.SetText(unicode(self.current_record.commandresults))
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_record_originalrecord(self, sender, args):
+        Clipboard.SetText(unicode(self.current_record.original_record))
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def load_log_file(self, sender, args):
-        selected_file = pick_file('log')
-        if selected_file:
-            self._append_log_file(selected_file)
+        selected_path = pick_folder()
+        if selected_path:
+            self.cur_logfile_path = selected_path
 
 
 if __name__ == '__main__':
-    LogViewerWindow('LogViewerWindow.xaml').ShowDialog()
+    UsageRecordsWindow('UsageRecordsWindow.xaml').ShowDialog()
