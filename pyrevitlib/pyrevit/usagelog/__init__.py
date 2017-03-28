@@ -1,3 +1,4 @@
+import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS
@@ -20,7 +21,8 @@ USAGELOG_FILEPATH_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogfileISC'
 USAGELOG_SERVERURL_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogserverISC'
 
 # default file path and name for usage logging
-FILE_LOG_FILENAME = '{}_{}_usagelog.json'.format(PYREVIT_FILE_PREFIX, get_session_uuid())
+FILE_LOG_EXT = 'json'
+FILE_LOG_FILENAME = '{}_{}_usagelog.{}'.format(PYREVIT_FILE_PREFIX, get_session_uuid(), FILE_LOG_EXT)
 USAGELOG_FILEPATH = op.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 
 # default server url for usage logging
@@ -121,9 +123,17 @@ def get_default_usage_logfilepath():
     return PYREVIT_VERSION_APP_DIR
 
 
+def get_current_usage_logpath():
+    return user_config.usagelogging.logfilepath
+
+
 def get_current_usage_logfile():
     return get_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME)
 
 
 def get_current_usage_serverurl():
     return get_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME)
+
+
+def is_active():
+    return user_config.usagelogging.active
