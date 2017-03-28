@@ -66,8 +66,12 @@ class UsageRecordsWindow(WPFWindow):
         recordfilter = self.current_filter
         search_term = self.current_search_term
         source_path = self.cur_logfile_path
-        self.record_list = logdb.get_records(source_path=source_path,
-                                             recordfilter=recordfilter, search_term=search_term)
+        log_records = logdb.get_records(source_path=source_path,
+                                        recordfilter=recordfilter, search_term=search_term)
+        if log_records:
+            self.record_list = log_records
+        else:
+            self.record_list = []
 
     def _update_filters(self):
         self.filter_cb.ItemsSource = logdb.get_auto_filters(self.record_list)

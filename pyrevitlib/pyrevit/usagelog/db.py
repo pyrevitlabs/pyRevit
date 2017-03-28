@@ -7,7 +7,7 @@ from pyrevit import PyRevitException
 from pyrevit.coreutils import calculate_dir_hash
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.usagelog import FILE_LOG_EXT
+from pyrevit.usagelog import FILE_LOG_EXT, get_current_usage_logpath
 from pyrevit.usagelog.record import UsageRecord
 from pyrevit.usagelog.filters import *
 
@@ -56,19 +56,25 @@ def _collect_all_records(source_path):
     global _records
     current_log_path = get_current_usage_logpath() if not source_path else source_path
 
-    if _is_record_info_current(current_log_path):
-        return _records
+    if current_log_path:
+        if _is_record_info_current(current_log_path):
+            return _records
+        else:
+            _records = []
+            for usagelog_file in _get_all_usagelogfiles(current_log_path):
+                _records.extend(_collect_records_from_file(usagelog_file))
+            return _records
     else:
-        _records = []
-        for usagelog_file in _get_all_usagelogfiles(current_log_path):
-            _records.extend(_collect_records_from_file(usagelog_file))
-        return _records
+        return None
 
 
 def get_records(source_path=None, recordfilter=None, search_term=None, reverse=True):
     all_records = _collect_all_records(source_path)
 
-    if recordfilter:
-        return sorted(recordfilter.filter_records(all_records, search_term=search_term), reverse=reverse)
+    if all_records:
+        if recordfilter:
+            return sorted(recordfilter.filter_records(all_records, search_term=search_term), reverse=reverse)
+        else:
+            return sorted(all_records, reverse=reverse)
     else:
-        return sorted(all_records, reverse=reverse)
+        return None
