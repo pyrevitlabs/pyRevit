@@ -177,7 +177,8 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def open_usagelog_folder(self, sender, args):
         cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
-        open_folder_in_explorer(cur_log_folder)
+        if cur_log_folder:
+            open_folder_in_explorer(cur_log_folder)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
