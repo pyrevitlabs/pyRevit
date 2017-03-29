@@ -115,8 +115,8 @@ def get_records(source_path=None, record_filter=None, search_term=None, reverse=
     all_records = _collect_all_records(source_path)
 
     if all_records:
-        if recordfilter:
-            return sorted(recordfilter.filter_records(all_records, search_term=search_term), reverse=reverse)
+        if record_filter:
+            return sorted(record_filter.filter_records(all_records, search_term=search_term), reverse=reverse)
         else:
             return sorted(all_records, reverse=reverse)
     else:
