@@ -40,13 +40,9 @@ USAGELOG_STATE_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogstateISC'
 USAGELOG_FILEPATH_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogfileISC'
 USAGELOG_SERVERURL_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogserverISC'
 
-# default file path and name for usage logging
+# templates for usage log file naming
 FILE_LOG_EXT = 'json'
-FILE_LOG_FILENAME = '{}_{}_usagelog.{}'.format(PYREVIT_FILE_PREFIX, get_session_uuid(), FILE_LOG_EXT)
-USAGELOG_FILEPATH = op.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
-
-# default server url for usage logging
-USAGELOG_SERVERURL = ''
+FILE_LOG_FILENAME_TEMPLATE = '{}_{}_usagelog.{}'
 
 
 class _CommandCustomResults(object):
@@ -103,21 +99,28 @@ def _disable_server_usage_logging():
     set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, '')
 
 
-def _setup_default_logfile():
+def _setup_default_logfile(usagelog_fullfilepath):
     # setup default usage logging file name
-    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, USAGELOG_FILEPATH)
-    if not op.exists(USAGELOG_FILEPATH):
+    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, usagelog_fullfilepath)
+    if not op.exists(usagelog_fullfilepath):
         # if file does not exist, let's write the basic JSON list to it.
         try:
-            with open(USAGELOG_FILEPATH, 'w') as log_file:
+            with open(usagelog_fullfilepath, 'w') as log_file:
                 log_file.write('[]')
         except Exception as write_err:
             logger.error('Usage logging is active but log file location is not accessible. | {}'.format(write_err))
             _disable_usage_logging()
 
 
-def setup_usage_logfile():
+def setup_usage_logfile(session_id):
     """Sets up the usage logging default config and environment values."""
+
+    # default file path and name for usage logging
+    filelogging_filename = FILE_LOG_FILENAME_TEMPLATE.format(PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT)
+    usagelog_fullfilepath = op.join(PYREVIT_VERSION_APP_DIR, filelogging_filename)
+
+    # default server url for usage logging
+    usagelog_serverurl = ''
 
     # initialize env variables related to usage logging
     _init_usagelogging_envvars()
@@ -126,15 +129,15 @@ def setup_usage_logfile():
     if not user_config.has_section('usagelogging'):
         user_config.add_section('usagelogging')
 
+    # GLOBAL SWITCH ----------------------------------------------------------------------------------------------------
     # setup default value for usage logging global switch
     usageloggingactive = user_config.usagelogging.get_option('active', default_value=False)
     set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, usageloggingactive)
 
-    # read or setup default values for file and server usage logging
-    logfilepath = user_config.usagelogging.get_option('logfilepath', default_value=USAGELOG_FILEPATH)
-    logserverurl = user_config.usagelogging.get_option('logserverurl', default_value=USAGELOG_SERVERURL)
+    # FILE usage logging -----------------------------------------------------------------------------------------------
+    # read or setup default values for file usage logging
+    logfilepath = user_config.usagelogging.get_option('logfilepath', default_value=usagelog_fullfilepath)
 
-    # FILE usage logging
     # check file usage logging config and setup destination
     if not logfilepath or is_blank(logfilepath):
         # if no config is provided, disable output
@@ -143,14 +146,17 @@ def setup_usage_logfile():
         # if config exists, create new usage log file under the same address
         if op.isdir(logfilepath):
             # if directory is valid
-            logfile_fullpath = op.join(logfilepath, FILE_LOG_FILENAME)
-            set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, logfile_fullpath)
+            logfile_fullpath = op.join(logfilepath, filelogging_filename)
+            _setup_default_logfile(logfile_fullpath)
         else:
             # if not, show error and disable usage logging
             logger.error('Provided usage log address does not exits or is not a directory. Usage logging disabled.')
             _disable_usage_logging()
 
-    # SERVER usage logging
+    # SERVER usage logging ---------------------------------------------------------------------------------------------
+    # read or setup default values for server usage logging
+    logserverurl = user_config.usagelogging.get_option('logserverurl', default_value=usagelog_serverurl)
+
     # check server usage logging config and setup destination
     if not logserverurl or is_blank(logserverurl):
         # if no config is provided, disable output
@@ -175,7 +181,7 @@ def get_current_usage_logpath():
     Returns:
         str: Active usage logging path.
     """
-    return user_config.usagelogging.logfilepath
+    return op.dirname(get_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME))
 
 
 def get_current_usage_logfile():
