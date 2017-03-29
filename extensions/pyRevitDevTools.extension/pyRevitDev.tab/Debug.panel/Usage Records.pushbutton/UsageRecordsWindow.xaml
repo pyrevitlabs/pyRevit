@@ -145,6 +145,7 @@
                         <MenuItem Click="copy_record_originalrecord" Header="Copy Original JSON Record" />
                         <MenuItem Click="copy_record_commandresults" Header="Copy Command Results Dictionary" />
                         <MenuItem Click="copy_record_script" Header="Copy Script Path" />
+                        <MenuItem Click="filter_thissession_records" Header="Filter records for this session" />
                         <MenuItem Click="copy_record_revit" Header="Copy Revit Version" />
                         <MenuItem Click="copy_record_revitbuild" Header="Copy Revit Build Number" />
                         <MenuItem Click="copy_record_pyrevit" Header="Copy pyRevit Version" />

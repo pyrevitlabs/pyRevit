@@ -51,6 +51,15 @@ class UsageRecordsWindow(WPFWindow):
     def current_filter(self):
         return self.filter_cb.SelectedItem
 
+    @current_filter.setter
+    def current_filter(self, rec_filter):
+        # idx = self.filter_cb.ItemsSource.index(filter)
+        self.filter_cb.SelectedItem = rec_filter
+
+    @property
+    def current_filter_list(self):
+        return self.filter_cb.ItemsSource
+
     @property
     def current_search_term(self):
         return self.search_tb.Text
@@ -115,6 +124,15 @@ class UsageRecordsWindow(WPFWindow):
             self.show_element(self.commandresults_dg)
         else:
             self.hide_element(self.commandresults_dg)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def filter_thissession_records(self, sender, args):
+        for rec_filter in self.current_filter_list:
+            if self.current_record.sessionid in rec_filter.filter_name:
+                self.current_filter = rec_filter
+                self._update_records()
+                return True
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
