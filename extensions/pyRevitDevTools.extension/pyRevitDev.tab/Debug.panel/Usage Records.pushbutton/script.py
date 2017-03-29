@@ -171,6 +171,11 @@ class UsageRecordsWindow(WPFWindow):
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
+    def copy_record_logfilename(self, sender, args):
+        Clipboard.SetText(unicode(self.current_record.logfilename))
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
     def load_log_file(self, sender, args):
         selected_path = pick_folder()
         if selected_path:

@@ -151,6 +151,7 @@
                         <MenuItem Click="copy_record_revit" Header="Copy Revit Version" />
                         <MenuItem Click="copy_record_revitbuild" Header="Copy Revit Build Number" />
                         <MenuItem Click="copy_record_pyrevit" Header="Copy pyRevit Version" />
+                        <MenuItem Click="copy_record_logfilename" Header="Copy log file path for this record" />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.View>
