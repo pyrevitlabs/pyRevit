@@ -54,7 +54,7 @@ def _setup_output_window():
 
 
 def _perform_onsessionload_ops():
-    # setup usage log file name
+    # asking usagelog module to setup the usage logging system (active or not active)
     setup_usage_logfile()
 
     # the loader dll addon, does not create an output window
