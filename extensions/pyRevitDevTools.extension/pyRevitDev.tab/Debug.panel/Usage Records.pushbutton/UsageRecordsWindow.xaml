@@ -108,6 +108,8 @@
                     </DockPanel>
                     <DockPanel Grid.Column="1" Grid.Row="0">
                         <TextBlock FontSize="14" Margin="20,5,10,5" DockPanel.Dock="Left">Filter:</TextBlock>
+                        <Button Content="x" Margin="10,0,0,0" DockPanel.Dock="Right"
+                                Click="clear_filter" Width="30px" Height="25px"/>
                         <ComboBox x:Name="filter_cb" SelectionChanged="filter_changed" Height="25px">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>

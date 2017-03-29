@@ -109,6 +109,11 @@ class UsageRecordsWindow(WPFWindow):
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
+    def clear_filter(self, sender, args):
+        self.filter_cb.SelectedIndex = 0
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
     def record_entry_changed(self, sender, args):
         class TableData:
             pass
