@@ -54,17 +54,17 @@ def _setup_output_window():
 
 
 def _perform_onsessionload_ops():
-    # asking usagelog module to setup the usage logging system (active or not active)
-    setup_usage_logfile()
-
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if FIRST_LOAD:
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
-    sessioninfo.new_session_uuid()
+    uuid_str = sessioninfo.new_session_uuid()
     sessioninfo.report_env()
+
+    # asking usagelog module to setup the usage logging system (active or not active)
+    setup_usage_logfile(uuid_str)
 
     # apply Upgrades
     upgrade_existing_pyrevit()

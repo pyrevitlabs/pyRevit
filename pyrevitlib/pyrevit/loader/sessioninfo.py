@@ -28,6 +28,7 @@ def get_session_uuid():
 def new_session_uuid():
     uuid_str = unicode(uuid.uuid1())
     set_session_uuid(uuid_str)
+    return uuid_str
 
 
 def report_env():
