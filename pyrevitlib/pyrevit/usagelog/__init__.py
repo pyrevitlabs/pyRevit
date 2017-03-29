@@ -57,7 +57,7 @@ class _CommandCustomResults(object):
     a C# dictionary, this class provides a very easy to use wrapper around it.
 
     Example:
-        >>> CommandCustomResults().returnparam = value
+        >>> _CommandCustomResults().returnparam = value
 
     Attributes:
         any (str): This is a smart class and can accept any attribute other than the reserved ones.
@@ -73,7 +73,7 @@ class _CommandCustomResults(object):
         return unicode(EXEC_PARAMS.result_dict[key])
 
     def __setattr__(self, key, value):
-        if key in CommandCustomResults.RESERVED_NAMES:
+        if key in _CommandCustomResults.RESERVED_NAMES:
             # making sure the script is not using a reserved name
             logger.error('{} is a standard log param. Can not override this value.'.format(key))
         else:
