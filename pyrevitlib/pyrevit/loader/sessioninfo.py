@@ -1,7 +1,7 @@
 import sys
 import uuid
 
-from pyrevit import EXEC_PARAMS, PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
+from pyrevit import EXEC_PARAMS, PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR, FIRST_LOAD
 
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.coreutils.logger import get_logger
@@ -45,5 +45,5 @@ def report_env():
 
 
 
-if not EXEC_PARAMS.doc_mode:
+if not EXEC_PARAMS.doc_mode and FIRST_LOAD:
     _setup_session_uuid()
