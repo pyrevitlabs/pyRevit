@@ -63,6 +63,7 @@ def _perform_onsessionload_ops():
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
+    sessioninfo.new_session_uuid()
     sessioninfo.report_env()
 
     # apply Upgrades
