@@ -1,11 +1,12 @@
 import datetime
 
 
-RESULT_DICT = {0:'Succeeded',
-               1:'SysExited', 2:'ExecutionException', 3:'CompileException',
-               9:'UnknownException'}
+RESULT_DICT = {0: 'Succeeded',
+               1: 'SysExited', 2: 'ExecutionException', 3: 'CompileException',
+               9: 'UnknownException'}
 
 TIMESTAMP_FORMAT = '%Y/%m/%d %H:%M:%S:%f'
+
 
 class UsageRecord:
     def __init__(self):

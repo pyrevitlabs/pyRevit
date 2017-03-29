@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.usagelog.record import RESULT_DICT
@@ -47,7 +45,7 @@ class RecordNoneFilter(RecordFilter):
     type_id = ''
 
     def __init__(self):
-        self.filter_value = 'None'
+        super(RecordNoneFilter, self).__init__('None')
         self.filter_name = 'No Filter'
 
     def __eq__(self, other):
@@ -133,7 +131,7 @@ class RecordBundleTypeFilter(RecordFilter):
     name_template = 'Bundle Type: {}'
 
     def __init__(self, filter_value):
-        RecordFilter.__init__(self, filter_value)
+        super(RecordBundleTypeFilter, self).__init__(filter_value)
         self.filter_value = filter_value.split('.')[1]
         self.filter_name = self.name_template.format(self.filter_value)
 
@@ -164,11 +162,12 @@ class RecordResultFilter(RecordFilter):
 
 
 filter_types = get_all_subclasses([RecordFilter])
-FILTERS_DICT = {f.filter_param:f for f in filter_types}
+FILTERS_DICT = {f.filter_param: f for f in filter_types}
 
 
 def get_auto_filters(record_list):
-    auto_filters = set([RecordNoneFilter()])
+    auto_filters = set()
+    auto_filters.add(RecordNoneFilter())
     for record in record_list:
         for param, value in record.__dict__.items():
             if param in FILTERS_DICT:
