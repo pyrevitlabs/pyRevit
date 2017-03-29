@@ -4,9 +4,9 @@ import datetime
 
 
 # result dictionary that maps human-readable names to resultcodes
-RESULT_DICT = {0:'Succeeded',
-               1:'SysExited', 2:'ExecutionException', 3:'CompileException',
-               9:'UnknownException'}
+RESULT_DICT = {0: 'Succeeded',
+               1: 'SysExited', 2: 'ExecutionException', 3: 'CompileException',
+               9: 'UnknownException'}
 
 # format for converting time stamps
 # this is used for sorting records by date:time

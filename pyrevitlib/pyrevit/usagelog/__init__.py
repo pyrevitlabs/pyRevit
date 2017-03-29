@@ -19,8 +19,6 @@ This module manages the usage logging system.
     See scriptutils for examples
 
 """
-
-import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS

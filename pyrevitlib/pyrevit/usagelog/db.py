@@ -8,8 +8,6 @@ It is not used to access the usage log records sent to a remote logging server.
         sorted results. See more on function documentation.
 
 """
-
-import re
 import os
 import os.path as op
 import json
