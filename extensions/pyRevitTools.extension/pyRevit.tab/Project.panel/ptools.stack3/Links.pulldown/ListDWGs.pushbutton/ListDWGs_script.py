@@ -39,7 +39,7 @@ dwgInst = defaultdict(list)
 workset_table = doc.GetWorksetTable()
 
 
-this_script.output.print_md("####LINKED AND IMPORTED DWG FILES:")
+this_script.output.print_md("## LINKED AND IMPORTED DWG FILES:")
 this_script.output.print_md('By: [{}]({})'.format(__author__, __contact__))
 
 
@@ -50,16 +50,16 @@ for dwg in dwgs:
         dwgInst["IMPORTED DWGs:"].append(dwg)
 
 for link_mode in dwgInst:
-    this_script.output.print_md("####{}".format(link_mode))
+    this_script.output.print_md("&nbsp;\n&nbsp;\n###{}".format(link_mode))
     for dwg in dwgInst[link_mode]:
         dwg_id = dwg.Id
         dwg_name = dwg.LookupParameter("Name").AsString()
         dwg_workset = workset_table.GetWorkset(dwg.WorksetId).Name
         dwg_instance_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, dwg.Id).Creator
 
-        this_script.output.print_md("\n**DWG name:** {}\n"    \
-                                    "DWG created by:{}\n"     \
-                                    "DWG id: {}\n"            \
+        this_script.output.print_md("\n\n-------\n\n**DWG name:** {}\n\n"    \
+                                    "DWG created by:{}\n\n"     \
+                                    "DWG id: {}\n\n"            \
                                     "DWG workset: {}\n".format(dwg_name,
                                                                dwg_instance_creator,
                                                                this_script.output.linkify(dwg_id),
