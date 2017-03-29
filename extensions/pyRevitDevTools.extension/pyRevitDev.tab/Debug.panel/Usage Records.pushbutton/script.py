@@ -67,7 +67,7 @@ class UsageRecordsWindow(WPFWindow):
         search_term = self.current_search_term
         source_path = self.cur_logfile_path
         log_records = logdb.get_records(source_path=source_path,
-                                        recordfilter=recordfilter, search_term=search_term)
+                                        record_filter=recordfilter, search_term=search_term)
         if log_records:
             self.record_list = log_records
         else:
