@@ -43,7 +43,10 @@ def _collect_records_from_file(usagelog_file):
     try:
         logger.debug('Reading usage log for: {}'.format(usagelog_file))
         with open(usagelog_file, 'r') as ulogf:
-            return json.load(ulogf, object_hook=_logobj_decoder)
+            record_list = json.load(ulogf, object_hook=_logobj_decoder)
+            for record in record_list:
+                record.logfilename = usagelog_file
+            return record_list
     except Exception as err:
         raise PyRevitException('Error reading usage log for: {} | {}'.format(usagelog_file, err))
 

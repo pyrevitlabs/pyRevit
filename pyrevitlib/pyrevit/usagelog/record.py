@@ -44,6 +44,7 @@ class UsageRecord:
         self.resultcode = 0
         self.commandresults = {}
         self.scriptpath = ''
+        self._logfilename = ''
 
     def __repr__(self):
         return '<UsageRecord {}>'.format(self.commandname)
@@ -63,6 +64,25 @@ class UsageRecord:
         mydate = datetime.datetime.strptime('{} {}'.format(self.date, self.time), TIMESTAMP_FORMAT)
         otherdate = datetime.datetime.strptime('{} {}'.format(other.date, other.time), TIMESTAMP_FORMAT)
         return mydate < otherdate
+
+    @property
+    def logfilename(self):
+        """Returns the log file name that this record has been saved to. The file path will be setup by
+        the ``pyrevit.usagelog.db`` module when parsing the log records.
+
+        Returns:
+            str: Full file path of the usage log file containing this record
+        """
+
+        return self._logfilename
+
+    @logfilename.setter
+    def logfilename(self, logfile_path):
+        """Sets the log file name that this record has been saved to. The file path will be set by
+        the ``pyrevit.usagelog.db`` module when parsing the log records.
+        """
+
+        self._logfilename = logfile_path
 
     @property
     def result(self):
