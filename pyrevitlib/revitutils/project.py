@@ -12,3 +12,5 @@ doc = HOST_APP.uiapp.ActiveUIDocument.Document
 uidoc = HOST_APP.uiapp.ActiveUIDocument
 all_docs = HOST_APP.uiapp.Application.Documents
 project = CurrentProject(doc)
+
+curview = uidoc.ActiveView

@@ -1,9 +1,14 @@
+from pyrevit.coreutils.logger import get_logger
+
 # noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import ElementId
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Selection import ObjectType
+
+
+logger = get_logger(__name__)
 
 
 class SelectionUtils:
@@ -15,22 +20,39 @@ class SelectionUtils:
 
     def _pick_obj(self, obj_type, pick_message, multiple=False, world=False):
         try:
-            self._refs = []
-
+            logger.debug('Picking elements: {} pick_message: {} multiple: {} world: {}'.format(obj_type, pick_message,
+                                                                                               multiple, world))
             if multiple:
                 self._refs = list(self._uidoc_selection.PickObjects(obj_type, pick_message))
             else:
+                self._refs = []
                 self._refs.append(self._uidoc_selection.PickObject(obj_type, pick_message))
 
+            if not self._refs:
+                logger.debug('Nothing picked by user...Returning None')
+                return None
+
+            logger.debug('Picked elements are: {}'.format(self._refs))
+
             if obj_type == ObjectType.Element:
-                return [self._doc.GetElement(ref) for ref in self._refs]
+                return_values = [self._doc.GetElement(ref) for ref in self._refs]
             elif obj_type == ObjectType.PointOnElement:
                 if world:
-                    return [ref.GlobalPoint for ref in self._refs]
+                    return_values = [ref.GlobalPoint for ref in self._refs]
                 else:
-                    return [ref.UVPoint for ref in self._refs]
+                    return_values = [ref.UVPoint for ref in self._refs]
             else:
-                return [self._doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in self._refs]
+                return_values =  [self._doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in self._refs]
+
+            logger.debug('Processed return elements are: {}'.format(return_values))
+
+            if type(return_values) is list:
+                if len(return_values) > 1:
+                    return return_values
+                elif len(return_values) == 1:
+                    return return_values[0]
+            else:
+                logger.error('Error processing picked elements. return_values should be a list.')
         except:
             return None
 

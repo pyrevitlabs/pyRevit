@@ -5,7 +5,7 @@ logger = get_logger(__name__)
 
 
 try:
-    from revitutils.project import doc, uidoc, all_docs, project
+    from revitutils.project import doc, uidoc, all_docs, project, curview
 
     from revitutils.selectutils import CurrentElementSelection
     selection = CurrentElementSelection(doc, uidoc)
