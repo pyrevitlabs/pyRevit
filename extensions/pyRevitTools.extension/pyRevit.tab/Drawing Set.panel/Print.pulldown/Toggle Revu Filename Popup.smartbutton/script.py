@@ -132,6 +132,8 @@ def toggle_state():
             this_script.ui_button.set_icon(on_icon, icon_size=ICON_MEDIUM)
 
         close_keys(dkeys)
+    else:
+        return None
 
 
 if __name__ == '__main__':
