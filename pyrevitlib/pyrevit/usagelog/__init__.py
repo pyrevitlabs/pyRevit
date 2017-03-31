@@ -112,8 +112,11 @@ def _setup_default_logfile(usagelog_fullfilepath):
             _disable_usage_logging()
 
 
-def setup_usage_logfile(session_id):
+def setup_usage_logfile(session_id=None):
     """Sets up the usage logging default config and environment values."""
+
+    if not session_id:
+        session_id = get_session_uuid()
 
     # default file path and name for usage logging
     filelogging_filename = FILE_LOG_FILENAME_TEMPLATE.format(PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT)
