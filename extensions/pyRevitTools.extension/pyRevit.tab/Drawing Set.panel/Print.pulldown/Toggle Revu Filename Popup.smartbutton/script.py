@@ -102,15 +102,16 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     off_icon = script_cmp.get_bundle_file('off.png')
 
     dkeys = get_driver_keys()
-    curval = query_filename_prompt_state(dkeys)
-    close_keys(dkeys)
+    if dkeys:
+        curval = query_filename_prompt_state(dkeys)
+        close_keys(dkeys)
 
-    if curval:
-        logger.debug('Prompt For FileName is Enabled...')
-        ui_button_cmp.set_icon(on_icon, icon_size=ICON_MEDIUM)
-    else:
-        logger.debug('Prompt For FileName is Disabled...')
-        ui_button_cmp.set_icon(off_icon, icon_size=ICON_MEDIUM)
+        if curval:
+            logger.debug('Prompt For FileName is Enabled...')
+            ui_button_cmp.set_icon(on_icon, icon_size=ICON_MEDIUM)
+        else:
+            logger.debug('Prompt For FileName is Disabled...')
+            ui_button_cmp.set_icon(off_icon, icon_size=ICON_MEDIUM)
 
 
 def toggle_state():
@@ -118,18 +119,19 @@ def toggle_state():
     off_icon = this_script.get_bundle_file('off.png')
 
     dkeys = get_driver_keys()
-    curval = query_filename_prompt_state(dkeys)
+    if dkeys:
+        curval = query_filename_prompt_state(dkeys)
 
-    if curval:
-        logger.debug('Prompt For FileName is Enabled. Disabling...')
-        set_filename_prompt_state(dkeys, False)
-        this_script.ui_button.set_icon(off_icon, icon_size=ICON_MEDIUM)
-    else:
-        logger.debug('Prompt For FileName is Disabled. Enabling...')
-        set_filename_prompt_state(dkeys, True)
-        this_script.ui_button.set_icon(on_icon, icon_size=ICON_MEDIUM)
+        if curval:
+            logger.debug('Prompt For FileName is Enabled. Disabling...')
+            set_filename_prompt_state(dkeys, False)
+            this_script.ui_button.set_icon(off_icon, icon_size=ICON_MEDIUM)
+        else:
+            logger.debug('Prompt For FileName is Disabled. Enabling...')
+            set_filename_prompt_state(dkeys, True)
+            this_script.ui_button.set_icon(on_icon, icon_size=ICON_MEDIUM)
 
-    close_keys(dkeys)
+        close_keys(dkeys)
 
 
 if __name__ == '__main__':
