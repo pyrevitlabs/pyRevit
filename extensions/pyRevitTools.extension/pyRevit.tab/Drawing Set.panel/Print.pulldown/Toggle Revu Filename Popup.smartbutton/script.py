@@ -112,6 +112,9 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         else:
             logger.debug('Prompt For FileName is Disabled...')
             ui_button_cmp.set_icon(off_icon, icon_size=ICON_MEDIUM)
+        return True
+    else:
+        return False
 
 
 def toggle_state():
@@ -132,8 +135,6 @@ def toggle_state():
             this_script.ui_button.set_icon(on_icon, icon_size=ICON_MEDIUM)
 
         close_keys(dkeys)
-    else:
-        return None
 
 
 if __name__ == '__main__':
