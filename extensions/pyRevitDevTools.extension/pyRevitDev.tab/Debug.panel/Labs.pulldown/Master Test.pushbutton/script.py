@@ -20,7 +20,7 @@ __min_req_revit_ver__ = '2015'
 
 # smart button template ------------------------------------------------------------------------------------------------
 def __selfinit__(script_cmp, commandbutton, __rvt__):
-    pass
+    return True
 
 su.this_script.output.print_md('**Testing log levels:**')
 su.logger.critical('Test Log Level')

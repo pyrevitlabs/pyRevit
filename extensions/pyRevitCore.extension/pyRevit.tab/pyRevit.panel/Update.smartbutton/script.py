@@ -67,8 +67,9 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.core.checkupdates and _check_for_updates():
             ui_button_cmp.set_icon(has_update_icon, icon_size=ICON_LARGE)
+        return True
     except:
-        return
+        return False
 
 
 if __name__ == '__main__':

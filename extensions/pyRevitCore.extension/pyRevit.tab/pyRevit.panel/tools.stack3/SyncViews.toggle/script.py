@@ -97,8 +97,12 @@ def togglestate():
 
 # noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
-    __rvt__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
-    __rvt__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
+    try:
+        __rvt__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
+        __rvt__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
+        return True
+    except:
+        return False
 
 
 if __name__ == '__main__':

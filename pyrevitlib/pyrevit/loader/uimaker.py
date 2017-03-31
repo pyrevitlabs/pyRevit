@@ -161,6 +161,9 @@ def _produce_ui_smartbutton(ui_maker_params):
     orig_cmd_path = EXEC_PARAMS.command_path
     EXEC_PARAMS.command_name = smartbutton.name
     EXEC_PARAMS.command_path = smartbutton.get_full_script_address()
+
+    new_uibutton = parent_ui_item.button(smartbutton.name)
+
     try:
         # importing smart button script as a module
         importedscript = imp.load_source(smartbutton.unique_name, smartbutton.script_file)
@@ -171,12 +174,18 @@ def _produce_ui_smartbutton(ui_maker_params):
         logger.debug('Running self initializer: {}'.format(smartbutton))
         try:
             # running the smart button initializer function
-            importedscript.__selfinit__(smartbutton,
-                                        parent_ui_item.button(smartbutton.name),
-                                        HOST_APP.uiapp)
+            res = importedscript.__selfinit__(smartbutton, new_uibutton, HOST_APP.uiapp)
         except Exception as button_err:
             logger.error('Error initializing smart button: {} | {}'.format(smartbutton, button_err))
-        return parent_ui_item.button(smartbutton.name)
+
+        # if the __selfinit__ function returns False
+        # remove the button
+        if res is False:
+            logger.debug('SelfInit returned False on Smartbutton: {}'.format(new_uibutton))
+            new_uibutton.deactivate()
+
+        logger.debug('SelfInit successful on Smartbutton: {}'.format(new_uibutton))
+        return new_uibutton
     except Exception as err:
         logger.error('Smart button script import error: {} | {}'.format(smartbutton, err.message))
         return None
