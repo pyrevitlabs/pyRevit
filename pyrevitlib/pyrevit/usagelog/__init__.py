@@ -21,7 +21,6 @@ This module manages the usage logging system.
 """
 import os.path as op
 
-from pyrevit import EXEC_PARAMS
 from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
 from pyrevit.coreutils import is_blank
 from pyrevit.coreutils.logger import get_logger
@@ -43,38 +42,6 @@ USAGELOG_SERVERURL_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogserverISC'
 # templates for usage log file naming
 FILE_LOG_EXT = 'json'
 FILE_LOG_FILENAME_TEMPLATE = '{}_{}_usagelog.{}'
-
-
-class _CommandCustomResults(object):
-    """
-    This class provides an interface wrapper around the EXEC_PARAMS.result_dict dictionary that is
-    provided by the ScriptExecutor C# object. ScriptExecutor provides this results dictionary to all
-    scripts, and scripts can add key:value pairs to the dictionary. But since the provided dictionary is
-    a C# dictionary, this class provides a very easy to use wrapper around it.
-
-    Example:
-        >>> _CommandCustomResults().returnparam = value
-
-    Attributes:
-        any (str): This is a smart class and can accept any attribute other than the reserved ones.
-    """
-
-    # list of standard/default usage log record params provided by the c-sharp logger
-    # scripts should not use these names
-    RESERVED_NAMES = ['time', 'username', 'revit', 'revitbuild', 'sessionid', 'pyrevit', 'debug',
-                      'alternate', 'commandname', 'result', 'source']
-
-    def __getattr__(self, key):
-        # return value of the given key, let it raise exception if the value is not there
-        return unicode(EXEC_PARAMS.result_dict[key])
-
-    def __setattr__(self, key, value):
-        if key in _CommandCustomResults.RESERVED_NAMES:
-            # making sure the script is not using a reserved name
-            logger.error('{} is a standard log param. Can not override this value.'.format(key))
-        else:
-            # if all is okay lets add the key:value to the return dict
-            EXEC_PARAMS.result_dict.Add(key, unicode(value))
 
 
 def _init_usagelogging_envvars():
