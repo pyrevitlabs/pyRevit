@@ -139,8 +139,9 @@ class UsageRecord:
         Returns:
             dict: original dictionary used to create/update this record.
         """
-
-        return self._src_dict
+        rec_string = str(self._src_dict)
+        rec_string = rec_string.replace('\'', '\"').replace('False', 'false').replace('True', 'true')
+        return rec_string
 
     def has_term(self, search_term):
         """Checks all parameters for the search_term.
