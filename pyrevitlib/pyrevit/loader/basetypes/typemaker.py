@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 
 # public base class maker function -------------------------------------------------------------------------------------
-def make_cmd_types(cmd_component, module_builder=None):
+def make_cmd_types(extension, cmd_component, module_builder=None):
     """
 
     Args:
@@ -27,14 +27,14 @@ def make_cmd_types(cmd_component, module_builder=None):
         if cmd_component.script_language == PYTHON_LANG:
             logger.debug('Command is python: {}'.format(cmd_component))
             try:
-                create_python_types(cmd_component, module_builder)
+                create_python_types(extension, cmd_component, module_builder)
             except Exception as cmd_exec_err:
                 logger.error('Error creating python types for: {} | {}'.format(cmd_component, cmd_exec_err))
 
         elif cmd_component.script_language == CSHARP_LANG:
             logger.debug('Command is C#: {}'.format(cmd_component))
             try:
-                create_csharp_types(cmd_component, module_builder)
+                create_csharp_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 logger.error('Error compiling C# types for: {} | {}'.format(cmd_component, cmd_compile_err))
     except:

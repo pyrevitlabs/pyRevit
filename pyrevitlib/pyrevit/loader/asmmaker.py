@@ -65,7 +65,7 @@ def _is_any_ext_asm_loaded(extension):
 
 def _update_component_cmd_types(extension):
     for cmd_component in extension.get_all_commands():
-        make_cmd_types(cmd_component, module_builder=None)
+        make_cmd_types(extension, cmd_component, module_builder=None)
 
 
 def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
@@ -102,7 +102,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     for cmd_component in extension.get_all_commands():
         # create command executor class for this command
         logger.debug('Creating types for command: {}'.format(cmd_component))
-        make_cmd_types(cmd_component, module_builder)
+        make_cmd_types(extension, cmd_component, module_builder)
 
     # save final assembly
     asm_builder.Save(ext_asm_full_file_name)

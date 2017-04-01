@@ -49,7 +49,8 @@ namespace PyRevitBaseClasses
 
         /// Run the script and print the output to a new output window.
         public int ExecuteScript(string sourcePath, string syspaths, string cmdName,
-                                 bool forcedDebugMode, bool altScriptMode)
+                                 bool forcedDebugMode, bool altScriptMode,
+                                 ref Dictionary<String, String> resultDict)
         {
             try
             {
@@ -75,6 +76,9 @@ namespace PyRevitBaseClasses
                 var hndl = scriptOutput.Handle;         // Forces creation of handle before showing the window
                 scriptOutput.Text = cmdName;            // Set output window title to command name
                 builtin.SetVariable("__window__", scriptOutput);
+
+                // add engine to builtins
+                builtin.SetVariable("__result__", resultDict);
 
                 // Create output stream
                 var outputStream = new ScriptOutputStream(scriptOutput);
@@ -110,7 +114,7 @@ namespace PyRevitBaseClasses
                     outputStream.WriteError(string.Join("\n",
                                                         ExternalConfig.ipyerrtitle,
                                                         string.Join("\n", errors.Errors.ToArray())));
-                    return (int)Result.Cancelled;
+                    return ExecutionErrorCodes.CompileException;
                 }
 
 
@@ -119,12 +123,12 @@ namespace PyRevitBaseClasses
                 {
                     script.Execute(scope);
 
-                    return (int)Result.Succeeded;
+                    return ExecutionErrorCodes.Succeeded;
                 }
                 catch (SystemExitException)
                 {
                     // ok, so the system exited. That was bound to happen...
-                    return (int)Result.Succeeded;
+                    return ExecutionErrorCodes.SysExited;
                 }
                 catch (Exception exception)
                 {
@@ -141,13 +145,13 @@ namespace PyRevitBaseClasses
                     _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
                     outputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
-                    return (int)Result.Cancelled;
+                    return ExecutionErrorCodes.ExecutionException;
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return (int)Result.Failed;
+                return ExecutionErrorCodes.UnknownException;
             }
         }
 
@@ -156,7 +160,7 @@ namespace PyRevitBaseClasses
         {
             var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
             {
-                { "Frames", true }, { "FullFrames", true }, {"LightweightScopes", true} 
+                { "Frames", true }, { "FullFrames", true }, {"LightweightScopes", true}
             });
             return engine;
         }
@@ -243,10 +247,10 @@ namespace PyRevitBaseClasses
     }
 
     // Custom attribute to carry the pyrevit version that compiles this assembly
-    [AttributeUsage(AttributeTargets.Assembly)]
-    public class AssemblyPyRevitVersion : Attribute {
-        string pyrevit_ver;
-        public AssemblyPyRevitVersion() : this(string.Empty) {}
-        public AssemblyPyRevitVersion(string txt) { pyrevit_ver = txt; }
-    }
+    // [AttributeUsage(AttributeTargets.Assembly)]
+    // public class AssemblyPyRevitVersion : Attribute {
+    //     string pyrevit_ver;
+    //     public AssemblyPyRevitVersion() : this(string.Empty) {}
+    //     public AssemblyPyRevitVersion(string txt) { pyrevit_ver = txt; }
+    // }
 }

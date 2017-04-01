@@ -19,12 +19,14 @@ COMMAND_KEY = 'command'
 DATA_KEY = 'data'
 
 
-DEFAULT_LINK = '<a title="Click to select or show element" style="background-color: #f5f7f2; ' \
+DEFAULT_LINK = '<a title="Click to select or show element" '\
+                  'style="background-color: #f5f7f2; ' \
                          'font-size:8pt; ' \
                          'color: #649417; ' \
                          'border: 1px solid #649417; ' \
                          'border-radius:3px; ' \
-                         'vertical-align:middle;margin:-4,0,-4,0; ' \
+                         'vertical-align:middle; '\
+                         'margin:-4,0,-4,0; ' \
                          'margin: 2px; ' \
                          'padding: 1px 4px; ' \
                          'text-align: center; ' \

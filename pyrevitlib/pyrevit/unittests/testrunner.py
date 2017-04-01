@@ -1,0 +1,152 @@
+import time
+from unittest import TestResult, TestLoader
+
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils.console.output import output_window
+
+
+logger = get_logger(__name__)
+
+
+DEBUG_OKAY_RESULT = 'PASSED'
+DEBUG_FAIL_RESULT = 'FAILED'
+
+RESULT_TEST_SUITE_START = '<div style="background:#e8e8e8; height:20px;">Test Suite: {suite}</div>'
+
+RESULT_DIV_OKAY = '<div style="border-bottom: 1px solid gray; height:20px;">:white_heavy_check_mark: PASSED {test}</div>'
+RESULT_DIV_FAIL = '<div style="border-bottom: 1px solid gray; height:20px;">:cross_mark: FAILED {test}</div>'
+RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">:heavy_large_circle: ERROR {test}</div>'
+
+
+class OutputWriter:
+    @staticmethod
+    def write(output_str):
+        output_window.print_html(output_str)
+
+
+class PyRevitTestResult(TestResult):
+    def __init__(self, verbosity):
+        super(PyRevitTestResult, self).__init__(verbosity=verbosity)
+
+    # noinspection PyPep8Naming
+    @staticmethod
+    def getDescription(test):
+        return test.shortDescription()
+
+    # noinspection PyPep8Naming
+    def startTest(self, test):
+        super(PyRevitTestResult, self).startTest(test)
+        logger.debug('Running test: %s' % self.getDescription(test))
+
+    # noinspection PyPep8Naming
+    def addSuccess(self, test):
+        super(PyRevitTestResult, self).addSuccess(test)
+        logger.debug(DEBUG_OKAY_RESULT)
+        OutputWriter.write(RESULT_DIV_OKAY.format(test=self.getDescription(test)))
+
+    def addError(self, test, err):
+        super(PyRevitTestResult, self).addError(test, err)
+        logger.debug(DEBUG_FAIL_RESULT)
+        OutputWriter.write(RESULT_DIV_ERROR.format(test=self.getDescription(test)))
+
+    def addFailure(self, test, err):
+        super(PyRevitTestResult, self).addFailure(test, err)
+        logger.debug(DEBUG_FAIL_RESULT)
+        OutputWriter.write(RESULT_DIV_FAIL.format(test=self.getDescription(test)))
+
+    # def addSkip(self, test, reason):
+    #     super(PyRevitTestResult, self).addSkip(test, reason)
+
+    # def addExpectedFailure(self, test, err):
+    #     super(PyRevitTestResult, self).addExpectedFailure(test, err)
+
+    # def addUnexpectedSuccess(self, test):
+    #     super(PyRevitTestResult, self).addUnexpectedSuccess(test)
+
+
+class PyRevitTestRunner(object):
+    resultclass = PyRevitTestResult
+
+    def __init__(self, verbosity=1, failfast=False, use_buffer=False, resultclass=None):
+        self.verbosity = verbosity
+        self.failfast = failfast
+        self.use_buffer = use_buffer
+        if resultclass is not None:
+            self.resultclass = resultclass
+
+    def _make_result(self):
+        return self.resultclass(self.verbosity)
+
+    def run(self, test):
+        # setup results object
+        result = self._make_result()
+        result.failfast = self.failfast
+        result.buffer = self.use_buffer
+
+        # start clock
+        start_time = time.time()
+
+        # find run test methods
+        start_test_run = getattr(result, 'startTestRun', None)
+        if start_test_run is not None:
+            start_test_run()
+        try:
+            test(result)
+        finally:
+            stop_test_run = getattr(result, 'stopTestRun', None)
+            if stop_test_run is not None:
+                stop_test_run()
+
+        # stop clock and calculate run time
+        stop_time = time.time()
+        time_taken = stop_time - start_time
+
+        # print errots
+        result.printErrors()
+        test_count = result.testsRun
+        logger.debug("Ran %d test%s in %.3fs" % (test_count, test_count != 1 and "s" or "", time_taken))
+
+        expected_fails = unexpected_successes = skipped = 0
+        try:
+            results = map(len, (result.expectedFailures,
+                                result.unexpectedSuccesses,
+                                result.skipped))
+        except AttributeError:
+            pass
+        else:
+            expected_fails, unexpected_successes, skipped = results
+
+        infos = []
+        if not result.wasSuccessful():
+            logger.debug("FAILED")
+            failed, errored = map(len, (result.failures, result.errors))
+            if failed:
+                infos.append("failures=%d" % failed)
+            if errored:
+                infos.append("errors=%d" % errored)
+        else:
+            logger.debug(DEBUG_OKAY_RESULT)
+
+        if skipped:
+            infos.append("skipped=%d" % skipped)
+        if expected_fails:
+            infos.append("expected failures=%d" % expected_fails)
+        if unexpected_successes:
+            infos.append("unexpected successes=%d" % unexpected_successes)
+        if infos:
+            logger.debug(" (%s)" % (", ".join(infos),))
+
+        return result
+
+
+test_runner = PyRevitTestRunner()
+test_loader = TestLoader()
+
+
+def run_module_tests(test_module):
+    # load all testcases from the given module into a testsuite
+    test_suite = test_loader.loadTestsFromModule(test_module)
+    # run the test suite
+    logger.debug('Running test suite for module: %s' % test_module)
+    OutputWriter.write(RESULT_TEST_SUITE_START.format(suite=test_module.__name__))
+    return test_runner.run(test_suite)

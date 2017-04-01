@@ -13,21 +13,23 @@ Everything else is private.
 import sys
 import clr
 
-from pyrevit import HOME_DIR, EXEC_PARAMS, FIRST_LOAD, HOST_APP
+from pyrevit import EXEC_PARAMS, FIRST_LOAD
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.logger import get_logger, stdout_hndlr, logger_has_errors
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 
-from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
-from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE, \
-                                     BASE_TYPES_ASM_NAME
+# import the basetypes first to get all the c-sharp code to compile
+from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+
+from pyrevit.usagelog import setup_usage_logfile
+from pyrevit.loader import sessioninfo
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -37,39 +39,18 @@ logger = get_logger(__name__)
 
 
 def _setup_output_window():
-    # import module with ScriptOutput and ScriptOutputStream types
-    # (base classes module)
-    clr.AddReference(BASE_TYPES_ASM)
-    base_module = __import__(LOADER_BASE_NAMESPACE)
-
+    from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
     # create output window and assign handle
-    out_window = base_module.ScriptOutput()
+    out_window = ScriptOutput()
     EXEC_PARAMS.window_handle = out_window
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = base_module.ScriptOutputStream(out_window)
+    outstr = ScriptOutputStream(out_window)
     sys.stdout = outstr
     sys.stderr = outstr
     stdout_hndlr.stream = outstr
-
-
-def _report_env():
-    # log python version, home directory, config file, ...
-    # get python version that includes last commit hash
-    pyrvt_ver = PYREVIT_VERSION.get_formatted()
-
-    logger.info('pyRevit version: {} - '
-                ':coded: with :small-black-heart: '
-                'in Portland, OR'.format(pyrvt_ver))
-    logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
-                                                       HOST_APP.build,
-                                                       HOST_APP.proc_id))
-    logger.info('Running on: {}'.format(sys.version))
-    logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
-    logger.info('Config file is: {}'.format(user_config.config_file))
 
 
 def _perform_onsessionload_ops():
@@ -79,7 +60,11 @@ def _perform_onsessionload_ops():
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
-    _report_env()
+    uuid_str = sessioninfo.new_session_uuid()
+    sessioninfo.report_env()
+
+    # asking usagelog module to setup the usage logging system (active or not active)
+    setup_usage_logfile(uuid_str)
 
     # apply Upgrades
     upgrade_existing_pyrevit()
@@ -156,7 +141,7 @@ def load_session():
     # if everything went well, self destruct
     try:
         from pyrevit.coreutils.console.output import output_window
-        timeout = user_config.core.get_option('startuplogtimeout', default_value=5)
+        timeout = user_config.core.startuplogtimeout
         if timeout > 0 and not logger_has_errors():
             output_window.self_destruct(timeout)
     except Exception as imp_err:

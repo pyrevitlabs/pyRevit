@@ -11,18 +11,6 @@ from pyrevit.coreutils import appdata
 from scriptutils import this_script, open_url, logger
 from scriptutils.userinput import WPFWindow, pick_file
 
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
-
-# noinspection PyUnresolvedReferences
-from System.Windows import DragDrop, DragDropEffects
-# noinspection PyUnresolvedReferences
-from System.Windows import Setter, EventSetter, DragEventHandler, Style
-# noinspection PyUnresolvedReferences
-from System.Windows.Input import MouseButtonEventHandler
-# noinspection PyUnresolvedReferences
-from System.Windows.Controls import ListViewItem
-
 
 log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s{1}(\d{2}:\d{2}:\d{2},\d{3})\s{1}(.*)\:\s{1}\[(.*?)\]\s{1}(.+)')
 logging_command_parser = re.compile('<(.*)>\s(.*)')

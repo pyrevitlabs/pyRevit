@@ -1,12 +1,18 @@
 import os
+import os.path as op
 
 from pyrevit import HOST_APP
-from pyrevit.coreutils import filter_null_items
+from pyrevit.coreutils import filter_null_items, is_url_valid, open_folder_in_explorer
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state, set_addinfiles_state
 from pyrevit.userconfig import user_config
+from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile, get_current_usage_serverurl, \
+                             get_default_usage_logfilepath
 from scriptutils import logger, show_file_in_explorer
 from scriptutils.userinput import WPFWindow, pick_folder
+
+# noinspection PyUnresolvedReferences
+from System.Windows.Forms import Clipboard
 
 
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic '\
@@ -27,6 +33,7 @@ class SettingsWindow(WPFWindow):
                                        '2016': self.revit2016_cb,
                                        '2017': self.revit2017_cb}
 
+        self._setup_usagelogging()
         self._setup_addinfiles()
 
     def _setup_core_options(self):
@@ -60,9 +67,22 @@ class SettingsWindow(WPFWindow):
                 self.Id = var_id
                 self.Value = value
 
+            def __repr__(self):
+                return '<EnvVariable Name: {} Value: {}>'.format(self.Id, self.Value)
+
         env_vars_list = [EnvVariable(k, v) for k, v in get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
+
+    def _setup_usagelogging(self):
+        self.usagelogging_cb.IsChecked = user_config.usagelogging.get_option('active', default_value=False)
+        self.usagelogfile_tb.Text = user_config.usagelogging.get_option('logfilepath', default_value='')
+        self.usagelogserver_tb.Text = user_config.usagelogging.get_option('logserverurl', default_value='')
+
+        self.cur_usagelogfile_tb.Text = get_current_usage_logfile()
+        self.cur_usagelogfile_tb.IsReadOnly = True
+        self.cur_usageserverurl_tb.Text = get_current_usage_serverurl()
+        self.cur_usageserverurl_tb.IsReadOnly = True
 
     def _setup_addinfiles(self):
         addinfiles_states = get_addinfiles_state()
@@ -79,6 +99,9 @@ class SettingsWindow(WPFWindow):
             else:
                 checkbox.Content = 'Revit {} (Not installed)'.format(rvt_ver)
                 checkbox.IsChecked = checkbox.IsEnabled = False
+
+    def update_usagelogging(self):
+        setup_usage_logfile()
 
     def update_addinfiles(self):
         new_states = {rvt_ver: checkbox.IsChecked for rvt_ver, checkbox in self._addinfiles_checkboxes.items()}
@@ -97,6 +120,16 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def resetcache(self, sender, args):
         self.bincache_rb.IsChecked = True
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_envvar_value(self, sender, args):
+        Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def copy_envvar_id(self, sender, args):
+        Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -129,6 +162,26 @@ class SettingsWindow(WPFWindow):
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
+    def pick_usagelog_folder(self, sender, args):
+        new_path = pick_folder()
+
+        if new_path:
+            self.usagelogfile_tb.Text = os.path.normpath(new_path)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def reset_usagelog_folder(self, sender, args):
+        self.usagelogfile_tb.Text = get_default_usage_logfilepath()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def open_usagelog_folder(self, sender, args):
+        cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
+        if cur_log_folder:
+            open_folder_in_explorer(cur_log_folder)
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
     def savesettings(self, sender, args):
         if self.verbose_rb.IsChecked:
             logger.set_verbose_mode()
@@ -150,8 +203,13 @@ class SettingsWindow(WPFWindow):
         else:
             user_config.core.userextensions = []
 
+        user_config.usagelogging.active = self.usagelogging_cb.IsChecked
+        user_config.usagelogging.logfilepath = self.usagelogfile_tb.Text
+        user_config.usagelogging.logserverurl = self.usagelogserver_tb.Text
+
         user_config.save_changes()
 
+        self.update_usagelogging()
         self.update_addinfiles()
         self.Close()
 

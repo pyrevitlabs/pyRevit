@@ -7,6 +7,7 @@ from pyrevit.coreutils import check_internet_connection
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.ribbon import ICON_LARGE
 from pyrevit.loader.sessionmgr import load_session
+from pyrevit.loader.sessioninfo import get_session_uuid
 
 import pyrevit.versionmgr.updater as updater
 import pyrevit.versionmgr.upgrade as upgrade
@@ -92,6 +93,8 @@ if __name__ == '__main__':
             sleep(1)
             logger.info('Reloading...')
             load_session()
+            this_script.results.newsession = get_session_uuid()
+
         else:
             this_script.output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
             logger.debug('Core updates. Skippin update and reload.')

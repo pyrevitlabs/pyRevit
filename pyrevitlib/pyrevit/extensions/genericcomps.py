@@ -81,6 +81,10 @@ class GenericUIComponent(GenericComponent):
                 continue
         return cleanup_string(uname)
 
+    @property
+    def bundle_name(self):
+        return self.original_name + self.type_id
+
     def get_search_paths(self):
         return self.syspath_search_paths
 

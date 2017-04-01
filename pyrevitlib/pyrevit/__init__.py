@@ -14,7 +14,7 @@ from System.IO import IOException
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
-VERSION_MINOR = 2
+VERSION_MINOR = 3
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -114,15 +114,15 @@ class _ExecutorParams(object):
         except:
             raise AttributeError()
 
-    @property   # read-only
-    def executor_version(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
-                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
-        except:
-            raise AttributeError()
+    # @property   # read-only
+    # def executor_version(self):
+    #     try:
+    #         # noinspection PyUnresolvedReferences
+    #         for custom_attr in __assmcustomattrs__:
+    #             if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
+    #                 return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
+    #     except:
+    #         raise AttributeError()
 
     @property   # read-only
     def forced_debug_mode(self):
@@ -170,16 +170,6 @@ class _ExecutorParams(object):
         # noinspection PyUnusedLocal
         __builtin__.__commandpath__ = value
 
-    @property   # read-only
-    def executor_version(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            for custom_attr in __assmcustomattrs__:
-                if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
-                    return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
-        except:
-            raise AttributeError()
-
     @property
     def doc_mode(self):
         try:
@@ -191,6 +181,15 @@ class _ExecutorParams(object):
     @property
     def command_mode(self):
         return self.command_name
+
+    @property
+    def result_dict(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __result__
+        except:
+            return False
+
 
 EXEC_PARAMS = _ExecutorParams()
 

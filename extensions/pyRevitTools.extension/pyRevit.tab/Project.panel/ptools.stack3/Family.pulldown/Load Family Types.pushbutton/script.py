@@ -8,11 +8,14 @@ from scriptutils import logger, this_script
 from scriptutils.userinput import SelectFromList
 from revitutils import doc, selection
 
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, Element, Family, FamilySymbol, FamilyInstance
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog
 
 
 # get family symbol from selection -------------------------------------------------------------------------------------
+fam_symbol = None
 if not selection.is_empty:
     selected_comp = selection.first
     if isinstance(selected_comp, FamilySymbol):
@@ -53,6 +56,7 @@ class SmartSortableFamilyType:
     def __repr__(self):
         return '<SmartSortableFamilyType Name:{} Values:{} StringSort:{}>'.format(self.type_name, self.number_list,
                                                                                   self.sort_alphabetically)
+
     def __eq__(self, other):
         return self.type_name == other.type_name
 
@@ -120,7 +124,7 @@ if options:
                 t.Commit()
                 logger.debug('Successfully loaded all selected symbols')
             except Exception as load_err:
-                logger.error('Error loading family symbol: {} from {} | {}'.format(symbol, fam_doc_path, load_err))
+                logger.error('Error loading family symbol from {} | {}'.format(fam_doc_path, load_err))
                 t.RollBack()
 else:
     TaskDialog.Show('pyRevit', 'All the family types are already loaded.')

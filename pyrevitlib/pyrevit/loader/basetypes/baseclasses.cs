@@ -6,6 +6,8 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using System.Collections.Generic;
 using System.Windows.Input;
+using System.Threading.Tasks;
+
 
 namespace PyRevitBaseClasses
 {
@@ -13,22 +15,28 @@ namespace PyRevitBaseClasses
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand
     {
-        public string _scriptSource = "";
-        public string _alternateScriptSource = "";
+        public string _scriptSource;
+        public string _alternateScriptSource;
         public string _syspaths;
         public string _cmdName;
-        public bool _forcedDebugMode = false;
-        public bool _altScriptMode = false;
+        public string _cmdBundle;
+        public string _cmdExtension;
+        public bool _forcedDebugMode;
+        public bool _altScriptMode;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
-                              string cmdName)
+                              string cmdName,
+                              string cmdBundle,
+                              string cmdExtension)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
             _cmdName = cmdName;
+            _cmdBundle = cmdBundle;
+            _cmdExtension = cmdExtension;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -60,25 +68,34 @@ namespace PyRevitBaseClasses
                return Result.Succeeded;
             }
 
+            // get usage log state data from python dictionary saved in appdomain
+            // this needs to happen before command exection to get the values before the command changes them
+            var envdict = new EnvDictionary();
+
             // Get script executor
             var executor = new ScriptExecutor(this, commandData, message, elements);
 
+            // create result Dictionary
+            var resultDict = new Dictionary<String, String>();
             // Execute script
-            var result = executor.ExecuteScript(_script, _syspaths, _cmdName, _forcedDebugMode, _altScriptMode);
+            var resultCode = executor.ExecuteScript(_script, _syspaths, _cmdName,
+                                                _forcedDebugMode, _altScriptMode,
+                                                ref resultDict);
 
+            // log usage if usage logging in enabled
+            if(envdict.usageLogState) {
+                var logger = new ScriptUsageLogger(ref envdict, commandData,
+                                                   _cmdName, _cmdBundle, _cmdExtension, _script,
+                                                   _forcedDebugMode, _altScriptMode, resultCode,
+                                                   ref resultDict);
+                new Task(logger.LogUsage).Start();
+            }
 
             // Return results
-            switch (result)
-            {
-                case (int)Result.Succeeded:
-                    return Result.Succeeded;
-                case (int)Result.Cancelled:
-                    return Result.Cancelled;
-                case (int)Result.Failed:
-                    return Result.Failed;
-                default:
-                    return Result.Succeeded;
-            }
+            if (resultCode == 0)
+                return Result.Succeeded;
+            else
+                return Result.Cancelled;
         }
     }
 
