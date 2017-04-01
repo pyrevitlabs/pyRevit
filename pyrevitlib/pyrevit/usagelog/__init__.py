@@ -120,7 +120,6 @@ def setup_usage_logfile(session_id=None):
 
     # default file path and name for usage logging
     filelogging_filename = FILE_LOG_FILENAME_TEMPLATE.format(PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT)
-    usagelog_fullfilepath = op.join(PYREVIT_VERSION_APP_DIR, filelogging_filename)
 
     # default server url for usage logging
     usagelog_serverurl = ''
@@ -139,7 +138,7 @@ def setup_usage_logfile(session_id=None):
 
     # FILE usage logging -----------------------------------------------------------------------------------------------
     # read or setup default values for file usage logging
-    logfilepath = user_config.usagelogging.get_option('logfilepath', default_value=usagelog_fullfilepath)
+    logfilepath = user_config.usagelogging.get_option('logfilepath', default_value=PYREVIT_VERSION_APP_DIR)
 
     # check file usage logging config and setup destination
     if not logfilepath or is_blank(logfilepath):
