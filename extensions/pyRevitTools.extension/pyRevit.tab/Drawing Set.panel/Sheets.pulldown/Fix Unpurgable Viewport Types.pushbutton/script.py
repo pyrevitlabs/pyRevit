@@ -14,9 +14,9 @@ from Autodesk.Revit.DB import Element, ElementType, TransactionGroup, Transactio
 from Autodesk.Revit.UI import TaskDialog
 
 
-__doc__ = 'Asks user to select the viewport types to be purged and the viewport type to be replaced with ' \
-          'and purges the viewport types. I made this tool to fix a problem with viewport types duplicating '\
-          'themselves into unpurgable types.'
+__doc__ = 'Asks user to select the viewport types to be converted and the viewport type to be replaced with. ' \
+          'I made this tool to fix a problem with viewport types duplicating '\
+          'themselves during a project abd become unpurgable viewport types.'
 
 
 class ViewPortType:
