@@ -150,7 +150,7 @@ class SettingsWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def removefolder(self, sender, args):
         selected_path = self.extfolders_lb.SelectedItem
-        if self.extfolders_lb.ItemsSource:
+        if selected_path and self.extfolders_lb.ItemsSource:
             uniq_items = set(self.extfolders_lb.ItemsSource)
             uniq_items.remove(selected_path)
             self.extfolders_lb.ItemsSource = list(uniq_items)
