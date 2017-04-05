@@ -2,47 +2,59 @@
 
 from scriptutils import this_script
 from revitutils import doc, uidoc
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View
 
-views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import FilteredElementCollector as Fec
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import BuiltInCategory, View, ViewType
 
-mviews = []
+
 dviews = []
+mviews = []
+lviews = []
+all_sheeted_view_ids = []
 
+views = Fec(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
 for v in views:
-    if 'drafting' in str(v.ViewType).lower() and not v.IsTemplate:
-        dviews.append(v)
-    elif not v.IsTemplate:
-        mviews.append(v)
+    if not v.IsTemplate:
+        if v.ViewType == ViewType.DraftingView:
+            dviews.append(v)
+        elif v.ViewType == ViewType.Legend:
+            lviews.append(v)
+        else:
+            mviews.append(v)
 
-print('DRAFTING VIEWS NOT ON ANY SHEETS'.ljust(100, '-'))
+sheets = Fec(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+for sht in sheets:
+    vp_ids = [doc.GetElement(x).ViewId for x in sht.GetAllViewports()]
+    all_sheeted_view_ids.extend(vp_ids)
+
+
+this_script.output.print_md('### DRAFTING VIEWS NOT ON ANY SHEETS')
 for v in dviews:
-    phasep = v.LookupParameter('Phase')
-    sheetnum = v.LookupParameter('Sheet Number')
-    detnum = v.LookupParameter('Detail Number')
-    refsheet = v.LookupParameter('Referencing Sheet')
-    refviewport = v.LookupParameter('Referencing Detail')
-    if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
+    if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}  ID: {2}   {0}'.format(
-            v.ViewName,
-            str(v.ViewType).ljust(20),
-            this_script.output.linkify(v.Id),
-            str(v.IsTemplate).ljust(10),
-        ))
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+                                                   v.ViewType,
+                                                   this_script.output.linkify(v.Id)))
 
-print('\n\n\n' + 'MODEL VIEWS NOT ON ANY SHEETS'.ljust(100, '-'))
+
+this_script.output.print_md('### MODEL VIEWS NOT ON ANY SHEETS')
 for v in mviews:
-    phasep = v.LookupParameter('Phase')
-    sheetnum = v.LookupParameter('Sheet Number')
-    detnum = v.LookupParameter('Detail Number')
-    if sheetnum and detnum and ('-' not in sheetnum.AsString()) and ('-' not in detnum.AsString()):
+    if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}  ID: {2}   {0}'.format(
-            v.ViewName,
-            str(v.ViewType).ljust(20),
-            this_script.output.linkify(v.Id),
-            str(v.IsTemplate).ljust(10),
-        ))
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+                                                   v.ViewType,
+                                                   this_script.output.linkify(v.Id)))
+
+
+this_script.output.print_md('### LEGENDS NOT ON ANY SHEETS')
+for v in lviews:
+    if v.Id in all_sheeted_view_ids:
+        continue
+    else:
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+                                                   v.ViewType,
+                                                   this_script.output.linkify(v.Id)))
