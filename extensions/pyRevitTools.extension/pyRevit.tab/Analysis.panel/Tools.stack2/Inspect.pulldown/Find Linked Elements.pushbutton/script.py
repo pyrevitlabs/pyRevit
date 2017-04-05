@@ -25,23 +25,21 @@ uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
 selection = __revit__.ActiveUIDocument.Selection.GetElementIds()
 
-tg = TransactionGroup(doc, "Search for linked elements")
-tg.Start()
-t = Transaction(doc, "Search for linked elements")
-t.Start()
+if not selection.is_empty:
+    t = Transaction(doc, "Search for linked elements")
+    t.Start()
 
-linkedelementslist = []
+    print("Searching for all objects tied to ELEMENT ID: {0}...".format(selection.first.Id))
+    linked_elements_list = doc.Delete(selection.first.Id)
 
-for elId in selection:
-    print("Searching for all objects tied to ELEMENT ID: {0}...".format(elId))
-    linkedelementslist = doc.Delete(elId)
+    t.RollBack()
 
-t.Commit()
-tg.RollBack()
 
-for elId in linkedelementslist:
-    el = doc.GetElement(elId)
-    if el and elId in selection:
-        print("ID: {0}\t\tTYPE: {1} ( selected object )".format(elId, el.GetType().Name))
-    elif el:
-        print("ID: {0}\t\tTYPE: {1}".format(elId, el.GetType().Name))
+    for elId in linked_elements_list:
+        el = doc.GetElement(elId)
+        if el and elId in selection.element_ids:
+            elid_link = this_script.output.linkify(elId)
+            print("ID: {0}\t\tTYPE: {1} ( selected object )".format(elid_link, el.GetType().Name))
+        elif el:
+            elid_link = this_script.output.linkify(elId)
+            print("ID: {0}\t\tTYPE: {1}".format(elid_link, el.GetType().Name))
