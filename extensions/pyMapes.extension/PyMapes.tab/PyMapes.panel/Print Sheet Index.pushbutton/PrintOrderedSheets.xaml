@@ -1,0 +1,88 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print Sheets from Schedule" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+        <Window.Resources>
+
+            <DataTemplate x:Key="IndexColumnStyle">
+                <TextBlock Foreground="Gray" Text="{Binding print_index}"/>
+            </DataTemplate>
+
+            <ControlTemplate x:Key="Default" TargetType='{x:Type ListViewItem}'>
+                <StackPanel Background="White">
+                  <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                        Columns="{TemplateBinding GridView.ColumnCollection}"/>
+                </StackPanel>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type ListViewItem}'>
+                  <StackPanel Background="#f6f6f6">
+                    <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                          Columns="{TemplateBinding GridView.ColumnCollection}"/>
+                  </StackPanel>
+            </ControlTemplate>
+
+        </Window.Resources>
+
+        <DockPanel>
+            <StackPanel Margin="10,10,10,0" DockPanel.Dock="Top">
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+                    Select a Sheet Index (Schedule):
+                </TextBlock>
+                <ComboBox x:Name="schedules_cb" SelectionChanged="selection_changed">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Name}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="Print (using current print settings)"
+                        Click="print_sheets" HorizontalAlignment="Right" Width="350px" Margin="0,15,0,0"/>
+                <GroupBox Header="Print Settings:" Margin="0,15,0,15">
+                    <WrapPanel>
+                        <CheckBox x:Name="placeholder_cb" Margin="10,10,0,5"
+                                  IsChecked="True" Click="selection_changed">Show Non-Printable Sheets (Grayed out)
+                        </CheckBox>
+                        <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5"
+                                  IsChecked="True" Click="selection_changed">Include Non-Printable Sheets in Indexing
+                        </CheckBox>
+                        <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Combine into one file</CheckBox>
+                        <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
+                                  IsChecked="False" Click="selection_changed">Reverse Print Order
+                        </CheckBox>
+                    </WrapPanel>
+                </GroupBox>
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+                    List of the sheets in selected sheet index (Drag to manually reorder):
+                </TextBlock>
+            </StackPanel>
+            <StatusBar DockPanel.Dock="Bottom" Height="25" Background="#ffb762">
+                <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
+                    Kudos to Ryan McCullough for PrintFromIndex
+                </TextBlock>
+            </StatusBar>
+            <ListView x:Name="sheets_lb" Margin="10,0,10,10" AllowDrop="True">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Print Index" Width="70" CellTemplate="{StaticResource IndexColumnStyle}"/>
+                        <GridViewColumn Header="Sheet Number" Width="90" DisplayMemberBinding="{Binding number}" />
+                        <GridViewColumn Header="Sheet Name" DisplayMemberBinding="{Binding name}" />
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Template" Value="{StaticResource Default}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding printable}" Value="False">
+                                <Setter Property="Template"
+                                Value="{StaticResource NonPrintableSheet}"/>
+                                <Setter Property="Foreground" Value="#bdbdbd" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </DockPanel>
+</Window>
