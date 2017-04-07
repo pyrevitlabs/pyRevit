@@ -5,12 +5,12 @@ logger = get_logger(__name__)
 
 
 try:
-    from revitutils.project import doc, uidoc, all_docs, project, curview
+    from revitutils._project import doc, uidoc, all_docs, project, curview
 
-    from revitutils.selectutils import CurrentElementSelection
+    from revitutils._selectutils import CurrentElementSelection
     selection = CurrentElementSelection(doc, uidoc)
 
-    from revitutils.transaction import Action, ActionGroup
+    from revitutils._transaction import Action, ActionGroup
 
 except Exception as ru_setup_err:
     logger.error('Error setting up revitutils | {}'.format(ru_setup_err))
