@@ -17,6 +17,9 @@ import System.Windows
 import System.Windows.Controls as wpfControls
 
 
+__context__ = 'zerodoc'
+
+
 class ExtensionPackageListItem:
     def __init__(self, extension_package):
         """

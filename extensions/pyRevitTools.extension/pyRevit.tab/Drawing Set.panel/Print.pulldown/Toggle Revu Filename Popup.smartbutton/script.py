@@ -7,6 +7,8 @@ from scriptutils import this_script, logger
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 
+__context__ = 'zerodoc'
+
 __doc__ = 'Enables and disables the Revu PDF Printer prompt for filename option. ' \
           'The Icon shows the current state of this setting.'
 

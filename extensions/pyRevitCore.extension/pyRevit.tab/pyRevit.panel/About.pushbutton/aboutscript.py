@@ -8,6 +8,8 @@ from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
 from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
 
 
+__context__ = 'zerodoc'
+
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
           'updates about the new tools and changes, and a lot of other information there.'
 
