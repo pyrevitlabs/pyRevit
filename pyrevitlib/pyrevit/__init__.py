@@ -1,5 +1,6 @@
 """pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally."""
 
+import clr
 import sys
 import os
 import os.path as op
@@ -79,12 +80,23 @@ class _HostApplication:
         return uname
 
     @property
+    def proc(self):
+        return Process.GetCurrentProcess()
+
+    @property
     def proc_id(self):
         return Process.GetCurrentProcess().Id
 
     @property
     def proc_name(self):
         return Process.GetCurrentProcess().ProcessName
+
+    @property
+    def proc_screen(self):
+        clr.AddReferenceByPartialName('System.Windows.Forms')
+        # noinspection PyUnresolvedReferences
+        from System.Windows.Forms import Screen
+        return Screen.FromHandle(Process.GetCurrentProcess().MainWindowHandle)
 
     def is_newer_than(self, version):
         return int(self.version) > int(version)
