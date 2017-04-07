@@ -1,7 +1,8 @@
 from pyrevit.coreutils import create_type, create_ext_command_attrs, join_strings
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE, CMD_AVAIL_TYPE_SELECTION, CMD_AVAIL_TYPE_CATEGORY
+from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
+from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION, CMD_AVAIL_TYPE_CATEGORY
 
 from pyrevit.versionmgr import PYREVIT_VERSION
 
@@ -19,9 +20,13 @@ def _make_python_avail_type(module_builder, cmd_component):
     Returns:
 
     """
-    if cmd_component.cmd_context == 'Selection':
+    context_str = cmd_component.cmd_context.lower()
+    if  context_str == 'selection':
         create_type(module_builder, CMD_AVAIL_TYPE_SELECTION,
                     cmd_component.unique_avail_name, [], cmd_component.cmd_context)
+    elif context_str == 'zerodoc':
+        create_type(module_builder, CMD_AVAIL_TYPE,
+                    cmd_component.unique_avail_name, [])
     else:
         create_type(module_builder, CMD_AVAIL_TYPE_CATEGORY,
                     cmd_component.unique_avail_name, [], cmd_component.cmd_context)
