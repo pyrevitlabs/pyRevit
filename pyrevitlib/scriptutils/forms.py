@@ -18,8 +18,6 @@ from System import Uri
 # noinspection PyUnresolvedReferences
 from System.Windows import Window
 # noinspection PyUnresolvedReferences
-from System.Windows.Controls import SelectionMode
-# noinspection PyUnresolvedReferences
 from System.Windows.Media import SolidColorBrush, Color
 # noinspection PyUnresolvedReferences
 from System.Windows.Media.Imaging import BitmapImage

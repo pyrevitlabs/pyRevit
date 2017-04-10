@@ -5,6 +5,8 @@ from scriptutils.forms import WPFWindow
 clr.AddReferenceByPartialName('System.Windows.Forms')
 
 # noinspection PyUnresolvedReferences
+from System.Windows.Controls import SelectionMode
+# noinspection PyUnresolvedReferences
 from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
 
 
