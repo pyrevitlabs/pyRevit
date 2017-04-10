@@ -31,7 +31,7 @@ class PyRevitTestResult(TestResult):
     # noinspection PyPep8Naming
     @staticmethod
     def getDescription(test):
-        return test.shortDescription()
+        return test.shortDescription() if test.shortDescription() else test
 
     # noinspection PyPep8Naming
     def startTest(self, test):

@@ -20,6 +20,10 @@ def perform_tests():
     import pyrevit.unittests.ipycoretests as ipycoretests
     run_module_tests(ipycoretests)
 
+    # Perform enumtests
+    import pyrevit.unittests.enumtests as enumtests
+    run_module_tests(enumtests)
+
     # Perform revitutilstests
     import pyrevit.unittests.revitutilstests as revitutilstests
     run_module_tests(revitutilstests)

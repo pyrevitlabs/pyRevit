@@ -9,6 +9,7 @@ extensions/*
 # ignore third-party lib folder
 lib/*
 !lib/README.md
+!lib/enum
 
 # ignore pyCharm workspace settings
 .idea/workspace.xml
