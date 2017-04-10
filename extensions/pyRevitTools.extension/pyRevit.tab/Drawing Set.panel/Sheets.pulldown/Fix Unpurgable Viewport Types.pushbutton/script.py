@@ -2,14 +2,14 @@ import sys
 
 from scriptutils import logger
 from scriptutils.userinput import SelectFromList
-from revitutils import doc, Action, ActionGroup
+from revitutils import doc, Action, ActionGroup, DryAction
 
 # noinspection PyUnresolvedReferences
 import clr
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector as Fec
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Element, ElementType, TransactionGroup, Transaction, Viewport
+from Autodesk.Revit.DB import Element, ElementType, Viewport
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog
 
@@ -41,10 +41,8 @@ class ViewPortType:
         return self._rvt_type
 
     def find_linked_elements(self):
-        t = Transaction(doc, "Search for linked elements")
-        t.Start()
-        linked_element_ids = doc.Delete(self._rvt_type.Id)
-        t.RollBack()
+        with DryAction("Search for linked elements", clear_after_rollback=True):
+            linked_element_ids = doc.Delete(self._rvt_type.Id)
 
         return linked_element_ids
 
@@ -75,7 +73,7 @@ else:
 
 
 # Collect all elements that are somehow linked to the viewport types to be purged --------------------------------------
-TaskDialog.Show('pyRevit', 'Starting Conversion. Hit Cancel if you get any prompts.')
+# TaskDialog.Show('pyRevit', 'Starting Conversion. Hit Cancel if you get any prompts.')
 
 purge_dict = {}
 for purge_vp_type in purge_vp_types:
@@ -87,65 +85,39 @@ for purge_vp_type in purge_vp_types:
 
 
 # Perform cleanup ------------------------------------------------------------------------------------------------------
-tg = TransactionGroup(doc, 'Fixed Unpurgable Viewport Types')
-tg.Start()
+with ActionGroup('Fixed Unpurgable Viewport Types'):
+    # Correct all existing viewports that use the viewport types to be purged
+    # Collect viewports and find the ones that use the purging viewport types
+    all_viewports = Fec(doc).OfClass(clr.GetClrType(Viewport)).ToElements()
+    purge_vp_ids = [x.get_rvt_obj().Id for x in purge_vp_types]
+    with Action('Correct Viewport Types'):
+        for vp in all_viewports:
+            if vp.GetTypeId() in purge_vp_ids:
+                try:
+                    # change their type to the destination type
+                    logger.debug('Changing viewport type for viewport with id: {}'.format(vp.Id))
+                    vp.ChangeTypeId(dest_vp_typeid)
+                except Exception as change_err:
+                    logger.debug('Can not change type for viewport with id: {} | {}'.format(vp.Id, change_err))
+
+    # Correct all hidden viewport elements that use the viewport types to be purged
+    with Action('Correct Hidden Viewport Types'):
+        for vp_type_name, linked_elements in purge_dict.items():
+            has_error = False
+            logger.info('Converting all viewports of type: {}'.format(vp_type_name))
+            for linked_elid in linked_elements:
+                linked_el = doc.GetElement(linked_elid)
+                try:
+                    if isinstance(linked_el, Viewport) and linked_el.GetTypeId() in purge_vp_ids:
+                        logger.debug('Changing viewport type for hidden viewport with id: {}'.format(linked_el.Id))
+                        linked_el.ChangeTypeId(dest_vp_typeid)
+                except Exception as change_err:
+                    has_error = True
+                    logger.debug('Can not change type for hidden viewport with id: {} | {}'.format(linked_el.Id, change_err))
+            if has_error:
+                logger.warning('Exceptions occured while converting viewport type: {}\n' \
+                               'This is minor and the type might still be purgable.'.format(vp_type_name))
 
 
-# TRANSACTION 1
-# Correct all existing viewports that use the viewport types to be purged
-# Collect viewports and find the ones that use the purging viewport types
-all_viewports = Fec(doc).OfClass(clr.GetClrType(Viewport)).ToElements()
-purge_vp_ids = [x.get_rvt_obj().Id for x in purge_vp_types]
-t1 = Transaction(doc, 'Correct Viewport Types')
-t1.Start()
-for vp in all_viewports:
-    if vp.GetTypeId() in purge_vp_ids:
-        try:
-            # change their type to the destination type
-            logger.debug('Changing viewport type for viewport with id: {}'.format(vp.Id))
-            vp.ChangeTypeId(dest_vp_typeid)
-        except Exception as change_err:
-            logger.debug('Can not change type for viewport with id: {} | {}'.format(vp.Id, change_err))
-t1.Commit()
 
-
-# TRANSACTION 2
-# Correct all hidden viewport elements that use the viewport types to be purged
-t2 = Transaction(doc, 'Correct Hidden Viewport Types')
-t2.Start()
-for vp_type_name, linked_elements in purge_dict.items():
-    has_error = False
-    logger.info('Converting all viewports of type: {}'.format(vp_type_name))
-    for linked_elid in linked_elements:
-        linked_el = doc.GetElement(linked_elid)
-        try:
-            if isinstance(linked_el, Viewport) and linked_el.GetTypeId() in purge_vp_ids:
-                logger.debug('Changing viewport type for hidden viewport with id: {}'.format(linked_el.Id))
-                linked_el.ChangeTypeId(dest_vp_typeid)
-        except Exception as change_err:
-            has_error = True
-            logger.debug('Can not change type for hidden viewport with id: {} | {}'.format(linked_el.Id, change_err))
-    if has_error:
-        logger.warning('Exceptions occured while converting viewport type: {}\n' \
-                       'This is minor and the type might still be purgable.'.format(vp_type_name))
-
-t2.Commit()
-
-
-# # TRANSACTION 3
-# # Now remove the viewport types to be purged
-# for vp_type in purge_vp_types:
-#     logger.debug('Removing viewport type: {}'.format(vp_type))
-#     t3 = Transaction(doc, 'Remove viewport type')
-#     t3.Start()
-#     try:
-#         doc.Delete(vp_type.get_rvt_obj().Id)
-#         t3.Commit()
-#     except:
-#         logger.error('Can not remove: {}'.format(vp_type))
-#         t3.RollBack()
-#
-
-tg.Commit()
-
-TaskDialog.Show('pyRevit', 'Conversion Completed.\nRemove the unused viewport types using Purge tool.')
+TaskDialog.Show('pyRevit', 'Conversion Completed.\nNow you can remove the unused viewport types using Purge tool.')
