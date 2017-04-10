@@ -1,5 +1,6 @@
-from revitutils import doc
 from pyrevit.coreutils.logger import get_logger
+
+from revitutils._project import DocDecorator
 
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, TransactionGroup, TransactionStatus, FailureHandlingOptions
@@ -26,9 +27,24 @@ class ActionStatus:
                 return stat_v
 
 
-class Action:
+@DocDecorator
+class Action():
+    """
+    Simplifies transactions by applying ``Transaction.Start()`` and
+    ``Transaction.Commit()`` before and after the context.
+    Automatically rolls back if exception is raised.
+
+    >>> with Action('Move Wall'):
+    >>>     wall.DoSomething()
+
+    >>> with Action('Move Wall') as action:
+    >>>     wall.DoSomething()
+    >>>     assert action.status == ActionStatus.Started  # True
+    >>> assert action.status == ActionStatus.Committed    # True
+
+    """
     def __init__(self, name=None, clear_after_rollback=False, show_error_dialog=False):
-        self._rvt_transaction = Transaction(doc, name if name else DEFAULT_TRANSACTION_NAME)
+        self._rvt_transaction = Transaction(self.doc, name if name else DEFAULT_TRANSACTION_NAME)
         self._fail_hndlr_ops = self._rvt_transaction.GetFailureHandlingOptions()
         self._fail_hndlr_ops.SetClearAfterRollback(clear_after_rollback)
         self._fail_hndlr_ops.SetForcedModalHandling(show_error_dialog)
@@ -96,14 +112,16 @@ class Action:
         return self._rvt_transaction.HasEnded()
 
 
+@DocDecorator
 class DryAction(Action):
     def __exit__(self, exception, exception_value, traceback):
         self._rvt_transaction.RollBack()
 
 
-class ActionGroup:
+@DocDecorator
+class ActionGroup():
     def __init__(self, name=None, assimilate=True):
-        self._rvt_transaction_group = TransactionGroup(doc, name if name else DEFAULT_TRANSACTION_NAME)
+        self._rvt_transaction_group = TransactionGroup(self.doc, name if name else DEFAULT_TRANSACTION_NAME)
         self.assimilate = assimilate
 
     def __enter__(self):
