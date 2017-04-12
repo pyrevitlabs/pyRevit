@@ -4,8 +4,10 @@ from revitutils import doc, selection
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import CurveElement, ElementId, StorageType
 
-__doc__ = 'Sums up the values of selected parameter on selected elements. Elements not containig ' \
-          'that parameter will be skipped.'
+__doc__ = 'Sums up the values of selected parameter on selected elements. This tool studies the selected ' \
+          'elements and their associated types and presents the user with a list of parameters that are ' \
+          'shared between the selected elements. Only parameters with Double or Interger values are included.'
+          
 __title__ = 'Sum Total'
 
 
