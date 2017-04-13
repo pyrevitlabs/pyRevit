@@ -1,30 +1,13 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Activates selection tool that picks only Model elements."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from revitutils import uidoc
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Activates selection tool that picks only Model elements.'
-
-from Autodesk.Revit.DB import ElementId
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import Group, ElementId
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI.Selection import ISelectionFilter
+# noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 
 class MassSelectionFilter(ISelectionFilter):
