@@ -1,38 +1,21 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Looks into the current selection elements and keeps the ones hosted on a linked model surface."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from revitutils import doc, uidoc, selection
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Looks into the current selection elements and keeps the ones hosted on a linked model surface.'
-
+# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import ElementId, RevitLinkInstance
-from System.Collections.Generic import List
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 __context__ = 'Selection'
 
-set = []
-for elId in uidoc.Selection.GetElementIds():
-    el = doc.GetElement(elId)
-    host = el.Host
-    if isinstance(host, RevitLinkInstance):
-        set.append(elId)
 
-uidoc.Selection.SetElementIds(List[ElementId](set))
-uidoc.RefreshActiveView()
+filtered_elements = []
+for el in selection:
+    try:
+        host = el.Host
+        if isinstance(host, RevitLinkInstance):
+            filtered_elements.append(el.Id)
+    except:
+        continue
+
+selection.set_to(filtered_elements)
