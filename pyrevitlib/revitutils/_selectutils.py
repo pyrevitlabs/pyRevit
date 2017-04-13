@@ -96,9 +96,6 @@ class SelectionUtils:
     def references(self):
         return self._refs
 
-    def replace_selection(self, el_id_list):
-        self._uidoc_selection.SetElementIds(List[ElementId](el_id_list))
-
 
 class CurrentElementSelection:
     def __init__(self, document, uidocument):
@@ -122,7 +119,31 @@ class CurrentElementSelection:
 
     def __iter__(self):
         return iter(self.elements)
-    
+
     @property
     def is_empty(self):
         return len(self.elements) == 0
+
+    def set_to(self, element_list):
+        element_id_list = []
+        if not isinstance(element_list, list):
+            element_list = [element_list]
+
+        for el in element_list:
+            if isinstance(el, ElementId):
+                element_id_list.append(el)
+            else:
+                element_id_list.append(el.Id)
+
+        self._uidoc.Selection.SetElementIds(List[ElementId](element_id_list))
+        self._uidoc.RefreshActiveView()
+
+    def append(self, element_list):
+        element_id_list = []
+        for el in element_list:
+            if isinstance(el, ElementId):
+                element_id_list.append(el)
+            else:
+                element_id_list.append(el.Id)
+
+        self._uidoc.Selection.SetElementIds(List[ElementId](element_id_list))
