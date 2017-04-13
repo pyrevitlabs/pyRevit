@@ -103,14 +103,7 @@ class CurrentElementSelection:
         self._uidoc = uidocument
         self._uidoc_selection = self._uidoc.Selection
 
-        self.element_ids = list(self._uidoc_selection.GetElementIds())
-        self.elements = [self._doc.GetElement(el_id) for el_id in self.element_ids]
-
-        self.count = len(self.element_ids)
-        self.first = self.last = None
-        if self.count > 0:
-            self.first = self.elements[0]
-            self.last = self.elements[self.count-1]
+        self.elements = [self._doc.GetElement(el_id) for el_id in self._uidoc_selection.GetElementIds()]
 
         self.utils = SelectionUtils(self._doc, self._uidoc)
 
@@ -120,30 +113,45 @@ class CurrentElementSelection:
     def __iter__(self):
         return iter(self.elements)
 
+    @staticmethod
+    def _get_element_ids(mixed_list):
+        element_id_list = []
+
+        if not isinstance(mixed_list, list):
+            mixed_list = [mixed_list]
+
+        for el in mixed_list:
+            if isinstance(el, ElementId):
+                element_id_list.append(el)
+            else:
+                element_id_list.append(el.Id)
+
+        return element_id_list
+
     @property
     def is_empty(self):
         return len(self.elements) == 0
 
+    @property
+    def element_ids(self):
+        return [el.Id for el in self.elements]
+
+    @property
+    def first(self):
+        if self.elements:
+            return self.elements[0]
+
+    @property
+    def last(self):
+        if self.elements:
+            return self.elements[len(self)-1]
+
     def set_to(self, element_list):
-        element_id_list = []
-        if not isinstance(element_list, list):
-            element_list = [element_list]
-
-        for el in element_list:
-            if isinstance(el, ElementId):
-                element_id_list.append(el)
-            else:
-                element_id_list.append(el.Id)
-
-        self._uidoc.Selection.SetElementIds(List[ElementId](element_id_list))
+        self._uidoc.Selection.SetElementIds(List[ElementId](self._get_element_ids(element_list)))
         self._uidoc.RefreshActiveView()
 
     def append(self, element_list):
-        element_id_list = []
-        for el in element_list:
-            if isinstance(el, ElementId):
-                element_id_list.append(el)
-            else:
-                element_id_list.append(el.Id)
-
-        self._uidoc.Selection.SetElementIds(List[ElementId](element_id_list))
+        new_elids = self._get_element_ids(element_list)
+        new_elids.extend(self.element_ids)
+        self._uidoc.Selection.SetElementIds(List[ElementId](new_elids))
+        self.elements = [self._doc.GetElement(el_id) for el_id in new_elids]
