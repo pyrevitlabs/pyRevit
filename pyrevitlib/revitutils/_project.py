@@ -6,6 +6,7 @@ class CurrentProject:
         self._doc = document
         self._info = self._doc.ProjectInformation
         self.name = self._info.Name
+        self.location = self._doc.PathName
 
 
 doc = HOST_APP.uiapp.ActiveUIDocument.Document

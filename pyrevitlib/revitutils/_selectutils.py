@@ -117,6 +117,12 @@ class CurrentElementSelection:
 
         self.utils = SelectionUtils(self._doc, self._uidoc)
 
+    def __len__(self):
+        return len(self.elements)
+
+    def __iter__(self):
+        return iter(self.elements)
+    
     @property
     def is_empty(self):
         return len(self.elements) == 0

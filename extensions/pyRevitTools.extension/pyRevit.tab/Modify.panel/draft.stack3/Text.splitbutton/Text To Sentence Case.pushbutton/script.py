@@ -1,35 +1,21 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Capitalizes the first letter of the selected text note."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from revitutils import doc, selection, Action
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+def get_first_alpha_index(src_string):
+    for idx, char in enumerate(src_string):
+        if char.isalpha():
+            return idx
 
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+    return None
 
-__doc__ = 'Capitalizes the first letter of the selected text note.'
+with Action('to Sentence case'):
+    for el in selection.elements:
+        new_sentence = ''
+        for word in unicode(el.Text).split():
+            idx = get_first_alpha_index(word)
+            if idx is not None:
+                new_sentence += ' ' + word[:idx].lower() + word[idx].upper() + word[idx+1:].lower()
 
-__window__.Close()
-from Autodesk.Revit.DB import Transaction
-
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
-
-t = Transaction(doc, 'to Sentence case')
-t.Start()
-
-for elId in uidoc.Selection.GetElementIds():
-    el = doc.GetElement(elId)
-    el.Text = el.Text[0].upper() + el.Text[1:].lower()
-
-t.Commit()
+        el.Text = new_sentence
