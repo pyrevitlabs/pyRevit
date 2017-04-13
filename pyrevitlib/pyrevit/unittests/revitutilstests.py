@@ -42,3 +42,12 @@ class TestRevitUtilsImports(TestCase):
             from revitutils import ActionGroup
         except Exception as e:
             raise e
+
+
+class TestRevitUtilsSelection(TestCase):
+    def setUp(self):
+        pass
+
+    def test_getSelection(self):
+        """revitutils selection access test"""
+        pass

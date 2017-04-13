@@ -16,13 +16,13 @@ logger = get_logger(__name__)
 
 
 def perform_tests():
+    # Perform enumtests
+    # import pyrevit.unittests.enumtests as enumtests
+    # run_module_tests(enumtests)
+    
     # Perform ipycoretests
     import pyrevit.unittests.ipycoretests as ipycoretests
     run_module_tests(ipycoretests)
-
-    # Perform enumtests
-    import pyrevit.unittests.enumtests as enumtests
-    run_module_tests(enumtests)
 
     # Perform revitutilstests
     import pyrevit.unittests.revitutilstests as revitutilstests
