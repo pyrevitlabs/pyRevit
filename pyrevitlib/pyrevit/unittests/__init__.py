@@ -8,26 +8,29 @@ of that module, although only a subset of functions are used during startup and 
 import warnings
 warnings.filterwarnings("ignore")
 
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.unittests.testrunner import run_module_tests
+from pyrevit.unittests._testrunner import run_module_tests
 
 
-logger = get_logger(__name__)
-
-
-def perform_tests():
+def perform_engine_tests():
     # Perform enumtests
-    # import pyrevit.unittests.enumtests as enumtests
-    # run_module_tests(enumtests)
-    
+    import pyrevit.unittests.ipytests.enumtests as enumtests
+    run_module_tests(enumtests)
+
     # Perform ipycoretests
-    import pyrevit.unittests.ipycoretests as ipycoretests
+    import pyrevit.unittests.ipytests.ipycoretests as ipycoretests
     run_module_tests(ipycoretests)
 
-    # Perform revitutilstests
-    import pyrevit.unittests.revitutilstests as revitutilstests
-    run_module_tests(revitutilstests)
 
-    # Perform consoletests
+def perform_coreutils_tests():
     import pyrevit.unittests.consoletests as consoletests
     run_module_tests(consoletests)
+
+
+def perform_scriptutilstests():
+    import pyrevit.unittests.scriptutilstests as scriptutilstests
+    run_module_tests(scriptutilstests)
+
+
+def perform_revitutils_tests():
+    import pyrevit.unittests.revitutilstests as revitutilstests
+    run_module_tests(revitutilstests)
