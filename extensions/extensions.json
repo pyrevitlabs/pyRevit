@@ -28,6 +28,19 @@
         "dependencies": []
         },
         {
+        "builtin": "True",
+        "enable": "True",
+        "type": "lib",
+        "name": "Rhino3dmIO",
+        "description": "Rhino 3dmIO Library",
+        "author": "McNeel",
+        "author-url": "https://github.com/mcneel",
+        "url": "",
+        "website": "https://github.com/mcneel/rhinocommon",
+        "image" : "",
+        "dependencies": []
+        },
+        {
         "builtin": "False",
         "type": "lib",
         "name": "RevitPythonWrapper",
