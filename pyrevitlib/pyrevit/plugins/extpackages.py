@@ -124,9 +124,12 @@ class ExtensionPackage:
             bool: Checked whether this extension is installed or not.
         """
         for ext_dir in user_config.get_ext_root_dirs():
-            for sub_dir in os.listdir(ext_dir):
-                if op.isdir(op.join(ext_dir, sub_dir)) and sub_dir == self.ext_dirname:
-                    return op.join(ext_dir, sub_dir)
+            if op.exists(ext_dir):
+                for sub_dir in os.listdir(ext_dir):
+                    if op.isdir(op.join(ext_dir, sub_dir)) and sub_dir == self.ext_dirname:
+                        return op.join(ext_dir, sub_dir)
+            else:
+                logger.error('custom Extension path does not exist: {}'.format(ext_dir))
 
         return ''
 
