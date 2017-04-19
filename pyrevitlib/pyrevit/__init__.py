@@ -63,26 +63,27 @@ class _HostApplication:
         try:
             # noinspection PyUnresolvedReferences
             self.uiapp = __revit__
+            self.app = self.uiapp.Application
         except Exception:
             raise Exception('Critical Error: Host software is not supported. '
                             '(__revit__ handle is not available)')
 
     @property
     def version(self):
-        return self.uiapp.Application.VersionNumber
+        return self.app.VersionNumber
 
     @property
     def version_name(self):
-        return self.uiapp.Application.VersionName
+        return self.app.VersionName
 
     @property
     def build(self):
-        return self.uiapp.Application.VersionBuild
+        return self.app.VersionBuild
 
     @property
     def username(self):
         """Return the username from Revit API (Application.Username)"""
-        uname = self.uiapp.Application.Username
+        uname = self.app.Username
         uname = uname.split('@')[0]  # if username is email
         # removing dots since username will be used in file naming
         uname = uname.replace('.', '')
