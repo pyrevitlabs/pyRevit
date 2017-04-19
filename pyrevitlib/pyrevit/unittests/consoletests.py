@@ -17,5 +17,6 @@ class TestConsoleWindow(TestCase):
             self._console.update_progress(i+1, 50)
 
         res = TaskDialog.Show('pyrevit', 'Did you see the progress bar?',
-                              TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No)
+                              TaskDialogCommonButtons.Yes |
+                              TaskDialogCommonButtons.No)
         self.assertEqual(str(res), 'Yes')

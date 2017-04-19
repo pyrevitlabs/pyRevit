@@ -11,14 +11,27 @@ logger = get_logger(__name__)
 DEBUG_OKAY_RESULT = 'PASSED'
 DEBUG_FAIL_RESULT = 'FAILED'
 
-RESULT_TEST_SUITE_START = '<div style="background:#e8e8e8; height:20px;">Test Suite: {suite}</div>'
+RESULT_TEST_SUITE_START = '<div style="background:#e8e8e8; height:20px;">' \
+                          'Test Suite: {suite}' \
+                          '</div>'
 
-RESULT_DIV_OKAY = '<div style="border-bottom: 1px solid gray; height:20px;">:white_heavy_check_mark: PASSED {test}</div>'
-RESULT_DIV_FAIL = '<div style="border-bottom: 1px solid gray; height:20px;">:cross_mark: FAILED {test}</div>'
-RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">:heavy_large_circle: ERROR {test}</div>'
+RESULT_DIV_OKAY = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+                  ':white_heavy_check_mark: PASSED {test}' \
+                  '</div>'
+
+RESULT_DIV_FAIL = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+                  ':cross_mark: FAILED {test}' \
+                  '</div>'
+
+RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+                   ':heavy_large_circle: ERROR {test}' \
+                   '</div>'
 
 
 class OutputWriter:
+    def __init__(self):
+        pass
+
     @staticmethod
     def write(output_str):
         output_window.print_html(output_str)
@@ -42,17 +55,20 @@ class PyRevitTestResult(TestResult):
     def addSuccess(self, test):
         super(PyRevitTestResult, self).addSuccess(test)
         logger.debug(DEBUG_OKAY_RESULT)
-        OutputWriter.write(RESULT_DIV_OKAY.format(test=self.getDescription(test)))
+        OutputWriter.write(RESULT_DIV_OKAY
+                           .format(test=self.getDescription(test)))
 
     def addError(self, test, err):
         super(PyRevitTestResult, self).addError(test, err)
         logger.debug(DEBUG_FAIL_RESULT)
-        OutputWriter.write(RESULT_DIV_ERROR.format(test=self.getDescription(test)))
+        OutputWriter.write(RESULT_DIV_ERROR
+                           .format(test=self.getDescription(test)))
 
     def addFailure(self, test, err):
         super(PyRevitTestResult, self).addFailure(test, err)
         logger.debug(DEBUG_FAIL_RESULT)
-        OutputWriter.write(RESULT_DIV_FAIL.format(test=self.getDescription(test)))
+        OutputWriter.write(RESULT_DIV_FAIL
+                           .format(test=self.getDescription(test)))
 
     # def addSkip(self, test, reason):
     #     super(PyRevitTestResult, self).addSkip(test, reason)
@@ -67,7 +83,8 @@ class PyRevitTestResult(TestResult):
 class PyRevitTestRunner(object):
     resultclass = PyRevitTestResult
 
-    def __init__(self, verbosity=1, failfast=False, use_buffer=False, resultclass=None):
+    def __init__(self, verbosity=1, failfast=False,
+                 use_buffer=False, resultclass=None):
         self.verbosity = verbosity
         self.failfast = failfast
         self.use_buffer = use_buffer
@@ -104,7 +121,9 @@ class PyRevitTestRunner(object):
         # print errots
         result.printErrors()
         test_count = result.testsRun
-        logger.debug("Ran %d test%s in %.3fs" % (test_count, test_count != 1 and "s" or "", time_taken))
+        logger.debug("Ran %d test%s in %.3fs" % (test_count,
+                                                 test_count != 1 and "s" or "",
+                                                 time_taken))
 
         expected_fails = unexpected_successes = skipped = 0
         try:
@@ -148,5 +167,6 @@ def run_module_tests(test_module):
     test_suite = test_loader.loadTestsFromModule(test_module)
     # run the test suite
     logger.debug('Running test suite for module: %s' % test_module)
-    OutputWriter.write(RESULT_TEST_SUITE_START.format(suite=test_module.__name__))
+    OutputWriter.write(RESULT_TEST_SUITE_START
+                       .format(suite=test_module.__name__))
     return test_runner.run(test_suite)

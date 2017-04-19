@@ -1,5 +1,4 @@
 from unittest import TestCase
-import pyrevit.coreutils.console.output as output
 
 
 class TestWithIndependentOutput(TestCase):
