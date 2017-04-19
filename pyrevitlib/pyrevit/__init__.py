@@ -1,4 +1,8 @@
-"""pyRevit root level config for all pyrevit sub-modules. Sub-modules handle their specific configuration internally."""
+"""
+pyRevit root level config for all pyrevit sub-modules.
+Sub-modules handle their specific configuration internally.
+
+"""
 
 import clr
 import sys
@@ -18,9 +22,9 @@ VERSION_MAJOR = 4
 VERSION_MINOR = 3
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Base Exceptions
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 TRACEBACK_TITLE = 'Traceback:'
 
 
@@ -35,10 +39,13 @@ class PyRevitException(Exception):
             tb_report = traceback.format_tb(sys.exc_traceback)[0]
             if self.args:
                 message = self.args[0]
-                return '{}\n\n{}\n{}'.format(message, TRACEBACK_TITLE, tb_report)
+                return '{}\n\n{}\n{}'.format(message,
+                                             TRACEBACK_TITLE,
+                                             tb_report)
             else:
                 return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
         except:
+            # noinspection PyArgumentList
             return Exception.__str__(self)
 
 
@@ -46,9 +53,9 @@ class PyRevitIOError(PyRevitException):
     pass
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# testing for availability of __revit__ just in case and collect host information
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# testing for availability of __revit__ just in case and collect host info
+# ------------------------------------------------------------------------------
 class _HostApplication:
     """Contains current host version and provides comparison functions."""
     def __init__(self):
@@ -57,7 +64,8 @@ class _HostApplication:
             # noinspection PyUnresolvedReferences
             self.uiapp = __revit__
         except Exception:
-            raise Exception('Critical Error: Host software is not supported. (__revit__ handle is not available)')
+            raise Exception('Critical Error: Host software is not supported. '
+                            '(__revit__ handle is not available)')
 
     @property
     def version(self):
@@ -76,7 +84,8 @@ class _HostApplication:
         """Return the username from Revit API (Application.Username)"""
         uname = self.uiapp.Application.Username
         uname = uname.split('@')[0]  # if username is email
-        uname = uname.replace('.', '')  # removing dots since username will be used in file naming
+        # removing dots since username will be used in file naming
+        uname = uname.replace('.', '')
         return uname
 
     @property
@@ -108,17 +117,19 @@ class _HostApplication:
 HOST_APP = _HostApplication()
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Testing the values of builtin parameters set in builtins scope by C# Script Executor.
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Testing values of builtin parameters set in scope by C# Script Executor.
+# ------------------------------------------------------------------------------
 class _ExecutorParams(object):
     @property   # read-only
     def engine(self):
         """
-        Reference to IronPython dotnet ScriptEngine that is executing this script.
+        Reference to IronPython dotnet ScriptEngine that is
+        executing this script.
 
         Returns:
-            Microsoft.Scripting.Hosting.ScriptEngine: Reference to dotnet object of this type
+            Microsoft.Scripting.Hosting.ScriptEngine:
+                Reference to dotnet object of this type
         """
         try:
             # noinspection PyUnresolvedReferences
@@ -131,8 +142,10 @@ class _ExecutorParams(object):
     #     try:
     #         # noinspection PyUnresolvedReferences
     #         for custom_attr in __assmcustomattrs__:
-    #             if 'AssemblyPyRevitVersion' in unicode(custom_attr.AttributeType):
-    #                 return unicode(custom_attr.ConstructorArguments[0]).replace('\"', '')
+    #             if 'AssemblyPyRevitVersion' in
+    #             unicode(custom_attr.AttributeType):
+    #                 return unicode(custom_attr.ConstructorArguments[0])
+    #                        .replace('\"', '')
     #     except:
     #         raise AttributeError()
 
@@ -205,17 +218,19 @@ class _ExecutorParams(object):
 
 EXEC_PARAMS = _ExecutorParams()
 
-# if no output window is set by the executor, it means that pyRevit is loading at Revit startup (not reloading)
+# if no output window is set by the executor, it means that pyRevit
+# is loading at Revit startup (not reloading)
 FIRST_LOAD = True if EXEC_PARAMS.window_handle is None else False
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # config environment info
-# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def _find_home_directory():
     """Return the pyRevitLoader.py full directory address"""
     try:
-        return op.dirname(op.dirname(op.dirname(__file__)))   # 3 steps back for <home>/Lib/pyrevit
+        # 3 steps back for <home>/Lib/pyrevit
+        return op.dirname(op.dirname(op.dirname(__file__)))
     except NameError:
         raise Exception('Critical Error. Can not find home directory.')
 
@@ -251,14 +266,24 @@ for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
             os.mkdir(pyrvt_app_dir)
             sys.path.append(pyrvt_app_dir)
         except (OSError, IOException) as err:
-            raise PyRevitException('Can not access pyRevit folder at: {} | {}'.format(pyrvt_app_dir, err))
+            raise PyRevitException('Can not access pyRevit folder at: {} | {}'
+                                   .format(pyrvt_app_dir, err))
 
 
 if EXEC_PARAMS.doc_mode:
-    PYREVIT_FILE_PREFIX_UNIVERSAL = PYREVIT_FILE_PREFIX = PYREVIT_FILE_PREFIX_STAMPED = None
+    PYREVIT_FILE_PREFIX_UNIVERSAL = None
+    PYREVIT_FILE_PREFIX = None
+    PYREVIT_FILE_PREFIX_STAMPED = None
 else:
     # pyrevit standard files prefix
-    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.username)
-    PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME, HOST_APP.version, HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                   HOST_APP.username)
+
+    PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                            HOST_APP.version,
+                                            HOST_APP.username)
+
     PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                       HOST_APP.version, HOST_APP.username, HOST_APP.proc_id)
+                                                       HOST_APP.version,
+                                                       HOST_APP.username,
+                                                       HOST_APP.proc_id)
