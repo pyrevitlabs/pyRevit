@@ -74,6 +74,7 @@ class TemplatePromptBar(WPFWindow):
             <TextBlock x:Name="message_tb"
                        TextWrapping="Wrap" Text="TextBlock" TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+        </Grid>    
     </Window>
     """
 
