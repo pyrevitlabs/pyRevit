@@ -1,12 +1,10 @@
 """Increases the sheet number of the selected sheets by one."""
 
-
 import os
 import os.path as op
 import revitutils.journals as journals
 
-
-__context__ = 'zerodoc'
+# __context__ = 'zerodoc'
 
 
 # Checks to see if notepad++ program is installed and available.

@@ -6,7 +6,7 @@ from scriptutils import coreutils
 import revitutils.journals as journals
 
 
-__context__ = 'zerodoc'
+# __context__ = 'zerodoc'
 
 
 journals_folder = journals.get_journals_folder()
