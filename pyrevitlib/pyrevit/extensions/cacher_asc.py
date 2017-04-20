@@ -18,11 +18,15 @@ NAME_KEY = 'name'
 
 
 def _get_cache_file(cached_ext):
-    return appdata.get_data_file(file_id='cache_{}'.format(cached_ext.name), file_ext='json')
+    return appdata.get_data_file(file_id='cache_{}'.format(cached_ext.name),
+                                 file_ext='json')
 
 
 def _make_cache_from_cmp(obj):
-    return json.dumps(obj, default=lambda o: o.get_cache_data(), sort_keys=True, indent=4)
+    return json.dumps(obj,
+                      default=lambda o: o.get_cache_data(),
+                      sort_keys=True,
+                      indent=4)
 
 
 def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
@@ -34,13 +38,17 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
     for cached_cmp in cached_sub_cmps:  # type: dict
         for sub_class in allowed_sub_cmps:
             if sub_class.type_id == cached_cmp[TYPE_ID_KEY]:
-                logger.debug('Creating sub component from cache: {}, {}'.format(cached_cmp[NAME_KEY], sub_class))
+                logger.debug('Creating sub component from cache: {}, {}'
+                             .format(cached_cmp[NAME_KEY], sub_class))
 
-                # cached_cmp might contain SUB_CMP_KEY. This needs to be removed since this function will make
-                # all the children recursively. So if this component has SUB_CMP_KEY means it has sub components:
+                # cached_cmp might contain SUB_CMP_KEY. This needs to be
+                # removed since this function will make all the children
+                # recursively. So if this component has SUB_CMP_KEY means
+                # it has sub components:
                 sub_cmp_cache = None
                 if SUB_CMP_KEY in cached_cmp.keys():
-                    # drop subcomponents dict from cached_cmp since we don't want the loaded_cmp to include this
+                    # drop subcomponents dict from cached_cmp since we
+                    # don't want the loaded_cmp to include this
                     sub_cmp_cache = cached_cmp.pop(SUB_CMP_KEY)
 
                 # create sub component from cleaned cached_cmp
@@ -63,7 +71,8 @@ def _read_cache_for(cached_ext):
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
     except Exception as err:
-        raise PyRevitException('Error reading cache for: {} | {}'.format(cached_ext, err))
+        raise PyRevitException('Error reading cache for: {} | {}'
+                               .format(cached_ext, err))
 
 
 def _write_cache_for(parsed_ext):
@@ -74,7 +83,8 @@ def _write_cache_for(parsed_ext):
         with open(cache_file, 'w') as cache_file:
             cache_file.write(_make_cache_from_cmp(parsed_ext))
     except Exception as err:
-        raise PyRevitException('Error writing cache for: {} | {}'.format(parsed_ext, err))
+        raise PyRevitException('Error writing cache for: {} | {}'
+                               .format(parsed_ext, err))
 
 
 def update_cache(parsed_ext):
@@ -86,9 +96,11 @@ def update_cache(parsed_ext):
 def get_cached_extension(installed_ext):
     cached_ext_dict = _read_cache_for(installed_ext)
     try:
-        logger.debug('Constructing components from cache for: {}'.format(installed_ext))
+        logger.debug('Constructing components from cache for: {}'
+                     .format(installed_ext))
         # get cached sub component dictionary and call recursive maker function
-        _make_sub_cmp_from_cache(installed_ext, cached_ext_dict.pop(SUB_CMP_KEY))
+        _make_sub_cmp_from_cache(installed_ext,
+                                 cached_ext_dict.pop(SUB_CMP_KEY))
         logger.debug('Load successful...')
     except Exception as err:
         logger.debug('Error reading cache...')
@@ -100,16 +112,22 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext_dict = _read_cache_for(extension)  # type: dict
-        logger.debug('Extension cache directory is: {} for: {}'.format(extension.directory, extension))
+        logger.debug('Extension cache directory is: {} for: {}'
+                     .format(extension.directory, extension))
         cache_dir_valid = cached_ext_dict[EXT_DIR_KEY] == extension.directory
 
-        logger.debug('Extension cache version is: {} for: {}'.format(extension.pyrvt_version, extension))
-        cache_version_valid = cached_ext_dict[EXT_HASH_VERSION_KEY] == extension.pyrvt_version
+        logger.debug('Extension cache version is: {} for: {}'
+                     .format(extension.pyrvt_version, extension))
+        cache_version_valid = \
+            cached_ext_dict[EXT_HASH_VERSION_KEY] == extension.pyrvt_version
 
-        logger.debug('Extension hash value is: {} for: {}'.format(extension.dir_hash_value, extension))
-        cache_hash_valid = cached_ext_dict[EXT_HASH_VALUE_KEY] == extension.dir_hash_value
+        logger.debug('Extension hash value is: {} for: {}'
+                     .format(extension.dir_hash_value, extension))
+        cache_hash_valid = \
+            cached_ext_dict[EXT_HASH_VALUE_KEY] == extension.dir_hash_value
 
-        cache_valid = cache_dir_valid and cache_version_valid and cache_hash_valid
+        cache_valid = \
+            cache_dir_valid and cache_version_valid and cache_hash_valid
 
         # cache is valid if both version and hash value match
         return cache_valid
@@ -119,4 +137,5 @@ def is_cache_valid(extension):
         return False
 
     except Exception as err:
-        logger.debug('Error determining cache validity: {} | {}'.format(extension, err))
+        logger.debug('Error determining cache validity: {} | {}'
+                     .format(extension, err))
