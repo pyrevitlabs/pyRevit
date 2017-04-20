@@ -55,7 +55,7 @@ class GenericUIComponent(GenericComponent):
         self.icon_file = None
 
     def __init_from_dir__(self, ext_dir):
-        if not ext_dir.endswith(self.type_id):
+        if not ext_dir.lower().endswith(self.type_id):
             raise PyRevitException('Can not initialize from directory: {}'.format(ext_dir))
         self.directory = ext_dir
         self.unique_name = self._get_unique_name()
