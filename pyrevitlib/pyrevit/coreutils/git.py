@@ -12,11 +12,15 @@ import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.loader.addin import get_addin_dll_file
 
 # noinspection PyUnresolvedReferences
 import System
 # noinspection PyUnresolvedReferences
 from System import DateTime, DateTimeOffset
+
+
+logger = get_logger(__name__)
 
 
 GIT_LIB = 'LibGit2Sharp'
@@ -25,10 +29,13 @@ if not EXEC_PARAMS.doc_mode:
     # todo: figure out how to import extensions on the caller's scope.
     clr.AddReference("System.Core")
     clr.ImportExtensions(System.Linq)
-    clr.AddReferenceByName(GIT_LIB)
-
-
-logger = get_logger(__name__)
+    # clr.AddReferenceByName(GIT_LIB)
+    try:
+        clr.AddReferenceToFileAndPath(get_addin_dll_file(GIT_LIB))
+    except:
+        logger.error('Can not load %s module. '
+                     'This module is necessary for getting pyRevit version '
+                     'and staying updated.' % GIT_LIB)
 
 
 if not EXEC_PARAMS.doc_mode:
@@ -140,7 +147,7 @@ def git_pull(repo_info):
 def git_fetch(repo_info):
     repo = repo_info.repo
     try:
-        repo.Network.Fetch(repo.Head.TrackedBranch.Remote, _make_fetch_options(repo_info)) 
+        repo.Network.Fetch(repo.Head.TrackedBranch.Remote, _make_fetch_options(repo_info))
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
         head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))

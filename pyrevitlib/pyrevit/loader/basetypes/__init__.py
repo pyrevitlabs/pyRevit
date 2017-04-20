@@ -10,19 +10,17 @@ from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.versionmgr import PYREVIT_VERSION
 import pyrevit.coreutils.appdata as appdata
 
+from pyrevit.loader import LOADER_DIR
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
+from pyrevit.loader.addin import ADDIN_DIR, ADDIN_RESOURCE_DIR, get_addin_dll_file
 
 
 logger = get_logger(__name__)
 
 
 if not EXEC_PARAMS.doc_mode:
-    LOADER_DIR = op.dirname(op.dirname(__file__))
-    ADDIN_DIR = op.join(LOADER_DIR, 'addin')
-
     sys.path.append(ADDIN_DIR)
 
-    ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
     INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
@@ -35,8 +33,7 @@ if not EXEC_PARAMS.doc_mode:
         FRAMEWORK_DIRS = None
         logger.debug('Dotnet SDK is not installed. | {}'.format(dotnet_sdk_err))
 else:
-    LOADER_DIR = ADDIN_DIR = ADDIN_RESOURCE_DIR = INTERFACE_TYPES_DIR = None
-    DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
+    INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
 
 
 # base classes for pyRevit commands ------------------------------------------------------------------------------------
@@ -117,17 +114,9 @@ def _get_framework_module(fw_module):
     return None
 
 
-def _get_addin_dll_file(addin_filename):
-    addin_file = op.join(ADDIN_DIR, make_canonical_name(addin_filename, ASSEMBLY_FILE_TYPE))
-    if op.exists(addin_file):
-        return addin_file
-
-    return None
-
-
 def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
-    addin_file = _get_addin_dll_file(ref_name)
+    addin_file = get_addin_dll_file(ref_name)
     if addin_file:
         return addin_file
 
