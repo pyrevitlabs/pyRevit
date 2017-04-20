@@ -16,16 +16,17 @@ ADDIN_CLASSNAME = LOADER_ADDON_NAMESPACE + 'Application'
 ADDIN_VENDORID = 'eirannejad'
 
 
-addinfile_contents = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'            \
-                     '<RevitAddIns>\n'                                                     \
-                     '  <AddIn Type="Application">\n'                                      \
-                     '    <Name>{addinname}</Name>\n'                                      \
-                     '    <Assembly>{addinfolder}\\{addinname}.dll</Assembly>\n'           \
-                     '    <AddInId>{addinguid}</AddInId>\n'                                \
-                     '    <FullClassName>{addinname}.{addinclassname}</FullClassName>\n'   \
-                     '  <VendorId>{addinvendorid}</VendorId>\n'                            \
-                     '  </AddIn>\n'                                                        \
-                     '</RevitAddIns>\n'
+addinfile_contents = \
+    '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n'            \
+    '<RevitAddIns>\n'                                                     \
+    '  <AddIn Type="Application">\n'                                      \
+    '    <Name>{addinname}</Name>\n'                                      \
+    '    <Assembly>{addinfolder}\\{addinname}.dll</Assembly>\n'           \
+    '    <AddInId>{addinguid}</AddInId>\n'                                \
+    '    <FullClassName>{addinname}.{addinclassname}</FullClassName>\n'   \
+    '  <VendorId>{addinvendorid}</VendorId>\n'                            \
+    '  </AddIn>\n'                                                        \
+    '</RevitAddIns>\n'
 
 
 def _find_revit_addin_directory():
@@ -43,8 +44,10 @@ def _addin_def_exists(revit_addin_dir):
             fullfname = op.join(revit_addin_dir, fname)
             with open(fullfname, 'r') as f:
                 for line in f.readlines():
-                    if (LOADER_ADDON_NAMESPACE + '.dll').lower() in line.lower():
-                        logger.debug('Addin file exists for pyRevit: {}'.format(fullfname))
+                    if (LOADER_ADDON_NAMESPACE + '.dll').lower() \
+                            in line.lower():
+                        logger.debug('Addin file exists for pyRevit: {}'
+                                     .format(fullfname))
                         return fullfname
     return False
 
@@ -58,23 +61,26 @@ def _set_addin_state_for(revit_version, addin_state):
             try:
                 os.remove(existing_addin_file)
             except Exception as del_err:
-                logger.debug('Error removing {} | {}'.format(existing_addin_file, del_err))
+                logger.debug('Error removing {} | {}'
+                             .format(existing_addin_file, del_err))
 
         if addin_state:
             new_addin_file = op.join(revit_addin_dir, ADDIN_DEF_FILENAME)
             with open(new_addin_file, 'w') as f:
-                f.writelines(addinfile_contents.format(addinname=LOADER_ADDON_NAMESPACE,
-                                                       addinfolder=ADDIN_DIR,
-                                                       addinguid=ADDIN_GUID,
-                                                       addinvendorid=ADDIN_VENDORID,
-                                                       addinclassname=ADDIN_CLASSNAME))
+                f.writelines(
+                    addinfile_contents.format(addinname=LOADER_ADDON_NAMESPACE,
+                                              addinfolder=ADDIN_DIR,
+                                              addinguid=ADDIN_GUID,
+                                              addinvendorid=ADDIN_VENDORID,
+                                              addinclassname=ADDIN_CLASSNAME))
 
 
 def get_addinfiles_state():
     addinfiles_state_dict = {}
     installed_revits_dict = _get_installed_revit_addin_folders()
     for revit_version, revit_addin_dir in installed_revits_dict.items():
-        addinfiles_state_dict[revit_version] = _addin_def_exists(revit_addin_dir)
+        addinfiles_state_dict[revit_version] = \
+            _addin_def_exists(revit_addin_dir)
 
     return addinfiles_state_dict
 

@@ -13,7 +13,9 @@ else:
 
 
 def get_addin_dll_file(addin_filename):
-    addin_file = op.join(ADDIN_DIR, make_canonical_name(addin_filename, ASSEMBLY_FILE_TYPE))
+    addin_file = op.join(ADDIN_DIR,
+                         make_canonical_name(addin_filename,
+                                             ASSEMBLY_FILE_TYPE))
     if op.exists(addin_file):
         return addin_file
 
