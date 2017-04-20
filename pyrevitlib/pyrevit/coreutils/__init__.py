@@ -504,3 +504,47 @@ def is_url_valid(url_string):
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     return regex.match(url_string)
+
+
+def reformat_string(orig_str, orig_format, new_format):
+    """Reformats a string into a new format.
+    Extracts information from a string based on a given pattern,
+    and recreates a new string based on the given new pattern.
+
+    Arguments:
+        orig_str(str): Original string to be reformatted
+        orig_format(str): Pattern of the original string (data to be extracted)
+        new_format(str): New pattern (how to recompose the data)
+
+    Example:
+    >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
+                        '{section} - {loc} - {mat} - {rating} - {name}',
+                        '{section}:{mat}:{rating} - {name} ({loc})'))
+    >>> 150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)
+
+    Returns:
+        str: Reformatted string
+
+    """
+
+    # find the tags
+    tag_extractor = re.compile('\{(.*?)\}')
+    tags = tag_extractor.findall(orig_format)
+
+    # replace the tags with regex patterns
+    # to create a regex pattern that finds values
+    tag_replacer = re.compile('\{.*?\}')
+    value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
+    # find all values
+    value_extractor = re.compile(value_extractor_pattern)
+    values = value_extractor.findall(orig_str)
+    if len(values) > 0:
+        values = values[0]
+
+    # create a dictionary of tags and values
+    reformat_dict = {}
+    for k, v in zip(tags, values):
+        reformat_dict[k] = v
+
+    # use dictionary to reformat the string into new
+    return new_format.format(**reformat_dict)
