@@ -1,6 +1,10 @@
 from pyrevit.coreutils.console import charts
-
 from scriptutils import this_script
+
+
+__context__ = 'zerodoc'
+
+
 this_script.output.set_width(600)
 
 

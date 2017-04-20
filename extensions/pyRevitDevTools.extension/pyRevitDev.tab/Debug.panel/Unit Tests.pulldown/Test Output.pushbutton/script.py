@@ -7,6 +7,9 @@ import scriptutils as su
 from Autodesk.Revit.DB import ElementId
 
 
+__context__ = 'zerodoc'
+
+
 su.this_script.output.print_md('**Testing log levels:**')
 su.logger.critical('Test Log Level')
 su.logger.warning('Test Log Level')

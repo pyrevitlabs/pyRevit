@@ -14,6 +14,9 @@ import IronPython.Hosting
 import IronPython.Runtime
 
 
+__context__ = 'zerodoc'
+
+
 TEST_UNIT = 100
 MAX_TESTS = 5 * TEST_UNIT
 script = "import random; random.randint(1,10)"
