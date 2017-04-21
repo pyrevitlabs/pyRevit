@@ -31,7 +31,8 @@ class SettingsWindow(WPFWindow):
         self._setup_env_vars_list()
         self._addinfiles_checkboxes = {'2015': self.revit2015_cb,
                                        '2016': self.revit2016_cb,
-                                       '2017': self.revit2017_cb}
+                                       '2017': self.revit2017_cb,
+                                       '2018': self.revit2018_cb}
 
         self._setup_usagelogging()
         self._setup_addinfiles()
