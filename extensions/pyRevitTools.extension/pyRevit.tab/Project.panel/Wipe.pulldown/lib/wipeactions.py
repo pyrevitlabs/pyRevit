@@ -27,12 +27,13 @@ def log_debug(message):
 
 def log_error(el_type='', el_id=0, delete_err=None):
     err_msg = str(delete_err).replace('\n', ' ').replace('\r', '')
-    logger.error('Error Removing Element with Id: {} Type: {} | {}'.format(el_type, el_id, err_msg))
+    logger.warning('Error Removing Element with Id: {} Type: {} | {}'.format(el_id, el_type, err_msg))
 
 
 def remove_action(action_title, action_cat, elements_to_remove, validity_func=None):
     def remove_element(rem_el):
         if rem_el:
+            print(rem_el)
             try:
                 log_debug('Removing element:{} id:{}'.format(rem_el, rem_el.Id))
                 doc.Delete(rem_el.Id)
@@ -50,10 +51,16 @@ def remove_action(action_title, action_cat, elements_to_remove, validity_func=No
     with Action(action_title):
         for element in elements_to_remove:
             if validity_func:
-                if validity_func(element):
-                    remove_element(element)
+                try:
+                    if validity_func(element):
+                        remove_element(element)
+                except Exception as e:
+                    log_debug('Validity func failed. | {}'.format(e))
+                    continue
             else:
                 remove_element(element)
+
+    print('Completed...\n')
 
 
 @notdependent
@@ -73,7 +80,7 @@ def remove_all_constraints():
         return cnst.View is not None
 
     cl = FilteredElementCollector(doc)
-    consts = list(cl.OfCategory(BuiltInCategory.OST_Constraints).WhereElementIsNotElementType())
+    consts = list(cl.OfCategory(BuiltInCategory.OST_Constraints).WhereElementIsNotElementType().ToElements())
 
     print_header('REMOVING ALL CONSTRAINTS')
     remove_action('Remove All Constraints', 'Constraint', consts, validity_func=confirm_removal)
@@ -83,11 +90,10 @@ def remove_all_constraints():
 def remove_all_groups():
     """Remove (and Explode) All Groups"""
 
-    def confirm_removal(group_typeid):
-        group_type = doc.GetElement(group_typeid)
+    def confirm_removal(group_type):
         return group_type and group_type.Category.Name != 'Attached Detail Groups'
 
-    group_types = list(FilteredElementCollector(doc).OfClass(clr.GetClrType(GroupType)).ToElementIds())
+    group_types = list(FilteredElementCollector(doc).OfClass(clr.GetClrType(GroupType)).ToElements())
     groups = list(FilteredElementCollector(doc).OfClass(clr.GetClrType(Group)).ToElements())
 
     print_header('EXPLODING GROUPS')         # ungroup all groups
@@ -97,29 +103,31 @@ def remove_all_groups():
             for grp in groups:
                 grp.UngroupMembers()
 
-        print_header('REMOVING GROUPS')          # delete group types
+        # delete group types
+        this_script.output.print_md('### {}'.format('REMOVING GROUPS'))
         remove_action('Remove All Groups', 'Group Type', group_types, validity_func=confirm_removal)
 
 
-@notdependent
+@dependent
 def remove_all_external_links():
     """Remove All External Links"""
 
-    def confirm_removal(refId):
-        link_el = doc.GetElement(refId)
+    def confirm_removal(link_el):
         return isinstance(link_el, RevitLinkType) or isinstance(link_el, CADLinkType)
+
+    print_header('REMOVE ALL EXTERNAL LINKS')
 
     if doc.PathName:
         modelPath = ModelPathUtils.ConvertUserVisiblePathToModelPath(doc.PathName)
         transData = TransmissionData.ReadTransmissionData(modelPath)
         externalReferences = transData.GetAllExternalFileReferenceIds()
-        cl = FilteredElementCollector(doc)
-        import_instances = list(cl.OfClass(clr.GetClrType(ImportInstance)).ToElements())
+        xref_links = [doc.GetElement(x) for x in externalReferences]
+        # cl = FilteredElementCollector(doc)
+        # import_instances = list(cl.OfClass(clr.GetClrType(ImportInstance)).ToElements())
 
-        print_header('REMOVE ALL EXTERNAL LINKS')
-        remove_action('Remove All External Links', 'External Link', import_instances, validity_func=confirm_removal)
+        remove_action('Remove All External Links', 'External Link', xref_links, validity_func=confirm_removal)
     else:
-        log_error('Model must be saved for external links to be removed.')
+        logger.warning('Model must be saved for external links to be removed.')
 
 
 @notdependent
@@ -132,7 +140,7 @@ def remove_all_sheets():
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
 
     def confirm_removal(sht):
-        return sht.Id.IntegerValue in open_views
+        return isinstance(sht, ViewSheet) and sht.Id.IntegerValue not in open_views
 
     print_header('REMOVING SHEETS')
     remove_action('Remove All Sheets', 'Sheet', sheets, validity_func=confirm_removal)
@@ -226,22 +234,28 @@ READONLY_VIEWS = [ViewType.ProjectBrowser,
                   ViewType.DrawingSheet,
                   ViewType.Internal]
 
-@notdependent
+PURGABLE_VIEWS = (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
+
+@dependent
 def remove_all_views():
     """Remove All Views"""
 
     cl = FilteredElementCollector(doc)
-    views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElementIds())
+    views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElements())
     open_UIViews = uidoc.GetOpenUIViews()
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
 
     def confirm_removal(v):
-        if isinstance(v, View):
-            if ViewType.ThreeD == v.ViewType and '{3D}' == v.ViewName:
+        if isinstance(v, PURGABLE_VIEWS):
+            if v.ViewType in READONLY_VIEWS:
                 return False
-            elif '<' in v.ViewName or v.IsTemplate:
+            elif v.IsTemplate:
                 return False
-            elif vid.IntegerValue in open_views:
+            elif ViewType.ThreeD == v.ViewType and '{3D}' == v.ViewName:
+                return False
+            elif '<' in v.ViewName:
+                return False
+            elif v.Id.IntegerValue in open_views:
                 return False
             else:
                 return True

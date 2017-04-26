@@ -1,31 +1,22 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'This script removes all custom parameters that has not been used in dimensions as labels and also ' \
-          'resets the value for the other parameters to zero or null.'
-
+import sys
 import clr
 from Autodesk.Revit.DB import Transaction, ElementId, StorageType, FilteredElementCollector, Dimension, FamilyParameter
-from Autodesk.Revit.UI import TaskDialog
+from Autodesk.Revit.UI import TaskDialog, TaskDialogCommonButtons, TaskDialogResult
 
 uidoc = __revit__.ActiveUIDocument
 doc = __revit__.ActiveUIDocument.Document
+
+__doc__ = 'This script removes all custom parameters that has not been used '\
+          'in dimensions as labels and also resets the value for the other ' \
+          'parameters to zero or null.'
+
+res = TaskDialog.Show('pyRevit',
+                      'Make sure your models are saved and synced. '
+                      'Hit OK to continue...',
+                      TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel)
+
+if not res == TaskDialogResult.Ok:
+    sys.exit()
 
 if doc.IsFamilyDocument:
     params = doc.FamilyManager.GetParameters()
