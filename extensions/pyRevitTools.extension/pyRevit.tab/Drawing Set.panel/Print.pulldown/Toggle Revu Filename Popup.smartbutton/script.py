@@ -7,8 +7,8 @@ from scriptutils import this_script, logger
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 
-__doc__ = 'Enables and disables the Revu PDF Printer prompt for filename option. ' \
-          'The Icon shows the current state of this setting.'
+__doc__ = 'Enables and disables the Revu PDF Printer prompt for ' \
+          'filename option. The Icon shows the current state of this setting.'
 
 
 # op.sep = '\\'
@@ -30,7 +30,8 @@ def get_reg_key(key, subkey):
 
 def find_driver_key(driver_keys, parent_string, key):
     subkey_count, value_count, last_changed = wr.QueryInfoKey(key)
-    logger.debug('{} reg key has {} subkeys and {} values.'.format(parent_string, subkey_count, value_count))
+    logger.debug('{} reg key has {} subkeys and {} values.' \
+                 .format(parent_string, subkey_count, value_count))
     for idx in range(0, subkey_count):
         subkey_name = wr.EnumKey(key, idx)
         key_path = op.join(parent_string, subkey_name)
@@ -73,10 +74,15 @@ def set_filename_prompt_state(dkeys, state):
     if dkeys:
         try:
             for dkey in dkeys:
-                wr.SetValueEx(dkey, r'PromptForFileName', 0, wr.REG_SZ, '1' if state else '0')
+                wr.SetValueEx(dkey,
+                              r'PromptForFileName',
+                              0,
+                              wr.REG_SZ,
+                              '1' if state else '0')
             return state
         except Exception as key_read_err:
-            logger.error('Error accessing registry key value. | {}'.format(key_read_err))
+            logger.debug('Error accessing registry key value.' \
+                         ' | {}'.format(key_read_err))
     else:
         logger.debug('No registry keys are available for revu printer driver.')
 
@@ -91,7 +97,8 @@ def query_filename_prompt_state(dkeys):
                 state |= int(key_state) > 0
             return state
         except Exception as key_read_err:
-            logger.error('Error accessing registry key value. | {}'.format(key_read_err))
+            logger.debug('Error accessing registry key value.' \
+                         ' | {}'.format(key_read_err))
     else:
         logger.debug('No registry keys are available for revu printer driver.')
 
@@ -107,10 +114,10 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         close_keys(dkeys)
 
         if curval:
-            logger.debug('Prompt For FileName is Enabled...')
+            logger.debug('PDF Printer PromptForFileName is Enabled...')
             ui_button_cmp.set_icon(on_icon, icon_size=ICON_MEDIUM)
         else:
-            logger.debug('Prompt For FileName is Disabled...')
+            logger.debug('PDF Printer PromptForFileName is Disabled...')
             ui_button_cmp.set_icon(off_icon, icon_size=ICON_MEDIUM)
         return True
     else:
