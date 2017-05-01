@@ -4,9 +4,6 @@ from rpw import DB, activeview, Action, Collector, SectionBox
 from System.Collections.Generic import List
 
 
-__title__ = 'Toggle\nSection Box'
-
-
 section_boxes = Collector(of_category=SectionBox,
                           is_type=False)
 

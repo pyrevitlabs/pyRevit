@@ -4,7 +4,6 @@
 from revitutils import curview, Action
 activeview = curview
 
-__title__ = 'Toggle\nImported'
 
 with Action('Toggle Imported'):
     activeview.AreImportCategoriesHidden = \
