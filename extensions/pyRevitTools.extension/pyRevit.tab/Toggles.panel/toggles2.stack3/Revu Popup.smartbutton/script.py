@@ -139,7 +139,7 @@ def toggle_state():
             logger.debug('Prompt For FileName is Disabled. Enabling...')
             set_filename_prompt_state(dkeys, True)
 
-        this_script.toggle_icon(curval)
+        this_script.toggle_icon(not curval)
         close_keys(dkeys)
 
 
