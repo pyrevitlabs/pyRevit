@@ -122,6 +122,22 @@ class PyRevitScriptUtils:
     def get_bundle_file(file_name):
         return op.join(COMMAND_PATH, file_name)
 
+    def toggle_icon(self, new_state):
+        on_icon = this_script.get_bundle_file('on.png')
+        if not on_icon:
+            logger.error('Script does not have icon for on state.')
+            return
+
+        off_icon = this_script.get_bundle_file('off.png')
+        if not off_icon:
+            logger.error('Script does not have icon for on state.')
+            return
+
+        if new_state:
+            this_script.ui_button.set_icon(on_icon)
+        else:
+            this_script.ui_button.set_icon(off_icon)
+
     @staticmethod
     def journal_write(data_key, msg):
         # Get the StringStringMap class which can write data into.
