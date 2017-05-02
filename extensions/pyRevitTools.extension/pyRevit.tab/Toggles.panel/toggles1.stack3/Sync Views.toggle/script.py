@@ -87,12 +87,7 @@ def applyzoomstate(sender, args):
 def togglestate():
     new_state = not get_pyrevit_env_var(SYNC_VIEW_ENV_VAR)
     set_pyrevit_env_var(SYNC_VIEW_ENV_VAR, new_state)
-    on_icon = this_script.get_bundle_file('on.png')
-    off_icon = this_script.get_bundle_file('off.png')
-    if new_state:
-        this_script.ui_button.set_icon(on_icon)
-    else:
-        this_script.ui_button.set_icon(off_icon)
+    this_script.toggle_icon(new_state)
 
 
 # noinspection PyUnusedLocal

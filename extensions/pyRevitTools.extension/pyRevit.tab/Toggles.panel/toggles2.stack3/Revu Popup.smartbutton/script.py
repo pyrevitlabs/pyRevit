@@ -8,6 +8,7 @@ from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
 
 __context__ = 'zerodoc'
+__title__ = 'Revu\nPopup'
 
 __doc__ = 'Enables and disables the Revu PDF Printer prompt for filename option. ' \
           'The Icon shows the current state of this setting.'
@@ -127,9 +128,6 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 
 
 def toggle_state():
-    on_icon = this_script.get_bundle_file('on.png')
-    off_icon = this_script.get_bundle_file('off.png')
-
     dkeys = get_driver_keys()
     if dkeys:
         curval = query_filename_prompt_state(dkeys)
@@ -137,12 +135,11 @@ def toggle_state():
         if curval:
             logger.debug('Prompt For FileName is Enabled. Disabling...')
             set_filename_prompt_state(dkeys, False)
-            this_script.ui_button.set_icon(off_icon, icon_size=ICON_MEDIUM)
         else:
             logger.debug('Prompt For FileName is Disabled. Enabling...')
             set_filename_prompt_state(dkeys, True)
-            this_script.ui_button.set_icon(on_icon, icon_size=ICON_MEDIUM)
 
+        this_script.toggle_icon(curval)
         close_keys(dkeys)
 
 
