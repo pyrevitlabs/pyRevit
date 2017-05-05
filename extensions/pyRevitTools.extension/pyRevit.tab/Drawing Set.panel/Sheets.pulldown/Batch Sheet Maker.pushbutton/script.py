@@ -37,7 +37,7 @@ class BatchSheetMakerWindow(WPFWindow):
         no_tb_option = 'No Title Block'
         titleblocks = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_TitleBlocks) \
                                                    .WhereElementIsElementType().ToElements()
-        tblock_dict = {Element.Name.GetValue(tb):tb for tb in titleblocks}
+        tblock_dict = {'{}: {}'.format(tb.FamilyName, Element.Name.GetValue(tb)):tb for tb in titleblocks}
         options = [no_tb_option]
         options.extend(tblock_dict.keys())
         selected_titleblocks = SelectFromList.show(options, multiselect=False)
@@ -64,7 +64,8 @@ class BatchSheetMakerWindow(WPFWindow):
 
             except Exception as create_err:
                 t.RollBack()
-                logger.error('Error creating placeholder sheet: {}'.format(create_err))
+                logger.error('Error creating placeholder sheet {}:{} | {}'
+                             .format(sheet_num, sheet_name, create_err))
 
     def _create_sheet(self, sheet_num, sheet_name):
         with Transaction(doc, 'Create Sheet') as t:
@@ -79,7 +80,8 @@ class BatchSheetMakerWindow(WPFWindow):
 
             except Exception as create_err:
                 t.RollBack()
-                logger.error('Error creating sheet sheet: {}'.format(create_err))
+                logger.error('Error creating sheet sheet {}:{} | {}'
+                             .format(sheet_num, sheet_name, create_err))
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
