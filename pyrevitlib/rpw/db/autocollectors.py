@@ -2,8 +2,9 @@ import re
 import sys
 
 # noinspection PyUnresolvedReferences
-from rpw import DB
+from rpw import DB, doc
 from rpw.utils import get_all_subclasses
+from rpw.db.core.datamodel import Category
 from rpw.db.core.collector import Collector
 
 
@@ -35,6 +36,10 @@ class CategoryCollector(object):
         pass
 
     @classmethod
+    def category(cls):
+        return Category(DB.Category.GetCategory(doc, cls._wrapped_category))
+
+    @classmethod
     def builtin_enum(cls):
         return cls._wrapped_category
 
@@ -45,9 +50,18 @@ class SubCategoryCollector(object):
 
 class AutoCategoryCollectorModule:
     def __init__(self):
-        all_builtin_cats = \
-            list(DB.BuiltInCategory.GetValues(DB.BuiltInCategory))
-        all_builtin_cats.remove(DB.BuiltInCategory.INVALID)
+        # all_builtin_cats = \
+        #     list(DB.BuiltInCategory.GetValues(DB.BuiltInCategory))
+        # all_builtin_cats.remove(DB.BuiltInCategory.INVALID)
+
+        all_builtin_cats = []
+        for builtin_cat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+            try:
+                cat = DB.Category.GetCategory(doc, builtin_cat)
+                if cat and cat.Parent is None:
+                    all_builtin_cats.append(builtin_cat)
+            except:
+                pass
 
         all_existing_category_subclass_names = \
             [x.__name__ for x in get_all_subclasses(CategoryCollector)]

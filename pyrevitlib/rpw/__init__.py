@@ -92,8 +92,6 @@ from rpw.base import BaseObject, BaseObjectWrapper, BaseEnumWrapper
 # And now exposing rpw api to outside ------------------------------------------
 # noinspection PyUnresolvedReferences
 from rpw.db import *
-# noinspection PyUnresolvedReferences
-from rpw.env import *
 
 
 if RPS_MODE:
@@ -105,6 +103,5 @@ if RPS_MODE:
     del(exceptions)
     del(hostapp, base, db, DOC_MODE)
     del(BaseObject, BaseObjectWrapper, BaseEnumWrapper)
-    revit = HOST_APP
     del(HOST_APP, HOST_API_NAMESPACE)
     del(PYREVIT_CMDNAME, PYREVIT_CMDPATH)

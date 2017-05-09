@@ -162,6 +162,7 @@ class Category(Element):
 
     @property
     def subcategories(self):
+        # return [Category(x) for x in self._wrapped_object.SubCategories]
         return self._wrapped_object.SubCategories
 
     @property

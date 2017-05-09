@@ -44,8 +44,11 @@ class ParameterSet(BaseObjectWrapper):
 
     @property
     def all(self):
-        return [Parameter(parameter)
-                for parameter in self._wrapped_object.Parameters]
+        if hasattr(self._wrapped_object, 'Parameters'):
+            return [Parameter(parameter)
+                    for parameter in self._wrapped_object.Parameters]
+        else:
+            return []
 
     def __len__(self):
         return len(self.all)

@@ -67,6 +67,10 @@ class WallFamily(Family):
         super(WallFamily, self).__init__(wall_family, enforce_type=enforce_type)
 
     @property
+    def name(self):
+        return self._wrapped_object.Name
+
+    @property
     def symbols(self):
         symbols = Collector(**WallSymbol._collector_params).elements
         return [symbol for symbol in symbols

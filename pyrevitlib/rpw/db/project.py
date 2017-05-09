@@ -1,5 +1,5 @@
 # noinspection PyUnresolvedReferences
-from rpw import DB, BaseObjectWrapper, doc
+from rpw import DB, BaseObjectWrapper, doc, uidoc
 
 
 class ProjectInfo(BaseObjectWrapper):
@@ -17,4 +17,5 @@ class ProjectInfo(BaseObjectWrapper):
         self.location = doc.PathName
 
 
+activeview = uidoc.ActiveView
 projectinfo = ProjectInfo(doc.ProjectInformation)
