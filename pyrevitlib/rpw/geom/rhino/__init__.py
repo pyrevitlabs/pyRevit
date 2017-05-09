@@ -1,10 +1,9 @@
 import clr
 import os.path as op
 
-from pyrevit import EXEC_PARAMS
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import make_canonical_name
-from pyrevit.loader import ASSEMBLY_FILE_TYPE
+from rpw import DOC_MODE, ASSEMBLY_FILE_TYPE
+from rpw import get_logger
+from rpw.utils import make_canonical_name
 
 # noinspection PyUnresolvedReferences
 import System
@@ -14,7 +13,7 @@ logger = get_logger(__name__)
 
 
 RHINO_THREEDM = 'Rhino3dmIO'
-EXTENSION_DIR = op.dirname(op.dirname(__file__))
+EXTENSION_DIR = op.dirname(__file__)
 
 
 def get_dll_file(addin_filename):
@@ -27,7 +26,7 @@ def get_dll_file(addin_filename):
     return None
 
 
-if not EXEC_PARAMS.doc_mode:
+if not DOC_MODE:
     clr.AddReference("System.Core")
     clr.ImportExtensions(System.Linq)
     # clr.AddReferenceByName(RHINO_THREEDM)
@@ -37,4 +36,3 @@ if not EXEC_PARAMS.doc_mode:
         logger.error('Can not load %s module.' % RHINO_THREEDM)
 
     from Rhino import *
-    rhg = Geometry
