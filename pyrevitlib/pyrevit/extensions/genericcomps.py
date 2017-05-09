@@ -78,9 +78,9 @@ class GenericUIComponent(GenericComponent):
         pyRevit dll assembly. Current method create a unique name based on
         the command full directory address.
         Example:
-            self.direcotry = 
+            self.direcotry =
             '/pyRevit.package/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
-            unique name = 
+            unique name =
             pyRevitpyRevitEditFlipdoors
         """
         uname = ''
@@ -368,7 +368,11 @@ class GenericUICommand(GenericUIComponent):
             self.beta_cmd = script_content.extract_param(
                 BETA_SCRIPT_PARAM)  # type: bool
         except PyRevitException as script_parse_err:
-            logger.error(script_parse_err)
+            logger.error('Error parsing script file: {} | {}'
+                         .format(self.script_file, script_parse_err))
+        except Exception as generic_parse_err:
+            logger.error('Error reading script file: {} | {}'
+                         .format(self.script_file, generic_parse_err))
 
         # fixme: logger reports module as 'ast' after a
         # successfull param retrieval. Must be ast.literal_eval()
