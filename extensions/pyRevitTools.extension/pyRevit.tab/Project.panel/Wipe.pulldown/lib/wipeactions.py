@@ -132,7 +132,7 @@ def remove_all_external_links():
 
 @notdependent
 def remove_all_sheets():
-    """Remove All Sheets"""
+    """Remove All Sheets (except open sheets)"""
 
     cl = FilteredElementCollector(doc)
     sheets = cl.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
@@ -234,15 +234,17 @@ READONLY_VIEWS = [ViewType.ProjectBrowser,
                   ViewType.DrawingSheet,
                   ViewType.Internal]
 
-def _purge_all_views(view_class_to_purge, header, action_title, action_cat):
+def _purge_all_views(viewclass_to_purge, viewtype_to_purge, header, action_title, action_cat):
     cl = FilteredElementCollector(doc)
-    views = set(cl.OfClass(view_class_to_purge).WhereElementIsNotElementType().ToElements())
+    views = set(cl.OfClass(viewclass_to_purge).WhereElementIsNotElementType().ToElements())
     open_UIViews = uidoc.GetOpenUIViews()
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
 
     def confirm_removal(v):
-        if isinstance(v, view_class_to_purge):
-            if v.ViewType in READONLY_VIEWS:
+        if isinstance(v, viewclass_to_purge):
+            if viewtype_to_purge and v.ViewType != viewtype_to_purge:
+                return False
+            elif v.ViewType in READONLY_VIEWS:
                 return False
             elif v.IsTemplate:
                 return False
@@ -263,63 +265,112 @@ def _purge_all_views(view_class_to_purge, header, action_title, action_cat):
 
 @dependent
 def remove_all_views():
-    """Remove All Views (of any kind, except sheets)"""
+    """Remove All Views (of any kind, except open views and sheets)"""
 
     # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
-    _purge_all_views(View,
+    _purge_all_views(View, None,
                      'REMOVING DRAFTING, PLAN, SECTION, AND ELEVATION VIEWS',
-                     'Remove All Views',
-                     'View')
+                     'Remove All Views', 'View')
 
 
 @dependent
 def remove_all_plans():
-    """Remove All Views (Plan Views only)"""
+    """Remove All Views (Floor Plans only)"""
 
-    _purge_all_views(ViewPlan,
+    _purge_all_views(ViewPlan, ViewType.FloorPlan,
                      'REMOVING PLAN VIEWS',
-                     'Remove All Plan Views',
-                     'Plan View')
+                     'Remove All Plan Views', 'Plan View')
+
+
+@dependent
+def remove_all_rcps():
+    """Remove All Views (Reflected Ceiling Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.CeilingPlan,
+                     'REMOVING RCP VIEWS',
+                     'Remove All Reflected Ceiling Plans', 'Ceiling View')
+
+
+@dependent
+def remove_all_engplan():
+    """Remove All Views (Engineering Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.EngineeringPlan,
+                     'REMOVING ENGINEERING VIEWS',
+                     'Remove All Engineering Plans', 'Engineering View')
+
+
+@dependent
+def remove_all_engplan():
+    """Remove All Views (Area Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.AreaPlan,
+                     'REMOVING AREA VIEWS',
+                     'Remove All Area Plans', 'Area View')
 
 
 @dependent
 def remove_all_threed():
     """Remove All Views (3D Views only)"""
 
-    _purge_all_views(View3D,
+    _purge_all_views(View3D, ViewType.ThreeD,
                      'REMOVING 3D VIEWS',
-                     'Remove All 3D Views',
-                     '3D View')
+                     'Remove All 3D Views', '3D View')
 
 
 @dependent
 def remove_all_drafting():
     """Remove All Views (Drafting Views only)"""
 
-    _purge_all_views(ViewDrafting,
+    _purge_all_views(ViewDrafting, None,
                      'REMOVING DRAFTING VIEWS',
-                     'Remove All Drafting Views',
-                     'Drafting View')
+                     'Remove All Drafting Views', 'Drafting View')
 
 
 @dependent
 def remove_all_sections():
     """Remove All Views (Sections only)"""
-    pass
+    _purge_all_views(ViewSection, ViewType.Section,
+                     'REMOVING SECTION VIEWS',
+                     'Remove All Section Views', 'Section View')
 
 
 @dependent
 def remove_all_elevations():
     """Remove All Views (Elevations only)"""
-    pass
+    _purge_all_views(ViewSection, ViewType.Elevation,
+                     'REMOVING SECTION VIEWS',
+                     'Remove All Section Views', 'Section View')
 
 
 @dependent
 def remove_all_schedules():
     """Remove All Views (Schedules only)"""
-    # Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags)
-    # el.Definition.CategoryId
-    pass
+
+    cl = FilteredElementCollector(doc)
+    sched_views = set(cl.OfClass(ViewSchedule).WhereElementIsNotElementType().ToElements())
+    open_UIViews = uidoc.GetOpenUIViews()
+    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+
+    def confirm_removal(v):
+        if isinstance(v, ViewSchedule):
+            if v.ViewType in READONLY_VIEWS:
+                return False
+            elif v.IsTemplate:
+                return False
+            elif '<' in v.ViewName:
+                return False
+            elif v.Id.IntegerValue in open_views:
+                return False
+            elif v.Definition.CategoryId == Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags).Id:
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    print_header('REMOVING SCHEDULES')
+    remove_action('Remove All Schedules', 'Schedule', sched_views, validity_func=confirm_removal)
 
 
 @dependent
@@ -342,6 +393,9 @@ def remove_all_legends():
             elif v.Id.IntegerValue in open_views:
                 return False
             else:
+                return True
+        elif isinstance(v, ViewSchedule) \
+            and v.Definition.CategoryId == Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags).Id:
                 return True
         else:
             return False
