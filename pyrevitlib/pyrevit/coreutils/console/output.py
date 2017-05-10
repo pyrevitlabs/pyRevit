@@ -135,6 +135,9 @@ class PyRevitConsoleWindow:
     def update_progress(self, cur_value, max_value):
         self.__winhandle__.UpdateProgressBar(cur_value, max_value)
 
+    def reset_progress(self):
+        self.__winhandle__.UpdateProgressBar(0, 1)
+
     @staticmethod
     def emojize(md_str):
         print(emojize(md_str), end="")
