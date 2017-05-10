@@ -33,7 +33,6 @@ def log_error(el_type='', el_id=0, delete_err=None):
 def remove_action(action_title, action_cat, elements_to_remove, validity_func=None):
     def remove_element(rem_el):
         if rem_el:
-            print(rem_el)
             try:
                 log_debug('Removing element:{} id:{}'.format(rem_el, rem_el.Id))
                 doc.Delete(rem_el.Id)
@@ -48,8 +47,12 @@ def remove_action(action_title, action_cat, elements_to_remove, validity_func=No
 
         return False
 
+
+    rem_count = len(elements_to_remove)
+    this_script.output.reset_progress()
     with Action(action_title):
-        for element in elements_to_remove:
+        for idx, element in enumerate(elements_to_remove):
+            this_script.output.update_progress(idx + 1, rem_count)
             if validity_func:
                 try:
                     if validity_func(element):
@@ -119,11 +122,13 @@ def remove_all_external_links():
 
     if doc.PathName:
         modelPath = ModelPathUtils.ConvertUserVisiblePathToModelPath(doc.PathName)
-        transData = TransmissionData.ReadTransmissionData(modelPath)
-        externalReferences = transData.GetAllExternalFileReferenceIds()
-        xref_links = [doc.GetElement(x) for x in externalReferences]
-        # cl = FilteredElementCollector(doc)
-        # import_instances = list(cl.OfClass(clr.GetClrType(ImportInstance)).ToElements())
+        try:
+            transData = TransmissionData.ReadTransmissionData(modelPath)
+            externalReferences = transData.GetAllExternalFileReferenceIds()
+            xref_links = [doc.GetElement(x) for x in externalReferences]
+        except:
+            logger.warning('Model must be saved for external links to be removed.')
+            return
 
         remove_action('Remove All External Links', 'External Link', xref_links, validity_func=confirm_removal)
     else:
