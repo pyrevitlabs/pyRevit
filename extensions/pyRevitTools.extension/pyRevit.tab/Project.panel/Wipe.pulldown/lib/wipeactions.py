@@ -234,19 +234,14 @@ READONLY_VIEWS = [ViewType.ProjectBrowser,
                   ViewType.DrawingSheet,
                   ViewType.Internal]
 
-PURGABLE_VIEWS = (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
-
-@dependent
-def remove_all_views():
-    """Remove All Views"""
-
+def _purge_all_views(view_class_to_purge, header, action_title, action_cat):
     cl = FilteredElementCollector(doc)
-    views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElements())
+    views = set(cl.OfClass(view_class_to_purge).WhereElementIsNotElementType().ToElements())
     open_UIViews = uidoc.GetOpenUIViews()
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
 
     def confirm_removal(v):
-        if isinstance(v, PURGABLE_VIEWS):
+        if isinstance(v, view_class_to_purge):
             if v.ViewType in READONLY_VIEWS:
                 return False
             elif v.IsTemplate:
@@ -262,8 +257,97 @@ def remove_all_views():
         else:
             return False
 
-    print_header('REMOVING VIEWS / LEGENDS / SCHEDULES')
-    remove_action('Remove All Views', 'View', views, validity_func=confirm_removal)
+    print_header(header)
+    remove_action(action_title, action_cat, views, validity_func=confirm_removal)
+
+
+@dependent
+def remove_all_views():
+    """Remove All Views (of any kind, except sheets)"""
+
+    # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
+    _purge_all_views(View,
+                     'REMOVING DRAFTING, PLAN, SECTION, AND ELEVATION VIEWS',
+                     'Remove All Views',
+                     'View')
+
+
+@dependent
+def remove_all_plans():
+    """Remove All Views (Plan Views only)"""
+
+    _purge_all_views(ViewPlan,
+                     'REMOVING PLAN VIEWS',
+                     'Remove All Plan Views',
+                     'Plan View')
+
+
+@dependent
+def remove_all_threed():
+    """Remove All Views (3D Views only)"""
+
+    _purge_all_views(View3D,
+                     'REMOVING 3D VIEWS',
+                     'Remove All 3D Views',
+                     '3D View')
+
+
+@dependent
+def remove_all_drafting():
+    """Remove All Views (Drafting Views only)"""
+
+    _purge_all_views(ViewDrafting,
+                     'REMOVING DRAFTING VIEWS',
+                     'Remove All Drafting Views',
+                     'Drafting View')
+
+
+@dependent
+def remove_all_sections():
+    """Remove All Views (Sections only)"""
+    pass
+
+
+@dependent
+def remove_all_elevations():
+    """Remove All Views (Elevations only)"""
+    pass
+
+
+@dependent
+def remove_all_schedules():
+    """Remove All Views (Schedules only)"""
+    # Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags)
+    # el.Definition.CategoryId
+    pass
+
+
+@dependent
+def remove_all_legends():
+    """Remove All Views (Legends only)"""
+
+    cl = FilteredElementCollector(doc)
+    legend_views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElements())
+    open_UIViews = uidoc.GetOpenUIViews()
+    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+
+    def confirm_removal(v):
+        if isinstance(v, View) and v.ViewType == ViewType.Legend:
+            if v.ViewType in READONLY_VIEWS:
+                return False
+            elif v.IsTemplate:
+                return False
+            elif '<' in v.ViewName:
+                return False
+            elif v.Id.IntegerValue in open_views:
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    print_header('REMOVING LEGENDS')
+    remove_action('Remove All Legends', 'Legend', legend_views, validity_func=confirm_removal)
 
 
 @notdependent
