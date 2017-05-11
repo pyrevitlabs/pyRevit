@@ -1,3 +1,4 @@
+import clr
 import os.path as op
 from math import sqrt, pi, sin, cos, degrees
 
@@ -11,7 +12,8 @@ from revitutils import typeutils
 from System.Collections.Generic import List
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, FillPattern, FillPatternElement, FillGrid, \
-                              FillPatternTarget, FillPatternHostOrientation, UV
+                              FillPatternTarget, FillPatternHostOrientation, UV, \
+                              FilteredElementCollector
 
 
 logger = get_logger(__name__)
@@ -251,6 +253,7 @@ class _PatternDomain:
         self._origin = _PatternPoint(min(start_u, end_u), min(start_v, end_v))
         self._corner = _PatternPoint(max(start_u, end_u), max(start_v, end_v))
         self._domain = self._corner - self._origin
+        self._normalized_domain = _PatternPoint(1.0, 1.0 * (self._domain.v / self._domain.u))
         if self._zero_domain():
             raise PyRevitException('Can not process zero domain.')
 
@@ -407,11 +410,27 @@ class _RevitPattern:
 
     @staticmethod
     def _make_fillpattern_element(rvt_fill_pat):
-        with Transaction(doc, 'Create Fill Pattern') as t:
-            t.Start()
-            fill_pat_element = FillPatternElement.Create(doc, rvt_fill_pat)
-            logger.debug('Created FillPatternElement with id:{}'.format(fill_pat_element.Id))
-            t.Commit()
+        # find existing filled pattern element matching name and pattern target
+        existing_fillpatternelements = FilteredElementCollector(doc).OfClass(clr.GetClrType(FillPatternElement))
+        fill_pat_element = None
+        for exfpe in existing_fillpatternelements:
+            exfp = exfpe.GetFillPattern()
+            if rvt_fill_pat.Name == exfp.Name \
+                and rvt_fill_pat.Target == exfp.Target:
+                fill_pat_element = exfpe
+
+        if fill_pat_element:
+            with Transaction(doc, 'Create Fill Pattern') as t:
+                t.Start()
+                fill_pat_element.SetFillPattern(rvt_fill_pat)
+                logger.debug('Updated FillPatternElement with id:{}'.format(fill_pat_element.Id))
+                t.Commit()
+        else:
+            with Transaction(doc, 'Create Fill Pattern') as t:
+                t.Start()
+                fill_pat_element = FillPatternElement.Create(doc, rvt_fill_pat)
+                logger.debug('Created FillPatternElement with id:{}'.format(fill_pat_element.Id))
+                t.Commit()
 
         logger.debug('Fill Pattern:{}'.format(fill_pat_element.Name))
         fp = fill_pat_element.GetFillPattern()
