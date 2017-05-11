@@ -33,6 +33,7 @@ class MakePatternWindow(WPFWindow):
     def __init__(self, xaml_file_name, rvt_elements):
         # cleanup selection (pick only acceptable curves)
         self.selected_lines = self._cleanup_selection(rvt_elements)
+        self.active_view = doc.GetElement(self.selected_lines[0].OwnerViewId)
 
         # create pattern maker window and process options
         WPFWindow.__init__(self, xaml_file_name)
@@ -106,9 +107,13 @@ class MakePatternWindow(WPFWindow):
             patmaker.export_pattern(self.pat_name, pat_lines, domain, export_path, model_pattern=self.is_model_pat)
             TaskDialog.Show('pyRevit', 'Pattern {} exported.'.format(self.pat_name))
         else:
+            if not self.is_model_pat:
+                pat_scale = 1.0 / self.active_view.Scale
+            else:
+                pat_scale = 1.0
             patmaker.make_pattern(self.pat_name, pat_lines, domain, model_pattern=self.is_model_pat,
-                                  create_filledregion=self.create_filledregion)
-            TaskDialog.Show('pyRevit', 'Pattern {} created.'.format(self.pat_name))
+                                  create_filledregion=self.create_filledregion, scale=pat_scale)
+            TaskDialog.Show('pyRevit', 'Pattern {} created/updated.'.format(self.pat_name))
 
     def _verify_name(self):
         if not self.pat_name:
