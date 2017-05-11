@@ -33,7 +33,6 @@ def log_error(el_type='', el_id=0, delete_err=None):
 def remove_action(action_title, action_cat, elements_to_remove, validity_func=None):
     def remove_element(rem_el):
         if rem_el:
-            print(rem_el)
             try:
                 log_debug('Removing element:{} id:{}'.format(rem_el, rem_el.Id))
                 doc.Delete(rem_el.Id)
@@ -48,8 +47,12 @@ def remove_action(action_title, action_cat, elements_to_remove, validity_func=No
 
         return False
 
+
+    rem_count = len(elements_to_remove)
+    this_script.output.reset_progress()
     with Action(action_title):
-        for element in elements_to_remove:
+        for idx, element in enumerate(elements_to_remove):
+            this_script.output.update_progress(idx + 1, rem_count)
             if validity_func:
                 try:
                     if validity_func(element):
@@ -119,11 +122,13 @@ def remove_all_external_links():
 
     if doc.PathName:
         modelPath = ModelPathUtils.ConvertUserVisiblePathToModelPath(doc.PathName)
-        transData = TransmissionData.ReadTransmissionData(modelPath)
-        externalReferences = transData.GetAllExternalFileReferenceIds()
-        xref_links = [doc.GetElement(x) for x in externalReferences]
-        # cl = FilteredElementCollector(doc)
-        # import_instances = list(cl.OfClass(clr.GetClrType(ImportInstance)).ToElements())
+        try:
+            transData = TransmissionData.ReadTransmissionData(modelPath)
+            externalReferences = transData.GetAllExternalFileReferenceIds()
+            xref_links = [doc.GetElement(x) for x in externalReferences]
+        except:
+            logger.warning('Model must be saved for external links to be removed.')
+            return
 
         remove_action('Remove All External Links', 'External Link', xref_links, validity_func=confirm_removal)
     else:
@@ -132,7 +137,7 @@ def remove_all_external_links():
 
 @notdependent
 def remove_all_sheets():
-    """Remove All Sheets"""
+    """Remove All Sheets (except open sheets)"""
 
     cl = FilteredElementCollector(doc)
     sheets = cl.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
@@ -234,20 +239,17 @@ READONLY_VIEWS = [ViewType.ProjectBrowser,
                   ViewType.DrawingSheet,
                   ViewType.Internal]
 
-PURGABLE_VIEWS = (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
-
-@dependent
-def remove_all_views():
-    """Remove All Views"""
-
+def _purge_all_views(viewclass_to_purge, viewtype_to_purge, header, action_title, action_cat):
     cl = FilteredElementCollector(doc)
-    views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElements())
+    views = set(cl.OfClass(viewclass_to_purge).WhereElementIsNotElementType().ToElements())
     open_UIViews = uidoc.GetOpenUIViews()
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
 
     def confirm_removal(v):
-        if isinstance(v, PURGABLE_VIEWS):
-            if v.ViewType in READONLY_VIEWS:
+        if isinstance(v, viewclass_to_purge):
+            if viewtype_to_purge and v.ViewType != viewtype_to_purge:
+                return False
+            elif v.ViewType in READONLY_VIEWS:
                 return False
             elif v.IsTemplate:
                 return False
@@ -262,8 +264,149 @@ def remove_all_views():
         else:
             return False
 
-    print_header('REMOVING VIEWS / LEGENDS / SCHEDULES')
-    remove_action('Remove All Views', 'View', views, validity_func=confirm_removal)
+    print_header(header)
+    remove_action(action_title, action_cat, views, validity_func=confirm_removal)
+
+
+@dependent
+def remove_all_views():
+    """Remove All Views (of any kind, except open views and sheets)"""
+
+    # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
+    _purge_all_views(View, None,
+                     'REMOVING DRAFTING, PLAN, SECTION, AND ELEVATION VIEWS',
+                     'Remove All Views', 'View')
+
+
+@dependent
+def remove_all_plans():
+    """Remove All Views (Floor Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.FloorPlan,
+                     'REMOVING PLAN VIEWS',
+                     'Remove All Plan Views', 'Plan View')
+
+
+@dependent
+def remove_all_rcps():
+    """Remove All Views (Reflected Ceiling Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.CeilingPlan,
+                     'REMOVING RCP VIEWS',
+                     'Remove All Reflected Ceiling Plans', 'Ceiling View')
+
+
+@dependent
+def remove_all_engplan():
+    """Remove All Views (Engineering Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.EngineeringPlan,
+                     'REMOVING ENGINEERING VIEWS',
+                     'Remove All Engineering Plans', 'Engineering View')
+
+
+@dependent
+def remove_all_engplan():
+    """Remove All Views (Area Plans only)"""
+
+    _purge_all_views(ViewPlan, ViewType.AreaPlan,
+                     'REMOVING AREA VIEWS',
+                     'Remove All Area Plans', 'Area View')
+
+
+@dependent
+def remove_all_threed():
+    """Remove All Views (3D Views only)"""
+
+    _purge_all_views(View3D, ViewType.ThreeD,
+                     'REMOVING 3D VIEWS',
+                     'Remove All 3D Views', '3D View')
+
+
+@dependent
+def remove_all_drafting():
+    """Remove All Views (Drafting Views only)"""
+
+    _purge_all_views(ViewDrafting, None,
+                     'REMOVING DRAFTING VIEWS',
+                     'Remove All Drafting Views', 'Drafting View')
+
+
+@dependent
+def remove_all_sections():
+    """Remove All Views (Sections only)"""
+    _purge_all_views(ViewSection, ViewType.Section,
+                     'REMOVING SECTION VIEWS',
+                     'Remove All Section Views', 'Section View')
+
+
+@dependent
+def remove_all_elevations():
+    """Remove All Views (Elevations only)"""
+    _purge_all_views(ViewSection, ViewType.Elevation,
+                     'REMOVING SECTION VIEWS',
+                     'Remove All Section Views', 'Section View')
+
+
+@dependent
+def remove_all_schedules():
+    """Remove All Views (Schedules only)"""
+
+    cl = FilteredElementCollector(doc)
+    sched_views = set(cl.OfClass(ViewSchedule).WhereElementIsNotElementType().ToElements())
+    open_UIViews = uidoc.GetOpenUIViews()
+    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+
+    def confirm_removal(v):
+        if isinstance(v, ViewSchedule):
+            if v.ViewType in READONLY_VIEWS:
+                return False
+            elif v.IsTemplate:
+                return False
+            elif '<' in v.ViewName:
+                return False
+            elif v.Id.IntegerValue in open_views:
+                return False
+            elif v.Definition.CategoryId == Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags).Id:
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    print_header('REMOVING SCHEDULES')
+    remove_action('Remove All Schedules', 'Schedule', sched_views, validity_func=confirm_removal)
+
+
+@dependent
+def remove_all_legends():
+    """Remove All Views (Legends only)"""
+
+    cl = FilteredElementCollector(doc)
+    legend_views = set(cl.OfClass(View).WhereElementIsNotElementType().ToElements())
+    open_UIViews = uidoc.GetOpenUIViews()
+    open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+
+    def confirm_removal(v):
+        if isinstance(v, View) and v.ViewType == ViewType.Legend:
+            if v.ViewType in READONLY_VIEWS:
+                return False
+            elif v.IsTemplate:
+                return False
+            elif '<' in v.ViewName:
+                return False
+            elif v.Id.IntegerValue in open_views:
+                return False
+            else:
+                return True
+        elif isinstance(v, ViewSchedule) \
+            and v.Definition.CategoryId == Category.GetCategory(doc, BuiltInCategory.OST_KeynoteTags).Id:
+                return True
+        else:
+            return False
+
+    print_header('REMOVING LEGENDS')
+    remove_action('Remove All Legends', 'Legend', legend_views, validity_func=confirm_removal)
 
 
 @notdependent
