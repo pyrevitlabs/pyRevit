@@ -1,41 +1,46 @@
+Make tutorial video:
+    - just read, it tells you if delete, wipe icons
+
+    - match  tool
+        make override
+        black dot, tool config
+    - pattern maker
+        let's say pattern
+        warning bar
+        makes pattern
+        applaud
+        bla bla about misery money
+        test file for pattern
+        curves, splines,
+        accuracy of patterns
+        dots with little lines
+
+    - change element types safely
+    - batch sheet maker, sheets and placeholders
+    - selection memory
+    - copy paste state, 3d section box, visibility graphics
+    - sum total
+    - clickable links
+    - pick tools
+    [] script anatomy: How to make a script
+
+    
+
 Tools:
-- pick tools
 - tooltips on every tool
-- just read, it tells you if delete, wipe icons
-- clickable links
 - selection tools
     select all types in legends
     select sub-walls
-
-- selection memory
-- copy paste state, 3d section box, visibility graphics
 - sync view
-- quickly over analyze
 - compare detail views
 - find linked elements, fake deleting
 - show nested group structure
-- match  tool
-    make override
-    black dot, tool config
-- pattern maker
-    let's say pattern
-    warning bar
-    makes pattern
-    applaud
-    bla bla about misery money
-    test file for pattern
-    curves, splines,
-    accuracy of patterns
-    dots with little lines
 swap lines, shake filled regions
-change element types safely
 orient section box
 orient to face
-batch sheet maker, sheets and placeholders
+
 convert unpurgable viewport types
 print linked sheets
 print sheet index, manual override
 load family types
 purge family
-
-script anatomy
