@@ -29,18 +29,6 @@
         },
         {
         "builtin": "False",
-        "type": "lib",
-        "name": "RevitPythonWrapper",
-        "description": "A Python Wrapper For the Revit API",
-        "author": "Gui Talarico",
-        "author-url": "https://github.com/gtalarico",
-        "url": "https://github.com/gtalarico/revitpythonwrapper.git",
-        "website": "http://revitpythonwrapper.readthedocs.io/en/latest/",
-        "image" : "http://revitpythonwrapper.readthedocs.io/en/latest/_images/logo-tight.png",
-        "dependencies": []
-        },
-        {
-        "builtin": "False",
         "type": "extension",
         "name": "PyRevitPlus",
         "description": "Extensions for PyRevit",
