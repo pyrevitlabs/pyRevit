@@ -233,6 +233,30 @@ def remove_all_materials():
     remove_action('Remove All Materials', 'Material', mats, validity_func=confirm_removal)
 
 
+@notdependent
+def remove_all_render_materials():
+    """Remove All Materials (only Render Materials)"""
+
+    cl = FilteredElementCollector(doc)
+    mats = cl.OfCategory(BuiltInCategory.OST_Materials).WhereElementIsNotElementType().ToElements()
+    render_mats = [x for x in mats if x.Name.startswith('Render Material')]
+
+    print_header('REMOVING MATERIALS')
+    remove_action('Remove All Render Materials', 'Render Material', render_mats)
+
+
+@notdependent
+def remove_all_imported_lines():
+    """Remove All Imported Line Patterns"""
+
+    cl = FilteredElementCollector(doc)
+    line_pats = cl.OfClass(LinePatternElement).ToElements()
+    import_lines = [x for x in line_pats if x.Name.lower().startswith('import')]
+
+    print_header('REMOVING MATERIALS')
+    remove_action('Remove All Import Lines', 'Line Pattern', import_lines)
+
+
 READONLY_VIEWS = [ViewType.ProjectBrowser,
                   ViewType.SystemBrowser,
                   ViewType.Undefined,
@@ -451,6 +475,30 @@ def remove_all_filters():
 
     print_header('REMOVING ALL FILTERS')
     remove_action('Remove All Filters', 'View Filter', filters)
+
+
+@notdependent
+def remove_all_model_patterns():
+    """Remove All Patterns (Model)"""
+
+    cl = FilteredElementCollector(doc)
+    pattern_elements = cl.OfClass(FillPatternElement).WhereElementIsNotElementType().ToElements()
+    model_patterns = [x for x in pattern_elements if x.GetFillPattern().Target == FillPatternTarget.Model]
+
+    print_header('REMOVING ALL MODEL PATTERNS')
+    remove_action('Remove All Model Patterns', 'Model Pattern', model_patterns)
+
+
+@notdependent
+def remove_all_drafting_patterns():
+    """Remove All Patterns (Drafting)"""
+
+    cl = FilteredElementCollector(doc)
+    pattern_elements = cl.OfClass(FillPatternElement).WhereElementIsNotElementType().ToElements()
+    draft_patterns = [x for x in pattern_elements if x.GetFillPattern().Target == FillPatternTarget.Drafting]
+
+    print_header('REMOVING ALL DRAFTING PATTERNS')
+    remove_action('Remove All Drafting Patterns', 'Drafting Pattern', draft_patterns)
 
 
 # dynamically generate function that remove all elements on a workset, based on current model worksets
