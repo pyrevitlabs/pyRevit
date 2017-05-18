@@ -18,10 +18,13 @@ class GroupNode:
     def id(self):
         return self.group.Id
 
+    @property
+    def members(self):
+        return [doc.GetElement(x) for x in self.group.GetMemberIds()]
+
     def find_subgroups(self):
         subgrps = []
-        for mem_id in self.group.GetMemberIds():
-            mem = doc.GetElement(mem_id)
+        for mem in self.members:
             if isinstance(mem, Group):
                 subgrps.append(GroupNode(mem))
         return subgrps
@@ -42,7 +45,12 @@ def print_tree(groupnode, level, trunk='', branch=''):
     fruit = branch + '■ {name} {id}' \
               .format(name=groupnode.name,
                       id=this_script.output.linkify(groupnode.id))
-    print(fruit)
+    if groupnode.id in selection.element_ids:
+        print(fruit + '\t<<< selected group element')
+    elif any([x in selection.element_ids for x in [y.Id for y in groupnode.members if not isinstance(y, Group)]]):
+        print(fruit + '\t<<< selected group members')
+    else:
+        print(fruit)
 
     count = len(groupnode)
     for idx, sub_grp in enumerate(groupnode):
