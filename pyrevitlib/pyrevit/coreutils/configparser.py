@@ -20,8 +20,10 @@ class PyRevitConfigSectionParser(object):
         return self._parser.options(self._section_name)
 
     def __repr__(self):
-        return '<PyRevitConfigSectionParser object at 0x{0:016x} config section \'{1}\'>'.format(id(self),
-                                                                                                 self._section_name)
+        return '<PyRevitConfigSectionParser object '    \
+               'at 0x{0:016x} '                         \
+               'config section \'{1}\'>'                \
+               .format(id(self), self._section_name)
 
     def __getattr__(self, param_name):
         try:
@@ -40,16 +42,20 @@ class PyRevitConfigSectionParser(object):
             except:
                 return value
         except (NoOptionError, NoSectionError):
-            raise AttributeError('Parameter does not exist in config file: {}'.format(param_name))
+            raise AttributeError('Parameter does not exist in config file: {}'
+                                 .format(param_name))
 
     def __setattr__(self, param_name, value):
         if param_name in ['_parser', '_section_name']:
-            super(PyRevitConfigSectionParser, self).__setattr__(param_name, value)
+            super(PyRevitConfigSectionParser, self).__setattr__(param_name,
+                                                                value)
         else:
             try:
-                return self._parser.set(self._section_name, param_name, unicode(value))
+                return self._parser.set(self._section_name,
+                                        param_name, unicode(value))
             except Exception as set_err:
-                raise PyRevitException('Error setting parameter value. | {}'.format(set_err))
+                raise PyRevitException('Error setting parameter value. '
+                                       '| {}'.format(set_err))
 
     def get_option(self, op_name, default_value=None):
         try:
