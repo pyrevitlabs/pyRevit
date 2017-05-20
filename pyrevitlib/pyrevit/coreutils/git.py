@@ -62,7 +62,8 @@ class RepoInfo:
         self.username = self.password = None
 
     def __repr__(self):
-        return '<type \'RepoInfo\' head \'{}\' @ {}>'.format(self.last_commit_hash, self.directory)
+        return '<type \'RepoInfo\' head \'{}\' @ {}>'\
+            .format(self.last_commit_hash, self.directory)
 
 
 def _credentials_hndlr(username, password):
@@ -73,7 +74,9 @@ def _credentials_hndlr(username, password):
 
 
 def _get_credentials_hndlr(username, password):
-    return libgit.Handlers.CredentialsHandler(lambda url, uname, types: _credentials_hndlr(username, password))
+    return libgit.Handlers. \
+           CredentialsHandler(lambda url, uname, types:
+                              _credentials_hndlr(username, password))
 
 
 def _make_pull_options(repo_info):
@@ -81,8 +84,13 @@ def _make_pull_options(repo_info):
     pull_ops = libgit.PullOptions()
     pull_ops.FetchOptions = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
-        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
-        pull_ops.FetchOptions.CredentialsProvider = _get_credentials_hndlr(repo_info.username, repo_info.password)
+        logger.debug('Making Credentials handler. '
+                     '(Username and password are available but'
+                     'will not be logged for privacy purposes.)')
+
+        pull_ops.FetchOptions.CredentialsProvider = \
+            _get_credentials_hndlr(repo_info.username, repo_info.password)
+
     return pull_ops
 
 
@@ -90,8 +98,13 @@ def _make_fetch_options(repo_info):
     logger.debug('Making fetch options: {}'.format(repo_info))
     fetch_ops = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
-        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
-        fetch_ops.CredentialsProvider = _get_credentials_hndlr(repo_info.username, repo_info.password)
+        logger.debug('Making Credentials handler. '
+                     '(Username and password are available but'
+                     'will not be logged for privacy purposes.)')
+
+        fetch_ops.CredentialsProvider = \
+            _get_credentials_hndlr(repo_info.username, repo_info.password)
+
     return fetch_ops
 
 
@@ -99,14 +112,22 @@ def _make_clone_options(username=None, password=None):
     logger.debug('Making clone options.')
     clone_ops = libgit.CloneOptions()
     if username and password:
-        logger.debug('Making Credentials handler. (Username and password are available but cant\' log private info.)')
-        clone_ops.CredentialsProvider = _get_credentials_hndlr(username, password)
+        logger.debug('Making Credentials handler. '
+                     '(Username and password are available but'
+                     'will not be logged for privacy purposes.)')
+
+        clone_ops.CredentialsProvider = \
+            _get_credentials_hndlr(username, password)
+
     return clone_ops
 
 
 def _make_pull_signature():
-    logger.debug('Creating pull signature for username: {}'.format(HOST_APP.username))
-    return libgit.Signature(HOST_APP.username, HOST_APP.username, DateTimeOffset(DateTime.Now))
+    logger.debug('Creating pull signature for username: {}'
+                 .format(HOST_APP.username))
+    return libgit.Signature(HOST_APP.username,
+                            HOST_APP.username,
+                            DateTimeOffset(DateTime.Now))
 
 
 def _process_git_error(exception_err):
@@ -133,38 +154,53 @@ def get_repo(repo_dir):
 def git_pull(repo_info):
     repo = repo_info.repo
     try:
-        repo.Network.Pull(_make_pull_signature(), _make_pull_options(repo_info))
+        repo.Network.Pull(_make_pull_signature(),
+                          _make_pull_options(repo_info))
+
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
         head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
-        logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+
+        logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
+                                                   head_msg))
         return RepoInfo(repo)
 
     except Exception as pull_err:
-        logger.debug('Failed git pull: {} | {}'.format(repo_info.directory, pull_err))
+        logger.debug('Failed git pull: {} '
+                     '| {}'.format(repo_info.directory, pull_err))
         _process_git_error(pull_err)
 
 
 def git_fetch(repo_info):
     repo = repo_info.repo
     try:
-        repo.Network.Fetch(repo.Head.TrackedBranch.Remote, _make_fetch_options(repo_info))
+        repo.Network.Fetch(repo.Head.TrackedBranch.Remote,
+                           _make_fetch_options(repo_info))
+
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
         head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
-        logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+
+        logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
+                                                   head_msg))
         return RepoInfo(repo)
 
     except Exception as fetch_err:
-        logger.debug('Failed git fetch: {} | {}'.format(repo_info.directory, fetch_err))
+        logger.debug('Failed git fetch: {} '
+                     '| {}'.format(repo_info.directory, fetch_err))
         _process_git_error(fetch_err)
 
 
 def git_clone(repo_url, clone_dir, username=None, password=None):
     try:
-        libgit.Repository.Clone(repo_url, clone_dir, _make_clone_options(username=username,
-                                                                         password=password))
+        libgit.Repository.Clone(repo_url,
+                                clone_dir,
+                                _make_clone_options(username=username,
+                                                    password=password))
+
         logger.debug('Completed git clone: {} @ {}'.format(repo_url, clone_dir))
+
     except Exception as clone_err:
-        logger.debug('Error cloning repo: {} to {} | {}'.format(repo_url, clone_dir, clone_err))
+        logger.debug('Error cloning repo: {} to {} '
+                     '| {}'.format(repo_url, clone_dir, clone_err))
         _process_git_error(clone_err)
 
 
@@ -178,14 +214,18 @@ def compare_branch_heads(repo_info):
         if not branch.IsRemote:
             try:
                 if branch.TrackedBranch:
-                    logger.debug('Comparing heads: {} of {}'.format(branch.CanonicalName,
-                                                                    branch.TrackedBranch.CanonicalName))
-                    hist_div = repo.ObjectDatabase.CalculateHistoryDivergence(branch.Tip, branch.TrackedBranch.Tip)
+                    logger.debug('Comparing heads: {} of {}'
+                                 .format(branch.CanonicalName,
+                                         branch.TrackedBranch.CanonicalName))
+
+                    hist_div = repo.ObjectDatabase. \
+                        CalculateHistoryDivergence(branch.Tip,
+                                                   branch.TrackedBranch.Tip)
                     return hist_div
             except Exception as compare_err:
-                logger.error('Can not compare branch {} in repo: {} | {}'.format(branch,
-                                                                                 repo,
-                                                                                 unicode(compare_err).replace('\n', '')))
+                logger.error('Can not compare branch {} in repo: {} | {}'
+                             .format(branch, repo,
+                                     unicode(compare_err).replace('\n', '')))
 
 
 def get_all_new_commits(repo_info):
@@ -193,7 +233,9 @@ def get_all_new_commits(repo_info):
 
     repo = repo_info.repo
     current_commit = repo_info.last_commit_hash
-    ref_commit = repo.Lookup(libgit.ObjectId(current_commit), libgit.ObjectType.Commit)
+
+    ref_commit = repo.Lookup(libgit.ObjectId(current_commit),
+                             libgit.ObjectType.Commit)
 
     # Let's only consider the refs that lead to this commit...
     refs = repo.Refs.ReachableFrom([ref_commit])
