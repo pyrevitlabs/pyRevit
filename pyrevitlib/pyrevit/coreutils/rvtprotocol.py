@@ -19,26 +19,27 @@ COMMAND_KEY = 'command'
 DATA_KEY = 'data'
 
 
-DEFAULT_LINK = '<a title="Click to select or show element" '\
-                  'style="background-color: #f5f7f2; ' \
-                         'font-size:8pt; ' \
-                         'color: #649417; ' \
-                         'border: 1px solid #649417; ' \
-                         'border-radius:3px; ' \
-                         'vertical-align:middle; '\
-                         'margin:-4,0,-4,0; ' \
-                         'margin: 2px; ' \
-                         'padding: 1px 4px; ' \
-                         'text-align: center; ' \
-                         'text-decoration: none; ' \
-                         'display: inline-block;" href="{}{}">{}</a>'
+DEFAULT_LINK = '<a title="Click to select or show element" ' \
+               'style="background-color: #f5f7f2; ' \
+               'font-size:8pt; ' \
+               'color: #649417; ' \
+               'border: 1px solid #649417; ' \
+               'border-radius:3px; ' \
+               'vertical-align:middle; '\
+               'margin:-4,0,-4,0; ' \
+               'margin: 2px; ' \
+               'padding: 1px 4px; ' \
+               'text-align: center; ' \
+               'text-decoration: none; ' \
+               'display: inline-block;" href="{}{}">{}</a>'
 
 
 try:
     doc = HOST_APP.uiapp.ActiveUIDocument.Document
     uidoc = HOST_APP.uiapp.ActiveUIDocument
 except:
-    logger.debug('Active document does not exist in Revit. Can not get doc and uidoc.')
+    logger.debug('Active document does not exist in Revit. '
+                 'Can not get doc and uidoc.')
 
 
 # noinspection PyClassHasNoInit
@@ -54,7 +55,9 @@ class GenericProtocolCommand(object):
 
     @property
     def url_data(self):
-        return json.dumps({COMMAND_KEY: self.type_id, DATA_KEY: self.get_elements()}, separators=(',', ':'))
+        return json.dumps({COMMAND_KEY: self.type_id,
+                           DATA_KEY: self.get_elements()},
+                          separators=(',', ':'))
 
     @property
     def url_title(self):
@@ -73,7 +76,8 @@ class SelectElementsCommand(GenericProtocolCommand):
     type_id = ProtocolCommandTypes.SELECT
 
     def get_elements(self):
-        return [arg.IntegerValue for arg in self._args if isinstance(arg, ElementId)]
+        return [arg.IntegerValue for arg in self._args
+                if isinstance(arg, ElementId)]
 
     def execute(self):
         el_list = List[ElementId]()
@@ -111,7 +115,8 @@ def _get_command_from_data(cmd_data):
 
 
 def _make_protocol_url(url_data, url_title):
-    return DEFAULT_LINK.format(PROTOCOL_NAME, url_data.replace('\"', '\''), url_title)
+    return DEFAULT_LINK.format(PROTOCOL_NAME,
+                               url_data.replace('\"', '\''), url_title)
 
 
 def make_url(args):
@@ -133,7 +138,8 @@ def make_url(args):
     """
     # send the arguments and receive the handling command for this input.
     cmd = _get_command_from_arg(args)
-    # command contains the data string and a title for the html link block or other uses.
+    # command contains the data string and a
+    # title for the html link block or other uses.
     return _make_protocol_url(cmd.url_data, cmd.url_title)
 
 
@@ -162,7 +168,10 @@ def process_url(url):
         >>> process_url(url)
     """
     # cleanup protocol name, / and change single quotes back to double quotes
-    url_data = url.replace(PROTOCOL_NAME, '').replace('/', '').replace('\'', '\"')
+    url_data = url.replace(PROTOCOL_NAME,
+                           '').replace('/',
+                                       '').replace('\'',
+                                                   '\"')
     # send the string data to be processed and the command object, then execute
     cmd = _get_command_from_data(url_data)
     return cmd.execute()
