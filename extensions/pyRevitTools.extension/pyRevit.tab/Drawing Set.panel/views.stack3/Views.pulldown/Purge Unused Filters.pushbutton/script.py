@@ -1,6 +1,7 @@
 """Deletes all view parameter filters that has not been listed on any views. This includes sheets as well."""
 
 from scriptutils import logger
+from scriptutils.userinput import SelectFromCheckBoxes
 from revitutils import doc, uidoc
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, \
                               View, ParameterFilterElement, Transaction, ElementId
@@ -13,7 +14,7 @@ allFilters = set()
 for flt in filters:
     allFilters.add(flt.Id.IntegerValue)
 
-print('{} Filters found.'.format(len(allFilters)))
+# print('{} Filters found.'.format(len(allFilters)))
 
 for v in views:
     try:
@@ -26,19 +27,30 @@ for v in views:
 unusedFilters = allFilters - usedFiltersSet
 
 if unusedFilters:
-    print('{} Filters have not been used and will be purged.'.format(len(unusedFilters)))
+    # ask user for wipe actions
+    class ViewFilterToPurge:
+        def __init__(self, filter_elid):
+            self.state = False
+            self.filter_el = doc.GetElement(ElementId(filter_elid))
+            self.name = self.filter_el.Name
 
-    t = Transaction(doc, 'Purge Unused Filters')
-    t.Start()
+    return_options = SelectFromCheckBoxes.show([ViewFilterToPurge(x) for x in unusedFilters],
+                                               title='Select Filters to Purge', width=500, button_name='Purge Filters')
 
-    for flid in unusedFilters:
-        fl = doc.GetElement(ElementId(flid))
-        print('Purging Filter: {0}\t{1}'.format(fl.Id, fl.Name))
-        try:
-            doc.Delete(ElementId(flid))
-        except Exception as del_err:
-            logger.error('Error purging filter: {} | {}'.format(fl.Name, del_err))
+    # print('{} Filters have not been used and will be purged.'.format(len(unusedFilters)))
 
-    t.Commit()
+    if return_options:
+        t = Transaction(doc, 'Purge Unused Filters')
+        t.Start()
+
+        for vf in return_options:
+            if vf.state:
+                print('Purging Filter: {0}\t{1}'.format(vf.filter_el.Id, vf.name))
+                try:
+                    doc.Delete(vf.filter_el.Id)
+                except Exception as del_err:
+                    logger.error('Error purging filter: {} | {}'.format(vf.name, del_err))
+
+        t.Commit()
 else:
     print('All filters are in use. No purging in necessary.')

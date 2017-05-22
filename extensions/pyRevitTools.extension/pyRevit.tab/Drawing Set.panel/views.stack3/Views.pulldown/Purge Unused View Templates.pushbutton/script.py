@@ -1,25 +1,6 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Deletes all unused view templates (Any view template that has not been assigned to a view)."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Deletes all unused view templates (Any view template that has not been assigned to a view).'
-
-__window__.Width = 1100
+from scriptutils.userinput import SelectFromCheckBoxes
 from Autodesk.Revit.DB import FilteredElementCollector, Transaction, BuiltInCategory, ElementId
 from Autodesk.Revit.UI import TaskDialog, TaskDialogCommonButtons, TaskDialogResult
 
@@ -45,21 +26,36 @@ for v in views:
 
 unusedvtemp = vtemp - usedvtemp
 
-t = Transaction(doc, 'Purge Unused View Templates')
-t.Start()
 
-for vid in unusedvtemp:
-    view = doc.GetElement(ElementId(vid))
-    print view.ViewName
+if unusedvtemp:
+    # ask user for wipe actions
+    class ViewTemplateToPurge:
+        def __init__(self, template_elid):
+            self.state = False
+            self.template_el = doc.GetElement(ElementId(template_elid))
+            self.name = self.template_el.Name
 
-res = TaskDialog.Show('pyrevit',
-                      'Are you sure you want to remove these view templates?',
-                      TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)
+    return_options = SelectFromCheckBoxes.show([ViewTemplateToPurge(x) for x in unusedvtemp],
+                                               title='Select View Templates to Purge', width=500, button_name='Purge View Templates')
 
-if res == TaskDialogResult.Yes:
-    for v in unusedvtemp:
-        doc.Delete(ElementId(v))
-else:
-    print('----------- Purge Cancelled --------------')
 
-t.Commit()
+    if return_options:
+        t = Transaction(doc, 'Purge Unused View Templates')
+        t.Start()
+
+        for vtp in return_options:
+            if vtp.state:
+                print('Purging View Template: {0}\t{1}'.format(vtp.template_el.Id, vtp.name))
+                doc.Delete(vtp.template_el.Id)
+
+        # res = TaskDialog.Show('pyrevit',
+        #                       'Are you sure you want to remove these view templates?',
+        #                       TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.Cancel)
+
+        # if res == TaskDialogResult.Yes:
+        #     for v in unusedvtemp:
+        #         doc.Delete(ElementId(v))
+        # else:
+        #     print('----------- Purge Cancelled --------------')
+
+        t.Commit()
