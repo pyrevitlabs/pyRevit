@@ -45,22 +45,35 @@ def _compile_dotnet(code_provider,
         compiler_params.EmbeddedResources.Add(resource)
 
     logger.debug('Compiling source files.')
-    compiler = code_provider.CompileAssemblyFromFile(compiler_params, Array[str](sourcefiles_list))
+    compiler = \
+        code_provider.CompileAssemblyFromFile(compiler_params,
+                                              Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
         error_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
         raise PyRevitException("Compile error: {}".format(error_list))
 
     if full_output_file_addr is None:
-        logger.debug('Compile to memory successful: {}'.format(compiler.CompiledAssembly))
+        logger.debug('Compile to memory successful: {}'
+                     .format(compiler.CompiledAssembly))
         return compiler.CompiledAssembly
     else:
         logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
         return compiler.PathToAssembly
 
 
-def compile_csharp(sourcefiles_list, full_output_file_addr=None, reference_list=None, resource_list=None):
+def compile_csharp(sourcefiles_list,
+                   full_output_file_addr=None,
+                   reference_list=None, resource_list=None):
+
     logger.debug('Getting csharp provider.')
-    cleanedup_source_list = [src.replace('\\','\\\\') for src in sourcefiles_list]
-    provider = CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
-    return _compile_dotnet(provider, cleanedup_source_list, full_output_file_addr, reference_list, resource_list)
+
+    cleanedup_source_list = \
+        [src.replace('\\', '\\\\') for src in sourcefiles_list]
+
+    provider = \
+        CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
+    return _compile_dotnet(provider,
+                           cleanedup_source_list,
+                           full_output_file_addr,
+                           reference_list, resource_list)
