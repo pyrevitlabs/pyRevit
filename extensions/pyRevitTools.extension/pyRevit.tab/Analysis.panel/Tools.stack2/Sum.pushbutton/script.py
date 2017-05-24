@@ -77,7 +77,12 @@ def calc_total_length():
 
 
 def output_area(total):
-    print("TOTAL AREA OF ALL SELECTED ELEMENTS IS:\n{0} SQFT\n{1} ACRE".format(total, total / 43560))
+    print("TOTAL AREA OF ALL SELECTED ELEMENTS IS:\n"
+          "{0} SQFT\n"
+          "{1} ACRE\n"
+          "{2} SQM".format(total,
+                           total / 43560,
+                           total / 10.7639104))
 
 
 custom_calc_funcs = {'Length': calc_total_length}
