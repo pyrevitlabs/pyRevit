@@ -40,6 +40,7 @@ def pickbycategory(catname):
 
 
 selected_switch = CommandSwitchWindow(sorted(['Area',
+                                              'Area Boundary',
                                               'Column',
                                               'Dimension',
                                               'Door',
