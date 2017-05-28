@@ -211,9 +211,10 @@ with TransactionGroup(doc, 'Convert View Types') as tg:
     total_view_count = len(drafting_views)
 
     for src_view in drafting_views:
-        this_script.output.print_md('-----\n**{} of {}**\n**Converting: {}**'.format(view_count,
-                                                                                 total_view_count,
-                                                                                 src_view.ViewName))
+        this_script.output.print_md('-----\n**{} of {}**'
+                                    .format(view_count, total_view_count))
+        this_script.output.print_md('**Converting: {}**'
+                                    .format(src_view.ViewName))
         dest_view_successfully_setup = False
         try:
             dest_view = create_dest_view(dest_view_type, src_view.ViewName, src_view.Scale)
