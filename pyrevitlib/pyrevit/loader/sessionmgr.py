@@ -11,7 +11,6 @@ Everything else is private.
 """
 
 import sys
-import clr
 
 from pyrevit import EXEC_PARAMS, FIRST_LOAD
 from pyrevit.coreutils import Timer
@@ -24,7 +23,6 @@ from pyrevit.userconfig import user_config
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 
 # import the basetypes first to get all the c-sharp code to compile
-from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
@@ -63,7 +61,8 @@ def _perform_onsessionload_ops():
     uuid_str = sessioninfo.new_session_uuid()
     sessioninfo.report_env()
 
-    # asking usagelog module to setup the usage logging system (active or not active)
+    # asking usagelog module to setup the usage logging system
+    # (active or not active)
     setup_usage_logfile(uuid_str)
 
     # apply Upgrades
@@ -92,7 +91,8 @@ def _new_session():
         # create a dll assembly and get assembly info
         ext_asm_info = create_assembly(ui_ext)
         if not ext_asm_info:
-            logger.critical('Failed to create assembly for: {}'.format(ui_ext))
+            logger.critical('Failed to create assembly for: {}'
+                            .format(ui_ext))
             continue
 
         logger.info('Extension assembly created: {}'.format(ui_ext.name))
@@ -100,7 +100,10 @@ def _new_session():
         # update/create ui (needs the assembly to link button actions
         # to commands saved in the dll)
 
-        update_pyrevit_ui(ui_ext, ext_asm_info, user_config.core.get_option('loadbeta', default_value=False))
+        update_pyrevit_ui(ui_ext,
+                          ext_asm_info,
+                          user_config.core.get_option('loadbeta',
+                                                      default_value=False))
         logger.info('UI created for extension: {}'.format(ui_ext.name))
 
     # cleanup existing UI. This is primarily for cleanups after reloading
@@ -145,4 +148,5 @@ def load_session():
         if timeout > 0 and not logger_has_errors():
             output_window.self_destruct(timeout)
     except Exception as imp_err:
-        logger.error('Error setting up self_destruct on output window | {}'.format(imp_err))
+        logger.error('Error setting up self_destruct on output window | {}'
+                     .format(imp_err))

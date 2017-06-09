@@ -15,6 +15,8 @@ from scriptutils.userinput import WPFWindow, pick_folder
 from System.Windows.Forms import Clipboard
 
 
+__context__ = 'zerodoc'
+
 __doc__ = 'Shows the preferences window for pyrevit. You can customize how pyrevit loads and set some basic '\
           'parameters here.\n\nShift-Click: Shows config file in explorer.'
 

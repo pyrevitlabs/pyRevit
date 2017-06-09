@@ -1,9 +1,10 @@
-from pyrevit.coreutils import create_type, create_ext_command_attrs, join_strings
+from pyrevit.coreutils import create_type, create_ext_command_attrs,\
+    join_strings
 from pyrevit.coreutils.logger import get_logger
 
-from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE, CMD_AVAIL_TYPE_SELECTION, CMD_AVAIL_TYPE_CATEGORY
-
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
+from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
+    CMD_AVAIL_TYPE_CATEGORY
 
 
 logger = get_logger(__name__)
@@ -19,12 +20,22 @@ def _make_python_avail_type(module_builder, cmd_component):
     Returns:
 
     """
-    if cmd_component.cmd_context == 'Selection':
+
+    context_str = cmd_component.cmd_context.lower()
+
+    if context_str == 'selection':
         create_type(module_builder, CMD_AVAIL_TYPE_SELECTION,
-                    cmd_component.unique_avail_name, [], cmd_component.cmd_context)
+                    cmd_component.unique_avail_name, [],
+                    cmd_component.cmd_context)
+
+    elif context_str == 'zerodoc':
+        create_type(module_builder, CMD_AVAIL_TYPE,
+                    cmd_component.unique_avail_name, [])
+
     else:
         create_type(module_builder, CMD_AVAIL_TYPE_CATEGORY,
-                    cmd_component.unique_avail_name, [], cmd_component.cmd_context)
+                    cmd_component.unique_avail_name, [],
+                    cmd_component.cmd_context)
 
     return cmd_component.unique_avail_name
 
@@ -50,18 +61,23 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.bundle_name,
                 extension.name)
 
-    logger.debug('Successfully created executor type for: {}'.format(cmd_component))
+    logger.debug('Successfully created executor type for: {}'
+                 .format(cmd_component))
     cmd_component.class_name = cmd_component.unique_name
 
     # create command availability class for this command
     if cmd_component.cmd_context:
         try:
-            logger.debug('Creating availability type for: {}'.format(cmd_component))
-            cmd_component.avail_class_name = _make_python_avail_type(module_builder, cmd_component)
-            logger.debug('Successfully created availability type for: {}'.format(cmd_component))
+            logger.debug('Creating availability type for: {}'
+                         .format(cmd_component))
+            cmd_component.avail_class_name = \
+                _make_python_avail_type(module_builder, cmd_component)
+            logger.debug('Successfully created availability type for: {}'
+                         .format(cmd_component))
         except Exception as cmd_avail_err:
             cmd_component.avail_class_name = None
-            logger.error('Error creating availability type: {} | {}'.format(cmd_component, cmd_avail_err))
+            logger.error('Error creating availability type: {} | {}'
+                         .format(cmd_component, cmd_avail_err))
 
 
 def create_python_types(extension, cmd_component, module_builder=None):

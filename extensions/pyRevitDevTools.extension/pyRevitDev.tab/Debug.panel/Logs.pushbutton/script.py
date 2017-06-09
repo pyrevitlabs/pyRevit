@@ -12,6 +12,9 @@ from scriptutils import this_script, open_url, logger
 from scriptutils.userinput import WPFWindow, pick_file
 
 
+__context__ = 'zerodoc'
+
+
 log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s{1}(\d{2}:\d{2}:\d{2},\d{3})\s{1}(.*)\:\s{1}\[(.*?)\]\s{1}(.+)')
 logging_command_parser = re.compile('<(.*)>\s(.*)')
 

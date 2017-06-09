@@ -1,67 +1,15 @@
-import os
-import os.path as op
 import clr
 
-from pyrevit.coreutils.logger import get_logger
+from scriptutils.forms import WPFWindow
 
-clr.AddReference('IronPython.Wpf')
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('WindowsBase')
 
 # noinspection PyUnresolvedReferences
-import System.Windows
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-from System.Windows import Window
-# noinspection PyUnresolvedReferences
-from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
+import System
 # noinspection PyUnresolvedReferences
 from System.Windows.Controls import SelectionMode
 # noinspection PyUnresolvedReferences
-from System.Windows.Media import SolidColorBrush, Color
-# noinspection PyUnresolvedReferences
-from System.Windows.Media.Imaging import BitmapImage
-# noinspection PyUnresolvedReferences
-from System.IO import StringReader
-# noinspection PyUnresolvedReferences
-import wpf
-
-
-logger = get_logger(__name__)
-
-
-class WPFWindow(Window):
-    def __init__(self, xaml_file, literal_string=False):
-        self.Parent = self
-        if not literal_string:
-            if not op.exists(xaml_file):
-                # noinspection PyUnresolvedReferences
-                wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
-            else:
-                wpf.LoadComponent(self, xaml_file)
-        else:
-            wpf.LoadComponent(self, StringReader(xaml_file))
-
-    def set_image_source(self, element_name, image_file):
-        wpf_element = getattr(self, element_name)
-        if not op.exists(image_file):
-            # noinspection PyUnresolvedReferences
-            wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file)))
-        else:
-            wpf_element.Source = BitmapImage(Uri(image_file))
-
-    @staticmethod
-    def hide_element(*wpf_elements):
-        for wpf_element in wpf_elements:
-            wpf_element.Visibility = System.Windows.Visibility.Collapsed
-
-    @staticmethod
-    def show_element(*wpf_elements):
-        for wpf_element in wpf_elements:
-            wpf_element.Visibility = System.Windows.Visibility.Visible
+from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
 
 
 class TemplateUserInputWindow(WPFWindow):

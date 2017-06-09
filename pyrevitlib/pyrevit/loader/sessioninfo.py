@@ -1,7 +1,7 @@
 import sys
 import uuid
 
-from pyrevit import EXEC_PARAMS, PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
+from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 
 from pyrevit.versionmgr import PYREVIT_VERSION
 from pyrevit.coreutils.logger import get_logger

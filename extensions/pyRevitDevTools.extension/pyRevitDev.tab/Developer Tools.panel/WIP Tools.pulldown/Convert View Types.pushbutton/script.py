@@ -24,6 +24,7 @@ view_types_dict = {'Floor Plan': ViewPlan,
                    'Section': ViewSection,
                    'Reflected Ceiling Plan': ViewPlan,
                    'Elevation': ViewSection,
+                   'Drafting': ViewDrafting,
                    # 'Area Plan': ViewPlan,
                    # 'Structural Plan': ViewPlan,
                    }
@@ -61,9 +62,9 @@ class ViewConverterFailurePreProcessor(IFailuresPreprocessor):
 
 def process_selection():
     if not selection.is_empty:
-        return [el for el in selection.elements if isinstance(el, ViewDrafting)]
+        return selection.elements
     else:
-        TaskDialog.Show('pyRevit', 'At least one Drafting view must be selected.')
+        TaskDialog.Show('pyRevit', 'At least one view must be selected.')
         sys.exit(0)
 
 
@@ -129,11 +130,15 @@ def create_dest_view(view_type, view_name, view_scale):
                 dest_view = elev_marker.CreateElevation(doc, default_floor_plan.Id, 0)
                 scale_param = dest_view.LookupParameter('Hide at scales coarser than')
                 scale_param.Set(1)
+            elif view_type == 'Drafting':
+                view_fam_typeid = doc.GetDefaultElementTypeId(ElementTypeGroup.ViewTypeDrafting)
+                dest_view = ViewDrafting.Create(doc, view_fam_typeid)
 
             dest_view.ViewName = view_name
             dest_view.Scale = view_scale
             model_visib_param = dest_view.LookupParameter('Display Model')
-            model_visib_param.Set(2)
+            if model_visib_param:
+                model_visib_param.Set(2)
             dest_view.CropBoxActive = False
             dest_view.CropBoxVisible = False
             t.Commit()
@@ -199,16 +204,17 @@ dest_view_type = get_modelview_type()
 successfully_converted = 0
 
 # iterate over drafting views
-with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
+with TransactionGroup(doc, 'Convert View Types') as tg:
     tg.Start()
     tg.IsFailureHandlingForcedModal = False
     view_count = 1
     total_view_count = len(drafting_views)
 
     for src_view in drafting_views:
-        this_script.output.print_md('-----\n**{} of {}**\n**Converting: {}**'.format(view_count,
-                                                                                 total_view_count,
-                                                                                 src_view.ViewName))
+        this_script.output.print_md('-----\n**{} of {}**'
+                                    .format(view_count, total_view_count))
+        this_script.output.print_md('**Converting: {}**'
+                                    .format(src_view.ViewName))
         dest_view_successfully_setup = False
         try:
             dest_view = create_dest_view(dest_view_type, src_view.ViewName, src_view.Scale)
@@ -219,8 +225,8 @@ with TransactionGroup(doc, 'Convert Drafting to Model') as tg:
                                                                                                    err))
 
         if dest_view_successfully_setup:
-            print('Copying contents from {} to {}'.format(this_script.output.linkify(src_view.Id),
-                                                          this_script.output.linkify(dest_view.Id)))
+            print('Copying 2D contents from {} to {}'.format(this_script.output.linkify(src_view.Id),
+                                                             this_script.output.linkify(dest_view.Id)))
             el_count = copy_paste_elements_btwn_views(src_view, dest_view)
             if el_count:
                 print('Conversion completed. {} elements were copied.\n\n'.format(el_count))

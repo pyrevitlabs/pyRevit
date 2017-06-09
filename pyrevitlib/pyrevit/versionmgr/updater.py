@@ -23,7 +23,8 @@ def _get_extension_credentials(repo_info):
 
 
 def _fetch_remote(remote, repo_info):
-    logger.debug('Fetching remote: {} of {}'.format(remote.Name, repo_info.directory))
+    logger.debug('Fetching remote: {} of {}'
+                 .format(remote.Name, repo_info.directory))
     username, password = _get_extension_credentials(repo_info)
     if username and password:
         repo_info.username = username
@@ -42,7 +43,8 @@ def get_thirdparty_ext_repos():
         if ext_info and git.libgit.Repository.IsValid(ext_info.directory):
             extensions.append(ext_info)
 
-    logger.debug('Valid third-party extensions for update: {}'.format(extensions))
+    logger.debug('Valid third-party extensions for update: {}'
+                 .format(extensions))
 
     repos = []
     for ext in extensions:
@@ -55,8 +57,10 @@ def get_thirdparty_ext_repos():
 
 def get_all_extension_repos():
     logger.debug('Finding all extension repos.')
-    repo_info_list = [get_pyrevit_repo()]               # pyrevit main repo
-    repo_info_list.extend(get_thirdparty_ext_repos())   # add all thirdparty extension repos
+    # pyrevit main repo
+    repo_info_list = [get_pyrevit_repo()]
+    # add all thirdparty extension repos
+    repo_info_list.extend(get_thirdparty_ext_repos())
     logger.debug('Repos are: {}'.format(repo_info_list))
     return repo_info_list
 
@@ -65,7 +69,8 @@ def update_pyrevit(repo_info):
     repo = repo_info.repo
     logger.debug('Updating repo: {}'.format(repo_info.directory))
     head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
-    logger.debug('Current head is: {} > {}'.format(repo.Head.Tip.Id.Sha, head_msg))
+    logger.debug('Current head is: {} > {}'
+                 .format(repo.Head.Tip.Id.Sha, head_msg))
     username, password = _get_extension_credentials(repo_info)
     if username and password:
         repo_info.username = username
@@ -73,15 +78,18 @@ def update_pyrevit(repo_info):
 
     try:
         updated_repo_info = git.git_pull(repo_info)
-        logger.debug('Successfully updated repo: {}'.format(updated_repo_info.directory))
+        logger.debug('Successfully updated repo: {}'
+                     .format(updated_repo_info.directory))
         return updated_repo_info
 
     except git.PyRevitGitAuthenticationError as auth_err:
-        logger.debug('Can not login to git repository to get updates: {} | {}'.format(repo_info, auth_err))
+        logger.debug('Can not login to git repository to get updates: {} | {}'
+                     .format(repo_info, auth_err))
         raise auth_err
 
     except Exception as update_err:
-        logger.debug('Failed updating repo: {} | {}'.format(repo_info, update_err))
+        logger.debug('Failed updating repo: {} | {}'
+                     .format(repo_info, update_err))
         raise update_err
 
 
@@ -96,7 +104,9 @@ def get_updates(repo_info):
             at_least_one_fetch_was_successful = True
 
         except git.PyRevitGitAuthenticationError:
-            logger.debug('Failed fetching updates. Can not login to repo to get updates: {}'.format(repo_info))
+            logger.debug('Failed fetching updates. '
+                         'Can not login to repo to get updates: {}'
+                         .format(repo_info))
             continue
 
         except:
@@ -110,8 +120,7 @@ def get_updates(repo_info):
 
 
 def has_pending_updates(repo_info):
-    fetched = get_updates(repo_info)
-    if fetched:
+    if get_updates(repo_info):
         hist_div = git.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
             return True
@@ -119,14 +128,15 @@ def has_pending_updates(repo_info):
 
 def has_core_updates():
     pyrevit_repo = get_pyrevit_repo()
-    fetched = get_updates(pyrevit_repo)
-    new_commits = git.get_all_new_commits(pyrevit_repo)
+    if get_updates(pyrevit_repo):
+        new_commits = git.get_all_new_commits(pyrevit_repo)
 
-    logger.debug('Checking new commits on pyrevit repo.')
-    for cmt_sha, cmt_msg in new_commits.items():
-        logger.debug('{}: {}'.format(cmt_sha, cmt_msg))
-        if CORE_UPDATE_TRIGGER in cmt_msg:
-            logger.debug('pyrevit repo has core update at {}: {}'.format(cmt_sha, cmt_msg))
-            return True
+        logger.debug('Checking new commits on pyrevit repo.')
+        for cmt_sha, cmt_msg in new_commits.items():
+            logger.debug('{}: {}'.format(cmt_sha, cmt_msg))
+            if CORE_UPDATE_TRIGGER in cmt_msg:
+                logger.debug('pyrevit repo has core update at {}: {}'
+                             .format(cmt_sha, cmt_msg))
+                return True
 
     return False

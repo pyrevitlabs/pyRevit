@@ -16,14 +16,17 @@ from System import AppDomain,  Array, Type
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 # noinspection PyUnresolvedReferences
-from System.Reflection import Assembly, TypeAttributes, MethodAttributes, CallingConventions
+from System.Reflection import Assembly, TypeAttributes,         \
+                              MethodAttributes, CallingConventions
 # noinspection PyUnresolvedReferences
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 # noinspection PyUnresolvedReferences
 from System.Net import WebClient, WebRequest
 
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.Attributes import RegenerationAttribute, RegenerationOption, TransactionAttribute, TransactionMode
+from Autodesk.Revit.Attributes import RegenerationAttribute,    \
+                                      RegenerationOption,       \
+                                      TransactionAttribute, TransactionMode
 
 
 def enum(**enums):
@@ -49,7 +52,8 @@ class ScriptFileParser:
             with open(file_address, 'r') as f:
                 self.ast_tree = ast.parse(f.read())
         except Exception as err:
-            raise PyRevitException('Error parsing script file: {} | {}'.format(self.file_addr, err))
+            raise PyRevitException('Error parsing script file: {} | {}'
+                                   .format(self.file_addr, err))
 
     def get_docstring(self):
         doc_str = ast.get_docstring(self.ast_tree)
@@ -68,16 +72,17 @@ class ScriptFileParser:
                                 param_value = param_value.decode('utf-8')
                             return param_value
         except Exception as err:
-            raise PyRevitException('Error parsing parameter: {} in script file for : {} | {}'.format(param_name,
-                                                                                                     self.file_addr,
-                                                                                                     err))
+            raise PyRevitException('Error parsing parameter: {} '
+                                   'in script file for : {} | {}'
+                                   .format(param_name, self.file_addr, err))
 
         return None
 
 
 def get_all_subclasses(parent_classes):
     sub_classes = []
-    # if super-class, get a list of sub-classes. Otherwise use component_class to create objects.
+    # if super-class, get a list of sub-classes.
+    # Otherwise use component_class to create objects.
     for parent_class in parent_classes:
         try:
             derived_classes = parent_class.__subclasses__()
@@ -131,7 +136,8 @@ SPECIAL_CHARS = {' ': '',
                  '&': 'AND',
                  '*': 'STAR',
                  '+': 'PLUS',
-                 ';': '', ':': '', ',': '', '\"': '', '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
+                 ';': '', ':': '', ',': '', '\"': '',
+                 '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
                  '-': 'MINUS',
                  '=': 'EQUALS',
                  '<': '', '>': '',
@@ -156,14 +162,17 @@ def get_revit_instance_count():
 
 def run_process(proc, cwd=''):
     import subprocess
-    return subprocess.Popen(proc, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, shell=True)
+    return subprocess.Popen(proc,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=cwd, shell=True)
 
 
 def inspect_calling_scope_local_var(variable_name):
     """Traces back the stack to find the variable in the caller local stack.
     Example:
-    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
-    __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals.
+    Thus, modules have access to __revit__ but not to __window__.
+    This function is used to find __window__ in the caller stack.
     """
     import inspect
 
@@ -178,8 +187,9 @@ def inspect_calling_scope_local_var(variable_name):
 def inspect_calling_scope_global_var(variable_name):
     """Traces back the stack to find the variable in the caller local stack.
     Example:
-    PyRevitLoader defines __revit__ in builtins and __window__ in locals. Thus, modules have access to
-    __revit__ but not to __window__. This function is used to find __window__ in the caller stack.
+    PyRevitLoader defines __revit__ in builtins and __window__ in locals.
+    Thus, modules have access to __revit__ but not to __window__.
+    This function is used to find __window__ in the caller stack.
     """
     import inspect
 
@@ -197,7 +207,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
     Args:
         asm_info (str): name or location of the assembly
         by_partial_name (bool): returns all assemblies that include the asm_info
-        by_location (bool): returns all assemblies with their location matching asm_info
+        by_location (bool): returns all assemblies matching location
 
     Returns:
         list: List of all loaded assemblies matching the provided info
@@ -207,15 +217,18 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
     loaded_asm_list = []
     for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
-            if asm_info.lower() in unicode(loaded_assembly.GetName().Name).lower():
+            if asm_info.lower() in \
+                    unicode(loaded_assembly.GetName().Name).lower():
                 loaded_asm_list.append(loaded_assembly)
         elif by_location:
             try:
-                if op.normpath(loaded_assembly.Location) == op.normpath(asm_info):
+                if op.normpath(loaded_assembly.Location) == \
+                        op.normpath(asm_info):
                     loaded_asm_list.append(loaded_assembly)
             except:
                 continue
-        elif asm_info.lower() == unicode(loaded_assembly.GetName().Name).lower():
+        elif asm_info.lower() == \
+                unicode(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
     return loaded_asm_list
@@ -234,7 +247,8 @@ def find_type_by_name(assembly, type_name):
     if base_class is not None:
         return base_class
     else:
-        raise PyRevitException('Can not find base class type: {}'.format(type_name))
+        raise PyRevitException('Can not find base class type: {}'
+                               .format(type_name))
 
 
 def make_canonical_name(*args):
@@ -303,7 +317,9 @@ def check_internet_connection(timeout=1000):
         except:
             return False
 
-    for url in ["http://google.com/", "http://github.com/", "http://bitbucket.com/"]:
+    for url in ["http://google.com/",
+                "http://github.com/",
+                "http://bitbucket.com/"]:
         if can_access(url):
             return url
 
@@ -320,22 +336,37 @@ def read_source_file(source_file_path):
         with open(source_file_path, 'r') as code_file:
             return code_file.read()
     except Exception as read_err:
-        raise PyRevitException('Error reading source file: {} | {}'.format(source_file_path, read_err))
+        raise PyRevitException('Error reading source file: {} | {}'
+                               .format(source_file_path, read_err))
 
 
 def create_ext_command_attrs():
-    regen_const_info = clr.GetClrType(RegenerationAttribute).GetConstructor(Array[Type]((RegenerationOption,)))
-    regen_attr_builder = CustomAttributeBuilder(regen_const_info, Array[object]((RegenerationOption.Manual,)))
+    regen_const_info = \
+        clr.GetClrType(RegenerationAttribute) \
+           .GetConstructor(Array[Type]((RegenerationOption,)))
+
+    regen_attr_builder = \
+        CustomAttributeBuilder(regen_const_info,
+                               Array[object]((RegenerationOption.Manual,)))
+
     # add TransactionAttribute to type
-    trans_constructor_info = clr.GetClrType(TransactionAttribute).GetConstructor(Array[Type]((TransactionMode,)))
-    trans_attrib_builder = CustomAttributeBuilder(trans_constructor_info, Array[object]((TransactionMode.Manual,)))
+    trans_constructor_info = \
+        clr.GetClrType(TransactionAttribute) \
+           .GetConstructor(Array[Type]((TransactionMode,)))
+
+    trans_attrib_builder = \
+        CustomAttributeBuilder(trans_constructor_info,
+                               Array[object]((TransactionMode.Manual,)))
 
     return [regen_attr_builder, trans_attrib_builder]
 
 
 def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     # create type builder
-    type_builder = modulebuilder.DefineType(class_name, TypeAttributes.Class | TypeAttributes.Public, type_class)
+    type_builder = \
+        modulebuilder.DefineType(class_name,
+                                 TypeAttributes.Class | TypeAttributes.Public,
+                                 type_class)
 
     for custom_attr in custom_attr_list:
         type_builder.SetCustomAttribute(custom_attr)
@@ -362,8 +393,10 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     for param in param_list:
         gen.Emit(OpCodes.Ldstr, param)
 
-    gen.Emit(OpCodes.Call, ci)  # call base constructor (consumes "this" and the created stack)
-    gen.Emit(OpCodes.Nop)  # Fill some space - this is how it is generated for equivalent C# code
+    # call base constructor (consumes "this" and the created stack)
+    gen.Emit(OpCodes.Call, ci)
+    # Fill some space - this is how it is generated for equivalent C# code
+    gen.Emit(OpCodes.Nop)
     gen.Emit(OpCodes.Nop)
     gen.Emit(OpCodes.Nop)
     gen.Emit(OpCodes.Ret)
@@ -372,12 +405,14 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
 
 def show_file_in_explorer(file_path):
     import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(file_path)))
+    subprocess.Popen(r'explorer /select,"{}"'
+                     .format(os.path.normpath(file_path)))
 
 
 def open_folder_in_explorer(folder_path):
     import subprocess
-    subprocess.Popen(r'explorer /open,"{}"'.format(os.path.normpath(folder_path)))
+    subprocess.Popen(r'explorer /open,"{}"'
+                     .format(os.path.normpath(folder_path)))
 
 
 def open_url(url):
@@ -496,11 +531,56 @@ def is_blank(input_string):
 
 def is_url_valid(url_string):
     regex = re.compile(
-            r'^(?:http|ftp)s?://' # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-            r'localhost|' #localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-            r'(?::\d+)?' # optional port
+            r'^(?:http|ftp)s?://'                   # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
+            r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+            r'localhost|'                           # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+            r'(?::\d+)?'                            # optional port
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     return regex.match(url_string)
+
+
+def reformat_string(orig_str, orig_format, new_format):
+    """Reformats a string into a new format.
+    Extracts information from a string based on a given pattern,
+    and recreates a new string based on the given new pattern.
+
+    Arguments:
+        orig_str(str): Original string to be reformatted
+        orig_format(str): Pattern of the original string (data to be extracted)
+        new_format(str): New pattern (how to recompose the data)
+
+    Example:
+    >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
+                        '{section} - {loc} - {mat} - {rating} - {name}',
+                        '{section}:{mat}:{rating} - {name} ({loc})'))
+    >>> '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
+
+    Returns:
+        str: Reformatted string
+
+    """
+
+    # find the tags
+    tag_extractor = re.compile('{(.*?)}')
+    tags = tag_extractor.findall(orig_format)
+
+    # replace the tags with regex patterns
+    # to create a regex pattern that finds values
+    tag_replacer = re.compile('{.*?}')
+    value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
+    # find all values
+    value_extractor = re.compile(value_extractor_pattern)
+    values = value_extractor.findall(orig_str)
+    if len(values) > 0:
+        values = values[0]
+
+    # create a dictionary of tags and values
+    reformat_dict = {}
+    for k, v in zip(tags, values):
+        reformat_dict[k] = v
+
+    # use dictionary to reformat the string into new
+    return new_format.format(**reformat_dict)

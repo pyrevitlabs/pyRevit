@@ -12,16 +12,17 @@ This module manages the usage logging system.
         >>> get_current_usage_serverurl()
         >>> is_active()
 
-    This module also provides a wrapper class around the command results dictionary that is included
-    with the usage log record.
-        >>> CommandCustomResults()
-    Scripts should use the instance of this class provided by the scriptutils module.
-    See scriptutils for examples
+    This module also provides a wrapper class around the command results
+    dictionary that is included with the usage log record.
+
+    Scripts should use the instance of this class provided by the
+    scriptutils module. See scriptutils for examples
 
 """
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
+from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR,\
+                    PYREVIT_FILE_PREFIX
 from pyrevit.coreutils import is_blank
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
@@ -75,7 +76,8 @@ def _setup_default_logfile(usagelog_fullfilepath):
             with open(usagelog_fullfilepath, 'w') as log_file:
                 log_file.write('[]')
         except Exception as write_err:
-            logger.error('Usage logging is active but log file location is not accessible. | {}'.format(write_err))
+            logger.error('Usage logging is active but log file location '
+                         'is not accessible. | {}'.format(write_err))
             _disable_usage_logging()
 
 
@@ -86,7 +88,8 @@ def setup_usage_logfile(session_id=None):
         session_id = get_session_uuid()
 
     # default file path and name for usage logging
-    filelogging_filename = FILE_LOG_FILENAME_TEMPLATE.format(PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT)
+    filelogging_filename = FILE_LOG_FILENAME_TEMPLATE \
+        .format(PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT)
 
     # default server url for usage logging
     usagelog_serverurl = ''
@@ -98,14 +101,16 @@ def setup_usage_logfile(session_id=None):
     if not user_config.has_section('usagelogging'):
         user_config.add_section('usagelogging')
 
-    # GLOBAL SWITCH ----------------------------------------------------------------------------------------------------
+    # GLOBAL SWITCH ------------------------------------------------------------
     # setup default value for usage logging global switch
-    usageloggingactive = user_config.usagelogging.get_option('active', default_value=False)
+    ul_config = user_config.usagelogging
+    usageloggingactive = ul_config.get_option('active', default_value=False)
     set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, usageloggingactive)
 
-    # FILE usage logging -----------------------------------------------------------------------------------------------
+    # FILE usage logging -------------------------------------------------------
     # read or setup default values for file usage logging
-    logfilepath = user_config.usagelogging.get_option('logfilepath', default_value=PYREVIT_VERSION_APP_DIR)
+    logfilepath = ul_config.get_option('logfilepath',
+                                       default_value=PYREVIT_VERSION_APP_DIR)
 
     # check file usage logging config and setup destination
     if not logfilepath or is_blank(logfilepath):
@@ -119,12 +124,14 @@ def setup_usage_logfile(session_id=None):
             _setup_default_logfile(logfile_fullpath)
         else:
             # if not, show error and disable usage logging
-            logger.error('Provided usage log address does not exits or is not a directory. Usage logging disabled.')
+            logger.error('Provided usage log address does not exits or is '
+                         'not a directory. Usage logging disabled.')
             _disable_usage_logging()
 
-    # SERVER usage logging ---------------------------------------------------------------------------------------------
+    # SERVER usage logging -----------------------------------------------------
     # read or setup default values for server usage logging
-    logserverurl = user_config.usagelogging.get_option('logserverurl', default_value=usagelog_serverurl)
+    logserverurl = ul_config.get_option('logserverurl',
+                                        default_value=usagelog_serverurl)
 
     # check server usage logging config and setup destination
     if not logserverurl or is_blank(logserverurl):
@@ -136,7 +143,8 @@ def setup_usage_logfile(session_id=None):
 
 
 def get_default_usage_logfilepath():
-    """Returns default usage logging path. This path is automatically generated at module execution.
+    """Returns default usage logging path. This path is automatically
+    generated at module execution.
 
     Returns:
         str: Default usage logging path. This might not be the active path.
@@ -145,7 +153,8 @@ def get_default_usage_logfilepath():
 
 
 def get_current_usage_logpath():
-    """Returns active usage logging path. This path might be the default, or set by user in user config.
+    """Returns active usage logging path. This path might be the default,
+    or set by user in user config.
 
     Returns:
         str: Active usage logging path.
@@ -155,9 +164,9 @@ def get_current_usage_logpath():
 
 def get_current_usage_logfile():
     """
-    Returns active usage logging full file path. This is the file that usage logs are being
-    written to in current pyRevit session. Usage logging filenames are automatically generated
-    at this module execution.
+    Returns active usage logging full file path. This is the file that usage
+    logs are being written to in current pyRevit session. Usage logging
+    filenames are automatically generated at this module execution.
 
     Returns:
         str: Active usage logging full file path.
@@ -167,8 +176,9 @@ def get_current_usage_logfile():
 
 def get_current_usage_serverurl():
     """
-    Returns active usage logging server url. This is the server that usage logs are being
-    sent to in current pyRevit session. Server url must be set by the user in config.
+    Returns active usage logging server url. This is the server that usage
+    logs are being sent to in current pyRevit session.
+    Server url must be set by the user in config.
 
     Returns:
         str: Active usage logging server url.

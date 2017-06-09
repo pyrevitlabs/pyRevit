@@ -1,4 +1,8 @@
-"""perform upgrades between versions here, e.g. adding a new config parameter"""
+"""
+perform upgrades between versions here,
+e.g. adding a new config parameter
+
+"""
 
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import find_loaded_asm, get_revit_instance_count
@@ -25,12 +29,14 @@ def _cleanup_cache_files():
     """
     cache_file_exts = ['pickle', 'json', 'log', 'pym']
     for cache_file_ext in cache_file_exts:
-        for cache_file_path in appdata.list_data_files(file_ext=cache_file_ext, universal=True):
+        for cache_file_path in appdata.list_data_files(file_ext=cache_file_ext,
+                                                       universal=True):
                 appdata.garbage_data_file(cache_file_path)
 
     # Cleanup Universal Dll files
     if get_revit_instance_count() == 1:
-        for asm_file_path in appdata.list_data_files(file_ext='dll', universal=True):
+        for asm_file_path in appdata.list_data_files(file_ext='dll',
+                                                     universal=True):
             if not find_loaded_asm(asm_file_path, by_location=True):
                 appdata.garbage_data_file(asm_file_path)
 
@@ -50,7 +56,8 @@ def _loadbeta_config_upgrade():
 
 def _startuplogtimeout_config_upgrade():
     """ Upgrades local files and settings per this commit changes.
-    commit message:   Updated settings window to allow adjusting the startup window timeout
+    commit message:   Updated settings window to allow adjusting
+                      the startup window timeout
     commit hash:      75ffba6d19e98862a28d5d180345c124df696246
     """
 

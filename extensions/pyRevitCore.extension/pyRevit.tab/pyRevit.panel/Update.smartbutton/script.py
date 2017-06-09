@@ -16,6 +16,8 @@ from pyrevit.userconfig import user_config
 from scriptutils import logger, this_script
 
 
+__context__ = 'zerodoc'
+
 __doc__ = 'Downloads updates from the remote libgit repositories (e.g github, bitbucket).'
 
 

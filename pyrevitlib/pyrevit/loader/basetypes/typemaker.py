@@ -11,13 +11,14 @@ from pyrevit.loader.basetypes.csharptypemaker import create_csharp_types
 logger = get_logger(__name__)
 
 
-# public base class maker function -------------------------------------------------------------------------------------
+# public base class maker function ---------------------------------------------
 def make_cmd_types(extension, cmd_component, module_builder=None):
     """
 
     Args:
-        module_builder:
+        extension: 
         cmd_component (pyrevit.extensions.genericcomps.GenericUICommand):
+        module_builder:
 
     Returns:
 
@@ -29,16 +30,19 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
             try:
                 create_python_types(extension, cmd_component, module_builder)
             except Exception as cmd_exec_err:
-                logger.error('Error creating python types for: {} | {}'.format(cmd_component, cmd_exec_err))
+                logger.error('Error creating python types for: {} | {}'
+                             .format(cmd_component, cmd_exec_err))
 
         elif cmd_component.script_language == CSHARP_LANG:
             logger.debug('Command is C#: {}'.format(cmd_component))
             try:
                 create_csharp_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
-                logger.error('Error compiling C# types for: {} | {}'.format(cmd_component, cmd_compile_err))
+                logger.error('Error compiling C# types for: {} | {}'
+                             .format(cmd_component, cmd_compile_err))
     except:
-        logger.error('Can not determine script language for: {}'.format(cmd_component))
+        logger.error('Can not determine script language for: {}'
+                     .format(cmd_component))
 
 
 def make_shared_types(module_builder=None):

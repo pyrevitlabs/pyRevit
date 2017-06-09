@@ -28,6 +28,6 @@ if len(view_list) == 2:
 
     if not comp:
         uidoc.ActiveView = view_list[0]
-        selection.utils.replace_selection(res.diff_elements)
+        selection.set_to(res.diff_elements)
 else:
     TaskDialog.Show('pyRevit', 'Exactly 2 views need to be selected.')

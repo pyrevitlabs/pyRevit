@@ -1,44 +1,32 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from revitutils import doc, uidoc, selection
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB import ElementId, IndependentTag, AreaTag
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB.Architecture import RoomTag
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.DB.Mechanical import SpaceTag
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.UI import TaskDialog
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
 
 __doc__ = 'Select a series of tags and this tool will add their associated elements to selection. ' \
           'This is especially useful for isolating elements and their tags.'
 
-__window__.Close()
-
-from Autodesk.Revit.DB import ElementId, IndependentTag
-from Autodesk.Revit.DB.Architecture import RoomTag
-from Autodesk.Revit.UI import TaskDialog
-from System.Collections.Generic import List
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-selection = list(uidoc.Selection.GetElementIds())
 
 tagged_elements = []
 
-for eltid in selection:
-    elt = doc.GetElement(eltid)
-    if isinstance(elt, IndependentTag):
-        tagged_elements.append(elt.TaggedLocalElementId)
+for el in selection:
+    if isinstance(el, IndependentTag):
+        tagged_elements.append(el.TaggedLocalElementId)
+    elif isinstance(el, RoomTag):
+        tagged_elements.append(el.TaggedLocalRoomId)
+    elif isinstance(el, SpaceTag):
+        tagged_elements.append(el.Space.Id)
+    elif isinstance(el, AreaTag):
+        tagged_elements.append(el.Area.Id)
 
 if len(tagged_elements) > 0:
-    uidoc.Selection.SetElementIds(List[ElementId](selection + tagged_elements))
+    selection.append(tagged_elements)
 else:
     TaskDialog.Show('pyrevit', 'Please select at least one element tag.')
