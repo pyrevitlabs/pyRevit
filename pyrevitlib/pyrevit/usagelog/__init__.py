@@ -124,8 +124,9 @@ def setup_usage_logfile(session_id=None):
             _setup_default_logfile(logfile_fullpath)
         else:
             # if not, show error and disable usage logging
-            logger.error('Provided usage log address does not exits or is '
-                         'not a directory. Usage logging disabled.')
+            if usageloggingactive:
+                logger.error('Provided usage log address does not exits or is '
+                             'not a directory. Usage logging disabled.')
             _disable_usage_logging()
 
     # SERVER usage logging -----------------------------------------------------
