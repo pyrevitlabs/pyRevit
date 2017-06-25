@@ -24,18 +24,3 @@ OTHER DEALINGS IN THE SOFTWARE.
 Copyright 2017 Gui Talarico
 
 """
-
-__title__ = 'revitpythonwrapper'
-__version__ = '1.0.1'
-__maintainer__ = ['Gui Talarico', 'Ehsan Iran-Nejad']
-__license__ = 'MIT'
-__contact__ = 'github.com/gtalarico/revitpythonwrapper'
-
-from rpw.utils.logger import logger
-from rpw.__revit import revit, DB, UI
-import rpw.db
-import rpw.ui
-import rpw.extras
-
-# For Compatibility. Use revit.doc instead?
-doc, uidoc = revit.doc, revit.uidoc

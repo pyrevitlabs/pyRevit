@@ -1,133 +1,128 @@
 """
-All Wrappers inherit from this base class, which has 4 responsibilities:
+Base Object Wrapper Class
 
-* Instantiating python class and storing wrapped element (from Revit API).
-* Provides a ``unwrap()`` method, which returns the wrapped object.
-* Provides access to all original methods and attributes of the wrapped object.
-* Create a ``__repr__()`` method for consistent representation
+Most other wrappers inherit from this base class,
+which has 4 primary responsibilities:
+
+* Instantiates Class and stores wrapped element.
+* Provides a ``unwrap()`` method to return the wrapped object.
+* Provides access to all original methods and attributes of the
+  wrapped object through a pass through ``__getattr__``
+* Implements a ``__repr__()`` for consistent object representation
 
 Because access to original methods and properties is maintained, you can keep
 the elements wrapped throughout your code. You would only need to unwrap when
 when passing the element into function where the original Type is expected.
+
+>>> wrapped = BaseObjectWrapper(SomeObject)
+>>> wrapped
+<RPW_BaseOBjectWrapper:>
+>>> wrapped.unwrap()
+SomeObject
+>>> wrapped.Pinned
+False
+>>> wrapped.AnyRevitPropertyOrMethod
+
+Warning:
+    This class is primarily for internal use. If you plan on creating your
+    own wrappers using this base class make sure you read through the
+    documentation first. Misusing this class can cause easilly cause
+    Max Recursion Crashes.
+
 """
 
-# noinspection PyUnresolvedReferences
-from rpw import DB, get_logger, HOST_API_NAMESPACE
-from rpw import RpwException, RpwTypeError, RpwAttributeError
-
-
-logger = get_logger(__name__)
+import rpw
+from rpw.exceptions import RpwTypeError, RpwException
+from rpw.utils.logger import logger
 
 
 class BaseObject(object):
-    def __init__(self, *args, **kwargs):
-        pass
 
-    def __repr__(self, data=None, wrapping=None):
-        base_repr = '%s' % self.__class__.__name__
+        def __init__(self, *args, **kwargs):
+            pass
 
-        # inserting wrapperd element, read '%' as 'wrapping'
-        # e.g. <rpw.BaseObjectWrapper % Autodesk.Revit.DB.ElementType>
-        if wrapping:
-            base_repr += ' %% %s' % wrapping
+        def ToString(self, *args, **kwargs):
+            """ Show correct repr on Dynamo """
+            return self.__repr__(*args, **kwargs)
 
-        if not data:
-            # basic repr if no data
-            return '<%s>' % base_repr
-        else:
-            # if data dict is provided, make a str repr of the data
-            data_repr = ''
-            for k, v in data.items():
-                data_repr += ' %s:%s' % (k, v)
-            # add data repr to the output
-            return '<%s%s>' % (base_repr, data_repr)
+        # def __dir__(self):
+        # TODO: Implement Dir on BaseOBject and BaseObjectWrapper for proper AC
+            # return list(self.__dict__)
+
+        def __repr__(self, data={}):
+            data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
+            return '<rpw:{class_name} | {data}>'.format(
+                                        class_name=self.__class__.__name__,
+                                        data=data)
 
 
 class BaseObjectWrapper(BaseObject):
-    def __init__(self, revit_object, enforce_type=None, enforce_types=None):
+    """
+    Arguments:
+        element(APIObject): Revit Element to store
+    """
+
+    def __init__(self, revit_object, enforce_type=True):
         """
-        Child classes can use self._wrapped_object to refer to
-        the wrapped Revit APIObject or Element. In Revit API, Element does
-        not subclass from APIObject. But in RPW, BaseObjectWrapper is the
-        parent class to all other wrappers including Revit Element wrappers.
+        Child classes can use self._revit_object to refer back to Revit Element
 
-        Arguments:
-            revit_object(APIObject): Revit APIObject to store
+        Warning:
+            Any Wrapper that inherits and overrides __init__ class MUST
+            super to ensure _revit_object is created by calling super().__init__
+            BaseObjectWrapper must define a class variable _revit_object_class
+            to define the object being wrapped.
         """
+        _revit_object_class = self.__class__._revit_object_class
 
-        super(BaseObjectWrapper, self).__init__()
+        if enforce_type and not isinstance(revit_object, _revit_object_class):
+            raise RpwTypeError(_revit_object_class, type(revit_object))
 
-        if enforce_type and not isinstance(revit_object, enforce_type):
-            raise RpwTypeError(enforce_type, type(revit_object))
-        if enforce_types and not isinstance(revit_object, enforce_types):
-            raise RpwTypeError(enforce_type, type(revit_object))
-
-        super(BaseObjectWrapper, self).__setattr__('_wrapped_object',
-                                                   revit_object)
-
-    def __str__(self):
-        return repr(self)
-
-    # noinspection PyMethodOverriding
-    def __repr__(self, data=None):
-        # pass the wrapped element name and data to the original repr
-        if hasattr(self._wrapped_object, 'ToString'):
-            wrapping_element = self._wrapped_object.ToString()
-            wrapping_element = \
-                wrapping_element.replace(HOST_API_NAMESPACE + '.', '')
-        else:
-            wrapping_element = type(self._wrapped_object).__name__
-
-        return super(BaseObjectWrapper, self)\
-            .__repr__(data=data, wrapping=unicode(wrapping_element))
+        object.__setattr__(self, '_revit_object', revit_object)
 
     def __getattr__(self, attr):
         """
-        Getter for methods and properties of this python class or
-        the wrapped Revit APIObject. This method is only called if the
-        attribute name does not already exist in the class dictionary.
-
-        Raises:
-            RpwException: if wrapped element does not exist.
-            AttributeError: if attribute does not exist.
+        Getter for original methods and properties or the element.
+        This method is only called if the attribute name does not
+        already exists.
         """
         try:
-            return getattr(self.__dict__['_wrapped_object'], attr)
+            return getattr(self.__dict__['_revit_object'], attr)
+        # except AttributeError:
+            # This lower/snake case to be converted.
+            # This automatically gives acess to all names in lower case format
+            # x.name (if was not already defined, will get x.Name)
+            # Note: will not Work for setters, unless defined by wrapper
+            # attr_pascal_case = rpw.utils.coerce.to_pascal_case(attr)
+            # return getattr(self.__dict__['_revit_object'], attr_pascal_case)
         except KeyError:
-            raise RpwException('{} is missing _wrapped_object.'
-                               .format(self.__class__.__name__))
+            raise RpwException('BaseObjectWrapper is missing _revit_object')
 
     def __setattr__(self, attr, value):
         """
-        Setter for properties of this python class or the wrapped
-        Revit APIObject. Setter allows setting of wrapped object properties,
-        for example:
+        Setter allows setting of wrapped object properties, for example
         ```WrappedWall.Pinned = True``
-
-        Raises:
-            AttributeError: On attribue set errors.
         """
-        if hasattr(self._wrapped_object, attr):
-            self._wrapped_object.__setattr__(attr, value)
+        if hasattr(self._revit_object, attr):
+            self._revit_object.__setattr__(attr, value)
         else:
-            super(BaseObjectWrapper, self).__setattr__(attr, value)
+            object.__setattr__(self, attr, value)
 
     def unwrap(self):
-        return self._wrapped_object
+        """ Returns the Original Wrapped Element """
+        return self._revit_object
 
+    def __repr__(self, data={}, to_string=None):
+        """ ToString can be overriden for objects in which the method is
+        not consistent - ie. XYZ.ToString returns pt tuple not Class Name """
+        revit_object_name = to_string or self._revit_object.ToString()
+        revit_object_name_chunks = revit_object_name.split('.')
+        if revit_object_name_chunks > 2:
+            revit_object_name = '..{}'.format('.'.join(revit_object_name_chunks[-2:]))
 
-class BaseEnumWrapper(BaseObject):
-    def __init__(self, api_enum):
-        super(BaseEnumWrapper, self).__init__()
-        self._api_enum = api_enum
+        data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
 
-    def get(self, parameter_name):
-        try:
-            enum = getattr(self._api_enum, parameter_name)
-        except AttributeError:
-            raise RpwAttributeError(DB.BuiltInParameter, parameter_name)
-        return enum
-
-    def get_id(self, parameter_name):
-        enum = self.get(parameter_name)
-        return DB.ElementId(enum)
+        return '<rpw:{class_name} % {revit_object} | {data}>'.format(
+                                    class_name=self.__class__.__name__,
+                                    data=data,
+                                    revit_object=revit_object_name,
+                                    )

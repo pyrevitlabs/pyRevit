@@ -37,6 +37,6 @@
         "url": "https://github.com/gtalarico/pyrevitplus.git",
         "website": "https://github.com/gtalarico/pyrevitplus",
         "image" : "",
-        "dependencies": ["RevitPythonWrapper"]
+        "dependencies": []
         }   ]
 }
