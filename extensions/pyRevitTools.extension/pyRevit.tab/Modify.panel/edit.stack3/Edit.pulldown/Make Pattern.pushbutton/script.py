@@ -75,7 +75,7 @@ class MakePatternWindow(WPFWindow):
             return round(coord, PICK_COORD_RESOLUTION)
 
         # ask user for origin and max domain points
-        with WarningBar(title='Pick origin point (bottom-right corner of the pattern area):'):
+        with WarningBar(title='Pick origin point (bottom-left corner of the pattern area):'):
             pat_bottomleft = selection.utils.pick_point()
         if pat_bottomleft:
             with WarningBar(title='Pick top-right corner of the pattern area:'):
