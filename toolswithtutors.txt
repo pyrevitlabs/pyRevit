@@ -1,17 +1,13 @@
 Make videos for these tools:
 
 - change element types safely
-- selection memory
 - copy paste state, 3d section box, visibility graphics
 - sum total
 - clickable links
 - pick tools
 - sync view
 - compare detail views
-- find linked elements, fake deleting
 - show nested group structure
-- orient section box
-- orient to face
 - convert unpurgable viewport types
 - print linked sheets
 - print sheet index, manual override
