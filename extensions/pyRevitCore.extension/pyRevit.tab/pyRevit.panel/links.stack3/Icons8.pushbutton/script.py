@@ -1,4 +1,4 @@
-"""Opens the website that is providing the icons for the tools in the default browser."""
+"""Opens the website that is providing the icons for the tools."""
 
 __context__ = 'zerodoc'
 
