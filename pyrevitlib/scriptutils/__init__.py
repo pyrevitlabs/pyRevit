@@ -172,13 +172,3 @@ from pyrevit.coreutils.envvars import get_pyrevit_env_var, set_pyrevit_env_var
 logger = get_logger(COMMAND_NAME)
 # setup this script services
 this_script = PyRevitScriptUtils()
-
-
-def print_md(md_str):
-    logger.warning('print_md is deprecated and will be removed soon. Please use this_script.output.print_md')
-    this_script.output.print_md(md_str)
-
-
-def print_code(code_str):
-    logger.warning('print_code is deprecated and will be removed soon. Please use this_script.output.print_code')
-    this_script.output.print_code(code_str)
