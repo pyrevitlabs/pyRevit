@@ -150,3 +150,27 @@ def load_session():
     except Exception as imp_err:
         logger.error('Error setting up self_destruct on output window | {}'
                      .format(imp_err))
+
+
+def execute_script(script_path):
+    """Executes a script under pyRevit.
+
+    Args:
+        script_path (str): Address of the script file
+
+    Returns:
+        results from the executed script
+    """
+    pass
+
+
+def execute_command(command_info):
+    """Executes a pyRevit command.
+
+    Args:
+        command_info (str):
+
+    Returns:
+        results from the executed script
+    """
+    pass
