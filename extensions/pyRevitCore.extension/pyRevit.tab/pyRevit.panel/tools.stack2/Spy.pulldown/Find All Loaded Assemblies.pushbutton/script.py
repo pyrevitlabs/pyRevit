@@ -22,12 +22,16 @@ for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
                                loc))
     try:
         print('External Applications:')
-        print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalApplication") is not None])
+        print([x.FullName
+               for x in loadedAssembly.GetTypes()
+               if x.GetInterface("IExternalApplication") is not None])
     except:
         pass
     try:
         print('External Commands:')
-        print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalCommand") is not None])
+        print([x.FullName
+               for x in loadedAssembly.GetTypes()
+               if x.GetInterface("IExternalCommand") is not None])
     except:
         pass
 
@@ -43,7 +47,9 @@ for loadedAssembly in userScriptsAssemblies:
                              loc))
     try:
         print('External Commands:')
-        print([x.FullName for x in loadedAssembly.GetTypes() if x.GetInterface("IExternalCommand") is not None])
+        print([x.FullName
+               for x in loadedAssembly.GetTypes()
+               if x.GetInterface("IExternalCommand") is not None])
         print('\n')
     except:
         pass

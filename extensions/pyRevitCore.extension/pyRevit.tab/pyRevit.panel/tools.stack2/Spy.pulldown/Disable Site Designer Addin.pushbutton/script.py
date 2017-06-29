@@ -1,7 +1,11 @@
-"""Site Designer has a bug that duplicates its standard line styles. This script will disable the Add-in."""
+"""Site Designer has a bug that duplicates its standard line styles.
+This script will disable the Add-in.
+"""
 
 import os
 import os.path as op
+
+# noinspection PyUnresolvedReferences
 from System import AppDomain
 
 
@@ -12,6 +16,8 @@ __context__ = 'zerodoc'
 
 
 def findassembly(assemblyname):
+    """Finds the loaded assembly that contains assemblyname in name
+    """
     alist = []
     for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
         if assemblyname in loadedAssembly.FullName:
@@ -20,6 +26,9 @@ def findassembly(assemblyname):
 
 
 def disableaddin(assemb):
+    """Find the addin definition file location and append .bak to its name.
+    This way Revit won;t be able to find it on next load.
+    """
     assmloc = op.dirname(assemb.Location)
     files = os.listdir(assmloc)
     atleastonedisabled = False
@@ -39,7 +48,9 @@ def disableaddin(assemb):
 assmList = findassembly(assmName)
 
 if len(assmList) > 1:
-    print('Multiple assemblies found:\n{0}\n\nAttemping disabling all...'.format(assmList))
+    print('Multiple assemblies found:'
+          '\n{0}'
+          '\n\nAttemping disabling all...'.format(assmList))
     for i, a in enumerate(assmList):
         print('\n\n{0}: {1}'.format(i, a.GetName().Name))
         if not a.IsDynamic:
@@ -50,7 +61,9 @@ if len(assmList) > 1:
 elif len(assmList) == 1:
     assm = assmList[0]
     if not assm.IsDynamic:
-        print('Assembly found:\n{0}\nAttemping disabling...'.format(assm.GetName().Name))
+        print('Assembly found:'
+              '\n{0}'
+              '\nAttemping disabling...'.format(assm.GetName().Name))
         disableaddin(assm)
     else:
         print('Can not disable dynamic assembly...')

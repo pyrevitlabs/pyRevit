@@ -4,8 +4,6 @@ import os
 import os.path as op
 import revitutils.journals as journals
 
-# __context__ = 'zerodoc'
-
 
 # Checks to see if notepad++ program is installed and available.
 def npplusplus_exists():
