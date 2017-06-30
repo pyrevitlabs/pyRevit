@@ -21,14 +21,14 @@ namespace PyRevitBaseClasses
         private readonly ExternalCommandData _commandData;
         private readonly ElementSet _elements;
         private readonly UIApplication _revit;
-        private readonly UIControlledApplication _uiControlledApplication;
+        // private readonly UIControlledApplication _uiControlledApplication;
         private readonly PyRevitCommand _thisCommand;
 
 
-        public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
+        public ScriptExecutor(UIApplication uiApplication) // UIControlledApplication uiControlledApplication)
         {
             _revit = uiApplication;
-            _uiControlledApplication = uiControlledApplication;
+            // _uiControlledApplication = uiControlledApplication;
 
             _commandData = null;
             _elements = null;
@@ -43,7 +43,7 @@ namespace PyRevitBaseClasses
             _commandData = commandData;
             _elements = elements;
 
-            _uiControlledApplication = null;
+            // _uiControlledApplication = null;
         }
 
 
@@ -202,10 +202,10 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__revit__", _revit);
 
             // allow access to the UIControlledApplication in the startup script...
-            if (_uiControlledApplication != null)
-            {
-                builtin.SetVariable("__uiControlledApplication__", _uiControlledApplication);
-            }
+            // if (_uiControlledApplication != null)
+            // {
+            //    builtin.SetVariable("__uiControlledApplication__", _uiControlledApplication);
+            // }
 
             // add the search paths
             //AddEmbeddedLib(engine);

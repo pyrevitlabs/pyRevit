@@ -58,7 +58,7 @@ namespace PyRevitLoader
             var startupScript = GetStartupScriptPath();
             if (startupScript != null)
             {
-                var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
+                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
                 var result = executor.ExecuteScript(startupScript);
                 if (result == (int)Result.Failed)
                 {
