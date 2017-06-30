@@ -153,15 +153,39 @@ def load_session():
 
 
 def execute_script(script_path):
-    """Executes a script under pyRevit.
+    """Executes a script using pyRevit script executor.
 
     Args:
         script_path (str): Address of the script file
 
     Returns:
-        results from the executed script
+        results dictionary from the executed script
     """
-    pass
+
+    import os.path as op
+    from pyrevit import HOST_APP
+    from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
+    from pyrevit import PYTHON_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR
+    from pyrevit.coreutils.loadertypes import ScriptExecutor
+
+    # noinspection PyUnresolvedReferences
+    from System.Collections.Generic import Dictionary
+
+    executor = ScriptExecutor(HOST_APP.uiapp)
+    script_name = op.basename(script_path)
+    results_dict = Dictionary[str, str]()
+    sys_paths = ';'.join([MAIN_LIB_DIR,
+                          PYTHON_LIB_DIR,
+                          PYTHON_LIB_SITEPKGS_DIR,
+                          MISC_LIB_DIR])
+
+    executor.ExecuteScript(script_path,
+                           sys_paths,
+                           script_name,
+                           False, False,
+                           results_dict)
+
+    return results_dict
 
 
 def execute_command(command_info):
@@ -173,4 +197,23 @@ def execute_command(command_info):
     Returns:
         results from the executed script
     """
+
+    # from pyrevit import HOST_APP
+    # from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
+    #
+    # # noinspection PyUnresolvedReferences
+    # from System.Runtime.Serialization import FormatterServices
+    # # noinspection PyUnresolvedReferences
+    # from Autodesk.Revit.DB import ElementSet
+    # # noinspection PyUnresolvedReferences
+    # from Autodesk.Revit.UI import ExternalCommandData
+    #
+    # tmp_cmd_data = FormatterServices.GetUninitializedObject(ExternalCommandData)
+    # tmp_cmd_data.Application = HOST_APP.uiapp
+    # tmp_cmd_data.IsReadOnly = False
+    # tmp_cmd_data.View = None
+    # tmp_cmd_data.JournalData = None
+    #
+    # temp_command = CMD_EXECUTOR_TYPE(script_path, '', '', '', '', '')
+    # return temp_command.Execute(tmp_cmd_data, '', ElementSet())
     pass

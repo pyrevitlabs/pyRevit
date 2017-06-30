@@ -197,6 +197,14 @@ class _ExecutorParams(object):
         __builtin__.__commandpath__ = value
 
     @property
+    def command_data(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __commandData__
+        except:
+            return None
+
+    @property
     def doc_mode(self):
         try:
             # noinspection PyUnresolvedReferences
