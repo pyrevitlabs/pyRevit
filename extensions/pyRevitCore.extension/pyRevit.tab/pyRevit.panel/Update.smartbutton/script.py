@@ -21,7 +21,7 @@ __doc__ = 'Downloads updates from the remote libgit repositories ' \
           '(e.g github, bitbucket).'
 
 
-PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsSpyGetSysPath'
+PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 COREUPDATE_MESSAGE = '<div style="background:#F7F3F2; color:#C64325; ' \
                                  'padding:20px; margin:10px 0px 10px 0px; ' \
                                  'border: 2px solid #C64325; ' \
