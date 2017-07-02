@@ -45,3 +45,28 @@ Type: filesandordirs; Name: "{app}"
 
 [UninstallRun]
 Filename: "{app}\pyRevit\release\uninstall_addin.bat";
+
+[Code]
+var
+  UsagePage: TInputOptionWizardPage;
+  
+procedure InitializeWizard;
+begin
+  { Create the pages }  
+  UsagePage := CreateInputOptionPage(wpLicense,
+    'Select Installation Type', 'For Current user or All users?',
+    'Please specify how you would like to install pyRevit, then click Next.',
+    True, False);
+  UsagePage.Add('Current User Only');
+  UsagePage.Add('All Users (pyRevit will load for all users)');
+  
+  { Set default values}
+  UsagePage.Values[0] := True;
+  UsagePage.Values[0] := False;
+end;
+
+function GetAllUsersState(): Boolean;
+begin
+  { Return the selected DataDir }
+  Result := UsagePage.Values[1];
+end;
