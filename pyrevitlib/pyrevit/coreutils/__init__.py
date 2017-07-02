@@ -29,6 +29,9 @@ from Autodesk.Revit.Attributes import RegenerationAttribute,    \
                                       TransactionAttribute, TransactionMode
 
 
+DEFAULT_SEPARATOR = ';'
+
+
 def enum(**enums):
     return type('Enum', (), enums)
 
@@ -118,7 +121,7 @@ def get_parent_directory(path):
     return op.dirname(path)
 
 
-def join_strings(path_list, separator=';'):
+def join_strings(path_list, separator=DEFAULT_SEPARATOR):
     if path_list:
         return separator.join(path_list)
     return ''
