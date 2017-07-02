@@ -4,6 +4,7 @@ import uuid
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 
 from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.coreutils import DEFAULT_SEPARATOR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
 from pyrevit.userconfig import user_config
@@ -14,7 +15,10 @@ from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 logger = get_logger(__name__)
 
 
-SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuidISC'
+SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuid'
+
+LOADEDASSM_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_loadedassms'
+LOADEDASSM_COUNT_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_assmcount'
 
 
 def set_session_uuid(uuid_str):
@@ -29,6 +33,53 @@ def new_session_uuid():
     uuid_str = unicode(uuid.uuid1())
     set_session_uuid(uuid_str)
     return uuid_str
+
+
+def get_total_loaded_assm_count():
+    """Returns the total number of pyRevit assemblies loaded under current
+    Revit session. This value is stored in an environment variable and is kept
+    updated during the multiple pyRevit sessions. Notice that not all of these
+    assemblies belong to current pyRevit session as pyRevit could be reloaded
+     multiple times under the same Revit session.
+
+    Returns:
+        total count (int): Total number of loaded assemblies.
+    """
+    assm_count = get_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME)
+    if not assm_count:
+        return 0
+    else:
+        return assm_count
+
+
+def set_total_loaded_assm_count(assm_count):
+    """Sets the total number of pyRevit assemblies loaded under current
+    Revit session. This value is stored in an environment variable and is kept
+    updated during the multiple pyRevit sessions.
+
+    This value should not be updated by pyRevit users.
+
+    Args:
+        assm_count (int): Number of loaded assemblies
+    """
+
+    set_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME, assm_count)
+
+
+def get_loaded_pyrevit_assemblies():
+    loaded_assms_str = get_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME)
+    if loaded_assms_str:
+        return loaded_assms_str.split(DEFAULT_SEPARATOR)
+    else:
+        return []
+
+
+def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
+    set_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME,
+                        DEFAULT_SEPARATOR.join(loaded_assm_name_list))
+
+    set_total_loaded_assm_count(get_total_loaded_assm_count()
+                                + len(loaded_assm_name_list))
 
 
 def report_env():

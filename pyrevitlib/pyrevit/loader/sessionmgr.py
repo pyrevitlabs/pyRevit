@@ -51,6 +51,7 @@ def _setup_output_window():
     stdout_hndlr.stream = outstr
 
 
+# Functions related to creating/loading a new pyRevit session
 def _perform_onsessionload_ops():
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
@@ -60,6 +61,9 @@ def _perform_onsessionload_ops():
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
     sessioninfo.report_env()
+
+    # reset the list of assemblies loaded under pyRevit session
+    sessioninfo.set_loaded_pyrevit_assemblies([])
 
     # asking usagelog module to setup the usage logging system
     # (active or not active)
@@ -86,6 +90,8 @@ def _new_session():
     Returns:
         None
     """
+
+    loaded_assm_list = []
     # get all installed ui extensions
     for ui_ext in get_installed_ui_extensions():
         # create a dll assembly and get assembly info
@@ -97,6 +103,9 @@ def _new_session():
 
         logger.info('Extension assembly created: {}'.format(ui_ext.name))
 
+        # add name of the created assembly to the session info
+        loaded_assm_list.append(ext_asm_info.name)
+
         # update/create ui (needs the assembly to link button actions
         # to commands saved in the dll)
 
@@ -105,6 +114,9 @@ def _new_session():
                           user_config.core.get_option('loadbeta',
                                                       default_value=False))
         logger.info('UI created for extension: {}'.format(ui_ext.name))
+
+    # add names of the created assemblies to the session info
+    sessioninfo.set_loaded_pyrevit_assemblies(loaded_assm_list)
 
     # cleanup existing UI. This is primarily for cleanups after reloading
     cleanup_pyrevit_ui()
@@ -152,6 +164,7 @@ def load_session():
                      .format(imp_err))
 
 
+# Functions related to finding/executing a command or script in current session
 def execute_script(script_path):
     """Executes a script using pyRevit script executor.
 
@@ -166,6 +179,7 @@ def execute_script(script_path):
     from pyrevit import HOST_APP
     from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
     from pyrevit import PYTHON_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR
+    from pyrevit.coreutils import DEFAULT_SEPARATOR
     from pyrevit.coreutils.loadertypes import ScriptExecutor
 
     # noinspection PyUnresolvedReferences
@@ -174,10 +188,10 @@ def execute_script(script_path):
     executor = ScriptExecutor(HOST_APP.uiapp)
     script_name = op.basename(script_path)
     results_dict = Dictionary[str, str]()
-    sys_paths = ';'.join([MAIN_LIB_DIR,
-                          PYTHON_LIB_DIR,
-                          PYTHON_LIB_SITEPKGS_DIR,
-                          MISC_LIB_DIR])
+    sys_paths = DEFAULT_SEPARATOR.join([MAIN_LIB_DIR,
+                                        PYTHON_LIB_DIR,
+                                        PYTHON_LIB_SITEPKGS_DIR,
+                                        MISC_LIB_DIR])
 
     executor.ExecuteScript(script_path,
                            sys_paths,
@@ -188,32 +202,68 @@ def execute_script(script_path):
     return results_dict
 
 
-def execute_command(command_info):
+def find_loaded_command(command_unique_name):
+    """Searches the pyRevit-generated assemblies under current session for
+    the command with the matching unique name (class name) and returns the
+    command type. Notice that this returned value is a 'type' and should be
+    instantiated before use.
+
+    Example:
+        >>> cmd = find_loaded_command('pyRevitCorepyRevitpyRevittoolsReload')
+        >>> command_instance = cmd()
+        >>> command_instance.Execute() # Provide commandData, message, elements
+
+    Args:
+        command_unique_name (str): Unique name for the command
+
+    Returns:
+        Type for the command with matching unique name
+    """
+    # go through assmebles loaded under current pyRevit session
+    # and try to find the command
+    from pyrevit.coreutils import find_loaded_asm
+
+    for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+        loaded_assm = find_loaded_asm(loaded_assm_name)
+        if loaded_assm:
+            for pyrvt_type in loaded_assm[0].GetTypes():
+                if pyrvt_type.FullName == command_unique_name:
+                    return pyrvt_type
+
+    return None
+
+
+def execute_command(command_unique_name):
     """Executes a pyRevit command.
 
     Args:
-        command_info (str):
+        command_unique_name (str): Unique/Class Name of the pyRevit command
 
     Returns:
-        results from the executed script
+        results from the executed command
     """
 
-    # from pyrevit import HOST_APP
-    # from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
-    #
-    # # noinspection PyUnresolvedReferences
-    # from System.Runtime.Serialization import FormatterServices
-    # # noinspection PyUnresolvedReferences
-    # from Autodesk.Revit.DB import ElementSet
-    # # noinspection PyUnresolvedReferences
-    # from Autodesk.Revit.UI import ExternalCommandData
-    #
-    # tmp_cmd_data = FormatterServices.GetUninitializedObject(ExternalCommandData)
-    # tmp_cmd_data.Application = HOST_APP.uiapp
+    cmd_class = find_loaded_command(command_unique_name)
+
+    if not cmd_class:
+        logger.error('Can not find command with unique name: {}'
+                     .format(command_unique_name))
+        return None
+
+    from pyrevit import HOST_APP
+
+    # noinspection PyUnresolvedReferences
+    from System.Runtime.Serialization import FormatterServices
+    # noinspection PyUnresolvedReferences
+    from Autodesk.Revit.DB import ElementSet
+    # noinspection PyUnresolvedReferences
+    from Autodesk.Revit.UI import ExternalCommandData
+
+    tmp_cmd_data = FormatterServices.GetUninitializedObject(ExternalCommandData)
+    tmp_cmd_data.Application = HOST_APP.uiapp
     # tmp_cmd_data.IsReadOnly = False
     # tmp_cmd_data.View = None
     # tmp_cmd_data.JournalData = None
-    #
-    # temp_command = CMD_EXECUTOR_TYPE(script_path, '', '', '', '', '')
-    # return temp_command.Execute(tmp_cmd_data, '', ElementSet())
-    pass
+
+    command_instance = cmd_class()
+    return command_instance.Execute(tmp_cmd_data, '', ElementSet())

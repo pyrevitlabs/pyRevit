@@ -21,8 +21,8 @@ namespace PyRevitBaseClasses
         public string _cmdName;
         public string _cmdBundle;
         public string _cmdExtension;
-        public bool _forcedDebugMode;
-        public bool _altScriptMode;
+        public bool _forcedDebugMode = false;
+        public bool _altScriptMode = false;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
