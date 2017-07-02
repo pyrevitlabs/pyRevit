@@ -1,15 +1,20 @@
 Make videos for these tools:
 
-- change element types safely
 - copy paste state, 3d section box, visibility graphics
 - sum total
 - clickable links
+- show nested group structure
+- convert unpurgable viewport types
+
+Needs setup:
+- print linked sheets
+- print sheet index, manual override
+
+
+
+- change element types safely
 - pick tools
 - sync view
 - compare detail views
-- show nested group structure
-- convert unpurgable viewport types
-- print linked sheets
-- print sheet index, manual override
 - load family types
 - purge family
