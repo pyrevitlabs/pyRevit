@@ -1,5 +1,7 @@
 """Example of IronPython script to be executed by pyRevit on extension load
 
+The script filename must end in startup.py
+
 To Test:
 - rename file to startup.py
 - reload pyRevit: pyRevit will run this script after successfully
