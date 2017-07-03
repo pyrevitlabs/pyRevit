@@ -106,6 +106,13 @@ def _new_session():
         # add name of the created assembly to the session info
         loaded_assm_list.append(ext_asm_info.name)
 
+        # run startup scripts for this ui extension, if any
+        if ui_ext.startup_script:
+            logger.info('Running startup tasks...')
+            logger.debug('Executing startup script for extension: {}'
+                         .format(ui_ext.name))
+            execute_script(ui_ext.startup_script)
+
         # update/create ui (needs the assembly to link button actions
         # to commands saved in the dll)
 

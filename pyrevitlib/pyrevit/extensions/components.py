@@ -1,3 +1,4 @@
+import os
 import os.path as op
 
 from pyrevit import PyRevitException
@@ -220,6 +221,13 @@ class Extension(GenericUIContainer):
     def get_all_commands(self):
         return self.get_components_of_type(GenericUICommand)
 
+    @property
+    def startup_script(self):
+        for ext_file in os.listdir(self.directory):
+            if ext_file.endswith('startup.py'):
+                return op.join(self.directory, ext_file)
+
+        return None
 
 # library extension class
 # ------------------------------------------------------------------------------
