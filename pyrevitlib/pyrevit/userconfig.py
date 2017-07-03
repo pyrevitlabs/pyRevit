@@ -23,6 +23,34 @@ CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
 logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 
 
+# fix obsolete config file naming ----------------------------------------------
+# config file (and all appdata files) used to include username in the filename
+# this fixes the existing config file with obsolete naming, to new format
+import os
+import os.path as op
+from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_UNIVERSAL_USER
+
+OBSOLETE_CONFIG_FILENAME = '{}_{}'.format(PYREVIT_FILE_PREFIX_UNIVERSAL_USER,
+                                          'config.ini')
+OBSOLETE_CONFIG_FILEPATH = op.join(PYREVIT_APP_DIR, OBSOLETE_CONFIG_FILENAME)
+
+if op.exists(OBSOLETE_CONFIG_FILEPATH):
+    try:
+        os.rename(OBSOLETE_CONFIG_FILEPATH, CONFIG_FILE_PATH)
+    except Exception as rename_err:
+        logger.error('Failed to update the config file name to new format. '
+                     'A new configuration file has been created for you '
+                     'under \n{}'
+                     '\nYour previous pyRevit configuration file still '
+                     'existing under the same folder. Please close Revit, '
+                     'open both configuration files and copy and paste '
+                     'settings from the old config file to new config file. '
+                     'Then you can remove the old config file as pyRevit '
+                     'will not be using that anymore. | {}'
+                     .format(CONFIG_FILE_PATH, rename_err))
+# end fix obsolete config file naming ------------------------------------------
+
+
 INIT_SETTINGS_SECTION = 'core'
 COMMAND_ALIAS_SECTION = 'alias'
 

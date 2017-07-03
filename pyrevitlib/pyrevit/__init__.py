@@ -285,14 +285,24 @@ if EXEC_PARAMS.doc_mode:
     PYREVIT_FILE_PREFIX_STAMPED = None
 else:
     # pyrevit standard files prefix
-    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                   HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}'.format(PYREVIT_ADDON_NAME)
 
-    PYREVIT_FILE_PREFIX = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                            HOST_APP.version,
-                                            HOST_APP.username)
+    PYREVIT_FILE_PREFIX = '{}_{}'.format(PYREVIT_ADDON_NAME,
+                                         HOST_APP.version)
 
-    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                       HOST_APP.version,
-                                                       HOST_APP.username,
-                                                       HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                    HOST_APP.version,
+                                                    HOST_APP.proc_id)
+
+    # pyrevit standard files prefix, with usernames
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                        HOST_APP.username)
+
+    PYREVIT_FILE_PREFIX_USER = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                 HOST_APP.version,
+                                                 HOST_APP.username)
+
+    PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
+                                                            HOST_APP.version,
+                                                            HOST_APP.username,
+                                                            HOST_APP.proc_id)
