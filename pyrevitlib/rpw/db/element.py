@@ -41,12 +41,12 @@ class Element(BaseObjectWrapper):
     if a match is not found, an Element will be used.
     If the element does not inherit from DB.Element, and exception is raised.
 
-    >>> wall_instance = Element(SomeWallInstance)
+    >>> wall_instance = rpw.db.Element(SomeWallInstance)
     >>> type(wall_instance)
-    rpw.db.WallInstance
-    >>> wall_symbol = Element(SomeWallSymbol)
+    'rpw.db.WallInstance'
+    >>> wall_symbol = rpw.db.Element(SomeWallSymbol)
     >>> type(wall_symbol)
-    rpw.db.WallSymbol
+    'rpw.db.WallSymbol'
 
     Attributes:
 
@@ -67,15 +67,21 @@ class Element(BaseObjectWrapper):
         and will find one that wraps the corresponding class. If and exact
         match is not found :any:`Element` is used
         """
-
         defined_wrapper_classes = inspect.getmembers(rpw.db, inspect.isclass)
         # [('Area', '<class Area>'), ... ]
 
         _revit_object_class = cls._revit_object_class
 
-        if cls is not Element and not isinstance(element, _revit_object_class):
+        if element is None:
+            raise RpwTypeError('Element or Element Child', 'None')
+
+        # Ensure Wrapped Element is instance of Class Wrapper or decendent
+        # Must also check is element because isinstance(Element, Element) is False
+        if not isinstance(element, _revit_object_class):
+        #    or cls is not Element:
             raise RpwTypeError(_revit_object_class, type(element))
 
+        # rpw.ui.forms.Console()
         for class_name, wrapper_class in defined_wrapper_classes:
             if type(element) is getattr(wrapper_class, '_revit_object_class', None):
                 # Found Mathing Class, Use Wrapper
@@ -85,7 +91,7 @@ class Element(BaseObjectWrapper):
                 # return new_object
         else:
             # Could Not find a Matching Class, Use Element if related
-            # print('Not find a Matching Class, Use Element if related')
+            # print('Did not find a Matching Class, will use Element if related')
             if DB.Element in inspect.getmro(element.__class__):
                 return super(Element, cls).__new__(cls, element, **kwargs)
         element_class_name = element.__class__.__name__
@@ -95,7 +101,7 @@ class Element(BaseObjectWrapper):
         """
         Main Element Instantiation
 
-        >>> wall = Element(SomeElementId)
+        >>> wall = rpw.db.Element(SomeElementId)
         <rpw: WallInstance % DB.Wall >
         >>> wall.parameters['Height']
         10.0
@@ -160,23 +166,31 @@ class Element(BaseObjectWrapper):
         logger.warning(msg)
         return Element(element)
 
-    def __repr__(self, data={}):
-        data = data or {'id': getattr(self._revit_object, 'Id', None)}
+    def delete(self):
+        """ Deletes Element from Model """
+        self.doc.Delete(self._revit_object.Id)
+
+    def __repr__(self, data=None):
+        if data is None:
+            data = {}
+        element_id = getattr(self._revit_object, 'Id', None)
+        if element_id:
+            data.update({'id': element_id})
         return super(Element, self).__repr__(data=data)
 
 
-class Instance(Element):
+class FamilyInstance(Element):
     """
     `DB.FamilyInstance` Wrapper
 
-    >>> instance = rpw.Instance(SomeFamilyInstance)
-    <RPW_Symbol:72" x 36">
+    >>> instance = rpw.db.Element(SomeFamilyInstance)
+    <rpw:FamilyInstance % DB.FamilyInstance | name:72" x 36">
     >>> instance.symbol.name
     '72" x 36"'
     >>> instance.family
     <RPW_Family:desk>
     >>> instance.siblings
-    [<RPW_Instance:72" x 36">, <RPW_Instance:72" x 36">, ... ]
+    [<rpw:FamilyInstance % DB.FamilyInstance | name:72" x 36">, ... ]
 
     Attribute:
         _revit_object (DB.FamilyInstance): Wrapped ``DB.FamilyInstance``
@@ -189,7 +203,7 @@ class Instance(Element):
     def symbol(self):
         """ Wrapped ``DB.FamilySymbol`` of the ``DB.FamilyInstance`` """
         symbol = self._revit_object.Symbol
-        return Symbol(symbol)
+        return FamilySymbol(symbol)
 
     @property
     def family(self):
@@ -207,21 +221,21 @@ class Instance(Element):
         return self.symbol.instances
 
     def __repr__(self):
-        return super(Instance, self).__repr__(data={'symbol': self.symbol.name})
+        return super(FamilyInstance, self).__repr__(data={'symbol': self.symbol.name})
 
 
-class Symbol(Element):
+class FamilySymbol(Element):
     """
     `DB.FamilySymbol` Wrapper
 
-    >>> symbol = rpw.Symbol(SomeSymbol)
-    <RPW_Symbol:72" x 36">
+    >>> symbol = rpw.db.Element(SomeSymbol)
+    <rpw:FamilySymbol % DB.FamilySymbol | name:72" x 36">
     >>> instance.symbol.name
     '72" x 36"'
     >>> instance.family
-    <RPW_Family:desk>
+    <rpw:Family % DB.Family | name:desk>
     >>> instance.siblings
-    <RPW_Instance:72" x 36">, <RPW_Instance:72" x 36">, ... ]
+    <rpw:Family % DB.Family | name:desk>, ... ]
 
     Attribute:
         _revit_object (DB.FamilySymbol): Wrapped ``DB.FamilySymbol``
@@ -231,6 +245,7 @@ class Symbol(Element):
 
     @property
     def name(self):
+        #TODO: Add setter - maybe as a mixin
         """ Returns the name of the Symbol """
         return self.parameters.builtins['SYMBOL_NAME_PARAM'].value
         # return self.parameters.builtins['ALL_MODEL_TYPE_NAME'].value
@@ -264,7 +279,7 @@ class Symbol(Element):
         return self.family.category
 
     def __repr__(self):
-        return super(Symbol, self).__repr__(data={'name': self.name})
+        return super(FamilySymbol, self).__repr__(data={'name': self.name})
 
 
 class Family(Element):
@@ -285,11 +300,12 @@ class Family(Element):
         # This BIP only exist in symbols, so we retrieve a symbol first.
         # The Alternative is to use Element.Name.GetValue(), but I am
         # avoiding it due to the import bug in ironpython
+        # https://github.com/IronLanguages/ironpython2/issues/79
         try:
             symbol = self.symbols[0]
         except IndexError:
             raise RpwException('Family [{}] has no symbols'.format(self.name))
-        return Element.Factory(symbol).parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
+        return Element(symbol).parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
         # Uses generic factory so it can be inherited by others
         # Alternative: ALL_MODEL_FAMILY_NAME
 
@@ -301,7 +317,7 @@ class Family(Element):
         # There has to be a better way
         instances = []
         for symbol in self.symbols:
-            symbol_instances = Element.Factory(symbol).instances
+            symbol_instances = Element(symbol).instances
             instances.append(symbol_instances)
         return instances
 
@@ -354,7 +370,7 @@ class Category(BaseObjectWrapper):
         symbols = self.symbols
         unique_family_ids = set()
         for symbol in symbols:
-            symbol_family = Element.Factory(symbol).family
+            symbol_family = Element(symbol).family
             unique_family_ids.add(symbol_family.Id)
         return [revit.doc.GetElement(family_id) for family_id in unique_family_ids]
 

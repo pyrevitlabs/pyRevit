@@ -10,12 +10,19 @@ from rpw.exceptions import RpwTypeError
 from rpw.utils.logger import logger
 from rpw.utils.coerce import to_element_ids, to_elements, to_iterable
 from rpw.db.collection import ElementSet
+from rpw.db.reference import Reference
+from rpw.db.xyz import XYZ
+from rpw.db.element import Element
 
 if revit.host:
     ObjectType = UI.Selection.ObjectType
     ObjectSnapTypes = UI.Selection.ObjectSnapTypes
     PickObjects = revit.uidoc.Selection.PickObjects
     PickObject = revit.uidoc.Selection.PickObject
+    PickElementsByRectangle = revit.uidoc.Selection.PickElementsByRectangle
+    PickBox = revit.uidoc.Selection.PickBox
+    PickPoint = revit.uidoc.Selection.PickPoint
+
 
 class Selection(BaseObjectWrapper, ElementSet):
     """
@@ -59,7 +66,7 @@ class Selection(BaseObjectWrapper, ElementSet):
 
         ElementSet.__init__(self, elements_or_ids, doc=self.uidoc.Document)
 
-    def add(self, elements_or_ids):
+    def add(self, elements_or_ids, select=True):
         """ Adds elements to selection.
 
         Args:
@@ -72,11 +79,8 @@ class Selection(BaseObjectWrapper, ElementSet):
         """
         # Call Set for proper adding into set.
         ElementSet.add(self, elements_or_ids)
-        self.update()
-
-    # def update(self):
-    #     """ Updates Selection() object to match current selection state"""
-    #     Selection.__init__(self, uidoc=self.uidoc)
+        if select:
+            self.update()
 
     def update(self):
         """ Forces UI selection to match the Selection() object """
@@ -109,32 +113,58 @@ class Selection(BaseObjectWrapper, ElementSet):
     def __repr__(self):
         return super(Selection, self).__repr__(data={'count': len(self)})
 
-    # Other Selection Methods - Keep with Selection? Seems to make sense
+
+class Pick(BaseObject):
+    """ Pick Class
+
+    Handles all pick* methods in the Seletion Class
+
+    >>> picker = rpw.ui.Pick()
+    >>> pick.pick_element()
+    <rpw:reference>
+    >>> pick.pick_element(multiple=True)
+    [<rpw:reference>, ...]
+    """
+
+    def _pick(self, obj_type, msg='Pick:', multiple=False):
+        """ Note: Moved Reference Logic to Referenc Wrapper."""
+        if multiple:
+            references = PickObjects(obj_type, msg)
+        else:
+            reference = PickObject(obj_type, msg)
+
+        if multiple:
+            return [Reference(ref) for ref in references]
+        else:
+            return Reference(reference)
+
     def pick_box(self, msg, style='directional'):
-        """ Pick Box Style """
+        """
+        PickBox
+
+        Returns:
+            XYZ Points (``XYZ``): Min and Max Points of Box
+        """
+        # This seems kind of usless right now.
         PICK_STYLE = {'crossing': UI.Selection.PickBoxStyle.Crossing,
                       'enclosing': UI.Selection.PickBoxStyle.Enclosing,
                       'directional': UI.Selection.PickBoxStyle.Directional,
                       }
 
-        refs = self._revit_object.PickBox(PICK_STYLE[style])
-        return refs
+        pick_box = PickBox(PICK_STYLE[style])
+        return (XYZ(pick_box.Min), XYZ(pick_box.Max))
 
     def pick_by_rectangle(self, msg):
-        """ Pick by Rectangle """
-        # TODO: Implement ISelectFilter overload
-        refs = self._revit_object.PickElementsByRectangle(msg)
+        """
+        PickBox
 
-    def _pick(self, obj_type, msg='Pick:', multiple=False):
+        Returns:
+            Elements (``List``): List of wrapped Elements
+        """
         # TODO: Implement ISelectFilter overload
-        """ Note: Moved Reference Logic to Referenc Wrapper."""
-        if multiple:
-            references = PickObjects(obj_type, msg)
-        else:
-            references = PickObject(obj_type, msg)
-
-        self.add(references)
-        return references
+        # NOTE: This is the only method that returns elements
+        refs = PickElementsByRectangle(msg)
+        return [Element(ref) for ref in refs]
 
     def pick_element(self, msg='Pick Element(s)', multiple=False):
         """
@@ -143,6 +173,9 @@ class Selection(BaseObjectWrapper, ElementSet):
         Args:
             msg (str): Message to show
             multiple (bool): False to pick single element, True for multiple
+
+        Returns:
+            reference (``Reference``): :any:`Reference` Class
         """
         return self._pick(ObjectType.Element, msg=msg, multiple=multiple)
 
@@ -153,6 +186,9 @@ class Selection(BaseObjectWrapper, ElementSet):
         Args:
             msg (str): Message to show
             multiple (bool): False to pick single point, True for multiple
+
+        Returns:
+            reference (``Reference``): :any:`Reference` Class
         """
         return self._pick(ObjectType.PointOnElement, msg=msg, multiple=multiple)
 
@@ -163,6 +199,9 @@ class Selection(BaseObjectWrapper, ElementSet):
         Args:
             msg (str): Message to show
             multiple (bool): False to pick single edge, True for multiple
+
+        Returns:
+            reference (``Reference``): :any:`Reference` Class
         """
         return self._pick(ObjectType.Edge, msg=msg, multiple=multiple)
 
@@ -173,6 +212,9 @@ class Selection(BaseObjectWrapper, ElementSet):
         Args:
             msg (str): Message to show
             multiple (bool): False to pick single face, True for multiple
+
+        Returns:
+            reference (``Reference``): :any:`Reference` Class
         """
         return self._pick(ObjectType.Face, msg=msg, multiple=multiple)
 
@@ -183,6 +225,9 @@ class Selection(BaseObjectWrapper, ElementSet):
         Args:
             msg (str): Message to show
             multiple (bool): False to pick single element, True for multiple
+
+        Returns:
+            reference (``Reference``): :any:`Reference` Class
         """
         return self._pick(ObjectType.LinkedElement, msg=msg, multiple=multiple)
 
@@ -196,6 +241,9 @@ class Selection(BaseObjectWrapper, ElementSet):
                                        workplanegrid, intersections,
                                        centers, perpendicular,
                                        tangents, quadrants, points]
+
+        Returns:
+            XYZ (`Xyz`): Rpw XYZ Point
         """
 
         SNAPS = {
@@ -213,13 +261,14 @@ class Selection(BaseObjectWrapper, ElementSet):
                  }
 
         if snap:
-            return self._revit_object.PickPoint(SNAPS[snap], msg)
+            return XYZ(PickPoint(SNAPS[snap], msg))
         else:
-            return self._revit_object.PickPoint(msg)
+            return XYZ(PickPoint(msg))
 
 
 class SelectionFilter(UI.Selection.ISelectionFilter):
     # http://www.revitapidocs.com/2017.1/d552f44b-221c-0ecd-d001-41a5099b2f9f.htm
-    # Also See Ehsan's Implemented
+    # Also See Ehsan's implementation on pyrevit
+    # TODO: Implement ISelectFilter overload
     def __init__(self):
         raise NotImplemented

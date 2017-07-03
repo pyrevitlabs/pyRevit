@@ -21,7 +21,7 @@ from rpw.utils.dotnet import Enum
 from rpw.exceptions import RpwCoerceError
 
 
-class BiParameter(BaseObjectWrapper):
+class _BiParameter(BaseObjectWrapper):
     """
     BuiltInParameter Wrapper
 
@@ -34,7 +34,7 @@ class BiParameter(BaseObjectWrapper):
     _revit_object_class = DB.BuiltInParameter
 
     def __init__(self):
-        super(BiParameter, self).__init__(DB.BuiltInParameter,
+        super(_BiParameter, self).__init__(DB.BuiltInParameter,
                                           enforce_type=False)
 
     def __getattr__(self, attr):
@@ -69,7 +69,7 @@ class BiParameter(BaseObjectWrapper):
         return DB.ElementId(enum)
 
 
-class BiCategory(BaseObjectWrapper):
+class _BiCategory(BaseObjectWrapper):
     """
     Enumeration Wrapper
 
@@ -84,7 +84,7 @@ class BiCategory(BaseObjectWrapper):
     _revit_object_class = DB.BuiltInCategory
 
     def __init__(self):
-        super(BiCategory, self).__init__(DB.BuiltInCategory,
+        super(_BiCategory, self).__init__(DB.BuiltInCategory,
                                          enforce_type=False)
 
     def get(self, category_name):
@@ -139,7 +139,9 @@ class BiCategory(BaseObjectWrapper):
         return Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
         # Similar to: Category.GetCategory(doc, category.Id).Name
 
-# For Test Compatibility
+# Classes should already be instantiated
+BiParameter = _BiParameter()
+BiCategory = _BiCategory()
 # TODO: Replace on Tests and Code!
-BipEnum = BiParameter()
-BicEnum = BiCategory()
+BipEnum = BiParameter
+BicEnum = BiCategory

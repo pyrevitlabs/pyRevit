@@ -60,7 +60,6 @@ class Console(Window):
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <TextBox Grid.Column="1" Grid.Row="1"  HorizontalAlignment="Stretch"
-                         KeyDown="OnKeyDownHandler" KeyUp="OnKeyUpHandler"
                          Name="tbox" Margin="6,6,6,6" VerticalAlignment="Stretch"
                          AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                          TextWrapping="Wrap"
@@ -73,7 +72,7 @@ class Console(Window):
 
     CARET = '>>> '
 
-    def __init__(self, stack_level=1, stack_info=False, context=None):
+    def __init__(self, stack_level=1, stack_info=True, context=None):
         """
         Args:
             stack_level (int): Default is 1. 0 Is the Console stack, 1 is the
@@ -92,6 +91,7 @@ class Console(Window):
 
         self.stack_locals = {}
         self.stack_globals = {}
+        self.stack_level = stack_level
 
         if context:
             self.stack_locals.update(context)
@@ -99,13 +99,13 @@ class Console(Window):
             # Where inspection does not work
         else:
             # Stack Info
-            # stack = inspect.currentframe().f_back
+            # stack_frame = inspect.currentframe().f_back
             stack_frame = inspect.stack()[stack_level][0] # Finds Calling Stack
 
             self.stack_locals.update(stack_frame.f_locals)
-            self.stack_globals.update(stack_frame.f_locals)
-            # logger.debug('Global vars: ' + str(self.stack_globals))
-            # logger.debug('Local vars: ' + str(self.stack_locals))
+            self.stack_globals.update(stack_frame.f_globals)
+            # Debug Console
+            self.stack_globals.update({'stack': inspect.stack()})
 
             stack_code = stack_frame.f_code
             stack_filename = os.path.basename(stack_code.co_filename)
@@ -116,11 +116,13 @@ class Console(Window):
         self.ui = wpf.LoadComponent(self, StringReader(Console.LAYOUT))
         self.ui.Title = 'RevitPythonWrapper Console'
         self.PreviewKeyDown += self.KeyPressPreview
+        self.KeyUp += self.OnKeyUpHandler
+        self.is_loaded = False
 
         # Form Init
         self.ui.tbox.Focus()
         if not context and stack_info:
-            self.write_line('Caller: {} [line:{}] | File: {}'.format(stack_caller, stack_lineno, stack_filename))
+            self.write_line('Caller: {} [ Line:{}] | File: {}'.format(stack_caller, stack_lineno, stack_filename))
         else:
             self.tbox.Text = Console.CARET
 
@@ -166,7 +168,7 @@ class Console(Window):
 
     def OnKeyUpHandler(self, sender, args):
         # Need to use this to be able to override ENTER
-        if self.tbox.LineCount == 1:
+        if not self.is_loaded:
             return
         if args.Key == Key.Enter:
             entered_line = self.get_last_entered_line()
@@ -179,7 +181,6 @@ class Console(Window):
             self.write_line(output)
 
     def evaluate(self, line):
-
         try:
             output = eval(line, self.stack_globals, self.stack_locals)
         except SyntaxError as errmsg:
@@ -199,6 +200,8 @@ class Console(Window):
         self.tbox.CaretIndex = self.tbox.Text.rfind(Console.CARET) + len(Console.CARET)
 
     def KeyPressPreview(self, sender, e):
+        # This Happens before all other key handlers
+        # If e.Handled = True, stops event propagation here.
         e.Handled = False
         if self.tbox.CaretIndex < self.tbox.Text.rfind(Console.CARET):
             self.tbox.CaretIndex = len(self.tbox.Text)
@@ -218,6 +221,7 @@ class Console(Window):
             self.autocomplete()
             e.Handled = True
         if e.Key == Key.Enter:
+            self.is_loaded = True
             self.tbox.CaretIndex = len(self.tbox.Text)
 
 
@@ -254,12 +258,16 @@ class Console(Window):
             self.tbox.CaretIndex = caret_index
 
     def write_line(self, line=None):
+        # Used for Code Output
+        # Writes line with no starting caret, new line + caret
         if line:
             self.tbox.AppendText(line)
             self.tbox.AppendText(NewLine)
         self.tbox.AppendText(Console.CARET)
 
     def write_text(self, line):
+        # Used by Autocomplete and History
+        # Adds text to line, including Caret
         last_new_line = self.tbox.Text.rfind(Console.CARET)
         self.tbox.Text = self.tbox.Text[0:last_new_line]
         self.tbox.AppendText(Console.CARET)

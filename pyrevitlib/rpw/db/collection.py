@@ -15,6 +15,7 @@ from rpw.utils.dotnet import List
 class ElementSet(BaseObject):
     """
     Provides helpful methods for managing a set of unique of ``DB.ElementId``
+    Sets are unordered.
 
     >>> element_set = ElementSet([element, element])
     >>> element_set = ElementSet()
@@ -33,7 +34,7 @@ class ElementSet(BaseObject):
 
     def __init__(self, elements_or_ids=None, doc=revit.doc):
         self.doc = doc
-        self._elements = OrderedDict()
+        self._elements = {}
         if elements_or_ids:
             self.add(elements_or_ids)
 
@@ -54,7 +55,7 @@ class ElementSet(BaseObject):
         Removed from set using ElementIds
 
         Args:
-            element_id (`DB.ElementId`)
+            element_id (`DB.ElementId`): ElementId
          """
         return self._elements.pop(element_id)
 
@@ -69,8 +70,10 @@ class ElementSet(BaseObject):
     @property
     def elements(self):
         """
+        Elements in ElementSet
+
         Returns:
-            Elements stored in ElementSet
+            Elements (``List``): Elements stored in ElementSet
         """
         return [e for e in self._elements.values()]
         # return [self.doc.GetElement(eid) for eid in self._element_dict.keys()]
@@ -78,8 +81,11 @@ class ElementSet(BaseObject):
     @property
     def element_ids(self):
         """
+        ElementId of Elements in ElementSet
+
         Returns:
-            [DB.ElementId]: List of ElementIds Objects """
+            ElementIds (``List``): List of ElementIds Objects
+        """
         return [e for e in self._elements.keys()]
         # return [eid for eid in self._element_dict]
 
@@ -177,8 +183,10 @@ class ElementCollection(ElementSet):
     @property
     def elements(self):
         """
+        List of Elements in Collection
+
         Returns:
-            [DB.Element]: List of Elements Objects
+            Elements (``List``): List of Elements Objects
         """
         return self._elements
 
@@ -186,7 +194,7 @@ class ElementCollection(ElementSet):
     def element_ids(self):
         """
         Returns:
-            [DB.ElementId]: List of ElementIds Objects
+            ElementIds (``List``): List of ElementIds Objects
         """
         return [e.Id for e in self._elements]
 

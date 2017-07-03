@@ -1,78 +1,70 @@
 """
 Reference Wrappers
 
+>>> pick = rpw.ui.Pick()
+>>> references = pick.pick_element(multiple=True)
+>>> references
+[<rpw:Reference>, <rpw:Reference>]
+>>> references[0].as_global_pt
+<rpw:XYZ>
+
 """
 
-# import rpw
-# from rpw import revit, DB
-# from rpw.db import Element
-# from rpw.utils.logger import logger
+import rpw
+from rpw import revit, DB
+from rpw.db.element import Element
+from rpw.db.xyz import XYZ
+from rpw.utils.logger import logger
 # from rpw.db.builtins import BipEnum
 
 
-# class Reference(Element):
-#     """
-#     `DB.Architecture.Room` Wrapper
-#     Inherits from :any:`Element`
-#
-#     >>> room = rpw.Room(SomeRoom)
-#     <RPW_Room: Office:122>
-#     >>> room.name
-#     'Office'
-#     >>> room.number
-#     '122'
-#     >>> room.is_placed
-#     True
-#     >>> room.is_bounded
-#     True
-#
-#     Attribute:
-#         _revit_object (DB.Architecture.Room): Wrapped ``DB.Architecture.Room``
-#     """
-#
-#     _revit_object_class = DB.Architecture.Room
-#     _revit_object_category = DB.BuiltInCategory.OST_Rooms
-#     _collector_params = {'of_category': _revit_object_category,
-#                          'is_not_type': True}
-#
-#
-#     def __repr__(self):
-#         return super(Room, self).__repr__(data={'name': self.name,
-#                                                 'number': self.number})
+class Reference(Element):
+    """
+    `DB.Reference` Wrapper
+    Inherits from :any:`Element`
 
-# def _pick(self, obj_type, msg='', multiple=False, world=None):
-#     doc = self.uidoc.Document
-#
-#     if multiple:
-#         refs = PickObjects(obj_type, msg)
-#     else:
-#         refs = PickObject(obj_type, msg)
-#
-#     refs = to_iterable(refs)
-#
-#     ref_dict = {}  # Return Value
-#
-#     if world:
-#         try:
-#             global_pts = [ref.GlobalPoint for ref in refs]
-#         except AttributeError:
-#             raise
-#         else:
-#             global_pts = global_pts if multiple else global_pts[0]
-#             ref_dict['global_points'] = global_pts
-#     if world is False:
-#         try:
-#             uv_pts = [ref.UVPoint for ref in refs]
-#         except AttributeError:
-#             raise
-#         else:
-#             uv_pts = uv_pts if multiple else uv_pts[0]
-#             ref_dict['uv_points'] = uv_pts
-#     try:
-#         ref_dict['geometric_object'] = [doc.GetElement(ref).GetGeometryObjectFromReference(ref) for ref in refs]
-#     except AttributeError:
-#         raise
-#
-#     self.add(refs)
-#     rpw.ui.Console()
-#     return ref_dict
+    >>>
+
+    Attribute:
+        _revit_object (DB.Reference): Wrapped ``DB.Reference``
+    """
+
+    _revit_object_class = DB.Reference
+
+    def __init__(self, reference, doc=revit.doc):
+        super(Reference, self).__init__(reference)
+        self.doc = doc
+
+    def __repr__(self):
+        return super(Reference, self).__repr__(data={'id': self.id})
+
+    @property
+    def as_global_pt(self):
+        """ Returns ``GlobalPoint`` property of Reference """
+        pt = self._revit_object.GlobalPoint
+        if pt:
+            return XYZ(pt)
+
+    @property
+    def as_uv_pt(self):
+        """ Returns ``UVPoint`` property of Reference - Face references only """
+        pt = self._revit_object.UVPoint
+        if pt:
+            #TODO XYZ needs to handle XYZ
+            return pt
+            # return XYZ(pt)
+
+    @property
+    def id(self):
+        """ ElementId of Reference """
+        return self._revit_object.ElementId
+
+    def get_element(self):
+        """ Element of Reference """
+        #TODO: Handle Linked Element
+        return self.doc.GetElement(self.id)
+
+    def get_geometry(self):
+        """ GeometryObject from Reference """
+        ref = self._revit_object
+        return self.doc.GetElement(ref).GetGeometryObjectFromReference(ref)

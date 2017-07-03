@@ -26,7 +26,7 @@ Copyright 2017 Gui Talarico
 """
 
 __title__ = 'revitpythonwrapper'
-__version__ = '1.0.1'
+__version__ = '1.1.1'
 __maintainer__ = ['Gui Talarico', 'Ehsan Iran-Nejad']
 __license__ = 'MIT'
 __contact__ = 'github.com/gtalarico/revitpythonwrapper'

@@ -28,7 +28,7 @@ from rpw.base import BaseObjectWrapper, BaseObject
 from rpw.exceptions import RpwException, RpwTypeError, RpwCoerceError
 from rpw.db.element import Element
 from rpw.db.builtins import BicEnum, BipEnum
-from rpw.ui import Selection
+from rpw.ui.selection import Selection
 from rpw.utils.coerce import to_element_id, to_element_ids
 from rpw.utils.coerce import to_category, to_class
 from rpw.utils.logger import logger
@@ -474,7 +474,10 @@ class Collector(BaseObjectWrapper):
 
     def __len__(self):
         """ Returns length of collector.elements """
-        return self._collector.GetElementCount()
+        try:
+            return self._collector.GetElementCount()
+        except AttributeError:
+            return len(self.elements) # Revit 2015
 
     def __repr__(self):
         return super(Collector, self).__repr__(data={'count': len(self)})

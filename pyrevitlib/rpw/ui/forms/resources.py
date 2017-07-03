@@ -33,7 +33,6 @@ from System.Windows import HorizontalAlignment, VerticalAlignment, Thickness
 # OS Dialogs
 from System.Windows import Forms
 
-
 if revit.host == 'Dynamo':
     # IronPython 2.7.3 - Dynamo + RPS w/out pyRevit
     # Conflicts with PyRevit. Must Ensure exact path is specified
