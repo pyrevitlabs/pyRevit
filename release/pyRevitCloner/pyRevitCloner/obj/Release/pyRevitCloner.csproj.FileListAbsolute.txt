@@ -24,4 +24,8 @@ C:\Users\LeoW10\Desktop\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.pd
 \\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\bin\Release\LibGit2Sharp.dll
 \\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\bin\Release\LibGit2Sharp.xml
 \\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.exe
-\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.csprojResolveAssemblyReference.cache
+\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\bin\Release\pyRevitCloner.exe.manifest
+\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\bin\Release\pyRevitCloner.application
+\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.TrustInfo.xml
+\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.exe.manifest
+\\vmware-host\Shared Folders\Revit API\pyRevit\release\pyRevitCloner\pyRevitCloner\obj\Release\pyRevitCloner.application

@@ -27,7 +27,7 @@ LicenseFile=LICENSE
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\release\pyRevitCloner\pyRevitCloner\bin\Release\*"; DestDir: "{tmp}\"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\release\pyRevitCloner\pyRevitCloner\bin\Release\*"; DestDir: "{tmp}\"; Flags: recursesubdirs createallsubdirs
 
 [Dirs]
 Name: "{userappdata}\{#MyAppName}"
