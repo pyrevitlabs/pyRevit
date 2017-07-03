@@ -1,8 +1,8 @@
-import rhino
+# import rhino
 
 
 __context__ = 'zerodoc'
 
 
-print rhino
-print rhino.rhg
+# print rhino
+# print rhino.rhg
