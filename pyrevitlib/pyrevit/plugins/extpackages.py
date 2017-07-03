@@ -203,6 +203,15 @@ class ExtensionPackage:
         user_config.remove_section(self.ext_dirname)
         user_config.save_changes()
 
+    def disable_package(self):
+        """
+        Disables package in pyRevit configuration so it won't be loaded
+        in the next session.
+        """
+
+        self.config.disabled = True
+        user_config.save_changes()
+
 
 class _ExtensionPackageDefinitionFile:
     def __init__(self, file_path):

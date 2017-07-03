@@ -68,8 +68,19 @@ def _startuplogtimeout_config_upgrade():
         user_config.save_changes()
 
 
+def _disabe_legacy_revitpythonwrapper_extension():
+    """ Disables the old revitpythonwrapper library extension
+    RPW is now a builtin module in pyRevit
+    """
+    from pyrevit.plugins.extpackages import get_ext_package_by_name
+    legacy_rpw_pkg = get_ext_package_by_name('RevitPythonWrapper')
+    if legacy_rpw_pkg:
+        legacy_rpw_pkg.disable_package()
+
+
 def upgrade_existing_pyrevit():
     _filelogging_config_upgrade()
     _cleanup_cache_files()
     _loadbeta_config_upgrade()
     _startuplogtimeout_config_upgrade()
+    _disabe_legacy_revitpythonwrapper_extension()
