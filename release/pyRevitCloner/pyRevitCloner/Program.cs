@@ -10,7 +10,7 @@ namespace pyRevitCloner
             var cops = new CloneOptions();
             cops.Checkout = true;
             cops.BranchName = "unstable_w23";
-            Repository.Clone(args[0], args[1]);
+            Repository.Clone(args[0], args[1], cops);
         }
     }
 }
