@@ -1,7 +1,14 @@
 cd /D %~dp0
+set releasepath=%CD%
 cd ..
 set installpath=%CD%
-cd /D %AppData%\Autodesk\Revit\Addins
+if not "%1" == "" (
+    if "%1" == "--allusers" (
+        cd /D %ProgramData%\Autodesk\Revit\Addins
+    )
+) else (
+    cd /D %AppData%\Autodesk\Revit\Addins
+)
 for /D %%i in (*.*) do (
 echo Adding addin description file to Revit %%i...
 (
@@ -17,3 +24,4 @@ echo   ^</AddIn^>
 echo ^</RevitAddIns^>
 ) > "%CD%\%%i\pyRevit.addin"
 )
+cd /D %releasepath%

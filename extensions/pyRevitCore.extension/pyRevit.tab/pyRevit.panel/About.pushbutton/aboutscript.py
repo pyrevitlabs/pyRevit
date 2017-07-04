@@ -3,13 +3,16 @@ import sys
 
 from scriptutils import open_url
 from scriptutils.userinput import WPFWindow
-from pyrevit.coreutils.git import compare_branch_heads
 from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
-from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
+# from pyrevit.coreutils.git import compare_branch_heads
+# from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
 
 
-__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, ' \
-          'updates about the new tools and changes, and a lot of other information there.'
+__context__ = 'zerodoc'
+
+__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
+          'detailed information on how pyrevit works, updates about the' \
+          'new tools and changes, and a lot of other information there.'
 
 
 class AboutWindow(WPFWindow):
@@ -21,14 +24,16 @@ class AboutWindow(WPFWindow):
         self.set_image_source('keybase_profile', 'keybase.png')
 
         try:
-            self.version_info.Text = ' v{}'.format(PYREVIT_VERSION.get_formatted())
+            self.version_info.Text = ' v{}' \
+                                     .format(PYREVIT_VERSION.get_formatted())
             if PYREVIT_REPO.branch != 'master':
                 self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
         except:
             self.version_info.Text = ''
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'.format(sys.version_info.major,
-                                                                                sys.version_info.minor,
-                                                                                sys.version_info.micro)
+        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
+                                      .format(sys.version_info.major,
+                                              sys.version_info.minor,
+                                              sys.version_info.micro)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -67,7 +72,9 @@ class AboutWindow(WPFWindow):
         # pyrvt_repo = get_pyrevit_repo()
         # if has_pending_updates(pyrvt_repo):
         #     hist_div = compare_branch_heads(pyrvt_repo)
-        #     self.version_info.Text = '{} {}'.format(self.version_info.Text, hist_div.BehindBy)
+        #     self.version_info.Text = '{} {}'
+        #                              .format(self.version_info.Text,
+        #                                      hist_div.BehindBy)
 
 
 if __name__ == '__main__':

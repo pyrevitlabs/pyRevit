@@ -50,7 +50,7 @@ namespace PyRevitLoader
         {
             // we need a UIApplication object to assign as `__revit__` in python...
             var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-            var fieldName = versionNumber == "2017" ? "m_uiapplication": "m_application";
+            var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication": "m_application";
             var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
 
             var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
@@ -58,7 +58,7 @@ namespace PyRevitLoader
             var startupScript = GetStartupScriptPath();
             if (startupScript != null)
             {
-                var executor = new ScriptExecutor(uiApplication, uiControlledApplication);
+                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
                 var result = executor.ExecuteScript(startupScript);
                 if (result == (int)Result.Failed)
                 {

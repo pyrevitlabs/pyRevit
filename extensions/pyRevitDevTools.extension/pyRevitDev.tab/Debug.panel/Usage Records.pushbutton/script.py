@@ -16,6 +16,7 @@ from System.Windows.Forms import Clipboard
 from Autodesk.Revit.UI import TaskDialog
 
 
+__context__ = 'zerodoc'
 __title__ = 'Usage\nRecords'
 
 

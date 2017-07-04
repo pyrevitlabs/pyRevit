@@ -4,6 +4,7 @@ from pyrevit.coreutils import pairwise
 
 from scriptutils import this_script, logger
 from scriptutils.userinput import WPFWindow, pick_folder
+from scriptutils.forms import WarningBar
 from revitutils import doc, selection, patmaker
 
 # noinspection PyUnresolvedReferences
@@ -74,9 +75,11 @@ class MakePatternWindow(WPFWindow):
             return round(coord, PICK_COORD_RESOLUTION)
 
         # ask user for origin and max domain points
-        pat_bottomleft = selection.utils.pick_point('Pick origin point (bottom-right corner of the pattern area):')
+        with WarningBar(title='Pick origin point (bottom-left corner of the pattern area):'):
+            pat_bottomleft = selection.utils.pick_point()
         if pat_bottomleft:
-            pat_topright = selection.utils.pick_point('Pick top-right corner of the pattern area:')
+            with WarningBar(title='Pick top-right corner of the pattern area:'):
+                pat_topright = selection.utils.pick_point()
             if pat_topright:
                 return (round_domain_coord(pat_bottomleft.X), round_domain_coord(pat_bottomleft.Y)), \
                        (round_domain_coord(pat_topright.X), round_domain_coord(pat_topright.Y))

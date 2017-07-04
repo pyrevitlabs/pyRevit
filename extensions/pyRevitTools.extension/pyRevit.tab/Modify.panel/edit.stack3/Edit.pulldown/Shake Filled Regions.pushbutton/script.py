@@ -27,12 +27,12 @@ def shake_filled_regions(view):
             t.Commit()
 
 
-print('Shaking Filled Regions in {} views'.format(selection.count))
+print('Shaking Filled Regions in {} views'.format(len(selection)))
 with TransactionGroup(doc, 'Shake Filled Regions') as t:
     t.Start()
     for i, view in enumerate(selection.elements):
         shake_filled_regions(view)
-        this_script.output.update_progress(i+1, selection.count)
+        this_script.output.update_progress(i+1, len(selection))
     t.Assimilate()
 
 print('All Filled Regions where shaken...')

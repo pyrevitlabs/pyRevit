@@ -28,19 +28,23 @@ class PyRevitVersion(object):
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')"""
-        ver_tuple = (unicode(PyRevitVersion.major), unicode(PyRevitVersion.minor), self.patch)
+        ver_tuple = (unicode(PyRevitVersion.major),
+                     unicode(PyRevitVersion.minor), self.patch)
         return ver_tuple
 
     def get_formatted(self):
         """Returns 'major.minor:patch' in string"""
-        return '{}.{}:{}'.format(PyRevitVersion.major, PyRevitVersion.minor, self.patch)
+        return '{}.{}:{}'.format(PyRevitVersion.major,
+                                 PyRevitVersion.minor,
+                                 self.patch)
 
 
 def get_pyrevit_repo():
     try:
         return git.get_repo(HOME_DIR)
     except Exception as repo_err:
-        logger.error('Can not create repo from directory: {} | {}'.format(HOME_DIR, repo_err))
+        logger.error('Can not create repo from directory: {} | {}'
+                     .format(HOME_DIR, repo_err))
 
 if not EXEC_PARAMS.doc_mode:
     try:
@@ -50,7 +54,8 @@ if not EXEC_PARAMS.doc_mode:
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
         PYREVIT_VERSION = PyRevitVersion('?')
 
-    set_pyrevit_env_var(PYREVIT_ADDON_NAME + '_versionISC', PYREVIT_VERSION.get_formatted())
+    set_pyrevit_env_var(PYREVIT_ADDON_NAME + '_versionISC',
+                        PYREVIT_VERSION.get_formatted())
 
 else:
     PYREVIT_REPO = None

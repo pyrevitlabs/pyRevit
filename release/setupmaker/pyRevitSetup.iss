@@ -27,7 +27,7 @@ LicenseFile=LICENSE
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\release\pyRevitCloner\pyRevitCloner\bin\Release\*"; DestDir: "{tmp}\"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\release\pyRevitCloner\pyRevitCloner\bin\Release\*"; DestDir: "{tmp}\"; Flags: recursesubdirs createallsubdirs
 
 [Dirs]
 Name: "{userappdata}\{#MyAppName}"
@@ -38,10 +38,36 @@ Type: filesandordirs; Name: "{app}\pyRevit"
 [Run]
 Filename: "{tmp}\pyRevitCloner.exe"; Parameters:"{#MyAppGit} {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
-Filename: "{app}\pyRevit\release\install_addin.bat"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{app}\pyRevit\release\install_addin.bat"; Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [UninstallRun]
 Filename: "{app}\pyRevit\release\uninstall_addin.bat";
+
+[Code]
+var
+  UsagePage: TInputOptionWizardPage;
+  
+procedure InitializeWizard;
+begin
+  { Create the pages }  
+  UsagePage := CreateInputOptionPage(wpLicense,
+    'Select Installation Type', 'For Current user or All users?',
+    'Please specify how you would like to install pyRevit, then click Next.',
+    True, False);
+  UsagePage.Add('Current User Only');
+  UsagePage.Add('All Users (pyRevit will load for all users)');
+  
+  { Set default values}
+  UsagePage.Values[0] := True;
+  UsagePage.Values[0] := False;
+end;
+
+function GetAllUsersState(param: string): String;
+begin
+  { Return the selected DataDir }
+  if UsagePage.Values[1] = True then
+    Result := '--allusers';
+end;

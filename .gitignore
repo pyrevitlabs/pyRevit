@@ -3,12 +3,14 @@ extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
 !extensions/pyRevitTools.extension/
+!extensions/Rhino3dmIO.lib/
 !extensions/extensions.json
 !extensions/README.md
 
 # ignore third-party lib folder
 lib/*
 !lib/README.md
+!lib/enum
 
 # ignore pyCharm workspace settings
 .idea/workspace.xml

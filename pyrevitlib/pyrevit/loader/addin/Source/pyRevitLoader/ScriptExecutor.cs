@@ -19,12 +19,12 @@ namespace PyRevitLoader
     {
         private string _message;
         private readonly UIApplication _revit;
-        private readonly UIControlledApplication _uiControlledApplication;
+        //private readonly UIControlledApplication _uiControlledApplication;
 
-        public ScriptExecutor(UIApplication uiApplication, UIControlledApplication uiControlledApplication)
+        public ScriptExecutor(UIApplication uiApplication) // UIControlledApplication uiControlledApplication)
         {
             _revit = uiApplication;
-            _uiControlledApplication = uiControlledApplication;
+            //_uiControlledApplication = uiControlledApplication;
 
             // note, if this constructor is used, then this stuff is all null
             // (I'm just setting it here to be explete - this constructor is

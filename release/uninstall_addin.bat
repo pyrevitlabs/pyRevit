@@ -1,3 +1,5 @@
+cd /D %ProgramData%\Autodesk\Revit\Addins
+for /D %%i in (*.*) do del "%CD%\%%i\pyRevit.addin"
 cd /D %AppData%\Autodesk\Revit\Addins
 for /D %%i in (*.*) do del "%CD%\%%i\pyRevit.addin"
 for /D %%i in (*.*) do del "%CD%\%%i\*pythonloader*.addin"
