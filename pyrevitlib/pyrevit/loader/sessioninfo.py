@@ -82,10 +82,27 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
                                 + len(loaded_assm_name_list))
 
 
+def system_diag():
+    """Verifies system status is appropriate for a pyRevit session.
+    """
+
+    # checking available drive space
+    import ctypes
+    free_bytes = ctypes.c_ulonglong(0)
+    ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p("."), None,
+                                               None, ctypes.pointer(free_bytes))
+
+    free_hd_space = float(free_bytes.value) / (1024 ** 3)
+    if free_hd_space < 10.0:
+        logger.warning('Remaining space on local drive is less than 10GB...')
+
+
 def report_env():
     # log python version, home directory, config file, ...
     # get python version that includes last commit hash
     pyrvt_ver = PYREVIT_VERSION.get_formatted()
+
+    system_diag()
 
     logger.info('pyRevit version: {} - '
                 ':coded: with :small-black-heart: '
