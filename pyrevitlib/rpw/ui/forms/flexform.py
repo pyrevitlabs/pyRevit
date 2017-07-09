@@ -80,7 +80,10 @@ class FlexForm(Window):
 
     @staticmethod
     def get_values(sender, e):
-        """ Default Get Values. Collect values from controls and close """
+        """
+        Default Get Values. Set form.values attribute with values from controls
+        and closes form.
+        """
         component_values = {}
         window = Window.GetWindow(sender)
         for component in window.MainGrid.Children:
@@ -149,13 +152,15 @@ class TextBox(RpwControlMixin, Controls.TextBox):
 
     >>> TextBox()
     """
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, default='', **kwargs):
         """
         Args:
             name (``str``): Name of control. Will be used to return value
+            default (``bool``): Sets ``Text`` attribute of textbox [Default: '']
             wpf_params (kwargs): Additional WPF attributes
         """
         self.Name = name
+        self.Text = default
         self.set_attrs(**kwargs)
         if 'Height' not in kwargs:
             self.Height = 25
@@ -171,14 +176,15 @@ class Button(RpwControlMixin, Controls.Button):
 
     >>> Button('Select')
     """
-    def __init__(self, button_text, **kwargs):
+    def __init__(self, button_text, on_click=None, **kwargs):
         """
         Args:
             button_text (``str``): Button Text
+            on_click (``func``): Registers Click event Function [Default: :any:`FlexForm.get_values`]
             wpf_params (kwargs): Additional WPF attributes
         """
         self.Content = button_text
-        self.on_click = kwargs.get('Click', FlexForm.get_values)
+        self.on_click = on_click or FlexForm.get_values
         self.set_attrs(**kwargs)
 
 
@@ -188,15 +194,17 @@ class CheckBox(RpwControlMixin, Controls.CheckBox):
 
     >>> CheckBox('Label')
     """
-    def __init__(self, name, checkbox_text, **kwargs):
+    def __init__(self, name, checkbox_text, default=False, **kwargs):
         """
         Args:
             name (``str``): Name of control. Will be used to return value
             checkbox_text (``str``): Checkbox label Text
+            default (``bool``): Sets IsChecked state [Default: False]
             wpf_params (kwargs): Additional WPF attributes
         """
         self.Name = name
         self.Content = checkbox_text
+        self.IsChecked = default
         self.set_attrs(top_offset=5, **kwargs)
 
     @property
@@ -209,26 +217,33 @@ class ComboBox(RpwControlMixin, Controls.ComboBox):
     Windows.Controls.ComboBox Wrapper
 
     >>> ComboBox({'Option 1': Element, 'Option 2', 'Elemnet'})
+    >>> ComboBox({'Option 1': Element, 'Option 2', 'Elemnet'}, sort=False)
     """
-    def __init__(self, name, options, **kwargs):
+    def __init__(self, name, options, default=None, sort=True, **kwargs):
         """
         Args:
             name (``str``): Name of control. Will be used to return value
             options (``list``, ``dict``): If ``dict``, selected value is returned
+            default (``str``): Sets SelectedItem attribute [Default: first]
             wpf_params (kwargs): Additional WPF attributes
         """
         self.Name = name
         self.set_attrs(**kwargs)
+        index = 0
 
         self.options = options
         if hasattr(options, 'keys'):
             options = options.keys()
-        if kwargs.get('sort', True):
+        if sort:
             options.sort()
+        if default is None:
+            index = 0
+        else:
+            index = options.index(default)
 
         self.Items.Clear()
         self.ItemsSource = options
-        self.SelectedItem = options[0]
+        self.SelectedItem = options[index]
 
     @property
     def value(self):

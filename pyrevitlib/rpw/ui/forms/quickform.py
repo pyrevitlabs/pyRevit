@@ -28,9 +28,9 @@ def SelectFromList(title, options, description=None, sort=True, exit_on_close=Tr
     components = []
     if description:
         components.append(Label(description))
-    components.append(ComboBox('combobox', options))
+    components.append(ComboBox('combobox', options, sort=sort))
     components.append(Button('Select'))
-    form = FlexForm('SelectFromList', components, sort=sort, exit_on_close=exit_on_close)
+    form = FlexForm(title, components)
     ok = form.show()
     if ok:
         return form.values['combobox']
@@ -56,12 +56,12 @@ def TextInput(title, default=None, description=None, sort=True, exit_on_close=Tr
     if description:
         components.append(Label(description))
     if default:
-        textbox = TextBox('textbox', Text=default)
+        textbox = TextBox('textbox', default=default)
     else:
         textbox = TextBox('textbox')
     components.append(textbox)
     components.append(Button('Select'))
-    form = FlexForm('TextInput', components, sort=sort)
+    form = FlexForm(title, components)
     ok = form.show()
     if ok:
         return form.values['textbox']

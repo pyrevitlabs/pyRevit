@@ -84,7 +84,7 @@ class Selection(BaseObjectWrapper, ElementSet):
 
     def update(self):
         """ Forces UI selection to match the Selection() object """
-        self._revit_object.SetElementIds(self.as_element_id_list())
+        self._revit_object.SetElementIds(self.as_element_id_list)
 
     def clear(self):
         """ Clears Selection

@@ -105,6 +105,10 @@ class XYZ(BaseObjectWrapper):
         """
         return {'x': self.x, 'y': self.y, 'z':self.z}
 
+
+    def __eq__(self, other):
+        return self.as_dict == other.as_dict
+
     def __repr__(self):
         return super(XYZ, self).__repr__(data=self.as_dict,
                                          to_string='Autodesk.Revit.DB.XYZ')

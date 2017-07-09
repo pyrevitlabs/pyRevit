@@ -93,6 +93,7 @@ class ElementSet(BaseObject):
         """ Clears Set """
         self._elements = OrderedDict()
 
+    @property
     def as_element_list(self):
         """
         Returns:
@@ -100,6 +101,7 @@ class ElementSet(BaseObject):
         """
         return List[DB.Element](self.elements)
 
+    @property
     def as_element_id_list(self):
         """
         Returns:
@@ -109,7 +111,7 @@ class ElementSet(BaseObject):
 
     def select(self):
         """ Selects Set in UI """
-        return Selection(self.element_ids)
+        return rpw.ui.Selection(self.element_ids)
 
     def __len__(self):
         return len(self._elements)
@@ -171,7 +173,7 @@ class ElementCollection(ElementSet):
 
     def append(self, elements_or_ids):
         """ Adds elements or element_ids to set. Handles single or list """
-        if not isinstance(elements_or_ids, (list, set)):
+        if not hasattr(elements_or_ids, '__iter__'):
             elements_or_ids = [elements_or_ids]
         elements = to_elements(elements_or_ids)
         for element in elements:
@@ -201,6 +203,15 @@ class ElementCollection(ElementSet):
     def clear(self):
         """ Clears Set """
         self._elements = []
+
+    def pop(self, index=0):
+        """
+        Removed from set using ElementIds
+
+        Args:
+            index (``int``): Index of Element [Default: 0]
+         """
+        return self._elements.pop(index)
 
     def __iter__(self):
         return iter(self._elements)
