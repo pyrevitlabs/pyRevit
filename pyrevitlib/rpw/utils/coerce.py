@@ -110,9 +110,9 @@ def to_category(category_reference, fuzzy=True):
     >>> from rpw.utils.coerce import to_category
     >>> to_category('OST_Walls')
     BuiltInCategory.OST_Walls
-    >>> to_class('Wall')
+    >>> to_category('Wall')
     BuiltInCategory.OST_Walls
-    >>> to_class(BuiltInCategory.OST_Walls)
+    >>> to_category(BuiltInCategory.OST_Walls)
     BuiltInCategory.OST_Walls
 
     Args:
@@ -132,6 +132,26 @@ def to_category(category_reference, fuzzy=True):
         return BicEnum.from_category_id(category_reference)
     raise RpwTypeError('Category Type, Category Type Name',
                         type(category_reference))
+
+def to_category_id(category_reference, fuzzy=True):
+    """ Coerces a category, category name or category id to a Category Id.
+
+    >>> from rpw.utils.coerce import to_category_id
+    >>> to_category_id('OST_Walls')
+    <ElementId>
+    >>> to_category_id('Wall')
+    <ElementId>
+    >>> to_category_id(BuiltInCategory.OST_Walls)
+    <ElementId>
+
+    Args:
+        cateagory_reference ([``DB.BuiltInCategory``, ``str``, ``CategoryId``]): Category Reference or Name
+
+    Returns:
+        [``DB.ElementId``]: ElementId of Category
+    """
+    category_enum = to_category(category_reference)
+    return DB.ElementId(category_enum)
 
 def to_iterable(item_or_iterable):
     """

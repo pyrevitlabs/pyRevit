@@ -6,19 +6,52 @@ View Wrappers
 import rpw
 from rpw import revit, DB
 from rpw.db.element import Element
+from rpw.db.pattern import LinePatternElement, FillPatternElement
 from rpw.db.collector import Collector
 from rpw.base import BaseObjectWrapper
+from rpw.utils.coerce import to_element_ids, to_element_id, to_element
+from rpw.utils.coerce import to_category_id, to_iterable
+from rpw.exceptions import RpwTypeError, RpwCoerceError
 from rpw.utils.logger import logger
-from rpw.utils.dotnet import Enum
-from rpw.db.builtins import BipEnum
 
 
 class View(Element):
     """
-    This is the master View Class. All other View classes inherit
-    from DB.View
+    This is the main View View Wrapper - wraps ``DB.View``.
+    All other View classes inherit from this class in the same way All
+    API View classes inheir from `DB.View`
 
-    This is also used for some Types: Legend, ProjectBrowser, SystemBrowser
+    This class is also used for some View types that do not have a more specific
+    class, such as: Legend, ProjectBrowser, SystemBrowser.
+
+    As with other wrapeprs, you can just use the Element() factory class to
+    use the best wrapper available.
+
+    >>> wrapped_view = rpw.db.Element(some_view_plan)
+    <rpw:ViewPlan>
+    >>> wrapped_view = rpw.db.Element(some_legend)
+    <rpw:View>
+    >>> wrapped_view = rpw.db.Element(some_schedule)
+    <rpw:ViewSchedule>
+
+
+    >>> wrapped_view = rpw.db.Element(some_view_plan)
+    >>> wrapped_view.view_type
+    <rpw:ViewType | view_type: FloorPlan>
+    >>> wrapped_view.view_family_type
+    <rpw:ViewFamilyType % ..DB.ViewFamilyType | view_family:FloorPlan name:Floor Plan id:1312>
+    >>> wrapped_view.view_family
+    <rpw:ViewFamily | family: FloorPlan>
+    >>> wrapped_view.siblings
+    [<rpw:ViewFamilyType % ..DB.ViewFamilyType> ... ]
+
+    View wrappers classes are collectible:
+
+    >>> rpw.db.ViewPlan.collect()
+    <rpw:Collector % ..DB.FilteredElementCollector | count:5>
+    >>> rpw.db.View3D.collect(where=lambda x: x.Name='MyView')
+    <rpw:Collector % ..DB.FilteredElementCollector | count:1>
+
     """
 
     _revit_object_category = DB.BuiltInCategory.OST_Views
@@ -27,19 +60,23 @@ class View(Element):
 
     @property
     def name(self):
+        """ Name Property """
         # TODO: Make Mixin ?
         return self._revit_object.Name
 
     @name.setter
     def name(self, value):
+        """ Name Property Setter """
         self._revit_object.Name == value
 
     @property
     def view_type(self):
+        """ ViewType attribute """
         return ViewType(self._revit_object.ViewType)
 
     @property
     def view_family_type(self):
+        """ ViewFamilyType attribute """
         # NOTE: This can return Empty, as Some Views like SystemBrowser have no Type
         view_type_id = self._revit_object.GetTypeId()
         view_type = self.doc.GetElement(view_type_id)
@@ -48,12 +85,30 @@ class View(Element):
 
     @property
     def view_family(self):
+        """ ViewFamily attribute """
         # Some Views don't have a ViewFamilyType
         return getattr(self.view_family_type, 'view_family', None)
 
     @property
     def siblings(self):
+        """ Collect all views of the same ``ViewType`` """
         return self.view_type.views
+
+    @property
+    def override(self):
+        """ Access to overrides.
+
+        For more information see :any:`OverrideGraphicSettings`
+
+        >>> view.override.projection_line(element, color=[0,255,0])
+        >>> view.override.cut_line(category, weight=5)
+
+        """
+        return OverrideGraphicSettings(self)
+
+    def change_type(self, type_reference):
+        raise NotImplemented
+        # self._revit_object.ChangeTypeId(type_reference)
 
     def __repr__(self):
         return super(View, self).__repr__(data={'view_name': self.name,
@@ -63,8 +118,8 @@ class View(Element):
                                                 })
 
 
-# ViewPlanType
 class ViewPlan(View):
+    """ ViewPlan Wrapper. ``ViewType`` is ViewType.FloorPlan or  ViewType.CeilingPlan"""
     _revit_object_class = DB.ViewPlan
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
@@ -72,30 +127,25 @@ class ViewPlan(View):
     def level(self):
         return self._revit_object.GenLevel
 
-
 class ViewSheet(View):
-    """ View where ``ViewType`` is ViewType.DrawingSheet """
+    """ ViewSheet Wrapper. ``ViewType`` is ViewType.DrawingSheet """
     _revit_object_class = DB.ViewSheet
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
 
 class ViewSchedule(View):
-    """ View where ``ViewType`` is ViewType.DrawingSheet """
+    """ ViewSchedule Wrapper. ``ViewType`` is ViewType.Schedule """
     _revit_object_class = DB.ViewSchedule
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
 
 class ViewSection(View):
-    """ View where ``ViewType`` is ViewType.DrawingSheet """
+    """ DB.ViewSection Wrapper. ``ViewType`` is ViewType.DrawingSheet """
     _revit_object_class = DB.ViewSection
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
-
-class ViewSchedule(View):
-    _revit_object_class = DB.ViewSchedule
-    _collector_params = {'of_class': _revit_object_class, 'is_type': False}
-
 class View3D(View):
+    """ DB.View3D Wrapper. ``ViewType`` is ViewType.ThreeD """
     _revit_object_class = DB.View3D
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
@@ -107,9 +157,19 @@ class ViewFamilyType(Element):
 
     @property
     def name(self):
-        # Could use the line below but would required re-importing element, as per
-        # return DB.Element.Name.GetValue(self._revit_object)
-        return self.parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
+        """ Name of ViewFamilyType """
+        # return self.parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
+        return DB.Element.Name.__get__(self._revit_object)
+
+    @name.setter
+    def name(self, value):
+        """ Name Property Setter"""
+        # Requires Re-importing Element due to IronPython Bug:
+        # https://github.com/IronLanguages/ironpython2/issues/79
+        raise NotImplemented('Not possible due to ironpython bug')
+        # This works in IronPython but does not work in Pyrevit
+        DB.Element.Name.__set__(self._revit_object, value)
+        # DB.Element.Name.SetValue(self._revit_object, value)
 
     @property
     def view_family(self):
@@ -119,7 +179,7 @@ class ViewFamilyType(Element):
 
     @property
     def views(self):
-        # Collect All Views, Compare view_family of each view with self
+        """ Collect All Views of the same ViewFamilyType """
         views = Collector(of_class='View').wrapped_elements
         return [view for view in views if getattr(view.view_family_type, '_revit_object', None) == self.unwrap()]
 
@@ -133,6 +193,7 @@ class ViewFamilyType(Element):
 class ViewFamily(BaseObjectWrapper):
     """ ViewFamily Enumerator Wrapper.
     An enumerated type that corresponds to the type of a Revit view.
+    http://www.revitapidocs.com/2015/916ed7b6-0a2e-c607-5d35-9ff9303b1f46.htm
 
     This is returned on view.ViewFamily
     AreaPlan, CeilingPlan, CostReport
@@ -146,11 +207,12 @@ class ViewFamily(BaseObjectWrapper):
 
     @property
     def name(self):
+        """ ToString() of View Family Enumerator """
         return self._revit_object.ToString()
 
     @property
     def views(self):
-        # Collect All Views, Compare view_family of each view with self
+        """ Collect All Views of the same ViewFamily """
         views = Collector(of_class='View').wrapped_elements
         return [view for view in views if getattr(view.view_family, '_revit_object', None) == self.unwrap()]
 
@@ -163,6 +225,7 @@ class ViewFamily(BaseObjectWrapper):
 class ViewType(BaseObjectWrapper):
     """ ViewType Wrapper.
     An enumerated type listing available view types.
+    http://www.revitapidocs.com/2015/bf04dabc-05a3-baf0-3564-f96c0bde3400.htm
 
     Can be on of the following types:
         AreaPlan ,CeilingPlan, ColumnSchedule, CostReport,
@@ -177,10 +240,12 @@ class ViewType(BaseObjectWrapper):
 
     @property
     def name(self):
+        """ ToString() of View Family Enumerator """
         return self._revit_object.ToString()
 
     @property
     def views(self):
+        """ Collect All Views of the same ViewType """
         views = Collector(of_class='View').wrapped_elements
         return [view for view in views if view.view_type.unwrap() == self.unwrap()]
 
@@ -193,6 +258,202 @@ class ViewType(BaseObjectWrapper):
 class ViewPlanType(BaseObjectWrapper):
     """
     Enumerator
-        FloorPlan, CeilingPlan
-    No Wrapper Need. Only a Enum that is used as arg for ViewPlan
+        ViewPlanType.FloorPlan, ViewPlanType.CeilingPlan
+    No Wrapper Need. Enum is only used as arg for when creating ViewPlan
     """
+
+
+class OverrideGraphicSettings(BaseObjectWrapper):
+
+    """ Internal Wrapper for OverrideGraphicSettings - view.override
+
+
+
+    >>> wrapped_view = rpw.db.Element(some_view)
+    >>> wrapped_view.override.projection_line(target, color=(255,0,0))
+    >>> wrapped_view.override.projection_fill(target, color=(0,0,255), pattern=pattern_id)
+    >>> wrapped_view.override.cut_line(target, color=(0,0,255), weight=2)
+    >>> wrapped_view.override.cut_fill(target, visible=False)
+    >>> wrapped_view.override.transparency(target, 50)
+    >>> wrapped_view.override.halftone(target, True)
+    >>> wrapped_view.override.detail_level(target, 'Coarse')
+
+    Note:
+        Target can be any of the following:
+
+        * Element
+        * ElementId
+        * BuiltInCategory Enum
+        * BuiltInCategory Fuzzy Name (See :func:`fuzzy_get`)
+        * Category_id
+        * An iterable containing any of the above types
+
+    """
+
+    # TODO: Pattern: Add pattern_id from name. None sets InvalidElementId
+    # TODO: Weight: None to set InvalidPenNumber
+    # TODO: Color: Add color from name util
+
+    _revit_object_class = DB.OverrideGraphicSettings
+
+    def __init__(self, wrapped_view):
+        super(OverrideGraphicSettings, self).__init__(DB.OverrideGraphicSettings())
+        self.view = wrapped_view.unwrap()
+
+    def _set_overrides(self, target):
+        targets = to_iterable(target)
+        for target in targets:
+            try:
+                category_id = to_category_id(target)
+                self._set_category_overrides(category_id)
+            except (RpwTypeError, RpwCoerceError) as errmsg:
+                logger.debug('Not Category, Trying Element Override')
+                element_id = to_element_id(target)
+                self._set_element_overrides(element_id)
+
+    # @rpw.db.Transaction.ensure('Set OverrideGraphicSettings')
+    def _set_element_overrides(self, element_id):
+        self.view.SetElementOverrides(element_id, self._revit_object)
+
+    def _set_category_overrides(self, category_id):
+        self.view.SetCategoryOverrides(category_id, self._revit_object)
+
+    def match_element(self, target, element_to_match):
+        """
+        Matches the settings of another element
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            element_to_match (``Element``, ``ElementId``): Element to match
+        """
+        element_to_match = to_element_id(element_to_match)
+
+        self._revit_object = self.view.GetElementOverrides(element_to_match)
+        self._set_overrides(target)
+
+    def projection_line(self, target, color=None, pattern=None, weight=None):
+        """
+        Sets ProjectionLine overrides
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
+            pattern (``DB.ElementId``): ElementId of Pattern
+            weight (``int``,``None``): Line weight must be a positive integer less than 17 or None(sets invalidPenNumber)
+        """
+        if color:
+            Color = DB.Color(*color)
+            self._revit_object.SetProjectionLineColor(Color)
+        if pattern:
+            line_pattern = LinePatternElement.by_name_or_element_ref(pattern)
+            self._revit_object.SetProjectionLinePatternId(line_pattern.Id)
+        if weight:
+            self._revit_object.SetProjectionLineWeight(weight)
+
+        self._set_overrides(target)
+
+    def cut_line(self, target, color=None, pattern=None, weight=None):
+        """
+        Sets CutLine Overrides
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
+            pattern (``DB.ElementId``): ElementId of Pattern
+            weight (``int``,``None``): Line weight must be a positive integer less than 17 or None(sets invalidPenNumber)
+        """
+        if color:
+            Color = DB.Color(*color)
+            self._revit_object.SetCutLineColor(Color)
+        if pattern:
+            line_pattern = LinePatternElement.by_name_or_element_ref(pattern)
+            self._revit_object.SetCutLinePatternId(line_pattern.Id)
+        if weight:
+            self._revit_object.SetCutLineWeight(weight)
+
+        self._set_overrides(target)
+
+    def projection_fill(self, target, color=None, pattern=None, visible=None):
+        """
+        Sets ProjectionFill overrides
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
+            pattern (``DB.ElementId``): ElementId of Pattern
+            visible (``bool``): Cut Fill Visibility
+        """
+        if color:
+            Color = DB.Color(*color)
+            self._revit_object.SetProjectionFillColor(Color)
+        if pattern:
+            fill_pattern = FillPatternElement.by_name_or_element_ref(pattern)
+            self._revit_object.SetProjectionFillPatternId(fill_pattern.Id)
+        if visible is not None:
+            self._revit_object.SetProjectionFillPatternVisible(visible)
+
+        self._set_overrides(target)
+
+    def cut_fill(self, target, color=None, pattern=None, visible=None):
+        """
+        Sets CutFill overrides
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
+            pattern (``DB.ElementId``): ElementId of Pattern
+            visible (``bool``): Cut Fill Visibility
+        """
+
+        if color:
+            Color = DB.Color(*color)
+            self._revit_object.SetCutFillColor(Color)
+        if pattern:
+            fill_pattern = FillPatternElement.by_name_or_element_ref(pattern)
+            self._revit_object.SetCutFillPatternId(fill_pattern.Id)
+        if visible is not None:
+            self._revit_object.SetCutFillPatternVisible(visible)
+
+        self._set_overrides(target)
+
+    def transparency(self, target, transparency):
+        """
+        Sets SurfaceTransparency override
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            transparency (``int``): Value of the transparency of the projection surface (0 = opaque, 100 = fully transparent)
+        """
+        self._revit_object.SetSurfaceTransparency(transparency)
+        self._set_overrides(target)
+
+    def halftone(self, target, halftone):
+        """
+        Sets Halftone Override
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            halftone (``bool``): Halftone
+        """
+        self._revit_object.SetHalftone(halftone)
+        self._set_overrides(target)
+
+    def detail_level(self, target, detail_level):
+        """
+        Sets DetailLevel Override. DetailLevel can be Enumeration memeber of
+        DB.ViewDetailLevel or its name as a string. The Options are:
+
+            * Coarse
+            * Medium
+            * Fine
+
+        Args:
+            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to apply override. Can be list.
+            detail_level (``DB.ViewDetailLevel``, ``str``): Detail Level Enumerator or name
+        """
+
+        if isinstance(detail_level, str):
+            detail_level = getattr(DB.ViewDetailLevel, detail_level)
+
+        self._revit_object.SetDetailLevel(detail_level)
+        self._set_overrides(target)

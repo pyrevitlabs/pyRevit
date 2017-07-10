@@ -30,7 +30,7 @@ Note:
 
 
 """  #
-
+import rpw
 from rpw.utils.dotnet import clr, Process
 from rpw.utils.logger import logger
 from rpw.base import BaseObject
@@ -103,7 +103,7 @@ class Revit(BaseObject):
     @property
     def active_view(self):
         """ Returns: uidoc.ActiveView """
-        return self.uidoc.ActiveView
+        return rpw.db.Element(self.uidoc.ActiveView)
 
     @active_view.setter
     def active_view(self, view_reference):

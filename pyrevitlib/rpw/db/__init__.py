@@ -17,7 +17,9 @@ from rpw.db.spatial_element import Room, Area, AreaScheme
 from rpw.db.view import View, ViewPlan, ViewSheet, ViewSection
 from rpw.db.view import ViewSchedule, View3D
 from rpw.db.view import ViewFamilyType
-from rpw.db.view import ViewType, ViewPlanType
+from rpw.db.view import ViewFamily, ViewType, ViewPlanType  # Enums
+
+from rpw.db.pattern import LinePatternElement, FillPatternElement
 
 from rpw.db.parameter import Parameter, ParameterSet
 from rpw.db.builtins import BicEnum, BipEnum

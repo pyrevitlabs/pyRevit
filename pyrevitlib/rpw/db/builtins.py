@@ -68,6 +68,9 @@ class _BiParameter(BaseObjectWrapper):
         enum = self.get(parameter_name)
         return DB.ElementId(enum)
 
+        def __repr__(self):
+            return super(_BiParameter, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInParameter')
+
 
 class _BiCategory(BaseObjectWrapper):
     """
@@ -104,6 +107,22 @@ class _BiCategory(BaseObjectWrapper):
         return enum
 
     def fuzzy_get(self, loose_category_name):
+        """ Gets Built In Category by Fuzzy Name.
+        Similar to get() but ignores case, and does not require OST_ prefix.
+
+        >>> BiCategory.fuzzy_get('OST_Rooms')
+        < BuiltInCategory >
+        >>> BiCategory.fuzzy_get('Rooms')
+        < BuiltInCategory >
+        >>> BiCategory.fuzzy_get('rooms')
+        < BuiltInCategory >
+
+        Args:
+            ``str``: Name of Category
+
+        Returns:
+            ``DB.BuiltInCategory``: BuiltInCategory Enumeration Member
+        """
         loose_category_name = loose_category_name.replace(' ', '').lower()
         loose_category_name = loose_category_name.replace('ost_', '')
         for category_name in dir(DB.BuiltInCategory):
@@ -136,8 +155,18 @@ class _BiCategory(BaseObjectWrapper):
         Returns:
             ``DB.BuiltInCategory`` member
         """
-        return Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
+        bic = Enum.ToObject(DB.BuiltInCategory, category_id.IntegerValue)
+        if DB.ElementId(bic).IntegerValue < -1:
+            return bic
+        else:
+            # If you pass a regular element to category_id, it converts it to BIC.
+            # It should fail, because result is not a valid Category Enum
+            raise RpwCoerceError('category_id: {}'.format(category_id),
+                                 DB.BuiltInCategory)
         # Similar to: Category.GetCategory(doc, category.Id).Name
+
+    def __repr__(self):
+        return super(_BiCategory, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInCategory')
 
 # Classes should already be instantiated
 BiParameter = _BiParameter()
