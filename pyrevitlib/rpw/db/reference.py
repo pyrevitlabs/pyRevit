@@ -50,7 +50,7 @@ class Reference(Element):
         """ Returns ``UVPoint`` property of Reference - Face references only """
         pt = self._revit_object.UVPoint
         if pt:
-            #TODO XYZ needs to handle XYZ
+            # TODO XYZ needs to handle XYZ
             return pt
             # return XYZ(pt)
 
@@ -61,7 +61,7 @@ class Reference(Element):
 
     def get_element(self):
         """ Element of Reference """
-        #TODO: Handle Linked Element
+        # TODO: Handle Linked Element
         return self.doc.GetElement(self.id)
 
     def get_geometry(self):

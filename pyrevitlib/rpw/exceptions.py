@@ -2,6 +2,7 @@
 
 from rpw.utils.logger import logger
 
+
 class RpwException(Exception):
     """ Revit Python Wrapper Base Exception """
 

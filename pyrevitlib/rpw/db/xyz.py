@@ -103,8 +103,7 @@ class XYZ(BaseObjectWrapper):
             (dict): dict with float of XYZ values
 
         """
-        return {'x': self.x, 'y': self.y, 'z':self.z}
-
+        return {'x': self.x, 'y': self.y, 'z': self.z}
 
     def __eq__(self, other):
         return self.as_dict == other.as_dict

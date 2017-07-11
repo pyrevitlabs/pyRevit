@@ -35,6 +35,7 @@ from rpw.utils.dotnet import clr, Process
 from rpw.utils.logger import logger
 from rpw.base import BaseObject
 
+
 class Revit(BaseObject):
     """Revit Application Wrapper """
 
@@ -155,6 +156,7 @@ class Revit(BaseObject):
     #     # noinspection PyUnresolvedReferences
     #     from System.Windows.Forms import Screen
     #     return Screen.FromHandle(Process.GetCurrentProcess().MainWindowHandle)
+
 
 class RevitVersion():
     def __init__(self, uiapp):

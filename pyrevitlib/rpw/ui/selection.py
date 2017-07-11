@@ -247,7 +247,7 @@ class Pick(BaseObject):
         """
 
         SNAPS = {
-                #  'none': ObjectSnapTypes.None,
+                 # 'none': ObjectSnapTypes.None,
                  'endpoints': ObjectSnapTypes.Endpoints,
                  'midpoints': ObjectSnapTypes.Midpoints,
                  'nearest': ObjectSnapTypes.Nearest,

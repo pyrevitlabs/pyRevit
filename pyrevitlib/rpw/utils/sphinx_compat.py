@@ -50,6 +50,7 @@ class MockObject(object):
     def __str__(self):
         return self.fullname
 
+
 class MockImporter(object):
     # https://github.com/gtalarico/revitpythonwrapper/issues/3
     # http://dangerontheranger.blogspot.com/2012/07/how-to-use-sysmetapath-with-python.html
@@ -86,4 +87,4 @@ class MockImporter(object):
             mod.__path__ = [fullname]
             mod.__name__ = fullname
             sys.modules[fullname] = mod
-            return mod # This gives errors
+            return mod  # This gives errors

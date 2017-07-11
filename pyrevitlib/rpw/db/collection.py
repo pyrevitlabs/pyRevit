@@ -149,6 +149,7 @@ class ElementSet(BaseObject):
         except IndexError:
             return None
 
+
 class ElementCollection(ElementSet):
     """
     List Collection for managing a list of ``DB.Element``.

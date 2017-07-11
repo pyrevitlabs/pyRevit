@@ -1,5 +1,6 @@
 """ Document Wrapper """
 
+
 class Document(BaseObjectWrapper):
     """Document Application Wrapper
     Autodesk.Revit.UI.UIDocument

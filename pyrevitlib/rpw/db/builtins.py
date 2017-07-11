@@ -35,7 +35,7 @@ class _BiParameter(BaseObjectWrapper):
 
     def __init__(self):
         super(_BiParameter, self).__init__(DB.BuiltInParameter,
-                                          enforce_type=False)
+                                           enforce_type=False)
 
     def __getattr__(self, attr):
         return self.get(attr)
@@ -68,8 +68,8 @@ class _BiParameter(BaseObjectWrapper):
         enum = self.get(parameter_name)
         return DB.ElementId(enum)
 
-        def __repr__(self):
-            return super(_BiParameter, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInParameter')
+    def __repr__(self):
+        return super(_BiParameter, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInParameter')
 
 
 class _BiCategory(BaseObjectWrapper):
@@ -88,7 +88,7 @@ class _BiCategory(BaseObjectWrapper):
 
     def __init__(self):
         super(_BiCategory, self).__init__(DB.BuiltInCategory,
-                                         enforce_type=False)
+                                          enforce_type=False)
 
     def get(self, category_name):
         """ Gets Built In Category by Name
@@ -132,7 +132,6 @@ class _BiCategory(BaseObjectWrapper):
         # If not Found Try regular method, handle error
         return self.get(loose_category_name)
 
-
     def get_id(self, category_name):
         """ Gets ElementId of Category by name
 
@@ -167,6 +166,7 @@ class _BiCategory(BaseObjectWrapper):
 
     def __repr__(self):
         return super(_BiCategory, self).__repr__(to_string='Autodesk.Revit.DB.BuiltInCategory')
+
 
 # Classes should already be instantiated
 BiParameter = _BiParameter()

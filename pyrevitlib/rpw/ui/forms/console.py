@@ -7,7 +7,11 @@
 Keyboard Shortcuts:
     * ``UP``  Iterate history up
     * ``Down``  Iterate history down
-    * ``Tab``  Iterate possible autocomplete options
+    * ``Tab``  Iterate possible autocomplete options (works for dotted lookup)
+
+Warning:
+    Becareful with `Force Quit`. Under certain circumstances, it can crash Revit.
+    It crashes Dynamo very consistently.
 
 Note:
     The last stack frame is automatically injected is the context of the evaluation
@@ -35,16 +39,19 @@ import logging
 import tempfile
 from collections import defaultdict
 
+from rpw.utils.rlcompleter import Completer
 from rpw.ui.forms.resources import Window
 from rpw.ui.forms.resources import *
 # logger.verbose(True)
+
 
 class Console(Window):
     LAYOUT = """
                 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                         Title="DeployWindow" Height="400" Width="800" SnapsToDevicePixels="True"
-                        UseLayoutRounding="True" WindowState="Normal" WindowStartupLocation="CenterScreen">
+                        UseLayoutRounding="True" WindowState="Normal"
+                        WindowStartupLocation="CenterScreen">
                 <Window.Resources>
                     <Style TargetType="{x:Type MenuItem}">
                         <Setter Property="FontFamily" Value="Consolas"/>
@@ -55,20 +62,23 @@ class Console(Window):
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="0"></RowDefinition>
-                    <RowDefinition Height="*"></RowDefinition>
-                </Grid.RowDefinitions>
-                <TextBox Grid.Column="1" Grid.Row="1"  HorizontalAlignment="Stretch"
-                         Name="tbox" Margin="6,6,6,6" VerticalAlignment="Stretch"
-                         AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-                         TextWrapping="Wrap"
-                         FontFamily="Consolas" FontSize="12.0"
-                         />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="0"></RowDefinition>
+                        <RowDefinition Height="*"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <TextBox Grid.Column="1" Grid.Row="1"  HorizontalAlignment="Stretch"
+                             Name="tbox" Margin="6,6,6,42" VerticalAlignment="Stretch"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap"
+                             FontFamily="Consolas" FontSize="12.0"
+                             />
+                     <Button Content="Force Quit" Margin="6,6,6,6" Height="30"
+                             Grid.Column="1" Grid.Row="1" VerticalAlignment="Bottom"
+                             ToolTip="Might Crash Revit. Will Crash Dynamo"
+                             Click="force_quit"></Button>
                 </Grid>
                 </Window>
     """
-    # <Button Grid.Column="1" Content="Deploy" Height="30" Width="100" HorizontalAlignment="Left" Margin="10,10,10,10" Name="deployButton" Cursor="Hand" />
 
     CARET = '>>> '
 
@@ -100,7 +110,7 @@ class Console(Window):
         else:
             # Stack Info
             # stack_frame = inspect.currentframe().f_back
-            stack_frame = inspect.stack()[stack_level][0] # Finds Calling Stack
+            stack_frame = inspect.stack()[stack_level][0]  # Finds Calling Stack
 
             self.stack_locals.update(stack_frame.f_locals)
             self.stack_globals.update(stack_frame.f_globals)
@@ -112,6 +122,8 @@ class Console(Window):
             stack_lineno = stack_code.co_firstlineno
             stack_caller = stack_code.co_name
 
+        self._update_completer()
+
         # Form Setup
         self.ui = wpf.LoadComponent(self, StringReader(Console.LAYOUT))
         self.ui.Title = 'RevitPythonWrapper Console'
@@ -122,7 +134,9 @@ class Console(Window):
         # Form Init
         self.ui.tbox.Focus()
         if not context and stack_info:
-            self.write_line('Caller: {} [ Line:{}] | File: {}'.format(stack_caller, stack_lineno, stack_filename))
+            self.write_line('Caller: {} [ Line:{}] | File: {}'.format(stack_caller,
+                                                                      stack_lineno,
+                                                                      stack_filename))
         else:
             self.tbox.Text = Console.CARET
 
@@ -134,8 +148,18 @@ class Console(Window):
 
         self.ShowDialog()
 
+    def force_quit(self, sender, e):
+        raise SystemExit('Force Quit')
+
+    def _update_completer(self):
+        # Updates Completer. Used at start, and after each exec loop
+        context = self.stack_locals.copy()
+        context.update(self.stack_globals)
+        # context.update(vars(__builtins__))
+        self.completer = Completer(context)
+
     def get_line(self, index):
-        line = self.tbox.GetLineText(index).replace('\r\n','')
+        line = self.tbox.GetLineText(index).replace('\r\n', '')
         if line.startswith(Console.CARET):
             line = line[len(Console.CARET):]
         logger.debug('Get Line: {}'.format(line))
@@ -179,6 +203,7 @@ class Console(Window):
             self.append_history(entered_line)
             self.history_index = 0
             self.write_line(output)
+            self.tbox.ScrollToEnd()
 
     def evaluate(self, line):
         try:
@@ -186,6 +211,7 @@ class Console(Window):
         except SyntaxError as errmsg:
             try:
                 exec(line, self.stack_globals, self.stack_locals)
+                self._update_completer()  # Update completer with new locals
                 return
             except Exception as errmsg:
                 output = errmsg
@@ -196,14 +222,26 @@ class Console(Window):
     def OnKeyDownHandler(self, sender, args):
         pass
 
+    @property
+    def last_caret_start_index(self):
+        return self.tbox.Text.rfind(Console.CARET)
+
+    @property
+    def last_caret_end_index(self):
+        return self.last_caret_start_index + len(Console.CARET)
+
+    @property
+    def last_caret_line_start_index(self):
+        return self.last_caret_start_index - len(Console.CARET)
+
     def reset_caret(self):
-        self.tbox.CaretIndex = self.tbox.Text.rfind(Console.CARET) + len(Console.CARET)
+        self.tbox.CaretIndex = self.last_caret_end_index
 
     def KeyPressPreview(self, sender, e):
         # This Happens before all other key handlers
         # If e.Handled = True, stops event propagation here.
         e.Handled = False
-        if self.tbox.CaretIndex < self.tbox.Text.rfind(Console.CARET):
+        if self.tbox.CaretIndex < self.last_caret_start_index:
             self.tbox.CaretIndex = len(self.tbox.Text)
         if e.Key == Key.Up:
             self.history_up()
@@ -212,7 +250,7 @@ class Console(Window):
             self.history_down()
             e.Handled = True
         if e.Key == Key.Left or e.Key == Key.Back:
-            if self.ui.tbox.CaretIndex == self.tbox.Text.rfind(Console.CARET) + len(Console.CARET):
+            if self.ui.tbox.CaretIndex == self.last_caret_end_index:
                 e.Handled = True
         if e.Key == Key.Home:
             self.reset_caret()
@@ -224,33 +262,23 @@ class Console(Window):
             self.is_loaded = True
             self.tbox.CaretIndex = len(self.tbox.Text)
 
-
     def autocomplete(self):
-        # TODO: Add recursive dir() attribute suggestions
-
-        last_line = self.get_last_line()
-        cursor_line_index = self.tbox.CaretIndex - self.tbox.Text.rfind(Console.CARET) - len(Console.CARET)
-        text = last_line[0:cursor_line_index]
-        possibilities = set(self.stack_locals.keys() +
-                            self.stack_globals.keys() +
-                            ['locals', 'globals', 'vars'] +
-                            self.get_all_history()[::-1][0:20] # Last 20 cmds
-                            )
-        suggestions = [p for p in possibilities if p.lower().startswith(text.lower())]
-
+        text = self.tbox.Text[self.last_caret_end_index:self.tbox.CaretIndex]
         logger.debug('Text: {}'.format(text))
-        logger.debug('Sug: {}'.format(suggestions))
 
-        if not suggestions:
-            return None
         # Create Dictionary to Track iteration over suggestion
         index = self.ac_options[text]
-        try:
-            suggestion = suggestions[index]
-        except IndexError:
+        suggestion = self.completer.complete(text, index)
+
+        logger.debug('ac_options: {}'.format(self.ac_options))
+        logger.debug('Sug: {}'.format(suggestion))
+
+        if not suggestion:
             self.ac_options[text] = 0
-            suggestion = suggestions[0]
-        self.ac_options[text] += 1
+        else:
+            self.ac_options[text] += 1
+            if suggestion.endswith('('):
+                suggestion = suggestion[:-1]
 
         if suggestion is not None:
             caret_index = self.tbox.CaretIndex
@@ -268,8 +296,7 @@ class Console(Window):
     def write_text(self, line):
         # Used by Autocomplete and History
         # Adds text to line, including Caret
-        last_new_line = self.tbox.Text.rfind(Console.CARET)
-        self.tbox.Text = self.tbox.Text[0:last_new_line]
+        self.tbox.Text = self.tbox.Text[0:self.last_caret_start_index]
         self.tbox.AppendText(Console.CARET)
         self.tbox.AppendText(line)
         self.ui.tbox.CaretIndex = len(self.ui.tbox.Text)
@@ -277,8 +304,8 @@ class Console(Window):
     def get_all_history(self):
         # TODO: Add clean up when history > X
         with open(self.history_file) as fp:
-            lines = [l for l in fp.read().split('\n') if l != '']
-            return lines
+            lines = fp.read().split('\n')
+            return [line for line in lines if line != '']
 
     def history_up(self):
         self.history_index += 1
@@ -301,7 +328,7 @@ class Console(Window):
         lines = self.get_all_history()
         logger.debug('Lines: {}'.format(lines))
         try:
-            line = lines[::-1][self.history_index -1]
+            line = lines[::-1][self.history_index - 1]
         # Wrap around lines to loop and up down infinetly.
         except IndexError:
             if len(lines) == 0:
@@ -323,4 +350,4 @@ if __name__ == '__main__':
         # Console()
         Console(context=locals())
     test()
-    z =2
+    z = 2

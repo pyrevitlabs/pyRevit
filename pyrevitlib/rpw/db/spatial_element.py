@@ -115,6 +115,7 @@ class Area(Room):
         return super(Element, self).__repr__(data={'name': self.name,
                                                    'area': self.area})
 
+
 class AreaScheme(Element):
     """
     `DB.AreaScheme` Wrapper
@@ -145,7 +146,7 @@ class AreaScheme(Element):
         bip = BipEnum.get_id('AREA_SCHEME_ID')
         param_filter = rpw.db.Collector.ParameterFilter(bip, equals=self._revit_object.Id)
         collector = rpw.db.Collector(parameter_filter=param_filter,
-                                  **Area._collector_params)
+                                     **Area._collector_params)
         return collector.wrapped_elements
 
     def __repr__(self):

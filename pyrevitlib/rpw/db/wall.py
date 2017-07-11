@@ -9,7 +9,10 @@ from rpw.db import Element
 from rpw.db import FamilyInstance, FamilySymbol, Family, Category
 from rpw.base import BaseObjectWrapper
 from rpw.utils.logger import logger
+from rpw.utils.coerce import to_element_id
 from rpw.db.builtins import BipEnum
+from rpw.exceptions import RpwTypeError, RpwCoerceError
+from rpw.utils.mixins import ByNameCollectMixin
 
 
 class Wall(FamilyInstance):
@@ -21,6 +24,17 @@ class Wall(FamilyInstance):
     _revit_object_category = DB.BuiltInCategory.OST_Walls
     _revit_object_class = DB.Wall
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
+
+    def change_type(self, wall_type_reference):
+        """
+        Change Wall Type
+
+        Args:
+            wall_type_reference (``ElementId``, ``WallType``, ``str``): Wall Type Reference
+        """
+        wall_type = WallType.by_name_or_element_ref(wall_type_reference)
+        wall_type_id = to_element_id(wall_type)
+        self._revit_object.ChangeTypeId(wall_type_id)
 
     @property
     def symbol(self):
@@ -41,7 +55,7 @@ class Wall(FamilyInstance):
         return self.wall_kind
 
 
-class WallType(FamilySymbol):
+class WallType(FamilySymbol, ByNameCollectMixin):
     """
     Inherits from :any:`FamilySymbol` and overrides:
         * :func:`wall_kind` to get the `Family` equivalent of Wall `(.Kind)`
@@ -50,7 +64,6 @@ class WallType(FamilySymbol):
 
     _revit_object_class = DB.WallType
     _collector_params = {'of_class': _revit_object_class, 'is_type': True}
-
 
     @property
     def family(self):

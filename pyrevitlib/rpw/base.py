@@ -50,8 +50,8 @@ class BaseObject(object):
             # return list(self.__dict__)
 
         # TODO: Clean up repr. remove wraps, add brackets to data
-        def __repr__(self, data={}):
-            data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
+        def __repr__(self, data=None):
+            data = data or ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
             return '<rpw:{class_name} | {data}>'.format(
                                         class_name=self.__class__.__name__,
                                         data=data)

@@ -26,6 +26,7 @@ def to_element_id(element_reference):
         raise RpwTypeError('Element, ElementId, or int', type(element_reference))
     return element_id
 
+
 def to_element_ids(element_references):
     """ Coerces an element or list of elements into element ids. Elements remain unchanged.
     This will always return a list, even if only one element is passed.
@@ -39,13 +40,15 @@ def to_element_ids(element_references):
     [ DB.ElementId, DB.ElementId ]
 
     Args:
-        elements (``DB.Element``): Iterable list (``list`` or ``set``) or single of ``Element``, ``int``.
+        elements (``DB.Element``): Iterable list (``list`` or ``set``)
+                                   or single of ``Element``, ``int``.
 
     Returns:
         [``DB.ElementId``, ... ]: List of Element Ids.
     """
     element_references = to_iterable(element_references)
     return [to_element_id(e_ref) for e_ref in element_references]
+
 
 def to_element(element_reference, doc=revit.doc):
     if isinstance(element_reference, DB.ElementId):
@@ -60,6 +63,7 @@ def to_element(element_reference, doc=revit.doc):
         raise RpwTypeError('Element, ElementId, or int', type(element_reference))
     return element
 
+
 def to_elements(element_references, doc=revit.doc):
     """ Coerces element reference (``int``, or ``ElementId``) into ``DB.Element``.
     Remains unchanged if it's already ``DB.Element``. Accepts single object or lists
@@ -73,7 +77,8 @@ def to_elements(element_references, doc=revit.doc):
     [ DB.Element, DB.Element ]
 
     Args:
-        element_references ([``DB.ElementId``, ``int``, ``DB.Element``]): Element Reference, single or list
+        element_references ([``DB.ElementId``, ``int``, ``DB.Element``]): Element Reference,
+                                                                          single or list
 
     Returns:
         [``DB.Element``]: Elements
@@ -116,7 +121,8 @@ def to_category(category_reference, fuzzy=True):
     BuiltInCategory.OST_Walls
 
     Args:
-        cateagory_reference ([``DB.BuiltInCategory``, ``str``, ``CategoryId``]): Category Reference or Name
+        cateagory_reference ([``DB.BuiltInCategory``, ``str``, ``CategoryId``]): Category Reference
+                                                                                 or Name
 
     Returns:
         [``BuiltInCategory``]: BuiltInCategory
@@ -131,7 +137,8 @@ def to_category(category_reference, fuzzy=True):
     if isinstance(category_reference, DB.ElementId):
         return BicEnum.from_category_id(category_reference)
     raise RpwTypeError('Category Type, Category Type Name',
-                        type(category_reference))
+                       type(category_reference))
+
 
 def to_category_id(category_reference, fuzzy=True):
     """ Coerces a category, category name or category id to a Category Id.
@@ -145,13 +152,15 @@ def to_category_id(category_reference, fuzzy=True):
     <ElementId>
 
     Args:
-        cateagory_reference ([``DB.BuiltInCategory``, ``str``, ``CategoryId``]): Category Reference or Name
+        cateagory_reference ([``DB.BuiltInCategory``, ``str``, ``CategoryId``]): Category Reference
+                                                                                 or Name
 
     Returns:
         [``DB.ElementId``]: ElementId of Category
     """
     category_enum = to_category(category_reference)
     return DB.ElementId(category_enum)
+
 
 def to_iterable(item_or_iterable):
     """
@@ -167,6 +176,7 @@ def to_iterable(item_or_iterable):
         return item_or_iterable
     else:
         return [item_or_iterable]
+
 
 def to_pascal_case(snake_str):
     """ Converts Snake Case to Pascal Case

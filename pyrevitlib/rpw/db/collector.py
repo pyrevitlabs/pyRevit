@@ -275,11 +275,10 @@ class FilterClasses():
         By default, function will test against wrapped elements for easier
         parameter access
 
-        >>> rpw.db.Collector(of_class='FamilyInstance', where=lambda x: 'Desk' in x.name)
-        >>> rpw.db.Collector(of_class='Wall', where=lambda x: 'Desk' in x.parameters['Length'] > 5.0)
+        >>> Collector(of_class='FamilyInstance', where=lambda x: 'Desk' in x.name)
+        >>> Collector(of_class='Wall', where=lambda x: 'Desk' in x.parameters['Length'] > 5.0)
         """
         keyword = 'where'
-
 
         @classmethod
         def apply(cls, doc, collector, func):
@@ -332,7 +331,8 @@ class Collector(BaseObjectWrapper):
     Attributes:
         collector.elements: Returns list of all `collected` elements
         collector.first: Returns first found element, or ``None``
-        collector.wrapped_elements: Returns list with all elements wrapped. Elements will be instantiated using :any:`Element`
+        collector.wrapped_elements: Returns list with all elements wrapped.
+                                    Elements will be instantiated using :any:`Element`
 
     Wrapped Element:
         self._revit_object = ``Revit.DB.FilteredElementCollector``
@@ -361,15 +361,20 @@ class Collector(BaseObjectWrapper):
         Filter Options:
             * ``is_type`` (``bool``): Same as ``WhereElementIsElementType``
             * ``is_not_type`` (``bool``): Same as ``WhereElementIsNotElementType``
-            * ``of_class`` (``Type``): Same as ``OfClass``. Type can be ``DB.SomeType`` or string: ``DB.Wall`` or ``'Wall'``
-            * ``of_category`` (``BuiltInCategory``): Same as ``OfCategory``. Can be ``DB.BuiltInCategory.OST_Wall`` or ``'Wall'``
+            * ``of_class`` (``Type``): Same as ``OfClass``. Type can be ``DB.SomeType`` or
+                                       string: ``DB.Wall`` or ``'Wall'``
+            * ``of_category`` (``BuiltInCategory``): Same as ``OfCategory``. Can be
+                                                     ``DB.BuiltInCategory.OST_Wall`` or ``'Wall'``
             * ``owner_view`` (``DB.ElementId, View`): ``WhereElementIsViewIndependent(True)``
             * ``is_view_independent`` (``bool``): ``WhereElementIsViewIndependent(True)``
             * ``family`` (``DB.ElementId``, ``DB.Element``)`: Element or ElementId of Family
             * ``symbol`` (``DB.ElementId``, ``DB.Element``)`: Element or ElementId of Symbol
-            * ``level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId of Level, or Level Name
-            * ``not_level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId of Level, or Level Name
-            * ``parameter_filter`` (:any:`ParameterFilter`): Similar to ``ElementParameterFilter`` Class
+            * ``level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId
+                                                                           of Level, or Level Name
+            * ``not_level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId of
+                                                                               Level, or Level Name
+            * ``parameter_filter`` (:any:`ParameterFilter`): Similar to
+                                                            ``ElementParameterFilter`` Class
             * ``where`` (`function`): function to test your elements against
 
         """
@@ -383,7 +388,7 @@ class Collector(BaseObjectWrapper):
         elif 'elements' in filters:
             elements = filters.pop('elements')
             element_ids = to_element_ids(elements)
-            collector = DB.FilteredElementCollector(collector_doc,List[DB.ElementId](element_ids))
+            collector = DB.FilteredElementCollector(collector_doc, List[DB.ElementId](element_ids))
         elif 'element_ids' in filters:
             element_ids = filters.pop('element_ids')
             collector = DB.FilteredElementCollector(collector_doc, List[DB.ElementId](element_ids))
@@ -477,7 +482,7 @@ class Collector(BaseObjectWrapper):
         try:
             return self._collector.GetElementCount()
         except AttributeError:
-            return len(self.elements) # Revit 2015
+            return len(self.elements)  # Revit 2015
 
     def __repr__(self):
         return super(Collector, self).__repr__(data={'count': len(self)})

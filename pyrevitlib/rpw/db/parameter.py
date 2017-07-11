@@ -150,11 +150,11 @@ class Parameter(BaseObjectWrapper):
 
         Parameter Wrapper handles the following types:
 
-        | Autodesk.Revit.DB.StorageType.String
-        | Autodesk.Revit.DB.StorageType.Double
-        | Autodesk.Revit.DB.StorageType.ElementId
-        | Autodesk.Revit.DB.StorageType.Integer
-        | Autodesk.Revit.DB.StorageType.None
+        * Autodesk.Revit.DB.StorageType.String
+        * Autodesk.Revit.DB.StorageType.Double
+        * Autodesk.Revit.DB.StorageType.ElementId
+        * Autodesk.Revit.DB.StorageType.Integer
+        * Autodesk.Revit.DB.StorageType.None
 
 
     """
@@ -227,7 +227,8 @@ class Parameter(BaseObjectWrapper):
 
             * Storage is ``str`` and value is ``None``; value is converted to ``blank_string``
             * Storage is ``str`` and value is ``any``; value is converted to ``string``
-            * Storage is ``ElementId`` and value is ``None``; value is converted to ``ElemendId.InvalidElementId``
+            * Storage is ``ElementId`` and value is ``None``; value is
+              converted to ``ElemendId.InvalidElementId``
             * Storage is ``int`` and value is ``float``; value is converted to ``int``
             * Storage is ``float`` and value is ``int``; value is converted to ``float``
 
@@ -246,7 +247,8 @@ class Parameter(BaseObjectWrapper):
     @value.setter
     def value(self, value):
         if self._revit_object.IsReadOnly:
-            raise RpwException('Parameter is Read Only: {}'.format(self._revit_object.Definition.Name))
+            definition_name = self._revit_object.Definition.Name
+            raise RpwException('Parameter is Read Only: {}'.format(definition_name))
 
         # Check if value provided matches storage type
         if not isinstance(value, self.type):
