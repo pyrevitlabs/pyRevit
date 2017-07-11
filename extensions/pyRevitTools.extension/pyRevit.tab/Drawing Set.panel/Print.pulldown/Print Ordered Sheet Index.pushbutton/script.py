@@ -122,7 +122,8 @@ class PrintSheetsWindow(WPFWindow):
         return self._order_sheets_by_schedule_data(schedule_view, sheets)
 
     def _is_sheet_index(self, schedule_view):
-        return self.sheet_cat_id == schedule_view.Definition.CategoryId
+        return self.sheet_cat_id == schedule_view.Definition.CategoryId \
+               and not schedule_view.IsTemplate
 
     def _get_sheet_index_list(self):
         cl_schedules = FilteredElementCollector(doc)
