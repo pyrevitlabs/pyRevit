@@ -5,7 +5,7 @@
         <DockPanel Margin="10">
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
-                    Select Linked Model:
+                    Select Linked Model (Only Loaded Models are listed):
                 </TextBlock>
                 <ListView x:Name="linkedmodels_lb" SelectionMode="Single" SelectionChanged="linked_model_selected">
                     <ListView.View>

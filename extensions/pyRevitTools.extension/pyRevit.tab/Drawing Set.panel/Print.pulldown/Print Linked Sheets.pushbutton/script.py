@@ -22,7 +22,9 @@ class PrintLinkedSheets(WPFWindow):
 
     def _find_linked_models(self):
         cl = FilteredElementCollector(doc)
-        self.linked_models = cl.OfClass(clr.GetClrType(RevitLinkType)).ToElements()
+        all_linked_models = cl.OfClass(clr.GetClrType(RevitLinkType)).ToElements()
+        self.linked_models = [lm for lm in all_linked_models
+                                 if RevitLinkType.IsLoaded(doc, lm.Id)] 
         self.linkedmodels_lb.ItemsSource = self.linked_models
         self.linkedmodels_lb.SelectedIndex = 0
 
@@ -42,7 +44,9 @@ class PrintLinkedSheets(WPFWindow):
 
     def _get_printer(self):
         open_doc = self._get_linked_model_doc()
-        self.print_l.Text = 'Select Sheets to be Printed (To: {})'.format(open_doc.PrintManager.PrinterName)
+        if open_doc:
+            self.print_l.Text = 'Select Sheets to be Printed (To: {})' \
+                                .format(open_doc.PrintManager.PrinterName)
 
     def _print_sheets(self, combined=False):
         open_doc = self._get_linked_model_doc()
