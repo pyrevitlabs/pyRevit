@@ -14,6 +14,8 @@ pyrevit.plugins.extpackages to check whether an extension is active or not.
 """
 
 from pyrevit import EXEC_PARAMS
+from pyrevit import MAIN_LIB_DIR, PYTHON_LIB_DIR, \
+                    MISC_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
@@ -43,9 +45,12 @@ from pyrevit.plugins.extpackages import is_ext_package_enabled
 logger = get_logger(__name__)
 
 
-def _update_extension_syspaths(ui_ext, lib_ext_list):
+def _update_extension_syspaths(ui_ext, lib_ext_list, pyrvt_paths):
     for lib_ext in lib_ext_list:
         ui_ext.add_syspath(lib_ext.directory)
+
+    for pyrvt_path in pyrvt_paths:
+        ui_ext.add_syspath(pyrvt_path)
 
 
 def _is_extension_enabled(ext_info):
@@ -193,10 +198,19 @@ def get_installed_ui_extensions():
                 logger.info('Skipping disabled ui extension: {}'
                             .format(ext_info.name))
 
-    # update extension master syspaths with lib address of other lib extensions
-    # this is to support extensions that provide library only to be
-    # used by other extensions
+    # update extension master syspaths with standard pyrevit lib paths and
+    # lib address of other lib extensions (to support extensions that provide
+    # library only to be used by other extensions)
+    # all other lib paths internal to the extension and tool bundles have
+    # already been set inside the extension bundles and will take precedence
+    # over paths added by this method (they're the first paths added to the
+    # search paths list, and these paths will follow)
     for ui_extension in ui_ext_list:
-        _update_extension_syspaths(ui_extension, lib_ext_list)
+        _update_extension_syspaths(ui_extension,
+                                   lib_ext_list,
+                                   [PYTHON_LIB_DIR,
+                                    PYTHON_LIB_SITEPKGS_DIR,
+                                    MAIN_LIB_DIR,
+                                    MISC_LIB_DIR])
 
     return ui_ext_list
