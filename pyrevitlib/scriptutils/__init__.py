@@ -24,6 +24,10 @@ scriptutils_logger = get_logger(__name__)
 scriptutils_logger.debug('Executing script: {} @ {}'
                          .format(COMMAND_NAME, COMMAND_PATH))
 
+scriptutils_logger.debug('Module Search Paths (sys.path):')
+for search_path in sys.path:
+    scriptutils_logger.debug(search_path)
+
 
 class PyRevitScriptUtils:
     def __init__(self):
