@@ -229,6 +229,7 @@ class Extension(GenericUIContainer):
 
         return None
 
+
 # library extension class
 # ------------------------------------------------------------------------------
 class LibraryExtension(GenericComponent):

@@ -8,8 +8,8 @@ __context__ = 'zerodoc'
 
 
 folder = os.path.dirname(__file__)
-print('Home directory of this script:\n{0}\n'.format(folder))
+print('Home directory of this script:\n{0}'.format(folder))
 
-print('Printing sys.path directories:')
+print('\n\nPrinting sys.path directories:')
 for p in sys.path:
     print(p)
