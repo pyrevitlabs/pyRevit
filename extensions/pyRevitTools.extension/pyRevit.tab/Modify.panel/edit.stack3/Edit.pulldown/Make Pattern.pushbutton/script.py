@@ -168,9 +168,18 @@ class MakePatternWindow(WPFWindow):
         # self.Close()
         TaskDialog.Show('pyRevit', 'Work in progress...')
 
+# filter line types - only detail lines allowed
+def filter_detail_lines(element):
+    detail_line_types = [DetailLine, DetailEllipse, DetailArc, DetailNurbSpline]
+    if type(element) in detail_line_types and element.OwnerViewId is not None:
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
-    if len(selection.elements) > 0:
-        MakePatternWindow('MakePatternWindow.xaml', selection.elements).ShowDialog()
+    # filter line types before making pattern
+    selected_elements = filter(filter_detail_lines, selection.elements)
+    if len(selected_elements) > 0:
+        MakePatternWindow('MakePatternWindow.xaml', selected_elements).ShowDialog()
     else:
         TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
