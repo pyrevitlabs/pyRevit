@@ -1,13 +1,15 @@
-from scriptutils import logger
+from scriptutils import logger, this_script
 from scriptutils.userinput import CommandSwitchWindow
 from revitutils import doc, selection
 
 from collections import namedtuple
+from customcollections import DefaultOrderedDict
 
+out = this_script.output
 ParamDef = namedtuple('ParamDef', ['name', 'type'])
 
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import CurveElement, ElementId, \
+from Autodesk.Revit.DB import Element, CurveElement, ElementId, \
                               StorageType, ParameterType
 
 __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
@@ -100,10 +102,10 @@ def output_param_total(element_list, param_def):
 
 def process_options(element_list):
     # find all relevant parameters
-    shared_params = set()
-    shared_type_params = set()
+    param_sets = []
 
     for el in element_list:
+        shared_params = set()
         # find element parameters
         for param in el.ParametersMap:
             if is_calculable_param(param):
@@ -117,16 +119,34 @@ def process_options(element_list):
             for type_param in el_type.ParametersMap:
                 if is_calculable_param(type_param):
                     pdef = type_param.Definition
-                    shared_type_params.add(ParamDef(pdef.Name,
-                                                    pdef.ParameterType))
+                    shared_params.add(ParamDef(pdef.Name,
+                                               pdef.ParameterType))
+
+        param_sets.append(shared_params)
 
     # make a list of options from discovered parameters
-    all_params = shared_params.union(shared_type_params)
-    return {'{} <{}>'.format(x.name, x.type):x for x in all_params}
+    all_shared_params = param_sets[0]
+    for param_set in param_sets[1:]:
+        all_shared_params = all_shared_params.intersection(param_set)
+
+    return {'{} <{}>'.format(x.name, x.type):x for x in all_shared_params}
 
 
 def process_sets(element_list):
-    pass
+    el_sets = DefaultOrderedDict(list)
+
+    # add all elements as first set, for totals of all elements
+    el_sets['All Selected Elements'].extend(element_list)
+
+    # separate elements into sets based on their type
+    for el in element_list:
+        if hasattr(el ,'LineStyle'):
+            el_sets[el.LineStyle.Name].append(el)
+        else:
+            tname = Element.Name.GetValue(doc.GetElement(el.GetTypeId()))
+            el_sets[tname].append(el)
+
+    return el_sets
 
 # main -------------------------------------------------------------------------
 # ask user to select an option
@@ -135,49 +155,12 @@ selected_switch = \
     CommandSwitchWindow(sorted(options),
                         'Sum values of parameter:').pick_cmd_switch()
 
+# Calculating totals for each set and printing results
 if selected_switch:
-    output_param_total(selection.elements, options[selected_switch])
-
-    # for type_name, element_set in process_sets(selection.elements):
-    #     output_param_total(element_set, options[selected_switch])
-
-
-
-
-# def calc_total_length():
-#     lines = []
-#     total = 0.0
-#
-#     print("PROCESSING TOTAL OF {0} OBJECTS:\n\n".format(len(selection)))
-#
-#     for i, el in enumerate(selection):
-#         if isinstance(el, CurveElement):
-#             lines.append(el)
-#         total += el.LookupParameter('Length').AsDouble()
-#     print('TOTAL LENGTH OF ALL SELECTED LINES IS: '
-#           '{0} feet / {1} meters'.format(total, _feet_to_meter(total)))
-#
-#     # group lines per line style
-#     linestyles = {}
-#     for l in lines:
-#         if l.LineStyle.Name in linestyles:
-#             linestyles[l.LineStyle.Name].append(l)
-#         else:
-#             linestyles[l.LineStyle.Name] = [l]
-#
-#     for k in sorted(linestyles.keys()):
-#         linestyletotal = 0.0
-#         for l in linestyles[k]:
-#             linestyletotal += l.LookupParameter('Length').AsDouble()
-#         print("LINES OF STYLE: {0}\nTOTAL LENGTH : {1}\n\n\n".format(k, linestyletotal))
-#
-#
-# def output_area(total):
-#     print("TOTAL AREA OF ALL SELECTED ELEMENTS IS:\n"
-#           "{0} SQFT\n"
-#           "{1} ACRE\n"
-#           "{2} SQM".format(total,
-#                            total / 43560,
-#                            total / 10.7639104))
-#
-#
+    selected_option = options[selected_switch]
+    if selected_option:
+        for type_name, element_set in process_sets(selection.elements).items():
+            type_name = type_name.replace('<', '&lt;').replace('>', '&gt;')
+            out.print_md('### Totals for: {}'.format(type_name))
+            output_param_total(element_set, selected_option)
+            out.insert_divider()
