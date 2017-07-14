@@ -11,6 +11,7 @@ extensions/*
 lib/*
 !lib/README.md
 !lib/enum
+!lib/customcollections
 
 # ignore pyCharm workspace settings
 .idea/workspace.xml
