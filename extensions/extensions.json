@@ -16,6 +16,19 @@
         },
         {
         "builtin": "True",
+        "enable": "False",
+        "type": "extension",
+        "name": "pyRevitTutor",
+        "description": "Python for Revit Tutorials form pyRevit Youtube Channel",
+        "author": "Ehsan Iran-Nejad",
+        "author-url": "https://keybase.io/ein",
+        "url": "https://github.com/eirannejad/pyRevit.git",
+        "website": "http://eirannejad.github.io/pyRevit/",
+        "image" : "",
+        "dependencies": []
+        },
+        {
+        "builtin": "True",
         "enable": "True",
         "type": "extension",
         "name": "pyRevitTools",

@@ -3,7 +3,7 @@ extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
 !extensions/pyRevitTools.extension/
-!extensions/Rhino3dmIO.lib/
+!extensions/pyRevitTutor.extension/
 !extensions/extensions.json
 !extensions/README.md
 
