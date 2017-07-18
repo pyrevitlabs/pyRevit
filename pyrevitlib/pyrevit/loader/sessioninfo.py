@@ -15,7 +15,7 @@ from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 logger = get_logger(__name__)
 
 
-SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuid'
+SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuidISC'
 
 LOADEDASSM_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_loadedassms'
 LOADEDASSM_COUNT_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_assmcount'
