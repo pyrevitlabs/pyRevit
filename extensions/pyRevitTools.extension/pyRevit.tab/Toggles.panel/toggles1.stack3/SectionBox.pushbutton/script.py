@@ -1,21 +1,30 @@
 """Toggles visibility of section box in current 3D view"""
 
-from rpw import DB, activeview, Transaction, Collector, SectionBox
+from revitutils import doc, uidoc
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, \
+                              ElementId, Transaction, TemporaryViewMode
 from System.Collections.Generic import List
 
 
-section_boxes = Collector(of_category=SectionBox,
-                          is_type=False)
+t = Transaction(doc, 'Toggle Section Box')
+t.Start()
 
-# worksets = DB.FilteredWorksetCollector(doc).OfKind(DB.WorksetKind.ViewWorkset)
-sec_box = None
-for sb in section_boxes:
-    if sb.WorksetId == activeview.WorksetId:
-        sec_box = sb
+# activate the show hidden so we can collect all elements (visible and hidden)
+activeview = uidoc.ActiveView
+activeview.EnableRevealHiddenMode()
+view_elements = FilteredElementCollector(doc, uidoc.ActiveView.Id) \
+                .OfCategory(BuiltInCategory.OST_SectionBox).ToElements()
 
-if sec_box:
-    with Transaction('Toggle Section Box'):
+# find section boxes, and try toggling their visibility
+# usually more than one section box shows up on the list but not
+# all of them can be toggled. Whichever that can be toggled,
+# belongs to this view
+for sec_box in [x for x in view_elements
+                  if x.CanBeHidden(uidoc.ActiveView)]:
         if sec_box.IsHidden(activeview):
-            activeview.UnhideElements(List[DB.ElementId]([sec_box.unwrap().Id]))
+            activeview.UnhideElements(List[ElementId]([sec_box.Id]))
         else:
-            activeview.HideElements(List[DB.ElementId]([sec_box.unwrap().Id]))
+            activeview.HideElements(List[ElementId]([sec_box.Id]))
+
+activeview.DisableTemporaryViewMode(TemporaryViewMode.RevealHiddenElements)
+t.Commit()
