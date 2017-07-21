@@ -28,6 +28,9 @@ from System.IO import StringReader
 # noinspection PyUnresolvedReferences
 import wpf
 
+# noinspection PyUnresolvedReferences
+from Autodesk.Revit.UI import TaskDialog
+
 
 logger = get_logger(__name__)
 
@@ -74,7 +77,7 @@ class TemplatePromptBar(WPFWindow):
             <TextBlock x:Name="message_tb"
                        TextWrapping="Wrap" Text="TextBlock" TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
-        </Grid>    
+        </Grid>
     </Window>
     """
 
@@ -101,3 +104,7 @@ class TemplatePromptBar(WPFWindow):
 
 class WarningBar(TemplatePromptBar):
     pass
+
+
+def alert(msg, title='pyRevit'):
+    TaskDialog.Show(title, msg)
