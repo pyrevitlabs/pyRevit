@@ -19,6 +19,9 @@ class PyRevitConfigSectionParser(object):
     def __iter__(self):
         return self._parser.options(self._section_name)
 
+    def __str__(self):
+        return self._section_name
+
     def __repr__(self):
         return '<PyRevitConfigSectionParser object '    \
                'at 0x{0:016x} '                         \
@@ -57,6 +60,9 @@ class PyRevitConfigSectionParser(object):
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))
 
+    def has_option(self, option_name):
+        return self._parser.has_option(self._section_name, option_name)
+
     def get_option(self, op_name, default_value=None):
         try:
             return self.__getattr__(op_name)
@@ -79,6 +85,9 @@ class PyRevitConfigParser(object):
                 raise PyRevitIOError()
             except Exception as read_err:
                 raise PyRevitException(read_err)
+
+    def __iter__(self):
+        return [self.get_section(x) for x in self._parser.sections()]
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
