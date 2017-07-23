@@ -21,6 +21,7 @@ namespace PyRevitBaseClasses
         public string _cmdName;
         public string _cmdBundle;
         public string _cmdExtension;
+        public string _cmdUniqueName;
         public bool _forcedDebugMode = false;
         public bool _altScriptMode = false;
 
@@ -29,7 +30,8 @@ namespace PyRevitBaseClasses
                               string syspaths,
                               string cmdName,
                               string cmdBundle,
-                              string cmdExtension)
+                              string cmdExtension,
+                              string cmdUniqueName)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
@@ -37,6 +39,7 @@ namespace PyRevitBaseClasses
             _cmdName = cmdName;
             _cmdBundle = cmdBundle;
             _cmdExtension = cmdExtension;
+            _cmdUniqueName = cmdUniqueName;
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -78,14 +81,14 @@ namespace PyRevitBaseClasses
             // create result Dictionary
             var resultDict = new Dictionary<String, String>();
             // Execute script
-            var resultCode = executor.ExecuteScript(_script, _syspaths, _cmdName,
-                                                _forcedDebugMode, _altScriptMode,
-                                                ref resultDict);
+            var resultCode = executor.ExecuteScript(_script, _syspaths, _cmdName, _cmdUniqueName,
+                                                    _forcedDebugMode, _altScriptMode,
+                                                    ref resultDict);
 
             // log usage if usage logging in enabled
             if(envdict.usageLogState) {
                 var logger = new ScriptUsageLogger(ref envdict, commandData,
-                                                   _cmdName, _cmdBundle, _cmdExtension, _script,
+                                                   _cmdName, _cmdBundle, _cmdExtension, _cmdUniqueName, _script,
                                                    _forcedDebugMode, _altScriptMode, resultCode,
                                                    ref resultDict);
                 new Task(logger.LogUsage).Start();

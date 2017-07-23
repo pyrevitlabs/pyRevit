@@ -11,6 +11,7 @@ namespace PyRevitBaseClasses
         public static string progressbar = "<div style=\"position:fixed;bottom:0px;width:100%;height:8px;font-size:1pt;border:0px;background:#EEE;\"></div>";
         public static string progressbargraphstyle = "font-size:1pt;width:{0}%;height:8px;background:#b5d54b;border:0px;";
         public static string progressbargraphid = "graph";
+        public static string pyrevitconsolesappdata = "pyRevitConsoles";
     }
 
     public static class ExecutionErrorCodes

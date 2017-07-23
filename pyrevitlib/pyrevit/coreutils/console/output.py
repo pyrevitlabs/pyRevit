@@ -28,6 +28,7 @@ class PyRevitConsoleWindow:
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
         self.__winhandle__.UrlHandler = self._handle_protocol_url
+        self.cmd_uniq_name = self.__winhandle__.commandUniqueName
 
     @staticmethod
     def _handle_protocol_url(url):
@@ -112,6 +113,18 @@ class PyRevitConsoleWindow:
 
     def close(self):
         self.__winhandle__.Close()
+
+    def close_others(self, all_open_outputs=False):
+        from pyrevit.coreutils.console.outputmgr import get_all_consoles
+
+        if all_open_outputs:
+            output_wnds = get_all_consoles()
+        else:
+            output_wnds = get_all_consoles(command=self.cmd_uniq_name)
+
+        for output_wnd in output_wnds:
+            if output_wnd != self.__winhandle__:
+                output_wnd.Close()
 
     def hide(self):
         self.__winhandle__.Hide()
