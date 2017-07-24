@@ -111,6 +111,10 @@ class LoggerWrapper(logging.Logger):
     def set_level(self, level):
         self.handlers[0].setLevel(level)
 
+    def set_quiet_mode(self):
+        self._reset_logger_env_vars(verbose=False, debug=False)
+        self.handlers[0].setLevel(logging.CRITICAL)
+
     def set_verbose_mode(self):
         self._reset_logger_env_vars(verbose=True, debug=False)
         self.handlers[0].setLevel(logging.INFO)
