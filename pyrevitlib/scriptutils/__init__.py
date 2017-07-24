@@ -130,9 +130,11 @@ class PyRevitScriptUtils:
         """
         from pyrevit.coreutils.appdata import get_data_file
         if not doc:
-            from rpw import doc
-        project_name = doc.ProjectInformation.Name
-        script_file_id = '{}_{}_{}'.format(COMMAND_NAME, file_id, project_name)
+            from revitutils import project
+
+        script_file_id = '{}_{}_{}'.format(COMMAND_NAME,
+                                           file_id,
+                                           project.filename or project.name)
         return get_data_file(script_file_id, file_ext)
 
     @property
