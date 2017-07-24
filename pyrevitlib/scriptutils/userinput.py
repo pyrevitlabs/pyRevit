@@ -1,5 +1,7 @@
 import clr
 
+from pyrevit.coreutils import dletter_to_unc
+
 from scriptutils.forms import WPFWindow
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
@@ -320,10 +322,18 @@ def pick_folder():
         return fb_dlg.SelectedPath
 
 
-def pick_file(file_ext='', multi_file=False):
+def pick_file(file_ext='', files_filter='', init_dir='',
+              restore_dir=True, multi_file=False, unc_paths=False,):
     of_dlg = OpenFileDialog()
-    of_dlg.Filter = '|*.{}'.format(file_ext)
-    of_dlg.RestoreDirectory = True
+    if files_filter:
+        of_dlg.Filter = files_filter
+    else:
+        of_dlg.Filter = '|*.{}'.format(file_ext)
+    of_dlg.RestoreDirectory = restore_dir
     of_dlg.Multiselect = multi_file
+    if init_dir:
+        of_dlg.InitialDirectory = init_dir
     if of_dlg.ShowDialog() == DialogResult.OK:
+        if unc_paths:
+            return dletter_to_unc(of_dlg.FileName)
         return of_dlg.FileName
