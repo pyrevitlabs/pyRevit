@@ -1,3 +1,4 @@
+import os.path as op
 from pyrevit import HOST_APP
 
 
@@ -10,6 +11,7 @@ class CurrentProject:
             self.name = self._info.Name
 
         self.location = self._doc.PathName
+        self.filename = op.splitext(op.basename(self._doc.PathName))[0]
 
 
 doc = HOST_APP.uiapp.ActiveUIDocument.Document
