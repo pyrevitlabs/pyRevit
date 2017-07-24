@@ -10,6 +10,7 @@ from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
 from pyrevit.userconfig import user_config
 
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
+from pyrevit.loader.systemdiag import system_diag
 
 
 logger = get_logger(__name__)
@@ -80,21 +81,6 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()
                                 + len(loaded_assm_name_list))
-
-
-def system_diag():
-    """Verifies system status is appropriate for a pyRevit session.
-    """
-
-    # checking available drive space
-    import ctypes
-    free_bytes = ctypes.c_ulonglong(0)
-    ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p("."), None,
-                                               None, ctypes.pointer(free_bytes))
-
-    free_hd_space = float(free_bytes.value) / (1024 ** 3)
-    if free_hd_space < 10.0:
-        logger.warning('Remaining space on local drive is less than 10GB...')
 
 
 def report_env():

@@ -102,6 +102,10 @@ class _HostApplication:
         return Process.GetCurrentProcess().ProcessName
 
     @property
+    def proc_path(self):
+        return Process.GetCurrentProcess().MainModule.FileName
+
+    @property
     def proc_screen(self):
         clr.AddReferenceByPartialName('System.Windows.Forms')
         # noinspection PyUnresolvedReferences

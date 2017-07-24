@@ -135,6 +135,29 @@
                             <CheckBox x:Name="revit2018_cb" Margin="10,5,0,10" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
                         </StackPanel>
                     </GroupBox>
+                    <GroupBox Header="Runtime Checks:" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the required host build number.
+                                                                                           pyRevit will show a warning if it's being run
+                                                                                           on a host with different build number. Set to 0
+                                                                                           to disable.</TextBlock>
+                            <DockPanel Margin="10,10,10,10">
+                                <TextBlock x:Name="requiredhostbuild_t" DockPanel.Dock="Left" Margin="0,2,0,0">
+                                    Required Build Number (build):
+                                </TextBlock>
+                                <Button DockPanel.Dock="Right" Content="Set to Current Host Build Number" Width="200" Margin="10,0,0,0"
+                                        Click="reset_requiredhostbuild" ToolTip="Set the required build number to current host build number"/>
+                                <TextBox x:Name="requiredhostbuild_tb" Margin="10,0,0,0" Height="25"/>
+                            </DockPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the minimum free space on host drive.
+                                                                                           pyRevit will show a warning if free space is less
+                                                                                           than minimum value. Set to 0 to disable.</TextBlock>
+                            <DockPanel Margin="10,10,10,10">
+                                <TextBlock DockPanel.Dock="Left" Margin="0,2,0,0">Minimum Free Space on Host Drive (in GigaByte):</TextBlock>
+                                <TextBox x:Name="minhostdrivefreespace_tb" Margin="10,0,0,0" Height="25"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <GroupBox Header="Development:" Margin="0,10,0,0">
                         <StackPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>

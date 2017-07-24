@@ -76,6 +76,15 @@ class SettingsWindow(WPFWindow):
         else:
             self.asciicache_rb.IsChecked = True
 
+        req_build = user_config.core.get_option('requiredhostbuild',
+                                                default_value=0)
+        self.requiredhostbuild_tb.Text = str(req_build)
+
+        min_freespace = user_config.core.get_option('minhostdrivefreespace',
+                                                    default_value=0)
+        self.minhostdrivefreespace_tb.Text = str(min_freespace)
+
+
         self.loadbetatools_cb.IsChecked = \
             user_config.core.get_option('loadbeta', default_value=False)
 
@@ -172,6 +181,13 @@ class SettingsWindow(WPFWindow):
         self.noreporting_rb.IsChecked = False
         self.debug_rb.IsChecked = False
         self.filelogging_cb.IsChecked = False
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def reset_requiredhostbuild(self, sender, args):
+        """Callback method for resetting requried host version to current
+        """
+        self.requiredhostbuild_tb.Text = HOST_APP.build
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -275,6 +291,15 @@ class SettingsWindow(WPFWindow):
         user_config.core.bincache = self.bincache_rb.IsChecked
         user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.core.compilevb = self.compilevb_cb.IsChecked
+        user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
+
+        try:
+            min_freespace = int(self.minhostdrivefreespace_tb.Text)
+            user_config.core.minhostdrivefreespace = min_freespace
+        except ValueError:
+            logger.error('Minimum free space value must be an integer.')
+            user_config.core.minhostdrivefreespace = 0
+
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
         user_config.core.startuplogtimeout = self.startup_log_timeout.Text
 
