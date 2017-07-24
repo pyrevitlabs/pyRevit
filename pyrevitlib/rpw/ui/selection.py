@@ -14,7 +14,7 @@ from rpw.db.reference import Reference
 from rpw.db.xyz import XYZ
 from rpw.db.element import Element
 
-if revit.host:
+if revit.host and revit.doc:
     ObjectType = UI.Selection.ObjectType
     ObjectSnapTypes = UI.Selection.ObjectSnapTypes
     PickObjects = revit.uidoc.Selection.PickObjects

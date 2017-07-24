@@ -26,23 +26,39 @@ class XYZ(BaseObjectWrapper):
 
     _revit_object_class = DB.XYZ
 
-    def __init__(self, *xyz_or_tuple):
+    def __init__(self, *point_reference):
         """
+        XYZ Supports a wide variety of instantiation overloads:
+
+        >>> XYZ(0,0)
+        >>> XYZ(0,0,0)
+        >>> XYZ([0,0])
+        >>> XYZ([0,0,0])
+        >>> XYZ(DB.XYZ(0,0,0))
+
         Args:
-            instance (``DB.XYZ``): Instance of XYZ to be wrapped
+            point_reference (``DB.XYZ``,``iterable``, ``args``): Point like data
         """
-        if len(xyz_or_tuple) == 3:
-            xyz = DB.XYZ(*xyz_or_tuple)
-        elif len(xyz_or_tuple) == 2:
-            xyz = DB.XYZ(xyz_or_tuple[0], xyz_or_tuple[1], 0)
-        elif len(xyz_or_tuple) == 1 and isinstance(xyz_or_tuple[0], (tuple, list)):
+        # XYZ(0,0,0)
+        if len(point_reference) == 3:
+            xyz = DB.XYZ(*point_reference)
+        # XYZ(0,0)
+        elif len(point_reference) == 2:
+            xyz = DB.XYZ(point_reference[0], point_reference[1], 0)
+        # XYZ([0,0,0]) or # XYZ([0,0])
+        elif len(point_reference) == 1 and isinstance(point_reference[0], (tuple, list)):
             # Assumes one arg, tuple
-            xyz = DB.XYZ(*xyz_or_tuple[0])
-        elif isinstance(xyz_or_tuple, (list, tuple)):
+            xyz = XYZ(*point_reference[0])
+            xyz = DB.XYZ(*xyz.as_tuple)
+        # XYZ(DB.XYZ(0,0,0))
+        elif len(point_reference) == 1 and isinstance(point_reference[0], DB.XYZ):
             # Assumes one arg, DB.XYZ
-            xyz = xyz_or_tuple[0]
+            xyz = point_reference[0]
+        elif len(point_reference) == 1 and isinstance(point_reference[0], XYZ):
+            # Assumes one arg, DB.XYZ
+            xyz = point_reference[0].unwrap()
         else:
-            raise RpwCoerceError(xyz_or_tuple, 'point-like object')
+            raise RpwCoerceError(point_reference, 'point-like object')
         super(XYZ, self).__init__(xyz)
 
     @property
@@ -105,8 +121,21 @@ class XYZ(BaseObjectWrapper):
         """
         return {'x': self.x, 'y': self.y, 'z': self.z}
 
+    def __mul__(self, value):
+        """ Multiplication Method """
+        return XYZ(self.unwrap() * value)
+
+    def __add__(self, point):
+        """ Addition Method """
+        return XYZ(self.unwrap() + XYZ(point).unwrap())
+
+    def __sub__(self, point):
+        """ Subtraction Method """
+        return XYZ(self.unwrap() - XYZ(point).unwrap())
+
     def __eq__(self, other):
-        return self.as_dict == other.as_dict
+        """ Equality Method """
+        return self._revit_object.IsAlmostEqualTo(XYZ(other).unwrap())
 
     def __repr__(self):
         return super(XYZ, self).__repr__(data=self.as_dict,
