@@ -587,3 +587,16 @@ def reformat_string(orig_str, orig_format, new_format):
 
     # use dictionary to reformat the string into new
     return new_format.format(**reformat_dict)
+
+
+def dletter_to_unc(dletter_path):
+    clr.AddReference('System.Management')
+    from System.Management import ManagementObjectSearcher
+    searcher = ManagementObjectSearcher("root\\CIMV2",
+                                        "SELECT * FROM Win32_MappedLogicalDisk")
+
+    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    dletter = dletter_path[:2]
+    for mapped_drive, server_path in drives.items():
+        if dletter.lower() == mapped_drive.lower():
+            return dletter_path.replace(dletter, server_path)
