@@ -5,7 +5,8 @@ from pyrevit import HOST_APP
 from pyrevit.coreutils import filter_null_items, open_folder_in_explorer
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state,\
-                                            set_addinfiles_state
+                                            set_addinfiles_state, \
+                                            is_pyrevit_for_allusers
 from pyrevit.userconfig import user_config
 from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile,\
                              get_current_usage_serverurl, \
@@ -141,7 +142,14 @@ class SettingsWindow(WPFWindow):
         and updates the ui.
         """
 
-        addinfiles_states = get_addinfiles_state()
+        self.is_pyrevit_allusers = is_pyrevit_for_allusers()
+        if self.is_pyrevit_allusers:
+            addinfiles_states = get_addinfiles_state(allusers=True)
+            self.revitversions_tb.Text = \
+                str(self.revitversions_tb.Text).replace('%appdata%',
+                                                        '%programdata%')
+        else:
+            addinfiles_states = get_addinfiles_state()
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
             if rvt_ver in addinfiles_states.keys():
@@ -170,7 +178,7 @@ class SettingsWindow(WPFWindow):
         new_states = {rvt_ver: checkbox.IsChecked
                       for rvt_ver, checkbox in self._addinfiles_cboxes.items()}
         new_states.pop(HOST_APP.version)
-        set_addinfiles_state(new_states)
+        set_addinfiles_state(new_states, allusers=self.is_pyrevit_allusers)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic

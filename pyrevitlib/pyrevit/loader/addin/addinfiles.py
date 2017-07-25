@@ -1,7 +1,7 @@
 import os
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME
+from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import LOADER_ADDON_NAMESPACE
 from pyrevit.loader.basetypes import ADDIN_DIR
@@ -29,31 +29,47 @@ addinfile_contents = \
     '</RevitAddIns>\n'
 
 
-def _find_revit_addin_directory():
-    return op.join(os.getenv('appdata'), "Autodesk", "Revit", "Addins")
+def _find_revit_addin_directory(program_data=False):
+    if not program_data:
+        addins_dir = op.join(os.getenv('appdata'),
+                             "Autodesk", "Revit", "Addins")
+    else:
+        addins_dir = op.join(os.getenv('programdata'),
+                             "Autodesk", "Revit", "Addins")
+    if op.isdir(addins_dir):
+        return addins_dir
+    else:
+        return None
 
 
-def _get_installed_revit_addin_folders():
-    revit_addin_dir = _find_revit_addin_directory()
-    return {x: op.join(revit_addin_dir, x) for x in os.listdir(revit_addin_dir)}
+def _get_installed_revit_addin_dirs(program_data=False):
+    revit_addin_dir = _find_revit_addin_directory(program_data)
+    if revit_addin_dir:
+        return {x: op.join(revit_addin_dir, x)
+                for x in os.listdir(revit_addin_dir)}
+    else:
+        return {}
 
 
 def _addin_def_exists(revit_addin_dir):
     for fname in os.listdir(revit_addin_dir):
         if fname.lower().endswith('addin'):
             fullfname = op.join(revit_addin_dir, fname)
-            with open(fullfname, 'r') as f:
-                for line in f.readlines():
-                    if (LOADER_ADDON_NAMESPACE + '.dll').lower() \
-                            in line.lower():
-                        logger.debug('Addin file exists for pyRevit: {}'
-                                     .format(fullfname))
-                        return fullfname
+            try:
+                with open(fullfname, 'r') as f:
+                    for line in f.readlines():
+                        if (LOADER_ADDON_NAMESPACE + '.dll').lower() \
+                                in line.lower():
+                            logger.debug('Addin file exists for pyRevit: {}'
+                                         .format(fullfname))
+                            return fullfname
+            except:
+                continue
     return False
 
 
-def _set_addin_state_for(revit_version, addin_state):
-    installed_revits_dict = _get_installed_revit_addin_folders()
+def _set_addin_state_for(revit_version, addin_state, program_data=False):
+    installed_revits_dict = _get_installed_revit_addin_dirs(program_data)
     if revit_version in installed_revits_dict:
         revit_addin_dir = installed_revits_dict[revit_version]
         existing_addin_file = _addin_def_exists(revit_addin_dir)
@@ -75,9 +91,9 @@ def _set_addin_state_for(revit_version, addin_state):
                                               addinclassname=ADDIN_CLASSNAME))
 
 
-def get_addinfiles_state():
+def get_addinfiles_state(allusers=False):
     addinfiles_state_dict = {}
-    installed_revits_dict = _get_installed_revit_addin_folders()
+    installed_revits_dict = _get_installed_revit_addin_dirs(allusers)
     for revit_version, revit_addin_dir in installed_revits_dict.items():
         addinfiles_state_dict[revit_version] = \
             _addin_def_exists(revit_addin_dir)
@@ -85,6 +101,40 @@ def get_addinfiles_state():
     return addinfiles_state_dict
 
 
-def set_addinfiles_state(states_dict):
+def set_addinfiles_state(states_dict, allusers=False):
     for revit_version, addin_state in states_dict.items():
-        _set_addin_state_for(revit_version, addin_state)
+        _set_addin_state_for(revit_version, addin_state, allusers)
+
+
+def get_revit_addin_dir(revit_version, allusers=False):
+    revit_addin_dir = _find_revit_addin_directory(allusers)
+    if revit_addin_dir:
+        return op.join(revit_addin_dir, revit_version)
+    else:
+        return None
+
+
+def get_current_pyrevit_addin():
+    pdata_addin_dir = get_revit_addin_dir(HOST_APP.version, allusers=True)
+    if pdata_addin_dir:
+        pyrvt_pdata_addin = op.join(pdata_addin_dir, ADDIN_DEF_FILENAME)
+        if op.isfile(pyrvt_pdata_addin):
+            return pyrvt_pdata_addin
+
+    appdata_addin_dir = get_revit_addin_dir(HOST_APP.version, allusers=False)
+    if appdata_addin_dir:
+        pyrvt_appdata_addin = op.join(appdata_addin_dir, ADDIN_DEF_FILENAME)
+        if op.isfile(pyrvt_appdata_addin):
+            return pyrvt_appdata_addin
+
+    return None
+
+
+def is_pyrevit_for_allusers():
+    pdata_addin_dir = get_revit_addin_dir(HOST_APP.version, allusers=True)
+    if pdata_addin_dir:
+        pyrvt_pdata_addin = op.join(pdata_addin_dir, ADDIN_DEF_FILENAME)
+        if op.isfile(pyrvt_pdata_addin):
+            return True
+
+    return False
