@@ -600,3 +600,15 @@ def dletter_to_unc(dletter_path):
     for mapped_drive, server_path in drives.items():
         if dletter.lower() == mapped_drive.lower():
             return dletter_path.replace(dletter, server_path)
+
+
+def unc_to_dletter(unc_path):
+    clr.AddReference('System.Management')
+    from System.Management import ManagementObjectSearcher
+    searcher = ManagementObjectSearcher("root\\CIMV2",
+                                        "SELECT * FROM Win32_MappedLogicalDisk")
+
+    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    for mapped_drive, server_path in drives.items():
+        if server_path in unc_path:
+            return unc_path.replace(server_path, mapped_drive)
