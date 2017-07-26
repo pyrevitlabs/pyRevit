@@ -197,7 +197,8 @@ emoji_file_dict = {
     'clock_face_two_oclock': '1F551',
     'clockwise_downwards_and_upwards_open_circle_arrows': '1F503',
     'clockwise_rightwards_and_leftwards_open_circle_arrows': '1F501',
-    'clockwise_rightwards_and_leftwards_open_circle_arrows_with_circled_one_overlay': '1F502',
+    'clockwise_rightwards_and_leftwards_open_circle_arrows'
+    '_with_circled_one_overlay': '1F502',
     'closed_book': '1F4D5',
     'closed_lock_with_key': '1F510',
     'closed_mailbox_with_lowered_flag': '1F4EA',
