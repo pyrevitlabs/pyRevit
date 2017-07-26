@@ -114,7 +114,6 @@ class ExtensionPackage:
             logger.debug('Missing extended plugin ext info. | {}'
                          .format(ext_info_err))
 
-
     def __repr__(self):
         return '<ExtensionPackage object. name \'{}\' url \'{}\'>'\
             .format(self.name, self.url)
@@ -354,7 +353,7 @@ def get_ext_packages(authorized_only=True):
                 ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_deffile)
                 if authorized_only:
                     auth_pkgs = [x for x in ext_def_file.defined_ext_packages
-                                   if x.user_has_access]
+                                 if x.user_has_access]
                 else:
                     auth_pkgs = ext_def_file.defined_ext_packages
 
