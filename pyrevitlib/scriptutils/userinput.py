@@ -11,7 +11,8 @@ import System
 # noinspection PyUnresolvedReferences
 from System.Windows.Controls import SelectionMode
 # noinspection PyUnresolvedReferences
-from System.Windows.Forms import FolderBrowserDialog, DialogResult, OpenFileDialog
+from System.Windows.Forms import FolderBrowserDialog, DialogResult, \
+                                 OpenFileDialog, SaveFileDialog
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -337,3 +338,19 @@ def pick_file(file_ext='', files_filter='', init_dir='',
         if unc_paths:
             return dletter_to_unc(of_dlg.FileName)
         return of_dlg.FileName
+
+
+def save_file(file_ext='', files_filter='', init_dir='',
+              restore_dir=True, unc_paths=False,):
+    sf_dlg = SaveFileDialog()
+    if files_filter:
+        sf_dlg.Filter = files_filter
+    else:
+        sf_dlg.Filter = '|*.{}'.format(file_ext)
+    sf_dlg.RestoreDirectory = restore_dir
+    if init_dir:
+        sf_dlg.InitialDirectory = init_dir
+    if sf_dlg.ShowDialog() == DialogResult.OK:
+        if unc_paths:
+            return dletter_to_unc(sf_dlg.FileName)
+        return sf_dlg.FileName
