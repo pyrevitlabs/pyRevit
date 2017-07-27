@@ -9,7 +9,7 @@ __context__ = 'zerodoc'
 __doc__ = 'Renames PDF sheets printed from Revit and removes the Central ' \
           'model name from the PDF names. The tool will ask for a folder ' \
           'containing the file.\n\n' \
-          'SHIFT-Click:\nRename files on Desktop'
+          'Shift-Click:\nRename files on Desktop'
 
 
 # if user shift-clicks, default to user desktop,
