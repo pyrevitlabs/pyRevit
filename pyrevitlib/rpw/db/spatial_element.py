@@ -54,6 +54,10 @@ class Room(Element):
     def number(self, value):
         self.parameters.builtins['ROOM_NUMBER'].value = value
 
+    # @property
+    # def from_room(self, value):
+        # TODO: from_room 
+
     @property
     def is_placed(self):
         """ ``bool`` for whether Room is Placed.

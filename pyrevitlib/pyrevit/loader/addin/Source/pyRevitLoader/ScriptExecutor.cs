@@ -97,7 +97,17 @@ namespace PyRevitLoader
 
         private ScriptEngine CreateEngine()
         {
-            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() { { "Frames", true }, { "FullFrames", true } });
+            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() {
+                { "Frames", true },
+                { "FullFrames", true },
+                { "LightweightScopes", true}
+            });
+
+            // Tried reusing an engine but does not work
+            // No way to get a clean engine
+            // Also it seems reassigning the outstreams does not work either
+            // AppDomain.CurrentDomain.SetData("pyRevitIpyEngine", engine);
+
             return engine;
         }
 

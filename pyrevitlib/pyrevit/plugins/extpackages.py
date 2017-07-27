@@ -3,7 +3,7 @@ import os.path as op
 import json
 from collections import defaultdict
 
-from pyrevit import PyRevitException
+from pyrevit import PyRevitException, HOST_APP
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import git, fully_remove_tree
 from pyrevit.userconfig import user_config
@@ -82,10 +82,7 @@ class ExtensionPackage:
                 self.type = ExtensionTypes.LIB_EXTENSION
 
             self.builtin = info_dict['builtin'].lower() == 'true'
-            if self.builtin:
-                self._enable_default = info_dict['enable'].lower() == 'true'
-            else:
-                self._enable_default = True
+            self.enable_default = info_dict['enable'].lower() == 'true'
 
             self.name = info_dict['name']
             self.description = info_dict['description']
@@ -95,6 +92,12 @@ class ExtensionPackage:
         except KeyError as ext_info_err:
             raise PyRevitException('Required plugin ext info not available. '
                                    '| {}'.format(ext_info_err))
+
+        # Setup access
+        if 'authusers' in info_dict:
+            self.authusers = info_dict['authusers']
+        else:
+            self.authusers = None
 
         # Setting extended attributes
         try:
@@ -189,11 +192,32 @@ class ExtensionPackage:
             return user_config.get_section(self.ext_dirname)
         except:
             cfg_section = user_config.add_section(self.ext_dirname)
-            self.config.disabled = not self._enable_default
+            self.config.disabled = not self.enable_default
             self.config.private_repo = self.builtin
             self.config.username = self.config.password = ''
             user_config.save_changes()
             return cfg_section
+
+    @property
+    def is_enabled(self):
+        """Checks the default and user configured load state of the extension.
+
+        Returns:
+            bool: True if package should be loaded
+        """
+        return not self.config.disabled
+
+    @property
+    def user_has_access(self):
+        """Checks whether current user has access to this extension.
+
+        Returns:
+            bool: True is current user has access
+        """
+        if self.authusers:
+            return HOST_APP.username in self.authusers
+        else:
+            return True
 
     def remove_pkg_config(self):
         """
@@ -210,6 +234,15 @@ class ExtensionPackage:
         """
 
         self.config.disabled = True
+        user_config.save_changes()
+
+    def toggle_package(self):
+        """
+        Disables/Enables package in pyRevit configuration so it won't be loaded
+        in the next session.
+        """
+
+        self.config.disabled = not self.config.disabled
         user_config.save_changes()
 
 
@@ -300,7 +333,7 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
                 _remove_ext_pkg(dep_pkg, remove_dependencies=True)
 
 
-def get_ext_packages():
+def get_ext_packages(authorized_only=True):
     """
     Reads the list of registered plug-in extensions and returns a list of
     ExtensionPackage classes which contain information on the plug-in extension.
@@ -318,20 +351,26 @@ def get_ext_packages():
             ext_pkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
             if op.exists(ext_pkg_deffile):
                 ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_deffile)
-                EXTENSION_PACKAGES.extend(ext_def_file.defined_ext_packages)
+                if authorized_only:
+                    auth_pkgs = [x for x in ext_def_file.defined_ext_packages
+                                 if x.user_has_access]
+                else:
+                    auth_pkgs = ext_def_file.defined_ext_packages
+
+                EXTENSION_PACKAGES.extend(auth_pkgs)
 
         return EXTENSION_PACKAGES
 
 
 def get_ext_package_by_name(ext_pkg_name):
-    for ext_pkg in get_ext_packages():
+    for ext_pkg in get_ext_packages(authorized_only=False):
         if ext_pkg.name == ext_pkg_name:
             return ext_pkg
     return None
 
 
 def get_dependency_graph():
-    return DependencyGraph(get_ext_packages())
+    return DependencyGraph(get_ext_packages(authorized_only=False))
 
 
 def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
@@ -340,7 +379,7 @@ def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
 
     Args:
         ext_pkg_name (str): Extension package name
-        ext_pkg_type_postfix (str): Postfix of extension type 
+        ext_pkg_type_postfix (str): Postfix of extension type
                                     (.lib or .extension)
 
     Returns:
@@ -349,7 +388,7 @@ def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
     try:
         ext_pkg = get_ext_package_by_name(ext_pkg_name)
         if ext_pkg:
-            return not ext_pkg.config.disabled
+            return ext_pkg.is_enabled and ext_pkg.user_has_access
         else:
             logger.debug('Extension package is not defined: {}.{}'
                          .format(ext_pkg_name, ext_pkg_type_postfix))

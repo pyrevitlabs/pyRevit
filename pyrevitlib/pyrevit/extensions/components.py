@@ -16,6 +16,7 @@ from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX,\
     STACKTHREE_BUTTON_POSTFIX
 from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE,\
     DEFAULT_OFF_ICON_FILE
+from pyrevit.extensions import EXTENSION_HASH_CACHE_FILENAME
 from pyrevit.extensions import ExtensionTypes
 from pyrevit.extensions import CSHARP_SCRIPT_FILE_FORMAT
 from pyrevit.extensions.genericcomps import GenericComponent,\
@@ -189,11 +190,42 @@ class Extension(GenericUIContainer):
     def __init_from_dir__(self, package_dir):
         GenericUIContainer.__init_from_dir__(self, package_dir)
         self.pyrvt_version = PYREVIT_VERSION.get_formatted()
-        self.dir_hash_value = self._calculate_extension_dir_hash()
+
+        self.dir_hash_value = self._read_dir_hash()
+        if not self.dir_hash_value:
+            self.dir_hash_value = self._calculate_extension_dir_hash()
+
+    @property
+    def hash_cache(self):
+        hash_file = op.join(self.directory, EXTENSION_HASH_CACHE_FILENAME)
+        if op.isfile(hash_file):
+            return hash_file
+        else:
+            return ''
 
     @property
     def ext_hash_value(self):
         return get_str_hash(unicode(self.get_cache_data()))
+
+    # def _write_dir_hash(self, hash_value):
+    #     if os.access(self.hash_cache, os.W_OK):
+    #         try:
+    #             with open(self.hash_cache, 'w') as hash_file:
+    #                 hash_file.writeline(hash_value)
+    #                 return True
+    #         except Exception:
+    #             return False
+    #     return False
+
+    def _read_dir_hash(self):
+        if self.hash_cache:
+            try:
+                with open(self.hash_cache, 'r') as hash_file:
+                    return hash_file.readline().rstrip()
+            except Exception:
+                return ''
+        else:
+            return ''
 
     def _calculate_extension_dir_hash(self):
         """Creates a unique hash # to represent state of directory."""
@@ -212,7 +244,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + SMART_BUTTON_POSTFIX + ')'
         pat += '|(\\' + TOGGLE_BUTTON_POSTFIX + ')'
         pat += '|(\\' + LINK_BUTTON_POSTFIX + ')'
-        # seach for scripts, setting files (future support), and layout files
+        # search for scripts, setting files (future support), and layout files
         patfile = '(\\' + PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + CSHARP_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'

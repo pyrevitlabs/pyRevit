@@ -19,10 +19,13 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-CHARTS_JS_PATH = op.join(MAIN_LIB_DIR, 'pyrevit', 'coreutils', 'console', 'charts', CHARTS_ENGINE)
+CHARTS_JS_PATH = op.join(MAIN_LIB_DIR,
+                         'pyrevit', 'coreutils', 'console', 'charts',
+                         CHARTS_ENGINE)
 
 
-SCRIPT_TEMPLATE = "var ctx = document.getElementById('{}').getContext('2d');var chart = new Chart(ctx, {});"
+SCRIPT_TEMPLATE = "var ctx = document.getElementById('{}').getContext('2d');" \
+                  "var chart = new Chart(ctx, {});"
 
 
 class ChartsDataSetEncode(JSONEncoder):
@@ -48,7 +51,10 @@ class PyRevitOutputChartDataset:
 
     def set_color(self, *args):
         if len(args) == 4:
-            self.backgroundColor = 'rgba({},{},{},{})'.format(args[0], args[1], args[2], args[3])
+            self.backgroundColor = 'rgba({},{},{},{})'.format(args[0],
+                                                              args[1],
+                                                              args[2],
+                                                              args[3])
         elif len(args) == 1:
             self.backgroundColor = '{}'.format(args[0])
 
@@ -84,7 +90,8 @@ class PyRevitOutputChart:
         #
         # # title options
         # # position:
-        # # Position of the title. Possible values are 'top', 'left', 'bottom' and 'right'.
+        # # Position of the title. Possible values are 'top',
+        # # 'left', 'bottom' and 'right'.
         # chart.options.title = {'display': False,
         #                        'position': 'top',
         #                        'fullWidth': True,
@@ -113,7 +120,8 @@ class PyRevitOutputChart:
         #
         # # tooltips options
         # # intersect:
-        # # if true, the tooltip mode applies only when the mouse position intersects with an element.
+        # # if true, the tooltip mode applies only when the mouse
+        # # position intersects with an element.
         # # If false, the mode will be applied at all times
         # chart.options.tooltips = {'enabled': True,
         #                           'intersect': True,
@@ -143,12 +151,14 @@ class PyRevitOutputChart:
         return '<canvas {}></canvas>'.format(attribs)
 
     def _make_charts_script(self, canvas_id):
-        return SCRIPT_TEMPLATE.format(canvas_id, ChartsDataSetEncode().encode(self))
+        return SCRIPT_TEMPLATE.format(canvas_id,
+                                      ChartsDataSetEncode().encode(self))
 
     def randomize_colors(self):
         if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
             for dataset in self.data.datasets:
-                dataset.backgroundColor = [random_rgba_color() for _ in range(0, len(dataset.data))]
+                dataset.backgroundColor = [random_rgba_color()
+                                           for _ in range(0, len(dataset.data))]
         else:
             for dataset in self.data.datasets:
                 dataset.backgroundColor = random_rgba_color()

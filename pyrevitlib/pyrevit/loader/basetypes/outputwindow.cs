@@ -9,9 +9,9 @@ namespace PyRevitBaseClasses
     {
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
+        public string commandUniqueName;
 
-        public ScriptOutput()
-        {
+        public ScriptOutput() {
             Application.EnableVisualStyles();
             InitializeComponent();
             txtStdOut.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
@@ -28,6 +28,33 @@ namespace PyRevitBaseClasses
 
         private void ScriptOutput_Load(object sender, EventArgs e) {}
 
+        public void AppendToOutputList(object sender, EventArgs e)
+        {
+            var outputList = (List<ScriptOutput>) AppDomain.CurrentDomain.GetData(ExternalConfig.pyrevitconsolesappdata);
+            if (outputList == null) {
+                var newOutputList = new List<ScriptOutput>();
+                newOutputList.Add(this);
+
+                AppDomain.CurrentDomain.SetData(ExternalConfig.pyrevitconsolesappdata, newOutputList);
+            }
+            else
+            {
+                outputList.Add(this);
+            }
+        }
+
+        public void RemoveFromOutputList(object sender, FormClosingEventArgs e)
+        {
+            var outputList = (List<ScriptOutput>) AppDomain.CurrentDomain.GetData(ExternalConfig.pyrevitconsolesappdata);
+            if (outputList == null) {
+                return;
+            }
+            else
+            {
+                outputList.Remove(this);
+            }
+        }
+
         public void WaitReadyBrowser() {
             // while(txtStdOut.ReadyState != WebBrowserReadyState.Complete)
             // {
@@ -35,27 +62,23 @@ namespace PyRevitBaseClasses
             // }
         }
 
-        public void LockSize()
-        {
+        public void LockSize() {
             this.MaximizeBox = false;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
         }
 
-        public void ScrollToBottom()
-        {
+        public void ScrollToBottom() {
             if (txtStdOut.Document != null)
             {
                 txtStdOut.Document.Window.ScrollTo(0, txtStdOut.Document.Body.ScrollRectangle.Height);
             }
         }
 
-        public void FocusOutput()
-        {
+        public void FocusOutput() {
             txtStdOut.Focus();
         }
 
-        public void AppendText(String OutputText, String HtmlElementType)
-        {
+        public void AppendText(String OutputText, String HtmlElementType) {
             WaitReadyBrowser();
             var div = txtStdOut.Document.CreateElement(HtmlElementType);
             div.InnerHtml = OutputText;
@@ -63,8 +86,7 @@ namespace PyRevitBaseClasses
             ScrollToBottom();
         }
 
-        private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e)
-        {
+        private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e) {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
                 var commandStr = e.Url.ToString();
@@ -79,8 +101,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void ShowProgressBar()
-        {
+        public void ShowProgressBar() {
             WaitReadyBrowser();
             if (txtStdOut.Document != null)
             {
@@ -93,8 +114,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void UpdateProgressBar(float curValue, float maxValue)
-        {
+        public void UpdateProgressBar(float curValue, float maxValue) {
             WaitReadyBrowser();
             if (txtStdOut.Document != null)
             {
@@ -108,8 +128,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void SelfDestructTimer(int miliseconds)
-        {
+        public void SelfDestructTimer(int miliseconds) {
             // Create a 30 min timer
             var timer = new System.Timers.Timer(miliseconds);
             // Hook up the Elapsed event for the timer.
@@ -117,8 +136,7 @@ namespace PyRevitBaseClasses
             timer.Enabled = true;
         }
 
-        private static void SelfDestructTimerEvent(object source, System.Timers.ElapsedEventArgs e, ScriptOutput output_window)
-        {
+        private static void SelfDestructTimerEvent(object source, System.Timers.ElapsedEventArgs e, ScriptOutput output_window) {
             output_window.Close();
         }
     }

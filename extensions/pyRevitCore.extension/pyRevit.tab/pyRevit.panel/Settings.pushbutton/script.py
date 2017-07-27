@@ -5,7 +5,8 @@ from pyrevit import HOST_APP
 from pyrevit.coreutils import filter_null_items, open_folder_in_explorer
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state,\
-                                            set_addinfiles_state
+                                            set_addinfiles_state, \
+                                            is_pyrevit_for_allusers
 from pyrevit.userconfig import user_config
 from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile,\
                              get_current_usage_serverurl, \
@@ -76,6 +77,15 @@ class SettingsWindow(WPFWindow):
         else:
             self.asciicache_rb.IsChecked = True
 
+        req_build = user_config.core.get_option('requiredhostbuild',
+                                                default_value=0)
+        self.requiredhostbuild_tb.Text = str(req_build)
+
+        min_freespace = user_config.core.get_option('minhostdrivefreespace',
+                                                    default_value=0)
+        self.minhostdrivefreespace_tb.Text = str(min_freespace)
+
+
         self.loadbetatools_cb.IsChecked = \
             user_config.core.get_option('loadbeta', default_value=False)
 
@@ -132,7 +142,14 @@ class SettingsWindow(WPFWindow):
         and updates the ui.
         """
 
-        addinfiles_states = get_addinfiles_state()
+        self.is_pyrevit_allusers = is_pyrevit_for_allusers()
+        if self.is_pyrevit_allusers:
+            addinfiles_states = get_addinfiles_state(allusers=True)
+            self.revitversions_tb.Text = \
+                str(self.revitversions_tb.Text).replace('%appdata%',
+                                                        '%programdata%')
+        else:
+            addinfiles_states = get_addinfiles_state()
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
             if rvt_ver in addinfiles_states.keys():
@@ -161,7 +178,7 @@ class SettingsWindow(WPFWindow):
         new_states = {rvt_ver: checkbox.IsChecked
                       for rvt_ver, checkbox in self._addinfiles_cboxes.items()}
         new_states.pop(HOST_APP.version)
-        set_addinfiles_state(new_states)
+        set_addinfiles_state(new_states, allusers=self.is_pyrevit_allusers)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -172,6 +189,13 @@ class SettingsWindow(WPFWindow):
         self.noreporting_rb.IsChecked = False
         self.debug_rb.IsChecked = False
         self.filelogging_cb.IsChecked = False
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def reset_requiredhostbuild(self, sender, args):
+        """Callback method for resetting requried host version to current
+        """
+        self.requiredhostbuild_tb.Text = HOST_APP.build
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -275,6 +299,15 @@ class SettingsWindow(WPFWindow):
         user_config.core.bincache = self.bincache_rb.IsChecked
         user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.core.compilevb = self.compilevb_cb.IsChecked
+        user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
+
+        try:
+            min_freespace = int(self.minhostdrivefreespace_tb.Text)
+            user_config.core.minhostdrivefreespace = min_freespace
+        except ValueError:
+            logger.error('Minimum free space value must be an integer.')
+            user_config.core.minhostdrivefreespace = 0
+
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
         user_config.core.startuplogtimeout = self.startup_log_timeout.Text
 

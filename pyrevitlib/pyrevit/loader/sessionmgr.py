@@ -203,6 +203,7 @@ def execute_script(script_path):
     executor.ExecuteScript(script_path,
                            sys_paths,
                            script_name,
+                           script_name,
                            False, False,
                            results_dict)
 

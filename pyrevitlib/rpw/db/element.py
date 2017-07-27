@@ -78,7 +78,7 @@ class Element(BaseObjectWrapper):
         # Must also check is element because isinstance(Element, Element) is False
         if not isinstance(element, _revit_object_class):
             # or cls is not Element:
-            raise RpwTypeError(_revit_object_class, type(element))
+            raise RpwTypeError('DB.Element child', element.__class__.__name__)
 
         # rpw.ui.forms.Console()
         for wrapper_class in defined_wrapper_classes:

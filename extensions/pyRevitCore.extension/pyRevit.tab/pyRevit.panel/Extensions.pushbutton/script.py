@@ -1,7 +1,6 @@
 """Add or remove pyRevit extensions."""
 
 from pyrevit.coreutils import open_folder_in_explorer
-from pyrevit.loader.sessionmgr import load_session
 from pyrevit.plugins import extpackages
 from pyrevit.userconfig import user_config
 
@@ -307,7 +306,7 @@ class ExtensionsWindow(WPFWindow):
         try:
             extpackages.install(self.selected_pkg.ext_pkg, sender.install_path)
             self.Close()
-            load_session()
+            call_reload()
         except Exception as pkg_install_err:
             logger.error('Error installing package.'
                          ' | {}'.format(pkg_install_err))
@@ -319,11 +318,9 @@ class ExtensionsWindow(WPFWindow):
         """Enables/Disables the selected exension, then reloads pyRevit
         """
 
-        self.selected_pkg.ext_pkg.config.disabled = \
-            not self.selected_pkg.ext_pkg.config.disabled
-        user_config.save_changes()
+        self.selected_pkg.ext_pkg.toggle_package()
         self.Close()
-        load_session()
+        call_reload()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -334,7 +331,7 @@ class ExtensionsWindow(WPFWindow):
         try:
             extpackages.remove(self.selected_pkg.ext_pkg)
             self.Close()
-            load_session()
+            call_reload()
         except Exception as pkg_remove_err:
             logger.error('Error removing package. | {}'.format(pkg_remove_err))
 
@@ -349,6 +346,12 @@ def open_ext_dir_in_explorer(ext_dirs_list):
 
     for ext_dir in ext_dirs_list:
         open_folder_in_explorer(ext_dir)
+
+
+PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
+def call_reload():
+    from pyrevit.loader.sessionmgr import execute_command
+    execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # handles tool click in Revit interface:

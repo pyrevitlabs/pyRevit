@@ -1,3 +1,5 @@
+using System.Windows.Forms;
+
 namespace PyRevitBaseClasses
 {
     partial class ScriptOutput
@@ -57,7 +59,11 @@ namespace PyRevitBaseClasses
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "pyRevit";
-            this.Load += new System.EventHandler(this.ScriptOutput_Load);
+
+            // this.Load += new System.EventHandler(this.ScriptOutput_Load);
+            this.Shown += new System.EventHandler(this.AppendToOutputList);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.RemoveFromOutputList);
+
             this.ResumeLayout(false);
 
         }
