@@ -200,15 +200,31 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="baseclasses.cs" />
-    <Compile Include="EnvDictionary.cs" />
-    <Compile Include="executor.cs" />
-    <Compile Include="outputstream.cs" />
-    <Compile Include="outputwindow.cs" />
-    <Compile Include="outputwindowdesigner.cs" />
+    <Compile Include="..\..\baseclasses.cs">
+      <Link>baseclasses.cs</Link>
+    </Compile>
+    <Compile Include="..\..\EnvDictionary.cs">
+      <Link>EnvDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\executor.cs">
+      <Link>executor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\outputstream.cs">
+      <Link>outputstream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\outputwindow.cs">
+      <Link>outputwindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\outputwindowdesigner.cs">
+      <Link>outputwindowdesigner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\usagelogger.cs">
+      <Link>usagelogger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\_config.cs">
+      <Link>_config.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="usagelogger.cs" />
-    <Compile Include="_config.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
