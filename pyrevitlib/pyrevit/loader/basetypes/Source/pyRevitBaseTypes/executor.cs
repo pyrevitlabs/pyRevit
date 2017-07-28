@@ -44,7 +44,7 @@ namespace PyRevitBaseClasses
             try
             {
                 // cleanup engines for douments that are no longer loaded
-                CleanupOrphanedEngines();
+                //CleanupOrphanedEngines();
 
                 // Setup engine (returns either an existing or a new engine)
                 var engine = CreateEngine();
@@ -175,9 +175,9 @@ namespace PyRevitBaseClasses
 
             var openDocuments = _revit.Application.Documents;
             var openDocumentsList = new List<int>();
+            openDocumentsList.Add(0);
             foreach (Document doc in openDocuments) {
-                int documentId = GetDocumentId(doc);
-                openDocumentsList.Add(documentId);
+                openDocumentsList.Add(GetDocumentId(doc));
             }
 
             var existingEngineDict = GetEngineDict();
@@ -185,7 +185,6 @@ namespace PyRevitBaseClasses
                 foreach (int docId in existingEngineDict.Keys) {
                     if (!openDocumentsList.Contains(docId)) {
                         ScriptEngine docEng = existingEngineDict[docId];
-                        docEng.Runtime.Shutdown();
                         existingEngineDict.Remove(docId);
                     }
                 }
