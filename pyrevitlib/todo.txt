@@ -1,3 +1,10 @@
 <Category>:
 ☐ <Not completed>
 ✔ <Completed> @done
+
+
+Single Engine ----------------------------------------------------------------------------------------------------------
+☐ Fix PyRevitException reporting when compile error occurs
+☐ Fix loading of smartbuttons
+☐ Fix Module level variables
+☐
