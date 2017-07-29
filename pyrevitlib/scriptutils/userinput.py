@@ -20,7 +20,8 @@ class TemplateUserInputWindow(WPFWindow):
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+            WindowStartupLocation="CenterScreen"
+            HorizontalContentAlignment="Center">
     </Window>
     """
 
@@ -50,7 +51,8 @@ class SelectFromList(TemplateUserInputWindow):
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+            WindowStartupLocation="CenterScreen"
+            HorizontalContentAlignment="Center">
             <Window.Resources>
                 <Style x:Key="ClearButton" TargetType="Button">
                     <Setter Property="Background" Value="White"/>
@@ -58,15 +60,23 @@ class SelectFromList(TemplateUserInputWindow):
             </Window.Resources>
             <DockPanel Margin="10">
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                    <TextBlock FontSize="14" Margin="0,3,10,0" DockPanel.Dock="Left">Filter:</TextBlock>
+                    <TextBlock FontSize="14" Margin="0,3,10,0"
+                               DockPanel.Dock="Left">
+                               Filter:
+                    </TextBlock>
                     <StackPanel>
-                        <TextBox x:Name="search_tb" Height="25px" TextChanged="search_txt_changed"/>
-                        <Button Style="{StaticResource ClearButton}" HorizontalAlignment="Right"
-                                x:Name="clrsearch_b" Content="x" Margin="0,-25,5,0" Padding="0,-4,0,0"
-                                Click="clear_search" Width="15px" Height="15px"/>
+                        <TextBox x:Name="search_tb" Height="25px"
+                                 TextChanged="search_txt_changed"/>
+                        <Button Style="{StaticResource ClearButton}"
+                                HorizontalAlignment="Right"
+                                x:Name="clrsearch_b" Content="x"
+                                Margin="0,-25,5,0" Padding="0,-4,0,0"
+                                Click="clear_search"
+                                Width="15px" Height="15px"/>
                     </StackPanel>
                 </DockPanel>
-                <Button Content="Select" Click="button_select" DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
+                <Button Content="Select" Click="button_select"
+                        DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
                 <ListView x:Name="list_lb" />
             </DockPanel>
     </Window>
@@ -93,7 +103,8 @@ class SelectFromList(TemplateUserInputWindow):
             self.list_lb.ItemsSource = [str(option) for option in self._context]
 
     def _get_options(self):
-        return [option for option in self._context if str(option) in self.list_lb.SelectedItems]
+        return [option for option in self._context
+                if str(option) in self.list_lb.SelectedItems]
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -124,7 +135,8 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+            WindowStartupLocation="CenterScreen"
+            HorizontalContentAlignment="Center">
             <Window.Resources>
                 <Style x:Key="ClearButton" TargetType="Button">
                     <Setter Property="Background" Value="White"/>
@@ -132,12 +144,17 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
             </Window.Resources>
             <DockPanel Margin="10">
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                    <TextBlock FontSize="14" Margin="0,3,10,0" DockPanel.Dock="Left">Filter:</TextBlock>
+                    <TextBlock FontSize="14" Margin="0,3,10,0" \
+                               DockPanel.Dock="Left">Filter:</TextBlock>
                     <StackPanel>
-                        <TextBox x:Name="search_tb" Height="25px" TextChanged="search_txt_changed"/>
-                        <Button Style="{StaticResource ClearButton}" HorizontalAlignment="Right"
-                                x:Name="clrsearch_b" Content="x" Margin="0,-25,5,0" Padding="0,-4,0,0"
-                                Click="clear_search" Width="15px" Height="15px"/>
+                        <TextBox x:Name="search_tb" Height="25px"
+                                 TextChanged="search_txt_changed"/>
+                        <Button Style="{StaticResource ClearButton}"
+                                HorizontalAlignment="Right"
+                                x:Name="clrsearch_b" Content="x"
+                                Margin="0,-25,5,0" Padding="0,-4,0,0"
+                                Click="clear_search"
+                                Width="15px" Height="15px"/>
                     </StackPanel>
                 </DockPanel>
                 <StackPanel DockPanel.Dock="Bottom">
@@ -150,20 +167,28 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="checkall_b" Grid.Column="0" Grid.Row="0"
-                                Content="Check" Click="check_all" Margin="0,10,3,0"/>
-                        <Button x:Name="uncheckall_b" Grid.Column="1" Grid.Row="0"
-                                Content="Uncheck" Click="uncheck_all" Margin="3,10,3,0"/>
-                        <Button x:Name="toggleall_b" Grid.Column="2" Grid.Row="0"
-                                Content="Toggle" Click="toggle_all" Margin="3,10,0,0"/>
+                        <Button x:Name="checkall_b"
+                                Grid.Column="0" Grid.Row="0"
+                                Content="Check" Click="check_all"
+                                Margin="0,10,3,0"/>
+                        <Button x:Name="uncheckall_b"
+                                Grid.Column="1" Grid.Row="0"
+                                Content="Uncheck" Click="uncheck_all"
+                                Margin="3,10,3,0"/>
+                        <Button x:Name="toggleall_b"
+                                Grid.Column="2" Grid.Row="0"
+                                Content="Toggle" Click="toggle_all"
+                                Margin="3,10,0,0"/>
                     </Grid>
-                    <Button x:Name="select_b" Content="" Click="button_select" Margin="0,10,0,0"/>
+                    <Button x:Name="select_b" Content=""
+                            Click="button_select" Margin="0,10,0,0"/>
                 </StackPanel>
                 <ListView x:Name="list_lb">
                     <ListView.ItemTemplate>
                          <DataTemplate>
                            <StackPanel>
-                             <CheckBox Content="{Binding name}" IsChecked="{Binding state}"/>
+                             <CheckBox Content="{Binding name}"
+                                       IsChecked="{Binding state}"/>
                            </StackPanel>
                          </DataTemplate>
                    </ListView.ItemTemplate>
@@ -179,10 +204,6 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
         if 'button_name' in kwargs:
             self.select_b.Content = kwargs['button_name']
-        # if 'button_color' in kwargs:
-        #     color_tuple = kwargs['button_color']
-        #     color_brush = SolidColorBrush(Color.FromRgb(color_tuple[0], color_tuple[1], color_tuple[2]));
-        #     self.select_b.Background = color_brush
 
         self._list_options()
 
@@ -192,8 +213,9 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
             self.uncheckall_b.Content = 'Uncheck'
             self.toggleall_b.Content = 'Toggle'
             checkbox_filter = checkbox_filter.lower()
-            self.list_lb.ItemsSource = [checkbox for checkbox in self._context
-                                        if checkbox_filter in checkbox.name.lower()]
+            self.list_lb.ItemsSource = \
+                [checkbox for checkbox in self._context
+                 if checkbox_filter in checkbox.name.lower()]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
@@ -264,12 +286,16 @@ class CommandSwitchWindow:
         self.my_window.Width = 600
         self.my_window.SizeToContent = System.Windows.SizeToContent.Height
         self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
-        self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+        self.my_window.WindowStartupLocation = \
+            System.Windows.WindowStartupLocation.CenterScreen
         self.my_window.PreviewKeyDown += self.handle_esc_key
         self.my_window.MouseUp += self.handle_click
         border = System.Windows.Controls.Border()
         border.CornerRadius = System.Windows.CornerRadius(15)
-        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(220, 55, 50, 50))
+        border.Background = \
+            System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromArgb(220, 55, 50, 50)
+            )
         self.my_window.Content = border
 
         # Create StackPanel to Layout UI elements
