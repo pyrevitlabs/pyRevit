@@ -69,6 +69,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\addin\Microsoft.Scripting.Metadata.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="RevitAPI">
       <HintPath>..\..\..\addin\RevitAPI.dll</HintPath>
     </Reference>
@@ -77,20 +78,27 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Reflection.Context" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
-    <Compile Include="..\..\EnvDictionary.cs">
-      <Link>EnvDictionary.cs</Link>
+    <Compile Include="..\..\enginermgr.cs">
+      <Link>enginermgr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\envdict.cs">
+      <Link>envdict.cs</Link>
     </Compile>
     <Compile Include="..\..\executor.cs">
       <Link>executor.cs</Link>
@@ -100,9 +108,11 @@
     </Compile>
     <Compile Include="..\..\outputwindow.cs">
       <Link>outputwindow.cs</Link>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="..\..\outputwindowdesigner.cs">
       <Link>outputwindowdesigner.cs</Link>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>

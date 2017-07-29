@@ -12,6 +12,6 @@ def _get_all_open_consoles():
 def get_all_consoles(command=None):
     if command:
         return [x for x in _get_all_open_consoles()
-                  if x.commandUniqueName == command]
+                  if x.OutputId == command]
     else:
         return _get_all_open_consoles()

@@ -9,7 +9,7 @@ namespace PyRevitBaseClasses
     {
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
-        public string commandUniqueName;
+        public string OutputId;
 
         public ScriptOutput() {
             Application.EnableVisualStyles();

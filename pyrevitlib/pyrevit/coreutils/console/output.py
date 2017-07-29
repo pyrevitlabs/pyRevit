@@ -28,7 +28,7 @@ class PyRevitConsoleWindow:
         """Sets up the wrapper from the input dot net window handler"""
         self.__winhandle__ = window_handle
         self.__winhandle__.UrlHandler = self._handle_protocol_url
-        self.cmd_uniq_name = self.__winhandle__.commandUniqueName
+        self.cmd_uniq_name = self.__winhandle__.OutputId
 
     @staticmethod
     def _handle_protocol_url(url):

@@ -34,7 +34,7 @@ namespace PyRevitBaseClasses
         public LogEntry(string revitUsername, string revitVersion, string revitBuild, string revitProcessId,
                         string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName,
-                        int executorResultCode, ref Dictionary<String, String> resultDict,
+                        int executorResultCode, Dictionary<String, String> resultDict,
                         string pyRevitCommandPath)
         {
             username = revitUsername;
@@ -63,29 +63,27 @@ namespace PyRevitBaseClasses
 
     public class ScriptUsageLogger
     {
-        private readonly UIApplication _revit;
         private string _usageLogFilePath;
         private string _usageLogServerUrl;
         public LogEntry logEntry;
 
         public ScriptUsageLogger(ref EnvDictionary envdict, ExternalCommandData commandData,
-                                 string cmdName, string cmdBundle, string cmdExtension, string cmdUniqueName,
-                                 string scriptSource,
-                                 bool forcedDebugMode, bool altScriptMode,
-                                 int execResult, ref Dictionary<String, String> resultDict)
+                                 PyRevitCommand pyrvtCmd, int execResult)
         {
-            _revit = commandData.Application;
-
+            // get host
+            var revit = commandData.Application;
+            
             // get live data from python dictionary saved in appdomain
             _usageLogFilePath = envdict.usageLogFilePath;
             _usageLogServerUrl = envdict.usageLogServerUrl;
 
-            logEntry = new LogEntry(_revit.Application.Username,
-                                  _revit.Application.VersionNumber, _revit.Application.VersionBuild,
-                                  envdict.sessionUUID, envdict.addonVersion,
-                                  forcedDebugMode, altScriptMode, cmdName, cmdBundle, cmdExtension, cmdUniqueName,
-                                  execResult, ref resultDict,
-                                  scriptSource);
+            logEntry = new LogEntry(revit.Application.Username,
+                                    revit.Application.VersionNumber, revit.Application.VersionBuild,
+                                    envdict.sessionUUID, envdict.addonVersion,
+                                    pyrvtCmd.DebugMode, pyrvtCmd.AlternateMode,
+                                    pyrvtCmd.CommandName, pyrvtCmd.CommandBundle, pyrvtCmd.CommandExtension, pyrvtCmd.CommandUniqueId,
+                                    execResult, pyrvtCmd.GetResultsDictionary(),
+                                    pyrvtCmd.ScriptSourceFile);
         }
 
         public string MakeJSONLogEntry()

@@ -13,15 +13,19 @@ namespace PyRevitBaseClasses
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand
     {
-        public string _scriptSource;
-        public string _alternateScriptSource;
-        public string _syspaths;
-        public string _cmdName;
-        public string _cmdBundle;
-        public string _cmdExtension;
-        public string _cmdUniqueName;
-        public bool _forcedDebugMode = false;
-        public bool _altScriptMode = false;
+        private string _scriptSource;
+        private string _alternateScriptSource;
+        private string _syspaths;
+        private string _cmdName;
+        private string _cmdBundle;
+        private string _cmdExtension;
+        private string _cmdUniqueName;
+        private bool _forcedDebugMode = false;
+        private bool _altScriptMode = false;
+
+        private ExternalCommandData _commandData;
+        private ElementSet _elements;
+        private Dictionary<String, String> _resultsDict;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
@@ -42,6 +46,8 @@ namespace PyRevitBaseClasses
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
+            // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // Processing modifier keys
             // Default script is the main script unless it is changed by modifier buttons
             var _script = _scriptSource;
 
@@ -69,26 +75,23 @@ namespace PyRevitBaseClasses
                return Result.Succeeded;
             }
 
+            // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // Executing the script and logging the results
             // get usage log state data from python dictionary saved in appdomain
             // this needs to happen before command exection to get the values before the command changes them
             var envdict = new EnvDictionary();
 
-            // Get script executor
-            var executor = new ScriptExecutor(this, commandData, message, elements);
+            // create result Dictionary 
+            _resultsDict = new Dictionary<String, String>();
 
-            // create result Dictionary
-            var resultDict = new Dictionary<String, String>();
+            // Get script executor
+            var executor = new ScriptExecutor(commandData);
             // Execute script
-            var resultCode = executor.ExecuteScript(_script, _syspaths, _cmdName, _cmdUniqueName,
-                                                    _forcedDebugMode, _altScriptMode,
-                                                    ref resultDict);
+            var resultCode = executor.ExecuteScript(this);
 
             // log usage if usage logging in enabled
             if(envdict.usageLogState) {
-                var logger = new ScriptUsageLogger(ref envdict, commandData,
-                                                   _cmdName, _cmdBundle, _cmdExtension, _cmdUniqueName, _script,
-                                                   _forcedDebugMode, _altScriptMode, resultCode,
-                                                   ref resultDict);
+                var logger = new ScriptUsageLogger(ref envdict, commandData, this, resultCode);
                 new Task(logger.LogUsage).Start();
             }
 
@@ -98,6 +101,112 @@ namespace PyRevitBaseClasses
             else
                 return Result.Cancelled;
         }
+
+        public string ScriptSourceFile
+        {
+            get
+            {
+                if (_altScriptMode)
+                    return _alternateScriptSource;
+                else
+                    return _scriptSource;
+            }
+        }
+
+        public string OriginalScriptSourceFile
+        {
+            get
+            {
+                return _scriptSource;
+            }
+        }
+
+        public string AlternateScriptSourceFile
+        {
+            get
+            {
+                return _alternateScriptSource;
+            }
+        }
+
+        public string[] ModuleSearchPaths
+        {
+            get
+            {
+                return _syspaths.Split(';');
+            }
+        }
+
+        public string CommandName
+        {
+            get
+            {
+                return _cmdName;
+            }
+        }
+
+        public string CommandUniqueId
+        {
+            get
+            {
+                return _cmdUniqueName;
+            }
+        }
+
+        public string CommandBundle
+        {
+            get
+            {
+                return _cmdBundle;
+            }
+        }
+
+        public string CommandExtension
+        {
+            get
+            {
+                return _cmdExtension;
+            }
+        }
+
+        public bool DebugMode
+        {
+            get
+            {
+                return _forcedDebugMode;
+            }
+        }
+
+        public bool AlternateMode
+        {
+            get
+            {
+                return _altScriptMode;
+            }
+        }
+
+
+        public ExternalCommandData CommandData
+        {
+            get
+            {
+                return _commandData;
+            }
+        }
+
+        public ElementSet SelectedElements
+        {
+            get
+            {
+                return _elements;
+            }
+        }
+
+        public Dictionary<String, String> GetResultsDictionary()
+        {
+            return _resultsDict;
+        }
+
     }
 
 

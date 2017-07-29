@@ -9,7 +9,6 @@ import sys
 import os
 import os.path as op
 import traceback
-import __builtin__
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -126,6 +125,9 @@ HOST_APP = _HostApplication()
 # Testing values of builtin parameters set in scope by C# Script Executor.
 # ------------------------------------------------------------------------------
 class _ExecutorParams(object):
+    def __init__(self):
+        self._window = None
+
     @property   # read-only
     def engine(self):
         """
@@ -142,69 +144,61 @@ class _ExecutorParams(object):
         except:
             raise AttributeError()
 
-    # @property   # read-only
-    # def executor_version(self):
-    #     try:
-    #         # noinspection PyUnresolvedReferences
-    #         for custom_attr in __assmcustomattrs__:
-    #             if 'AssemblyPyRevitVersion' in
-    #             unicode(custom_attr.AttributeType):
-    #                 return unicode(custom_attr.ConstructorArguments[0])
-    #                        .replace('\"', '')
-    #     except:
-    #         raise AttributeError()
+    @property   # read-only
+    def pyrevit_command(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __externalcommand__
+        except:
+            raise AttributeError()
 
     @property   # read-only
     def forced_debug_mode(self):
         try:
             # noinspection PyUnresolvedReferences
-            return __forceddebugmode__
+            return self.pyrevit_command.DebugMode
         except:
             return False
 
     @property   # writeabe
     def window_handle(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __window__ if __window__ else None
-        except:
-            return None
+        return self._window
 
     @window_handle.setter
     def window_handle(self, value):
-        __builtin__.__window__ = value
+        self._window = value
 
     @property   # writeabe
     def command_name(self):
         try:
             # noinspection PyUnresolvedReferences
-            return __commandname__
+            return self.pyrevit_command.CommandName
         except:
             return None
 
-    @command_name.setter
-    def command_name(self, value):
-        # noinspection PyUnusedLocal
-        __builtin__.__commandname__ = value
+    # @command_name.setter
+    # def command_name(self, value):
+    #     # noinspection PyUnusedLocal
+    #     __builtin__.__commandname__ = value
 
-    @property   # read-only
+    @property   # writeabe
     def command_path(self):
         try:
             # noinspection PyUnresolvedReferences
-            return __commandpath__
+            return self.pyrevit_command.ScriptSourceFile
         except:
             return None
 
-    @command_path.setter
-    def command_path(self, value):
-        # noinspection PyUnusedLocal
-        __builtin__.__commandpath__ = value
+    # @command_path.setter
+    # def command_path(self, value):
+    #     # noinspection PyUnusedLocal
+    #     __builtin__.__commandpath__ = value
 
     @property
     def command_data(self):
         try:
             # noinspection PyUnresolvedReferences
-            return __commandData__
+            return self.pyrevit_command.CommandData
         except:
             return None
 
@@ -224,7 +218,7 @@ class _ExecutorParams(object):
     def result_dict(self):
         try:
             # noinspection PyUnresolvedReferences
-            return __result__
+            return self.pyrevit_command.GetResultsDictionary()
         except:
             return False
 
