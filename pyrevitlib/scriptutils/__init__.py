@@ -55,7 +55,7 @@ class PyRevitScriptUtils:
 
     @property
     def logger(self):
-        return get_logger(EXEC_PARAMS.command_name)()
+        return get_logger(EXEC_PARAMS.command_name)
 
     @property
     def config(self):
@@ -193,3 +193,5 @@ import pyrevit.coreutils.envvars as envvars
 
 
 this_script = PyRevitScriptUtils()
+# for backward compatibility
+logger = this_script.logger
