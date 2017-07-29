@@ -7,14 +7,14 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM,\
-    BETA_SCRIPT_PARAM
+                               BETA_SCRIPT_PARAM, CLEAN_ENGINE_SCRIPT_PARAM
 from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
 from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
 from pyrevit.extensions import PYTHON_SCRIPT_POSTFIX, DEFAULT_CONFIG_SCRIPT_FILE
 from pyrevit.extensions import CSHARP_SCRIPT_POSTFIX, VB_SCRIPT_POSTFIX,\
-    RUBY_SCRIPT_POSTFIX
+                               RUBY_SCRIPT_POSTFIX
 from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT,\
-    CSHARP_SCRIPT_FILE_FORMAT, VB_SCRIPT_FILE_FORMAT
+                               CSHARP_SCRIPT_FILE_FORMAT, VB_SCRIPT_FILE_FORMAT
 from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
 from pyrevit.extensions import MAX_REVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
 from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
@@ -363,6 +363,8 @@ class GenericUICommand(GenericUIComponent):
                 COMMAND_CONTEXT_PARAM)  # type: str
             self.beta_cmd = script_content.extract_param(
                 BETA_SCRIPT_PARAM)  # type: bool
+            self.requires_clean_engine = script_content.extract_param(
+                CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
         except PyRevitException as script_parse_err:
             logger.error('Error parsing script file: {} | {}'
                          .format(self.script_file, script_parse_err))

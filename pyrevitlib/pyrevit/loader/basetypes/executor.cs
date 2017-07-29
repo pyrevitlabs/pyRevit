@@ -30,7 +30,7 @@ namespace PyRevitBaseClasses
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
             var engineMgr = new EngineManager(_revit);
-            var engine = engineMgr.GetEngine();
+            var engine = engineMgr.GetEngine(ref pyrvtCmd);
             // Process search paths provided to executor
             // syspaths variable is a string of paths separated by ';'. Split syspath and update the search paths
             engine.SetSearchPaths(pyrvtCmd.ModuleSearchPaths);
@@ -49,7 +49,7 @@ namespace PyRevitBaseClasses
             // 5: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
-            var compiler_options = (PythonCompilerOptions)engine.GetCompilerOptions(scope);
+            var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
             compiler_options.ModuleName = "__main__";
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 

@@ -60,7 +60,8 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.name,
                 cmd_component.bundle_name,
                 extension.name,
-                cmd_component.unique_name)
+                cmd_component.unique_name,
+                int(cmd_component.requires_clean_engine))
 
     logger.debug('Successfully created executor type for: {}'
                  .format(cmd_component))

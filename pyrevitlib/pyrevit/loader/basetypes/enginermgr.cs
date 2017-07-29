@@ -3,6 +3,7 @@ using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 
 namespace PyRevitBaseClasses
@@ -16,12 +17,17 @@ namespace PyRevitBaseClasses
             _revit = revit;
 
             // cleanup engines for douments that are no longer loaded
-            CleanupOrphanedEngines();
+            // CleanupOrphanedEngines();
         }
 
 
-        public ScriptEngine GetEngine()
+        public ScriptEngine GetEngine(ref PyRevitCommand pyrvtCmd)
         {
+            if (pyrvtCmd.NeedsCleanEngine)
+            {
+                return CreateNewEngine();
+            }
+
             var engineDocId = GetActiveDocumentId();
             var existingEngineDict = GetEngineDict();
             if (existingEngineDict != null)

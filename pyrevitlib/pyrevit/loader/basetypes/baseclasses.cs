@@ -20,6 +20,7 @@ namespace PyRevitBaseClasses
         private string _cmdBundle;
         private string _cmdExtension;
         private string _cmdUniqueName;
+        private bool _needsCleanEngine = false;
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
 
@@ -36,7 +37,8 @@ namespace PyRevitBaseClasses
                               string cmdName,
                               string cmdBundle,
                               string cmdExtension,
-                              string cmdUniqueName)
+                              string cmdUniqueName,
+                              int needsCleanEngine)
         {
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
@@ -45,6 +47,7 @@ namespace PyRevitBaseClasses
             _cmdBundle = cmdBundle;
             _cmdExtension = cmdExtension;
             _cmdUniqueName = cmdUniqueName;
+            _needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -177,6 +180,14 @@ namespace PyRevitBaseClasses
             get
             {
                 return _cmdExtension;
+            }
+        }
+
+        public bool NeedsCleanEngine
+        {
+            get
+            {
+                return _needsCleanEngine;
             }
         }
 

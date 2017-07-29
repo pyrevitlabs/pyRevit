@@ -64,7 +64,7 @@ class ScriptFileParser:
             return doc_str.decode('utf-8')
         return None
 
-    def extract_param(self, param_name):
+    def extract_param(self, param_name, default_value=None):
         try:
             for child in ast.iter_child_nodes(self.ast_tree):
                 if hasattr(child, 'targets'):
@@ -79,7 +79,7 @@ class ScriptFileParser:
                                    'in script file for : {} | {}'
                                    .format(param_name, self.file_addr, err))
 
-        return None
+        return default_value
 
 
 def get_all_subclasses(parent_classes):
@@ -378,7 +378,8 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     type_list = []
     param_list = []
     for param in args:
-        if type(param) == str:
+        if type(param) == str \
+                or type(param) == int:
             type_list.append(type(param))
             param_list.append(param)
 
@@ -393,8 +394,11 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
 
     # add constructor input params to the stack
-    for param in param_list:
-        gen.Emit(OpCodes.Ldstr, param)
+    for param_type, param in zip(type_list, param_list):
+        if param_type == str:
+            gen.Emit(OpCodes.Ldstr, param)
+        elif param_type == int:
+            gen.Emit(OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
     gen.Emit(OpCodes.Call, ci)
