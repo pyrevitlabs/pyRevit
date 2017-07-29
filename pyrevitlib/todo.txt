@@ -7,7 +7,7 @@ Single Engine ------------------------------------------------------------------
 Shared engine fixes:
 ☐ Fix Module level variables
 ☐ Modify engine manager to create engines per doc + extension
-☐ Add __cleanengine__ to triggers
+✔ Add __cleanengine__ to triggers
 
 
 Improvement fixes:
