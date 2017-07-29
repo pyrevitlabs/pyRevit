@@ -160,14 +160,13 @@ class _ExecutorParams(object):
             # noinspection PyUnresolvedReferences
             return __externalcommand__
         except:
-            raise AttributeError()
+            return None
 
     @property   # read-only
     def forced_debug_mode(self):
-        try:
-            # noinspection PyUnresolvedReferences
+        if self.pyrevit_command:
             return self.pyrevit_command.DebugMode
-        except:
+        else:
             return False
 
     @property   # writeabe
@@ -180,11 +179,8 @@ class _ExecutorParams(object):
 
     @property   # writeabe
     def command_name(self):
-        try:
-            # noinspection PyUnresolvedReferences
+        if self.pyrevit_command:
             return self.pyrevit_command.CommandName
-        except:
-            return None
 
     # @command_name.setter
     # def command_name(self, value):
@@ -193,11 +189,8 @@ class _ExecutorParams(object):
 
     @property   # writeabe
     def command_path(self):
-        try:
-            # noinspection PyUnresolvedReferences
+        if self.pyrevit_command:
             return self.pyrevit_command.ScriptSourceFile
-        except:
-            return None
 
     # @command_path.setter
     # def command_path(self, value):
@@ -206,11 +199,8 @@ class _ExecutorParams(object):
 
     @property
     def command_data(self):
-        try:
-            # noinspection PyUnresolvedReferences
+        if self.pyrevit_command:
             return self.pyrevit_command.CommandData
-        except:
-            return None
 
     @property
     def doc_mode(self):
@@ -222,15 +212,12 @@ class _ExecutorParams(object):
 
     @property
     def command_mode(self):
-        return self.command_name
+        return self.pyrevit_command
 
     @property
     def result_dict(self):
-        try:
-            # noinspection PyUnresolvedReferences
+        if self.pyrevit_command:
             return self.pyrevit_command.GetResultsDictionary()
-        except:
-            return False
 
 
 EXEC_PARAMS = _ExecutorParams()
