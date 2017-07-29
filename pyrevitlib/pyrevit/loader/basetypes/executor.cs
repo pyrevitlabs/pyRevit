@@ -1,9 +1,6 @@
 using System;
 using System.IO;
-using System.Reflection;
-using System.Linq;
 using System.Text;
-using Autodesk.Revit;
 using IronPython.Runtime.Exceptions;
 using IronPython.Compiler;
 using Microsoft.Scripting;

@@ -1,16 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.IO;
-using System.Windows.Forms;
-using Autodesk.Revit;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
-using IronPython.Runtime;
 
 
 namespace PyRevitBaseClasses
