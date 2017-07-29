@@ -1,7 +1,8 @@
-from __future__ import unicode_literals
 from __future__ import absolute_import
-from . import util
+from __future__ import unicode_literals
+
 from . import odict
+from . import util
 
 
 class State(list):

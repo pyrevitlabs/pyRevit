@@ -10,28 +10,25 @@ The only public function is ``load_session()`` that loads a new session.
 Everything else is private.
 """
 
+import os.path as op
 import sys
-
-from pyrevit import EXEC_PARAMS, FIRST_LOAD
-from pyrevit.coreutils import Timer
-from pyrevit.coreutils.logger import get_logger, stdout_hndlr, loggers_have_errors
-from pyrevit.coreutils.appdata import cleanup_appdata_folder
-
-from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
-from pyrevit.userconfig import user_config
-
-from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
-
-# import the basetypes first to get all the c-sharp code to compile
-from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
-from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-
-from pyrevit.usagelog import setup_usage_logfile
-from pyrevit.loader import sessioninfo
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
+from pyrevit import EXEC_PARAMS, FIRST_LOAD
+from pyrevit.coreutils import Timer
+from pyrevit.coreutils.appdata import cleanup_appdata_folder
+from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
+    loggers_have_errors
+from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
+from pyrevit.loader import sessioninfo
+# import the basetypes first to get all the c-sharp code to compile
+from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
+from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from pyrevit.usagelog import setup_usage_logfile
+from pyrevit.userconfig import user_config
+from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 
 logger = get_logger(__name__)
 
@@ -48,6 +45,7 @@ def _setup_output_window():
     outstr = ScriptOutputStream(out_window)
     sys.stdout = outstr
     sys.stderr = outstr
+    stdout_hndlr = get_stdout_hndlr()
     stdout_hndlr.stream = outstr
 
 
@@ -162,7 +160,8 @@ def load_session():
 
     # if everything went well, self destruct
     try:
-        from pyrevit.coreutils.console.output import output_window
+        from pyrevit.output import get_output
+        output_window = get_output()
         timeout = user_config.core.startuplogtimeout
         if timeout > 0 and not loggers_have_errors():
             output_window.self_destruct(timeout)
@@ -182,7 +181,6 @@ def execute_script(script_path):
         results dictionary from the executed script
     """
 
-    import os.path as op
     from pyrevit import HOST_APP
     from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
     from pyrevit import PYTHON_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR

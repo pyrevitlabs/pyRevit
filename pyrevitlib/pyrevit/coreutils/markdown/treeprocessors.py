@@ -1,8 +1,9 @@
-from __future__ import unicode_literals
 from __future__ import absolute_import
-from . import util
-from . import odict
+from __future__ import unicode_literals
+
 from . import inlinepatterns
+from . import odict
+from . import util
 
 
 def build_treeprocessors(md_instance, **kwargs):

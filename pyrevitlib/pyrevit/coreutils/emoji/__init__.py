@@ -2,7 +2,7 @@ import os.path as op
 import re
 
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils.console.emoji.code import emoji_file_dict
+from pyrevit.coreutils.emoji.unicodes import emoji_file_dict
 
 HTML_EMOJI_SPAN = prepare_html_str('<span><img src="{}" style="'
                                    'vertical-align:middle;'

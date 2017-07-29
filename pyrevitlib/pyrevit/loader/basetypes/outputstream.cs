@@ -26,14 +26,14 @@ namespace PyRevitBaseClasses
 
         public void WriteError(string error_msg)
         {
-            var err_div = _gui.txtStdOut.Document.CreateElement(ExternalConfig.errordiv);
+            var err_div = _gui.renderer.Document.CreateElement(ExternalConfig.errordiv);
             err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
 
             var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
             Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
         }
 
-        /// Append the text in the buffer to gui.txtStdOut
+        /// Append the text in the buffer to gui.renderer
         public override void Write(byte[] buffer, int offset, int count)
         {
             lock (this)

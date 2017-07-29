@@ -5,9 +5,8 @@ import sys
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils.console.emoji import emojize
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
-
+from pyrevit.coreutils.emoji import emojize
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
@@ -182,7 +181,7 @@ def get_logger(logger_name):
 
 
 def set_file_logging(status):
-    pass
+    return status
 
 
 def loggers_have_errors():

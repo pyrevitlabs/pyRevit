@@ -30,20 +30,20 @@ namespace PyRevitBaseClasses
         /// </summary>
         private void InitializeComponent()
         {
-            this.txtStdOut = new System.Windows.Forms.WebBrowser();
+            this.renderer = new System.Windows.Forms.WebBrowser();
             this.SuspendLayout();
             //
-            // txtStdOut
+            // renderer
             //
-            this.txtStdOut.AllowWebBrowserDrop = false;
-            this.txtStdOut.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtStdOut.Location = new System.Drawing.Point(0, 0);
-            this.txtStdOut.Margin = new System.Windows.Forms.Padding(0);
-            this.txtStdOut.MinimumSize = new System.Drawing.Size(27, 25);
-            this.txtStdOut.Name = "txtStdOut";
-            this.txtStdOut.Size = new System.Drawing.Size(878, 455);
-            this.txtStdOut.TabIndex = 0;
-            this.txtStdOut.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.txtStdOut_Navigating);
+            this.renderer.AllowWebBrowserDrop = false;
+            this.renderer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.renderer.Location = new System.Drawing.Point(0, 0);
+            this.renderer.Margin = new System.Windows.Forms.Padding(0);
+            this.renderer.MinimumSize = new System.Drawing.Size(27, 25);
+            this.renderer.Name = "renderer";
+            this.renderer.Size = new System.Drawing.Size(878, 455);
+            this.renderer.TabIndex = 0;
+            this.renderer.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.txtStdOut_Navigating);
             //
             // ScriptOutput
             //
@@ -51,7 +51,7 @@ namespace PyRevitBaseClasses
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(900, 600);
-            this.Controls.Add(this.txtStdOut);
+            this.Controls.Add(this.renderer);
             this.Font = new System.Drawing.Font("Verdana", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "ScriptOutput";
@@ -70,7 +70,7 @@ namespace PyRevitBaseClasses
 
         #endregion
 
-        public System.Windows.Forms.WebBrowser txtStdOut;
+        public System.Windows.Forms.WebBrowser renderer;
 
 
     }

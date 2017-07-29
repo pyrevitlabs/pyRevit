@@ -14,8 +14,10 @@ as they need to alter how markdown blocks are parsed.
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
+
 import logging
 import re
+
 from . import util
 from .blockparser import BlockParser
 

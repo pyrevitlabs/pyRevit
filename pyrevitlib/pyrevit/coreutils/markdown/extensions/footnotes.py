@@ -15,15 +15,17 @@ License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from . import Extension
-from ..preprocessors import Preprocessor
-from ..inlinepatterns import Pattern
-from ..treeprocessors import Treeprocessor
-from ..postprocessors import Postprocessor
-from .. import util
-from ..odict import OrderedDict
-import re
+
 import copy
+import re
+
+from . import Extension
+from .. import util
+from ..inlinepatterns import Pattern
+from ..odict import OrderedDict
+from ..postprocessors import Postprocessor
+from ..preprocessors import Preprocessor
+from ..treeprocessors import Treeprocessor
 
 FN_BACKLINK_TEXT = util.STX + "zz1337820767766393qq" + util.ETX
 NBSP_PLACEHOLDER = util.STX + "qq3936677670287331zz" + util.ETX

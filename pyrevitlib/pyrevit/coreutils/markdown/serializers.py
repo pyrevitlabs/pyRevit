@@ -39,7 +39,9 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
+
 from . import util
+
 ElementTree = util.etree.ElementTree
 QName = util.etree.QName
 if hasattr(util.etree, 'test_comment'):  # pragma: no cover

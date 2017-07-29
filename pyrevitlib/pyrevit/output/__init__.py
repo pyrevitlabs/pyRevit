@@ -1,17 +1,19 @@
 from __future__ import print_function
+
 import clr
 
 from pyrevit import EXEC_PARAMS
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import rvtprotocol
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils.console import charts
-from pyrevit.coreutils.console import markdown
-from pyrevit.coreutils.console.emoji import emojize
+from pyrevit.coreutils import rvtprotocol, markdown, charts
+from pyrevit.coreutils.emoji import emojize
+from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils.loadertypes import ExternalConfig
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
 
+# noinspection PyUnresolvedReferences
+from System import AppDomain
 # noinspection PyUnresolvedReferences
 import System.Drawing
 # noinspection PyUnresolvedReferences
@@ -21,19 +23,41 @@ import System.Windows
 logger = get_logger(__name__)
 
 
-class PyRevitConsoleWindow:
-    """Wrapper to interact with the output console window."""
+class PyRevitOutputMgr:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def _get_all_open_output_windows():
+        output_list_entryname = ExternalConfig.pyrevitconsolesappdata
+        return list(AppDomain.CurrentDomain.GetData(output_list_entryname))
+
+    @staticmethod
+    def get_all_outputs(command=None):
+        if command:
+            return [x for x in PyRevitOutputMgr._get_all_open_output_windows()
+                    if x.OutputId == command]
+        else:
+            return PyRevitOutputMgr._get_all_open_output_windows()
+
+
+class PyRevitOutputWindow:
+    """Wrapper to interact with the output output window."""
 
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
-        self.__winhandle__ = window_handle
-        self.__winhandle__.UrlHandler = self._handle_protocol_url
-        self.cmd_uniq_name = self.__winhandle__.OutputId
+        self.__win__ = window_handle
+        self.__win__.UrlHandler = self._handle_protocol_url
+        self.cmd_uniq_name = self.__win__.OutputId
+
+    @property
+    def renderer(self):
+        return self.__win__.renderer
 
     @staticmethod
     def _handle_protocol_url(url):
         """
-        This is a function assgined to the __winhandle__.UrlHandler which
+        This is a function assgined to the __win__.UrlHandler which
          is a delegate. Everytime WebBrowser is asked to handle a link with
          a protocol other than http, it'll call this function.
         System.Windows.Forms.WebBrowser returns a string with misc stuff
@@ -56,13 +80,13 @@ class PyRevitConsoleWindow:
             logger.error('Error handling link | {}'.format(exec_err))
 
     def _get_head_element(self):
-        return self.__winhandle__.txtStdOut.Document.GetElementsByTagName('head')[0]
+        return self.renderer.Document.GetElementsByTagName('head')[0]
 
     def self_destruct(self, seconds):
-        self.__winhandle__.SelfDestructTimer(seconds*1000)
+        self.__win__.SelfDestructTimer(seconds * 1000)
 
     def inject_to_head(self, element_tag, element_contents, attribs=None):
-        html_element = self.__winhandle__.txtStdOut.Document.CreateElement(element_tag)
+        html_element = self.renderer.Document.CreateElement(element_tag)
         if element_contents:
             html_element.InnerHtml = element_contents
 
@@ -84,72 +108,73 @@ class PyRevitConsoleWindow:
         return self._get_head_element().InnerHtml
 
     def set_title(self, new_title):
-        self.__winhandle__.Text = new_title
+        self.__win__.Text = new_title
 
     def set_width(self, width):
-        self.__winhandle__.Width = width
+        self.__win__.Width = width
 
     def set_height(self, height):
-        self.__winhandle__.Height = height
+        self.__win__.Height = height
 
     def set_font(self, font_family_name, font_size):
         # noinspection PyUnresolvedReferences
-        self.__winhandle__.txtStdOut.Font = System.Drawing.Font(font_family_name, font_size,
-                                                                System.Drawing.FontStyle.Regular,
-                                                                System.Drawing.GraphicsUnit.Point)
+        self.renderer.Font = \
+            System.Drawing.Font(font_family_name,
+                                font_size,
+                                System.Drawing.FontStyle.Regular,
+                                System.Drawing.GraphicsUnit.Point)
 
     def resize(self, width, height):
         self.set_width(width)
         self.set_height(height)
 
     def get_title(self):
-        return self.__winhandle__.Text
+        return self.__win__.Text
 
     def get_width(self):
-        return self.__winhandle__.Width
+        return self.__win__.Width
 
     def get_height(self):
-        return self.__winhandle__.Height
+        return self.__win__.Height
 
     def close(self):
-        self.__winhandle__.Close()
+        self.__win__.Close()
 
     def close_others(self, all_open_outputs=False):
-        from pyrevit.coreutils.console.outputmgr import get_all_consoles
-
         if all_open_outputs:
-            output_wnds = get_all_consoles()
+            output_wnds = PyRevitOutputMgr.get_all_outputs()
         else:
-            output_wnds = get_all_consoles(command=self.cmd_uniq_name)
+            output_wnds = PyRevitOutputMgr.\
+                get_all_outputs(command=self.cmd_uniq_name)
 
         for output_wnd in output_wnds:
-            if output_wnd != self.__winhandle__:
+            if output_wnd != self.__win__:
                 output_wnd.Close()
 
     def hide(self):
-        self.__winhandle__.Hide()
+        self.__win__.Hide()
 
     def show(self):
-        self.__winhandle__.Show()
+        self.__win__.Show()
 
     def lock_size(self):
-        self.__winhandle__.LockSize()
+        self.__win__.LockSize()
 
     def save_contents(self, dest_file):
-        html = self.__winhandle__.txtStdOut.Document.Body.OuterHtml.encode('ascii', 'ignore')
-        doc_txt = self.__winhandle__.txtStdOut.DocumentText
+        html = self.renderer.Document.Body.OuterHtml.encode('ascii', 'ignore')
+        doc_txt = self.renderer.DocumentText
         full_html = doc_txt.lower().replace('<body></body>', html)
         with open(dest_file, 'w') as output_file:
             output_file.write(full_html)
 
     def open_url(self, dest_url):
-        self.__winhandle__.txtStdOut.Navigate(dest_url, False)
+        self.renderer.Navigate(dest_url, False)
 
     def update_progress(self, cur_value, max_value):
-        self.__winhandle__.UpdateProgressBar(cur_value, max_value)
+        self.__win__.UpdateProgressBar(cur_value, max_value)
 
     def reset_progress(self):
-        self.__winhandle__.UpdateProgressBar(0, 1)
+        self.__win__.UpdateProgressBar(0, 1)
 
     @staticmethod
     def emojize(md_str):
@@ -174,11 +199,13 @@ class PyRevitConsoleWindow:
                    '{}' \
                    '</div>'
 
-        print(prepare_html_str(code_div.format(code_str.replace('    ', nbsp*4))), end="")
+        print(prepare_html_str(code_div.format(code_str.replace('    ',
+                                                                nbsp*4))),
+              end="")
 
     @staticmethod
     def print_md(md_str):
-        tables_ext = 'pyrevit.coreutils.console.markdown.extensions.tables'
+        tables_ext = 'pyrevit.coreutils.output.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = emojize(prepare_html_str(markdown_html))
@@ -188,7 +215,11 @@ class PyRevitConsoleWindow:
         self.print_md('-----')
 
     def next_page(self):
-        self.print_html('<div style="page-break-after:always;"></div><div>&nbsp</div>')
+        self.print_html('<div style="page-break-after:always;">'
+                        '</div>'
+                        '<div>'
+                        '&nbsp'
+                        '</div>')
 
     @staticmethod
     def linkify(*args):
@@ -224,13 +255,5 @@ class PyRevitConsoleWindow:
         return charts.PyRevitOutputChart(self, chart_type=charts.BUBBLE_CHART)
 
 
-# creates an instance of PyRevitConsoleWindow with the recovered __window__ handler.
-output_window = PyRevitConsoleWindow(EXEC_PARAMS.window_handle)
-
-# This snippet is for backup only:
-# __window__ used to be added to local scope by pyRevitLoader.dll, thus it needed to be extracted from caller scope
-# pyRevitLoader.dll has been modified to add __window__ to globals.
-# from .coreutils import inspect_calling_scope_local_var
-# win_handler = pyrevit.coreutils.inspect_calling_scope_local_var('__window__')
-# if win_handler:
-#     output_window = PyRevitConsoleWindow(win_handler)
+def get_output():
+    return PyRevitOutputWindow(EXEC_PARAMS.window_handle)

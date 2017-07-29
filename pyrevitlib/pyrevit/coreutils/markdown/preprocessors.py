@@ -8,9 +8,11 @@ complicated.
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from . import util
-from . import odict
+
 import re
+
+from . import odict
+from . import util
 
 
 def build_preprocessors(md_instance, **kwargs):
@@ -217,7 +219,8 @@ class HtmlBlockPreprocessor(Preprocessor):
                                                                 block)
                     # keep checking conditions below and maybe just append
 
-                    if data_index < len(block) and (util.isBlockLevel(left_tag) or left_tag == '--'):
+                    if data_index < len(block) and (
+                        util.isBlockLevel(left_tag) or left_tag == '--'):
                         text.insert(0, block[data_index:])
                         block = block[:data_index]
 

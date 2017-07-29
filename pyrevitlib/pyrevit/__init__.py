@@ -190,7 +190,7 @@ class _ExecutorParams(object):
     @property   # writeabe
     def command_path(self):
         if self.pyrevit_command:
-            return self.pyrevit_command.ScriptSourceFile
+            return op.dirname(self.pyrevit_command.ScriptSourceFile)
 
     # @command_path.setter
     # def command_path(self, value):

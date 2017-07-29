@@ -32,20 +32,22 @@ License: BSD (see LICENSE for details).
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from .__version__ import version, version_info  # noqa
+
 import codecs
-import sys
-import logging
-import warnings
 import importlib
+import logging
+import sys
+import warnings
+
 from . import util
-from .preprocessors import build_preprocessors
+from .__version__ import version, version_info  # noqa
 from .blockprocessors import build_block_parser
-from .treeprocessors import build_treeprocessors
+from .extensions import Extension
 from .inlinepatterns import build_inlinepatterns
 from .postprocessors import build_postprocessors
-from .extensions import Extension
+from .preprocessors import build_preprocessors
 from .serializers import to_html_string, to_xhtml_string
+from .treeprocessors import build_treeprocessors
 
 __all__ = ['Markdown', 'markdown', 'markdownFromFile']
 
