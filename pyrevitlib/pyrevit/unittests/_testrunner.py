@@ -2,8 +2,7 @@ import time
 from unittest import TestResult, TestLoader
 
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.console.output import output_window
-
+from pyrevit.output import get_output
 
 logger = get_logger(__name__)
 
@@ -30,11 +29,10 @@ RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">' \
 
 class OutputWriter:
     def __init__(self):
-        pass
+        self._output = get_output()
 
-    @staticmethod
-    def write(output_str):
-        output_window.print_html(output_str)
+    def write(self, output_str):
+        self._output.print_html(output_str)
 
 
 class PyRevitTestResult(TestResult):
