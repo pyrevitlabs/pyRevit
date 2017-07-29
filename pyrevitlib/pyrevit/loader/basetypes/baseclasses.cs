@@ -23,6 +23,9 @@ namespace PyRevitBaseClasses
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
 
+        private ScriptOutput _scriptOutput;
+        private ScriptOutputStream _outputStream;
+
         private ExternalCommandData _commandData;
         private ElementSet _elements;
         private Dictionary<String, String> _resultsDict;
@@ -76,6 +79,14 @@ namespace PyRevitBaseClasses
             }
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // Stating a new output window
+            _scriptOutput = new ScriptOutput();
+            _outputStream = new ScriptOutputStream(_scriptOutput);
+            var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
+            _scriptOutput.Text = _cmdName;                  // Set output window title to command name
+            _scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+
+            // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Executing the script and logging the results
             // get usage log state data from python dictionary saved in appdomain
             // this needs to happen before command exection to get the values before the command changes them
@@ -185,6 +196,22 @@ namespace PyRevitBaseClasses
             }
         }
 
+
+        public ScriptOutput OutputWindow
+        {
+            get
+            {
+                return _scriptOutput;
+            }
+        }
+
+        public ScriptOutputStream OutputStream
+        {
+            get
+            {
+                return _outputStream;
+            }
+        }
 
         public ExternalCommandData CommandData
         {
