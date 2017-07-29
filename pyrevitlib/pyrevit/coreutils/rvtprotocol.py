@@ -34,14 +34,6 @@ DEFAULT_LINK = '<a title="Click to select or show element" ' \
                'display: inline-block;" href="{}{}">{}</a>'
 
 
-try:
-    doc = HOST_APP.uiapp.ActiveUIDocument.Document
-    uidoc = HOST_APP.uiapp.ActiveUIDocument
-except:
-    logger.debug('Active document does not exist in Revit. '
-                 'Can not get doc and uidoc.')
-
-
 # noinspection PyClassHasNoInit
 class ProtocolCommandTypes:
     SELECT = 'select'
@@ -85,19 +77,23 @@ class SelectElementsCommand(GenericProtocolCommand):
             if type(arg) == int:
                 el_list.Add(ElementId(arg))
 
-        uidoc.Selection.SetElementIds(el_list)
+        if not HOST_APP.doc:
+            logger.debug('Active document does not exist in Revit. '
+                         'Can not get doc and uidoc.')
+        else:
+            HOST_APP.uidoc.Selection.SetElementIds(el_list)
 
-        for ei_id in el_list:
-            try:
-                el = doc.GetElement(ei_id)
-                if isinstance(el, View):
-                    uidoc.ActiveView = el
-                else:
-                    owner_view = doc.GetElement(el.OwnerViewId)
-                    if owner_view:
-                        uidoc.ActiveView = owner_view
-            except Exception as err:
-                print(err)
+            for ei_id in el_list:
+                try:
+                    el = HOST_APP.doc.GetElement(ei_id)
+                    if isinstance(el, View):
+                        HOST_APP.uidoc.ActiveView = el
+                    else:
+                        owner_view = HOST_APP.doc.GetElement(el.OwnerViewId)
+                        if owner_view:
+                            HOST_APP.uidoc.ActiveView = owner_view
+                except Exception as err:
+                    print(err)
 
 
 def _get_command_from_arg(cmd_args):

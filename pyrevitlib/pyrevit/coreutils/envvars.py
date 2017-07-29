@@ -1,18 +1,14 @@
-from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
+from pyrevit import PYREVIT_ADDON_NAME
 
 # noinspection PyUnresolvedReferences
 from System import AppDomain
 
-PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
 
-if not EXEC_PARAMS.doc_mode:
-    CURRENT_REVIT_APPDOMAIN = AppDomain.CurrentDomain
-else:
-    CURRENT_REVIT_APPDOMAIN = None
+PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
 
 
 def get_pyrevit_env_vars():
-    return CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    return AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
 
 
 def get_pyrevit_env_var(param_name):
@@ -32,7 +28,7 @@ def get_pyrevit_env_var(param_name):
     # This function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
 
-    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    data_dict = AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
 
     if data_dict:
         try:
@@ -59,11 +55,11 @@ def set_pyrevit_env_var(param_name, param_value):
     # Get function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
 
-    data_dict = CURRENT_REVIT_APPDOMAIN.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    data_dict = AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
 
     if data_dict:
         data_dict[param_name] = param_value
     else:
         data_dict = {param_name: param_value}
 
-    CURRENT_REVIT_APPDOMAIN.SetData(PYREVIT_ENV_VAR_DICT_NAME, data_dict)
+    AppDomain.CurrentDomain.SetData(PYREVIT_ENV_VAR_DICT_NAME, data_dict)

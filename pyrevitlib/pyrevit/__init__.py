@@ -117,6 +117,16 @@ class _HostApplication:
     def is_older_than(self, version):
         return int(self.version) < int(version)
 
+    @property
+    def doc(self):
+        """ Returns: uiapp.ActiveUIDocument.Document """
+        return getattr(self.uiapp.ActiveUIDocument, 'Document', None)
+
+    @property
+    def uidoc(self):
+        """ Returns: uiapp.ActiveUIDocument """
+        return getattr(self.uiapp, 'ActiveUIDocument', None)
+
 
 HOST_APP = _HostApplication()
 

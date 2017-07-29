@@ -25,6 +25,7 @@ logger = get_logger(__name__)
 
 GIT_LIB = 'LibGit2Sharp'
 
+
 if not EXEC_PARAMS.doc_mode:
     # todo: figure out how to import extensions on the caller's scope.
     clr.AddReference("System.Core")
