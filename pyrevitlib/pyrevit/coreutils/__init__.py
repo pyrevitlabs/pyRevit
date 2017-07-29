@@ -591,6 +591,7 @@ def reformat_string(orig_str, orig_format, new_format):
 
 def dletter_to_unc(dletter_path):
     clr.AddReference('System.Management')
+    # noinspection PyUnresolvedReferences
     from System.Management import ManagementObjectSearcher
     searcher = ManagementObjectSearcher("root\\CIMV2",
                                         "SELECT * FROM Win32_MappedLogicalDisk")
@@ -604,6 +605,7 @@ def dletter_to_unc(dletter_path):
 
 def unc_to_dletter(unc_path):
     clr.AddReference('System.Management')
+    # noinspection PyUnresolvedReferences
     from System.Management import ManagementObjectSearcher
     searcher = ManagementObjectSearcher("root\\CIMV2",
                                         "SELECT * FROM Win32_MappedLogicalDisk")
