@@ -3,14 +3,16 @@
 ✔ <Completed> @done
 
 
-Single Engine ----------------------------------------------------------------------------------------------------------
+Single Engine ------------------------------------------------------------------
 Shared engine fixes:
-☐ Fix Module level variables
-☐ Modify engine manager to create engines per doc + extension
 ✔ Add __cleanengine__ to triggers
+✔ Modify engine manager to create engines per extension
+✔ Add clean engine override shortcut
+☐ Start testing tools and Fix Module level variables and other issues
 
 
 Improvement fixes:
 ☐ Fix File logging
+☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
