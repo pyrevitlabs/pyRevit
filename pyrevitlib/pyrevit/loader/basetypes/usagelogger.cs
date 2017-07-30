@@ -34,7 +34,7 @@ namespace PyRevitBaseClasses
         public LogEntry(string revitUsername, string revitVersion, string revitBuild, string revitProcessId,
                         string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName,
-                        int executorResultCode, Dictionary<String, String> resultDict,
+                        int executorResultCode, ref Dictionary<String, String> resultDict,
                         string pyRevitCommandPath)
         {
             username = revitUsername;
@@ -68,7 +68,10 @@ namespace PyRevitBaseClasses
         public LogEntry logEntry;
 
         public ScriptUsageLogger(ref EnvDictionary envdict, ExternalCommandData commandData,
-                                 PyRevitCommand pyrvtCmd, int execResult)
+                                 string cmdName, string cmdBundle, string cmdExtension, string cmdUniqueName,
+                                 string scriptSource,
+                                 bool forcedDebugMode, bool altScriptMode,
+                                 int execResult, ref Dictionary<String, String> resultDict)
         {
             // get host
             var revit = commandData.Application;
@@ -80,10 +83,10 @@ namespace PyRevitBaseClasses
             logEntry = new LogEntry(revit.Application.Username,
                                     revit.Application.VersionNumber, revit.Application.VersionBuild,
                                     envdict.sessionUUID, envdict.addonVersion,
-                                    pyrvtCmd.DebugMode, pyrvtCmd.AlternateMode,
-                                    pyrvtCmd.CommandName, pyrvtCmd.CommandBundle, pyrvtCmd.CommandExtension, pyrvtCmd.CommandUniqueId,
-                                    execResult, pyrvtCmd.GetResultsDictionary(),
-                                    pyrvtCmd.ScriptSourceFile);
+                                    forcedDebugMode, altScriptMode,
+                                    cmdName, cmdBundle, cmdExtension, cmdUniqueName,
+                                    execResult, ref resultDict,
+                                    scriptSource);
         }
 
         public string MakeJSONLogEntry()

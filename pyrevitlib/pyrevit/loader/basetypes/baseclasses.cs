@@ -117,7 +117,10 @@ namespace PyRevitBaseClasses
 
             // log usage if usage logging in enabled
             if(envdict.usageLogState) {
-                var logger = new ScriptUsageLogger(ref envdict, commandData, this, resultCode);
+                var logger = new ScriptUsageLogger(ref envdict, commandData,
+                                                   _cmdName, _cmdBundle, _cmdExtension, _cmdUniqueName, _script,
+                                                   _forcedDebugMode, _altScriptMode, resultCode,
+                                                   ref _resultsDict);
                 new Task(logger.LogUsage).Start();
             }
 
