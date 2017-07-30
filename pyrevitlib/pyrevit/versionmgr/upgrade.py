@@ -78,9 +78,7 @@ def _disabe_legacy_revitpythonwrapper_extension():
 
 
 def _cleanengine_config_upgrade(user_config):
-    try:
-        assert user_config.core.cleanengine
-    except:
+    if not  user_config.core.has_option('cleanengine'):
         user_config.core.cleanengine = True
         user_config.save_changes()
 
