@@ -57,28 +57,40 @@ namespace PyRevitBaseClasses
             // Default script is the main script unless it is changed by modifier buttons
             var _script = _scriptSource;
 
-            // If Shift clicking on button, run config script instead
-            if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            // If Ctrl-Alt-Shift clicking on the tool run in clean engine
+            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt) &&
+                Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl) &&
+                Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
             {
-                _script = _alternateScriptSource;
-                _altScriptMode = true;
+                _needsCleanEngine = true;
             }
-
-            // If Ctrl clicking on button, set forced debug mode.
-            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            else
             {
-                _forcedDebugMode = true;
-            }
+                // If Alt clicking on button, open the script in explorer and return.
+                if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
+                {
+                    // combine the arguments together
+                    // it doesn't matter if there is a space after ','
+                    string argument = "/select, \"" + _script + "\"";
 
-            // If Alt clicking on button, open the script in explorer and return.
-            if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
-            {
-               // combine the arguments together
-               // it doesn't matter if there is a space after ','
-               string argument = "/select, \"" + _script +"\"";
+                    System.Diagnostics.Process.Start("explorer.exe", argument);
+                    return Result.Succeeded;
+                }
+                else
+                {
+                    // If Shift clicking on button, run config script instead
+                    if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+                    {
+                        _script = _alternateScriptSource;
+                        _altScriptMode = true;
+                    }
 
-               System.Diagnostics.Process.Start("explorer.exe", argument);
-               return Result.Succeeded;
+                    // If Ctrl clicking on button, set forced debug mode.
+                    if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                    {
+                        _forcedDebugMode = true;
+                    }
+                }
             }
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------

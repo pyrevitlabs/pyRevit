@@ -14,9 +14,10 @@ namespace PyRevitBaseClasses
 		public static string usageLogState = String.Format("{0}_usagelogstateISC", EnvDictionaryKeys.addonName);
 		public static string usageLogFilePath = String.Format("{0}_usagelogfileISC", EnvDictionaryKeys.addonName);
 		public static string usageLogServerUrl = String.Format("{0}_usagelogserverISC", EnvDictionaryKeys.addonName);
-	}
+        public static string pyrevitOutputWindows = String.Format("{0}_outputsISC", EnvDictionaryKeys.addonName);
+    }
 
-	public class EnvDictionary
+    public class EnvDictionary
 	{
 		private readonly PythonDictionary _envData;
 		public string sessionUUID;

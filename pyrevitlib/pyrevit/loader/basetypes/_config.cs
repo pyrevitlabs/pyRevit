@@ -51,8 +51,6 @@ namespace PyRevitBaseClasses
                                                      "border:0px;";
 
         public static string progressbargraphid = "graph";
-
-        public static string pyrevitconsolesappdata = "pyRevitConsoles";
     }
 
     public static class ExecutionErrorCodes

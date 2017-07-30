@@ -32,7 +32,7 @@ namespace PyRevitBaseClasses
             if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
             {
                 var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
-                SetupBuiltins(existingEngine, ref pyrvtCmd);
+                SetupBuiltins(existingEngine, ref pyrvtCmd, true);
                 return existingEngine;
             }
             else
@@ -87,13 +87,13 @@ namespace PyRevitBaseClasses
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
 
-            SetupBuiltins(engine, ref pyrvtCmd);
+            SetupBuiltins(engine, ref pyrvtCmd, false);
 
             return engine;
         }
 
 
-        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommand pyrvtCmd)
+        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommand pyrvtCmd, bool cachedEngine)
         {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
@@ -104,6 +104,9 @@ namespace PyRevitBaseClasses
 
             // Add current engine manager to builtins
             builtin.SetVariable("__ipyenginemanager__", this);
+
+            // Let commands know if they're being run in a cached engine
+            builtin.SetVariable("__cachedengine__", cachedEngine);
 
             // Adding output window handle (__window__ is for backwards compatibility)
             builtin.SetVariable("__window__", pyrvtCmd.OutputWindow);

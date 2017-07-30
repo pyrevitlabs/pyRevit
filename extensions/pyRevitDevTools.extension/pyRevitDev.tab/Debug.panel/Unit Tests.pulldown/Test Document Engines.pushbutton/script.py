@@ -1,13 +1,8 @@
-doc = __revit__.ActiveUIDocument.Document
+__context__ = 'zerodoc'
 
-this_doc = doc.GetHashCode()
 
-from System import AppDomain as ad
-ad.CurrentDomain.GetData('pyRevitIpyEngines')
-d = ad.CurrentDomain.GetData('pyRevitIpyEngines')
+from pyrevit import EXEC_PARAMS
+for engine_id in EXEC_PARAMS.engine_mgr.EngineDict:
+    print(engine_id)
 
-for doc_code in d.Keys:
-    if doc_code == this_doc:
-        print('{} - This doc'.format(doc_code))
-    else:
-        print(doc_code)
+print(__cachedengine__)
