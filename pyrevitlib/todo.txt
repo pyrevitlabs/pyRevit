@@ -8,6 +8,7 @@ Shared engine fixes:
 ✔ Add __cleanengine__ to triggers
 ✔ Modify engine manager to create engines per extension
 ✔ Add clean engine override shortcut
+✔ Add option to set pyRevit to performance single engine mode
 ☐ Start testing tools and Fix Module level variables and other issues
 
 
