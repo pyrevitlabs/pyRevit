@@ -9,11 +9,20 @@ Shared engine fixes:
 ✔ Modify engine manager to create engines per extension
 ✔ Add clean engine override shortcut
 ✔ Add option to set pyRevit to performance single engine mode
+☐ Fix globals in extensions
+☐ Fix globals in assembly maker / should regenrate based on perf mode
+☐ Fix globals in plugins
+☐ Fix globals in unittest
+☐ Fix globals in usagelog
+☐ Fix globals in versionmgr
+☐ Fix globals in user config
+☐ Fix globals in revitutils
 ☐ Start testing tools and Fix Module level variables and other issues
 
 
 Improvement fixes:
 ☐ Fix File logging
+☐ Fix Charts
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
