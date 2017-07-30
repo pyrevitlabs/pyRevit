@@ -7,7 +7,6 @@ from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
     load_asm_file, calculate_dir_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
-from pyrevit.versionmgr import PYREVIT_VERSION
 import pyrevit.coreutils.appdata as appdata
 
 from pyrevit.loader import LOADER_DIR
@@ -71,18 +70,6 @@ if not EXEC_PARAMS.doc_mode:
 else:
     BASE_TYPES_DIR_HASH = BASE_TYPES_ASM_FILE_ID = None
     BASE_TYPES_ASM_FILE = BASE_TYPES_ASM_NAME = None
-
-
-def _get_asm_attr_source():
-    asm_att_source = """
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using PyRevitBaseClasses;
-    [assembly: AssemblyPyRevitVersion("{}")]
-    """.format(PYREVIT_VERSION.get_formatted())
-
-    return asm_att_source
 
 
 def _get_source_files():
@@ -163,7 +150,6 @@ def _get_references():
 
 def _generate_base_classes_asm():
     source_list = list()
-    # source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
         # source_list.append(read_source_file(source_file))
         source_list.append(source_file)

@@ -3,9 +3,7 @@ import sys
 
 from scriptutils import coreutils as cu
 from scriptutils.userinput import WPFWindow
-from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
-# from pyrevit.coreutils.git import compare_branch_heads
-# from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
+from pyrevit.versionmgr import get_pyrevit_version, get_pyrevit_repo
 
 
 __context__ = 'zerodoc'
@@ -24,10 +22,12 @@ class AboutWindow(WPFWindow):
         self.set_image_source('keybase_profile', 'keybase.png')
 
         try:
+            pyrvt_repo = get_pyrevit_repo()
+            pyrvt_ver = get_pyrevit_version()
             self.version_info.Text = ' v{}' \
-                                     .format(PYREVIT_VERSION.get_formatted())
-            if PYREVIT_REPO.branch != 'master':
-                self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
+                                     .format(pyrvt_ver.get_formatted())
+            if pyrvt_repo.branch != 'master':
+                self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
         except:
             self.version_info.Text = ''
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
@@ -77,5 +77,4 @@ class AboutWindow(WPFWindow):
         #                                      hist_div.BehindBy)
 
 
-# if __name__ == '__main__':
 AboutWindow('AboutWindow.xaml').ShowDialog()
