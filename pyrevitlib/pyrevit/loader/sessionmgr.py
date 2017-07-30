@@ -38,7 +38,6 @@ def _clear_running_engines():
     # clear the cached engines
     try:
         EXEC_PARAMS.engine_mgr.ClearEngines()
-        print(EXEC_PARAMS.engine_mgr)
     except AttributeError:
         return False
 
