@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
@@ -25,95 +26,50 @@ namespace PyRevitBaseClasses
         {
             if (pyrvtCmd.NeedsCleanEngine)
             {
-                return CreateNewEngine();
+                return CreateNewEngine(ref pyrvtCmd);
             }
 
-            var engineDocId = GetActiveDocumentId();
-            var existingEngineDict = GetEngineDict();
-            if (existingEngineDict != null)
+            if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
             {
-                if (existingEngineDict.ContainsKey(engineDocId))
-                {
-                    return existingEngineDict[engineDocId];
-                }
-                else
-                {
-                    var newEngine = CreateNewEngine();
-                    existingEngineDict[engineDocId] = newEngine;
-                    return newEngine;
-                }
+                var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
+                SetupBuiltins(existingEngine, ref pyrvtCmd);
+                return existingEngine;
             }
             else
             {
-                var newEngineDict = RegisterEngineDict();
-                var newEngine = CreateNewEngine();
-                newEngineDict[engineDocId] = newEngine;
+                var newEngine = CreateNewEngine(ref pyrvtCmd);
+                this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
                 return newEngine;
             }
         }
 
 
-        private int GetDocumentId(Document doc)
+        public Dictionary<string, ScriptEngine> EngineDict
         {
-            return doc.GetHashCode();
-        }
-
-
-        private int GetActiveDocumentId()
-        {
-            var activeUIDoc = _revit.ActiveUIDocument;
-            if (activeUIDoc != null)
+            get
             {
-                return GetDocumentId(activeUIDoc.Document);
-            }
-            else
-            {
-                return 0;
-            }
-        }
+                var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDict);
 
-
-        private void CleanupOrphanedEngines()
-        {
-
-            var openDocuments = _revit.Application.Documents;
-            var openDocumentsList = new List<int>();
-            openDocumentsList.Add(0);
-            foreach (Document doc in openDocuments)
-            {
-                openDocumentsList.Add(GetDocumentId(doc));
-            }
-
-            var existingEngineDict = GetEngineDict();
-            if (existingEngineDict != null)
-            {
-                foreach (int docId in existingEngineDict.Keys)
+                if (engineDict == null)
                 {
-                    if (!openDocumentsList.Contains(docId))
-                    {
-                        ScriptEngine docEng = existingEngineDict[docId];
-                        existingEngineDict.Remove(docId);
-                    }
+                    engineDict = ClearEngines();
                 }
+
+                return engineDict;
             }
         }
 
 
-        private Dictionary<int, ScriptEngine> RegisterEngineDict()
+        public Dictionary<string, ScriptEngine> ClearEngines()
         {
-            var engineDict = new Dictionary<int, ScriptEngine>();
+            var engineDict = new Dictionary<string, ScriptEngine>();
             AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDict, engineDict);
+
             return engineDict;
         }
 
 
-        private Dictionary<int, ScriptEngine> GetEngineDict()
-        {
-            return (Dictionary<int, ScriptEngine>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDict);
-        }
-
-
-        private ScriptEngine CreateNewEngine()
+        private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd)
         {
             var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
             {{ "Frames", true },
@@ -131,7 +87,64 @@ namespace PyRevitBaseClasses
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
 
+            SetupBuiltins(engine, ref pyrvtCmd);
+
             return engine;
         }
+
+
+        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommand pyrvtCmd)
+        {
+            // BUILTINS -----------------------------------------------------------------------------------------------
+            // Get builtin to add custom variables
+            var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
+
+            // Add current IronPython engine to builtins
+            builtin.SetVariable("__ipyengine__", engine);
+
+            // Add current engine manager to builtins
+            builtin.SetVariable("__ipyenginemanager__", this);
+
+            // Adding output window handle (__window__ is for backwards compatibility)
+            builtin.SetVariable("__window__", pyrvtCmd.OutputWindow);
+            builtin.SetVariable("__output__", pyrvtCmd.OutputWindow);
+
+            // Adding output window stream
+            builtin.SetVariable("__outputstream__", pyrvtCmd.OutputStream);
+
+            // Add host application handle to the builtin to be globally visible everywhere
+            builtin.SetVariable("__revit__", _revit);
+
+            // Add handles to current document and ui document
+            if (_revit.ActiveUIDocument != null) {
+                builtin.SetVariable("__activeuidoc__", _revit.ActiveUIDocument);
+                builtin.SetVariable("__activedoc__", _revit.ActiveUIDocument.Document);
+                builtin.SetVariable("__zerodoc__", false);
+            }
+            else {
+                builtin.SetVariable("__activeuidoc__", (Object) null);
+                builtin.SetVariable("__activedoc__", (Object) null);
+                builtin.SetVariable("__zerodoc__", true);
+            }
+
+            // Add this script executor to the the builtin to be globally visible everywhere
+            // This support pyrevit functionality to ask information about the current executing command
+            builtin.SetVariable("__externalcommand__", pyrvtCmd);
+
+            // Adding data provided by IExternalCommand.Execute
+            builtin.SetVariable("__commanddata__", pyrvtCmd.CommandData);
+            builtin.SetVariable("__elements__", pyrvtCmd.SelectedElements);
+
+            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
+            builtin.SetVariable("__alternatecommandpath__", Path.GetDirectoryName(pyrvtCmd.AlternateScriptSourceFile));
+            builtin.SetVariable("__commandname__", pyrvtCmd.CommandName);
+            builtin.SetVariable("__commandbundle__", pyrvtCmd.CommandBundle);
+            builtin.SetVariable("__commandextension__", pyrvtCmd.CommandExtension);
+            builtin.SetVariable("__commanduniqueid__", pyrvtCmd.CommandUniqueId);
+            builtin.SetVariable("__forceddebugmode__", pyrvtCmd.DebugMode);
+            builtin.SetVariable("__shiftclick__", pyrvtCmd.AlternateMode);
+            builtin.SetVariable("__result__", pyrvtCmd.GetResultsDictionary());
+        }
+
     }
 }

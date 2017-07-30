@@ -40,7 +40,7 @@ namespace PyRevitBaseClasses
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setup the command scope in this engine with proper builtin and scope parameters
-            var scope = CreateCommandScope(engine, pyrvtCmd.OutputWindow, pyrvtCmd);
+            var scope = CreateScope(engine, ref pyrvtCmd);
 
             // 4: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Create the script from source file
@@ -50,7 +50,7 @@ namespace PyRevitBaseClasses
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
             var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
-            compiler_options.ModuleName = "__main__";
+            compiler_options.ModuleName = pyrvtCmd.CommandUniqueId;
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
             var errors = new ErrorReporter();
@@ -95,47 +95,20 @@ namespace PyRevitBaseClasses
         }
 
 
-        public ScriptScope CreateCommandScope(ScriptEngine engine, ScriptOutput outputWindow, PyRevitCommand pyrvtCmd)
+        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommand pyrvtCmd)
         {
-            // BUILTINS -----------------------------------------------------------------------------------------------
-            // Get builtin to add custom variables
-            var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
-
-            // Add host application handle to the builtin to be globally visible everywhere
-            builtin.SetVariable("__revit__", _revit);
-
-            // add engine to builtins
-            builtin.SetVariable("__ipyengine__", engine);
-
-            // Add this script executor to the the builtin to be globally visible everywhere
-            // This support pyrevit functionality to ask information about the current executing command
-            builtin.SetVariable("__externalcommand__", pyrvtCmd);
-
-
-            // SCOPE --------------------------------------------------------------------------------------------------
-            // Get script scope to add custom variables
             var scope = IronPython.Hosting.Python.CreateModule(engine, pyrvtCmd.CommandUniqueId);
 
-            // Adding data provided by IExternalCommand.Execute
-            scope.SetVariable("__commanddata__", pyrvtCmd.CommandData);
-            scope.SetVariable("__elements__", pyrvtCmd.SelectedElements);
-
-            // Add command info to builtins
-            scope.SetVariable("__file__", pyrvtCmd.ScriptSourceFile);
-            scope.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
-            scope.SetVariable("__alternatecommandpath__", Path.GetDirectoryName(pyrvtCmd.AlternateScriptSourceFile));
-            scope.SetVariable("__commandname__", pyrvtCmd.CommandName);
-            scope.SetVariable("__commandbundle__", pyrvtCmd.CommandBundle);
-            scope.SetVariable("__commandextension__", pyrvtCmd.CommandExtension);
-            scope.SetVariable("__commanduniqueid__", pyrvtCmd.CommandUniqueId);
-            scope.SetVariable("__forceddebugmode__", pyrvtCmd.DebugMode);
-            scope.SetVariable("__shiftclick__", pyrvtCmd.AlternateMode);
-            scope.SetVariable("__result__", pyrvtCmd.GetResultsDictionary());
-
-            // Adding output window handle
-            scope.SetVariable("__window__", outputWindow);
+            SetupScope(scope, ref pyrvtCmd);
 
             return scope;
+        }
+
+        public void SetupScope(ScriptScope scope, ref PyRevitCommand pyrvtCmd)
+        {
+            // SCOPE --------------------------------------------------------------------------------------------------
+            // Add command info to builtins
+            scope.SetVariable("__file__", pyrvtCmd.ScriptSourceFile);
         }
 
     }

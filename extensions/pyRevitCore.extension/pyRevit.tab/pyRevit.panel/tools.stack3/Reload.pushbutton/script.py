@@ -1,7 +1,9 @@
-__context__ = 'zerodoc'
+"""Searches the script folders and create buttons
+for the new script or newly installed extensions."""
 
-__doc__ = 'Searches the script folders and create buttons for the new ' \
-          'script or newly installed extensions.'
+
+__cleanengine__ = True
+__context__ = 'zerodoc'
 
 
 from scriptutils import logger

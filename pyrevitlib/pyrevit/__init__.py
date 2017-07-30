@@ -155,6 +155,20 @@ class _ExecutorParams(object):
             raise AttributeError()
 
     @property   # read-only
+    def engine_mgr(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __ipyenginemanager__
+        except:
+            raise AttributeError()
+
+    @property  # read-only
+    def first_load(self):
+        # if no output window is set by the executor, it means that pyRevit
+        # is loading at Revit startup (not reloading)
+        return True if EXEC_PARAMS.window_handle is None else False
+
+    @property   # read-only
     def pyrevit_command(self):
         try:
             # noinspection PyUnresolvedReferences
@@ -224,11 +238,6 @@ class _ExecutorParams(object):
 
 
 EXEC_PARAMS = _ExecutorParams()
-
-# if no output window is set by the executor, it means that pyRevit
-# is loading at Revit startup (not reloading)
-FIRST_LOAD = True if EXEC_PARAMS.window_handle is None else False
-
 
 # ------------------------------------------------------------------------------
 # config environment info

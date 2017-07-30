@@ -16,7 +16,7 @@ import sys
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
 
-from pyrevit import EXEC_PARAMS, FIRST_LOAD
+from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
@@ -30,7 +30,17 @@ from pyrevit.usagelog import setup_usage_logfile
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 
+
 logger = get_logger(__name__)
+
+
+def _clear_running_engines():
+    # clear the cached engines
+    try:
+        EXEC_PARAMS.engine_mgr.ClearEngines()
+        print(EXEC_PARAMS.engine_mgr)
+    except AttributeError:
+        return False
 
 
 def _setup_output_window():
@@ -51,9 +61,13 @@ def _setup_output_window():
 
 # Functions related to creating/loading a new pyRevit session
 def _perform_onsessionload_ops():
+    # clear the cached engines
+    if not _clear_running_engines():
+        logger.debug('No Engine Manager exists...')
+
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
-    if FIRST_LOAD:
+    if EXEC_PARAMS.first_load:
         _setup_output_window()
 
     # once pre-load is complete, report environment conditions
