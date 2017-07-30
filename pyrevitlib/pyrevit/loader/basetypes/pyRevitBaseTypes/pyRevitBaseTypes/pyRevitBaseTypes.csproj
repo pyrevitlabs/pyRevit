@@ -114,6 +114,9 @@
       <Link>outputwindowdesigner.cs</Link>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="..\..\outputwindowmgr.cs">
+      <Link>outputwindowmgr.cs</Link>
+    </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>
     </Compile>

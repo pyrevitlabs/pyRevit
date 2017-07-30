@@ -16,9 +16,6 @@ namespace PyRevitBaseClasses
         public EngineManager(UIApplication revit)
         {
             _revit = revit;
-
-            // cleanup engines for douments that are no longer loaded
-            // CleanupOrphanedEngines();
         }
 
 

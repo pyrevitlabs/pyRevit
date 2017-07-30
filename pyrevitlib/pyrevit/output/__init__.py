@@ -7,7 +7,7 @@ from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import rvtprotocol, markdown, charts
 from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.loadertypes import ExternalConfig
+from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
@@ -29,7 +29,7 @@ class PyRevitOutputMgr:
 
     @staticmethod
     def _get_all_open_output_windows():
-        output_list_entryname = ExternalConfig.pyrevitconsolesappdata
+        output_list_entryname = EnvDictionaryKeys.pyrevitOutputWindows
         return list(AppDomain.CurrentDomain.GetData(output_list_entryname))
 
     @staticmethod
@@ -39,6 +39,11 @@ class PyRevitOutputMgr:
                     if x.OutputId == command]
         else:
             return PyRevitOutputMgr._get_all_open_output_windows()
+
+    @staticmethod
+    def close_all_outputs():
+        for output_wnd in PyRevitOutputMgr._get_all_open_output_windows():
+            output_wnd.Close()
 
 
 class PyRevitOutputWindow:

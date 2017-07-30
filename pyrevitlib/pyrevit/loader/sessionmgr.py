@@ -20,7 +20,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
-    loggers_have_errors
+                                     loggers_have_errors
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 from pyrevit.loader import sessioninfo
 # import the basetypes first to get all the c-sharp code to compile
@@ -29,6 +29,7 @@ from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from pyrevit.usagelog import setup_usage_logfile
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
+from pyrevit.output import get_output
 
 
 logger = get_logger(__name__)
@@ -37,6 +38,10 @@ logger = get_logger(__name__)
 def _clear_running_engines():
     # clear the cached engines
     try:
+        my_output = get_output()
+        if my_output:
+            my_output.close_others(all_open_outputs=True)
+
         EXEC_PARAMS.engine_mgr.ClearEngines()
     except AttributeError:
         return False
