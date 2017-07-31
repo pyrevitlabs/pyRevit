@@ -94,7 +94,7 @@ def report_env():
                 ':coded: with :small-black-heart: '
                 'in Portland, OR'.format(pyrvt_ver))
     if not user_config.core.cleanengine:
-        logger.info('pyRevit Performance Mode enabled. :rocket:')
+        logger.info('pyRevit Rocket Mode enabled. :rocket:')
     logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
                                                        HOST_APP.build,
                                                        HOST_APP.proc_id))
