@@ -121,7 +121,6 @@ class XMLGenerator(handler.ContentHandler):
         self._undeclared_ns_maps = []
         self._encoding = encoding
 
-
     def _qname(self, name):
         """Builds a qualified name from a (ns_url, localname) pair"""
         if name[0]:
@@ -147,6 +146,7 @@ class XMLGenerator(handler.ContentHandler):
 
     def endDocument(self):
         self._flush()
+
     def startPrefixMapping(self, prefix, uri):
         self._ns_contexts.append(self._current_context.copy())
         self._current_context[uri] = prefix

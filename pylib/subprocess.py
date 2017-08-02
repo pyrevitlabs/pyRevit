@@ -426,6 +426,8 @@ if mswindows:
 elif mono:
     _has_poll = False
     import clr
+    if clr.IsNetStandard:
+        clr.AddReference("System.Diagnostics.Process")
     from System.Diagnostics import Process
     from System.IO import MemoryStream
 else:

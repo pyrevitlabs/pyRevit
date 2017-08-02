@@ -5,7 +5,7 @@ Implements the HMAC algorithm as described by RFC 2104.
 
 import warnings as _warnings
 
-# from operator import _compare_digest as compare_digest
+from operator import _compare_digest as compare_digest
 
 
 trans_5C = "".join ([chr (x ^ 0x5C) for x in xrange(256)])

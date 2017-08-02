@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 from __future__ import print_function
 
 import os
@@ -11,9 +12,9 @@ import tempfile
 __all__ = ["version", "bootstrap"]
 
 
-_SETUPTOOLS_VERSION = "3.6"
+_SETUPTOOLS_VERSION = "20.10.1"
 
-_PIP_VERSION = "1.5.6"
+_PIP_VERSION = "8.1.1"
 
 IRONPYTHON = sys.platform == 'cli'
 
@@ -24,6 +25,7 @@ try:
     import ssl
 except ImportError:
     ssl = None
+
     def _require_ssl_for_pip():
         raise RuntimeError(_MISSING_SSL_MESSAGE)
 else:
@@ -51,6 +53,7 @@ def version():
     Returns a string specifying the bundled version of pip.
     """
     return _PIP_VERSION
+
 
 def _disable_pip_configuration_settings():
     # We deliberately ignore all pip environment variables
@@ -148,7 +151,7 @@ def _uninstall_helper(verbosity=0):
     _disable_pip_configuration_settings()
 
     # Construct the arguments to be passed to the pip command
-    args = ["uninstall", "-y"]
+    args = ["uninstall", "-y", "--disable-pip-version-check"]
     if verbosity:
         args += ["-" + "v" * verbosity]
 

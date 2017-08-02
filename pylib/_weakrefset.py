@@ -125,7 +125,6 @@ class WeakSet(object):
         self.update(other)
         return self
 
-
     def difference(self, other):
         newset = self.copy()
         newset.difference_update(other)
@@ -179,6 +178,7 @@ class WeakSet(object):
         if opposite is NotImplemented:
             return NotImplemented
         return not opposite
+
     def symmetric_difference(self, other):
         newset = self.copy()
         newset.symmetric_difference_update(other)

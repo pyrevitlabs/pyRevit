@@ -295,6 +295,7 @@ class Hook:
         if self.logdir is not None:
             suffix = ['.txt', '.html'][self.format=="html"]
             (fd, path) = tempfile.mkstemp(suffix=suffix, dir=self.logdir)
+
             try:
                 file = os.fdopen(fd, 'w')
                 file.write(doc)

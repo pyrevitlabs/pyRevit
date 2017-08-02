@@ -306,7 +306,6 @@ class FileInput:
             self._filename = '<stdin>'
             self._file = sys.stdin
             self._isstdin = True
-
         else:
             if self._inplace:
                 self._backupfilename = (

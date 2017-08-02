@@ -194,17 +194,25 @@ def _get_default_tempdir():
             name = namer.next()
             filename = _os.path.join(dir, name)
             try:
-                fd = _os.open(filename, flags, 0600)
-                fp = _os.fdopen(fd, 'w')
-                fp.write('blat')
-                fp.close()
-                _os.unlink(filename)
-                del fp, fd
+                fd = _os.open(filename, flags, 0o600)
+                try:
+                    try:
+                        with _io.open(fd, 'wb', closefd=False) as fp:
+                            fp.write(b'blat')
+                    finally:
+                        _os.close(fd)
+                finally:
+                    _os.unlink(filename)
                 return dir
-            except (OSError, IOError), e:
-                if e[0] != _errno.EEXIST:
-                    break # no point trying more names in this directory
-                pass
+            except (OSError, IOError) as e:
+                if e.args[0] == _errno.EEXIST:
+                    continue
+                if (_os.name == 'nt' and e.args[0] == _errno.EACCES and
+                    _os.path.isdir(dir) and _os.access(dir, _os.W_OK)):
+                    # On windows, when a directory with the chosen name already
+                    # exists, EACCES error code is returned instead of EEXIST.
+                    continue
+                break # no point trying more names in this directory
     raise IOError, (_errno.ENOENT,
                     ("No usable temporary directory found in %s" % dirlist))
 

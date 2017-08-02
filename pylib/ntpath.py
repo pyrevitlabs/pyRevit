@@ -332,7 +332,7 @@ def expandvars(path):
         return path
     import string
     varchars = string.ascii_letters + string.digits + '_-'
-    if isinstance(path, _unicode):
+    if sys.platform != 'cli' and isinstance(path, _unicode):
         encoding = sys.getfilesystemencoding()
         def getenv(var):
             return os.environ[var.encode(encoding)].decode(encoding)

@@ -165,12 +165,12 @@ class TestCase(object):
 
     longMessage = False
 
-
     maxDiff = 80*8
 
     # If a string is longer than _diffThreshold, use normal comparison instead
     # of difflib.  See #11763.
     _diffThreshold = 2**16
+
     # Attribute used by TestSuite for classSetUp
 
     _classSetupFailed = False
