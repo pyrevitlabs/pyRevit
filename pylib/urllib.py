@@ -1625,7 +1625,6 @@ elif os.name == 'nt':
 
         Checks proxy settings gathered from the environment, if specified,
         or the registry.
-
         """
         proxies = getproxies_environment()
         if proxies:

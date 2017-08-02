@@ -59,7 +59,6 @@ try:
 except NameError:
     _unicode = False
 
-
 # next bit filched from 1.5.2's inspect.py
 def currentframe():
     """Return the frame object for the caller's stack frame."""
@@ -76,6 +75,7 @@ if hasattr(sys, '_getframe'): currentframe = lambda: sys._getframe(3)
 # caller stack frame.
 #
 _srcfile = os.path.normcase(currentframe.__code__.co_filename)
+
 # _srcfile is only used in conjunction with sys._getframe().
 # To provide compatibility with older versions of Python, set _srcfile
 # to None if _getframe() is not available; this value will prevent

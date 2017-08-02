@@ -91,8 +91,10 @@ class bdist_wininst (Command):
                 # next the command will be initialized using that name
             bdist_base = self.get_finalized_command('bdist').bdist_base
             self.bdist_dir = os.path.join(bdist_base, 'wininst')
+
         if not self.target_version:
             self.target_version = ""
+
         if not self.skip_build and self.distribution.has_ext_modules():
             short_version = get_python_version()
             if self.target_version and self.target_version != short_version:

@@ -307,6 +307,7 @@ def _url_collapse_path(path):
     Returns: The reconstituted URL, which will always start with a '/'.
 
     Raises: IndexError if too many '..' occur within the path.
+
     """
     # Query component should not be involved.
     path, _, query = path.partition('?')

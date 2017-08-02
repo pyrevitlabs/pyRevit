@@ -84,7 +84,6 @@ _array_fmts = None, 'b', 'h', None, 'i'
 
 import struct
 import sys
-
 from chunk import Chunk
 
 def _byteswap3(data):
@@ -92,6 +91,7 @@ def _byteswap3(data):
     ba[::3] = data[2::3]
     ba[2::3] = data[::3]
     return bytes(ba)
+
 class Wave_read:
     """Variables used in this class:
 

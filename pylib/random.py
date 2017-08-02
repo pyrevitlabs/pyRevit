@@ -279,6 +279,7 @@ class Random(_random.Random):
 
         Optional arg random is a 0-argument function returning a random
         float in [0.0, 1.0); by default, the standard random.random.
+
         """
 
         if random is None:
@@ -467,7 +468,6 @@ class Random(_random.Random):
 
         while 1:
             u1 = random()
-
             z = _cos(_pi * u1)
 
             d = z / (r + z)

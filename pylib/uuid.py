@@ -338,7 +338,6 @@ def _find_mac(command, args, hw_identifiers, get_index):
 
 def _ifconfig_getnode():
     """Get the hardware address on Unix by running ifconfig."""
-
     # This works on Linux ('' or '-a'), Tru64 ('-av'), but not all Unixes.
     for args in ('', '-a', '-av'):
         mac = _find_mac('ifconfig', args, ['hwaddr', 'ether'], lambda i: i+1)
@@ -444,12 +443,12 @@ def _netbios_getnode():
 _uuid_generate_time = _UuidCreate = None
 try:
     import ctypes, ctypes.util
-    import sys
+    import sys, os
 
     # The uuid_generate_* routines are provided by libuuid on at least
     # Linux and FreeBSD, and provided by libc on Mac OS X.
     _libnames = ['uuid']
-    if not sys.platform.startswith('win'):
+    if not sys.platform.startswith('win') and os.name != 'nt':
         _libnames.append('c')
     for libname in _libnames:
         try:

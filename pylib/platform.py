@@ -1155,7 +1155,7 @@ def uname():
         use_syscmd_ver = 1
 
         # Try win32_ver() on win32 platforms
-        if system == 'win32':
+        if system == 'win32' or (system == 'cli' and os.name == 'nt'):
             release,version,csd,ptype = win32_ver()
             if release and version:
                 use_syscmd_ver = 0
@@ -1372,6 +1372,7 @@ def _sys_version(sys_version=None):
             raise ValueError(
                 'failed to parse IronPython sys.version: %s' %
                 repr(sys_version))
+
         version, alt_version, compiler = match.groups()
         buildno = ''
         builddate = ''
