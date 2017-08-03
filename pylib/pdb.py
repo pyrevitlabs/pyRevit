@@ -1301,10 +1301,8 @@ def main():
 
     del sys.argv[0]         # Hide "pdb.py" from argument list
 
-    print sys.path
     # Replace pdb's dir with script's dir in front of module search path.
     sys.path[0] = os.path.dirname(mainpyfile)
-    print sys.path
 
     # Note on saving/restoring sys.argv: it's a good idea when sys.argv was
     # modified by the script being debugged. It's a bad idea when it was

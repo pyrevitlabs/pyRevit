@@ -285,7 +285,7 @@ def getsitepackages():
             continue
         seen.add(prefix)
 
-        if sys.platform in ('os2emx', 'riscos'):
+        if sys.platform in ('os2emx', 'riscos', 'cli'):
             sitepackages.append(os.path.join(prefix, "Lib", "site-packages"))
         elif os.sep == '/':
             sitepackages.append(os.path.join(prefix, "lib",

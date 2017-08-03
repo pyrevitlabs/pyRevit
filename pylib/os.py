@@ -262,6 +262,7 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
         print "bytes in", len(files), "non-directory files"
         if 'CVS' in dirs:
             dirs.remove('CVS')  # don't visit CVS directories
+
     """
 
     islink, join, isdir = path.islink, path.join, path.isdir

@@ -30,31 +30,31 @@ _ASSERT_CODES = set([ASSERT, ASSERT_NOT])
 # Sets of lowercase characters which have the same uppercase.
 _equivalences = (
     # LATIN SMALL LETTER I, LATIN SMALL LETTER DOTLESS I
-    (0x69, 0x131), # ii
+    (0x69, 0x131), # iı
     # LATIN SMALL LETTER S, LATIN SMALL LETTER LONG S
-    (0x73, 0x17f), # s?
+    (0x73, 0x17f), # sſ
     # MICRO SIGN, GREEK SMALL LETTER MU
-    (0xb5, 0x3bc), # ��
+    (0xb5, 0x3bc), # µμ
     # COMBINING GREEK YPOGEGRAMMENI, GREEK SMALL LETTER IOTA, GREEK PROSGEGRAMMENI
-    (0x345, 0x3b9, 0x1fbe), # \u0345??
+    (0x345, 0x3b9, 0x1fbe), # \u0345ιι
     # GREEK SMALL LETTER BETA, GREEK BETA SYMBOL
-    (0x3b2, 0x3d0), # �?
+    (0x3b2, 0x3d0), # βϐ
     # GREEK SMALL LETTER EPSILON, GREEK LUNATE EPSILON SYMBOL
-    (0x3b5, 0x3f5), # e?
+    (0x3b5, 0x3f5), # εϵ
     # GREEK SMALL LETTER THETA, GREEK THETA SYMBOL
-    (0x3b8, 0x3d1), # ??
+    (0x3b8, 0x3d1), # θϑ
     # GREEK SMALL LETTER KAPPA, GREEK KAPPA SYMBOL
-    (0x3ba, 0x3f0), # ??
+    (0x3ba, 0x3f0), # κϰ
     # GREEK SMALL LETTER PI, GREEK PI SYMBOL
-    (0x3c0, 0x3d6), # p?
+    (0x3c0, 0x3d6), # πϖ
     # GREEK SMALL LETTER RHO, GREEK RHO SYMBOL
-    (0x3c1, 0x3f1), # ??
+    (0x3c1, 0x3f1), # ρϱ
     # GREEK SMALL LETTER FINAL SIGMA, GREEK SMALL LETTER SIGMA
-    (0x3c2, 0x3c3), # ?s
+    (0x3c2, 0x3c3), # ςσ
     # GREEK SMALL LETTER PHI, GREEK PHI SYMBOL
-    (0x3c6, 0x3d5), # f?
+    (0x3c6, 0x3d5), # φϕ
     # LATIN SMALL LETTER S WITH DOT ABOVE, LATIN SMALL LETTER LONG S WITH DOT ABOVE
-    (0x1e61, 0x1e9b), # ??
+    (0x1e61, 0x1e9b), # ṡẛ
 )
 
 # Maps the lowercase code to lowercase codes which have the same uppercase.

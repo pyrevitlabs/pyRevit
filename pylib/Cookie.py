@@ -159,7 +159,6 @@ values, however.)
    7
    >>> C["string"].value
    'seven'
-
    >>> C.output()
    'Set-Cookie: number="I7\\012."\r\nSet-Cookie: string="S\'seven\'\\012p1\\012."'
 
@@ -428,6 +427,7 @@ class Morsel(dict):
                    }
 
     _flags = {'secure', 'httponly'}
+
     def __init__(self):
         # Set defaults
         self.key = self.value = self.coded_value = None

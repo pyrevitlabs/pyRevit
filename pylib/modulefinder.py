@@ -135,7 +135,6 @@ class ModuleFinder:
     def load_file(self, pathname):
         dir, name = os.path.split(pathname)
         name, ext = os.path.splitext(name)
-        self.msg(2, "load_file -> %s", pathname)
         with open(pathname, READ_MODE) as fp:
             stuff = (ext, "r", imp.PY_SOURCE)
             self.load_module(name, fp, pathname, stuff)

@@ -186,6 +186,7 @@ class Heap(object):
                 break
             self._allocated_blocks.remove(block)
             self._free(block)
+
     def free(self, block):
         # free a block returned by malloc()
         # Since free() can be called asynchronously by the GC, it could happen

@@ -147,6 +147,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
             "on platform '%s'" % os.name)
 
 
+
 def customize_compiler(compiler):
     """Do any platform-specific customization of a CCompiler instance.
 

@@ -200,7 +200,6 @@ if sys.platform != 'win32':
         return c1, c2
 
 else:
-
     from _multiprocessing import win32
 
     def Pipe(duplex=True):

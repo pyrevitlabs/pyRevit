@@ -584,6 +584,7 @@ class DictConfigurator(BaseConfigurator):
                     except StandardError as e:
                         raise ValueError('Unable to configure handler '
                                          '%r: %s' % (name, e))
+
                 # Next, do loggers - they refer to handlers and filters
 
                 #we don't want to lose the existing loggers,

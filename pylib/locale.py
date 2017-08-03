@@ -387,7 +387,6 @@ def normalize(localename):
         code = code.replace(':', '.')
     if '@' in code:
         code, modifier = code.split('@', 1)
-
     else:
         modifier = ''
     if '.' in code:
