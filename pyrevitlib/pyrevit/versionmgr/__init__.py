@@ -1,7 +1,8 @@
-from pyrevit import PYREVIT_ADDON_NAME
-from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, EXEC_PARAMS
+from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.envvars import set_pyrevit_env_var
+from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
+
 import pyrevit.coreutils.git as git
 
 
@@ -46,17 +47,15 @@ def get_pyrevit_repo():
         logger.error('Can not create repo from directory: {} | {}'
                      .format(HOME_DIR, repo_err))
 
-if not EXEC_PARAMS.doc_mode:
+
+def get_pyrevit_version():
     try:
-        PYREVIT_REPO = get_pyrevit_repo()
-        PYREVIT_VERSION = PyRevitVersion(PYREVIT_REPO.last_commit_hash)
+        pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
-        PYREVIT_VERSION = PyRevitVersion('?')
+        pyrvt_ver = PyRevitVersion('?')
 
-    set_pyrevit_env_var(PYREVIT_ADDON_NAME + '_versionISC',
-                        PYREVIT_VERSION.get_formatted())
+    set_pyrevit_env_var(EnvDictionaryKeys.addonVersion,
+                        pyrvt_ver.get_formatted())
 
-else:
-    PYREVIT_REPO = None
-    PYREVIT_VERSION = None
+    return pyrvt_ver

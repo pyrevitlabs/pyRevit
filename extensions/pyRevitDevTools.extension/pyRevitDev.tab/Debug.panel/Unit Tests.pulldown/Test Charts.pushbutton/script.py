@@ -1,4 +1,4 @@
-from pyrevit.coreutils.console import charts
+from pyrevit.output import charts
 from scriptutils import this_script
 
 

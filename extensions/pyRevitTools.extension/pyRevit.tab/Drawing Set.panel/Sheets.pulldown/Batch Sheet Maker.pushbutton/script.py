@@ -109,5 +109,4 @@ class BatchSheetMakerWindow(WPFWindow):
                 tg.Assimilate()
 
 
-if __name__ == '__main__':
-    BatchSheetMakerWindow('BatchSheetMakerWindow.xaml').ShowDialog()
+BatchSheetMakerWindow('BatchSheetMakerWindow.xaml').ShowDialog()

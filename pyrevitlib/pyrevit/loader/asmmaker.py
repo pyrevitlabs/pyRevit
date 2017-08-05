@@ -8,7 +8,7 @@ from pyrevit.coreutils import load_asm_file, find_loaded_asm, get_file_name,\
     make_canonical_name
 from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.versionmgr import get_pyrevit_version
 
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
@@ -86,7 +86,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
 
     # create assembly
     logger.debug('Building assembly for package: {}'.format(extension))
-    pyrvt_ver_int_tuple = PYREVIT_VERSION.as_int_tuple()
+    pyrvt_ver_int_tuple = get_pyrevit_version().as_int_tuple()
     win_asm_name = AssemblyName(Name=ext_asm_file_name,
                                 Version=Version(pyrvt_ver_int_tuple[0],
                                                 pyrvt_ver_int_tuple[1],

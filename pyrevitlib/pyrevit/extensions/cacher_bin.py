@@ -4,6 +4,7 @@ from pyrevit import PyRevitException
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils.logger import get_logger
 
+
 logger = get_logger(__name__)
 
 

@@ -1,16 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.IO;
-using System.Windows.Forms;
-using Autodesk.Revit;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
-using IronPython.Runtime;
 
 
 namespace PyRevitBaseClasses
@@ -70,7 +63,6 @@ namespace PyRevitBaseClasses
 
     public class ScriptUsageLogger
     {
-        private readonly UIApplication _revit;
         private string _usageLogFilePath;
         private string _usageLogServerUrl;
         public LogEntry logEntry;
@@ -81,18 +73,20 @@ namespace PyRevitBaseClasses
                                  bool forcedDebugMode, bool altScriptMode,
                                  int execResult, ref Dictionary<String, String> resultDict)
         {
-            _revit = commandData.Application;
-
+            // get host
+            var revit = commandData.Application;
+            
             // get live data from python dictionary saved in appdomain
             _usageLogFilePath = envdict.usageLogFilePath;
             _usageLogServerUrl = envdict.usageLogServerUrl;
 
-            logEntry = new LogEntry(_revit.Application.Username,
-                                  _revit.Application.VersionNumber, _revit.Application.VersionBuild,
-                                  envdict.sessionUUID, envdict.addonVersion,
-                                  forcedDebugMode, altScriptMode, cmdName, cmdBundle, cmdExtension, cmdUniqueName,
-                                  execResult, ref resultDict,
-                                  scriptSource);
+            logEntry = new LogEntry(revit.Application.Username,
+                                    revit.Application.VersionNumber, revit.Application.VersionBuild,
+                                    envdict.sessionUUID, envdict.addonVersion,
+                                    forcedDebugMode, altScriptMode,
+                                    cmdName, cmdBundle, cmdExtension, cmdUniqueName,
+                                    execResult, ref resultDict,
+                                    scriptSource);
         }
 
         public string MakeJSONLogEntry()

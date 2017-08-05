@@ -1,10 +1,12 @@
-from pyrevit.coreutils import create_type, create_ext_command_attrs,\
-    join_strings
+from pyrevit.coreutils import create_type, create_ext_command_attrs, \
+                              join_strings
 from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
     CMD_AVAIL_TYPE_CATEGORY
+
+from pyrevit.userconfig import user_config
 
 
 logger = get_logger(__name__)
@@ -52,6 +54,15 @@ def _make_python_types(extension, module_builder, cmd_component):
     """
     logger.debug('Creating executor type for: {}'.format(cmd_component))
 
+    # check if core is in clean engine mode
+    # this means that the type makes should set the clean engine requirement
+    # to True so the executor, runs each command in an independent engine
+    # otherwise the use of a clean engine is decided by the command itself
+    # and a shared engine will be used by default
+    requires_clean_engine = int(user_config.core.cleanengine)
+    if not requires_clean_engine:
+        requires_clean_engine = int(cmd_component.requires_clean_engine)
+
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
                 cmd_component.get_full_script_address(),
@@ -60,7 +71,8 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.name,
                 cmd_component.bundle_name,
                 extension.name,
-                cmd_component.unique_name)
+                cmd_component.unique_name,
+                requires_clean_engine)
 
     logger.debug('Successfully created executor type for: {}'
                  .format(cmd_component))

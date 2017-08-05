@@ -85,9 +85,10 @@ class SettingsWindow(WPFWindow):
                                                     default_value=0)
         self.minhostdrivefreespace_tb.Text = str(min_freespace)
 
-
         self.loadbetatools_cb.IsChecked = \
             user_config.core.get_option('loadbeta', default_value=False)
+
+        self.performancemode_cb.IsChecked = not user_config.core.cleanengine
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list
@@ -310,6 +311,7 @@ class SettingsWindow(WPFWindow):
 
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
         user_config.core.startuplogtimeout = self.startup_log_timeout.Text
+        user_config.core.cleanengine = not self.performancemode_cb.IsChecked
 
         # set extension folders from the list, after cleanup empty items
         if isinstance(self.extfolders_lb.ItemsSource, list):
@@ -336,9 +338,9 @@ class SettingsWindow(WPFWindow):
 # if Shift-Click on the tool, opens the pyRevit config file in
 # windows explorer
 # otherwise, will show the Settings user interface
-if __name__ == '__main__':
-    # noinspection PyUnresolvedReferences
-    if __shiftclick__:
-        show_file_in_explorer(user_config.config_file)
-    else:
-        SettingsWindow('SettingsWindow.xaml').ShowDialog()
+
+# noinspection PyUnresolvedReferences
+if __shiftclick__:
+    show_file_in_explorer(user_config.config_file)
+else:
+    SettingsWindow('SettingsWindow.xaml').ShowDialog()

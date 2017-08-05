@@ -6,10 +6,9 @@ e.g. adding a new config parameter
 
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import find_loaded_asm, get_revit_instance_count
-from pyrevit.userconfig import user_config
 
 
-def _filelogging_config_upgrade():
+def _filelogging_config_upgrade(user_config):
     """ Upgrades local files and settings per this commit changes.
     commit message:   Added file handler to logger
     commit hash:      d5c1cb548bfc08530d9f8b6ba9899e8f46f1d631
@@ -41,7 +40,7 @@ def _cleanup_cache_files():
                 appdata.garbage_data_file(asm_file_path)
 
 
-def _loadbeta_config_upgrade():
+def _loadbeta_config_upgrade(user_config):
     """ Upgrades local files and settings per this commit changes.
     commit message:   Added support for __beta__ Issue# 155
     commit hash:      d1237aa50a430f86a9362af5c2471c16254fd20e
@@ -54,7 +53,7 @@ def _loadbeta_config_upgrade():
         user_config.save_changes()
 
 
-def _startuplogtimeout_config_upgrade():
+def _startuplogtimeout_config_upgrade(user_config):
     """ Upgrades local files and settings per this commit changes.
     commit message:   Updated settings window to allow adjusting
                       the startup window timeout
@@ -78,9 +77,19 @@ def _disabe_legacy_revitpythonwrapper_extension():
         legacy_rpw_pkg.disable_package()
 
 
+def _cleanengine_config_upgrade(user_config):
+    if not  user_config.core.has_option('cleanengine'):
+        user_config.core.cleanengine = True
+        user_config.save_changes()
+
+
+def upgrade_user_config(user_config):
+    _filelogging_config_upgrade(user_config)
+    _loadbeta_config_upgrade(user_config)
+    _startuplogtimeout_config_upgrade(user_config)
+    _cleanengine_config_upgrade(user_config)
+
+
 def upgrade_existing_pyrevit():
-    _filelogging_config_upgrade()
     _cleanup_cache_files()
-    _loadbeta_config_upgrade()
-    _startuplogtimeout_config_upgrade()
     _disabe_legacy_revitpythonwrapper_extension()

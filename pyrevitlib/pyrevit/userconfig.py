@@ -9,6 +9,7 @@ from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils.configparser import PyRevitConfigParser
 from pyrevit.coreutils.logger import get_logger, set_file_logging
+from pyrevit.versionmgr.upgrade import upgrade_user_config
 
 # noinspection PyUnresolvedReferences
 from System.IO import IOException
@@ -195,6 +196,7 @@ if not EXEC_PARAMS.doc_mode:
     # this pushes reading settings at first import of this module.
     try:
         user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE_PATH)
+        upgrade_user_config(user_config)
     except Exception as cfg_err:
         logger.debug('Can not read existing confing file at: {} | {}'
                      .format(CONFIG_FILE_PATH, cfg_err))

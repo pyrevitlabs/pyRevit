@@ -81,6 +81,7 @@ MIN_REVIT_VERSION_PARAM = '__min_revit_ver__'
 MAX_REVIT_VERSION_PARAM = '__max_revit_ver__'
 SHIFT_CLICK_PARAM = '__shiftclick__'
 BETA_SCRIPT_PARAM = '__beta__'
+CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 
 LINK_BUTTON_ASSEMBLY_PARAM = '__assembly__'
 LINK_BUTTON_COMMAND_CLASS_PARAM = '__commandclass__'

@@ -9,7 +9,6 @@ import sys
 import os
 import os.path as op
 import traceback
-import __builtin__
 
 # noinspection PyUnresolvedReferences
 from System.Diagnostics import Process
@@ -118,6 +117,16 @@ class _HostApplication:
     def is_older_than(self, version):
         return int(self.version) < int(version)
 
+    @property
+    def doc(self):
+        """ Returns: uiapp.ActiveUIDocument.Document """
+        return getattr(self.uiapp.ActiveUIDocument, 'Document', None)
+
+    @property
+    def uidoc(self):
+        """ Returns: uiapp.ActiveUIDocument """
+        return getattr(self.uiapp, 'ActiveUIDocument', None)
+
 
 HOST_APP = _HostApplication()
 
@@ -126,6 +135,9 @@ HOST_APP = _HostApplication()
 # Testing values of builtin parameters set in scope by C# Script Executor.
 # ------------------------------------------------------------------------------
 class _ExecutorParams(object):
+    def __init__(self):
+        self._overridewindow = None
+
     @property   # read-only
     def engine(self):
         """
@@ -142,71 +154,70 @@ class _ExecutorParams(object):
         except:
             raise AttributeError()
 
-    # @property   # read-only
-    # def executor_version(self):
-    #     try:
-    #         # noinspection PyUnresolvedReferences
-    #         for custom_attr in __assmcustomattrs__:
-    #             if 'AssemblyPyRevitVersion' in
-    #             unicode(custom_attr.AttributeType):
-    #                 return unicode(custom_attr.ConstructorArguments[0])
-    #                        .replace('\"', '')
-    #     except:
-    #         raise AttributeError()
+    @property   # read-only
+    def engine_mgr(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __ipyenginemanager__
+        except:
+            raise AttributeError()
+
+    @property  # read-only
+    def first_load(self):
+        # if no output window is set by the executor, it means that pyRevit
+        # is loading at Revit startup (not reloading)
+        return True if EXEC_PARAMS.window_handle is None else False
+
+    @property   # read-only
+    def pyrevit_command(self):
+        try:
+            # noinspection PyUnresolvedReferences
+            return __externalcommand__
+        except:
+            return None
 
     @property   # read-only
     def forced_debug_mode(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __forceddebugmode__
-        except:
+        if self.pyrevit_command:
+            return self.pyrevit_command.DebugMode
+        else:
             return False
 
     @property   # writeabe
     def window_handle(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __window__ if __window__ else None
-        except:
-            return None
+        if self.pyrevit_command and not self._overridewindow:
+            return self.pyrevit_command.OutputWindow
+        else:
+            return self._overridewindow
 
     @window_handle.setter
     def window_handle(self, value):
-        __builtin__.__window__ = value
+        self._overridewindow = value
 
     @property   # writeabe
     def command_name(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __commandname__
-        except:
-            return None
+        if self.pyrevit_command:
+            return self.pyrevit_command.CommandName
 
-    @command_name.setter
-    def command_name(self, value):
-        # noinspection PyUnusedLocal
-        __builtin__.__commandname__ = value
+    # @command_name.setter
+    # def command_name(self, value):
+    #     # noinspection PyUnusedLocal
+    #     __builtin__.__commandname__ = value
 
-    @property   # read-only
+    @property   # writeabe
     def command_path(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __commandpath__
-        except:
-            return None
+        if self.pyrevit_command:
+            return op.dirname(self.pyrevit_command.ScriptSourceFile)
 
-    @command_path.setter
-    def command_path(self, value):
-        # noinspection PyUnusedLocal
-        __builtin__.__commandpath__ = value
+    # @command_path.setter
+    # def command_path(self, value):
+    #     # noinspection PyUnusedLocal
+    #     __builtin__.__commandpath__ = value
 
     @property
     def command_data(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __commandData__
-        except:
-            return None
+        if self.pyrevit_command:
+            return self.pyrevit_command.CommandData
 
     @property
     def doc_mode(self):
@@ -218,23 +229,15 @@ class _ExecutorParams(object):
 
     @property
     def command_mode(self):
-        return self.command_name
+        return self.pyrevit_command
 
     @property
     def result_dict(self):
-        try:
-            # noinspection PyUnresolvedReferences
-            return __result__
-        except:
-            return False
+        if self.pyrevit_command:
+            return self.pyrevit_command.GetResultsDictionary()
 
 
 EXEC_PARAMS = _ExecutorParams()
-
-# if no output window is set by the executor, it means that pyRevit
-# is loading at Revit startup (not reloading)
-FIRST_LOAD = True if EXEC_PARAMS.window_handle is None else False
-
 
 # ------------------------------------------------------------------------------
 # config environment info

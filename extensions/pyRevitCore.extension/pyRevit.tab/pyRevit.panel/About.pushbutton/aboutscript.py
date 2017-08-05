@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from scriptutils import open_url
+from scriptutils import coreutils as cu
 from scriptutils.userinput import WPFWindow
-from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
-# from pyrevit.coreutils.git import compare_branch_heads
-# from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
+from pyrevit.versionmgr import get_pyrevit_version, get_pyrevit_repo
 
 
 __context__ = 'zerodoc'
@@ -24,10 +22,12 @@ class AboutWindow(WPFWindow):
         self.set_image_source('keybase_profile', 'keybase.png')
 
         try:
+            pyrvt_repo = get_pyrevit_repo()
+            pyrvt_ver = get_pyrevit_version()
             self.version_info.Text = ' v{}' \
-                                     .format(PYREVIT_VERSION.get_formatted())
-            if PYREVIT_REPO.branch != 'master':
-                self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
+                                     .format(pyrvt_ver.get_formatted())
+            if pyrvt_repo.branch != 'master':
+                self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
         except:
             self.version_info.Text = ''
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
@@ -38,27 +38,27 @@ class AboutWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubrepopage(self, sender, args):
-        open_url('https://github.com/eirannejad/pyRevit')
+        cu.open_url('https://github.com/eirannejad/pyRevit')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubcommits(self, sender, args):
-        open_url('https://github.com/eirannejad/pyRevit/commits/master')
+        cu.open_url('https://github.com/eirannejad/pyRevit/commits/master')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openrevisionhistory(self, sender, args):
-        open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
+        cu.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
-        open_url('http://eirannejad.github.io/pyRevit/credits/')
+        cu.open_url('http://eirannejad.github.io/pyRevit/credits/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openkeybaseprofile(self, sender, args):
-        open_url('https://keybase.io/ein')
+        cu.open_url('https://keybase.io/ein')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -77,5 +77,4 @@ class AboutWindow(WPFWindow):
         #                                      hist_div.BehindBy)
 
 
-if __name__ == '__main__':
-    AboutWindow('AboutWindow.xaml').ShowDialog()
+AboutWindow('AboutWindow.xaml').ShowDialog()

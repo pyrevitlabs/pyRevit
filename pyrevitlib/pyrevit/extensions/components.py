@@ -21,7 +21,7 @@ from pyrevit.extensions import ExtensionTypes
 from pyrevit.extensions import CSHARP_SCRIPT_FILE_FORMAT
 from pyrevit.extensions.genericcomps import GenericComponent,\
     GenericUIContainer, GenericUICommand
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.versionmgr import get_pyrevit_version
 
 logger = get_logger(__name__)
 
@@ -189,7 +189,7 @@ class Extension(GenericUIContainer):
 
     def __init_from_dir__(self, package_dir):
         GenericUIContainer.__init_from_dir__(self, package_dir)
-        self.pyrvt_version = PYREVIT_VERSION.get_formatted()
+        self.pyrvt_version = get_pyrevit_version().get_formatted()
 
         self.dir_hash_value = self._read_dir_hash()
         if not self.dir_hash_value:

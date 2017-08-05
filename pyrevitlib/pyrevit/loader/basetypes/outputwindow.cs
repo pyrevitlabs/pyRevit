@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using System.Threading;
+
 
 namespace PyRevitBaseClasses
 {
@@ -9,20 +9,20 @@ namespace PyRevitBaseClasses
     {
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
-        public string commandUniqueName;
+        public string OutputId;
 
         public ScriptOutput() {
             Application.EnableVisualStyles();
             InitializeComponent();
-            txtStdOut.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
+            renderer.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
 
             // Let's leave the WebBrowser control working alone.
-            while (txtStdOut.Document.Body == null)
+            while (renderer.Document.Body == null)
             {
                 Application.DoEvents();
             }
 
-            txtStdOut.Document.Body.Style = ExternalConfig.htmlstyle;
+            renderer.Document.Body.Style = ExternalConfig.htmlstyle;
 
         }
 
@@ -30,12 +30,12 @@ namespace PyRevitBaseClasses
 
         public void AppendToOutputList(object sender, EventArgs e)
         {
-            var outputList = (List<ScriptOutput>) AppDomain.CurrentDomain.GetData(ExternalConfig.pyrevitconsolesappdata);
+            var outputList = (List<object>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.pyrevitOutputWindows);
             if (outputList == null) {
-                var newOutputList = new List<ScriptOutput>();
+                var newOutputList = new List<object>();
                 newOutputList.Add(this);
 
-                AppDomain.CurrentDomain.SetData(ExternalConfig.pyrevitconsolesappdata, newOutputList);
+                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.pyrevitOutputWindows, newOutputList);
             }
             else
             {
@@ -45,18 +45,21 @@ namespace PyRevitBaseClasses
 
         public void RemoveFromOutputList(object sender, FormClosingEventArgs e)
         {
-            var outputList = (List<ScriptOutput>) AppDomain.CurrentDomain.GetData(ExternalConfig.pyrevitconsolesappdata);
+            var outputList = (List<object>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.pyrevitOutputWindows);
             if (outputList == null) {
                 return;
             }
             else
             {
-                outputList.Remove(this);
+                if (outputList.Contains(this))
+                {
+                    outputList.Remove(this);
+                }
             }
         }
 
         public void WaitReadyBrowser() {
-            // while(txtStdOut.ReadyState != WebBrowserReadyState.Complete)
+            // while(renderer.ReadyState != WebBrowserReadyState.Complete)
             // {
                Application.DoEvents();
             // }
@@ -68,21 +71,21 @@ namespace PyRevitBaseClasses
         }
 
         public void ScrollToBottom() {
-            if (txtStdOut.Document != null)
+            if (renderer.Document != null)
             {
-                txtStdOut.Document.Window.ScrollTo(0, txtStdOut.Document.Body.ScrollRectangle.Height);
+                renderer.Document.Window.ScrollTo(0, renderer.Document.Body.ScrollRectangle.Height);
             }
         }
 
         public void FocusOutput() {
-            txtStdOut.Focus();
+            renderer.Focus();
         }
 
         public void AppendText(String OutputText, String HtmlElementType) {
             WaitReadyBrowser();
-            var div = txtStdOut.Document.CreateElement(HtmlElementType);
+            var div = renderer.Document.CreateElement(HtmlElementType);
             div.InnerHtml = OutputText;
-            txtStdOut.Document.Body.AppendChild(div);
+            renderer.Document.Body.AppendChild(div);
             ScrollToBottom();
         }
 
@@ -103,26 +106,26 @@ namespace PyRevitBaseClasses
 
         public void ShowProgressBar() {
             WaitReadyBrowser();
-            if (txtStdOut.Document != null)
+            if (renderer.Document != null)
             {
-                var pbar = txtStdOut.Document.CreateElement(ExternalConfig.progressbar);
-                var pbargraph = txtStdOut.Document.CreateElement("div");
+                var pbar = renderer.Document.CreateElement(ExternalConfig.progressbar);
+                var pbargraph = renderer.Document.CreateElement("div");
                 pbargraph.Id = ExternalConfig.progressbargraphid;
                 pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, 10);
                 pbar.AppendChild(pbargraph);
-                txtStdOut.Document.Body.AppendChild(pbar);
+                renderer.Document.Body.AppendChild(pbar);
             }
         }
 
         public void UpdateProgressBar(float curValue, float maxValue) {
             WaitReadyBrowser();
-            if (txtStdOut.Document != null)
+            if (renderer.Document != null)
             {
                 HtmlElement pbargraph;
-                pbargraph = txtStdOut.Document.GetElementById(ExternalConfig.progressbargraphid);
+                pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbargraphid);
                 if (pbargraph == null) {
                     ShowProgressBar();
-                    pbargraph = txtStdOut.Document.GetElementById(ExternalConfig.progressbargraphid);
+                    pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbargraphid);
                 }
                 pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, (curValue/maxValue)*100);
             }

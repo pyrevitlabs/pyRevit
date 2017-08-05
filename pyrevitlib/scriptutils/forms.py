@@ -2,7 +2,7 @@ import os
 import os.path as op
 import clr
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 
 clr.AddReference('IronPython.Wpf')
@@ -40,8 +40,8 @@ class WPFWindow(Window):
         self.Parent = self
         if not literal_string:
             if not op.exists(xaml_file):
-                # noinspection PyUnresolvedReferences
-                wpf.LoadComponent(self, os.path.join(__commandpath__, xaml_file))
+                wpf.LoadComponent(self, os.path.join(EXEC_PARAMS.command_path,
+                                                     xaml_file))
             else:
                 wpf.LoadComponent(self, xaml_file)
         else:
@@ -51,7 +51,9 @@ class WPFWindow(Window):
         wpf_element = getattr(self, element_name)
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
-            wpf_element.Source = BitmapImage(Uri(os.path.join(__commandpath__, image_file)))
+            wpf_element.Source = \
+                BitmapImage(Uri(os.path.join(EXEC_PARAMS.command_path,
+                                             image_file)))
         else:
             wpf_element.Source = BitmapImage(Uri(image_file))
 
@@ -70,13 +72,15 @@ class TemplatePromptBar(WPFWindow):
     layout = """
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            WindowStyle="None" Background="{x:Null}" ShowInTaskbar="False" ShowActivated="False"
+            WindowStyle="None" Background="{x:Null}"
+            ShowInTaskbar="False" ShowActivated="False"
             WindowStartupLocation="Manual" ResizeMode="NoResize" Topmost="True"
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Grid Background="#FFEA9F00">
             <TextBlock x:Name="message_tb"
-                       TextWrapping="Wrap" Text="TextBlock" TextAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+                   TextWrapping="Wrap" Text="TextBlock"
+                   TextAlignment="Center" VerticalAlignment="Center"
+                   Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
         </Grid>
     </Window>
     """
