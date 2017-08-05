@@ -29,9 +29,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "..\..\release\pyRevitCloner\pyRevitCloner\bin\Release\*"; DestDir: "{tmp}\"; Flags: recursesubdirs createallsubdirs
 
-[Dirs]
-Name: "{userappdata}\{#MyAppName}"
-
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\pyRevit"
 
@@ -49,7 +46,7 @@ Filename: "{app}\pyRevit\release\uninstall_addin.bat";
 [Code]
 var
   UsagePage: TInputOptionWizardPage;
-  
+
 procedure InitializeWizard;
 begin
   { Create the pages }  
@@ -65,9 +62,23 @@ begin
   UsagePage.Values[0] := False;
 end;
 
-function GetAllUsersState(param: string): String;
+function GetAllUsersState(Param: string): String;
 begin
-  { Return the selected DataDir }
+  { Return the selected user level }
   if UsagePage.Values[1] = True then
-    Result := '--allusers';
+      Result := '--allusers';
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  { Validate certain pages before allowing the user to proceed }
+  if CurPageID = UsagePage.ID then
+    begin
+      if UsagePage.Values[1] = True then
+        WizardForm.DirEdit.Text := ExpandConstant('{commonappdata}') + '\{#MyAppName}'
+      else
+        WizardForm.DirEdit.Text := ExpandConstant('{userappdata}') + '\{#MyAppName}'
+    end;
+  
+  Result := True;
 end;
