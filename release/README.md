@@ -13,14 +13,14 @@ This directory contains the source code (Visual studio solution) for a general p
 
 ``` batch
 REM Cloning pyRevit into a directory:
-pyrevitgitservices.exe clone <destination path to clone pyrevit into>
+pyrevitgitservices.exe clone <destination_path_to_clone_pyrevit_into>
 
 REM Updating an installed version of pyRevit to most recent:
-pyrevitgitservices.exe update <pyrevit installed path>
+pyrevitgitservices.exe update <pyrevit_installed_path>
 
 REM Setting an installed version of pyRevit to a specific commit
 REM Techinically this is HARD rebasing the git repo to that commit
-pyrevitgitservices.exe setversion <pyrevit installed path> <target commit hash>
+pyrevitgitservices.exe setversion <pyrevit_installed_path> <target_commit_hash>
 ```
 
 **setupmaker**
