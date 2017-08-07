@@ -59,9 +59,11 @@ def _make_python_types(extension, module_builder, cmd_component):
     # to True so the executor, runs each command in an independent engine
     # otherwise the use of a clean engine is decided by the command itself
     # and a shared engine will be used by default
-    requires_clean_engine = int(user_config.core.cleanengine)
-    if not requires_clean_engine:
-        requires_clean_engine = int(cmd_component.requires_clean_engine)
+    always_use_clean_engine = int(not user_config.core.rocketmode)
+    if not always_use_clean_engine:
+        always_use_clean_engine = int(cmd_component.requires_clean_engine)
+
+    print(always_use_clean_engine)
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
@@ -72,7 +74,7 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.bundle_name,
                 extension.name,
                 cmd_component.unique_name,
-                requires_clean_engine)
+                always_use_clean_engine)
 
     logger.debug('Successfully created executor type for: {}'
                  .format(cmd_component))

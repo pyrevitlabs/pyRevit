@@ -13,6 +13,7 @@ from pyrevit.versionmgr import get_pyrevit_version
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
 from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
+from pyrevit.userconfig import user_config
 
 
 if not EXEC_PARAMS.doc_mode:
@@ -38,9 +39,10 @@ logger = get_logger(__name__)
 
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that
-    # the extension is based upon
-    return get_str_hash(BASE_TYPES_DIR_HASH +
-                        extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
+    # the extension is based upon and also the user configuration version
+    return get_str_hash(BASE_TYPES_DIR_HASH \
+                        + user_config.get_config_version() \
+                        + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
 
 
 def _make_ext_asm_fileid(extension):

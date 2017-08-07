@@ -4,6 +4,8 @@ All other modules use this module to query user config.
 
 """
 
+import os.path as op
+
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata
@@ -83,6 +85,9 @@ class PyRevitConfig(PyRevitConfigParser):
         except Exception as env_update_err:
             logger.debug('Error updating env variable per user config. | {}'
                          .format(env_update_err))
+
+    def get_config_version(self):
+        return self.get_config_file_hash()
 
     def get_ext_root_dirs(self):
         """

@@ -17,9 +17,10 @@ def emojize(text):
         emoji_name = match.group(1)
         if emoji_name in emoji_file_dict:
             emoji_name = emoji_file_dict[emoji_name]
-
-        return HTML_EMOJI_SPAN.format(op.join(op.dirname(__file__),
-                                              'png',
-                                              '{}.png'.format(emoji_name)))
+            return HTML_EMOJI_SPAN.format(op.join(op.dirname(__file__),
+                                                  'png',
+                                                  '{}.png'.format(emoji_name)))
+        else:
+            return ':{}:'.format(emoji_name)
 
     return pattern.sub(emojifier, text)

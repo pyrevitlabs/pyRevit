@@ -88,7 +88,7 @@ class SettingsWindow(WPFWindow):
         self.loadbetatools_cb.IsChecked = \
             user_config.core.get_option('loadbeta', default_value=False)
 
-        self.performancemode_cb.IsChecked = not user_config.core.cleanengine
+        self.rocketmode_cb.IsChecked = user_config.core.rocketmode
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list
@@ -311,7 +311,7 @@ class SettingsWindow(WPFWindow):
 
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
         user_config.core.startuplogtimeout = self.startup_log_timeout.Text
-        user_config.core.cleanengine = not self.performancemode_cb.IsChecked
+        user_config.core.rocketmode = self.rocketmode_cb.IsChecked
 
         # set extension folders from the list, after cleanup empty items
         if isinstance(self.extfolders_lb.ItemsSource, list):

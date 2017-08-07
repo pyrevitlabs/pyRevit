@@ -77,9 +77,9 @@ def _disabe_legacy_revitpythonwrapper_extension():
         legacy_rpw_pkg.disable_package()
 
 
-def _cleanengine_config_upgrade(user_config):
-    if not  user_config.core.has_option('cleanengine'):
-        user_config.core.cleanengine = True
+def _rocketmode_config_upgrade(user_config):
+    if not user_config.core.has_option('rocketmode'):
+        user_config.core.rocketmode = False
         user_config.save_changes()
 
 
@@ -87,7 +87,7 @@ def upgrade_user_config(user_config):
     _filelogging_config_upgrade(user_config)
     _loadbeta_config_upgrade(user_config)
     _startuplogtimeout_config_upgrade(user_config)
-    _cleanengine_config_upgrade(user_config)
+    _rocketmode_config_upgrade(user_config)
 
 
 def upgrade_existing_pyrevit():

@@ -174,7 +174,7 @@
                                                                                           the active document, element information, etc.
                                                                                           Why? Yuuuuuge speed boost!!</TextBlock>
                             <WrapPanel Margin="10,5,0,10">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="performancemode_cb" IsChecked="False"/>
+                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
                                 <TextBlock Margin="30,4,0,0">Rocket Mode (Experimental / Reload Required)</TextBlock>
                             </WrapPanel>
                         </StackPanel>
