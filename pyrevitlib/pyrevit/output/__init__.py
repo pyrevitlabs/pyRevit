@@ -210,7 +210,7 @@ class PyRevitOutputWindow:
 
     @staticmethod
     def print_md(md_str):
-        tables_ext = 'pyrevit.coreutils.output.markdown.extensions.tables'
+        tables_ext = 'pyrevit.coreutils.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = emojize(prepare_html_str(markdown_html))

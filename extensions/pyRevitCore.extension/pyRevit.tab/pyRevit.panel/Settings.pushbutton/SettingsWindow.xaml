@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Settings" Height="660" Width="700" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="pyRevit Settings" Height="690" Width="700" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <Window.Resources>
             <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
@@ -292,7 +292,8 @@
                     <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
                 </StackPanel>
             </GroupBox>
-            <Button x:Name="save_b" Click="savesettings" Content="Save Settings" HorizontalAlignment="Right" Width="200px" Margin="0,10,25,25"/>
+            <Button x:Name="save_b" Click="savesettings" Content="Save Settings" HorizontalAlignment="Right" Width="200px" Margin="0,10,25,0"/>
+            <Button x:Name="savereload_b" Click="savesettingsandreload" Content="Save Settings and Reload" HorizontalAlignment="Right" Width="200px" Margin="0,10,25,25"/>
         </StackPanel>
         </ScrollViewer>
 </Window>

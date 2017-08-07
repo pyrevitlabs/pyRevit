@@ -25,6 +25,9 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how ' \
           '\n\nShift-Click: Shows config file in explorer.'
 
 
+PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
+
+
 class SettingsWindow(WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs
     """
@@ -332,6 +335,16 @@ class SettingsWindow(WPFWindow):
         self.update_usagelogging()
         self.update_addinfiles()
         self.Close()
+
+    # noinspection PyUnusedLocal
+    # noinspection PyMethodMayBeStatic
+    def savesettingsandreload(self, sender, args):
+        """Callback method for saving pyRevit settings and reloading
+        """
+        self.savesettings(sender, args)
+
+        from pyrevit.loader.sessionmgr import execute_command
+        execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # handles tool click in Revit interface:
