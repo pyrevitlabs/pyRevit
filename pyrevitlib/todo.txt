@@ -18,6 +18,7 @@ Shared engine fixes:
 ☐ Fix globals in user config
 ☐ Fix globals in revitutils
 ☐ Start testing tools and Fix Module level variables and other issues
+☐ Reload and Settings buttons will now change after reload.
 
 
 Improvement fixes:
