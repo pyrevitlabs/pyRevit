@@ -63,7 +63,7 @@ def _make_python_types(extension, module_builder, cmd_component):
     if not always_use_clean_engine:
         always_use_clean_engine = int(cmd_component.requires_clean_engine)
 
-    print(always_use_clean_engine)
+    logger.debug('Clean engine required: {}'.format(always_use_clean_engine))
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
