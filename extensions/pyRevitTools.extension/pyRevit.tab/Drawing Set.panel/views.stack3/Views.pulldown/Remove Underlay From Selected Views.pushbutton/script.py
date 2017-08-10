@@ -39,6 +39,7 @@ from Autodesk.Revit.DB import BuiltInParameter, BuiltInCategory
 
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
+rvt_version = int(doc.Application.VersionNumber)
 
 selection = uidoc.Selection
 selection_ids = selection.GetElementIds()
@@ -51,9 +52,13 @@ if selection_ids.Count > 0:
         element = doc.GetElement(element_id)
         if element.Category.Id.IntegerValue == int(BuiltInCategory.OST_Views) \
                 and (element.CanBePrinted):
-            p = element.get_Parameter(BuiltInParameter.VIEW_UNDERLAY_ID)
-            if p is not None:
-                p.Set(ElementId.InvalidElementId)
+
+            if rvt_version > 2016:
+                element.SetUnderlayRange(ElementId(-1), ElementId(-1))
+            else:
+                p = element.get_Parameter(BuiltInParameter.VIEW_UNDERLAY_ID)
+                if p is not None:
+                    p.Set(ElementId.InvalidElementId)
 
     t.Commit()
 else:
