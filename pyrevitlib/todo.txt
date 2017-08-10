@@ -28,3 +28,9 @@ Improvement fixes:
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
+
+
+
+Links --------------------------------------------------------------------------
+Using GC
+https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
