@@ -69,8 +69,11 @@ namespace PyRevitBaseClasses
         private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd)
         {
             var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
-            {{ "Frames", true },
-             { "FullFrames", true },
+            {
+             // Disabling all frames to avoid the memory leak issue
+             // that would increase the % of time spent in GC dramatically
+             // { "Frames", true },
+             // { "FullFrames", true },
              { "LightweightScopes", true }
              // Tried these options together and made the runtime much slower
              //  { "GCStress", 0 },

@@ -9,6 +9,7 @@ Shared engine fixes:
 ✔ Modify engine manager to create engines per extension
 ✔ Add clean engine override shortcut
 ✔ Add option to set pyRevit to performance single engine mode
+☐ Add __fullframeengine__ to triggers
 ☐ Fix globals in extensions
 ☐ Fix globals in assembly maker / should regenrate based on perf mode
 ☐ Fix globals in plugins
