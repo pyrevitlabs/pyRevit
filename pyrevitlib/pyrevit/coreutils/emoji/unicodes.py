@@ -1282,6 +1282,8 @@ emoji_file_dict = {
     'yellow_heart': '1F49B',
     'yin_yang': '262F',
     'zipper-mouth_face': '1F910',
+    'coded': 'coded',
+    'portland_skyline': 'portland_skyline',
     'python': 'python',
     'python-dark': 'python-dark',
     'small-black-heart': 'small-black-heart',
