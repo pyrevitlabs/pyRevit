@@ -11,6 +11,7 @@ from rpw.db.element import Element
 from rpw.db.family import FamilyInstance, FamilySymbol, Family, Category
 
 from rpw.db.wall import Wall, WallType, WallKind, WallCategory
+from rpw.db.assembly import AssemblyInstance, AssemblyType
 
 from rpw.db.spatial_element import Room, Area, AreaScheme
 

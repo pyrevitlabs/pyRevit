@@ -54,6 +54,11 @@ class Wall(FamilyInstance):
     def family(self):
         return self.wall_kind
 
+    @property
+    def category(self):
+        """ Wrapped ``DB.Category`` of the ``DB.Wall`` """
+        return WallCategory(self._revit_object.Category)
+
 
 class WallType(FamilySymbol, ByNameCollectMixin):
     """
@@ -86,6 +91,11 @@ class WallType(FamilySymbol, ByNameCollectMixin):
     def siblings(self):
         return self.wall_kind.wall_types
 
+    @property
+    def category(self):
+        """ Wrapped ``DB.Category`` of the ``DB.Wall`` """
+        return WallCategory(self._revit_object.Category)
+
 
 # class WallKind(Family):
 class WallKind(BaseObjectWrapper):
@@ -103,9 +113,11 @@ class WallKind(BaseObjectWrapper):
         # Same method as Family Works, but requires Code duplication
         # Since this should not inherit from Family.
         # Solution copy code or Mixin. Or return Enum Name:  'Basic'
-        # return self._revit_object.ToString()
-        wall_type = self.wall_types[0]
-        return wall_type.parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
+        # This works but requires Lookup.
+        # wall_type = self.wall_types[0]
+        # return wall_type.parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
+        # return '{} Wall'.format(self._revit_object.ToString())
+        return self._revit_object.ToString()
 
     @property
     def symbols(self):
@@ -127,9 +139,13 @@ class WallKind(BaseObjectWrapper):
 
     @property
     def category(self):
-        wall_type = rpw.db.Collector(of_class=DB.WallType, is_type=True).first
-        return WallCategory(wall_type.Category)
+        cat = DB.Category.GetCategory(revit.doc, DB.BuiltInCategory.OST_Walls)
+        return WallCategory(cat)
+        # wall_type = rpw.db.Collector(of_class=DB.WallType, is_type=True).first
+        # return WallCategory(wall_type.Category)
 
+    def __repr__(self):
+        return super(WallKind, self).__repr__({'name': self.name})
 
 class WallCategory(Category):
     """
@@ -147,5 +163,6 @@ class WallCategory(Category):
         wall_kinds = []
         for member in dir(DB.WallKind):
             if type(getattr(DB.WallKind, member)) is DB.WallKind:
-                wall_kinds.append(getattr(DB.WallKind, member))
+                wall_kind = WallKind(getattr(DB.WallKind, member))
+                wall_kinds.append(wall_kind)
         return wall_kinds

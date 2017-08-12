@@ -419,7 +419,7 @@ class Collector(BaseObjectWrapper):
             if filter_class.keyword not in filters:
                 continue
             filter_value = filters.pop(filter_class.keyword)
-            logger.debug('Applying Filter: {}'.format(filter_class))
+            logger.debug('Applying Filter: {}:{}'.format(filter_class, filter_value))
             new_collector = filter_class.apply(doc, collector, filter_value)
             return self._collect(doc, new_collector, filters)
         return collector
