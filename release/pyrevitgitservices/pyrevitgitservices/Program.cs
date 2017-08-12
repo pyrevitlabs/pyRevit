@@ -71,8 +71,14 @@ namespace pyrevitgitservices
                 var options = new PullOptions();
                 options.FetchOptions = new FetchOptions();
 
+                // forced checkout to overwrite possible changes
+                var checkoutOptions = new CheckoutOptions();
+                checkoutOptions.CheckoutModifiers = CheckoutModifiers.Force;
+                Commands.Checkout(repo, repo.Head, checkoutOptions);
+
                 Console.WriteLine(String.Format("Updating repo at: {0}", repoPath));
                 var res = Commands.Pull(repo, new Signature("pyRevitCoreUpdater", commiterEmail, new DateTimeOffset(DateTime.Now)), options);
+
                 if (res.Status == MergeStatus.FastForward)
                     Console.WriteLine("Successfully updated repo to HEAD");
                 else if (res.Status == MergeStatus.UpToDate)
