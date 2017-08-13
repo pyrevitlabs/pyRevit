@@ -71,8 +71,18 @@ namespace pyrevitgitservices
                 var options = new PullOptions();
                 options.FetchOptions = new FetchOptions();
 
+                // before updating, let's first
+                // forced checkout to overwrite possible local changes
+                // Re: https://github.com/eirannejad/pyRevit/issues/229
+                var checkoutOptions = new CheckoutOptions();
+                checkoutOptions.CheckoutModifiers = CheckoutModifiers.Force;
+                Commands.Checkout(repo, repo.Head, checkoutOptions);
+
+                // now let's pull from the tracked remote
                 Console.WriteLine(String.Format("Updating repo at: {0}", repoPath));
                 var res = Commands.Pull(repo, new Signature("pyRevitCoreUpdater", commiterEmail, new DateTimeOffset(DateTime.Now)), options);
+
+                // process the results and let user know
                 if (res.Status == MergeStatus.FastForward)
                     Console.WriteLine("Successfully updated repo to HEAD");
                 else if (res.Status == MergeStatus.UpToDate)

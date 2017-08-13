@@ -42,6 +42,7 @@
         },
         {
         "builtin": "False",
+        "enable": "True",
         "type": "extension",
         "name": "PyRevitMEP",
         "description": "MEP extension for PyRevit",
@@ -63,5 +64,19 @@
         "website": "https://github.com/gtalarico/pyrevitplus",
         "image" : "",
         "dependencies": []
-        }   ]
+        },
+        {
+        "builtin": "False",
+        "enable": "True",
+        "type": "extension",
+        "name": "PyRevitMEP",
+        "description": "MEP extension for PyRevit",
+        "author": "Cyril Waechter",
+        "author-url": "https://github.com/CyrilWaechter",
+        "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
+        "website": "http://pythoncvc.net/?page_id=123",
+        "image" : "",
+        "dependencies": []
+        }
+    ]
 }

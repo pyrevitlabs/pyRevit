@@ -80,6 +80,8 @@ class Transaction(BaseObjectWrapper):
 
     # TODO: Add  __repr__ with Transaction Status
     # TODO: Merge Transaction Status
+    # TODO: add check for if transaction is in progress, especially for ensure
+    # TODO: add ensure to TransactionGroup
 
 
 class TransactionGroup(BaseObjectWrapper):

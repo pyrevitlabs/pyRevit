@@ -90,9 +90,10 @@ class LoggerWrapper(logging.Logger):
         logger = self
         while logger:
             if len(logger.handlers) > 0:
-                eff_level = logging.CRITICAL
+                eff_level = logger.level
                 for hndlr in logger.handlers:
-                    if hndlr.level < eff_level:
+                    if hndlr.level < eff_level \
+                        and hndlr.level != logging.NOTSET:
                         eff_level = hndlr.level
                 return eff_level
             elif logger.level:

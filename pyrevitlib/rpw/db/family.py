@@ -1,6 +1,23 @@
 """
 Family Model Wrappers
 
+Relevant remarks from the API Documentation:
+
+Note:
+    Custom families within the Revit API represented by three objects -
+    Family, FamilySymbol and FamilyInstance .
+    Each object plays a significant part in the structure of families.
+    The Family element represents the entire family that consists of a
+    collection of types, such as an 'I Beam'.
+    You can think of that object as representing the entire family file.
+    The Family object contains a number of FamilySymbol elements.
+    The FamilySymbol object represents a specific set of family settings
+    within that Family and represents what is known in the Revit user
+    interface as a Type, such as 'W14x32'.
+    The FamilyInstance object represents an actual instance of that type
+    placed the Autodesk Revit project. For example the FamilyInstance
+    would be a single instance of a W14x32 column within the project.
+
 """  #
 
 import rpw
@@ -46,7 +63,7 @@ class FamilyInstance(Element):
     @property
     def category(self):
         """ Wrapped ``DB.Category`` of the ``DB.Symbol`` """
-        return self.family.category
+        return Category(self._revit_object.Category)
 
     @property
     def siblings(self):
@@ -102,14 +119,14 @@ class FamilySymbol(Element):
             [``DB.FamilySymbol``]: List of symbol Types of the same Family (unwrapped)
         """
         symbols_ids = self._revit_object.GetSimilarTypes()
-        return [revit.doc.GetElement(i) for i in symbols_ids]
+        return [self.doc.GetElement(i) for i in symbols_ids]
         # Same as: return self.family.symbols
 
     @property
     def category(self):
         """Returns:
         :any:`Category`: Wrapped ``DB.Category`` of the symbol """
-        return self.family.category
+        return Category(self._revit_object.Category)
 
     def __repr__(self):
         return super(FamilySymbol, self).__repr__(data={'name': self.name})
@@ -130,6 +147,7 @@ class Family(Element):
     def name(self):
         """ Returns:
             ``str``: name of the Family """
+        return self._revit_object.Name
         # This BIP only exist in symbols, so we retrieve a symbol first.
         # The Alternative is to use Element.Name.GetValue(), but I am
         # avoiding it due to the import bug in ironpython
@@ -139,8 +157,6 @@ class Family(Element):
         except IndexError:
             raise RpwException('Family [{}] has no symbols'.format(self.name))
         return Element(symbol).parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
-        # Uses generic factory so it can be inherited by others
-        # Alternative: ALL_MODEL_FAMILY_NAME
 
     @property
     def instances(self):
@@ -160,7 +176,7 @@ class Family(Element):
             [``DB.FamilySymbol``]: List of Symbol Types in the family (unwrapped)
         """
         symbols_ids = self._revit_object.GetFamilySymbolIds()
-        return [revit.doc.GetElement(i) for i in symbols_ids]
+        return [self.doc.GetElement(i) for i in symbols_ids]
 
     @property
     def category(self):

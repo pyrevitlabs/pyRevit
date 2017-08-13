@@ -18,7 +18,7 @@ class RpwTypeError(TypeError):
 class RpwParameterNotFound(RpwException, KeyError):
     """ Revit Python Wrapper Parameter Error """
     def __init__(self, element, param_name):
-        msg = 'parameter not found [element:{}]:[param_name:{}]'.format(element, param_name)
+        msg = 'parameter not found [element:{}]:[param_name:{}]'.format(element.Id, param_name)
         super(RpwParameterNotFound, self).__init__(msg)
 
 

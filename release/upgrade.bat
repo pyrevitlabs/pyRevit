@@ -9,9 +9,10 @@ cd ..
 REM Save repo root
 set current=%CD%
 REM Pull (fetch and merge) the remote head
-"%current%\release\pyrevitgitservices\pyrevitgitservices\bin\Release\pyrevitgitservices.exe" update "%current%"
+xcopy /Y/S "%current%\release\pyrevitgitservices\pyrevitgitservices\bin\Release" "%temp%\pyrevitgitservices\" >NUL
+"%temp%\pyrevitgitservices\pyrevitgitservices.exe" update "%current%"
 REM cd back to script folder
 cd /D %current%\release
-echo Successfully updated pyRevit core. You can close this window now.
+echo You can close this window now.
 pause
 exit

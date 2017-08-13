@@ -7,7 +7,7 @@ Parameter Wrapper
 5.0
 
 """  #
-
+import json
 from rpw import revit, DB
 from rpw.db.builtins import BipEnum
 from rpw.base import BaseObjectWrapper
@@ -48,6 +48,12 @@ class ParameterSet(BaseObjectWrapper):
         super(ParameterSet, self).__init__(element)
         self.builtins = _BuiltInParameterSet(self._revit_object)
 
+    def get_value(self, param_name, default_value=None):
+        try:
+            return self.__getitem__(param_name).value
+        except RpwParameterNotFound:
+            return default_value
+
     def __getitem__(self, param_name):
         """ Get's parameter by name.
 
@@ -79,6 +85,10 @@ class ParameterSet(BaseObjectWrapper):
         """ Returns: Flat list of wrapped parameter elements
         """
         return [Parameter(parameter) for parameter in self._revit_object.Parameters]
+
+    def to_json(self):
+        """ WIP: Returns a Serializable Dictionary """
+        return [p.to_json() for p in self.all]
 
     def __len__(self):
         return len(self.all)
@@ -185,12 +195,12 @@ class Parameter(BaseObjectWrapper):
     def type(self):
         """ Returns the Python Type of the Parameter
 
-        Returns:
-            type: Python Built in type
+        >>> element.parameters['Height'].type
+        <type: float>
 
-        Usage:
-            >>> element.parameters['Height'].type
-            <type: float>
+        Returns:
+            (``type``): Python Built in type
+
         """
         storage_type_name = self._revit_object.StorageType.ToString()
         python_type = Parameter.STORAGE_TYPES[storage_type_name]
@@ -211,15 +221,16 @@ class Parameter(BaseObjectWrapper):
         """
         Gets Parameter Value:
 
-        Returns:
-            type: parameter value in python type
-
         >>> desk.parameters['Height'].value
         >>> 3.0
 
         Sets Parameter Value (must be in Transaction Context):
 
         >>> desk.parameters['Height'].value = 3
+
+        Returns:
+            (``type``): parameter value in python type
+
 
         Note:
 
@@ -270,6 +281,26 @@ class Parameter(BaseObjectWrapper):
 
         param = self._revit_object.Set(value)
         return param
+
+    @property
+    def value_string(self):
+        """ Ensure Human Readable String Value """
+        return self._revit_object.AsValueString() or \
+               self._revit_object.AsString()
+
+    def to_json(self):
+        """ WIP: Returns a Serializable Dictionary """
+        value = self.value if not isinstance(self.value, DB.ElementId) \
+                           else self.value.IntegerValue
+        return {
+                'name': self.name,
+                'type': self.type.__name__,
+                'value': value,
+                'value_string': self.value_string
+                }
+
+    def __bool__(self):
+        return bool(self.value)
 
     def __eq__(self, other):
         """ Equal Parameter Value Comparison """
@@ -331,5 +362,8 @@ class Parameter(BaseObjectWrapper):
 
     def __repr__(self):
         """ Adds data to Base __repr__ to add selection count"""
-        return super(Parameter, self).__repr__(data={'name': self.name,
-                                                     'value': self.value})
+        return super(Parameter, self).__repr__(data={
+                                            'name': self.name,
+                                            'value': self.value,
+                                            'type': self.type.__name__
+                                            })
