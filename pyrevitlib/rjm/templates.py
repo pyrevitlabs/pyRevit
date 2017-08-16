@@ -1,0 +1,240 @@
+# timestamp format: 27-Oct-2016 19:33:31.459
+INIT = """' revit_journal_maker generated journal
+' 0:< 'C {time_stamp};
+Dim Jrn
+Set Jrn = CrsJournalScript
+"""
+
+
+INIT_DEBUG = """' Adding debug options'
+Jrn.Directive "DebugMode", "PerformAutomaticActionInErrorDialog", 1
+Jrn.Directive "DebugMode", "PermissiveJournal", 1
+' Jrn.Directive "DebugMode", "PermissiveJournalAndReportAsError", 1
+' Jrn.Directive "DebugMode" , "GfxUseDx9AccelerationOnPlay" , 1
+"""
+
+
+CENTRAL_OPEN_DETACH = """' Opening workshared model as detached
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Data "TaskDialogResult" _
+    , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?", "Detach and preserve worksets", "1001"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+CENTRAL_OPEN_DETACH_AUDIT = """' Opening workshared model as detached and audit
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "True"
+Jrn.Data "TaskDialogResult"  _
+    , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
+    "Yes", "IDYES"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Data "TaskDialogResult" _
+    , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
+    , "Detach and preserve worksets", "1001"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+CENTRAL_OPEN_DETACH_DISCARD = """' Opening workshared model as detached and discard worksets
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Data "TaskDialogResult" _
+    , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
+    , "Detach and discard worksets", "1002"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+CENTRAL_OPEN_DETACH_AUDIT_DISCARD = """' Opening workshared model as detached and discard worksets and audit
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "True"
+Jrn.Data "TaskDialogResult"  _
+    , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
+    "Yes", "IDYES"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Data "TaskDialogResult" _
+    , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
+    , "Detach and discard worksets", "1002"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+CENTRAL_OPEN = """' Opening workshared model as central
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+CENTRAL_OPEN_AUDIT = """' Opening workshared model as central
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "True"
+Jrn.Data "TaskDialogResult"  _
+    , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
+    "Yes", "IDYES"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+WORKSHARED_OPEN = """' Opening non-workshared model
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+WORKSHARED_OPEN_AUDIT = """' Opening non-workshared model and audit
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "True"
+Jrn.Data "TaskDialogResult"  _
+    , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
+    "Yes", "IDYES"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+FILE_OPEN = """' Opening non-workshared model
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 0
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+FILE_OPEN_AUDIT = """' Opening non-workshared model and audit
+Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
+Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "True"
+Jrn.Data "TaskDialogResult"  _
+    , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
+    "Yes", "IDYES"
+Jrn.Data "File Name" , "IDOK", "{journal_model_path}"
+Jrn.Data "WorksetConfig" , "Custom", 0
+Jrn.Directive "DocSymbol" , "[]"
+"""
+
+
+EXTERNAL_COMMAND = """' Executing external command
+Jrn.RibbonEvent "TabActivated:{external_command_tab}"
+Jrn.RibbonEvent "Execute external command:CustomCtrl_%CustomCtrl_%{external_command_tab}%{external_command_panel}%{command_class_name}:{command_class}"
+"""
+
+
+EXTERNAL_COMMANDDATA = """' Providing command data to external command
+Jrn.Data "APIStringStringMapJournalData"  _
+    , {data_count} _
+    ,{data_string}
+"""
+
+
+FILE_CLOSE = """' Closing model
+Jrn.Command "SystemMenu" , "Quit the application; prompts to save projects , ID_APP_EXIT"
+Jrn.Data "TaskDialogResult" , "Do you want to save changes to Untitled?", "No", "IDNO"
+"""
+
+
+FILE_SAVE = """' Saving model
+Jrn.Command "Ribbon" , "Save the active project , ID_REVIT_FILE_SAVE"
+"""
+
+
+FILE_SYNC_START = """' Syncing model
+Jrn.Command "Ribbon" , "Save the active project back to the Central Model , ID_FILE_SAVE_TO_MASTER"
+"""
+
+FILE_SYNC_COMPACT = """' Set compact central checkbox to {journal_compact_central}
+Jrn.CheckBox "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "Compact Central Model (slow), Control_Revit_ForceCompactCentralModel" _
+	, {journal_compact_central}
+"""
+
+FILE_SYNC_RELEASE_BORROWED = """' Set compact central checkbox
+Jrn.CheckBox "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "Borrowed Elements, Control_Revit_ReturnBorrowedElements" _
+	, True
+"""
+
+FILE_SYNC_RELEASE_USERWORKSETS = """' Set compact central checkbox
+Jrn.CheckBox "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "User-created Worksets, Control_Revit_RelinqUserCreatedPartitions" _
+	, True
+"""
+
+FILE_SYNC_RELEASE_SAVELOCAL = """' Set compact central checkbox to
+Jrn.CheckBox "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "Save Local File before and after synchronizing with central, Control_Revit_SavePartitionsToLocal" _
+	, True
+"""
+
+FILE_SYNC_COMMENT_OK = """' Commenting and Okaying the sync dialog
+Jrn.Edit "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "Control_Revit_Comment" _
+	, "ReplaceContents" , "{journal_sync_comment}"
+Jrn.PushButton "Modal , Synchronize with Central , Dialog_Revit_PartitionsSaveToMaster" _
+	, "OK, IDOK"
+"""
+
+IGNORE_MISSING_LINKS = """' Ignoring missing links
+Jrn.Data "TaskDialogResult"  _
+    , "Revit could not find or read 1 references. What do you want to do?",  _
+     "Ignore and continue opening the project", "1002"
+"""
+
+
+EXPORT_WARNINGS = """' Exporting warnings
+' Jrn.RibbonEvent "TabActivated:Manage"
+Jrn.Command "Ribbon" , "Review previously posted warnings , ID_REVIEW_WARNINGS"
+Jrn.Data "Error dialog" , "0 failures, 0 errors, 0 warnings"
+Jrn.PushButton "Modeless , Autodesk Revit Architecture 2016 , Dialog_Revit_ReviewWarningsDialog" _
+          , "Export..., Control_Revit_ExportErrorReport"
+Jrn.Data "Error Report Action" , "IDOK"
+Jrn.Data "Error Report File Path" , "{warnings_export_path}\\"
+Jrn.Data "Error Report File Name" , "{warnings_export_file}"
+Jrn.Data "Error Report File Format" , "html"
+Jrn.PushButton "Modeless , Autodesk Revit Architecture 2016 , Dialog_Revit_ReviewWarningsDialog" , "Close, IDABORT"
+"""
+
+
+PROJECT_PURGE = """' Purge model
+' Jrn.RibbonEvent "TabActivated:Manage"
+Jrn.Command "Ribbon" , "Purge(delete) unused families and types, ID_PURGE_UNUSED"
+Jrn.PushButton "Modal , Purge unused , Dialog_Revit_PurgeUnusedTree", "OK, IDOK"
+' Jrn.Data "Transaction Successful", "Purge unused"
+"""
