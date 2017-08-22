@@ -1,15 +1,11 @@
-<Category>:
-☐ <Not completed>
-✔ <Completed> @done
-
-
-Single Engine ------------------------------------------------------------------
 Shared engine fixes:
 ✔ Add __cleanengine__ to triggers
 ✔ Modify engine manager to create engines per extension
 ✔ Add clean engine override shortcut
 ✔ Add option to set pyRevit to performance single engine mode
-☐ Add __fullframeengine__ to triggers
+☐ Rocket mode should be extension dependent
+   ☐ pyrevit and its tools must be rocket-mode-compatible
+   ☐ Add rocket_mode_compatible and rocket_mode_required to ext def file
 ☐ Fix globals in extensions
 ☐ Fix globals in assembly maker / should regenrate based on perf mode
 ☐ Fix globals in plugins
@@ -22,15 +18,14 @@ Shared engine fixes:
 ☐ Reload and Settings buttons will now change after reload.
 
 
+Fullframe Engine:
+Using GC: https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
+☐ Add __fullframeengine__ to triggers
+
+
 Improvement fixes:
 ☐ Fix File logging
 ☐ Fix Charts
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
-
-
-
-Links --------------------------------------------------------------------------
-Using GC
-https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
