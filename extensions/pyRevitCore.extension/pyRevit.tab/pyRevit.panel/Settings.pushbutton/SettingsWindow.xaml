@@ -166,17 +166,17 @@
                                 <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
                                 <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameters in scripts, Reload is required)</TextBlock>
                             </WrapPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">pyRevit Rocket Mode &#x1F680;:<LineBreak/>
-                                                                                          This is the switch for pyRevit Rocket Mode.
-                                                                                          If enabled, pyRevit will use a shared engine per each extension.
-                                                                                          This means that your custom python modules should not use any
+                            <WrapPanel Margin="10,5,0,5">
+                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
+                                <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Experimental / Reload Required)</TextBlock>
+                            </WrapPanel>
+                            <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
+                                                                                          If enabled, pyRevit will use a shared engine per each extension
+                                                                                          that supports the Rocket mode. For pyRevit developers,
+                                                                                          this means that your custom python modules should not use any
                                                                                           module level variables that retain information from Revit like
                                                                                           the active document, element information, etc.
                                                                                           Why? Yuuuuuge speed boost!!</TextBlock>
-                            <WrapPanel Margin="10,5,0,10">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Rocket Mode (Experimental / Reload Required)</TextBlock>
-                            </WrapPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
