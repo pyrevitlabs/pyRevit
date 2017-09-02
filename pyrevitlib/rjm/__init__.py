@@ -16,7 +16,6 @@ This module is an effort to streamline the process of journal creation and
 interpretation.
 
 See README.md for examples
-
 """
 
 import os.path as op
@@ -27,7 +26,7 @@ from rjm import entries
 
 
 # rjm version
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 
 class JournalMaker(object):
@@ -157,7 +156,8 @@ class JournalMaker(object):
                                  .format(template_name=template_name))
 
     def open_workshared_model(self, model_path, central=False,
-                              detached=False, keep_worksets=True, audit=False):
+                              detached=False, keep_worksets=True, audit=False,
+                              show_workset_config=1):
         """ Appends a open workshared model entry to the journal.
         This instructs Revit to open a workshared model.
 
@@ -173,31 +173,39 @@ class JournalMaker(object):
             if audit:
                 if keep_worksets:
                     self._add_entry(templates.CENTRAL_OPEN_DETACH_AUDIT
-                                             .format(model_path=model_path))
+                                             .format(model_path=model_path,
+                                                     workset_config=show_workset_config))
                 else:
                     self._add_entry(templates.CENTRAL_OPEN_DETACH_AUDIT_DISCARD
-                                             .format(model_path=model_path))
+                                             .format(model_path=model_path,
+                                                     workset_config=show_workset_config))
             else:
                 if keep_worksets:
                     self._add_entry(templates.CENTRAL_OPEN_DETACH
-                                             .format(model_path=model_path))
+                                             .format(model_path=model_path,
+                                                     workset_config=show_workset_config))
                 else:
                     self._add_entry(templates.CENTRAL_OPEN_DETACH_DISCARD
-                                             .format(model_path=model_path))
+                                             .format(model_path=model_path,
+                                                     workset_config=show_workset_config))
         elif central:
             if audit:
                 self._add_entry(templates.CENTRAL_OPEN_AUDIT
-                                         .format(model_path=model_path))
+                                         .format(model_path=model_path,
+                                                 workset_config=show_workset_config))
             else:
                 self._add_entry(templates.CENTRAL_OPEN
-                                         .format(model_path=model_path))
+                                         .format(model_path=model_path,
+                                                 workset_config=show_workset_config))
         else:
             if audit:
                 self._add_entry(templates.WORKSHARED_OPEN_AUDIT
-                                         .format(model_path=model_path))
+                                         .format(model_path=model_path,
+                                                 workset_config=show_workset_config))
             else:
                 self._add_entry(templates.WORKSHARED_OPEN
-                                         .format(model_path=model_path))
+                                         .format(model_path=model_path,
+                                                 workset_config=show_workset_config))
 
     def open_model(self, model_path, audit=False):
         """ Appends a open non-workshared model entry to the journal.

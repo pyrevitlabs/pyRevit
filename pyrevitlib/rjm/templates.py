@@ -84,7 +84,7 @@ Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "True"
 Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
 Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Data "TaskDialogResult" _
     , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?", "Detach and preserve worksets", "1001"
@@ -103,7 +103,7 @@ Jrn.Data "TaskDialogResult"  _
     , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
     "Yes", "IDYES"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Data "TaskDialogResult" _
     , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
@@ -120,7 +120,7 @@ Jrn.Data "FileOpenSubDialog" , "DetachCheckBox", "True"
 Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
 Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Data "TaskDialogResult" _
     , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
@@ -140,7 +140,7 @@ Jrn.Data "TaskDialogResult"  _
     , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
     "Yes", "IDYES"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Data "TaskDialogResult" _
     , "Detaching this model will create an independent model. You will be unable to synchronize your changes with the original central model." & vbLf & "What do you want to do?" _
@@ -155,7 +155,7 @@ Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
 Jrn.Data "FileOpenSubDialog" , "OpenAsLocalCheckBox", "False"
 Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Directive "DocSymbol" , "[]"
 """
@@ -170,7 +170,7 @@ Jrn.Data "TaskDialogResult"  _
     , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
     "Yes", "IDYES"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Directive "DocSymbol" , "[]"
 """
@@ -181,7 +181,7 @@ WORKSHARED_OPEN = """' Opening non-workshared model
 Jrn.Command "Ribbon" , "Open an existing project , ID_REVIT_FILE_OPEN"
 Jrn.Data "FileOpenSubDialog" , "AuditCheckBox", "False"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Directive "DocSymbol" , "[]"
 """
@@ -195,7 +195,7 @@ Jrn.Data "TaskDialogResult"  _
     , "This operation can take a long time. Recommended use includes periodic maintenance of large files and preparation for upgrading to a new release. Do you want to continue?",  _
     "Yes", "IDYES"
 Jrn.Data "File Name" , "IDOK", "{model_path}"
-Jrn.Data "WorksetConfig" , "Custom", 1
+Jrn.Data "WorksetConfig" , "Custom", {workset_config}
 Jrn.PushButton "Modal , Opening Worksets , Dialog_Revit_Partitions", "OK, IDOK"
 Jrn.Directive "DocSymbol" , "[]"
 """
