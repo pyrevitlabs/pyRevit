@@ -350,7 +350,7 @@ def pick_folder():
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
-              restore_dir=True, multi_file=False, unc_paths=False,):
+              restore_dir=True, multi_file=False, unc_paths=False):
     of_dlg = OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
@@ -366,8 +366,8 @@ def pick_file(file_ext='', files_filter='', init_dir='',
         return of_dlg.FileName
 
 
-def save_file(file_ext='', files_filter='', init_dir='',
-              restore_dir=True, unc_paths=False,):
+def save_file(file_ext='', files_filter='', init_dir='', default_name='',
+              restore_dir=True, unc_paths=False):
     sf_dlg = SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
@@ -376,6 +376,10 @@ def save_file(file_ext='', files_filter='', init_dir='',
     sf_dlg.RestoreDirectory = restore_dir
     if init_dir:
         sf_dlg.InitialDirectory = init_dir
+
+    # setting default filename
+    sf_dlg.FileName = default_name
+
     if sf_dlg.ShowDialog() == DialogResult.OK:
         if unc_paths:
             return dletter_to_unc(sf_dlg.FileName)
