@@ -115,15 +115,14 @@ class BaseObjectWrapper(BaseObject):
     def __repr__(self, data={}, to_string=None):
         """ ToString can be overriden for objects in which the method is
         not consistent - ie. XYZ.ToString returns pt tuple not Class Name """
+        class_name = self.__class__.__name__
+
         revit_object_name = to_string or self._revit_object.ToString()
-        revit_object_name_chunks = revit_object_name.split('.')
-        if revit_object_name_chunks > 2:
-            revit_object_name = '..{}'.format('.'.join(revit_object_name_chunks[-2:]))
+        revit_class_name = revit_object_name.split('.')[-1]
+        if class_name != revit_class_name:
+            class_name = '{} % {}'.format(class_name, revit_class_name)
 
-        data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
-
-        return '<rpw:{class_name} % {revit_object} | {data}>'.format(
-                                    class_name=self.__class__.__name__,
-                                    data=data,
-                                    revit_object=revit_object_name,
-                                    )
+        data = ''.join([' [{0}:{1}]'.format(k, v) for k, v in data.iteritems()])
+        return '<rpw:{class_name}{data}>'.format(class_name=class_name,
+                                                    data=data
+                                                    )

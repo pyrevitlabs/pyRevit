@@ -80,24 +80,23 @@ class Element(BaseObjectWrapper):
             # or cls is not Element:
             raise RpwTypeError('DB.Element child', element.__class__.__name__)
 
-        # rpw.ui.forms.Console()
+        # TODO: OPtimize so if its right type, no need to iterate: rpw.db.Wall(wall)
         for wrapper_class in defined_wrapper_classes:
             class_name = wrapper_class.__name__
             if type(element) is getattr(wrapper_class, '_revit_object_class', None):
                 # Found Mathing Class, Use Wrapper
                 # print('Found Mathing Class, Use Wrapper: {}'.format(class_name))
                 return super(Element, cls).__new__(wrapper_class, element, **kwargs)
-                # new_obj._revit_object = element
-                # return new_object
         else:
             # Could Not find a Matching Class, Use Element if related
-            # print('Did not find a Matching Class, will use Element if related')
             if DB.Element in inspect.getmro(element.__class__):
                 return super(Element, cls).__new__(cls, element, **kwargs)
+
+        # No early return. Should not reach this point
         element_class_name = element.__class__.__name__
         raise RpwException('Factory does not support type: {}'.format(element_class_name))
 
-    def __init__(self, element, doc=revit.doc):
+    def __init__(self, element, doc=None):
         """
         Main Element Instantiation
 
@@ -117,12 +116,38 @@ class Element(BaseObjectWrapper):
         """
 
         super(Element, self).__init__(element)
-        self.doc = doc
+        self.doc = element.Document if doc is None else revit.doc
         if isinstance(element, DB.Element):
             # WallKind Inherits from Family/Element, but is not Element,
             # so ParameterSet fails. Parameters are only added if Element
             # inherits from element
+            # NOTE: This is no longer the case. Verify if it can be removed
             self.parameters = ParameterSet(element)
+
+    @property
+    def type(self):
+        """
+        Get's Element Type using the default GetTypeId() Method.
+        For some Elements, this is the same as ``element.Symbol`` or ``wall.WallType``
+
+        Args:
+            doc (``DB.Document``, optional): Document of Element [default: revit.doc]
+
+        Returns:
+            (``Element``): Wrapped ``rpw.db.Element`` element type
+
+        """
+        element_type_id = self._revit_object.GetTypeId()
+        element_type = self._revit_object.Document.GetElement(element_type_id)
+        return Element(element_type)
+
+    @property
+    def in_assembly(self):
+        """ Returns True if element is inside an AssemblyInstance """
+        if self._revit_object.AssemblyInstanceId.IntegerValue == -1:
+            return False
+        else:
+            return True
 
     @classmethod
     def collect(cls, **kwargs):
@@ -131,11 +156,11 @@ class Element(BaseObjectWrapper):
         Collector will use default params (ie: Room ``{'of_category': 'OST_rooms'}``).
         These can be overriden by passing keyword args to the collectors call.
 
-        >>> rooms = rpw.Rooms.collect()
+        >>> rooms = rpw.db.Rooms.collect()
         [<rpw:Room % DB.Room | Room:1>]
-        >>> rooms = rpw.Area.collect()
+        >>> rooms = rpw.db.Area.collect()
         [<rpw:Area % DB.Area | Rentable:30.2>]
-        >>> rooms = rpw.WallInstance.collect(level="Level 1")
+        >>> rooms = rpw.db.WallInstance.collect(level="Level 1")
         [<rpw:WallInstance % DB.Wall symbol:Basic Wall>]
 
         """
@@ -148,16 +173,52 @@ class Element(BaseObjectWrapper):
             raise RpwException('Wrapper cannot collect by class: {}'.format(cls.__name__))
 
     @staticmethod
-    def from_int(id_int):
-        """ Instantiate Element from an Integer representing and Id """
-        element = revit.doc.GetElement(DB.ElementId(id_int))
+    def from_int(id_int, doc=None):
+        """
+        Instantiate Element from an Integer representing and Id
+
+        Args:
+            id (``int``): ElementId of Element to wrap
+            doc (``DB.Document``, optional): Document of Element [default: revit.doc]
+
+        Returns:
+            (``Element``): Wrapped ``rpw.db.Element`` instance
+        """
+        doc = revit.doc if doc is None else doc
+        element_id = DB.ElementId(id_int)
+        return Element.from_id(element_id, doc=doc)
+
+    @staticmethod
+    def from_id(element_id, doc=None):
+        """
+        Instantiate Element from an ElementId
+
+        Args:
+            id (``ElementId``): ElementId of Element to wrap
+            doc (``DB.Document``, optional): Document of Element [default: revit.doc]
+
+        Returns:
+            (``Element``): Wrapped ``rpw.db.Element`` instance
+
+        """
+        doc = revit.doc if doc is None else doc
+        element = doc.GetElement(element_id)
         return Element(element)
 
     @staticmethod
-    def from_id(element_id):
-        """ Instantiate Element from an ElementId """
-        element = revit.doc.GetElement(element_id)
-        return Element(element)
+    def from_list(elements, doc=None):
+        """
+        Instantiate Elements from a list of DB.Element instances
+
+        Args:
+            elements (``[DB.Element,]``): List of elements
+
+        Returns:
+            (``list``): List of ``rpw.db.Element`` instances
+
+        """
+        doc = revit.doc if doc is None else doc
+        return [Element(element) for element in elements]
 
     @staticmethod
     def Factory(element):

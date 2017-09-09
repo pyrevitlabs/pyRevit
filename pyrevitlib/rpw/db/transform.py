@@ -4,7 +4,6 @@ import math
 import rpw
 from rpw import DB
 from rpw.base import BaseObjectWrapper
-from rpw.db.xyz import XYZ
 
 class Transform(BaseObjectWrapper):
     """
@@ -20,11 +19,25 @@ class Transform(BaseObjectWrapper):
     _revit_object_class = DB.Transform
 
     @classmethod
-    def rotate_vector(cls, vector, rotation, center=None, axis=None):
-        """ Rotate a Vector by Degrees """
+    def rotate_vector(cls, vector, rotation, center=None, axis=None, radians=False):
+        """ Rotate a Vector or point
 
+        Args:
+            vector (``point-like``): Point like element.
+            rotation (``float``): Rotation in degrees.
+            center (``point-like``, optional): Center of rotation [default: 0,0,0]
+            axis (``point-like``, optional): Axis of rotation [default: 0,0,1]
+            radians (``bool``, optional): True for rotation angle is in radians [default: False]
+
+        Returns:
+            ``point-like``: Rotate Vector
+            """
+        XYZ = rpw.db.XYZ
         vector = XYZ(vector)
-        angle_rad = math.radians(rotation)
+        if radians:
+            angle_rad = rotation
+        else:
+            angle_rad = math.radians(rotation)
         axis =  XYZ(DB.XYZ(0,0,1)) if not axis else XYZ(axis)
         center =  XYZ(DB.XYZ(0,0,0)) if not center else XYZ(center)
         transform = cls._revit_object_class.CreateRotationAtPoint(

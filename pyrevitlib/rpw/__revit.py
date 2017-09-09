@@ -118,7 +118,7 @@ class Revit(BaseObject):
     @property
     def docs(self):
         """ Returns: uidoc.Application.Documents """
-        return self.app.Application.Documents
+        return [doc for doc in self.app.Documents]
 
     @property
     def username(self):

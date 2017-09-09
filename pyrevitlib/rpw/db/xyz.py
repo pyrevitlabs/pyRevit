@@ -1,7 +1,7 @@
 from rpw import DB
 from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwCoerceError
-
+from rpw.db.transform import Transform
 
 class XYZ(BaseObjectWrapper):
     """
@@ -120,6 +120,14 @@ class XYZ(BaseObjectWrapper):
 
         """
         return {'x': self.x, 'y': self.y, 'z': self.z}
+
+    def rotate(self, rotation, axis=None, radians=False):
+        rotated_xyz = Transform.rotate_vector(self.unwrap(),
+                                              rotation,
+                                              center=None,
+                                              axis=axis,
+                                              radians=radians)
+        return rotated_xyz
 
     def __mul__(self, value):
         """ Multiplication Method """

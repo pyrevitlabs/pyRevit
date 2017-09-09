@@ -419,7 +419,7 @@ class Collector(BaseObjectWrapper):
             if filter_class.keyword not in filters:
                 continue
             filter_value = filters.pop(filter_class.keyword)
-            logger.debug('Applying Filter: {}'.format(filter_class))
+            logger.debug('Applying Filter: {}:{}'.format(filter_class, filter_value))
             new_collector = filter_class.apply(doc, collector, filter_value)
             return self._collect(doc, new_collector, filters)
         return collector
@@ -494,7 +494,7 @@ class ParameterFilter(BaseObjectWrapper):
     Used to build a parameter filter to be used with the Collector.
 
     Usage:
-        >>> param_id = DB.ElemendId(DB.BuiltInParameter.TYPE_NAME)
+        >>> param_id = DB.ElementId(DB.BuiltInParameter.TYPE_NAME)
         >>> parameter_filter = ParameterFilter(param_id, equals='Wall 1')
         >>> collector = Collector(parameter_filter=parameter_filter)
 
@@ -534,7 +534,7 @@ class ParameterFilter(BaseObjectWrapper):
         >>> param_rule = ParameterFilter(param_id, not_equals=3, reverse=True)
 
         Args:
-            param_id(DB.ElementID): ElemendId of parameter
+            param_id(DB.ElementID): ElementId of parameter
             **conditions: Filter Rule Conditions and options.
 
             conditions:
