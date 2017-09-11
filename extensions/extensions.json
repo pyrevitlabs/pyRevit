@@ -77,6 +77,19 @@
         "website": "http://pythoncvc.net/?page_id=123",
         "image" : "",
         "dependencies": []
+        },
+        {
+        "builtin": "False",
+        "enable": "True",
+        "type": "extension",
+        "name": "rvt_fixme",
+        "description": "pyRevit extension to make Revit useres aware of items to fix in central models",
+        "author": "Frédéric Beaupère",
+        "author-url": "https://github.com/hdm-dt-fb",
+        "url": "https://github.com/hdm-dt-fb/rvt_fixme.git",
+        "website": "https://github.com/hdm-dt-fb/rvt_fixme",
+        "image" : "",
+        "dependencies": []
         }
     ]
 }

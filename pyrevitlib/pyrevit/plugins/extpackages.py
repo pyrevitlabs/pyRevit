@@ -1,5 +1,6 @@
 import os
 import os.path as op
+import codecs
 import json
 from collections import defaultdict
 
@@ -261,7 +262,7 @@ class _ExtensionPackageDefinitionFile:
         """
 
         ext_pkgs = []
-        with open(self.file_path, 'r') as ext_pkg_def_file:
+        with codecs.open(self.file_path, 'r', 'utf-8') as ext_pkg_def_file:
             try:
                 defined_exts_pkg = json.load(ext_pkg_def_file)['extensions']
                 for ext_pkg_dict in defined_exts_pkg:
