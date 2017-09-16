@@ -66,7 +66,7 @@
         <DockPanel>
             <Grid Background="LightGray" DockPanel.Dock="Bottom">
             <WrapPanel HorizontalAlignment="Right">
-                <Button x:Name="save_b" Content="Save Settings" Click="savesettings" Width="200" Margin="10,10,10,10"/>
+                <Button x:Name="save_b" Content="Just Save Settings" Click="savesettings" Width="150" Margin="10,10,10,10"/>
                 <Button x:Name="savereload_b" Content="Save Settings and Reload" Click="savesettingsandreload" Width="200" Margin="10,10,10,10"/>
             </WrapPanel>
         </Grid>
