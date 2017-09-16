@@ -358,9 +358,8 @@ def call_reload():
 # if Shift-Click on the tool, opens the extension package destinations in
 # windows explorer
 # otherwise, will show the Extension manager user interface
-if __name__ == '__main__':
-    # noinspection PyUnresolvedReferences
-    if __shiftclick__:
-        open_ext_dir_in_explorer(user_config.get_ext_root_dirs())
-    else:
-        ExtensionsWindow('ExtensionsWindow.xaml').ShowDialog()
+# noinspection PyUnresolvedReferences
+if __shiftclick__:
+	open_ext_dir_in_explorer(user_config.get_ext_root_dirs())
+else:
+	ExtensionsWindow('ExtensionsWindow.xaml').ShowDialog()

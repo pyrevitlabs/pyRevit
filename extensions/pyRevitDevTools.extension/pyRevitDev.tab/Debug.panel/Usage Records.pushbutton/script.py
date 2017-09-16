@@ -183,5 +183,5 @@ class UsageRecordsWindow(WPFWindow):
             self.cur_logfile_path = selected_path
 
 
-if __name__ == '__main__':
-    UsageRecordsWindow('UsageRecordsWindow.xaml').ShowDialog()
+
+UsageRecordsWindow('UsageRecordsWindow.xaml').ShowDialog()

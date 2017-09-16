@@ -247,5 +247,4 @@ class LogViewerWindow(WPFWindow):
             self._append_log_file(selected_file)
 
 
-if __name__ == '__main__':
-    LogViewerWindow('LogViewerWindow.xaml').ShowDialog()
+LogViewerWindow('LogViewerWindow.xaml').ShowDialog()
