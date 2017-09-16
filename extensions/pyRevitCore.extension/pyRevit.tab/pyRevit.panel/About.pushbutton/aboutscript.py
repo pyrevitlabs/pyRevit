@@ -18,8 +18,17 @@ class AboutWindow(WPFWindow):
         WPFWindow.__init__(self, xaml_file_name)
 
         self.set_image_source('image_credits', 'credits.png')
-        self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
         self.set_image_source('keybase_profile', 'keybase.png')
+        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
+                                      .format(sys.version_info.major,
+                                              sys.version_info.minor,
+                                              sys.version_info.micro)
+
+        if __cachedengine__:
+            self.set_image_source('pyrevit_logo', 'pyRevitrocketlogo.png')
+            self.pyrevit_subtitle.Text += '\nRocket mode enabled.'
+        else:
+            self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
 
         try:
             pyrvt_repo = get_pyrevit_repo()
@@ -30,10 +39,6 @@ class AboutWindow(WPFWindow):
                 self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
         except:
             self.version_info.Text = ''
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
-                                      .format(sys.version_info.major,
-                                              sys.version_info.minor,
-                                              sys.version_info.micro)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
