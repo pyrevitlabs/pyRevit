@@ -1,17 +1,12 @@
+Fullframe Engine:
+Using GC: https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
+☐ Add __fullframeengine__ to triggers
 Shared engine fixes:
 ☐ Rocket mode should be extension dependent
    ☐ pyrevit and its tools must be rocket-mode-compatible
    ☐ Add rocket_mode_compatible and rocket_mode_required to ext def file
-☐ Fix globals in assembly maker / should regenrate based on perf mode
-☐ Fix globals in user config
 ☐ Fix globals in revitutils
 ☐ Start testing tools and Fix Module level variables and other issues
-☐ Reload and Settings buttons will now change after reload.
-
-
-Fullframe Engine:
-Using GC: https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
-☐ Add __fullframeengine__ to triggers
 
 
 Improvement fixes:
@@ -20,15 +15,19 @@ Improvement fixes:
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
+☐ userconfig returns a global config. Test config access between cached engines
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Fix globals in user config @done(2017-09-16 15:49)
+    ✔ Reload and Settings buttons will now change after reload. @done(2017-09-16 15:49)
+    ✔ Fix globals in assembly maker / should regenrate based on perf mode @done(2017-09-16 15:23)
     ✔ Fix globals in plugins @done(2017-09-16 12:31)
     ✔ Fix globals in unittest @done(2017-09-16 12:42)
     ✔ Fix globals in usagelog @done(2017-09-16 12:49)
     ✔ Fix globals in versionmgr @done(2017-09-16 12:50)
     ✔ Fix globals in extensions @done(2017-09-16 12:29)
-    ✔ Add __cleanengine__ to triggers
-    ✔ Modify engine manager to create engines per extension
-    ✔ Add clean engine override shortcut
-    ✔ Add option to set pyRevit to performance single engine mode
+    ✔ Add __cleanengine__ to triggers @done(2017-09-16 15:50)
+    ✔ Modify engine manager to create engines per extension @done(2017-09-16 15:50)
+    ✔ Add clean engine override shortcut @done(2017-09-16 15:50)
+    ✔ Add option to set pyRevit to performance single engine mode @done(2017-09-16 15:50)
