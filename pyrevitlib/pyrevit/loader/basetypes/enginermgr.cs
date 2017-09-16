@@ -18,28 +18,21 @@ namespace PyRevitBaseClasses
             _revit = revit;
         }
 
-
         public ScriptEngine GetEngine(ref PyRevitCommand pyrvtCmd)
         {
+            // If the command required a clean engine, make a clean one
             if (pyrvtCmd.NeedsCleanEngine)
-            {
                 return CreateNewEngine(ref pyrvtCmd);
-            }
 
-            if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
-            {
-                var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
-                SetupBuiltins(existingEngine, ref pyrvtCmd, true);
-                return existingEngine;
-            }
+            // if the user is asking to refresh the cached engine for the command,
+            // then update the engine and save in cache
+            if (pyrvtCmd.NeedsRefreshedEngine)
+                return GetCachedEngine(ref pyrvtCmd, true);
             else
-            {
-                var newEngine = CreateNewEngine(ref pyrvtCmd);
-                this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
-                return newEngine;
-            }
-        }
+                // if not above, get/create cached engine
+                return GetCachedEngine(ref pyrvtCmd);
 
+        }
 
         public Dictionary<string, ScriptEngine> EngineDict
         {
@@ -56,7 +49,6 @@ namespace PyRevitBaseClasses
             }
         }
 
-
         public Dictionary<string, ScriptEngine> ClearEngines()
         {
             var engineDict = new Dictionary<string, ScriptEngine>();
@@ -64,7 +56,6 @@ namespace PyRevitBaseClasses
 
             return engineDict;
         }
-
 
         private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd)
         {
@@ -92,6 +83,26 @@ namespace PyRevitBaseClasses
             return engine;
         }
 
+        private ScriptEngine CreateNewCachedEngine(ref PyRevitCommand pyrvtCmd)
+        {
+            var newEngine = CreateNewEngine(ref pyrvtCmd);
+            this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
+            return newEngine;
+        }
+
+        private ScriptEngine GetCachedEngine(ref PyRevitCommand pyrvtCmd, bool refresh=false)
+        {
+            if (!refresh && this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
+            {
+                var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
+                SetupBuiltins(existingEngine, ref pyrvtCmd, true);
+                return existingEngine;
+            }
+            else
+            {
+                return CreateNewCachedEngine(ref pyrvtCmd);
+            }
+        }
 
         private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommand pyrvtCmd, bool cachedEngine)
         {

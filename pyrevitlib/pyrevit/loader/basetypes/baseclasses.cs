@@ -21,6 +21,7 @@ namespace PyRevitBaseClasses
         private string _cmdExtension;
         private string _cmdUniqueName;
         private bool _needsCleanEngine = false;
+        private bool _refreshEngine = false;
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
 
@@ -57,12 +58,13 @@ namespace PyRevitBaseClasses
             // Default script is the main script unless it is changed by modifier buttons
             var _script = _scriptSource;
 
+
             // If Ctrl-Alt-Shift clicking on the tool run in clean engine
             if ((Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)) &&
                 (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)) &&
                 (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
             {
-                _needsCleanEngine = true;
+                _refreshEngine = true;
             }
             else
             {
@@ -203,6 +205,14 @@ namespace PyRevitBaseClasses
             get
             {
                 return _needsCleanEngine;
+            }
+        }
+
+        public bool NeedsRefreshedEngine
+        {
+            get
+            {
+                return _refreshEngine;
             }
         }
 
