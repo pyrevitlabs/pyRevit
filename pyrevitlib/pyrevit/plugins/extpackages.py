@@ -18,9 +18,6 @@ from pyrevit.plugins import PyRevitPluginAlreadyInstalledException,\
 logger = get_logger(__name__)
 
 
-EXTENSION_PACKAGES = []
-
-
 class DependencyGraph:
     def __init__(self, ext_pkg_list):
         self.dep_dict = defaultdict(list)
@@ -341,25 +338,20 @@ def get_ext_packages(authorized_only=True):
     Returns:
         list: list of registered plugin extensions (ExtensionPackage)
     """
-    global EXTENSION_PACKAGES
+    ext_pkgs = []
+    for ext_dir in user_config.get_ext_root_dirs():
+        ext_pkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
+        if op.exists(ext_pkg_deffile):
+            ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_deffile)
+            if authorized_only:
+                auth_pkgs = [x for x in ext_def_file.defined_ext_packages
+                             if x.user_has_access]
+            else:
+                auth_pkgs = ext_def_file.defined_ext_packages
 
-    if EXTENSION_PACKAGES:
-        return EXTENSION_PACKAGES
-    else:
-        EXTENSION_PACKAGES = []
-        for ext_dir in user_config.get_ext_root_dirs():
-            ext_pkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
-            if op.exists(ext_pkg_deffile):
-                ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_deffile)
-                if authorized_only:
-                    auth_pkgs = [x for x in ext_def_file.defined_ext_packages
-                                 if x.user_has_access]
-                else:
-                    auth_pkgs = ext_def_file.defined_ext_packages
+            ext_pkgs.extend(auth_pkgs)
 
-                EXTENSION_PACKAGES.extend(auth_pkgs)
-
-        return EXTENSION_PACKAGES
+    return ext_pkgs
 
 
 def get_ext_package_by_name(ext_pkg_name):

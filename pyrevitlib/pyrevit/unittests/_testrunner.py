@@ -38,6 +38,7 @@ class OutputWriter:
 class PyRevitTestResult(TestResult):
     def __init__(self, verbosity):
         super(PyRevitTestResult, self).__init__(verbosity=verbosity)
+        self.writer = OutputWriter()
 
     # noinspection PyPep8Naming
     @staticmethod
@@ -53,20 +54,20 @@ class PyRevitTestResult(TestResult):
     def addSuccess(self, test):
         super(PyRevitTestResult, self).addSuccess(test)
         logger.debug(DEBUG_OKAY_RESULT)
-        OutputWriter.write(RESULT_DIV_OKAY
-                           .format(test=self.getDescription(test)))
+        self.writer.write(RESULT_DIV_OKAY
+                          .format(test=self.getDescription(test)))
 
     def addError(self, test, err):
         super(PyRevitTestResult, self).addError(test, err)
         logger.debug(DEBUG_FAIL_RESULT)
-        OutputWriter.write(RESULT_DIV_ERROR
-                           .format(test=self.getDescription(test)))
+        self.writer.write(RESULT_DIV_ERROR
+                          .format(test=self.getDescription(test)))
 
     def addFailure(self, test, err):
         super(PyRevitTestResult, self).addFailure(test, err)
         logger.debug(DEBUG_FAIL_RESULT)
-        OutputWriter.write(RESULT_DIV_FAIL
-                           .format(test=self.getDescription(test)))
+        self.writer.write(RESULT_DIV_FAIL
+                          .format(test=self.getDescription(test)))
 
     # def addSkip(self, test, reason):
     #     super(PyRevitTestResult, self).addSkip(test, reason)
@@ -156,15 +157,13 @@ class PyRevitTestRunner(object):
         return result
 
 
-test_runner = PyRevitTestRunner()
-test_loader = TestLoader()
-
-
 def run_module_tests(test_module):
+    test_runner = PyRevitTestRunner()
+    test_loader = TestLoader()
     # load all testcases from the given module into a testsuite
     test_suite = test_loader.loadTestsFromModule(test_module)
     # run the test suite
     logger.debug('Running test suite for module: %s' % test_module)
-    OutputWriter.write(RESULT_TEST_SUITE_START
-                       .format(suite=test_module.__name__))
+    OutputWriter().write(RESULT_TEST_SUITE_START
+                        .format(suite=test_module.__name__))
     return test_runner.run(test_suite)
