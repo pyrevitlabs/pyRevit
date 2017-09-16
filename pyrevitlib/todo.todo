@@ -1,17 +1,8 @@
 Shared engine fixes:
-✔ Add __cleanengine__ to triggers
-✔ Modify engine manager to create engines per extension
-✔ Add clean engine override shortcut
-✔ Add option to set pyRevit to performance single engine mode
 ☐ Rocket mode should be extension dependent
    ☐ pyrevit and its tools must be rocket-mode-compatible
    ☐ Add rocket_mode_compatible and rocket_mode_required to ext def file
-☐ Fix globals in extensions
 ☐ Fix globals in assembly maker / should regenrate based on perf mode
-☐ Fix globals in plugins
-☐ Fix globals in unittest
-☐ Fix globals in usagelog
-☐ Fix globals in versionmgr
 ☐ Fix globals in user config
 ☐ Fix globals in revitutils
 ☐ Start testing tools and Fix Module level variables and other issues
@@ -29,3 +20,15 @@ Improvement fixes:
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
 ☐ Fix loading of smartbuttons
+
+＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
+Archive:
+    ✔ Fix globals in plugins @done(2017-09-16 12:31)
+    ✔ Fix globals in unittest @done(2017-09-16 12:42)
+    ✔ Fix globals in usagelog @done(2017-09-16 12:49)
+    ✔ Fix globals in versionmgr @done(2017-09-16 12:50)
+    ✔ Fix globals in extensions @done(2017-09-16 12:29)
+    ✔ Add __cleanengine__ to triggers
+    ✔ Modify engine manager to create engines per extension
+    ✔ Add clean engine override shortcut
+    ✔ Add option to set pyRevit to performance single engine mode
