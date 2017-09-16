@@ -4,23 +4,10 @@ import os.path as op
 from pyrevit import PyRevitException
 from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.extensions import LINK_BUTTON_POSTFIX, LINK_BUTTON_ASSEMBLY_PARAM,\
-    LINK_BUTTON_COMMAND_CLASS_PARAM
-from pyrevit.extensions import PANEL_POSTFIX, TAB_POSTFIX
-from pyrevit.extensions import PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX,\
-    SPLITPUSH_BUTTON_POSTFIX
-from pyrevit.extensions import PUSH_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX
-from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT,\
-    DEFAULT_LAYOUT_FILE_NAME
-from pyrevit.extensions import STACKTWO_BUTTON_POSTFIX,\
-    STACKTHREE_BUTTON_POSTFIX
-from pyrevit.extensions import TOGGLE_BUTTON_POSTFIX, DEFAULT_ON_ICON_FILE,\
-    DEFAULT_OFF_ICON_FILE
-from pyrevit.extensions import EXTENSION_HASH_CACHE_FILENAME
-from pyrevit.extensions import ExtensionTypes
-from pyrevit.extensions import CSHARP_SCRIPT_FILE_FORMAT
-from pyrevit.extensions.genericcomps import GenericComponent,\
-    GenericUIContainer, GenericUICommand
+import pyrevit.extensions as exts
+from pyrevit.extensions.genericcomps import GenericComponent
+from pyrevit.extensions.genericcomps import GenericUIContainer
+from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.versionmgr import get_pyrevit_version
 
 logger = get_logger(__name__)
@@ -32,7 +19,7 @@ logger = get_logger(__name__)
 # Commands, or Command groups
 # ------------------------------------------------------------------------------
 class LinkButton(GenericUICommand):
-    type_id = LINK_BUTTON_POSTFIX
+    type_id = exts.LINK_BUTTON_POSTFIX
 
     def __init__(self):
         GenericUICommand.__init__(self)
@@ -46,11 +33,11 @@ class LinkButton(GenericUICommand):
             script_content = ScriptFileParser(self.get_full_script_address())
 
             self.assembly = script_content.extract_param(
-                LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
+                exts.LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
 
             self.command_class = \
                 script_content.extract_param(
-                    LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
+                    exts.LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
 
         except PyRevitException as err:
             logger.error(err)
@@ -60,11 +47,11 @@ class LinkButton(GenericUICommand):
 
 
 class PushButton(GenericUICommand):
-    type_id = PUSH_BUTTON_POSTFIX
+    type_id = exts.PUSH_BUTTON_POSTFIX
 
 
 class ToggleButton(GenericUICommand):
-    type_id = TOGGLE_BUTTON_POSTFIX
+    type_id = exts.TOGGLE_BUTTON_POSTFIX
 
     def __init__(self):
         GenericUICommand.__init__(self)
@@ -73,17 +60,17 @@ class ToggleButton(GenericUICommand):
     def __init_from_dir__(self, cmd_dir):
         GenericUICommand.__init_from_dir__(self, cmd_dir)
 
-        full_file_path = op.join(self.directory, DEFAULT_ON_ICON_FILE)
+        full_file_path = op.join(self.directory, exts.DEFAULT_ON_ICON_FILE)
         self.icon_on_file = \
             full_file_path if op.exists(full_file_path) else None
 
-        full_file_path = op.join(self.directory, DEFAULT_OFF_ICON_FILE)
+        full_file_path = op.join(self.directory, exts.DEFAULT_OFF_ICON_FILE)
         self.icon_off_file = \
             full_file_path if op.exists(full_file_path) else None
 
 
 class SmartButton(GenericUICommand):
-    type_id = SMART_BUTTON_POSTFIX
+    type_id = exts.SMART_BUTTON_POSTFIX
 
 
 # Command groups only include commands. these classes can include
@@ -98,15 +85,15 @@ class GenericUICommandGroup(GenericUIContainer):
 
 
 class PullDownButtonGroup(GenericUICommandGroup):
-    type_id = PULLDOWN_BUTTON_POSTFIX
+    type_id = exts.PULLDOWN_BUTTON_POSTFIX
 
 
 class SplitPushButtonGroup(GenericUICommandGroup):
-    type_id = SPLITPUSH_BUTTON_POSTFIX
+    type_id = exts.SPLITPUSH_BUTTON_POSTFIX
 
 
 class SplitButtonGroup(GenericUICommandGroup):
-    type_id = SPLIT_BUTTON_POSTFIX
+    type_id = exts.SPLIT_BUTTON_POSTFIX
 
 
 # Stacks include GenericUICommand, or GenericUICommandGroup
@@ -124,16 +111,16 @@ class GenericStack(GenericUIContainer):
 
 
 class StackThreeButtonGroup(GenericStack):
-    type_id = STACKTHREE_BUTTON_POSTFIX
+    type_id = exts.STACKTHREE_BUTTON_POSTFIX
 
 
 class StackTwoButtonGroup(GenericStack):
-    type_id = STACKTWO_BUTTON_POSTFIX
+    type_id = exts.STACKTWO_BUTTON_POSTFIX
 
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
-    type_id = PANEL_POSTFIX
+    type_id = exts.PANEL_POSTFIX
     allowed_sub_cmps = [GenericStack, GenericUICommandGroup, GenericUICommand]
 
     def has_commands(self):
@@ -165,7 +152,7 @@ class Panel(GenericUIContainer):
 
 # Tabs include Panels
 class Tab(GenericUIContainer):
-    type_id = TAB_POSTFIX
+    type_id = exts.TAB_POSTFIX
     allowed_sub_cmps = [Panel]
 
     def has_commands(self):
@@ -178,7 +165,7 @@ class Tab(GenericUIContainer):
 # UI Tools extension class
 # ------------------------------------------------------------------------------
 class Extension(GenericUIContainer):
-    type_id = ExtensionTypes.UI_EXTENSION.POSTFIX
+    type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
     def __init__(self):
@@ -197,7 +184,7 @@ class Extension(GenericUIContainer):
 
     @property
     def hash_cache(self):
-        hash_file = op.join(self.directory, EXTENSION_HASH_CACHE_FILENAME)
+        hash_file = op.join(self.directory, exts.EXTENSION_HASH_CACHE_FILENAME)
         if op.isfile(hash_file):
             return hash_file
         else:
@@ -234,20 +221,20 @@ class Extension(GenericUIContainer):
         #   cache only saves the png address and not the contents so they'll
         #   get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        pat = '(\\' + TAB_POSTFIX + ')|(\\' + PANEL_POSTFIX + ')'
-        pat += '|(\\' + PULLDOWN_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + SPLIT_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + SPLITPUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + STACKTWO_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + STACKTHREE_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + PUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + SMART_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + TOGGLE_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + LINK_BUTTON_POSTFIX + ')'
+        pat = '(\\' + exts.TAB_POSTFIX + ')|(\\' + exts.PANEL_POSTFIX + ')'
+        pat += '|(\\' + exts.PULLDOWN_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.SPLIT_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.SPLITPUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.STACKTWO_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.STACKTHREE_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.PUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
         # search for scripts, setting files (future support), and layout files
-        patfile = '(\\' + PYTHON_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + CSHARP_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(' + DEFAULT_LAYOUT_FILE_NAME + ')'
+        patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
         return calculate_dir_hash(self.directory, pat, patfile)
 
     def get_all_commands(self):
@@ -265,7 +252,7 @@ class Extension(GenericUIContainer):
 # library extension class
 # ------------------------------------------------------------------------------
 class LibraryExtension(GenericComponent):
-    type_id = ExtensionTypes.LIB_EXTENSION.POSTFIX
+    type_id = exts.ExtensionTypes.LIB_EXTENSION.POSTFIX
 
     def __init__(self):
         GenericComponent.__init__(self)

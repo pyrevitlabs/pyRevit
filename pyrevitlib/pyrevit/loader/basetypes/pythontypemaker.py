@@ -62,8 +62,10 @@ def _make_python_types(extension, module_builder, cmd_component):
     always_use_clean_engine = int(not user_config.core.rocketmode)
     if not always_use_clean_engine:
         always_use_clean_engine = int(cmd_component.requires_clean_engine)
-
     logger.debug('Clean engine required: {}'.format(always_use_clean_engine))
+
+    use_fullframe_engine = int(cmd_component.requires_fullframe_engine)
+    logger.debug('Fullframe engine required: {}'.format(use_fullframe_engine))
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
@@ -74,7 +76,8 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.bundle_name,
                 extension.name,
                 cmd_component.unique_name,
-                always_use_clean_engine)
+                always_use_clean_engine,
+                use_fullframe_engine)
 
     logger.debug('Successfully created executor type for: {}'
                  .format(cmd_component))

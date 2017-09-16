@@ -82,6 +82,20 @@ class ScriptFileParser:
         return default_value
 
 
+class FileWatcher(object):
+    def __init__(self, filepath):
+        self._cached_stamp = 0
+        self._filepath = filepath
+        self.update_tstamp()
+
+    def update_tstamp(self):
+        self._cached_stamp = os.stat(self._filepath).st_mtime
+
+    @property
+    def has_changed(self):
+        return os.stat(self._filepath).st_mtime != self._cached_stamp
+
+
 def get_all_subclasses(parent_classes):
     sub_classes = []
     # if super-class, get a list of sub-classes.

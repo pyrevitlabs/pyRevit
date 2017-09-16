@@ -4,20 +4,7 @@ import os.path as op
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils import ScriptFileParser, cleanup_string
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.extensions import AUTHOR_PARAM, DOCSTRING_PARAM, UI_TITLE_PARAM
-from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
-from pyrevit.extensions import COMMAND_CONTEXT_PARAM, COMMAND_OPTIONS_PARAM,\
-                               BETA_SCRIPT_PARAM, CLEAN_ENGINE_SCRIPT_PARAM
-from pyrevit.extensions import COMP_LIBRARY_DIR_NAME
-from pyrevit.extensions import DEFAULT_LAYOUT_FILE_NAME, DEFAULT_ICON_FILE
-from pyrevit.extensions import PYTHON_SCRIPT_POSTFIX, DEFAULT_CONFIG_SCRIPT_FILE
-from pyrevit.extensions import CSHARP_SCRIPT_POSTFIX, VB_SCRIPT_POSTFIX,\
-                               RUBY_SCRIPT_POSTFIX
-from pyrevit.extensions import PYTHON_SCRIPT_FILE_FORMAT,\
-                               CSHARP_SCRIPT_FILE_FORMAT, VB_SCRIPT_FILE_FORMAT
-from pyrevit.extensions import PYTHON_LANG, CSHARP_LANG, VB_LANG
-from pyrevit.extensions import MAX_REVIT_VERSION_PARAM, MIN_REVIT_VERSION_PARAM
-from pyrevit.extensions import SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+import pyrevit.extensions as exts
 from pyrevit.userconfig import user_config
 
 
@@ -148,7 +135,7 @@ class GenericUIContainer(GenericUIComponent):
 
         # each container can store custom libraries under
         # /Lib inside the container folder
-        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
         self.library_path = lib_path if op.exists(lib_path) else None
 
         # setting up search paths. These paths will be added to
@@ -159,7 +146,7 @@ class GenericUIContainer(GenericUIComponent):
         self.layout_list = self._read_layout_file()
         logger.debug('Layout is: {}'.format(self.layout_list))
 
-        full_file_path = op.join(self.directory, DEFAULT_ICON_FILE)
+        full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
             logger.debug('Icon file is: {}'
@@ -169,10 +156,10 @@ class GenericUIContainer(GenericUIComponent):
         return iter(self._get_components_per_layout())
 
     def _read_layout_file(self):
-        full_file_path = op.join(self.directory, DEFAULT_LAYOUT_FILE_NAME)
+        full_file_path = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(full_file_path):
             layout_file = open(op.join(self.directory,
-                                       DEFAULT_LAYOUT_FILE_NAME), 'r')
+                                       exts.DEFAULT_LAYOUT_FILE_NAME), 'r')
             # return [x.replace('\n', '') for x in layout_file.readlines()]
             return layout_file.read().splitlines()
         else:
@@ -196,15 +183,15 @@ class GenericUIContainer(GenericUIComponent):
             logger.debug('Adding separators and slide outs per layout...')
             last_item_index = len(self.layout_list) - 1
             for i_index, layout_item in enumerate(self.layout_list):
-                if SEPARATOR_IDENTIFIER in layout_item \
+                if exts.SEPARATOR_IDENTIFIER in layout_item \
                         and i_index < last_item_index:
                     separator = GenericComponent()
-                    separator.type_id = SEPARATOR_IDENTIFIER
+                    separator.type_id = exts.SEPARATOR_IDENTIFIER
                     _processed_cmps.insert(i_index, separator)
-                elif SLIDEOUT_IDENTIFIER in layout_item \
+                elif exts.SLIDEOUT_IDENTIFIER in layout_item \
                         and i_index < last_item_index:
                     slideout = GenericComponent()
-                    slideout.type_id = SLIDEOUT_IDENTIFIER
+                    slideout.type_id = exts.SLIDEOUT_IDENTIFIER
                     _processed_cmps.insert(i_index, slideout)
 
             logger.debug('Reordered sub_component list is: {}'
@@ -276,6 +263,8 @@ class GenericUICommand(GenericUIComponent):
         self.unique_name = self.unique_avail_name = None
         self.class_name = self.avail_class_name = None
         self.beta_cmd = False
+        self.requires_clean_engine = False
+        self.requires_fullframe_engine = False
 
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
@@ -290,28 +279,28 @@ class GenericUICommand(GenericUIComponent):
 
         # setting up a unique availability name for command.
         self.unique_avail_name = \
-            self.unique_name + COMMAND_AVAILABILITY_NAME_POSTFIX
+            self.unique_name + exts.COMMAND_AVAILABILITY_NAME_POSTFIX
 
         self.ui_title = self.name
 
-        full_file_path = op.join(self.directory, DEFAULT_ICON_FILE)
+        full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         logger.debug('Command {}: Icon file is: {}'
                      .format(self, self.icon_file))
 
-        self.script_file = self._find_script_file([PYTHON_SCRIPT_POSTFIX,
-                                                   CSHARP_SCRIPT_POSTFIX,
-                                                   VB_SCRIPT_POSTFIX,
-                                                   RUBY_SCRIPT_POSTFIX])
+        self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
+                                                   exts.CSHARP_SCRIPT_POSTFIX,
+                                                   exts.VB_SCRIPT_POSTFIX,
+                                                   exts.RUBY_SCRIPT_POSTFIX])
 
         if self.script_file is None:
             logger.error('Command {}: Does not have script file.'.format(self))
             raise PyRevitException()
-        if self.script_language == PYTHON_LANG:
+        if self.script_language == exts.PYTHON_LANG:
             self._analyse_python_script()
 
         self.config_script_file = \
-            self._find_script_file([DEFAULT_CONFIG_SCRIPT_FILE])
+            self._find_script_file([exts.DEFAULT_CONFIG_SCRIPT_FILE])
 
         if self.config_script_file is None:
             logger.debug('Command {}: Does not have independent config script.'
@@ -320,7 +309,7 @@ class GenericUICommand(GenericUIComponent):
 
         # each command can store custom libraries under
         # /Lib inside the command folder
-        lib_path = op.join(self.directory, COMP_LIBRARY_DIR_NAME)
+        lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
         self.library_path = lib_path if op.exists(lib_path) else None
 
         # setting up search paths. These paths will be added to sys.path by
@@ -341,30 +330,32 @@ class GenericUICommand(GenericUIComponent):
             script_content = ScriptFileParser(self.get_full_script_address())
             # extracting min requried Revit and pyRevit versions
             extracted_ui_title = \
-                script_content.extract_param(UI_TITLE_PARAM)  # type: str
+                script_content.extract_param(exts.UI_TITLE_PARAM)  # type: str
             if extracted_ui_title:
                 self.ui_title = extracted_ui_title
 
             self.doc_string = script_content.get_docstring()
             custom_docstring = \
-                script_content.extract_param(DOCSTRING_PARAM)  # type: str
+                script_content.extract_param(exts.DOCSTRING_PARAM)  # type: str
             if custom_docstring:
                 self.doc_string = custom_docstring
 
             self.author = script_content.extract_param(
-                AUTHOR_PARAM)  # type: str
+                exts.AUTHOR_PARAM)  # type: str
             self.max_revit_ver = script_content.extract_param(
-                MAX_REVIT_VERSION_PARAM)  # type: str
+                exts.MAX_REVIT_VERSION_PARAM)  # type: str
             self.min_revit_ver = script_content.extract_param(
-                MIN_REVIT_VERSION_PARAM)  # type: str
+                exts.MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_options = script_content.extract_param(
-                COMMAND_OPTIONS_PARAM)  # type: list
+                exts.COMMAND_OPTIONS_PARAM)  # type: list
             self.cmd_context = script_content.extract_param(
-                COMMAND_CONTEXT_PARAM)  # type: str
+                exts.COMMAND_CONTEXT_PARAM)  # type: str
             self.beta_cmd = script_content.extract_param(
-                BETA_SCRIPT_PARAM)  # type: bool
+                exts.BETA_SCRIPT_PARAM)  # type: bool
             self.requires_clean_engine = script_content.extract_param(
-                CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
+                exts.CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
+            self.requires_fullframe_engine = script_content.extract_param(
+                exts.FULLFRAME_ENGINE_PARAM, False)  # type: bool
         except PyRevitException as script_parse_err:
             logger.error('Error parsing script file: {} | {}'
                          .format(self.script_file, script_parse_err))
@@ -405,12 +396,12 @@ class GenericUICommand(GenericUIComponent):
     @property
     def script_language(self):
         if self.script_file is not None:
-            if self.script_file.endswith(PYTHON_SCRIPT_FILE_FORMAT):
-                return PYTHON_LANG
-            elif self.script_file.endswith(CSHARP_SCRIPT_FILE_FORMAT):
-                return CSHARP_LANG
-            elif self.script_file.endswith(VB_SCRIPT_FILE_FORMAT):
-                return VB_LANG
+            if self.script_file.endswith(exts.PYTHON_SCRIPT_FILE_FORMAT):
+                return exts.PYTHON_LANG
+            elif self.script_file.endswith(exts.CSHARP_SCRIPT_FILE_FORMAT):
+                return exts.CSHARP_LANG
+            elif self.script_file.endswith(exts.VB_SCRIPT_FILE_FORMAT):
+                return exts.VB_LANG
         else:
             return None
 

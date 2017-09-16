@@ -24,6 +24,10 @@ namespace PyRevitBaseClasses
             if (pyrvtCmd.NeedsCleanEngine)
                 return CreateNewEngine(ref pyrvtCmd);
 
+            // If the command required a clean engine, make a clean one
+            if (pyrvtCmd.NeedsFullFrameEngine)
+                return CreateNewEngine(ref pyrvtCmd, fullframe:true);
+
             // if the user is asking to refresh the cached engine for the command,
             // then update the engine and save in cache
             if (pyrvtCmd.NeedsRefreshedEngine)
@@ -55,19 +59,22 @@ namespace PyRevitBaseClasses
             return engineDict;
         }
 
-        private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd)
+        private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd, bool fullframe=false)
         {
-            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>()
+            var flags = new Dictionary<string, object>(){{ "LightweightScopes", true }};
+
+            if (fullframe)
             {
-             // Disabling all frames to avoid the memory leak issue
-             // that would increase the % of time spent in GC dramatically
-             // { "Frames", true },
-             // { "FullFrames", true },
-             { "LightweightScopes", true }
-             // Tried these options together and made the runtime much slower
-             //  { "GCStress", 0 },
-             //  { "MaxRecursion", 0 },
-            });
+                // Disabling all frames to avoid the memory leak issue
+                // that would increase the % of time spent in GC dramatically
+                // Tried these options together and made the runtime much slower
+                //  { "GCStress", 0 },
+                //  { "MaxRecursion", 0 },
+                flags["Frames"] = true;
+                flags["FullFrames"] = true;
+            }
+                
+            var engine = IronPython.Hosting.Python.CreateEngine(flags);
 
             // reference RevitAPI and RevitAPIUI
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.DB.Document).Assembly);
