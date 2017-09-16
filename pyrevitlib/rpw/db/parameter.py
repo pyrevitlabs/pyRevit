@@ -7,7 +7,6 @@ Parameter Wrapper
 5.0
 
 """  #
-import json
 from rpw import revit, DB
 from rpw.db.builtins import BipEnum
 from rpw.base import BaseObjectWrapper
@@ -86,9 +85,9 @@ class ParameterSet(BaseObjectWrapper):
         """
         return [Parameter(parameter) for parameter in self._revit_object.Parameters]
 
-    def to_json(self):
+    def to_dict(self):
         """ WIP: Returns a Serializable Dictionary """
-        return [p.to_json() for p in self.all]
+        return [p.to_dict() for p in self.all]
 
     def __len__(self):
         return len(self.all)
@@ -288,8 +287,15 @@ class Parameter(BaseObjectWrapper):
         return self._revit_object.AsValueString() or \
                self._revit_object.AsString()
 
-    def to_json(self):
-        """ WIP: Returns a Serializable Dictionary """
+    def to_dict(self):
+        """
+        Returns Parameter as a dictionary. Included properties are:
+
+            * name: Parameter.Definition.Name
+            * type: Parameter.StorageType.Name
+            * value: Uses best parameter method based on StorageType
+            * value_string: Parameter.AsValueString
+        """
         value = self.value if not isinstance(self.value, DB.ElementId) \
                            else self.value.IntegerValue
         return {
