@@ -95,9 +95,9 @@ namespace PyRevitBaseClasses
         }
 
 
-        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommand pyrvtCmd)
+        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommand pyrvtCmd, string moduleName="__main__")
         {
-            var scope = IronPython.Hosting.Python.CreateModule(engine, pyrvtCmd.CommandUniqueId);
+            var scope = IronPython.Hosting.Python.CreateModule(engine, moduleName);
 
             SetupScope(scope, ref pyrvtCmd);
 

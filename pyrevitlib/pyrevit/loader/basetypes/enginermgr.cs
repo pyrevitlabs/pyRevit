@@ -41,9 +41,7 @@ namespace PyRevitBaseClasses
                 var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDict);
 
                 if (engineDict == null)
-                {
                     engineDict = ClearEngines();
-                }
 
                 return engineDict;
             }
