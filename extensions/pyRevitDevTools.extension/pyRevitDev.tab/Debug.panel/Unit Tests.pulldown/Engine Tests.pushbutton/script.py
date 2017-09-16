@@ -4,11 +4,6 @@
 __context__ = 'zerodoc'
 
 
-# import pyrevit.unittests as prtests
-#
-# prtests.perform_engine_tests()
+import pyrevit.unittests as prtests
 
-__cleanengine__ = True
-
-import sys
-print len(sys.modules)
+prtests.perform_engine_tests()
