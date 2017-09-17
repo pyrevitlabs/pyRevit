@@ -3,17 +3,16 @@ import os.path as op
 import pickle as pl
 import clr
 
+import pyrevit.coreutils.envvars as envvars
+
 from scriptutils import this_script
-from scriptutils import get_pyrevit_env_var, set_pyrevit_env_var
 
 clr.AddReference('PresentationCore')
 
 # noinspection PyUnresolvedReferences
 from System import EventHandler, Uri
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId, XYZ, ViewPlan
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Events import ViewActivatedEventArgs, ViewActivatingEventArgs
+import Autodesk.Revit.DB as DB
+import Autodesk.Revit.UI.Events as UIEvents
 
 
 __doc__ = 'Keep views synchronized. This means that as you pan and zoom and switch between Plan and RCP views, this ' \
@@ -32,7 +31,7 @@ SYNC_VIEW_ENV_VAR = 'SYNCVIEWACTIVE'
 
 
 def copyzoomstate(sender, args):
-    if get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
+    if envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
         event_uidoc = sender.ActiveUIDocument
         event_doc = sender.ActiveUIDocument.Document
         active_ui_views = event_uidoc.GetOpenUIViews()
@@ -41,7 +40,7 @@ def copyzoomstate(sender, args):
             if active_ui_view.ViewId == args.CurrentActiveView.Id:
                 current_ui_view = active_ui_view
 
-        if isinstance(args.CurrentActiveView, ViewPlan):
+        if isinstance(args.CurrentActiveView, DB.ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
             data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
 
@@ -63,7 +62,7 @@ def copyzoomstate(sender, args):
 
 
 def applyzoomstate(sender, args):
-    if get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
+    if envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
         event_uidoc = sender.ActiveUIDocument
         event_doc = sender.ActiveUIDocument.Document
         active_ui_views = event_uidoc.GetOpenUIViews()
@@ -72,29 +71,29 @@ def applyzoomstate(sender, args):
             if active_ui_view.ViewId == args.CurrentActiveView.Id:
                 current_ui_view = active_ui_view
 
-        if isinstance(args.CurrentActiveView, ViewPlan):
+        if isinstance(args.CurrentActiveView, DB.ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
             data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
             f = open(data_file, 'r')
             p2 = pl.load(f)
             p1 = pl.load(f)
             f.close()
-            vc1 = XYZ(p1.x, p1.y, 0)
-            vc2 = XYZ(p2.x, p2.y, 0)
+            vc1 = DB.XYZ(p1.x, p1.y, 0)
+            vc2 = DB.XYZ(p2.x, p2.y, 0)
             current_ui_view.ZoomAndCenterRectangle(vc1, vc2)
 
 
 def togglestate():
-    new_state = not get_pyrevit_env_var(SYNC_VIEW_ENV_VAR)
-    set_pyrevit_env_var(SYNC_VIEW_ENV_VAR, new_state)
+    new_state = not envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR)
+    envvars.set_pyrevit_env_var(SYNC_VIEW_ENV_VAR, new_state)
     this_script.toggle_icon(new_state)
 
 
 # noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
-        __rvt__.ViewActivating += EventHandler[ViewActivatingEventArgs](copyzoomstate)
-        __rvt__.ViewActivated += EventHandler[ViewActivatedEventArgs](applyzoomstate)
+        __rvt__.ViewActivating += EventHandler[UIEvents.ViewActivatingEventArgs](copyzoomstate)
+        __rvt__.ViewActivated += EventHandler[UIEvents.ViewActivatedEventArgs](applyzoomstate)
         return True
     except:
         return False

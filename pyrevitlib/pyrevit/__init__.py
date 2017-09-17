@@ -194,25 +194,21 @@ class _ExecutorParams(object):
     def window_handle(self, value):
         self._overridewindow = value
 
-    @property   # writeabe
+    @property   # read-only
     def command_name(self):
-        if self.pyrevit_command:
+        if '__commandname__' in __builtins__ \
+            and __builtins__['__commandname__']:
+            return __builtins__['__commandname__']
+        elif self.pyrevit_command:
             return self.pyrevit_command.CommandName
 
-    # @command_name.setter
-    # def command_name(self, value):
-    #     # noinspection PyUnusedLocal
-    #     __builtin__.__commandname__ = value
-
-    @property   # writeabe
+    @property   # read-only
     def command_path(self):
-        if self.pyrevit_command:
+        if '__commandpath__' in __builtins__ \
+            and __builtins__['__commandpath__']:
+            return __builtins__['__commandpath__']
+        elif self.pyrevit_command:
             return op.dirname(self.pyrevit_command.ScriptSourceFile)
-
-    # @command_path.setter
-    # def command_path(self, value):
-    #     # noinspection PyUnusedLocal
-    #     __builtin__.__commandpath__ = value
 
     @property
     def command_data(self):
