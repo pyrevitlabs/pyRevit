@@ -1,14 +1,7 @@
 from pyrevit import PyRevitException
+from pyrevit.platform import Array, Dictionary
+from pyrevit.platform import Compiler, CSharpCodeProvider
 from pyrevit.coreutils.logger import get_logger
-
-# noinspection PyUnresolvedReferences
-from System import Array
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import Dictionary
-# noinspection PyUnresolvedReferences
-from Microsoft.CSharp import CSharpCodeProvider
-# noinspection PyUnresolvedReferences
-from System.CodeDom import Compiler
 
 
 logger = get_logger(__name__)

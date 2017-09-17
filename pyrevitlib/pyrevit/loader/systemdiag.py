@@ -1,11 +1,8 @@
 from pyrevit import HOST_APP
 
 from pyrevit.userconfig import user_config
+from pyrevit.platform import DriveInfo, Path
 from pyrevit.coreutils.logger import get_logger
-
-
-# noinspection PyUnresolvedReferences
-from System.IO import DriveInfo, Path
 
 
 logger = get_logger(__name__)

@@ -1,6 +1,5 @@
-import clr 
-
 from pyrevit import EXEC_PARAMS
+from pyrevit.platform import clr
 from pyrevit.coreutils.logger import get_logger
 
 clr.AddReference('IronPython.dll')

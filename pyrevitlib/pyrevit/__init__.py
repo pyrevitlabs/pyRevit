@@ -4,16 +4,13 @@ Sub-modules handle their specific configuration internally.
 
 """
 
-import clr
 import sys
 import os
 import os.path as op
 import traceback
 
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
+from pyrevit.platform import Process, IOException
+from pyrevit.platform import Forms
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
@@ -106,10 +103,8 @@ class _HostApplication:
 
     @property
     def proc_screen(self):
-        clr.AddReferenceByPartialName('System.Windows.Forms')
-        # noinspection PyUnresolvedReferences
-        from System.Windows.Forms import Screen
-        return Screen.FromHandle(Process.GetCurrentProcess().MainWindowHandle)
+        return Forms.Screen.FromHandle(
+            Process.GetCurrentProcess().MainWindowHandle)
 
     def is_newer_than(self, version):
         return int(self.version) > int(version)

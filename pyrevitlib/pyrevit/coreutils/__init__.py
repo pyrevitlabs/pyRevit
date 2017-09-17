@@ -10,23 +10,13 @@ import shutil
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
-
-# noinspection PyUnresolvedReferences
-from System import AppDomain,  Array, Type
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-# noinspection PyUnresolvedReferences
-from System.Reflection import Assembly, TypeAttributes,         \
-                              MethodAttributes, CallingConventions
-# noinspection PyUnresolvedReferences
-from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
-# noinspection PyUnresolvedReferences
-from System.Net import WebClient, WebRequest
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.Attributes import RegenerationAttribute,    \
-                                      RegenerationOption,       \
-                                      TransactionAttribute, TransactionMode
+from pyrevit.platform import AppDomain, Array, Type
+from pyrevit.platform import Process, Assembly
+from pyrevit.platform import TypeAttributes, MethodAttributes
+from pyrevit.platform import CallingConventions
+from pyrevit.platform import CustomAttributeBuilder, OpCodes
+from pyrevit.platform import WebClient, WebRequest
+from pyrevit.revitapi import Attributes
 
 
 DEFAULT_SEPARATOR = ';'
@@ -359,21 +349,21 @@ def read_source_file(source_file_path):
 
 def create_ext_command_attrs():
     regen_const_info = \
-        clr.GetClrType(RegenerationAttribute) \
-           .GetConstructor(Array[Type]((RegenerationOption,)))
+        clr.GetClrType(Attributes.RegenerationAttribute) \
+           .GetConstructor(Array[Type]((Attributes.RegenerationOption,)))
 
     regen_attr_builder = \
         CustomAttributeBuilder(regen_const_info,
-                               Array[object]((RegenerationOption.Manual,)))
+                               Array[object]((Attributes.RegenerationOption.Manual,)))
 
     # add TransactionAttribute to type
     trans_constructor_info = \
-        clr.GetClrType(TransactionAttribute) \
-           .GetConstructor(Array[Type]((TransactionMode,)))
+        clr.GetClrType(Attributes.TransactionAttribute) \
+           .GetConstructor(Array[Type]((Attributes.TransactionMode,)))
 
     trans_attrib_builder = \
         CustomAttributeBuilder(trans_constructor_info,
-                               Array[object]((TransactionMode.Manual,)))
+                               Array[object]((Attributes.TransactionMode.Manual,)))
 
     return [regen_attr_builder, trans_attrib_builder]
 

@@ -4,9 +4,6 @@ from ConfigParser import NoOptionError, NoSectionError
 from pyrevit import PyRevitException, PyRevitIOError
 from pyrevit.coreutils import get_str_hash
 
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
-
 
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"

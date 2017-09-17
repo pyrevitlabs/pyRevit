@@ -1,14 +1,9 @@
 import json
 
 from pyrevit import HOST_APP
+from pyrevit.platform import List
+from pyrevit.revitapi import DB, UI
 from pyrevit.coreutils.logger import get_logger
-
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId, View
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import TaskDialog
 
 
 logger = get_logger(__name__)
@@ -69,29 +64,29 @@ class SelectElementsCommand(GenericProtocolCommand):
 
     def get_elements(self):
         return [arg.IntegerValue for arg in self._args
-                if isinstance(arg, ElementId)]
+                if isinstance(arg, DB.ElementId)]
 
     def execute(self):
-        el_list = List[ElementId]()
+        el_list = List[DB.ElementId]()
         for arg in self._args:
             if type(arg) == int:
-                el_list.Add(ElementId(arg))
+                el_list.Add(DB.ElementId(arg))
 
         if not HOST_APP.doc:
             logger.debug('Active document does not exist in Revit. '
                          'Can not get doc and uidoc.')
         else:
-            HOST_APP.uidoc.Selection.SetElementIds(el_list)
+            HOST_APP.uidoc.Selection.SetDB.ElementIds(el_list)
 
             for ei_id in el_list:
                 try:
                     el = HOST_APP.doc.GetElement(ei_id)
-                    if isinstance(el, View):
-                        HOST_APP.uidoc.ActiveView = el
+                    if isinstance(el, DB.View):
+                        HOST_APP.uidoc.ActiveDB.View = el
                     else:
-                        owner_view = HOST_APP.doc.GetElement(el.OwnerViewId)
-                        if owner_view:
-                            HOST_APP.uidoc.ActiveView = owner_view
+                        owner_DB.View = HOST_APP.doc.GetElement(el.OwnerDB.ViewId)
+                        if owner_DB.View:
+                            HOST_APP.uidoc.ActiveDB.View = owner_DB.View
                 except Exception as err:
                     print(err)
 
@@ -128,7 +123,7 @@ def make_url(args):
 
     Examples:
         Data contains a list of element ids to be selected.
-        >>> element_id = ElementId(1235)
+        >>> element_id = DB.ElementId(1235)
         >>> make_url(element_id)
         >>> "revit://{'command':'select','data':[1235]}"
     """

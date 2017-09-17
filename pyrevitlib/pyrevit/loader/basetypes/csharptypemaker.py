@@ -1,4 +1,5 @@
 from pyrevit import PyRevitException
+from pyrevit.revitapi import UI
 from pyrevit.coreutils import find_loaded_asm, read_source_file, get_str_hash
 from pyrevit.coreutils import create_type, load_asm_file,\
     create_ext_command_attrs
@@ -9,9 +10,6 @@ from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import _get_references
 
 import pyrevit.coreutils.appdata as appdata
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import IExternalCommand, IExternalCommandAvailability
 
 
 logger = get_logger(__name__)
@@ -62,9 +60,9 @@ def _verify_command_interfaces(compiled_assm):
     iextcmd = iextcmd_avail = None
 
     for compiled_type in compiled_assm.GetTypes():
-        if IExternalCommand in compiled_type.GetInterfaces():
+        if UI.IExternalCommand in compiled_type.GetInterfaces():
             iextcmd = compiled_type
-        elif IExternalCommandAvailability in compiled_type.GetInterfaces():
+        elif UI.IExternalCommandAvailability in compiled_type.GetInterfaces():
             iextcmd_avail = compiled_type
 
     return iextcmd, iextcmd_avail
@@ -83,7 +81,7 @@ def _make_csharp_types(module_builder, cmd_component):
                     create_ext_command_attrs())
         cmd_component.class_name = cmd_component.unique_name
     else:
-        raise PyRevitException('Can not find IExternalCommand derivatives '
+        raise PyRevitException('Can not find UI.IExternalCommand derivatives '
                                'for: {}'.format(cmd_component))
 
     if iext_cmd_avail:
@@ -93,7 +91,7 @@ def _make_csharp_types(module_builder, cmd_component):
                     [])
         cmd_component.avail_class_name = cmd_component.unique_avail_name
     else:
-        logger.debug('Can not find IExternalCommandAvailability derivatives '
+        logger.debug('Can not find UI.IExternalCommandAvailability derivatives '
                      'for: {}'.format(cmd_component))
 
 

@@ -1,37 +1,9 @@
 from collections import OrderedDict
 
-import clr
-
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
+from pyrevit.platform import Uri, Imaging
+from pyrevit.revitapi import UI, AdWindows
 from pyrevit.coreutils.logger import get_logger
-
-clr.AddReference('RevitAPIUI')
-clr.AddReference('PresentationCore')
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-from System.Windows.Media.Imaging import BitmapImage,\
-                                         BitmapCacheOption, BitmapCreateOptions
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import PushButton, PulldownButton, SplitButton
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import RibbonItemData, PushButtonData,\
-                              PulldownButtonData, SplitButtonData
-
-try:
-    clr.AddReference('AdWindows')
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import ComponentManager
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import RibbonRowPanel, RibbonButton, \
-        RibbonFoldPanel, RibbonSplitButton
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import RibbonToggleButton, RibbonSeparator,\
-        RibbonPanelBreak, RibbonRowPanel, RibbonSeparator
-except Exception as err:
-    raise PyRevitException('Can not establish ui module. '
-                           'Error referencing AdWindow | {}'.format(err))
 
 
 logger = get_logger(__name__)
@@ -56,11 +28,11 @@ class _ButtonIcons:
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'
                      .format(ICON_SMALL, file_address))
-        bitmap_image = BitmapImage()
+        bitmap_image = Imaging.BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
+        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_SMALL
         # bitmap_image.DecodePixelWidth = ICON_SMALL
         bitmap_image.EndInit()
@@ -68,11 +40,11 @@ class _ButtonIcons:
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'
                      .format(ICON_MEDIUM, file_address))
-        bitmap_image = BitmapImage()
+        bitmap_image = Imaging.BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
+        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_MEDIUM
         # bitmap_image.DecodePixelWidth = ICON_MEDIUM
         bitmap_image.EndInit()
@@ -80,11 +52,11 @@ class _ButtonIcons:
 
         logger.debug('Creating {0}x{0} bitmap from: {1}'
                      .format(ICON_LARGE, file_address))
-        bitmap_image = BitmapImage()
+        bitmap_image = Imaging.BitmapImage()
         bitmap_image.BeginInit()
         bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
+        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
+        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
         bitmap_image.DecodePixelHeight = ICON_LARGE
         # bitmap_image.DecodePixelWidth = ICON_LARGE
         bitmap_image.EndInit()
@@ -220,105 +192,106 @@ class _GenericRevitNativeUIContainer(_GenericPyRevitUIContainer):
         return True
 
     def deactivate(self):
-        raise PyRevitUIError('Can not de/activate native item: {}'.format(self))
+        raise PyRevitUIError('Can not de/activate native item: {}'
+                             .format(self))
 
     activate = deactivate
 
 
 class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_button):
+    def __init__(self, adwnd_ribbon_button):
         _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = \
-            unicode(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
-        self._rvtapi_object = adskwnd_ribbon_button
+            unicode(adwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
+        self._rvtapi_object = adwnd_ribbon_button
 
 
 class _RevitNativeRibbonGroupItem(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_item):
+    def __init__(self, adwnd_ribbon_item):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_item.Source.Title
-        self._rvtapi_object = adskwnd_ribbon_item
+        self.name = adwnd_ribbon_item.Source.Title
+        self._rvtapi_object = adwnd_ribbon_item
 
         # finding children on this button group
-        for adskwnd_ribbon_button in adskwnd_ribbon_item.Items:
-            self._add_component(_RevitNativeRibbonButton(adskwnd_ribbon_button))
+        for adwnd_ribbon_button in adwnd_ribbon_item.Items:
+            self._add_component(_RevitNativeRibbonButton(adwnd_ribbon_button))
 
     button = _GenericRevitNativeUIContainer._get_component
 
 
 class _RevitNativeRibbonPanel(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_panel):
+    def __init__(self, adwnd_ribbon_panel):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_panel.Source.Title
-        self._rvtapi_object = adskwnd_ribbon_panel
+        self.name = adwnd_ribbon_panel.Source.Title
+        self._rvtapi_object = adwnd_ribbon_panel
 
-        all_adskwnd_ribbon_items = []
+        all_adwnd_ribbon_items = []
         # getting a list of existing items under this panel
         # RibbonFoldPanel items are not visible. they automatically fold
         # buttons into stack on revit ui resize since RibbonFoldPanel are
         # not visible it does not make sense to create objects for them.
         # This pre-cleaner loop, finds the RibbonFoldPanel items and
         # adds the children to the main list
-        for adskwnd_ribbon_item in adskwnd_ribbon_panel.Source.Items:
-            if isinstance(adskwnd_ribbon_item, RibbonFoldPanel):
+        for adwnd_ribbon_item in adwnd_ribbon_panel.Source.Items:
+            if isinstance(adwnd_ribbon_item, AdWindows.RibbonFoldPanel):
                 try:
-                    for sub_rvtapi_item in adskwnd_ribbon_item.Items:
-                        all_adskwnd_ribbon_items.append(sub_rvtapi_item)
+                    for sub_rvtapi_item in adwnd_ribbon_item.Items:
+                        all_adwnd_ribbon_items.append(sub_rvtapi_item)
                 except Exception as append_err:
                     logger.debug('Can not get RibbonFoldPanel children: {} '
-                                 '| {}'.format(adskwnd_ribbon_item,
+                                 '| {}'.format(adwnd_ribbon_item,
                                                append_err))
             else:
-                all_adskwnd_ribbon_items.append(adskwnd_ribbon_item)
+                all_adwnd_ribbon_items.append(adwnd_ribbon_item)
 
         # processing the panel slideout for exising ribbon items
-        for adskwnd_slideout_item \
-                in adskwnd_ribbon_panel.Source.SlideOutPanelItemsView:
-            all_adskwnd_ribbon_items.append(adskwnd_slideout_item)
+        for adwnd_slideout_item \
+                in adwnd_ribbon_panel.Source.SlideOutPanelItemsView:
+            all_adwnd_ribbon_items.append(adwnd_slideout_item)
 
         # processing the cleaned children list and
         # creating pyRevit native ribbon objects
-        for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
+        for adwnd_ribbon_item in all_adwnd_ribbon_items:
             try:
-                if isinstance(adskwnd_ribbon_item, RibbonButton) \
-                        or isinstance(adskwnd_ribbon_item, RibbonToggleButton):
+                if isinstance(adwnd_ribbon_item,
+                              AdWindows.RibbonButton) \
+                        or isinstance(adwnd_ribbon_item,
+                                      AdWindows.RibbonToggleButton):
                     self._add_component(
-                        _RevitNativeRibbonButton(adskwnd_ribbon_item)
-                    )
-                elif isinstance(adskwnd_ribbon_item, RibbonSplitButton):
+                        _RevitNativeRibbonButton(adwnd_ribbon_item))
+                elif isinstance(adwnd_ribbon_item,
+                                AdWindows.RibbonSplitButton):
                     self._add_component(
-                        _RevitNativeRibbonGroupItem(adskwnd_ribbon_item)
-                    )
+                        _RevitNativeRibbonGroupItem(adwnd_ribbon_item))
 
             except Exception as append_err:
                 logger.debug('Can not create native ribbon item: {} '
-                             '| {}'.format(adskwnd_ribbon_item, append_err))
+                             '| {}'.format(adwnd_ribbon_item, append_err))
 
     ribbon_item = _GenericRevitNativeUIContainer._get_component
 
 
 class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_tab):
+    def __init__(self, adwnd_ribbon_tab):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_tab.Title
-        self._rvtapi_object = adskwnd_ribbon_tab
+        self.name = adwnd_ribbon_tab.Title
+        self._rvtapi_object = adwnd_ribbon_tab
 
         # getting a list of existing panels under this tab
         try:
-            for adskwnd_ribbon_panel in adskwnd_ribbon_tab.Panels:
+            for adwnd_ribbon_panel in adwnd_ribbon_tab.Panels:
                 # only listing visible panels
-                if adskwnd_ribbon_panel.IsVisible:
+                if adwnd_ribbon_panel.IsVisible:
                     self._add_component(
-                        _RevitNativeRibbonPanel(adskwnd_ribbon_panel)
+                        _RevitNativeRibbonPanel(adwnd_ribbon_panel)
                     )
         except Exception as append_err:
             logger.debug('Can not get native panels for this native tab: {} '
-                         '| {}'.format(adskwnd_ribbon_tab,
-                                       append_err))
+                         '| {}'.format(adwnd_ribbon_tab, append_err))
 
     ribbon_panel = _GenericRevitNativeUIContainer._get_component
 
@@ -338,7 +311,8 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         # when container is in itemdata_mode, self._rvtapi_object is a
         # RibbonItemData and not an actual ui item a sunsequent call to
         # create_data_items will create ui for RibbonItemData objects
-        self.itemdata_mode = isinstance(self._rvtapi_object, RibbonItemData)
+        self.itemdata_mode = isinstance(self._rvtapi_object,
+                                        UI.RibbonItemData)
 
         self.ui_title = self.name
         if not self.itemdata_mode:
@@ -434,7 +408,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         # itemdata_mode, only the necessary RibbonItemData objects will
         # be created for children a sunsequent call to create_data_items
         # will create ui for RibbonItemData objects
-        self.itemdata_mode = isinstance(self._rvtapi_object, RibbonItemData)
+        self.itemdata_mode = isinstance(self._rvtapi_object,
+                                        UI.RibbonItemData)
 
         # if button group shows the active button icon, then the child
         # buttons need to have large icons
@@ -451,8 +426,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonButton(revit_button))
 
     def _is_splitbutton(self):
-        return isinstance(self._rvtapi_object, SplitButton) \
-               or isinstance(self._rvtapi_object, SplitButtonData)
+        return isinstance(self._rvtapi_object, UI.SplitButton) \
+               or isinstance(self._rvtapi_object, UI.SplitButtonData)
 
     def set_rvtapi_object(self, rvtapi_obj):
         _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
@@ -532,7 +507,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                 .AvailabilityClassName = avail_class_name
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} '
-                                     '| {}'.format(button_name, asm_update_err))
+                                     '| {}'.format(button_name,
+                                                   asm_update_err))
 
                 if not icon_path:
                     logger.debug('Using parent item icon for {}'
@@ -574,7 +550,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         logger.debug('Parent does not include this button. Creating: {}'
                      .format(button_name))
         try:
-            button_data = PushButtonData(button_name, button_name,
+            button_data = UI.PushButtonData(button_name, button_name,
                                          asm_location, class_name)
             if avail_class_name:
                 button_data.AvailabilityClassName = avail_class_name
@@ -656,9 +632,10 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             # feeding _sub_native_ribbon_items with an instance of
             # _PyRevitRibbonGroupItem for existing group items
             # _PyRevitRibbonPanel will find its existing ribbon items internally
-            if isinstance(revit_ribbon_item, PulldownButton):
-                self._add_component(_PyRevitRibbonGroupItem(revit_ribbon_item))
-            elif isinstance(revit_ribbon_item, PushButton):
+            if isinstance(revit_ribbon_item, UI.PulldownButton):
+                self._add_component(
+                    _PyRevitRibbonGroupItem(revit_ribbon_item))
+            elif isinstance(revit_ribbon_item, UI.PushButton):
                 self._add_component(_PyRevitRibbonButton(revit_ribbon_item))
             else:
                 raise PyRevitUIError('Can not determin ribbon item type: {}'
@@ -777,7 +754,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             logger.debug('Parent does not include this button. Creating: {}'
                          .format(button_name))
             try:
-                button_data = PushButtonData(button_name, button_name,
+                button_data = UI.PushButtonData(button_name, button_name,
                                              asm_location, class_name)
                 if avail_class_name:
                     button_data.AvailabilityClassName = avail_class_name
@@ -868,7 +845,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
     def create_pulldown_button(self, item_name, icon_path,
                                update_if_exists=False):
-        self._create_button_group(PulldownButtonData, item_name, icon_path,
+        self._create_button_group(UI.PulldownButtonData, item_name, icon_path,
                                   update_if_exists)
 
     def create_split_button(self, item_name, icon_path,
@@ -877,7 +854,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Revits earlier than 2017 do not support '
                                  'split buttons in a stack.')
         else:
-            self._create_button_group(SplitButtonData, item_name, icon_path,
+            self._create_button_group(UI.SplitButtonData, item_name, icon_path,
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
@@ -887,7 +864,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Revits earlier than 2017 do not support '
                                  'split buttons in a stack.')
         else:
-            self._create_button_group(SplitButtonData, item_name, icon_path,
+            self._create_button_group(UI.SplitButtonData, item_name, icon_path,
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(False)
 
@@ -967,7 +944,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
         # Iterating over tabs,
         # because ComponentManager.Ribbon.Tabs.FindTab(tab.name)
         # does not return invisible tabs
-        for revit_ui_tab in ComponentManager.Ribbon.Tabs:
+        for revit_ui_tab in AdWindows.ComponentManager.Ribbon.Tabs:
             # feeding self._sub_pyrvt_ribbon_tabs with an instance of
             # _PyRevitRibbonTab or _RevitNativeRibbonTab for each existing
             # tab. _PyRevitRibbonTab or _RevitNativeRibbonTab will find
@@ -1014,7 +991,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                 # not return the created tab object.
                 # so find the tab object in exiting ui
                 revit_tab_ctrl = None
-                for exiting_rvt_ribbon_tab in ComponentManager.Ribbon.Tabs:
+                for exiting_rvt_ribbon_tab in AdWindows.ComponentManager.Ribbon.Tabs:
                     if exiting_rvt_ribbon_tab.Title == tab_name:
                         revit_tab_ctrl = exiting_rvt_ribbon_tab
 

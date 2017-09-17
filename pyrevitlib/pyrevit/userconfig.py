@@ -7,14 +7,13 @@ All other modules use this module to query user config.
 import os.path as op
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
+from pyrevit.platform import IOException
+
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils.configparser import PyRevitConfigParser
 from pyrevit.coreutils.logger import get_logger, set_file_logging
 from pyrevit.versionmgr.upgrade import upgrade_user_config
-
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
 
 
 logger = get_logger(__name__)

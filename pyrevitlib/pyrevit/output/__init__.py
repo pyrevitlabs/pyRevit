@@ -1,23 +1,13 @@
 from __future__ import print_function
 
-import clr
-
 from pyrevit import EXEC_PARAMS
+from pyrevit.platform import AppDomain
+from pyrevit.platform import Drawing, Windows
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import rvtprotocol, markdown, charts
 from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
-
-clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('System.Drawing')
-
-# noinspection PyUnresolvedReferences
-from System import AppDomain
-# noinspection PyUnresolvedReferences
-import System.Drawing
-# noinspection PyUnresolvedReferences
-import System.Windows
 
 
 logger = get_logger(__name__)
@@ -124,10 +114,10 @@ class PyRevitOutputWindow:
     def set_font(self, font_family_name, font_size):
         # noinspection PyUnresolvedReferences
         self.renderer.Font = \
-            System.Drawing.Font(font_family_name,
-                                font_size,
-                                System.Drawing.FontStyle.Regular,
-                                System.Drawing.GraphicsUnit.Point)
+            Drawing.Font(font_family_name,
+                         font_size,
+                         Drawing.FontStyle.Regular,
+                         Drawing.GraphicsUnit.Point)
 
     def resize(self, width, height):
         self.set_width(width)

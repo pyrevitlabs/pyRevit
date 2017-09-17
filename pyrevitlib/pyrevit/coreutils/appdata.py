@@ -8,9 +8,6 @@ from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL,\
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
-
 
 logger = get_logger(__name__)
 

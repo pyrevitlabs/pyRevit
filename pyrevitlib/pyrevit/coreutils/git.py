@@ -6,18 +6,14 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
-import clr
 import importlib
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+from pyrevit.platform import clr
+from pyrevit.platform import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.addin import get_addin_dll_file
-
-# noinspection PyUnresolvedReferences
-import System
-# noinspection PyUnresolvedReferences
-from System import DateTime, DateTimeOffset
 
 
 logger = get_logger(__name__)
@@ -27,10 +23,6 @@ GIT_LIB = 'LibGit2Sharp'
 
 
 if not EXEC_PARAMS.doc_mode:
-    # todo: figure out how to import extensions on the caller's scope.
-    clr.AddReference("System.Core")
-    clr.ImportExtensions(System.Linq)
-    # clr.AddReferenceByName(GIT_LIB)
     try:
         clr.AddReferenceToFileAndPath(get_addin_dll_file(GIT_LIB))
     except:
