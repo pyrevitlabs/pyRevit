@@ -78,6 +78,7 @@
                         <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding GitURL}"/>
                         <GridViewColumn Header="Author" DisplayMemberBinding="{Binding Author}"/>
                         <GridViewColumn Header="Built-in" DisplayMemberBinding="{Binding Builtin}"/>
+                        <GridViewColumn Header="Rocket-Mode" DisplayMemberBinding="{Binding RocketMode}"/>
                         <GridViewColumn Header="Installed" DisplayMemberBinding="{Binding Installed}"/>
                         <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}"/>
                         <GridViewColumn Header="Last Commit" DisplayMemberBinding="{Binding Version}"/>

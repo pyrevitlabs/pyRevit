@@ -91,25 +91,16 @@ class ExtensionPackage:
                                    '| {}'.format(ext_info_err))
 
         # Setup access
-        if 'authusers' in info_dict:
-            self.authusers = info_dict['authusers']
-        else:
-            self.authusers = None
-
+        self.authusers = info_dict.get('authusers', None)
+        # Setup rocket mode compatibility
+        self.rocket_mode = \
+            info_dict.get('rocket_mode_compatible', 'false').lower() == 'true'
         # Setting extended attributes
-        try:
-            self.website = info_dict['website']
-            self.image = info_dict['image']
-            self.author = info_dict['author']
-            self.author_profile = info_dict['author-url']
-            self.dependencies = info_dict['dependencies']
-        except Exception as ext_info_err:
-            self.website = self.url.replace('.git', '')
-            self.image = None
-            self.author = self.author_profile = None
-            self.dependencies = []
-            logger.debug('Missing extended plugin ext info. | {}'
-                         .format(ext_info_err))
+        self.website = info_dict.get('website', self.url.replace('.git', ''))
+        self.image = info_dict.get('image', None)
+        self.author = info_dict.get('author', None)
+        self.author_profile = info_dict.get('author-url', None)
+        self.dependencies = info_dict.get('dependencies', [])
 
     def __repr__(self):
         return '<ExtensionPackage object. name \'{}\' url \'{}\'>'\
@@ -363,33 +354,6 @@ def get_ext_package_by_name(ext_pkg_name):
 
 def get_dependency_graph():
     return DependencyGraph(get_ext_packages(authorized_only=False))
-
-
-def is_ext_package_enabled(ext_pkg_name, ext_pkg_type_postfix):
-    """
-    Checks whether an extension is enabled or has been disable by the user.
-
-    Args:
-        ext_pkg_name (str): Extension package name
-        ext_pkg_type_postfix (str): Postfix of extension type
-                                    (.lib or .extension)
-
-    Returns:
-        bool: True if enabled, False if not
-    """
-    try:
-        ext_pkg = get_ext_package_by_name(ext_pkg_name)
-        if ext_pkg:
-            return ext_pkg.is_enabled and ext_pkg.user_has_access
-        else:
-            logger.debug('Extension package is not defined: {}.{}'
-                         .format(ext_pkg_name, ext_pkg_type_postfix))
-            # Lets be nice and load the package if it is not defined
-            return True
-    except Exception as ext_check_err:
-        logger.error('Error checking state for extension: {} of type: {} | {}'
-                     .format(ext_pkg_name, ext_pkg_type_postfix, ext_check_err))
-        return True
 
 
 def install(ext_pkg, install_dir, install_dependencies=True):

@@ -53,6 +53,7 @@ class ExtensionPackageListItem:
 
         # setting up other list data
         self.Builtin = self.ext_pkg.builtin
+        self.RocketMode = self.ext_pkg.rocket_mode
         self.Name = self.ext_pkg.name
         self.Desciption = self.ext_pkg.description
         self.Author = self.ext_pkg.author

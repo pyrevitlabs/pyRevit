@@ -21,12 +21,12 @@ namespace PyRevitBaseClasses
         public ScriptEngine GetEngine(ref PyRevitCommand pyrvtCmd)
         {
             // If the command required a clean engine, make a clean one
-            if (pyrvtCmd.NeedsCleanEngine)
-                return CreateNewEngine(ref pyrvtCmd);
+            if (pyrvtCmd.NeedsFullFrameEngine)
+                return CreateNewEngine(ref pyrvtCmd, fullframe: true);
 
             // If the command required a clean engine, make a clean one
-            if (pyrvtCmd.NeedsFullFrameEngine)
-                return CreateNewEngine(ref pyrvtCmd, fullframe:true);
+            if (pyrvtCmd.NeedsCleanEngine)
+                return CreateNewEngine(ref pyrvtCmd);
 
             // if the user is asking to refresh the cached engine for the command,
             // then update the engine and save in cache

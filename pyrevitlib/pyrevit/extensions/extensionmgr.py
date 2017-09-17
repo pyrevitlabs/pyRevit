@@ -39,7 +39,7 @@ from pyrevit.extensions.parser import parse_dir_for_ext_type,\
 from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.extensions.components import Extension, LibraryExtension
 
-from pyrevit.plugins.extpackages import is_ext_package_enabled
+import pyrevit.plugins.extpackages as extpkgs
 
 
 logger = get_logger(__name__)
@@ -54,7 +54,19 @@ def _update_extension_syspaths(ui_ext, lib_ext_list, pyrvt_paths):
 
 
 def _is_extension_enabled(ext_info):
-    return is_ext_package_enabled(ext_info.name, ext_info.type_id)
+    try:
+        ext_pkg = extpkgs.get_ext_package_by_name(ext_info.name)
+        if ext_pkg:
+            return ext_pkg.is_enabled and ext_pkg.user_has_access
+        else:
+            logger.debug('Extension package is not defined: {}'
+                         .format(ext_info.name))
+    except Exception as ext_check_err:
+        logger.error('Error checking state for extension: {} | {}'
+                     .format(ext_info.name, ext_check_err))
+
+    # Lets be nice and load the package if it is not defined
+    return True
 
 
 def _remove_disabled_extensions(ext_list):

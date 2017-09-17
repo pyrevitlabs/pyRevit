@@ -352,10 +352,14 @@ class GenericUICommand(GenericUIComponent):
                 exts.COMMAND_CONTEXT_PARAM)  # type: str
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
+
+            # only True when command is specifically asking for
+            # a clean engine or a fullframe engine. False if not set.
             self.requires_clean_engine = script_content.extract_param(
                 exts.CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
             self.requires_fullframe_engine = script_content.extract_param(
                 exts.FULLFRAME_ENGINE_PARAM, False)  # type: bool
+
         except PyRevitException as script_parse_err:
             logger.error('Error parsing script file: {} | {}'
                          .format(self.script_file, script_parse_err))

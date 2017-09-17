@@ -8,8 +8,32 @@ from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
 
 from pyrevit.userconfig import user_config
 
+import pyrevit.plugins.extpackages as extpkgs
+
 
 logger = get_logger(__name__)
+
+
+def _is_rocketmode_compat(ext_name):
+    # pyRevitCore is rocket-mode compatible
+    # this line is needed since pyRevitCore does not have an extension
+    # definition in extensions/extensions.json
+    if ext_name == 'pyRevitCore':
+        return True
+
+    try:
+        ext_pkg = extpkgs.get_ext_package_by_name(ext_name)
+        if ext_pkg:
+            return ext_pkg.rocket_mode
+        else:
+            logger.debug('Extension package is not defined: {}'
+                         .format(ext_name))
+    except Exception as ext_check_err:
+        logger.error('Error checking rocket-mode compatibility '
+                     'for extension: {} | {}'.format(ext_name, ext_check_err))
+
+    # assume not-compatible if not set
+    return False
 
 
 def _make_python_avail_type(module_builder, cmd_component):
@@ -54,18 +78,23 @@ def _make_python_types(extension, module_builder, cmd_component):
     """
     logger.debug('Creating executor type for: {}'.format(cmd_component))
 
-    # check if core is in clean engine mode
-    # this means that the type makes should set the clean engine requirement
-    # to True so the executor, runs each command in an independent engine
-    # otherwise the use of a clean engine is decided by the command itself
-    # and a shared engine will be used by default
-    always_use_clean_engine = int(not user_config.core.rocketmode)
-    if not always_use_clean_engine:
-        always_use_clean_engine = int(cmd_component.requires_clean_engine)
-    logger.debug('Clean engine required: {}'.format(always_use_clean_engine))
+    # by default, core uses a clean engine for each command execution
+    use_clean_engine = True
+    # use_clean_engine will be set to false only when:
+    # core is in rocket-mode
+    #   AND extension is rocket-mode compatible
+    #       AND the command is not asking for a clean engine
+    if user_config.core.rocketmode \
+        and _is_rocketmode_compat(extension.name) \
+            and not cmd_component.requires_clean_engine:
+                use_clean_engine = False
 
-    use_fullframe_engine = int(cmd_component.requires_fullframe_engine)
-    logger.debug('Fullframe engine required: {}'.format(use_fullframe_engine))
+    logger.debug('{} uses clean engine: {}'.format(cmd_component.name,
+                                                   use_clean_engine))
+
+    logger.debug('{} requires Fullframe engine: {}'
+                 .format(cmd_component.name,
+                         cmd_component.requires_fullframe_engine))
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
@@ -76,8 +105,8 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.bundle_name,
                 extension.name,
                 cmd_component.unique_name,
-                always_use_clean_engine,
-                use_fullframe_engine)
+                int(use_clean_engine),
+                int(cmd_component.requires_fullframe_engine))
 
     logger.debug('Successfully created executor type for: {}'
                  .format(cmd_component))
