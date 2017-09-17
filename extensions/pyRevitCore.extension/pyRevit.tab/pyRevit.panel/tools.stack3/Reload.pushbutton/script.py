@@ -6,11 +6,12 @@ __cleanengine__ = True
 __context__ = 'zerodoc'
 
 
-from scriptutils import logger
+import scriptutils
 from pyrevit.loader.sessionmgr import load_session
 from pyrevit.loader.sessioninfo import get_session_uuid
 
-from scriptutils import this_script
+this_script = scriptutils.get_script()
+logger = scriptutils.get_logger()
 
 # re-load pyrevit session.
 logger.info('Reloading....')

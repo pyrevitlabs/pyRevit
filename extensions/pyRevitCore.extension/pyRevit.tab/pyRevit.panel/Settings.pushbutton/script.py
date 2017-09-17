@@ -2,6 +2,7 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP
+from pyrevit.platform import Forms
 from pyrevit.coreutils import filter_null_items, open_folder_in_explorer
 from pyrevit.coreutils.envvars import get_pyrevit_env_vars
 from pyrevit.loader.addin.addinfiles import get_addinfiles_state,\
@@ -11,11 +12,8 @@ from pyrevit.userconfig import user_config
 from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile,\
                              get_current_usage_serverurl, \
                              get_default_usage_logfilepath
-from scriptutils import logger, show_file_in_explorer
-from scriptutils.userinput import WPFWindow, pick_folder
-
-# noinspection PyUnresolvedReferences
-from System.Windows.Forms import Clipboard
+import scriptutils
+import scriptutils.userinput as userinput
 
 
 __context__ = 'zerodoc'
@@ -25,10 +23,13 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how ' \
           '\n\nShift-Click: Shows config file in explorer.'
 
 
+logger = scriptutils.get_logger()
+
+
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 
 
-class SettingsWindow(WPFWindow):
+class SettingsWindow(userinput.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs
     """
 
@@ -36,7 +37,7 @@ class SettingsWindow(WPFWindow):
         """Sets up the settings ui
         """
 
-        WPFWindow.__init__(self, xaml_file_name)
+        userinput.WPFWindow.__init__(self, xaml_file_name)
         try:
             self._setup_core_options()
         except Exception as setup_params_err:
@@ -213,21 +214,21 @@ class SettingsWindow(WPFWindow):
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard
         """
-        Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+        Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def copy_envvar_id(self, sender, args):
         """Callback method for copying selected env var name to clipboard
         """
-        Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
+        Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def addfolder(self, sender, args):
         """Callback method for adding extension folder to configs and list
         """
-        new_path = pick_folder()
+        new_path = userinput.pick_folder()
 
         if new_path:
             new_path = os.path.normpath(new_path)
@@ -262,7 +263,7 @@ class SettingsWindow(WPFWindow):
     def pick_usagelog_folder(self, sender, args):
         """Callback method for picking destination folder for usage log files
         """
-        new_path = pick_folder()
+        new_path = userinput.pick_folder()
 
         if new_path:
             self.usagelogfile_tb.Text = os.path.normpath(new_path)
@@ -354,6 +355,6 @@ class SettingsWindow(WPFWindow):
 
 # noinspection PyUnresolvedReferences
 if __shiftclick__:
-    show_file_in_explorer(user_config.config_file)
+    scriptutils.show_file_in_explorer(user_config.config_file)
 else:
     SettingsWindow('SettingsWindow.xaml').ShowDialog()

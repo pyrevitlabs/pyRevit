@@ -1,17 +1,15 @@
 """Activates selection tool that picks a specific type of element."""
 
+from pyrevit.platform import List
+from pyrevit.revitapi import DB, UI
 from scriptutils.userinput import CommandSwitchWindow
-from revitutils import doc, uidoc
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Selection import ISelectionFilter
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
 
 
-class PickByCategorySelectionFilter(ISelectionFilter):
+doc = __activedoc__
+uidoc = __activeuidoc__
+
+
+class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
     def __init__(self, catname):
         self.category = catname
 
@@ -34,7 +32,7 @@ def pickbycategory(catname):
         filteredlist = []
         for el in sellist:
             filteredlist.append(el.Id)
-        uidoc.Selection.SetElementIds(List[ElementId](filteredlist))
+        uidoc.Selection.SetElementIds(List[DB.ElementId](filteredlist))
     except:
         pass
 

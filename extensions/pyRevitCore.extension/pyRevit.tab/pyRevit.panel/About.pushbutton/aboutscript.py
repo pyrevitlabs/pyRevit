@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from scriptutils import coreutils as cu
+import scriptutils
 from scriptutils.userinput import WPFWindow
 from pyrevit.versionmgr import get_pyrevit_version, get_pyrevit_repo
 
@@ -43,27 +43,27 @@ class AboutWindow(WPFWindow):
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubrepopage(self, sender, args):
-        cu.open_url('https://github.com/eirannejad/pyRevit')
+        scriptutils.open_url('https://github.com/eirannejad/pyRevit')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opengithubcommits(self, sender, args):
-        cu.open_url('https://github.com/eirannejad/pyRevit/commits/master')
+        scriptutils.open_url('https://github.com/eirannejad/pyRevit/commits/master')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openrevisionhistory(self, sender, args):
-        cu.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
+        scriptutils.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
-        cu.open_url('http://eirannejad.github.io/pyRevit/credits/')
+        scriptutils.open_url('http://eirannejad.github.io/pyRevit/credits/')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def openkeybaseprofile(self, sender, args):
-        cu.open_url('https://keybase.io/ein')
+        scriptutils.open_url('https://keybase.io/ein')
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
