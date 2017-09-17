@@ -18,9 +18,7 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-CHARTS_JS_PATH = op.join(MAIN_LIB_DIR,
-                         'pyrevit', 'coreutils', 'console', 'charts',
-                         CHARTS_ENGINE)
+CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
 
 
 SCRIPT_TEMPLATE = "var ctx = document.getElementById('{}').getContext('2d');" \
