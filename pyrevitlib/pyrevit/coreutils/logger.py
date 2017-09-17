@@ -103,9 +103,10 @@ class LoggerWrapper(logging.Logger):
             msg_str = prepare_html_str(msg_str)
 
         logging.Logger._log(self, level, msg_str, args,
-                            exc_info=None, extra=None)
+                            exc_info=exc_info, extra=extra)
 
-    def getEffectiveLevel(self):
+    @staticmethod
+    def getEffectiveLevel():
         return get_current_logging_level()
 
     @staticmethod
