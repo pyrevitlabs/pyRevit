@@ -1,10 +1,9 @@
 from pyrevit import PYREVIT_ADDON_NAME
+from pyrevit.coreutils.platform import AppDomain
 
-# noinspection PyUnresolvedReferences
-from System import AppDomain
-
-
-PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME + '_envvardict'
+# root env var dictionary key.
+# must be the same in this file and pyrevit/loader/basetypes/envdict.cs
+PYREVIT_ENV_VAR_DICT_NAME = PYREVIT_ADDON_NAME.upper() + '_ENVVARDICT'
 
 
 def get_pyrevit_env_vars():

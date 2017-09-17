@@ -7,14 +7,28 @@ namespace PyRevitBaseClasses
 	public static class EnvDictionaryKeys
 	{
 		public static string docEngineDict = "pyRevitIpyEngines";
-		public static string addonName = "pyRevit";
-		public static string root = String.Format("{0}_envvardict", EnvDictionaryKeys.addonName);
-		public static string sessionUUID = String.Format("{0}_uuidISC", EnvDictionaryKeys.addonName);
-		public static string addonVersion = String.Format("{0}_versionISC", EnvDictionaryKeys.addonName);
-		public static string usageLogState = String.Format("{0}_usagelogstateISC", EnvDictionaryKeys.addonName);
-		public static string usageLogFilePath = String.Format("{0}_usagelogfileISC", EnvDictionaryKeys.addonName);
-		public static string usageLogServerUrl = String.Format("{0}_usagelogserverISC", EnvDictionaryKeys.addonName);
-        public static string pyrevitOutputWindows = String.Format("{0}_outputsISC", EnvDictionaryKeys.addonName);
+
+        public static string baseName = "PYREVIT";
+
+        // root env var dictionary key.
+        // must be the same in this file and pyrevit/coreutils/envvars.py
+		public static string root = String.Format("{0}_ENVVARDICT", EnvDictionaryKeys.baseName);
+
+		public static string sessionUUID = String.Format("{0}_UUID", EnvDictionaryKeys.baseName);
+		public static string addonVersion = String.Format("{0}_VERSION", EnvDictionaryKeys.baseName);
+
+        // must be the same in this file and pyrevit/coreutils/logger.py
+        public static string loggingLevel = String.Format("{0}_LOGGINGLEVEL", EnvDictionaryKeys.baseName);
+
+		public static string usageLogState = String.Format("{0}_USAGELOGSTATE", EnvDictionaryKeys.baseName);
+		public static string usageLogFilePath = String.Format("{0}_USAGELOGFILE", EnvDictionaryKeys.baseName);
+		public static string usageLogServerUrl = String.Format("{0}_USAGELOGSERVER", EnvDictionaryKeys.baseName);
+
+        public static string outputWindows = String.Format("{0}_OUTPUTSWINDOWS", EnvDictionaryKeys.baseName);
+
+        public static string loadedAssm = String.Format("{0}_LOADEDASSMS", EnvDictionaryKeys.baseName);
+        public static string loadedAssmCount = String.Format("{0}_ASSMCOUNT", EnvDictionaryKeys.baseName);
+
     }
 
     public class EnvDictionary

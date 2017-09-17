@@ -39,7 +39,9 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_CRITICAL,
 
 # Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
-GLOBAL_LOGGING_LEVEL_ENVVAR = PYREVIT_ADDON_NAME + '_logginglevelISC'
+
+# must be the same in this file and pyrevit/loader/basetypes/envdict.cs
+GLOBAL_LOGGING_LEVEL_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_LOGGINGLEVEL'
 set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
 
 

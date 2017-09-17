@@ -4,11 +4,11 @@ Shared engine fixes:
 
 Improvement fixes:
 ☐ Fix File logging
-☐ Consolidate the env var dictionary access
-☐ userconfig returns a global config. Test config access between cached engines
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Consolidate the env var dictionary access @done(2017-09-17 10:02)
+    ✘ userconfig returns a global config. Test config access between cached engines @cancelled(2017-09-17 09:31)
     ✔ Fix PyRevitException reporting when compile error occurs @done(2017-09-17 09:30)
     ✔ Fix loading of smartbuttons @done(2017-09-17 09:12)
     ✔ Fix Charts @done(2017-09-16 22:38)

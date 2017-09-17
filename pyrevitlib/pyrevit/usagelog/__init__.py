@@ -26,6 +26,7 @@ from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR,\
 from pyrevit.coreutils import is_blank
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
+from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 
 from pyrevit.loader.sessioninfo import get_session_uuid
 from pyrevit.userconfig import user_config
@@ -34,12 +35,6 @@ from pyrevit.userconfig import user_config
 logger = get_logger(__name__)
 
 
-# environment parameter names for communicating usage logging with
-# the command executor and usage logger in c-sharp
-USAGELOG_STATE_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogstateISC'
-USAGELOG_FILEPATH_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogfileISC'
-USAGELOG_SERVERURL_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_usagelogserverISC'
-
 # templates for usage log file naming
 FILE_LOG_EXT = 'json'
 FILE_LOG_FILENAME_TEMPLATE = '{}_{}_usagelog.{}'
@@ -47,29 +42,29 @@ FILE_LOG_FILENAME_TEMPLATE = '{}_{}_usagelog.{}'
 
 def _init_usagelogging_envvars():
     # init all env variables related to usage logging
-    set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, False)
-    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, '')
-    set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, '')
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogState, False)
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogFilePath, '')
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogServerUrl, '')
 
 
 def _disable_usage_logging():
     # set usage logging env variable to False, disabling the usage logging
-    set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, False)
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogState, False)
 
 
 def _disable_file_usage_logging():
     # set file logging env variable to empty, disabling the file logging
-    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, '')
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogFilePath, '')
 
 
 def _disable_server_usage_logging():
     # set server logging env variable to empty, disabling the remote logging
-    set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, '')
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogServerUrl, '')
 
 
 def _setup_default_logfile(usagelog_fullfilepath):
     # setup default usage logging file name
-    set_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME, usagelog_fullfilepath)
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogFilePath, usagelog_fullfilepath)
     if not op.exists(usagelog_fullfilepath):
         # if file does not exist, let's write the basic JSON list to it.
         try:
@@ -105,7 +100,7 @@ def setup_usage_logfile(session_id=None):
     # setup default value for usage logging global switch
     ul_config = user_config.usagelogging
     usageloggingactive = ul_config.get_option('active', default_value=False)
-    set_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME, usageloggingactive)
+    set_pyrevit_env_var(EnvDictionaryKeys.usageLogState, usageloggingactive)
 
     # FILE usage logging -------------------------------------------------------
     # read or setup default values for file usage logging
@@ -140,7 +135,7 @@ def setup_usage_logfile(session_id=None):
         _disable_server_usage_logging()
     else:
         # if config exists, setup server logging
-        set_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME, logserverurl)
+        set_pyrevit_env_var(EnvDictionaryKeys.usageLogServerUrl, logserverurl)
 
 
 def get_default_usage_logfilepath():
@@ -160,7 +155,7 @@ def get_current_usage_logpath():
     Returns:
         str: Active usage logging path.
     """
-    return op.dirname(get_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME))
+    return op.dirname(get_pyrevit_env_var(EnvDictionaryKeys.usageLogFilePath))
 
 
 def get_current_usage_logfile():
@@ -172,7 +167,7 @@ def get_current_usage_logfile():
     Returns:
         str: Active usage logging full file path.
     """
-    return get_pyrevit_env_var(USAGELOG_FILEPATH_ISC_KEYNAME)
+    return get_pyrevit_env_var(EnvDictionaryKeys.usageLogFilePath)
 
 
 def get_current_usage_serverurl():
@@ -184,7 +179,7 @@ def get_current_usage_serverurl():
     Returns:
         str: Active usage logging server url.
     """
-    return get_pyrevit_env_var(USAGELOG_SERVERURL_ISC_KEYNAME)
+    return get_pyrevit_env_var(EnvDictionaryKeys.usageLogServerUrl)
 
 
 def is_active():
@@ -193,4 +188,4 @@ def is_active():
     Returns:
         bool: True if usage logging is active, False if not.
     """
-    return get_pyrevit_env_var(USAGELOG_STATE_ISC_KEYNAME)
+    return get_pyrevit_env_var(EnvDictionaryKeys.usageLogState)

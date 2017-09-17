@@ -11,23 +11,18 @@ from pyrevit.userconfig import user_config
 
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
+from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 
 
 logger = get_logger(__name__)
 
 
-SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuidISC'
-
-LOADEDASSM_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_loadedassms'
-LOADEDASSM_COUNT_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_assmcount'
-
-
 def set_session_uuid(uuid_str):
-    set_pyrevit_env_var(SESSION_UUID_ISC_KEYNAME, uuid_str)
+    set_pyrevit_env_var(EnvDictionaryKeys.sessionUUID, uuid_str)
 
 
 def get_session_uuid():
-    return get_pyrevit_env_var(SESSION_UUID_ISC_KEYNAME)
+    return get_pyrevit_env_var(EnvDictionaryKeys.sessionUUID)
 
 
 def new_session_uuid():
@@ -46,7 +41,7 @@ def get_total_loaded_assm_count():
     Returns:
         total count (int): Total number of loaded assemblies.
     """
-    assm_count = get_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME)
+    assm_count = get_pyrevit_env_var(EnvDictionaryKeys.loadedAssmCount)
     if not assm_count:
         return 0
     else:
@@ -64,11 +59,11 @@ def set_total_loaded_assm_count(assm_count):
         assm_count (int): Number of loaded assemblies
     """
 
-    set_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME, assm_count)
+    set_pyrevit_env_var(EnvDictionaryKeys.loadedAssmCount, assm_count)
 
 
 def get_loaded_pyrevit_assemblies():
-    loaded_assms_str = get_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME)
+    loaded_assms_str = get_pyrevit_env_var(EnvDictionaryKeys.loadedAssm)
     if loaded_assms_str:
         return loaded_assms_str.split(DEFAULT_SEPARATOR)
     else:
@@ -76,7 +71,7 @@ def get_loaded_pyrevit_assemblies():
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
-    set_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME,
+    set_pyrevit_env_var(EnvDictionaryKeys.loadedAssm,
                         DEFAULT_SEPARATOR.join(loaded_assm_name_list))
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()

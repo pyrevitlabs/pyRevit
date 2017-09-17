@@ -29,7 +29,7 @@ class PyRevitOutputMgr:
 
     @staticmethod
     def _get_all_open_output_windows():
-        output_list_entryname = EnvDictionaryKeys.pyrevitOutputWindows
+        output_list_entryname = EnvDictionaryKeys.outputWindows
         return list(AppDomain.CurrentDomain.GetData(output_list_entryname))
 
     @staticmethod

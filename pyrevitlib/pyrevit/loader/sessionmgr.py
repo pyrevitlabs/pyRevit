@@ -13,23 +13,20 @@ Everything else is private.
 import os.path as op
 import sys
 
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-
 from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
                                      loggers_have_errors
-from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
-from pyrevit.loader import sessioninfo
 # import the basetypes first to get all the c-sharp code to compile
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
-from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-from pyrevit.usagelog import setup_usage_logfile
-from pyrevit.userconfig import user_config
-from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 from pyrevit.output import get_output
+from pyrevit.userconfig import user_config
+from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
+from pyrevit.usagelog import setup_usage_logfile
+from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
+from pyrevit.loader import sessioninfo
+from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 
 
 logger = get_logger(__name__)
