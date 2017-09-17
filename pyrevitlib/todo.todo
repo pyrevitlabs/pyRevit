@@ -1,11 +1,7 @@
-Fullframe Engine:
-Using GC: https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
-☐ Add __fullframeengine__ to triggers
+Using GC:
+https://blogs.msdn.microsoft.com/maoni/2005/05/06/using-gc-efficiently-part-4/
+
 Shared engine fixes:
-☐ Rocket mode should be extension dependent
-   ☐ pyrevit and its tools must be rocket-mode-compatible
-   ☐ Add rocket_mode_compatible and rocket_mode_required to ext def file
-☐ Fix globals in revitutils
 ☐ Start testing tools and Fix Module level variables and other issues
 
 
@@ -19,6 +15,10 @@ Improvement fixes:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Rocket mode should be extension dependent @done(2017-09-16 22:30)
+    ✔ pyrevit and its tools must be rocket-mode-compatible @done(2017-09-16 22:30)
+    ✔ Add rocket_mode_compatible to ext def file @done(2017-09-16 16:38)
+    ✔ Add __fullframeengine__ to triggers @done(2017-09-16 16:35)
     ✔ Fix globals in user config @done(2017-09-16 15:49)
     ✔ Reload and Settings buttons will now change after reload. @done(2017-09-16 15:49)
     ✔ Fix globals in assembly maker / should regenrate based on perf mode @done(2017-09-16 15:23)
