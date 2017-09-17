@@ -5,12 +5,12 @@ Shared engine fixes:
 Improvement fixes:
 ☐ Fix File logging
 ☐ Consolidate the env var dictionary access
-☐ Fix PyRevitException reporting when compile error occurs
-✔ Fix loading of smartbuttons @done(2017-09-17 09:12)
 ☐ userconfig returns a global config. Test config access between cached engines
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Fix PyRevitException reporting when compile error occurs @done(2017-09-17 09:30)
+    ✔ Fix loading of smartbuttons @done(2017-09-17 09:12)
     ✔ Fix Charts @done(2017-09-16 22:38)
     ✔ Rocket mode should be extension dependent @done(2017-09-16 22:30)
     ✔ pyrevit and its tools must be rocket-mode-compatible @done(2017-09-16 22:30)

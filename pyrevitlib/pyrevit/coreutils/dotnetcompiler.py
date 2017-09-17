@@ -50,8 +50,9 @@ def _compile_dotnet(code_provider,
                                               Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
-        error_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
-        raise PyRevitException("Compile error: {}".format(error_list))
+        err_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
+        err_str = '\n'.join(err_list)
+        raise PyRevitException("Compile error: {}".format(err_str))
 
     if full_output_file_addr is None:
         logger.debug('Compile to memory successful: {}'

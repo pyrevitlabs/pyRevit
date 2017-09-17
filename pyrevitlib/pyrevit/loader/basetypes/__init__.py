@@ -162,8 +162,7 @@ def _generate_base_classes_asm():
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
-        errors = '\n'.join(eval(str(compile_err)
-                                .replace('Compile error: ', '')))
+        errors = str(compile_err).replace('Compile error: ', '')
         logger.critical('Can not compile base types code into assembly.\n{}'
                         .format(errors))
         raise compile_err
