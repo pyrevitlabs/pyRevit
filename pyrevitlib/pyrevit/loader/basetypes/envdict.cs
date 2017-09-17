@@ -19,6 +19,7 @@ namespace PyRevitBaseClasses
 
         // must be the same in this file and pyrevit/coreutils/logger.py
         public static string loggingLevel = String.Format("{0}_LOGGINGLEVEL", EnvDictionaryKeys.baseName);
+        public static string fileLogging = String.Format("{0}_FILELOGGING", EnvDictionaryKeys.baseName);
 
 		public static string usageLogState = String.Format("{0}_USAGELOGSTATE", EnvDictionaryKeys.baseName);
 		public static string usageLogFilePath = String.Format("{0}_USAGELOGFILE", EnvDictionaryKeys.baseName);

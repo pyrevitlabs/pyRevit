@@ -5,16 +5,11 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from pyrevit import EXEC_PARAMS, PyRevitException
-from pyrevit.coreutils.logger import get_logger
+import pyrevit.coreutils.logger as corelogger
+from pyrevit.coreutils import show_file_in_explorer, open_url
 
 
-if not EXEC_PARAMS.command_name \
-        or not EXEC_PARAMS.command_path:
-    raise PyRevitException('This is not a pyRevit script environment. '
-                           'These tools are irrelevant here.')
-
-
-scriptutils_logger = get_logger(__name__)
+scriptutils_logger = corelogger.get_logger(__name__)
 
 
 class PyRevitScriptUtils:
@@ -52,10 +47,6 @@ class PyRevitScriptUtils:
     def output(self):
         from pyrevit.output import get_output
         return get_output()
-
-    @property
-    def logger(self):
-        return get_logger(EXEC_PARAMS.command_name)
 
     @property
     def config(self):
@@ -183,17 +174,9 @@ class PyRevitScriptUtils:
         # Begin to get the support data
         return data_map[data_key]
 
-# ------------------------------------------------------------------------------
-# Utilities available to scripts
-# ------------------------------------------------------------------------------
-# noinspection PyUnresolvedReferences
-import pyrevit.coreutils as coreutils
-# noinspection PyUnresolvedReferences
-from pyrevit.coreutils import show_file_in_explorer, open_url
-# noinspection PyUnresolvedReferences
-import pyrevit.coreutils.envvars as envvars
 
+def get_script():
+    return PyRevitScriptUtils()
 
-this_script = PyRevitScriptUtils()
-# for backward compatibility
-logger = this_script.logger
+def get_logger():
+    return corelogger.get_logger(EXEC_PARAMS.command_name)

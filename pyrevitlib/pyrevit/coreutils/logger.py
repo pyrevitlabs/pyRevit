@@ -1,6 +1,6 @@
-import logging
-import os.path
 import sys
+import os.path
+import logging
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
@@ -43,31 +43,14 @@ DEFAULT_LOGGING_LEVEL = logging.WARNING
 # must be the same in this file and pyrevit/loader/basetypes/envdict.cs
 GLOBAL_LOGGING_LEVEL_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_LOGGINGLEVEL'
 set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
+GLOBAL_FILELOGGING_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_FILELOGGING'
+set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, False)
 
 
 # Creating default file log name and status
 FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_DEFAULT_STATE = False
-
-
-def get_filelog_format():
-    if EXEC_PARAMS.command_mode:
-        return LOG_REC_FORMAT_FILE_C.format(EXEC_PARAMS.command_name)
-    else:
-        return LOG_REC_FORMAT_FILE
-
-
-def get_current_logging_level():
-    log_level = get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
-
-    # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
-    # user Shift-clicks on the button EXEC_PARAMS.forced_debug_mode will
-    # be set by the command executor at script runtime
-    if EXEC_PARAMS.forced_debug_mode:
-        log_level = logging.DEBUG
-
-    return log_level
 
 
 # custom logger methods --------------------------------------------------------
@@ -87,6 +70,8 @@ class LoggerWrapper(logging.Logger):
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
         self._has_errors = False
+        self._filelogstate = False
+        self._curlevel = DEFAULT_LOGGING_LEVEL
 
     def _log(self, level, msg, args, exc_info=None, extra=None):
         self._has_errors = (self._has_errors or level >= logging.ERROR)
@@ -107,9 +92,36 @@ class LoggerWrapper(logging.Logger):
         logging.Logger._log(self, level, msg_str, args,
                             exc_info=exc_info, extra=extra)
 
-    @staticmethod
-    def getEffectiveLevel():
-        return get_current_logging_level()
+    def callHandlers(self, record):
+        for hdlr in self.handlers:
+            # stream-handler only records based on current level
+            if isinstance(hdlr, logging.StreamHandler) \
+                and record.levelno >= self._curlevel:
+                    hdlr.handle(record)
+            # file-handler must record everything
+            elif isinstance(hdlr, logging.FileHandler) \
+                and self._filelogstate:
+                    hdlr.handle(record)
+
+    def isEnabledFor(self, level):
+        # update current logging level and file logging state
+        self._filelogstate = get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
+        self._curlevel = get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+
+        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # user Shift-clicks on the button EXEC_PARAMS.forced_debug_mode will
+        # be set by the command executor at script runtime
+        if EXEC_PARAMS.forced_debug_mode:
+            self._curlevel = logging.DEBUG
+
+        # if file logging is disabled, return the current logging level
+        # but if it's enabled, return the file logging level so the record
+        # is generated and logged by file-handler. The stream-handler still
+        # outputs the record based on the current logging level
+        if self._filelogstate:
+            return level >= logging.DEBUG
+
+        return level >= self._curlevel
 
     @staticmethod
     def _reset_logger_env_vars(log_level):
@@ -134,7 +146,7 @@ class LoggerWrapper(logging.Logger):
         self._reset_logger_env_vars(DEFAULT_LOGGING_LEVEL)
 
     def get_level(self):
-        return self.getEffectiveLevel()
+        return get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
 
 # setting up handlers and formatters -------------------------------------------
@@ -147,20 +159,29 @@ formatters = {logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
 stdout_hndlr.setFormatter(DispatchingFormatter(formatters, default_formatter))
 
 
+file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH, mode='a', delay=True)
+file_formatter = logging.Formatter(LOG_REC_FORMAT_FILE)
+file_hndlr.setFormatter(file_formatter)
+
+
 def get_stdout_hndlr():
+    global stdout_hndlr
+
     return stdout_hndlr
 
 
-file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH, mode='a', delay=True)
-file_formatter = logging.Formatter(LOG_REC_FORMAT_FILE)
-
-
 def get_file_hndlr():
-    global file_hndlr, file_formatter
-    file_hndlr.setFormatter(file_formatter)
-    file_hndlr.setLevel(logging.DEBUG)
+    global file_hndlr
 
-    return file_hndlr
+    if EXEC_PARAMS.command_mode:
+        cmd_file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH,
+                                             mode='a', delay=True)
+        logformat = LOG_REC_FORMAT_FILE_C.format(EXEC_PARAMS.command_name)
+        file_formatter = logging.Formatter(logformat)
+        cmd_file_hndlr.setFormatter(file_formatter)
+        return cmd_file_hndlr
+    else:
+        return file_hndlr
 
 
 # setting up public logger. this will be imported in with other modules --------
@@ -184,7 +205,7 @@ def get_logger(logger_name):
 
 
 def set_file_logging(status):
-    return status
+    set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, status)
 
 
 def loggers_have_errors():
