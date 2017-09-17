@@ -6,7 +6,7 @@ Improvement fixes:
 ☐ Fix File logging
 ☐ Consolidate the env var dictionary access
 ☐ Fix PyRevitException reporting when compile error occurs
-☐ Fix loading of smartbuttons
+✔ Fix loading of smartbuttons @done(2017-09-17 09:12)
 ☐ userconfig returns a global config. Test config access between cached engines
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
