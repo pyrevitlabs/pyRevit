@@ -4,6 +4,7 @@ All other modules use this module to query user config.
 
 """
 
+import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
@@ -28,8 +29,6 @@ logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 # fix obsolete config file naming ----------------------------------------------
 # config file (and all appdata files) used to include username in the filename
 # this fixes the existing config file with obsolete naming, to new format
-import os
-import os.path as op
 from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_UNIVERSAL_USER
 
 OBSOLETE_CONFIG_FILENAME = '{}_{}'.format(PYREVIT_FILE_PREFIX_UNIVERSAL_USER,

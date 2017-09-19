@@ -40,7 +40,7 @@ class PyRevitException(Exception):
                                              tb_report)
             else:
                 return '{}\n{}'.format(TRACEBACK_TITLE, tb_report)
-        except:
+        except Exception:
             # noinspection PyArgumentList
             return Exception.__str__(self)
 
@@ -146,7 +146,7 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             return __ipyengine__
-        except:
+        except NameError:
             raise AttributeError()
 
     @property   # read-only
@@ -154,7 +154,7 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             return __ipyenginemanager__
-        except:
+        except NameError:
             raise AttributeError()
 
     @property  # read-only
@@ -168,7 +168,7 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             return __externalcommand__
-        except:
+        except NameError:
             return None
 
     @property   # read-only
@@ -192,7 +192,7 @@ class _ExecutorParams(object):
     @property   # read-only
     def command_name(self):
         if '__commandname__' in __builtins__ \
-            and __builtins__['__commandname__']:
+                and __builtins__['__commandname__']:
             return __builtins__['__commandname__']
         elif self.pyrevit_command:
             return self.pyrevit_command.CommandName
@@ -200,7 +200,7 @@ class _ExecutorParams(object):
     @property   # read-only
     def command_path(self):
         if '__commandpath__' in __builtins__ \
-            and __builtins__['__commandpath__']:
+                and __builtins__['__commandpath__']:
             return __builtins__['__commandpath__']
         elif self.pyrevit_command:
             return op.dirname(self.pyrevit_command.ScriptSourceFile)
@@ -215,7 +215,7 @@ class _ExecutorParams(object):
         try:
             # noinspection PyUnresolvedReferences
             return __sphinx__
-        except:
+        except NameError:
             return False
 
     @property
@@ -229,6 +229,7 @@ class _ExecutorParams(object):
 
 
 EXEC_PARAMS = _ExecutorParams()
+
 
 # ------------------------------------------------------------------------------
 # config environment info
