@@ -76,17 +76,17 @@ class SelectElementsCommand(GenericProtocolCommand):
             logger.debug('Active document does not exist in Revit. '
                          'Can not get doc and uidoc.')
         else:
-            HOST_APP.uidoc.Selection.SetDB.ElementIds(el_list)
+            HOST_APP.uidoc.Selection.SetElementIds(el_list)
 
             for ei_id in el_list:
                 try:
                     el = HOST_APP.doc.GetElement(ei_id)
                     if isinstance(el, DB.View):
-                        HOST_APP.uidoc.ActiveDB.View = el
+                        HOST_APP.uidoc.ActiveView = el
                     else:
-                        owner_DB.View = HOST_APP.doc.GetElement(el.OwnerDB.ViewId)
-                        if owner_DB.View:
-                            HOST_APP.uidoc.ActiveDB.View = owner_DB.View
+                        owner_view = HOST_APP.doc.GetElement(el.OwnerViewId)
+                        if owner_view:
+                            HOST_APP.uidoc.ActiveView = owner_view
                 except Exception as err:
                     print(err)
 
