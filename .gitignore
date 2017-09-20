@@ -18,6 +18,12 @@ lib/*
 # ignore pyCharm workspace settings
 .idea/workspace.xml
 
+# ignore visual studio files
+pyrevitlib/pyrevit/loader/addin/Source/\.vs/
+pyrevitlib/pyrevit/loader/addin/Source/pyRevitLoader/bin/
+pyrevitlib/pyrevit/loader/addin/Source/pyRevitLoader/obj/
+
+
 # ignore sphinx build files
 docs/_*
 
