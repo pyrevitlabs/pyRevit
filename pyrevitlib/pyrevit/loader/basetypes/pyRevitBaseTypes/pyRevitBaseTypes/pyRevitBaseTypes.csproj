@@ -117,6 +117,9 @@
     <Compile Include="..\..\outputwindowmgr.cs">
       <Link>outputwindowmgr.cs</Link>
     </Compile>
+    <Compile Include="..\..\pyrevitcmdruntime.cs">
+      <Link>pyrevitcmdruntime.cs</Link>
+    </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>
     </Compile>

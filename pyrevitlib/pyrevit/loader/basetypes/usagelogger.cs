@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.IO;
-using Autodesk.Revit.UI;
+using System.Threading.Tasks;
 
 
 namespace PyRevitBaseClasses
@@ -32,10 +32,10 @@ namespace PyRevitBaseClasses
         }
 
         public LogEntry(string revitUsername, string revitVersion, string revitBuild, string revitProcessId,
-                        string pyRevitVersion, bool debugModeEnabled, bool alternateModeEnabled,
-                        string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName,
-                        int executorResultCode, ref Dictionary<String, String> resultDict,
-                        string pyRevitCommandPath)
+                        string pyRevitVersion,
+                        bool debugModeEnabled, bool alternateModeEnabled,
+                        string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName, string pyRevitCommandPath,
+                        int executorResultCode, Dictionary<String, String> resultDict)
         {
             username = revitUsername;
             revit = revitVersion;
@@ -48,9 +48,9 @@ namespace PyRevitBaseClasses
             commandbundle = pyRevitCommandBundle;
             commandextension = pyRevitCommandExtension;
             commanduniquename = pyRevitCommandUniqueName;
+            scriptpath = pyRevitCommandPath;
             resultcode = executorResultCode;
             commandresults = resultDict;
-            scriptpath = pyRevitCommandPath;
         }
 
         public void TimeStamp()
@@ -67,27 +67,7 @@ namespace PyRevitBaseClasses
         private string _usageLogServerUrl;
         public LogEntry logEntry;
 
-        public ScriptUsageLogger(ref EnvDictionary envdict, ExternalCommandData commandData,
-                                 string cmdName, string cmdBundle, string cmdExtension, string cmdUniqueName,
-                                 string scriptSource,
-                                 bool forcedDebugMode, bool altScriptMode,
-                                 int execResult, ref Dictionary<String, String> resultDict)
-        {
-            // get host
-            var revit = commandData.Application;
-            
-            // get live data from python dictionary saved in appdomain
-            _usageLogFilePath = envdict.usageLogFilePath;
-            _usageLogServerUrl = envdict.usageLogServerUrl;
-
-            logEntry = new LogEntry(revit.Application.Username,
-                                    revit.Application.VersionNumber, revit.Application.VersionBuild,
-                                    envdict.sessionUUID, envdict.addonVersion,
-                                    forcedDebugMode, altScriptMode,
-                                    cmdName, cmdBundle, cmdExtension, cmdUniqueName,
-                                    execResult, ref resultDict,
-                                    scriptSource);
-        }
+        public ScriptUsageLogger() {}
 
         public string MakeJSONLogEntry()
         {
@@ -95,9 +75,9 @@ namespace PyRevitBaseClasses
             return new JavaScriptSerializer().Serialize(logEntry);
         }
 
-        public void PostUsageLogToServer(string usageLogServerUrl)
+        public void PostUsageLogToServer()
         {
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(usageLogServerUrl);
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(_usageLogServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
 
@@ -117,15 +97,15 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void WriteUsageLogToFile(string usageLogFilePath)
+        public void WriteUsageLogToFile()
         {
             // Read existing json data
             string jsonData = "[]";
-            if(File.Exists(usageLogFilePath)) {
-                jsonData = System.IO.File.ReadAllText(usageLogFilePath);
+            if(File.Exists(_usageLogFilePath)) {
+                jsonData = System.IO.File.ReadAllText(_usageLogFilePath);
             }
             else {
-                System.IO.File.WriteAllText(usageLogFilePath, jsonData);
+                System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
             }
 
             // De-serialize to object or create new list
@@ -137,15 +117,38 @@ namespace PyRevitBaseClasses
 
             // Update json data string
             jsonData = new JavaScriptSerializer().Serialize(logData);
-            System.IO.File.WriteAllText(usageLogFilePath, jsonData);
+            System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
         }
 
-        public void LogUsage()
+        public void LogUsage(ref PyRevitCommandRuntime pyrvtCmd)
         {
-            if(!String.IsNullOrEmpty(_usageLogServerUrl))
-                PostUsageLogToServer(_usageLogServerUrl);
-            if(!String.IsNullOrEmpty(_usageLogFilePath))
-                WriteUsageLogToFile(_usageLogFilePath);
+            // get usage log state data from python dictionary saved in appdomain
+            // this needs to happen before command exection to get the values before the command changes them
+            var envdict = new EnvDictionary();
+
+            // get live data from python dictionary saved in appdomain
+            _usageLogFilePath = envdict.usageLogFilePath;
+            _usageLogServerUrl = envdict.usageLogServerUrl;
+
+            logEntry = new LogEntry(pyrvtCmd.RevitApp.Username,
+                                    pyrvtCmd.RevitApp.VersionNumber, pyrvtCmd.RevitApp.VersionBuild,
+                                    envdict.sessionUUID, envdict.addonVersion,
+                                    pyrvtCmd.DebugMode,
+                                    pyrvtCmd.AlternateMode,
+                                    pyrvtCmd.CommandName,
+                                    pyrvtCmd.CommandBundle,
+                                    pyrvtCmd.CommandExtension,
+                                    pyrvtCmd.CommandUniqueId,
+                                    pyrvtCmd.ScriptSourceFile,
+                                    pyrvtCmd.ExecutionResult,
+                                    pyrvtCmd.GetResultsDictionary());
+
+            // log usage if usage logging in enabled
+            if (envdict.usageLogState && !String.IsNullOrEmpty(_usageLogServerUrl))
+                new Task(PostUsageLogToServer).Start();
+
+            if (envdict.usageLogState && !String.IsNullOrEmpty(_usageLogFilePath))
+                new Task(WriteUsageLogToFile).Start();
         }
     }
 }

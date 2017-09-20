@@ -1,41 +1,45 @@
 using System;
 using System.IO;
 using Microsoft.Scripting.Hosting;
-using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 
 namespace PyRevitBaseClasses
 {
     public class EngineManager
     {
-        private readonly UIApplication _revit;
+        public EngineManager() {}
 
-        public EngineManager(UIApplication revit)
+        public ScriptEngine GetEngine(ref PyRevitCommandRuntime pyrvtCmd)
         {
-            _revit = revit;
-        }
+            ScriptEngine engine;
+            bool cachedEngine = false;
 
-        public ScriptEngine GetEngine(ref PyRevitCommand pyrvtCmd)
-        {
-            // If the command required a clean engine, make a clean one
+            // If the command required a fullframe engine
             if (pyrvtCmd.NeedsFullFrameEngine)
-                return CreateNewEngine(ref pyrvtCmd, fullframe: true);
+                engine = CreateNewEngine(ref pyrvtCmd, fullframe: true);
 
-            // If the command required a clean engine, make a clean one
-            if (pyrvtCmd.NeedsCleanEngine)
-                return CreateNewEngine(ref pyrvtCmd);
+            // If the command required a clean engine
+            else if (pyrvtCmd.NeedsCleanEngine)
+                engine = CreateNewEngine(ref pyrvtCmd);
 
             // if the user is asking to refresh the cached engine for the command,
             // then update the engine and save in cache
-            if (pyrvtCmd.NeedsRefreshedEngine)
-                return GetCachedEngine(ref pyrvtCmd, true);
-            else
-                // if not above, get/create cached engine
-                return GetCachedEngine(ref pyrvtCmd);
+            else if (pyrvtCmd.NeedsRefreshedEngine)
+                engine = RefreshCachedEngine(ref pyrvtCmd);
 
+            // if not above, get/create cached engine
+            else {
+                engine = GetCachedEngine(ref pyrvtCmd);
+                cachedEngine = true;
+            }
+
+            // now that the engine is ready, setup the builtins and io streams
+            SetupStreams(engine, pyrvtCmd.OutputStream);
+            SetupBuiltins(engine, ref pyrvtCmd, cachedEngine);
+            SetupSearchPaths(engine, pyrvtCmd.ModuleSearchPaths);
+
+            return engine;
         }
 
         public Dictionary<string, ScriptEngine> EngineDict
@@ -59,7 +63,13 @@ namespace PyRevitBaseClasses
             return engineDict;
         }
 
-        private ScriptEngine CreateNewEngine(ref PyRevitCommand pyrvtCmd, bool fullframe=false)
+        public void CleanupEngine(ScriptEngine engine)
+        {
+            CleanupEngineBuiltins(engine);
+            CleanupStreams(engine);
+        }
+
+        private ScriptEngine CreateNewEngine(ref PyRevitCommandRuntime pyrvtCmd, bool fullframe=false)
         {
             var flags = new Dictionary<string, object>(){{ "LightweightScopes", true }};
 
@@ -83,24 +93,21 @@ namespace PyRevitBaseClasses
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
 
-            SetupBuiltins(engine, ref pyrvtCmd, false);
-
             return engine;
         }
 
-        private ScriptEngine CreateNewCachedEngine(ref PyRevitCommand pyrvtCmd)
+        private ScriptEngine CreateNewCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
         {
             var newEngine = CreateNewEngine(ref pyrvtCmd);
             this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
             return newEngine;
         }
 
-        private ScriptEngine GetCachedEngine(ref PyRevitCommand pyrvtCmd, bool refresh=false)
+        private ScriptEngine GetCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
         {
-            if (!refresh && this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
+            if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
             {
                 var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
-                SetupBuiltins(existingEngine, ref pyrvtCmd, true);
                 return existingEngine;
             }
             else
@@ -109,60 +116,106 @@ namespace PyRevitBaseClasses
             }
         }
 
-        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommand pyrvtCmd, bool cachedEngine)
+        private ScriptEngine RefreshCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
+        {
+            return CreateNewCachedEngine(ref pyrvtCmd);
+        }
+
+        private void SetupSearchPaths(ScriptEngine engine, string[] searchPaths)
+        {
+            // Process search paths provided to executor
+            // syspaths variable is a string of paths separated by ';'. Split syspath and update the search paths
+            engine.SetSearchPaths(searchPaths);
+        }
+
+        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd, bool cachedEngine)
         {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
 
-            // Add current IronPython engine to builtins
-            builtin.SetVariable("__ipyengine__", engine);
-
-            // Add current engine manager to builtins
-            builtin.SetVariable("__ipyenginemanager__", this);
-
             // Let commands know if they're being run in a cached engine
             builtin.SetVariable("__cachedengine__", cachedEngine);
 
-            // Adding output window handle (__window__ is for backwards compatibility)
-            builtin.SetVariable("__window__", pyrvtCmd.OutputWindow);
-            builtin.SetVariable("__output__", pyrvtCmd.OutputWindow);
-
-            // Adding output window stream
-            builtin.SetVariable("__outputstream__", pyrvtCmd.OutputStream);
-
-            // Add host application handle to the builtin to be globally visible everywhere
-            builtin.SetVariable("__revit__", _revit);
-
-            // Add handles to current document and ui document
-            if (_revit.ActiveUIDocument != null) {
-                builtin.SetVariable("__activeuidoc__", _revit.ActiveUIDocument);
-                builtin.SetVariable("__activedoc__", _revit.ActiveUIDocument.Document);
-                builtin.SetVariable("__zerodoc__", false);
-            }
-            else {
-                builtin.SetVariable("__activeuidoc__", (Object) null);
-                builtin.SetVariable("__activedoc__", (Object) null);
-                builtin.SetVariable("__zerodoc__", true);
-            }
+            // Add current engine manager to builtins
+            builtin.SetVariable("__ipyenginemanager__", this);
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
             builtin.SetVariable("__externalcommand__", pyrvtCmd);
 
-            // Adding data provided by IExternalCommand.Execute
-            builtin.SetVariable("__commanddata__", pyrvtCmd.CommandData);
-            builtin.SetVariable("__elements__", pyrvtCmd.SelectedElements);
+            // Add host application handle to the builtin to be globally visible everywhere
+            builtin.SetVariable("__revit__", pyrvtCmd.RevitUIApp);
 
-            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
+
+            // Add handles to current document and ui document
+            if (pyrvtCmd.RevitUIDoc != null) {
+                builtin.SetVariable("__activeuidoc__",  pyrvtCmd.RevitUIDoc);
+                builtin.SetVariable("__activedoc__",    pyrvtCmd.RevitDoc);
+                builtin.SetVariable("__zerodoc__",      false);
+            }
+            else {
+                builtin.SetVariable("__activeuidoc__",  (Object)null);
+                builtin.SetVariable("__activedoc__",    (Object)null);
+                builtin.SetVariable("__zerodoc__",      true);
+            }
+
+            // Adding data provided by IExternalCommand.Execute
+            builtin.SetVariable("__commanddata__",          pyrvtCmd.CommandData);
+            builtin.SetVariable("__elements__",             pyrvtCmd.SelectedElements);
+
+            // Adding information on the command being executed
+            builtin.SetVariable("__commandpath__",          Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
             builtin.SetVariable("__alternatecommandpath__", Path.GetDirectoryName(pyrvtCmd.AlternateScriptSourceFile));
-            builtin.SetVariable("__commandname__", pyrvtCmd.CommandName);
-            builtin.SetVariable("__commandbundle__", pyrvtCmd.CommandBundle);
-            builtin.SetVariable("__commandextension__", pyrvtCmd.CommandExtension);
-            builtin.SetVariable("__commanduniqueid__", pyrvtCmd.CommandUniqueId);
-            builtin.SetVariable("__forceddebugmode__", pyrvtCmd.DebugMode);
-            builtin.SetVariable("__shiftclick__", pyrvtCmd.AlternateMode);
-            builtin.SetVariable("__result__", pyrvtCmd.GetResultsDictionary());
+            builtin.SetVariable("__commandname__",          pyrvtCmd.CommandName);
+            builtin.SetVariable("__commandbundle__",        pyrvtCmd.CommandBundle);
+            builtin.SetVariable("__commandextension__",     pyrvtCmd.CommandExtension);
+            builtin.SetVariable("__commanduniqueid__",      pyrvtCmd.CommandUniqueId);
+            builtin.SetVariable("__forceddebugmode__",      pyrvtCmd.DebugMode);
+            builtin.SetVariable("__shiftclick__",           pyrvtCmd.AlternateMode);
+
+            // Add reference to the results dictionary
+            // so the command can add custom values for logging
+            builtin.SetVariable("__result__",               pyrvtCmd.GetResultsDictionary());
+        }
+
+        private void SetupStreams(ScriptEngine engine, ScriptOutputStream outStream)
+        {
+            // Setup IO streams
+            engine.Runtime.IO.SetOutput(outStream, System.Text.Encoding.UTF8);
+            //engine.Runtime.IO.SetErrorOutput(outStream, System.Text.Encoding.UTF8);
+        }
+
+        private void CleanupEngineBuiltins(ScriptEngine engine)
+        {
+            var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
+
+            builtin.SetVariable("__cachedengine__",         (Object)null);
+            builtin.SetVariable("__ipyenginemanager__",     (Object)null);
+            builtin.SetVariable("__externalcommand__",      (Object)null);
+            builtin.SetVariable("__revit__",                (Object)null);
+            builtin.SetVariable("__activeuidoc__",          (Object)null);
+            builtin.SetVariable("__activedoc__",            (Object)null);
+            builtin.SetVariable("__zerodoc__",              (Object)null);
+            builtin.SetVariable("__commanddata__",          (Object)null);
+            builtin.SetVariable("__elements__",             (Object)null);
+            builtin.SetVariable("__commandpath__",          (Object)null);
+            builtin.SetVariable("__alternatecommandpath__", (Object)null);
+            builtin.SetVariable("__commandname__",          (Object)null);
+            builtin.SetVariable("__commandbundle__",        (Object)null);
+            builtin.SetVariable("__commandextension__",     (Object)null);
+            builtin.SetVariable("__commanduniqueid__",      (Object)null);
+            builtin.SetVariable("__forceddebugmode__",      (Object)null);
+            builtin.SetVariable("__shiftclick__",           (Object)null);
+            builtin.SetVariable("__result__",               (Object)null);
+
+
+        }
+
+        private void CleanupStreams(ScriptEngine engine)
+        {
+            // Remove IO streams references so GC can collect
+            engine.Runtime.IO.RedirectToConsole();
         }
 
     }

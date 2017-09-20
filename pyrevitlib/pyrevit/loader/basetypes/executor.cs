@@ -1,13 +1,9 @@
 using System;
-using System.IO;
-using System.Text;
-using IronPython.Runtime.Exceptions;
-using IronPython.Compiler;
+using System.Collections.Generic;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
-using System.Collections.Generic;
+using IronPython.Runtime.Exceptions;
+using IronPython.Compiler;
 
 
 namespace PyRevitBaseClasses
@@ -15,38 +11,27 @@ namespace PyRevitBaseClasses
     /// Executes a script
     public class ScriptExecutor
     {
-        private readonly UIApplication _revit;
-
-        public ScriptExecutor(ExternalCommandData commandData)
-        {
-            _revit = commandData.Application;
-        }
+        public ScriptExecutor() {}
 
 
         /// Run the script and print the output to a new output window.
-        public int ExecuteScript(PyRevitCommand pyrvtCmd)
+        public int ExecuteScript(ref PyRevitCommandRuntime pyrvtCmd)
         {
             // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
-            var engineMgr = new EngineManager(_revit);
+            var engineMgr = new EngineManager();
             var engine = engineMgr.GetEngine(ref pyrvtCmd);
-            // Process search paths provided to executor
-            // syspaths variable is a string of paths separated by ';'. Split syspath and update the search paths
-            engine.SetSearchPaths(pyrvtCmd.ModuleSearchPaths);
-            // Setup IO streams
-            engine.Runtime.IO.SetOutput(pyrvtCmd.OutputStream, Encoding.UTF8);
-            engine.Runtime.IO.SetErrorOutput(pyrvtCmd.OutputStream, Encoding.UTF8);
 
-            // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setup the command scope in this engine with proper builtin and scope parameters
             var scope = CreateScope(engine, ref pyrvtCmd);
 
-            // 4: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Create the script from source file
-            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, Encoding.UTF8, SourceCodeKind.Statements);
+            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, System.Text.Encoding.UTF8, SourceCodeKind.Statements);
 
-            // 5: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 4: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
             var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
@@ -92,10 +77,14 @@ namespace PyRevitBaseClasses
                 pyrvtCmd.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
                 return ExecutionErrorCodes.ExecutionException;
             }
+            finally
+            {
+                engineMgr.CleanupEngine(engine);
+            }
         }
 
 
-        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommand pyrvtCmd, string moduleName="__main__")
+        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd, string moduleName="__main__")
         {
             var scope = IronPython.Hosting.Python.CreateModule(engine, moduleName);
 
@@ -104,7 +93,7 @@ namespace PyRevitBaseClasses
             return scope;
         }
 
-        public void SetupScope(ScriptScope scope, ref PyRevitCommand pyrvtCmd)
+        public void SetupScope(ScriptScope scope, ref PyRevitCommandRuntime pyrvtCmd)
         {
             // SCOPE --------------------------------------------------------------------------------------------------
             // Add command info to builtins
@@ -112,7 +101,6 @@ namespace PyRevitBaseClasses
         }
 
     }
-
 
     public class ErrorReporter : ErrorListener
     {

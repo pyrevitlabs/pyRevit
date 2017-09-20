@@ -134,22 +134,6 @@ class _ExecutorParams(object):
         self._overridewindow = None
 
     @property   # read-only
-    def engine(self):
-        """
-        Reference to IronPython dotnet ScriptEngine that is
-        executing this script.
-
-        Returns:
-            Microsoft.Scripting.Hosting.ScriptEngine:
-                Reference to dotnet object of this type
-        """
-        try:
-            # noinspection PyUnresolvedReferences
-            return __ipyengine__
-        except NameError:
-            raise AttributeError()
-
-    @property   # read-only
     def engine_mgr(self):
         try:
             # noinspection PyUnresolvedReferences

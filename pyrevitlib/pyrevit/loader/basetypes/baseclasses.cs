@@ -2,9 +2,7 @@ using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
-using System.Collections.Generic;
 using System.Windows.Input;
-using System.Threading.Tasks;
 
 
 namespace PyRevitBaseClasses
@@ -13,25 +11,16 @@ namespace PyRevitBaseClasses
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand
     {
-        private string _scriptSource;
-        private string _alternateScriptSource;
-        private string _syspaths;
-        private string _cmdName;
-        private string _cmdBundle;
-        private string _cmdExtension;
-        private string _cmdUniqueName;
+        private string _scriptSource = null;
+        private string _alternateScriptSource = null;
+        private string _syspaths = null;
+        private string _cmdName = null;
+        private string _cmdBundle = null;
+        private string _cmdExtension = null;
+        private string _cmdUniqueName = null;
         private bool _needsCleanEngine = false;
         private bool _needsFullFrameEngine = false;
-        private bool _refreshEngine = false;
-        private bool _forcedDebugMode = false;
-        private bool _altScriptMode = false;
 
-        private ScriptOutput _scriptOutput;
-        private ScriptOutputStream _outputStream;
-
-        private ExternalCommandData _commandData;
-        private ElementSet _elements;
-        private Dictionary<String, String> _resultsDict;
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
@@ -57,10 +46,14 @@ namespace PyRevitBaseClasses
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
+            #region Processing modifier keys
             // Processing modifier keys
             // Default script is the main script unless it is changed by modifier buttons
             var _script = _scriptSource;
 
+            bool _refreshEngine = false;
+            bool _altScriptMode = false;
+            bool _forcedDebugMode = false;
 
             // If Ctrl-Alt-Shift clicking on the tool run in clean engine
             if ((Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)) &&
@@ -97,190 +90,44 @@ namespace PyRevitBaseClasses
                     }
                 }
             }
+            #endregion
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
-            // Stating a new output window
-            _scriptOutput = new ScriptOutput();
-            _outputStream = new ScriptOutputStream(_scriptOutput);
-            var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
-            _scriptOutput.Text = _cmdName;                  // Set output window title to command name
-            _scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+            #region Setup pyRevit Command Runtime
+            var pyrvtCmdRuntime = new PyRevitCommandRuntime(commandData, elements,
+                                                            _scriptSource,
+                                                            _alternateScriptSource,
+                                                            _syspaths,
+                                                            _cmdName,
+                                                            _cmdBundle,
+                                                            _cmdExtension,
+                                                            _cmdUniqueName,
+                                                            _needsCleanEngine,
+                                                            _needsFullFrameEngine,
+                                                            _refreshEngine,
+                                                            _forcedDebugMode,
+                                                            _altScriptMode);
+            #endregion
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
+            #region Execute and log results
             // Executing the script and logging the results
-            // get usage log state data from python dictionary saved in appdomain
-            // this needs to happen before command exection to get the values before the command changes them
-            var envdict = new EnvDictionary();
 
-            // create result Dictionary 
-            _resultsDict = new Dictionary<String, String>();
+            // Get script executor and Execute the script
+            var executor = new ScriptExecutor();
+            pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
 
-            // Get script executor
-            var executor = new ScriptExecutor(commandData);
-            // Execute script
-            var resultCode = executor.ExecuteScript(this);
+            // Log results
+            var logger = new ScriptUsageLogger();
+            logger.LogUsage(ref pyrvtCmdRuntime);
 
-            // log usage if usage logging in enabled
-            if(envdict.usageLogState) {
-                var logger = new ScriptUsageLogger(ref envdict, commandData,
-                                                   _cmdName, _cmdBundle, _cmdExtension, _cmdUniqueName, _script,
-                                                   _forcedDebugMode, _altScriptMode, resultCode,
-                                                   ref _resultsDict);
-                new Task(logger.LogUsage).Start();
-            }
-
-            // Return results
-            if (resultCode == 0)
+            // Return results to Revit. Don't report errors since we don't want Revit popup with error results
+            if (pyrvtCmdRuntime.ExecutionResult == 0)
                 return Result.Succeeded;
             else
                 return Result.Cancelled;
+            #endregion
         }
-
-        public string ScriptSourceFile
-        {
-            get
-            {
-                if (_altScriptMode)
-                    return _alternateScriptSource;
-                else
-                    return _scriptSource;
-            }
-        }
-
-        public string OriginalScriptSourceFile
-        {
-            get
-            {
-                return _scriptSource;
-            }
-        }
-
-        public string AlternateScriptSourceFile
-        {
-            get
-            {
-                return _alternateScriptSource;
-            }
-        }
-
-        public string[] ModuleSearchPaths
-        {
-            get
-            {
-                return _syspaths.Split(';');
-            }
-        }
-
-        public string CommandName
-        {
-            get
-            {
-                return _cmdName;
-            }
-        }
-
-        public string CommandUniqueId
-        {
-            get
-            {
-                return _cmdUniqueName;
-            }
-        }
-
-        public string CommandBundle
-        {
-            get
-            {
-                return _cmdBundle;
-            }
-        }
-
-        public string CommandExtension
-        {
-            get
-            {
-                return _cmdExtension;
-            }
-        }
-
-        public bool NeedsCleanEngine
-        {
-            get
-            {
-                return _needsCleanEngine;
-            }
-        }
-
-        public bool NeedsFullFrameEngine
-        {
-            get
-            {
-                return _needsFullFrameEngine;
-            }
-        }
-
-        public bool NeedsRefreshedEngine
-        {
-            get
-            {
-                return _refreshEngine;
-            }
-        }
-
-        public bool DebugMode
-        {
-            get
-            {
-                return _forcedDebugMode;
-            }
-        }
-
-        public bool AlternateMode
-        {
-            get
-            {
-                return _altScriptMode;
-            }
-        }
-
-
-        public ScriptOutput OutputWindow
-        {
-            get
-            {
-                return _scriptOutput;
-            }
-        }
-
-        public ScriptOutputStream OutputStream
-        {
-            get
-            {
-                return _outputStream;
-            }
-        }
-
-        public ExternalCommandData CommandData
-        {
-            get
-            {
-                return _commandData;
-            }
-        }
-
-        public ElementSet SelectedElements
-        {
-            get
-            {
-                return _elements;
-            }
-        }
-
-        public Dictionary<String, String> GetResultsDictionary()
-        {
-            return _resultsDict;
-        }
-
     }
 
 
