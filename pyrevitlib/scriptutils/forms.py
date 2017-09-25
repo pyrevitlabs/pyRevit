@@ -29,7 +29,8 @@ from System.IO import StringReader
 import wpf
 
 # noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import TaskDialog
+from Autodesk.Revit.UI import TaskDialog, TaskDialogCommonButtons, \
+                              TaskDialogResult
 
 
 logger = get_logger(__name__)
@@ -106,5 +107,26 @@ class WarningBar(TemplatePromptBar):
     pass
 
 
-def alert(msg, title='pyRevit'):
-    TaskDialog.Show(title, msg)
+def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
+    buttons = TaskDialogCommonButtons.Ok
+
+    if any([cancel, yes, no, retry]):
+        buttons = TaskDialogCommonButtons.None
+
+        if cancel:
+            buttons |= TaskDialogCommonButtons.Cancel
+        if yes:
+            buttons |= TaskDialogCommonButtons.Yes
+        if no:
+            buttons |= TaskDialogCommonButtons.No
+        if retry:
+            buttons |= TaskDialogCommonButtons.Retry
+
+    res = TaskDialog.Show(title, msg, buttons)
+
+    if res == TaskDialogResult.Ok \
+        or res == TaskDialogResult.Yes \
+        or res == TaskDialogResult.Retry:
+        return True
+    else:
+        return False

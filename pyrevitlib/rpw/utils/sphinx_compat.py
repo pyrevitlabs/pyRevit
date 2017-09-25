@@ -62,6 +62,7 @@ class MockImporter(object):
                       'IronPython',
                       'System',
                       'wpf',
+                      'Rhino',
                       ]
 
     def find_module(self, fullname, path=None):
