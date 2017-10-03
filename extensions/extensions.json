@@ -78,6 +78,19 @@
         "website": "https://github.com/hdm-dt-fb/rvt_fixme",
         "image" : "",
         "dependencies": []
+        },
+        {
+        "builtin": "False",
+        "enable": "True",
+        "type": "extension",
+        "name": "pyApex",
+        "description": "Apex Project BIM Utils",
+        "author": "Aleksey Melnikov",
+        "author-url": "https://github.com/melnikovalex",
+        "url": "https://github.com/apex-project/pyApex.git",
+        "website": "https://github.com/apex-project/pyApex",
+        "image" : "",
+        "dependencies": []
         }
     ]
 }
