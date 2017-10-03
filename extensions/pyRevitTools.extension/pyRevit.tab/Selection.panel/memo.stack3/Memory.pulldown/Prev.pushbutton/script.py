@@ -1,5 +1,8 @@
-__doc__ = 'Select next element in saved selection\nClick +1\nShift+Click +10'
-__title__ = 'Next'
+"""Select previous element in selection memory
+
+Click +1
+Shift+Click +10
+"""
 
 # noinspection PyUnresolvedReferences
 import iter_selection
@@ -8,7 +11,6 @@ step_size = 1
 if __shiftclick__:
     step_size = 10
 
-mode = '+'
+mode = '-'
 
 result = iter_selection.iterate( mode, step_size )
-
