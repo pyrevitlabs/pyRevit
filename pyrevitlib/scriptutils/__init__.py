@@ -123,18 +123,31 @@ class PyRevitScriptUtils:
         return get_instance_data_file(script_file_id)
 
     @staticmethod
-    def get_document_data_file(file_id, file_ext, doc=None):
+    def get_document_data_file(file_id, file_ext, doc=None, command_name=None):
         """Returns a filename to be used by a user script to store data under
         current Revit version and for the current document.
         Script should manage cleaning up these data files.
+        If datafile will be used by different commands, override it using command_name parameter
         """
         from pyrevit.coreutils.appdata import get_data_file
+        if not command_name:
+            command_name = COMMAND_NAME
+
         if not doc:
             from revitutils import project
+        else:
+            from revitutils._project import CurrentProject
+            project = CurrentProject(doc)
 
-        script_file_id = '{}_{}_{}'.format(COMMAND_NAME,
+        if not project.filename: # Remove special characters from project name
+            project_name = project.name.translate(None, '\\/:*"<>|')
+        else:
+            project_name = project.filename
+
+        script_file_id = '{}_{}_{}'.format(command_name,
                                            file_id,
-                                           project.filename or project.name)
+                                           project_name)
+
         return get_data_file(script_file_id, file_ext)
 
     @property

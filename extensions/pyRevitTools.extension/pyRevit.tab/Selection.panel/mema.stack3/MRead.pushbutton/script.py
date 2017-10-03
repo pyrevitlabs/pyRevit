@@ -23,16 +23,15 @@ import os
 import os.path as op
 import pickle as pl
 
+from scriptutils import this_script
+from revitutils import doc, uidoc, selection
+
 from Autodesk.Revit.DB import ElementId
 from System.Collections.Generic import List
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
+datafile = this_script.get_document_data_file(0, "pym", command_name="SelList")
 
-usertemp = os.getenv('Temp')
-prjname = op.splitext(op.basename(doc.PathName))[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
 try:
     f = open(datafile, 'r')
     cursel = pl.load(f)
