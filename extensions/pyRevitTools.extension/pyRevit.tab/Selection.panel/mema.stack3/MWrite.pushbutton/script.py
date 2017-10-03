@@ -26,14 +26,12 @@ import os
 import os.path as op
 import pickle as pl
 
+from scriptutils import this_script
+from revitutils import uidoc
+
 __context__ = 'Selection'
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-
-usertemp = os.getenv('Temp')
-prjname = op.splitext(op.basename(doc.PathName))[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
+datafile = this_script.get_document_data_file(0, "pym", command_name="SelList")
 
 selection = {elId.ToString() for elId in uidoc.Selection.GetElementIds()}
 
