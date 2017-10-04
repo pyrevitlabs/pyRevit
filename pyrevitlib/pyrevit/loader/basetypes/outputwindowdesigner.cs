@@ -65,7 +65,6 @@ namespace PyRevitBaseClasses
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.RemoveFromOutputList);
 
             this.ResumeLayout(false);
-
         }
 
         #endregion

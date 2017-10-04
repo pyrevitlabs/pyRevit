@@ -7,8 +7,8 @@ namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : Form
     {
-        public delegate void CustomProtocolHandler(String url);
-        public CustomProtocolHandler UrlHandler;
+        //public delegate void CustomProtocolHandler(String url);
+        //public CustomProtocolHandler UrlHandler;
         public string OutputId;
 
         public ScriptOutput() {
@@ -96,9 +96,9 @@ namespace PyRevitBaseClasses
                 if (commandStr.StartsWith("http")) {
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
-                else {
-                    UrlHandler(e.Url.OriginalString);
-                }
+                //else {
+                //    UrlHandler(e.Url.OriginalString);
+                //}
 
                 e.Cancel = true;
             }
