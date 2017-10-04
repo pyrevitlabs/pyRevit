@@ -8,6 +8,8 @@ namespace PyRevitBaseClasses
 {
     public class EngineManager
     {
+        private Stream _defaultOutput;
+
         public EngineManager() {}
 
         public ScriptEngine GetEngine(ref PyRevitCommandRuntime pyrvtCmd)
@@ -182,8 +184,8 @@ namespace PyRevitBaseClasses
         private void SetupStreams(ScriptEngine engine, ScriptOutputStream outStream)
         {
             // Setup IO streams
+            _defaultOutput = engine.Runtime.IO.OutputStream;
             engine.Runtime.IO.SetOutput(outStream, System.Text.Encoding.UTF8);
-            //engine.Runtime.IO.SetErrorOutput(outStream, System.Text.Encoding.UTF8);
         }
 
         private void CleanupEngineBuiltins(ScriptEngine engine)
@@ -215,7 +217,7 @@ namespace PyRevitBaseClasses
         private void CleanupStreams(ScriptEngine engine)
         {
             // Remove IO streams references so GC can collect
-            engine.Runtime.IO.RedirectToConsole();
+            engine.Runtime.IO.SetOutput(_defaultOutput, System.Text.Encoding.UTF8);
         }
 
     }
