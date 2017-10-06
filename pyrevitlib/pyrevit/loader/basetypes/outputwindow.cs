@@ -7,8 +7,11 @@ namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : Form
     {
+        private WebBrowserNavigatingEventHandler _customURLHandler;
+
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
+
         public string OutputId;
 
         public ScriptOutput() {
@@ -28,8 +31,12 @@ namespace PyRevitBaseClasses
 
         private void ScriptOutput_Load(object sender, EventArgs e) {}
 
-        public void AppendToOutputList(object sender, EventArgs e)
+        public void OnFormShown(object sender, EventArgs e)
         {
+            // Setup url handler
+            _customURLHandler = new WebBrowserNavigatingEventHandler(this.UserNavigatingLink);
+            this.renderer.Navigating += _customURLHandler;
+
             var outputList = (List<object>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
             if (outputList == null) {
                 var newOutputList = new List<object>();
@@ -43,8 +50,13 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void RemoveFromOutputList(object sender, FormClosingEventArgs e)
+        public void OnFormClosing(object sender, FormClosingEventArgs e)
         {
+            // Remove the url handler
+            this.renderer.Navigating -= _customURLHandler;
+            _customURLHandler = null;
+            UrlHandler = null;
+
             var outputList = (List<object>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
             if (outputList == null) {
                 return;
@@ -94,7 +106,10 @@ namespace PyRevitBaseClasses
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
                 else
-                    UrlHandler(e.Url.OriginalString);
+                {
+                    if (UrlHandler != null)
+                        UrlHandler(e.Url.OriginalString);
+                }
 
                 e.Cancel = true;
             }

@@ -30,7 +30,7 @@ namespace PyRevitBaseClasses
             this.renderer.Name = "renderer";
             this.renderer.Size = new System.Drawing.Size(878, 455);
             this.renderer.TabIndex = 0;
-            this.renderer.Navigating += new WebBrowserNavigatingEventHandler(this.UserNavigatingLink);
+
             //
             // ScriptOutput
             //
@@ -38,7 +38,7 @@ namespace PyRevitBaseClasses
             this.AutoScaleMode = AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(900, 600);
-            this.Controls.Add(this.renderer);
+
             this.Font = new System.Drawing.Font("Verdana",
                                                 9.75F,
                                                 System.Drawing.FontStyle.Regular,
@@ -52,8 +52,10 @@ namespace PyRevitBaseClasses
             this.Text = "pyRevit";
 
             // this.Load += new System.EventHandler(this.ScriptOutput_Load);
-            this.Shown += new System.EventHandler(this.AppendToOutputList);
-            this.FormClosing += new FormClosingEventHandler(this.RemoveFromOutputList);
+            this.Shown += new System.EventHandler(this.OnFormShown);
+            this.FormClosing += new FormClosingEventHandler(this.OnFormClosing);
+
+            this.Controls.Add(this.renderer);
 
             this.ResumeLayout(false);
             this.PerformLayout();
