@@ -7,8 +7,8 @@ namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : Form
     {
-        //public delegate void CustomProtocolHandler(String url);
-        //public CustomProtocolHandler UrlHandler;
+        public delegate void CustomProtocolHandler(String url);
+        public CustomProtocolHandler UrlHandler;
         public string OutputId;
 
         public ScriptOutput() {
@@ -59,10 +59,7 @@ namespace PyRevitBaseClasses
         }
 
         public void WaitReadyBrowser() {
-            // while(renderer.ReadyState != WebBrowserReadyState.Complete)
-            // {
                Application.DoEvents();
-            // }
         }
 
         public void LockSize() {
@@ -89,16 +86,15 @@ namespace PyRevitBaseClasses
             ScrollToBottom();
         }
 
-        private void txtStdOut_Navigating(object sender, WebBrowserNavigatingEventArgs e) {
+        private void UserNavigatingLink(object sender, WebBrowserNavigatingEventArgs e) {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
                 var commandStr = e.Url.ToString();
                 if (commandStr.StartsWith("http")) {
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
-                //else {
-                //    UrlHandler(e.Url.OriginalString);
-                //}
+                else
+                    UrlHandler(e.Url.OriginalString);
 
                 e.Cancel = true;
             }

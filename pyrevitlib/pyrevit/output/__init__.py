@@ -42,7 +42,7 @@ class PyRevitOutputWindow:
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
         self.__win__ = window_handle
-        # self.__win__.UrlHandler = self._handle_protocol_url
+        self.__win__.UrlHandler = self._handle_protocol_url
         self.cmd_uniq_name = self.__win__.OutputId
 
     @property
