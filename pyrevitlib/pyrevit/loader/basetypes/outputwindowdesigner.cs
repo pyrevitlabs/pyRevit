@@ -54,6 +54,7 @@ namespace PyRevitBaseClasses
             // this.Load += new System.EventHandler(this.ScriptOutput_Load);
             this.Shown += new System.EventHandler(this.OnFormShown);
             this.FormClosing += new FormClosingEventHandler(this.OnFormClosing);
+            this.FormClosed += new FormClosedEventHandler(this.OnFormClosed);
 
             this.Controls.Add(this.renderer);
 

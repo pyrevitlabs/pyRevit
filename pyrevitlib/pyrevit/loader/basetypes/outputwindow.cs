@@ -56,6 +56,7 @@ namespace PyRevitBaseClasses
             this.renderer.Navigating -= _customURLHandler;
             _customURLHandler = null;
             UrlHandler = null;
+            this.Controls.Clear();
 
             var outputList = (List<object>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
             if (outputList == null) {
@@ -68,6 +69,11 @@ namespace PyRevitBaseClasses
                     outputList.Remove(this);
                 }
             }
+        }
+
+        public void OnFormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.Dispose();
         }
 
         public void WaitReadyBrowser() {
