@@ -44,11 +44,14 @@ def _find_revit_addin_directory(program_data=False):
 
 
 def _get_installed_revit_addin_dirs(program_data=False):
+    addindict = {}
     addins_base_dir = _find_revit_addin_directory(program_data)
     if addins_base_dir:
-        addindict = {x: op.join(addins_base_dir, x)
-                     for x in os.listdir(addins_base_dir)}
-        logger.debug('Installed Revits: {}'.format(addindict))
+        for ver in os.listdir(addins_base_dir):
+            verfullpath = op.join(addins_base_dir, ver)
+            if op.isdir(verfullpath):
+                addindict[ver] = verfullpath
+                logger.debug('Installed Revits: {}'.format(addindict))
         return addindict
     else:
         logger.debug('Can not find installed revits under {}'
