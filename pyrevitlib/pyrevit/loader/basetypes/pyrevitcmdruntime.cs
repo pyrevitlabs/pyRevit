@@ -66,9 +66,9 @@ namespace PyRevitBaseClasses
 
             // Stating a new output window
             _scriptOutput = new ScriptOutput();
-            var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
-            _scriptOutput.Text = _cmdName;                  // Set output window title to command name
-            _scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+            //var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
+            //_scriptOutput.Text = _cmdName;                  // Set output window title to command name
+            //_scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
 
             // Setup the output stream
             _outputStream = new ScriptOutputStream(_scriptOutput);

@@ -26,52 +26,52 @@ namespace PyRevitBaseClasses
 
         public void WriteError(string error_msg)
         {
-            var err_div = _gui.renderer.Document.CreateElement(ExternalConfig.errordiv);
-            err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
+            //var err_div = _gui.renderer.Document.CreateElement(ExternalConfig.errordiv);
+            //err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
 
-            var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
-            Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
+            //var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
+            //Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
         }
 
         /// Append the text in the buffer to gui.renderer
         public override void Write(byte[] buffer, int offset, int count)
         {
-            lock (this)
-            {
-                if (_gui.IsDisposed)
-                {
-                    return;
-                }
+            //lock (this)
+            //{
+            //    if (_gui)
+            //    {
+            //        return;
+            //    }
 
-                if (!_gui.Visible)
-                {
-                    _gui.Show();
-                    _gui.Focus();
-                }
+            //    if (!_gui.Visible)
+            //    {
+            //        _gui.Show();
+            //        _gui.Focus();
+            //    }
 
-                var actualBuffer = new byte[count];
-                Array.Copy(buffer, offset, actualBuffer, 0, count);
-                var text = Encoding.UTF8.GetString(actualBuffer);
+            //    var actualBuffer = new byte[count];
+            //    Array.Copy(buffer, offset, actualBuffer, 0, count);
+            //    var text = Encoding.UTF8.GetString(actualBuffer);
 
-                // append output to the buffer
-                _outputBuffer += text;
+            //    // append output to the buffer
+            //    _outputBuffer += text;
 
-                if (count % 1024 != 0) {
-                    // Cleanup output for html
-                    if (_outputBuffer.EndsWith("\n"))
-                        _outputBuffer = _outputBuffer.Remove(_outputBuffer.Length - 1);
-                    _outputBuffer = _outputBuffer.Replace("<", "&lt;").Replace(">", "&gt;");
-                    _outputBuffer = _outputBuffer.Replace("&clt;", "<").Replace("&cgt;", ">");
-                    _outputBuffer = _outputBuffer.Replace("\n", "<br/>");
-                    _outputBuffer = _outputBuffer.Replace("\t", "&emsp;&emsp;");
+            //    if (count % 1024 != 0) {
+            //        // Cleanup output for html
+            //        if (_outputBuffer.EndsWith("\n"))
+            //            _outputBuffer = _outputBuffer.Remove(_outputBuffer.Length - 1);
+            //        _outputBuffer = _outputBuffer.Replace("<", "&lt;").Replace(">", "&gt;");
+            //        _outputBuffer = _outputBuffer.Replace("&clt;", "<").Replace("&cgt;", ">");
+            //        _outputBuffer = _outputBuffer.Replace("\n", "<br/>");
+            //        _outputBuffer = _outputBuffer.Replace("\t", "&emsp;&emsp;");
 
-                    // write to output window
-                    _gui.AppendText(_outputBuffer, ExternalConfig.defaultelement);
+            //        // write to output window
+            //        _gui.AppendText(_outputBuffer, ExternalConfig.defaultelement);
 
-                    // reset buffer and flush state for next time
-                    _outputBuffer = String.Empty;
-                }
-            }
+            //        // reset buffer and flush state for next time
+            //        _outputBuffer = String.Empty;
+            //    }
+            //}
         }
 
         public override void Flush()

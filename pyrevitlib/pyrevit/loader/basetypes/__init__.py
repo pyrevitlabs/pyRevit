@@ -143,7 +143,8 @@ def _get_references():
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
                 'System.Windows.Forms', 'System.Web.Extensions',
-                'PresentationCore', 'PresentationFramework', 'WindowsBase']
+                'PresentationCore', 'PresentationFramework', 'WindowsBase',
+                'CefSharp.Core.dll', 'CefSharp.dll', 'CefSharp.Wpf.dll']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
@@ -151,8 +152,10 @@ def _get_references():
 def _generate_base_classes_asm():
     source_list = list()
     for source_file in _get_source_files():
-        # source_list.append(read_source_file(source_file))
         source_list.append(source_file)
+
+    for xaml_file in _get_xaml_files():
+        source_list.append(xaml_file)
 
     # now try to compile
     try:
