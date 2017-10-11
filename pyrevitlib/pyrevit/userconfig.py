@@ -3,6 +3,9 @@ Handles reading, parsing, and saving of all user configurations.
 All other modules use this module to query user config.
 
 """
+import os
+import os.path as op
+import shutil
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
 from pyrevit.coreutils import touch
@@ -16,6 +19,9 @@ from System.IO import IOException
 
 logger = get_logger(__name__)
 
+
+# location for default pyRevit config files
+ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
 
 # setup config file name and path
 CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
@@ -190,7 +196,27 @@ def _get_default_config_parser(config_file_path):
     return parser
 
 
+def _setup_admin_config():
+    if not op.exists(CONFIG_FILE_PATH) \
+            and op.isdir(ADMIN_CONFIG_DIR):
+        for entry in os.listdir(ADMIN_CONFIG_DIR):
+            if entry.endswith('.ini'):
+                sourcecfg = op.join(ADMIN_CONFIG_DIR, entry)
+                try:
+                    shutil.copyfile(sourcecfg, CONFIG_FILE_PATH)
+                    logger.debug('Configured from admin file: {}'
+                                 .format(sourcecfg))
+                except Exception as copy_err:
+                    logger.debug('Error copying admin config file: {}'
+                                 .format(sourcecfg))
+                return True
+
+
 if not EXEC_PARAMS.doc_mode:
+    # check to see if there is any config file provided by admin
+    # if yes, copy that and use as default
+    _setup_admin_config()
+
     # read user config, or setup default config file if not available
     # this pushes reading settings at first import of this module.
     try:
