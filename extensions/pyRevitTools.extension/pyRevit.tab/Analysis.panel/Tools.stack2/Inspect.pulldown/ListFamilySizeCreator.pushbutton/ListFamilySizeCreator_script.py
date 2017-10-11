@@ -43,17 +43,25 @@ for fam in all_fams:
     if fam.IsEditable:
         fam_doc = doc.EditFamily(fam)
         fam_path = fam_doc.PathName
-        fam_size = "N/A"
+        fam_size = "0"
         fam_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, fam.Id).Creator
         if fam_path:
             if op.exists(fam_path):
-                fam_size = convert_size(op.getsize(fam_path))
-        fams_creator[fam_creator].append(fam_size + " ; " + fam.Name)
+                fam_size = str(op.getsize(fam_path))
+        fams_creator[fam_creator].append(fam_size + "; " + fam.Name)
 
 print("Families overview:")
 for creator in fams_creator:
     print(50*"-")
-    print("{} created {} families:".format(creator,
-                                           len(fams_creator[creator])))
+    print("{} created:".format(creator))
+    sum_size_created = 0
     for fam in fams_creator[creator]:
-        print(fam)
+        size_prefix = int(fam.split(";")[0])
+        fam_name = fam.split(";")[1]
+        sum_size_created += int(size_prefix)
+        if size_prefix == 0:
+            size_prefix = " N/A "
+        else:
+            size_prefix = convert_size(size_prefix)
+        print(size_prefix, fam_name)
+    print("{1} families, found total size: {0}".format(convert_size(sum_size_created), len(fams_creator[creator])))
