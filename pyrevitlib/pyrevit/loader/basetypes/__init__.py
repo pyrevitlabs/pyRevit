@@ -142,9 +142,9 @@ def _get_references():
     ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
-                'System.Windows.Forms', 'System.Web.Extensions',
+                'System.Windows.Forms', 'System.Web.Extensions', 'System.Xaml',
                 'PresentationCore', 'PresentationFramework', 'WindowsBase',
-                'CefSharp.Core.dll', 'CefSharp.dll', 'CefSharp.Wpf.dll']
+                'CefSharp.Core', 'CefSharp', 'CefSharp.Wpf']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
