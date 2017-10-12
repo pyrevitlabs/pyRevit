@@ -63,7 +63,7 @@ dest_dir = select_folder()
 img_types = Fec(doc).OfClass(ImageType).ToElements()
 
 with Transaction("rename_img_types"):
-    for i, img in enumerate(img_types):
+    for img in img_types:
 
         # export images
         image = img.GetImage()
@@ -80,7 +80,7 @@ with Transaction("rename_img_types"):
 
         print('EXPORTING {0}: {1}'.format(img_size[1:-1].rjust(8), image_name))
 
-print("pyRevit Export All Raster Images exported {0} images to {1} in: ".format(i + 1, dest_dir))
+print("pyRevit Export All Raster Images exported {0} images to {1} in: ".format(len(img_types), dest_dir))
 stopwatch.Stop()
 timespan = stopwatch.Elapsed
 print(timespan)
