@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Lists Families and their sizes grouped by creator.
+Lists all families and their sizes grouped by creator.
 
 Copyright (c) 2017 Frederic Beaupere
 github.com/frederic-beaupere
@@ -11,11 +11,12 @@ Copyright (c) 2014-2017 Ehsan Iran-Nejad
 pyRevit: repository at https://github.com/eirannejad/pyRevit
 """
 
-__title__ = 'Lists Families and their sizes grouped by creator'
+__title__ = 'Lists Families Sizes Grouped by Creator'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Lists Families and their sizes grouped by creator.'
+__doc__ = 'Lists all families and their sizes grouped by creator.'
+
 
 import os.path as op
 import math
