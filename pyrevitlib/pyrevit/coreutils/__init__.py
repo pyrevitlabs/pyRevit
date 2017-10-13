@@ -246,7 +246,10 @@ def load_asm(asm_name):
 
 
 def load_asm_file(asm_file):
-    return Assembly.LoadFrom(asm_file)
+    try:
+        return Assembly.LoadFrom(asm_file)
+    except Exception:
+        return None
 
 
 def find_type_by_name(assembly, type_name):
