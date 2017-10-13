@@ -1,7 +1,6 @@
 using System;
 using System.Windows.Controls;
 
-using CefSharp.Wpf;
 
 namespace PyRevitBaseClasses
 {
@@ -33,6 +32,8 @@ namespace PyRevitBaseClasses
             renderer = new WebBrowser();
             baseGrid.Children.Add(renderer);
             this.Content = baseGrid;
+
+            this.Closing += Window_Closing;
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
@@ -44,6 +45,14 @@ namespace PyRevitBaseClasses
         void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target)
         {
             this._contentLoaded = true;
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            var grid = (Grid)this.Content;
+            grid.Children.Remove(renderer);
+            renderer.Dispose();
+            renderer = null;
         }
     }
 }

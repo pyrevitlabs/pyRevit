@@ -131,8 +131,7 @@ def _get_references():
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
                 'System.Windows.Forms', 'System.Web.Extensions', 'System.Xaml',
-                'PresentationCore', 'PresentationFramework', 'WindowsBase',
-                'CefSharp.Core', 'CefSharp', 'CefSharp.Wpf']
+                'PresentationCore', 'PresentationFramework', 'WindowsBase']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
