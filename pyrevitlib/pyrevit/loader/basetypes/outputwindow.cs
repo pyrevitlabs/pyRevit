@@ -1,26 +1,7 @@
-using CefSharp.Wpf;
-using PyRevitBaseClasses;
 using System;
-using System.Diagnostics;
-using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Ink;
-using System.Windows.Input;
-using System.Windows.Markup;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using System.Windows.Media.TextFormatting;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Shell;
 
+using CefSharp.Wpf;
 
 namespace PyRevitBaseClasses
 {
@@ -28,6 +9,15 @@ namespace PyRevitBaseClasses
     {
 
         private bool _contentLoaded;
+
+        public WebBrowser renderer;
+
+        public ScriptOutput()
+        {
+            InitializeComponent();
+
+            renderer.Navigate("https://www.google.com");
+        }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
@@ -38,8 +28,11 @@ namespace PyRevitBaseClasses
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/pyRevitBaseTypes;component/outputwindow.xaml", System.UriKind.Relative);
-            System.Windows.Application.LoadComponent(this, resourceLocater);
+
+            Grid baseGrid = new Grid();
+            renderer = new WebBrowser();
+            baseGrid.Children.Add(renderer);
+            this.Content = baseGrid;
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
@@ -52,7 +45,5 @@ namespace PyRevitBaseClasses
         {
             this._contentLoaded = true;
         }
-
-        internal CefSharp.Wpf.ChromiumWebBrowser renderer;
     }
 }

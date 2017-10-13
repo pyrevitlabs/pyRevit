@@ -107,6 +107,7 @@ def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
     addin_file = get_addin_dll_file(ref_name)
     if addin_file:
+        load_asm_file(addin_file)
         return addin_file
 
     # Then try to find the dll in windows SDK
