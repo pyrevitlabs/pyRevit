@@ -47,19 +47,19 @@ def _clear_running_engines():
 def _setup_output_window():
     from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
     # create output window and assign handle
-    for idx in range(10):
-        out_window = ScriptOutput()
-        out_window.Show()
+    out_window = ScriptOutput()
     # EXEC_PARAMS.window_handle = out_window
-    #
-    # # create output stream and set stdout to it
-    # # we're not opening the output window here.
-    # # The output stream will open the window if anything is being printed.
-    # outstr = ScriptOutputStream(out_window)
-    # sys.stdout = outstr
-    # sys.stderr = outstr
-    # stdout_hndlr = get_stdout_hndlr()
-    # stdout_hndlr.stream = outstr
+
+    # create output stream and set stdout to it
+    # we're not opening the output window here.
+    # The output stream will open the window if anything is being printed.
+    outstr = ScriptOutputStream(out_window)
+    sys.stdout = outstr
+    sys.stderr = outstr
+    stdout_hndlr = get_stdout_hndlr()
+    stdout_hndlr.stream = outstr
+
+    print("Testing...")
 
 
 # Functions related to creating/loading a new pyRevit session
