@@ -285,4 +285,6 @@ def execute_command(command_unique_name):
     # tmp_cmd_data.JournalData = None
 
     command_instance = cmd_class()
-    return command_instance.Execute(tmp_cmd_data, '', ElementSet())
+    re = command_instance.Execute(tmp_cmd_data, '', ElementSet())
+    command_instance = None
+    return re

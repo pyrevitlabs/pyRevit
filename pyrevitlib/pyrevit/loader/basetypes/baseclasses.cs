@@ -43,6 +43,7 @@ namespace PyRevitBaseClasses
             _needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
         }
 
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -121,8 +122,13 @@ namespace PyRevitBaseClasses
             var logger = new ScriptUsageLogger();
             logger.LogUsage(ref pyrvtCmdRuntime);
 
+            // GC cleanups
+            var re = pyrvtCmdRuntime.ExecutionResult;
+            pyrvtCmdRuntime.Dispose();
+            pyrvtCmdRuntime = null;
+
             // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-            if (pyrvtCmdRuntime.ExecutionResult == 0)
+            if ( re == 0)
                 return Result.Succeeded;
             else
                 return Result.Cancelled;

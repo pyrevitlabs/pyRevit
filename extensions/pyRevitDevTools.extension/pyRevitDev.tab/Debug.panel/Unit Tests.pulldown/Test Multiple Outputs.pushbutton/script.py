@@ -7,5 +7,5 @@ commandlist = ["pyRevitDevToolspyRevitDevDebugUnitTestsTestRPW",
                "pyRevitToolspyRevitSelectionselectSelectListSelectionasClickableLinks"]
 
 for cmd in commandlist:
-    for i in range(10):
+    for i in range(5):
         execute_command(cmd)

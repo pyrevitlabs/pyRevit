@@ -219,8 +219,10 @@ namespace PyRevitBaseClasses
         private void CleanupStreams(ScriptEngine engine)
         {
             // Remove IO streams references so GC can collect
+            var outStream = engine.Runtime.IO.OutputStream;
             engine.Runtime.IO.SetOutput(_defaultOutput, System.Text.Encoding.UTF8);
+            outStream.Dispose();
+            outStream = null;
         }
-
     }
 }
