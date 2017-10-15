@@ -1,7 +1,9 @@
 """Lists the selected element ids as clickable links. This is a quick way to go through a series of elements."""
 
-from scriptutils import this_script
+import scriptutils
 from revitutils import selection
+
+this_script = scriptutils.get_script()
 
 this_script.output.set_width(200)
 

@@ -18,6 +18,7 @@ namespace PyRevitBaseClasses
 
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
+
         public string OutputId;
 
 

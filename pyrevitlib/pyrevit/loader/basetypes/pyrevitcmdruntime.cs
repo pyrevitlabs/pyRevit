@@ -26,8 +26,8 @@ namespace PyRevitBaseClasses
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
 
-        private ScriptOutput _scriptOutput = null;
-        private ScriptOutputStream _outputStream = null;
+        private WeakReference<ScriptOutput> _scriptOutput;
+        private WeakReference<ScriptOutputStream> _outputStream;
 
         private int _execResults = 0;
         private Dictionary<String, String> _resultsDict = null;
@@ -65,13 +65,13 @@ namespace PyRevitBaseClasses
             _altScriptMode = altScriptMode;
 
             // Stating a new output window
-            _scriptOutput = new ScriptOutput();
-            //var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
-            //_scriptOutput.Text = _cmdName;                  // Set output window title to command name
-            //_scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+            var output = new ScriptOutput();
+            output.Text = _cmdName;                  // Set output window title to command name
+            output.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+            _scriptOutput = new WeakReference<ScriptOutput>(output);
 
             // Setup the output stream
-            _outputStream = new ScriptOutputStream(_scriptOutput);
+            _outputStream = new WeakReference<ScriptOutputStream>(new ScriptOutputStream(output));
 
             // create result Dictionary 
             _resultsDict = new Dictionary<String, String>();
@@ -239,7 +239,13 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return _scriptOutput;
+                // get ScriptOutput from the weak reference
+                ScriptOutput output;
+                var re = _scriptOutput.TryGetTarget(out output);
+                if (re)
+                    return output;
+
+                return null;
             }
         }
 
@@ -247,9 +253,16 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return _outputStream;
+                // get ScriptOutputStream from the weak reference
+                ScriptOutputStream outputStream;
+                var re = _outputStream.TryGetTarget(out outputStream);
+                if (re)
+                    return outputStream;
+
+                return null;
             }
         }
+
         public int ExecutionResult
         {
             get
