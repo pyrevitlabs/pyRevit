@@ -48,7 +48,6 @@ def _setup_output_window():
     from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
     # create output window and assign handle
     out_window = ScriptOutput()
-    EXEC_PARAMS.window_handle = out_window
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
@@ -155,7 +154,6 @@ def load_session():
     Returns:
         None
     """
-
     # initialize timer to measure load time
     timer = Timer()
 
@@ -287,4 +285,6 @@ def execute_command(command_unique_name):
     # tmp_cmd_data.JournalData = None
 
     command_instance = cmd_class()
-    return command_instance.Execute(tmp_cmd_data, '', ElementSet())
+    re = command_instance.Execute(tmp_cmd_data, '', ElementSet())
+    command_instance = None
+    return re

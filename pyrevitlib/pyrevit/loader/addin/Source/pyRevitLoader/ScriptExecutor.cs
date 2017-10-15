@@ -83,7 +83,16 @@ namespace PyRevitLoader
                 }
                 catch (Exception exception)
                 {
-                    _message = exception.ToString();
+                    string _dotnet_err_message = exception.ToString();
+                    string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
+
+                    // Print all errors to stdout and return cancelled to Revit.
+                    // This is to avoid getting window prompts from Revit.
+                    // Those pop ups are small and errors are hard to read.
+                    _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+
+                    _message = _ipy_err_messages + "\n\n" + _dotnet_err_message;
                     return (int)Result.Failed;
                 }
 

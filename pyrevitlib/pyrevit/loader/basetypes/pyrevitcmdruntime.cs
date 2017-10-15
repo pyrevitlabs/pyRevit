@@ -7,7 +7,7 @@ using Autodesk.Revit.ApplicationServices;
 
 namespace PyRevitBaseClasses
 {
-	public class PyRevitCommandRuntime
+	public class PyRevitCommandRuntime: IDisposable
 	{
         private ExternalCommandData _commandData = null;
         private ElementSet _elements = null;
@@ -26,8 +26,8 @@ namespace PyRevitBaseClasses
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
 
-        private ScriptOutput _scriptOutput = null;
-        private ScriptOutputStream _outputStream = null;
+        private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
+        private WeakReference<ScriptOutputStream> _outputStream = new WeakReference<ScriptOutputStream>(null);
 
         private int _execResults = 0;
         private Dictionary<String, String> _resultsDict = null;
@@ -63,19 +63,6 @@ namespace PyRevitBaseClasses
             _refreshEngine = refreshEngine;
             _forcedDebugMode = forcedDebugMode;
             _altScriptMode = altScriptMode;
-
-            // Stating a new output window
-            _scriptOutput = new ScriptOutput();
-            var hndl = _scriptOutput.Handle;                // Forces creation of handle before showing the window
-            _scriptOutput.Text = _cmdName;                  // Set output window title to command name
-            _scriptOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
-
-            // Setup the output stream
-            _outputStream = new ScriptOutputStream(_scriptOutput);
-
-            // create result Dictionary 
-            _resultsDict = new Dictionary<String, String>();
-
         }
 
         public Application RevitApp
@@ -239,7 +226,20 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return _scriptOutput;
+                // get ScriptOutput from the weak reference
+                ScriptOutput output;
+                var re = _scriptOutput.TryGetTarget(out output);
+                if (re && output != null)
+                    return output;
+                else
+                {
+                    // Stating a new output window
+                    var newOutput = new ScriptOutput();
+                    newOutput.Title = _cmdName;                  // Set output window title to command name
+                    newOutput.OutputId = _cmdUniqueName;        // Set window identity to the command unique identifier
+                    _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
+                    return newOutput;
+                }
             }
         }
 
@@ -247,9 +247,21 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return _outputStream;
+                // get ScriptOutputStream from the weak reference
+                ScriptOutputStream outputStream;
+                var re = _outputStream.TryGetTarget(out outputStream);
+                if (re && outputStream != null)
+                    return outputStream;
+                else
+                {
+                    // Setup the output stream
+                    ScriptOutputStream newStream = new ScriptOutputStream(this);
+                    _outputStream = new WeakReference<ScriptOutputStream>(newStream);
+                    return newStream;
+                }
             }
         }
+
         public int ExecutionResult
         {
             get
@@ -264,7 +276,17 @@ namespace PyRevitBaseClasses
 
         public Dictionary<String, String> GetResultsDictionary()
         {
+            if(_resultsDict == null)
+                _resultsDict = new Dictionary<String, String>();
+
             return _resultsDict;
+        }
+
+        public void Dispose()
+        {
+            _scriptOutput = null;
+            _outputStream = null;
+            _resultsDict = null;
         }
     }
 }
