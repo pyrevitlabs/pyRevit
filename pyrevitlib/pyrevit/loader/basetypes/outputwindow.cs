@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace PyRevitBaseClasses
 {
-    public partial class ScriptOutput : Window, IComponentConnector
+    public partial class ScriptOutput : Window, IComponentConnector, IDisposable
     {
 
         private bool _contentLoaded;
@@ -25,16 +25,6 @@ namespace PyRevitBaseClasses
         public ScriptOutput()
         {
             InitializeComponent();
-
-            renderer.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
-
-            //// Let's leave the WebBrowser control working alone.
-            //while (renderer.Document.Body == null)
-            //{
-            //    DoEvents();
-            //}
-
-            //renderer.Document.Body.Style = ExternalConfig.htmlstyle;
         }
 
 
@@ -55,7 +45,13 @@ namespace PyRevitBaseClasses
 
             // Create the WebBrowser control.
             renderer = new System.Windows.Forms.WebBrowser();
-            this.renderer.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.renderer_Navigating);
+            //renderer.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(renderer_Navigating);
+            //renderer.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(renderer_DocumentCompleted);
+            renderer.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
+            //while(renderer.Document.Body == null)
+            //    System.Windows.Forms.Application.DoEvents();
+
+            //renderer.Document.Body.Style = ExternalConfig.htmlstyle;
 
             // Assign the WebBrowser control as the host control's child.
             host.Child = renderer;
@@ -86,12 +82,6 @@ namespace PyRevitBaseClasses
             this._contentLoaded = true;
         }
 
-
-        public static void DoEvents()
-        {
-            Application.Current.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Background,
-                                                  new Action(delegate { }));
-        }
 
         public void AppendToOutputList()
         {
@@ -129,10 +119,7 @@ namespace PyRevitBaseClasses
 
         public void WaitReadyBrowser()
         {
-            // while(renderer.ReadyState != WebBrowserReadyState.Complete)
-            // {
-            //Application.DoEvents();
-            // }
+            System.Windows.Forms.Application.DoEvents();
         }
 
 
@@ -165,12 +152,17 @@ namespace PyRevitBaseClasses
 
         public void AppendText(String OutputText, String HtmlElementType)
         {
-            WaitReadyBrowser();
-            var div = renderer.Document.CreateElement(HtmlElementType);
-            div.InnerHtml = OutputText;
-            renderer.Document.Body.AppendChild(div);
-            ScrollToBottom();
+            //WaitReadyBrowser();
+            //var div = renderer.Document.CreateElement(HtmlElementType);
+            //div.InnerHtml = OutputText;
+            //renderer.Document.Body.AppendChild(div);
+            //ScrollToBottom();
         }
+
+
+        //private void renderer_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
+        //{
+        //}
 
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e)
@@ -253,6 +245,12 @@ namespace PyRevitBaseClasses
             grid.Children.Remove(host);
             renderer.Dispose();
             renderer = null;
+        }
+
+        public void Dispose()
+        {
+            renderer = null;
+            this.Content = null;
         }
     }
 }

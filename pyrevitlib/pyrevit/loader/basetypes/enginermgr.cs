@@ -184,7 +184,9 @@ namespace PyRevitBaseClasses
         private void SetupStreams(ScriptEngine engine, ScriptOutputStream outStream)
         {
             // Setup IO streams
-            _defaultOutput = engine.Runtime.IO.OutputStream;
+            if(_defaultOutput == null)
+                _defaultOutput = engine.Runtime.IO.OutputStream;
+
             engine.Runtime.IO.SetOutput(outStream, System.Text.Encoding.UTF8);
         }
 

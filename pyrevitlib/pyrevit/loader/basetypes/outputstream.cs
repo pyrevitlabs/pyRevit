@@ -8,23 +8,38 @@ namespace PyRevitBaseClasses
     /// A stream to write output to...
     /// This can be passed into the python interpreter to render all output to.
     /// Only a minimal subset is actually implemented - this is all we really expect to use.
-    public class ScriptOutputStream: Stream
+    public class ScriptOutputStream: Stream, IDisposable
     {
+        private WeakReference<PyRevitCommandRuntime> _pyrvtCmd;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
+
+        public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
+        {
+            _outputBuffer = String.Empty;
+            _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(pyrvtCmd);
+            _gui = new WeakReference<ScriptOutput>(null);
+        }
 
         public ScriptOutputStream(ScriptOutput gui)
         {
             _outputBuffer = String.Empty;
+            _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
 
+
         private ScriptOutput GetOutput()
         {
+            PyRevitCommandRuntime pyrvtCmd;
+            var re = _pyrvtCmd.TryGetTarget(out pyrvtCmd);
+            if (re && pyrvtCmd != null)
+               return pyrvtCmd.OutputWindow;
+
             ScriptOutput output;
-            var re = _gui.TryGetTarget(out output);
-            if (re)
-               return output;
+            re = _gui.TryGetTarget(out output);
+            if (re && output != null)
+                return output;
 
             return null;
         }
@@ -56,13 +71,7 @@ namespace PyRevitBaseClasses
                 var output = GetOutput();
                 if (output != null)
                 {
-
-                    if (output.IsDisposed)
-                    {
-                        return;
-                    }
-
-                    if (!output.Visible)
+                    if (!output.IsVisible)
                     {
                         output.Show();
                         output.Focus();
@@ -139,6 +148,13 @@ namespace PyRevitBaseClasses
         {
             get { return 0; }
             set { }
+        }
+
+        new public void Dispose()
+        {
+            _pyrvtCmd = null;
+            _gui = null;
+            Dispose(true);
         }
     }
 }
