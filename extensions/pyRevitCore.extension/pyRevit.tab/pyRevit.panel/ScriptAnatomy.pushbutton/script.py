@@ -5,5 +5,6 @@ __context__ = 'zerodoc'
 __title__ = 'Script\nAnatomy'
 
 
-from scriptutils import open_url
-open_url('http://eirannejad.github.io/pyRevit/anatomyofpyrevitscript/')
+url = 'http://eirannejad.github.io/pyRevit/anatomyofpyrevitscript/'
+from pyrevit import coreutils
+coreutils.open_url(url)

@@ -3,10 +3,12 @@ import clr
 import System
 
 clr.AddReference('PresentationCore')
+clr.AddReference('PresentationFramework')
 clr.AddReference("System.Core")
 clr.AddReference('System.Xml.Linq')
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('System.Drawing')
+clr.AddReference('System.Management')
 
 clr.ImportExtensions(System.Linq)
 
@@ -21,14 +23,21 @@ from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 from System.IO import IOException, DriveInfo, Path
 from System.Net import WebClient, WebRequest
 
-from System import Type, Uri, Array
+from System import Type
+from System import Uri
+
 from System import DateTime, DateTimeOffset
+
+from System import Array
 from System.Collections.Generic import List, Dictionary
 
-import System.Drawing as Drawing
-import System.Windows as Windows
-import System.Windows.Forms as Forms
-import System.Windows.Media.Imaging as Imaging
+from System import Drawing
+from System import Windows
+from System.Windows import Forms
+from System.Windows import Controls
+from System.Windows.Media import Imaging
 
 from System.CodeDom import Compiler
 from Microsoft.CSharp import CSharpCodeProvider
+
+from System.Management import ManagementObjectSearcher

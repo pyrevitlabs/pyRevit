@@ -3,5 +3,6 @@
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('http://pyrevit.readthedocs.io/en/latest/')
+url = 'http://pyrevit.readthedocs.io/en/latest/'
+from pyrevit import coreutils
+coreutils.open_url(url)

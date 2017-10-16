@@ -1,22 +1,19 @@
 """Add or remove pyRevit extensions."""
 
-from pyrevit.coreutils import open_folder_in_explorer
-from pyrevit.plugins import extpackages
+from pyrevit import platform
+from pyrevit import coreutils
+from pyrevit import plugins
+from pyrevit import versionmgr
+from pyrevit import script
+from pyrevit import forms
+
 from pyrevit.userconfig import user_config
-
-from scriptutils import logger
-from scriptutils import open_url
-from scriptutils.userinput import WPFWindow
-
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-import System.Windows
-# noinspection PyUnresolvedReferences
-import System.Windows.Controls as wpfControls
 
 
 __context__ = 'zerodoc'
+
+
+logger = script.get_logger()
 
 
 class ExtensionPackageListItem:
@@ -39,16 +36,16 @@ class ExtensionPackageListItem:
         """Initializing the Extension package list item.
 
         Args:
-            extension_package (pyrevit.plugins.extpackages.ExtensionPackage):
+            extension_package (plugins.extpackages.ExtensionPackage):
         """
 
         # ref to the pkg object received
         self.ext_pkg = extension_package
         # setting up pretty type name that shows up on the list
         self.Type = 'Unknown'
-        if self.ext_pkg.type == extpackages.ExtensionTypes.LIB_EXTENSION:
+        if self.ext_pkg.type == plugins.extpackages.ExtensionTypes.LIB_EXTENSION:
             self.Type = 'IronPython Library'
-        elif self.ext_pkg.type == extpackages.ExtensionTypes.UI_EXTENSION:
+        elif self.ext_pkg.type == plugins.extpackages.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
         # setting up other list data
@@ -73,7 +70,7 @@ class ExtensionPackageListItem:
             self.Status = self.Version = '--'
 
 
-class InstallPackageMenuItem(wpfControls.MenuItem):
+class InstallPackageMenuItem(platform.Controls.MenuItem):
     """Context menu item for package installation destinations
 
     Instances of this class will be set to the possible directory paths
@@ -90,14 +87,14 @@ class InstallPackageMenuItem(wpfControls.MenuItem):
     install_path = ''
 
 
-class ExtensionsWindow(WPFWindow):
+class ExtensionsWindow(forms.WPFWindow):
     """Extension window managing installation and removal of extensions
     """
 
     def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         self._setup_ext_dirs_ui(user_config.get_ext_root_dirs())
-        self._setup_ext_pkg_ui(extpackages.get_ext_packages())
+        self._setup_ext_pkg_ui(plugins.extpackages.get_ext_packages())
 
     @property
     def selected_pkg(self):
@@ -158,7 +155,7 @@ class ExtensionsWindow(WPFWindow):
         # Update the description and web link
         if ext_pkg_item.URL:
             self.ext_gitlink_t.Text = '({})'.format(ext_pkg_item.URL)
-            self.ext_gitlink_hl.NavigateUri = Uri(ext_pkg_item.URL)
+            self.ext_gitlink_hl.NavigateUri = platform.Uri(ext_pkg_item.URL)
         else:
             self.ext_gitlink_t.Text = ''
 
@@ -166,7 +163,7 @@ class ExtensionsWindow(WPFWindow):
         if ext_pkg_item.Author:
             self.ext_author_t.Text = ext_pkg_item.Author
             self.ext_authorlink_hl.NavigateUri = \
-                Uri(ext_pkg_item.ext_pkg.author_profile)
+                platform.Uri(ext_pkg_item.ext_pkg.author_profile)
         else:
             self.ext_author_t.Text = ''
 
@@ -253,7 +250,7 @@ class ExtensionsWindow(WPFWindow):
     def handle_url_click(self, sender, args):
         """Callback for handling click on package website url
         """
-        open_url(sender.NavigateUri.AbsoluteUri)
+        coreutils.open_url(sender.NavigateUri.AbsoluteUri)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -276,7 +273,7 @@ class ExtensionsWindow(WPFWindow):
         sender.ContextMenu.IsEnabled = True
         sender.ContextMenu.PlacementTarget = sender
         sender.ContextMenu.Placement = \
-            System.Windows.Controls.Primitives.PlacementMode.Bottom
+            platform.Controls.Primitives.PlacementMode.Bottom
         sender.ContextMenu.IsOpen = True
 
     # noinspection PyUnusedLocal
@@ -305,7 +302,8 @@ class ExtensionsWindow(WPFWindow):
         """
 
         try:
-            extpackages.install(self.selected_pkg.ext_pkg, sender.install_path)
+            plugins.extpackages.install(self.selected_pkg.ext_pkg,
+                                        sender.install_path)
             self.Close()
             call_reload()
         except Exception as pkg_install_err:
@@ -330,14 +328,14 @@ class ExtensionsWindow(WPFWindow):
         """
 
         try:
-            extpackages.remove(self.selected_pkg.ext_pkg)
+            plugins.extpackages.remove(self.selected_pkg.ext_pkg)
             self.Close()
             call_reload()
         except Exception as pkg_remove_err:
             logger.error('Error removing package. | {}'.format(pkg_remove_err))
 
 
-def open_ext_dir_in_explorer(ext_dirs_list):
+def open_ext_dirs_in_explorer(ext_dirs_list):
     """Opens each folder provided by ext_dirs_list in window explorer.
 
     Args:
@@ -346,7 +344,7 @@ def open_ext_dir_in_explorer(ext_dirs_list):
     """
 
     for ext_dir in ext_dirs_list:
-        open_folder_in_explorer(ext_dir)
+        coreutils.open_folder_in_explorer(ext_dir)
 
 
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
@@ -361,6 +359,6 @@ def call_reload():
 # otherwise, will show the Extension manager user interface
 # noinspection PyUnresolvedReferences
 if __shiftclick__:
-	open_ext_dir_in_explorer(user_config.get_ext_root_dirs())
+	open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
 else:
-	ExtensionsWindow('ExtensionsWindow.xaml').ShowDialog()
+	ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()

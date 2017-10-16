@@ -5,18 +5,12 @@ import ast
 import hashlib
 import time
 import datetime
-import clr
 import shutil
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.platform import AppDomain, Array, Type
-from pyrevit.platform import Process, Assembly
-from pyrevit.platform import TypeAttributes, MethodAttributes
-from pyrevit.platform import CallingConventions
-from pyrevit.platform import CustomAttributeBuilder, OpCodes
-from pyrevit.platform import WebClient, WebRequest
-from pyrevit.revitapi import Attributes
+from pyrevit import platform
+from pyrevit import revitapi
 
 
 DEFAULT_SEPARATOR = ';'
@@ -164,7 +158,7 @@ def cleanup_string(input_str):
 
 
 def get_revit_instance_count():
-    return len(list(Process.GetProcessesByName(HOST_APP.proc_name)))
+    return len(list(platform.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
 def run_process(proc, cwd=''):
@@ -222,7 +216,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
               None will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
-    for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
+    for loaded_assembly in platform.AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
             if asm_info.lower() in \
                     unicode(loaded_assembly.GetName().Name).lower():
@@ -242,12 +236,12 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
 
 def load_asm(asm_name):
-    return AppDomain.CurrentDomain.Load(asm_name)
+    return platform.AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
     try:
-        return Assembly.LoadFrom(asm_file)
+        return platform.Assembly.LoadFrom(asm_file)
     except Exception:
         return None
 
@@ -295,7 +289,7 @@ def reverse_html(input_html):
 
 
 # def check_internet_connection():
-#     client = WebClient()
+#     client = platform.WebClient()
 #     try:
 #         client.OpenRead("http://www.google.com")
 #         return True
@@ -318,7 +312,7 @@ def reverse_html(input_html):
 def check_internet_connection(timeout=1000):
     def can_access(url_to_open):
         try:
-            client = WebRequest.Create(url_to_open)
+            client = platform.WebRequest.Create(url_to_open)
             client.Method = "HEAD"
             client.Timeout = timeout
             response = client.GetResponse()
@@ -352,21 +346,37 @@ def read_source_file(source_file_path):
 
 def create_ext_command_attrs():
     regen_const_info = \
-        clr.GetClrType(Attributes.RegenerationAttribute) \
-           .GetConstructor(Array[Type]((Attributes.RegenerationOption,)))
+        platform.clr.GetClrType(revitapi.Attributes.RegenerationAttribute) \
+           .GetConstructor(
+               platform.Array[platform.Type](
+                   (revitapi.Attributes.RegenerationOption,)
+                   )
+               )
 
     regen_attr_builder = \
-        CustomAttributeBuilder(regen_const_info,
-                               Array[object]((Attributes.RegenerationOption.Manual,)))
+        platform.CustomAttributeBuilder(
+            regen_const_info,
+            platform.Array[object](
+                (revitapi.Attributes.RegenerationOption.Manual,)
+                )
+            )
 
-    # add TransactionAttribute to type
+    # add TransactionAttribute to platform.Type
     trans_constructor_info = \
-        clr.GetClrType(Attributes.TransactionAttribute) \
-           .GetConstructor(Array[Type]((Attributes.TransactionMode,)))
+        platform.clr.GetClrType(revitapi.Attributes.TransactionAttribute) \
+           .GetConstructor(
+               platform.Array[platform.Type](
+                   (revitapi.Attributes.TransactionMode,)
+                   )
+               )
 
     trans_attrib_builder = \
-        CustomAttributeBuilder(trans_constructor_info,
-                               Array[object]((Attributes.TransactionMode.Manual,)))
+        platform.CustomAttributeBuilder(
+            trans_constructor_info,
+            platform.Array[object](
+                (revitapi.Attributes.TransactionMode.Manual,)
+                )
+            )
 
     return [regen_attr_builder, trans_attrib_builder]
 
@@ -374,9 +384,11 @@ def create_ext_command_attrs():
 def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     # create type builder
     type_builder = \
-        modulebuilder.DefineType(class_name,
-                                 TypeAttributes.Class | TypeAttributes.Public,
-                                 type_class)
+        modulebuilder.DefineType(
+            class_name,
+            platform.TypeAttributes.Class | platform.TypeAttributes.Public,
+            type_class
+            )
 
     for custom_attr in custom_attr_list:
         type_builder.SetCustomAttribute(custom_attr)
@@ -391,29 +403,30 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
             param_list.append(param)
 
     # call base constructor
-    ci = type_class.GetConstructor(Array[Type](type_list))
+    ci = type_class.GetConstructor(platform.Array[platform.Type](type_list))
     # create class constructor builder
-    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
-                                                   CallingConventions.Standard,
-                                                   Array[Type](()))
+    const_builder = \
+        type_builder.DefineConstructor(platform.MethodAttributes.Public,
+                                       platform.CallingConventions.Standard,
+                                       platform.Array[platform.Type](()))
     # add constructor parameters to stack
     gen = const_builder.GetILGenerator()
-    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    gen.Emit(platform.OpCodes.Ldarg_0)  # Load "this" onto eval stack
 
     # add constructor input params to the stack
     for param_type, param in zip(type_list, param_list):
         if param_type == str:
-            gen.Emit(OpCodes.Ldstr, param)
+            gen.Emit(platform.OpCodes.Ldstr, param)
         elif param_type == int:
-            gen.Emit(OpCodes.Ldc_I4, param)
+            gen.Emit(platform.OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
-    gen.Emit(OpCodes.Call, ci)
+    gen.Emit(platform.OpCodes.Call, ci)
     # Fill some space - this is how it is generated for equivalent C# code
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Ret)
+    gen.Emit(platform.OpCodes.Nop)
+    gen.Emit(platform.OpCodes.Nop)
+    gen.Emit(platform.OpCodes.Nop)
+    gen.Emit(platform.OpCodes.Ret)
     type_builder.CreateType()
 
 
@@ -600,14 +613,17 @@ def reformat_string(orig_str, orig_format, new_format):
     return new_format.format(**reformat_dict)
 
 
-def dletter_to_unc(dletter_path):
-    clr.AddReference('System.Management')
-    # noinspection PyUnresolvedReferences
-    from System.Management import ManagementObjectSearcher
-    searcher = ManagementObjectSearcher("root\\CIMV2",
-                                        "SELECT * FROM Win32_MappedLogicalDisk")
+def get_mapped_drives_dict():
+    searcher = platform.ManagementObjectSearcher(
+        "root\\CIMV2",
+        "SELECT * FROM Win32_MappedLogicalDisk"
+        )
 
-    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    return {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+
+
+def dletter_to_unc(dletter_path):
+    drives = get_mapped_drives_dict()
     dletter = dletter_path[:2]
     for mapped_drive, server_path in drives.items():
         if dletter.lower() == mapped_drive.lower():
@@ -615,13 +631,7 @@ def dletter_to_unc(dletter_path):
 
 
 def unc_to_dletter(unc_path):
-    clr.AddReference('System.Management')
-    # noinspection PyUnresolvedReferences
-    from System.Management import ManagementObjectSearcher
-    searcher = ManagementObjectSearcher("root\\CIMV2",
-                                        "SELECT * FROM Win32_MappedLogicalDisk")
-
-    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    drives = get_mapped_drives_dict()
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
             return unc_path.replace(server_path, mapped_drive)

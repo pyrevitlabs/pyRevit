@@ -2,18 +2,15 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP
-from pyrevit.platform import Forms
-from pyrevit.coreutils import filter_null_items, open_folder_in_explorer
-from pyrevit.coreutils.envvars import get_pyrevit_env_vars
-from pyrevit.loader.addin.addinfiles import get_addinfiles_state,\
-                                            set_addinfiles_state, \
-                                            is_pyrevit_for_allusers
+from pyrevit import platform
+from pyrevit import coreutils
+from pyrevit import usagelog
+from pyrevit import script
+from pyrevit import forms
+from pyrevit import userinput
+from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-from pyrevit.usagelog import setup_usage_logfile, get_current_usage_logfile,\
-                             get_current_usage_serverurl, \
-                             get_default_usage_logfilepath
-import scriptutils
-import scriptutils.userinput as userinput
+from pyrevit.loader.addin import addinfiles
 
 
 __context__ = 'zerodoc'
@@ -23,13 +20,13 @@ __doc__ = 'Shows the preferences window for pyrevit. You can customize how ' \
           '\n\nShift-Click: Shows config file in explorer.'
 
 
-logger = scriptutils.get_logger()
+logger = script.get_logger()
 
 
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 
 
-class SettingsWindow(userinput.WPFWindow):
+class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs
     """
 
@@ -37,7 +34,7 @@ class SettingsWindow(userinput.WPFWindow):
         """Sets up the settings ui
         """
 
-        userinput.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         try:
             self._setup_core_options()
         except Exception as setup_params_err:
@@ -120,7 +117,7 @@ class SettingsWindow(userinput.WPFWindow):
                        .format(self.Id, self.Value)
 
         env_vars_list = [EnvVariable(k, v)
-                         for k, v in get_pyrevit_env_vars().items()]
+                         for k, v in envvars.get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
 
@@ -137,9 +134,11 @@ class SettingsWindow(userinput.WPFWindow):
             user_config.usagelogging.get_option('logserverurl',
                                                 default_value='')
 
-        self.cur_usagelogfile_tb.Text = get_current_usage_logfile()
+        self.cur_usagelogfile_tb.Text = \
+            usagelog.get_current_usage_logfile()
         self.cur_usagelogfile_tb.IsReadOnly = True
-        self.cur_usageserverurl_tb.Text = get_current_usage_serverurl()
+        self.cur_usageserverurl_tb.Text = \
+            usagelog.get_current_usage_serverurl()
         self.cur_usageserverurl_tb.IsReadOnly = True
 
     def _setup_addinfiles(self):
@@ -147,14 +146,14 @@ class SettingsWindow(userinput.WPFWindow):
         and updates the ui.
         """
 
-        self.is_pyrevit_allusers = is_pyrevit_for_allusers()
+        self.is_pyrevit_allusers = addinfiles.is_pyrevit_for_allusers()
         if self.is_pyrevit_allusers:
-            addinfiles_states = get_addinfiles_state(allusers=True)
+            addinfiles_states = addinfiles.get_addinfiles_state(allusers=True)
             self.revitversions_tb.Text = \
                 str(self.revitversions_tb.Text).replace('%appdata%',
                                                         '%programdata%')
         else:
-            addinfiles_states = get_addinfiles_state()
+            addinfiles_states = addinfiles.get_addinfiles_state()
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
             if rvt_ver in addinfiles_states.keys():
@@ -175,7 +174,7 @@ class SettingsWindow(userinput.WPFWindow):
         """Updates the usage logging system per changes. This is usually
         called after new settings are saved and before pyRevit is reloaded.
         """
-        setup_usage_logfile()
+        usagelog.setup_usage_logfile()
 
     def update_addinfiles(self):
         """Enables/Disables the adding files for different Revit versions.
@@ -183,7 +182,7 @@ class SettingsWindow(userinput.WPFWindow):
         new_states = {rvt_ver: checkbox.IsChecked
                       for rvt_ver, checkbox in self._addinfiles_cboxes.items()}
         new_states.pop(HOST_APP.version)
-        set_addinfiles_state(new_states, allusers=self.is_pyrevit_allusers)
+        addinfiles.set_addinfiles_state(new_states, allusers=self.is_pyrevit_allusers)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -214,14 +213,14 @@ class SettingsWindow(userinput.WPFWindow):
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard
         """
-        Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+        platform.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def copy_envvar_id(self, sender, args):
         """Callback method for copying selected env var name to clipboard
         """
-        Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
+        platform.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -273,7 +272,7 @@ class SettingsWindow(userinput.WPFWindow):
     def reset_usagelog_folder(self, sender, args):
         """Callback method for resetting usage log file folder to defaults
         """
-        self.usagelogfile_tb.Text = get_default_usage_logfilepath()
+        self.usagelogfile_tb.Text = usagelog.get_default_usage_logfilepath()
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -282,7 +281,7 @@ class SettingsWindow(userinput.WPFWindow):
         """
         cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
         if cur_log_folder:
-            open_folder_in_explorer(cur_log_folder)
+            coreutils.open_folder_in_explorer(cur_log_folder)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
@@ -320,7 +319,7 @@ class SettingsWindow(userinput.WPFWindow):
         # set extension folders from the list, after cleanup empty items
         if isinstance(self.extfolders_lb.ItemsSource, list):
             user_config.core.userextensions = \
-                filter_null_items(self.extfolders_lb.ItemsSource)
+                coreutils.filter_null_items(self.extfolders_lb.ItemsSource)
         else:
             user_config.core.userextensions = []
 
@@ -355,6 +354,6 @@ class SettingsWindow(userinput.WPFWindow):
 
 # noinspection PyUnresolvedReferences
 if __shiftclick__:
-    scriptutils.show_file_in_explorer(user_config.config_file)
+    coreutils.show_file_in_explorer(user_config.config_file)
 else:
-    SettingsWindow('SettingsWindow.xaml').ShowDialog()
+    SettingsWindow('SettingsWindow.xaml').show_dialog()

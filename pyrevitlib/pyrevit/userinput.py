@@ -1,21 +1,9 @@
-import clr
-
-from pyrevit.coreutils import dletter_to_unc
-
-from scriptutils.forms import WPFWindow
-
-clr.AddReferenceByPartialName('System.Windows.Forms')
-
-# noinspection PyUnresolvedReferences
-import System
-# noinspection PyUnresolvedReferences
-from System.Windows.Controls import SelectionMode
-# noinspection PyUnresolvedReferences
-from System.Windows.Forms import FolderBrowserDialog, DialogResult, \
-                                 OpenFileDialog, SaveFileDialog
+from pyrevit import platform
+from pyrevit import coreutils
+from pyrevit import forms
 
 
-class TemplateUserInputWindow(WPFWindow):
+class TemplateUserInputWindow(forms.WPFWindow):
     layout = """
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -26,7 +14,7 @@ class TemplateUserInputWindow(WPFWindow):
     """
 
     def __init__(self, context, title, width, height, **kwargs):
-        WPFWindow.__init__(self, self.layout, literal_string=True)
+        forms.WPFWindow.__init__(self, self.layout, literal_string=True)
         self.Title = title
         self.Width = width
         self.Height = height
@@ -278,49 +266,49 @@ class CommandSwitchWindow:
         self.Parent = self
         self.selected_switch = ''
         # Create window
-        self.my_window = System.Windows.Window()
-        self.my_window.WindowStyle = System.Windows.WindowStyle.None
+        self.my_window = platform.Windows.Window()
+        self.my_window.WindowStyle = platform.Windows.WindowStyle.None
         self.my_window.AllowsTransparency = True
         self.my_window.Background = None
         self.my_window.Title = 'Command Options'
         self.my_window.Width = 600
-        self.my_window.SizeToContent = System.Windows.SizeToContent.Height
-        self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
+        self.my_window.SizeToContent = platform.Windows.SizeToContent.Height
+        self.my_window.ResizeMode = platform.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = \
-            System.Windows.WindowStartupLocation.CenterScreen
+            platform.Windows.WindowStartupLocation.CenterScreen
         self.my_window.PreviewKeyDown += self.handle_esc_key
         self.my_window.MouseUp += self.handle_click
-        border = System.Windows.Controls.Border()
-        border.CornerRadius = System.Windows.CornerRadius(15)
+        border = platform.Controls.Border()
+        border.CornerRadius = platform.Windows.CornerRadius(15)
         border.Background = \
-            System.Windows.Media.SolidColorBrush(
-                System.Windows.Media.Color.FromArgb(220, 55, 50, 50)
+            platform.Windows.Media.SolidColorBrush(
+                platform.Windows.Media.Color.FromArgb(220, 55, 50, 50)
             )
         self.my_window.Content = border
 
         # Create StackPanel to Layout UI elements
-        stack_panel = System.Windows.Controls.StackPanel()
-        stack_panel.Margin = System.Windows.Thickness(5)
+        stack_panel = platform.Controls.StackPanel()
+        stack_panel.Margin = platform.Windows.Thickness(5)
         border.Child = stack_panel
 
-        label = System.Windows.Controls.Label()
-        label.Foreground = System.Windows.Media.Brushes.White
+        label = platform.Controls.Label()
+        label.Foreground = platform.Windows.Media.Brushes.White
         label.Content = message
-        label.Margin = System.Windows.Thickness(2, 0, 0, 0)
+        label.Margin = platform.Windows.Thickness(2, 0, 0, 0)
         stack_panel.Children.Add(label)
 
         # Create WrapPanel for command options
-        self.button_list = System.Windows.Controls.WrapPanel()
-        self.button_list.Margin = System.Windows.Thickness(5)
+        self.button_list = platform.Controls.WrapPanel()
+        self.button_list.Margin = platform.Windows.Thickness(5)
         stack_panel.Children.Add(self.button_list)
 
         for switch in switches:
-            my_button = System.Windows.Controls.Button()
-            my_button.BorderBrush = System.Windows.Media.Brushes.Black
-            my_button.BorderThickness = System.Windows.Thickness(0)
+            my_button = platform.Controls.Button()
+            my_button.BorderBrush = platform.Windows.Media.Brushes.Black
+            my_button.BorderThickness = platform.Windows.Thickness(0)
             my_button.Content = switch
-            my_button.Margin = System.Windows.Thickness(5, 0, 5, 5)
-            my_button.Padding = System.Windows.Thickness(5, 0, 5, 0)
+            my_button.Margin = platform.Windows.Thickness(5, 0, 5, 5)
+            my_button.Padding = platform.Windows.Thickness(5, 0, 5, 0)
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
@@ -330,7 +318,7 @@ class CommandSwitchWindow:
 
     # noinspection PyUnusedLocal
     def handle_esc_key(self, sender, args):
-        if args.Key == System.Windows.Input.Key.Escape:
+        if args.Key == platform.Windows.Input.Key.Escape:
             self.my_window.Close()
 
     # noinspection PyUnusedLocal
@@ -344,14 +332,14 @@ class CommandSwitchWindow:
 
 
 def pick_folder():
-    fb_dlg = FolderBrowserDialog()
-    if fb_dlg.ShowDialog() == DialogResult.OK:
+    fb_dlg = platform.Forms.FolderBrowserDialog()
+    if fb_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
         return fb_dlg.SelectedPath
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
-    of_dlg = OpenFileDialog()
+    of_dlg = platform.Forms.OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
     else:
@@ -360,15 +348,15 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     of_dlg.Multiselect = multi_file
     if init_dir:
         of_dlg.InitialDirectory = init_dir
-    if of_dlg.ShowDialog() == DialogResult.OK:
+    if of_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
         if unc_paths:
-            return dletter_to_unc(of_dlg.FileName)
+            return coreutils.dletter_to_unc(of_dlg.FileName)
         return of_dlg.FileName
 
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
-    sf_dlg = SaveFileDialog()
+    sf_dlg = platform.Forms.SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
     else:
@@ -380,7 +368,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     # setting default filename
     sf_dlg.FileName = default_name
 
-    if sf_dlg.ShowDialog() == DialogResult.OK:
+    if sf_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
         if unc_paths:
-            return dletter_to_unc(sf_dlg.FileName)
+            return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName

@@ -48,6 +48,7 @@ def _setup_output_window():
     from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
     # create output window and assign handle
     out_window = ScriptOutput()
+    EXEC_PARAMS.window_handle = out_window
 
     # create output stream and set stdout to it
     # we're not opening the output window here.

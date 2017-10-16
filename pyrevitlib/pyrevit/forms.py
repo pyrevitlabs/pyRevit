@@ -48,6 +48,12 @@ class WPFWindow(Window):
         else:
             wpf.LoadComponent(self, StringReader(xaml_file))
 
+    def show(self):
+        return self.Show()
+
+    def show_dialog(self):
+        return self.ShowDialog()
+
     def set_image_source(self, element_name, image_file):
         wpf_element = getattr(self, element_name)
         if not op.exists(image_file):

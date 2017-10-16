@@ -3,15 +3,16 @@ __doc__ = 'Opens the central log for the current workshared project.'
 import os
 import os.path as op
 
-from rpw import doc
+from pyrevit.revitapi import DB, UI
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ModelPathUtils
+
+doc = __activedoc__
 
 
 if doc.GetWorksharingCentralModelPath():
     model_path = doc.GetWorksharingCentralModelPath()
-    centralPath = ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
+    centralPath = \
+        DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
     centralName = op.splitext(op.basename(centralPath))[0]
     slogFile = centralPath.replace('.rvt',
                                    '_backup\\{0}.slog'.format(centralName))
@@ -22,4 +23,4 @@ if doc.GetWorksharingCentralModelPath():
     else:
         os.system('start notepad "{0}"'.format(slogFile))
 else:
-    print("Model is not work-shared.")
+    UI.TaskDialog.Show('pyRevit', 'Model is not workshared.')

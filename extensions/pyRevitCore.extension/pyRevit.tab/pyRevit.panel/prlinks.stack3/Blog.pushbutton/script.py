@@ -3,5 +3,6 @@
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('http://eirannejad.github.io/pyRevit/')
+url = 'http://eirannejad.github.io/pyRevit/'
+from pyrevit import coreutils
+coreutils.open_url(url)

@@ -4,7 +4,7 @@
         Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0"
         ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center"
         UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None"
-        KeyDown="handleclick" MouseDown="handleclick" Activated="onactivated">
+        KeyDown="handleclick" MouseDown="handleclick">
     <Border BorderThickness="1" CornerRadius="15" BorderBrush="#dfdfdf">
         <Border.Background>
             <SolidColorBrush Color="#fff"/>

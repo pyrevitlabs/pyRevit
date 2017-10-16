@@ -2,5 +2,7 @@
 
 __context__ = 'zerodoc'
 
-from scriptutils import open_url
-open_url('https://pythonaec.slack.com/')
+
+url = 'https://pythonaec.slack.com/'
+from pyrevit import coreutils
+coreutils.open_url(url)

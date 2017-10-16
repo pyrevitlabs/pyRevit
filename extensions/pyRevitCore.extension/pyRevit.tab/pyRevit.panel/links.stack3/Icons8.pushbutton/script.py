@@ -3,5 +3,6 @@
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('https://icons8.com/web-app/new-icons/color')
+url = 'https://icons8.com/web-app/new-icons/color'
+from pyrevit import coreutils
+coreutils.open_url(url)
