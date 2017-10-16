@@ -1,8 +1,8 @@
 import json
 
 from pyrevit import HOST_APP
-from pyrevit.platform import List
-from pyrevit.revitapi import DB, UI
+from pyrevit.framework import List
+from pyrevit.revit import DB, UI
 from pyrevit.coreutils.logger import get_logger
 
 

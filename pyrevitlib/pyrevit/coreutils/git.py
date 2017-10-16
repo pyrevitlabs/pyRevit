@@ -10,8 +10,8 @@ import importlib
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
-from pyrevit.platform import clr
-from pyrevit.platform import DateTime, DateTimeOffset
+from pyrevit.framework import clr
+from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.addin import get_addin_dll_file
 

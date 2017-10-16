@@ -1,4 +1,4 @@
-from pyrevit.platform import clr
+from pyrevit.framework import clr
 from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE
 
 

@@ -1,4 +1,4 @@
-from pyrevit import platform
+from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import forms
 
@@ -266,49 +266,49 @@ class CommandSwitchWindow:
         self.Parent = self
         self.selected_switch = ''
         # Create window
-        self.my_window = platform.Windows.Window()
-        self.my_window.WindowStyle = platform.Windows.WindowStyle.None
+        self.my_window = framework.Windows.Window()
+        self.my_window.WindowStyle = framework.Windows.WindowStyle.None
         self.my_window.AllowsTransparency = True
         self.my_window.Background = None
         self.my_window.Title = 'Command Options'
         self.my_window.Width = 600
-        self.my_window.SizeToContent = platform.Windows.SizeToContent.Height
-        self.my_window.ResizeMode = platform.Windows.ResizeMode.CanMinimize
+        self.my_window.SizeToContent = framework.Windows.SizeToContent.Height
+        self.my_window.ResizeMode = framework.Windows.ResizeMode.CanMinimize
         self.my_window.WindowStartupLocation = \
-            platform.Windows.WindowStartupLocation.CenterScreen
+            framework.Windows.WindowStartupLocation.CenterScreen
         self.my_window.PreviewKeyDown += self.handle_esc_key
         self.my_window.MouseUp += self.handle_click
-        border = platform.Controls.Border()
-        border.CornerRadius = platform.Windows.CornerRadius(15)
+        border = framework.Controls.Border()
+        border.CornerRadius = framework.Windows.CornerRadius(15)
         border.Background = \
-            platform.Windows.Media.SolidColorBrush(
-                platform.Windows.Media.Color.FromArgb(220, 55, 50, 50)
+            framework.Windows.Media.SolidColorBrush(
+                framework.Windows.Media.Color.FromArgb(220, 55, 50, 50)
             )
         self.my_window.Content = border
 
         # Create StackPanel to Layout UI elements
-        stack_panel = platform.Controls.StackPanel()
-        stack_panel.Margin = platform.Windows.Thickness(5)
+        stack_panel = framework.Controls.StackPanel()
+        stack_panel.Margin = framework.Windows.Thickness(5)
         border.Child = stack_panel
 
-        label = platform.Controls.Label()
-        label.Foreground = platform.Windows.Media.Brushes.White
+        label = framework.Controls.Label()
+        label.Foreground = framework.Windows.Media.Brushes.White
         label.Content = message
-        label.Margin = platform.Windows.Thickness(2, 0, 0, 0)
+        label.Margin = framework.Windows.Thickness(2, 0, 0, 0)
         stack_panel.Children.Add(label)
 
         # Create WrapPanel for command options
-        self.button_list = platform.Controls.WrapPanel()
-        self.button_list.Margin = platform.Windows.Thickness(5)
+        self.button_list = framework.Controls.WrapPanel()
+        self.button_list.Margin = framework.Windows.Thickness(5)
         stack_panel.Children.Add(self.button_list)
 
         for switch in switches:
-            my_button = platform.Controls.Button()
-            my_button.BorderBrush = platform.Windows.Media.Brushes.Black
-            my_button.BorderThickness = platform.Windows.Thickness(0)
+            my_button = framework.Controls.Button()
+            my_button.BorderBrush = framework.Windows.Media.Brushes.Black
+            my_button.BorderThickness = framework.Windows.Thickness(0)
             my_button.Content = switch
-            my_button.Margin = platform.Windows.Thickness(5, 0, 5, 5)
-            my_button.Padding = platform.Windows.Thickness(5, 0, 5, 0)
+            my_button.Margin = framework.Windows.Thickness(5, 0, 5, 5)
+            my_button.Padding = framework.Windows.Thickness(5, 0, 5, 0)
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
@@ -318,7 +318,7 @@ class CommandSwitchWindow:
 
     # noinspection PyUnusedLocal
     def handle_esc_key(self, sender, args):
-        if args.Key == platform.Windows.Input.Key.Escape:
+        if args.Key == framework.Windows.Input.Key.Escape:
             self.my_window.Close()
 
     # noinspection PyUnusedLocal
@@ -332,14 +332,14 @@ class CommandSwitchWindow:
 
 
 def pick_folder():
-    fb_dlg = platform.Forms.FolderBrowserDialog()
-    if fb_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
+    fb_dlg = framework.Forms.FolderBrowserDialog()
+    if fb_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
         return fb_dlg.SelectedPath
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
-    of_dlg = platform.Forms.OpenFileDialog()
+    of_dlg = framework.Forms.OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
     else:
@@ -348,7 +348,7 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     of_dlg.Multiselect = multi_file
     if init_dir:
         of_dlg.InitialDirectory = init_dir
-    if of_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
+    if of_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
         if unc_paths:
             return coreutils.dletter_to_unc(of_dlg.FileName)
         return of_dlg.FileName
@@ -356,7 +356,7 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
-    sf_dlg = platform.Forms.SaveFileDialog()
+    sf_dlg = framework.Forms.SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
     else:
@@ -368,7 +368,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     # setting default filename
     sf_dlg.FileName = default_name
 
-    if sf_dlg.ShowDialog() == platform.Forms.DialogResult.OK:
+    if sf_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
         if unc_paths:
             return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName

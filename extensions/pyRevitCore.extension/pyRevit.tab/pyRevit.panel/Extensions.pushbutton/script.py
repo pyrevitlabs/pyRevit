@@ -1,6 +1,6 @@
 """Add or remove pyRevit extensions."""
 
-from pyrevit import platform
+from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import plugins
 from pyrevit import versionmgr
@@ -70,7 +70,7 @@ class ExtensionPackageListItem:
             self.Status = self.Version = '--'
 
 
-class InstallPackageMenuItem(platform.Controls.MenuItem):
+class InstallPackageMenuItem(framework.Controls.MenuItem):
     """Context menu item for package installation destinations
 
     Instances of this class will be set to the possible directory paths
@@ -155,7 +155,7 @@ class ExtensionsWindow(forms.WPFWindow):
         # Update the description and web link
         if ext_pkg_item.URL:
             self.ext_gitlink_t.Text = '({})'.format(ext_pkg_item.URL)
-            self.ext_gitlink_hl.NavigateUri = platform.Uri(ext_pkg_item.URL)
+            self.ext_gitlink_hl.NavigateUri = framework.Uri(ext_pkg_item.URL)
         else:
             self.ext_gitlink_t.Text = ''
 
@@ -163,7 +163,7 @@ class ExtensionsWindow(forms.WPFWindow):
         if ext_pkg_item.Author:
             self.ext_author_t.Text = ext_pkg_item.Author
             self.ext_authorlink_hl.NavigateUri = \
-                platform.Uri(ext_pkg_item.ext_pkg.author_profile)
+                framework.Uri(ext_pkg_item.ext_pkg.author_profile)
         else:
             self.ext_author_t.Text = ''
 
@@ -273,7 +273,7 @@ class ExtensionsWindow(forms.WPFWindow):
         sender.ContextMenu.IsEnabled = True
         sender.ContextMenu.PlacementTarget = sender
         sender.ContextMenu.Placement = \
-            platform.Controls.Primitives.PlacementMode.Bottom
+            framework.Controls.Primitives.PlacementMode.Bottom
         sender.ContextMenu.IsOpen = True
 
     # noinspection PyUnusedLocal

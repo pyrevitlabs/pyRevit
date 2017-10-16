@@ -1,7 +1,7 @@
 """Activates selection tool that picks a specific type of element."""
 
-from pyrevit.platform import List
-from pyrevit.revitapi import DB, UI
+from pyrevit.framework import List
+from pyrevit.revit import DB, UI
 from scriptutils.userinput import CommandSwitchWindow
 
 

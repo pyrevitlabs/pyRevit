@@ -3,7 +3,7 @@ __doc__ = 'Opens the central log for the current workshared project.'
 import os
 import os.path as op
 
-from pyrevit.revitapi import DB, UI
+from pyrevit.revit import DB, UI
 
 
 doc = __activedoc__

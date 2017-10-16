@@ -2,12 +2,12 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP
-from pyrevit import platform
+from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
 from pyrevit import forms
-from pyrevit import userinput
+from pyrevit.forms import userinput
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 from pyrevit.loader.addin import addinfiles
@@ -213,14 +213,14 @@ class SettingsWindow(forms.WPFWindow):
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard
         """
-        platform.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+        framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic
     def copy_envvar_id(self, sender, args):
         """Callback method for copying selected env var name to clipboard
         """
-        platform.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
+        framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
     # noinspection PyUnusedLocal
     # noinspection PyMethodMayBeStatic

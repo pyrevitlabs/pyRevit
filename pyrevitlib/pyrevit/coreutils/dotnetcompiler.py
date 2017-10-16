@@ -1,6 +1,6 @@
 from pyrevit import PyRevitException
-from pyrevit.platform import Array, Dictionary
-from pyrevit.platform import Compiler, CSharpCodeProvider
+from pyrevit.framework import Array, Dictionary
+from pyrevit.framework import Compiler, CSharpCodeProvider
 from pyrevit.coreutils.logger import get_logger
 
 

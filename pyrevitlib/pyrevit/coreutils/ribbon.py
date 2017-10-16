@@ -1,8 +1,8 @@
 from collections import OrderedDict
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
-from pyrevit.platform import Uri, Imaging
-from pyrevit.revitapi import UI, AdWindows
+from pyrevit.framework import Uri, Imaging
+from pyrevit.revit.api import UI, AdWindows
 from pyrevit.coreutils.logger import get_logger
 
 

@@ -8,7 +8,7 @@ import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
-from pyrevit.platform import IOException
+from pyrevit.framework import IOException
 
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata

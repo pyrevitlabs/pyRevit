@@ -3,8 +3,8 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
-from pyrevit.platform import AppDomain, Version
-from pyrevit.platform import Assembly, AssemblyName, AssemblyBuilderAccess
+from pyrevit.framework import AppDomain, Version
+from pyrevit.framework import Assembly, AssemblyName, AssemblyBuilderAccess
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import load_asm_file, find_loaded_asm, get_file_name,\
     make_canonical_name

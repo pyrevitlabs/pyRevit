@@ -1,9 +1,9 @@
 __doc__ = 'Lists specific elements from the model database.'
 
-from pyrevit.platform import List
-from pyrevit.revitapi import DB, UI
-from pyrevit import revitdb
-from pyrevit import userinput
+from pyrevit.framework import List
+from pyrevit.revit import DB, UI
+from pyrevit.revit import db
+from pyrevit.forms import userinput
 
 
 doc = __activedoc__
@@ -175,7 +175,7 @@ elif selected_switch == 'Viewport Types':
     vptypes = cl_views.OfClass(DB.ElementType).ToElements()
 
     for tp in vptypes:
-        wrapperd_tp = revitdb.wrap(tp)
+        wrapperd_tp = db.wrap(tp)
         if tp.FamilyName == 'Viewport':
             print('ID: {1} TYPE: {0}'.format(wrapperd_tp.name,
                                              str(tp.Id).ljust(10)))
@@ -185,7 +185,7 @@ elif selected_switch == 'Family Symbols':
     eltype_list = cl.OfClass(DB.ElementType).ToElements()
 
     for et in eltype_list:
-        wrapperd_et = revitdb.wrap(et)
+        wrapperd_et = db.wrap(et)
         print(wrapperd_et.name, et.FamilyName)
 
 elif selected_switch == 'Levels':

@@ -1,5 +1,5 @@
 from pyrevit import PyRevitException
-from pyrevit.revitapi import DB, UI
+from pyrevit.revit.api import DB, UI
 from Autodesk.Revit.DB import Element
 
 
@@ -12,7 +12,7 @@ class ElementWrapper(object):
                                    'derived from Element.')
 
     def __repr__(self):
-        return '<pyrevit.revitdb.{} % {} id:{}>' \
+        return '<pyrevit.revit.db.{} % {} id:{}>' \
                     .format(self.__class__.__name__,
                             self._wrapped_element.ToString(),
                             self._wrapped_element.Id)

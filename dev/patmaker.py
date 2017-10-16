@@ -13,7 +13,7 @@ from System.Collections.Generic import List
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import Transaction, FillPattern, FillPatternElement, FillGrid, \
                               FillPatternTarget, FillPatternHostOrientation, UV, \
-                              FilteredElementCollector
+                              FilteredElementCollector, FilledRegionType
 
 
 logger = get_logger(__name__)
@@ -481,6 +481,16 @@ class _RevitPattern:
         return pattern_desc
 
 
+def _make_filledregion(fillpattern_name, fillpattern_id):
+    filledregion_types = FilteredElementCollector(doc).OfClass(clr.GetClrType(FilledRegionType))
+    source_fr = filledregion_types.FirstElement()
+    with Transaction(doc, 'Create Filled Region') as t:
+        t.Start()
+        new_fr = source_fr.Duplicate(fillpattern_name)
+        new_fr.FillPatternId = fillpattern_id
+        t.Commit()
+
+
 def _export_pat(revit_pat, export_dir):
     pat_file_contents = revit_pat.get_pat_data()
     with open(op.join(export_dir, '{}.pat'.format(cleanup_filename(revit_pat.name))), 'w') as pat_file:
@@ -491,7 +501,7 @@ def _create_fill_pattern(revit_pat, create_filledregion=False):
     try:
         fillpat_element = revit_pat.create_pattern()
         if create_filledregion:
-            typeutils.make_filledregion(fillpat_element.Name, fillpat_element.Id)
+            _make_filledregion(fillpat_element.Name, fillpat_element.Id)
         return fillpat_element
     except Exception as create_pat_err:
         logger.error('Error creating pattern element. | {}'.format(create_pat_err))

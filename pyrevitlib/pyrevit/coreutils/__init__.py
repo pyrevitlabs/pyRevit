@@ -9,8 +9,8 @@ import shutil
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit import platform
-from pyrevit import revitapi
+from pyrevit import framework
+from pyrevit.revit import api
 
 
 DEFAULT_SEPARATOR = ';'
@@ -158,7 +158,7 @@ def cleanup_string(input_str):
 
 
 def get_revit_instance_count():
-    return len(list(platform.Process.GetProcessesByName(HOST_APP.proc_name)))
+    return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
 def run_process(proc, cwd=''):
@@ -216,7 +216,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
               None will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
-    for loaded_assembly in platform.AppDomain.CurrentDomain.GetAssemblies():
+    for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
             if asm_info.lower() in \
                     unicode(loaded_assembly.GetName().Name).lower():
@@ -236,12 +236,12 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
 
 def load_asm(asm_name):
-    return platform.AppDomain.CurrentDomain.Load(asm_name)
+    return framework.AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
     try:
-        return platform.Assembly.LoadFrom(asm_file)
+        return framework.Assembly.LoadFrom(asm_file)
     except Exception:
         return None
 
@@ -289,7 +289,7 @@ def reverse_html(input_html):
 
 
 # def check_internet_connection():
-#     client = platform.WebClient()
+#     client = framework.WebClient()
 #     try:
 #         client.OpenRead("http://www.google.com")
 #         return True
@@ -312,7 +312,7 @@ def reverse_html(input_html):
 def check_internet_connection(timeout=1000):
     def can_access(url_to_open):
         try:
-            client = platform.WebRequest.Create(url_to_open)
+            client = framework.WebRequest.Create(url_to_open)
             client.Method = "HEAD"
             client.Timeout = timeout
             response = client.GetResponse()
@@ -346,35 +346,35 @@ def read_source_file(source_file_path):
 
 def create_ext_command_attrs():
     regen_const_info = \
-        platform.clr.GetClrType(revitapi.Attributes.RegenerationAttribute) \
+        framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
            .GetConstructor(
-               platform.Array[platform.Type](
-                   (revitapi.Attributes.RegenerationOption,)
+               framework.Array[framework.Type](
+                   (api.Attributes.RegenerationOption,)
                    )
                )
 
     regen_attr_builder = \
-        platform.CustomAttributeBuilder(
+        framework.CustomAttributeBuilder(
             regen_const_info,
-            platform.Array[object](
-                (revitapi.Attributes.RegenerationOption.Manual,)
+            framework.Array[object](
+                (api.Attributes.RegenerationOption.Manual,)
                 )
             )
 
-    # add TransactionAttribute to platform.Type
+    # add TransactionAttribute to framework.Type
     trans_constructor_info = \
-        platform.clr.GetClrType(revitapi.Attributes.TransactionAttribute) \
+        framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
            .GetConstructor(
-               platform.Array[platform.Type](
-                   (revitapi.Attributes.TransactionMode,)
+               framework.Array[framework.Type](
+                   (api.Attributes.TransactionMode,)
                    )
                )
 
     trans_attrib_builder = \
-        platform.CustomAttributeBuilder(
+        framework.CustomAttributeBuilder(
             trans_constructor_info,
-            platform.Array[object](
-                (revitapi.Attributes.TransactionMode.Manual,)
+            framework.Array[object](
+                (api.Attributes.TransactionMode.Manual,)
                 )
             )
 
@@ -386,7 +386,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     type_builder = \
         modulebuilder.DefineType(
             class_name,
-            platform.TypeAttributes.Class | platform.TypeAttributes.Public,
+            framework.TypeAttributes.Class | framework.TypeAttributes.Public,
             type_class
             )
 
@@ -403,30 +403,30 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
             param_list.append(param)
 
     # call base constructor
-    ci = type_class.GetConstructor(platform.Array[platform.Type](type_list))
+    ci = type_class.GetConstructor(framework.Array[framework.Type](type_list))
     # create class constructor builder
     const_builder = \
-        type_builder.DefineConstructor(platform.MethodAttributes.Public,
-                                       platform.CallingConventions.Standard,
-                                       platform.Array[platform.Type](()))
+        type_builder.DefineConstructor(framework.MethodAttributes.Public,
+                                       framework.CallingConventions.Standard,
+                                       framework.Array[framework.Type](()))
     # add constructor parameters to stack
     gen = const_builder.GetILGenerator()
-    gen.Emit(platform.OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    gen.Emit(framework.OpCodes.Ldarg_0)  # Load "this" onto eval stack
 
     # add constructor input params to the stack
     for param_type, param in zip(type_list, param_list):
         if param_type == str:
-            gen.Emit(platform.OpCodes.Ldstr, param)
+            gen.Emit(framework.OpCodes.Ldstr, param)
         elif param_type == int:
-            gen.Emit(platform.OpCodes.Ldc_I4, param)
+            gen.Emit(framework.OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
-    gen.Emit(platform.OpCodes.Call, ci)
+    gen.Emit(framework.OpCodes.Call, ci)
     # Fill some space - this is how it is generated for equivalent C# code
-    gen.Emit(platform.OpCodes.Nop)
-    gen.Emit(platform.OpCodes.Nop)
-    gen.Emit(platform.OpCodes.Nop)
-    gen.Emit(platform.OpCodes.Ret)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Ret)
     type_builder.CreateType()
 
 
@@ -614,7 +614,7 @@ def reformat_string(orig_str, orig_format, new_format):
 
 
 def get_mapped_drives_dict():
-    searcher = platform.ManagementObjectSearcher(
+    searcher = framework.ManagementObjectSearcher(
         "root\\CIMV2",
         "SELECT * FROM Win32_MappedLogicalDisk"
         )

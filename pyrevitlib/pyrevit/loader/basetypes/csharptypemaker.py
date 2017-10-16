@@ -1,5 +1,5 @@
 from pyrevit import PyRevitException
-from pyrevit.revitapi import UI
+from pyrevit.revit import UI
 from pyrevit.coreutils import find_loaded_asm, read_source_file, get_str_hash
 from pyrevit.coreutils import create_type, load_asm_file,\
     create_ext_command_attrs

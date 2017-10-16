@@ -1,4 +1,4 @@
-from pyrevit.platform import clr
+from pyrevit.framework import clr
 
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')

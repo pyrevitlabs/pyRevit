@@ -1,5 +1,5 @@
 from pyrevit import PYREVIT_ADDON_NAME
-from pyrevit.platform import AppDomain
+from pyrevit.framework import AppDomain
 
 # root env var dictionary key.
 # must be the same in this file and pyrevit/loader/basetypes/envdict.cs

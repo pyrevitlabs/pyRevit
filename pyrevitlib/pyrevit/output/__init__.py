@@ -1,8 +1,8 @@
 from __future__ import print_function
 
 from pyrevit import EXEC_PARAMS
-from pyrevit.platform import AppDomain
-from pyrevit.platform import Drawing, Windows
+from pyrevit.framework import AppDomain
+from pyrevit.framework import Drawing, Windows
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import rvtprotocol, markdown, charts
 from pyrevit.coreutils.emoji import emojize

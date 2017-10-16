@@ -3,27 +3,27 @@ import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
-from pyrevit import platform
-from pyrevit.revitapi import UI
+from pyrevit import framework
+from pyrevit.revit import UI
 
 
 logger = get_logger(__name__)
 
 
-class WPFWindow(platform.Windows.Window):
+class WPFWindow(framework.Windows.Window):
     def __init__(self, xaml_file, literal_string=False):
         self.Parent = self
         if not literal_string:
             if not op.exists(xaml_file):
-                platform.wpf.LoadComponent(
+                framework.wpf.LoadComponent(
                     self,
                     os.path.join(EXEC_PARAMS.command_path,
                                  xaml_file)
                     )
             else:
-                platform.wpf.LoadComponent(self, xaml_file)
+                framework.wpf.LoadComponent(self, xaml_file)
         else:
-            platform.wpf.LoadComponent(self, platform.StringReader(xaml_file))
+            framework.wpf.LoadComponent(self, framework.StringReader(xaml_file))
 
     def show(self):
         return self.Show()
@@ -36,23 +36,23 @@ class WPFWindow(platform.Windows.Window):
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
             wpf_element.Source = \
-                platform.Imaging.BitmapImage(
-                    platform.Uri(os.path.join(EXEC_PARAMS.command_path,
+                framework.Imaging.BitmapImage(
+                    framework.Uri(os.path.join(EXEC_PARAMS.command_path,
                                               image_file))
                     )
         else:
             wpf_element.Source = \
-                platform.Imaging.BitmapImage(platform.Uri(image_file))
+                framework.Imaging.BitmapImage(framework.Uri(image_file))
 
     @staticmethod
     def hide_element(*wpf_elements):
         for wpf_element in wpf_elements:
-            wpf_element.Visibility = platform.Windows.Visibility.Collapsed
+            wpf_element.Visibility = framework.Windows.Visibility.Collapsed
 
     @staticmethod
     def show_element(*wpf_elements):
         for wpf_element in wpf_elements:
-            wpf_element.Visibility = platform.Windows.Visibility.Visible
+            wpf_element.Visibility = framework.Windows.Visibility.Visible
 
 
 class TemplatePromptBar(WPFWindow):

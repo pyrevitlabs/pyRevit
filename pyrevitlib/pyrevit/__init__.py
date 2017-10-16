@@ -41,12 +41,12 @@ ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
 PLATFORM_DLL_DIR = ADDIN_DIR
 
-# add the platform dll path to the search paths
+# add the framework dll path to the search paths
 sys.path.append(PLATFORM_DLL_DIR)
 
 
-from pyrevit.platform import Process, IOException
-from pyrevit.platform import Forms
+from pyrevit.framework import Process, IOException
+from pyrevit.framework import Forms
 
 
 # ------------------------------------------------------------------------------
