@@ -1,0 +1,16 @@
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\win32\x64\git2-15e1193.dll
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\win32\x64\git2-15e1193.pdb
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\win32\x86\git2-15e1193.dll
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\win32\x86\git2-15e1193.pdb
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\osx\libgit2-15e1193.dylib
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\lib\linux\x86_64\libgit2-15e1193.so
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\LibGit2Sharp.dll.config
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\pyrevitgitservices.exe.config
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\pyrevitgitservices.exe
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\pyrevitgitservices.pdb
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\LibGit2Sharp.dll
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\Mono.Options.dll
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\LibGit2Sharp.pdb
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\bin\Release\LibGit2Sharp.xml
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\obj\Release\pyrevitgitservices.exe
+C:\Users\16073\AppData\Roaming\pyRevit\pyRevit-v4\pyRevit\release\pyrevitgitservices\pyrevitgitservices\obj\Release\pyrevitgitservices.pdb

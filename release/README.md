@@ -7,15 +7,22 @@ Use these scripts to manually add or remove pyRevit from installed Revit version
 
 Use this script to manually update pyRevit. This is especially helpful when pyRevit core needs to be updated outside of Revit and when Revit is closed
 
-**pyRevitCloner**
+**pyrevitgitservices**
 
-This directory contains the source code (Visual studio solution) for a simple git cloner app that is part of
-the pyRevit installer.
- 
-**pyRevitCoreUpdater**
+This directory contains the source code (Visual studio solution) for a general purpose tool to support the git commands necessary to keep pyrevit updated or set to a specific version.
 
-When Revit is loaded, `pyRevitLoader.dll` is open by Revit instance and `git` can not overwrite this core dll to the newest version. This command is a generic tool to update any git repository to its tracked branch head. In case of pyRevit, it will update the pyRevit repository to the newest version.
- 
+``` batch
+REM Cloning pyRevit into a directory:
+pyrevitgitservices.exe clone <destination_path_to_clone_pyrevit_into>
+
+REM Updating an installed version of pyRevit to most recent:
+pyrevitgitservices.exe update <pyrevit_installed_path>
+
+REM Setting an installed version of pyRevit to a specific commit
+REM Techinically this is HARD rebasing the git repo to that commit
+pyrevitgitservices.exe setversion <pyrevit_installed_path> <target_commit_hash>
+```
+
 **setupmaker**
 
-This folder contains the InnoSetupMaker script to create the pyRevit installer 
+This folder contains the InnoSetupMaker script to create the pyRevit installer
