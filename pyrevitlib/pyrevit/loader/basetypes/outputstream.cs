@@ -21,6 +21,7 @@ namespace PyRevitBaseClasses
             _gui = new WeakReference<ScriptOutput>(null);
         }
 
+
         public ScriptOutputStream(ScriptOutput gui)
         {
             _outputBuffer = String.Empty;

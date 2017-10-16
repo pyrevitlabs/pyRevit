@@ -5,11 +5,11 @@ import clr
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 
-clr.AddReference('IronPython.Wpf')
 clr.AddReference('PresentationCore')
 clr.AddReferenceByPartialName("PresentationFramework")
 clr.AddReferenceByPartialName('System.Windows.Forms')
 clr.AddReferenceByPartialName('WindowsBase')
+clr.AddReference('IronPython.Wpf')
 
 # noinspection PyUnresolvedReferences
 import System.Windows
