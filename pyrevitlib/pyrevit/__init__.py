@@ -131,7 +131,7 @@ HOST_APP = _HostApplication()
 # ------------------------------------------------------------------------------
 class _ExecutorParams(object):
     def __init__(self):
-        self._overridewindow = None
+        pass
 
     @property   # read-only
     def engine_mgr(self):
@@ -162,16 +162,10 @@ class _ExecutorParams(object):
         else:
             return False
 
-    @property   # writeabe
+    @property   # read
     def window_handle(self):
-        if self.pyrevit_command and not self._overridewindow:
+        if self.pyrevit_command:
             return self.pyrevit_command.OutputWindow
-        else:
-            return self._overridewindow
-
-    @window_handle.setter
-    def window_handle(self, value):
-        self._overridewindow = value
 
     @property   # read-only
     def command_name(self):

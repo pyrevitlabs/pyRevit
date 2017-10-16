@@ -48,18 +48,16 @@ class PyRevitOutputWindow:
 
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
-        self.__win__ = window_handle
-        # self.__win__.UrlHandler = self._handle_protocol_url
-        self.cmd_uniq_name = self.__win__.OutputId
+        EXEC_PARAMS.window_handle.UrlHandler = self._handle_protocol_url
 
     @property
     def renderer(self):
-        return self.__win__.renderer
+        return EXEC_PARAMS.window_handle.renderer
 
     @staticmethod
     def _handle_protocol_url(url):
         """
-        This is a function assgined to the __win__.UrlHandler which
+        This is a function assgined to the ScriptOutput.UrlHandler which
          is a delegate. Everytime WebBrowser is asked to handle a link with
          a protocol other than http, it'll call this function.
         System.Windows.Forms.WebBrowser returns a string with misc stuff
@@ -85,7 +83,7 @@ class PyRevitOutputWindow:
         return self.renderer.Document.GetElementsByTagName('head')[0]
 
     def self_destruct(self, seconds):
-        self.__win__.SelfDestructTimer(seconds * 1000)
+        EXEC_PARAMS.window_handle.SelfDestructTimer(seconds * 1000)
 
     def inject_to_head(self, element_tag, element_contents, attribs=None):
         html_element = self.renderer.Document.CreateElement(element_tag)
@@ -110,13 +108,13 @@ class PyRevitOutputWindow:
         return self._get_head_element().InnerHtml
 
     def set_title(self, new_title):
-        self.__win__.Text = new_title
+        EXEC_PARAMS.window_handle.Text = new_title
 
     def set_width(self, width):
-        self.__win__.Width = width
+        EXEC_PARAMS.window_handle.Width = width
 
     def set_height(self, height):
-        self.__win__.Height = height
+        EXEC_PARAMS.window_handle.Height = height
 
     def set_font(self, font_family_name, font_size):
         # noinspection PyUnresolvedReferences
@@ -131,36 +129,36 @@ class PyRevitOutputWindow:
         self.set_height(height)
 
     def get_title(self):
-        return self.__win__.Text
+        return EXEC_PARAMS.window_handle.Text
 
     def get_width(self):
-        return self.__win__.Width
+        return EXEC_PARAMS.window_handle.Width
 
     def get_height(self):
-        return self.__win__.Height
+        return EXEC_PARAMS.window_handle.Height
 
     def close(self):
-        self.__win__.Close()
+        EXEC_PARAMS.window_handle.Close()
 
     def close_others(self, all_open_outputs=False):
         if all_open_outputs:
             output_wnds = PyRevitOutputMgr.get_all_outputs()
         else:
             output_wnds = PyRevitOutputMgr.\
-                get_all_outputs(command=self.cmd_uniq_name)
+                get_all_outputs(command=EXEC_PARAMS.window_handle.OutputId)
 
         for output_wnd in output_wnds:
-            if output_wnd != self.__win__:
+            if output_wnd != EXEC_PARAMS.window_handle:
                 output_wnd.Close()
 
     def hide(self):
-        self.__win__.Hide()
+        EXEC_PARAMS.window_handle.Hide()
 
     def show(self):
-        self.__win__.Show()
+        EXEC_PARAMS.window_handle.Show()
 
     def lock_size(self):
-        self.__win__.LockSize()
+        EXEC_PARAMS.window_handle.LockSize()
 
     def save_contents(self, dest_file):
         html = self.renderer.Document.Body.OuterHtml.encode('ascii', 'ignore')
@@ -173,10 +171,10 @@ class PyRevitOutputWindow:
         self.renderer.Navigate(dest_url, False)
 
     def update_progress(self, cur_value, max_value):
-        self.__win__.UpdateProgressBar(cur_value, max_value)
+        EXEC_PARAMS.window_handle.UpdateProgressBar(cur_value, max_value)
 
     def reset_progress(self):
-        self.__win__.UpdateProgressBar(0, 1)
+        EXEC_PARAMS.window_handle.UpdateProgressBar(0, 1)
 
     @staticmethod
     def emojize(md_str):

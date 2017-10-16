@@ -45,19 +45,20 @@ def _clear_running_engines():
 
 
 def _setup_output_window():
-    from pyrevit.coreutils.loadertypes import ScriptOutput, ScriptOutputStream
+    from pyrevit.coreutils import loadertypes
     # create output window and assign handle
-    out_window = ScriptOutput()
-    EXEC_PARAMS.window_handle = out_window
+    out_window = loadertypes.ScriptOutput()
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = ScriptOutputStream(out_window)
+    outstr = loadertypes.ScriptOutputStream(out_window)
     sys.stdout = outstr
     sys.stderr = outstr
     stdout_hndlr = get_stdout_hndlr()
     stdout_hndlr.stream = outstr
+
+    return out_window
 
 
 # Functions related to creating/loading a new pyRevit session
@@ -65,11 +66,6 @@ def _perform_onsessionload_ops():
     # clear the cached engines
     if not _clear_running_engines():
         logger.debug('No Engine Manager exists...')
-
-    # the loader dll addon, does not create an output window
-    # if an output window is not provided, create one
-    if EXEC_PARAMS.first_load:
-        _setup_output_window()
 
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
@@ -155,35 +151,36 @@ def load_session():
     Returns:
         None
     """
-    _setup_output_window()
-    print('testing')
-    # # initialize timer to measure load time
-    # timer = Timer()
-    #
-    # # perform pre-load tasks
-    # _perform_onsessionload_ops()
-    #
-    # # create a new session
-    # _new_session()
-    #
-    # # perform post-load tasks
-    # _perform_onsessionloadcomplete_ops()
-    #
-    # # log load time and thumbs-up :)
-    # endtime = timer.get_time()
-    # success_emoji = ':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'
-    # logger.info('Load time: {} seconds {}'.format(endtime, success_emoji))
-    #
-    # # if everything went well, self destruct
-    # try:
-    #     from pyrevit.output import get_output
-    #     output_window = get_output()
-    #     timeout = user_config.core.startuplogtimeout
-    #     if timeout > 0 and not loggers_have_errors():
-    #         output_window.self_destruct(timeout)
-    # except Exception as imp_err:
-    #     logger.error('Error setting up self_destruct on output window | {}'
-    #                  .format(imp_err))
+    # the loader dll addon, does not create an output window
+    # if an output window is not provided, create one
+    if EXEC_PARAMS.first_load:
+        output_window = _setup_output_window()
+
+    # initialize timer to measure load time
+    timer = Timer()
+
+    # perform pre-load tasks
+    _perform_onsessionload_ops()
+
+    # create a new session
+    _new_session()
+
+    # perform post-load tasks
+    _perform_onsessionloadcomplete_ops()
+
+    # log load time and thumbs-up :)
+    endtime = timer.get_time()
+    success_emoji = ':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'
+    logger.info('Load time: {} seconds {}'.format(endtime, success_emoji))
+
+    # if everything went well, self destruct
+    try:
+        timeout = user_config.core.startuplogtimeout
+        if timeout > 0 and not loggers_have_errors():
+            output_window.self_destruct(timeout)
+    except Exception as imp_err:
+        logger.error('Error setting up self_destruct on output window | {}'
+                     .format(imp_err))
 
 
 # Functions related to finding/executing a command or script in current session

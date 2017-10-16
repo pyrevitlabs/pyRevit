@@ -68,8 +68,6 @@ namespace PyRevitLoader
                 try
                 {
                     script.Execute(scope);
-                   
-                    _message = (scope.GetVariable("__message__") ?? "").ToString();
                     return (int)Result.Succeeded;
                 }
                 catch (SystemExitException)
@@ -131,9 +129,7 @@ namespace PyRevitLoader
         // Set up an IronPython environment
         public ScriptScope SetupEnvironment(ScriptEngine engine)
         {
-            //var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
-
-            var scope = engine.Runtime.CreateScope();
+            var scope = IronPython.Hosting.Python.CreateModule(engine, "__main__");
 
             SetupEnvironment(engine, scope);
 
@@ -142,9 +138,6 @@ namespace PyRevitLoader
 
         public void SetupEnvironment(ScriptEngine engine, ScriptScope scope)
         {
-            // these variables refer to the signature of the IExternalCommand.Execute method
-            scope.SetVariable("__message__", _message);
-
             // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
