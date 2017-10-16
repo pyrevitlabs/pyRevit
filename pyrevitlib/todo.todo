@@ -1,8 +1,10 @@
 Shared engine fixes:
-☐ Start testing tools and Fix Module level variables and other issues
+☐ Fix pyRevitDevTools
+☐ Fix pyRevitTools
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Start testing tools and Fix Module level variables and other issues @done(2017-10-15 17:43)
     ✔ Fix File logging @done(2017-09-17 12:45)
     ✔ Consolidate the env var dictionary access @done(2017-09-17 10:02)
     ✘ userconfig returns a global config. Test config access between cached engines @cancelled(2017-09-17 09:31)
