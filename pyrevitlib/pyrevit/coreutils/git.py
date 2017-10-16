@@ -20,20 +20,19 @@ logger = get_logger(__name__)
 
 
 GIT_LIB = 'LibGit2Sharp'
+libgit_dll = get_addin_dll_file(GIT_LIB)
+logger.debug('Loading dll: {}'.format(libgit_dll))
 
 
 if not EXEC_PARAMS.doc_mode:
     try:
-        clr.AddReferenceToFileAndPath(get_addin_dll_file(GIT_LIB))
-    except:
-        logger.error('Can not load %s module. '
+        clr.AddReferenceToFileAndPath(libgit_dll)
+        # public libgit module
+        libgit = importlib.import_module(GIT_LIB)
+    except Exception as load_err:
+        logger.error('Can not load {} module. '
                      'This module is necessary for getting pyRevit version '
-                     'and staying updated.' % GIT_LIB)
-
-
-if not EXEC_PARAMS.doc_mode:
-    # public libgit module
-    libgit = importlib.import_module(GIT_LIB)
+                     'and staying updated. | {}'.format(GIT_LIB, load_err))
 
 
 class PyRevitGitAuthenticationError(PyRevitException):

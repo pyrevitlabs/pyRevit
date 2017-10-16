@@ -1,8 +1,8 @@
 Shared engine fixes:
 ☐ Fix pyRevitDevTools
 ☐ Fix pyRevitTools
-☐ Fix IronPython.Wpf import
-☐ Fix imports in pyrevit.forms module
+✔ Fix IronPython.Wpf import @done(2017-10-15 22:23)
+✔ Fix imports in pyrevit.forms module @done(2017-10-15 22:23)
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:

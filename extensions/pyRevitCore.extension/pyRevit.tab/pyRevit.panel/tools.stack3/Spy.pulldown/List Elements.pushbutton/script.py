@@ -1,9 +1,9 @@
 __doc__ = 'Lists specific elements from the model database.'
 
-from pyrevit import userinput
 from pyrevit.platform import List
 from pyrevit.revitapi import DB, UI
 from pyrevit import revitdb
+from pyrevit import userinput
 
 
 doc = __activedoc__

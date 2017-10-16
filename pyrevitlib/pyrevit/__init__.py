@@ -1,21 +1,52 @@
-"""
-pyRevit root level config for all pyrevit sub-modules.
+"""pyRevit root level config for all pyrevit sub-modules.
 Sub-modules handle their specific configuration internally.
-
 """
+
+PYREVIT_ADDON_NAME = 'pyRevit'
+VERSION_MAJOR = 4
+VERSION_MINOR = 4
 
 import sys
 import os
 import os.path as op
 import traceback
 
+
+# ------------------------------------------------------------------------------
+# config environment paths
+# ------------------------------------------------------------------------------
+# main pyrevit repo folder
+try:
+    # 3 steps back for <home>/Lib/pyrevit
+    HOME_DIR = op.dirname(op.dirname(op.dirname(__file__)))
+except NameError:
+    raise Exception('Critical Error. Can not find home directory.')
+
+# default extensions directory
+EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
+
+# main pyrevit lib folders
+MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
+PYTHON_LIB_DIR = op.join(HOME_DIR, 'pylib')
+PYTHON_LIB_SITEPKGS_DIR = op.join(PYTHON_LIB_DIR, 'site-packages')
+MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
+
+PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
+
+# loader directory
+LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
+
+# addin directory
+ADDIN_DIR = op.join(LOADER_DIR, 'addin')
+ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
+PLATFORM_DLL_DIR = ADDIN_DIR
+
+# add the platform dll path to the search paths
+sys.path.append(PLATFORM_DLL_DIR)
+
+
 from pyrevit.platform import Process, IOException
 from pyrevit.platform import Forms
-
-
-PYREVIT_ADDON_NAME = 'pyRevit'
-VERSION_MAJOR = 4
-VERSION_MINOR = 4
 
 
 # ------------------------------------------------------------------------------
@@ -50,7 +81,7 @@ class PyRevitIOError(PyRevitException):
 
 
 # ------------------------------------------------------------------------------
-# testing for availability of __revit__ just in case and collect host info
+# Wrapper for __revit__ builtin parameter set in scope by C# Script Executor
 # ------------------------------------------------------------------------------
 class _HostApplication:
     """Contains current host version and provides comparison functions."""
@@ -127,7 +158,7 @@ HOST_APP = _HostApplication()
 
 
 # ------------------------------------------------------------------------------
-# Testing values of builtin parameters set in scope by C# Script Executor.
+# Wrapper to access builtin parameters set in scope by C# Script Executor
 # ------------------------------------------------------------------------------
 class _ExecutorParams(object):
     def __init__(self):
@@ -210,29 +241,8 @@ EXEC_PARAMS = _ExecutorParams()
 
 
 # ------------------------------------------------------------------------------
-# config environment info
+# config user environment paths
 # ------------------------------------------------------------------------------
-def _find_home_directory():
-    """Return the pyRevitLoader.py full directory address"""
-    try:
-        # 3 steps back for <home>/Lib/pyrevit
-        return op.dirname(op.dirname(op.dirname(__file__)))
-    except NameError:
-        raise Exception('Critical Error. Can not find home directory.')
-
-
-# main pyrevit repo folder
-HOME_DIR = _find_home_directory()
-
-# main pyrevit lib folders
-MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
-PYTHON_LIB_DIR = op.join(HOME_DIR, 'pylib')
-PYTHON_LIB_SITEPKGS_DIR = op.join(PYTHON_LIB_DIR, 'site-packages')
-MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
-
-# default extension extensions folder
-EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
-
 # user env paths
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
@@ -256,6 +266,9 @@ for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
                                    .format(pyrvt_app_dir, err))
 
 
+# ------------------------------------------------------------------------------
+# config template filenames
+# ------------------------------------------------------------------------------
 if EXEC_PARAMS.doc_mode:
     PYREVIT_FILE_PREFIX_UNIVERSAL = None
     PYREVIT_FILE_PREFIX = None

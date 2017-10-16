@@ -14,7 +14,7 @@ import os.path as op
 sys.path.append(op.dirname(op.dirname(op.dirname(op.dirname(__file__)))))
 
 # now pyrevit can be imported
-from pyrevit.loader.sessionmgr import load_session
+from pyrevit.loader import sessionmgr
 
 # ask sessionmgr to start a new session
-load_session()
+sessionmgr.load_session()

@@ -3,16 +3,15 @@ import os.path as op
 import sys
 
 from pyrevit import PyRevitException, EXEC_PARAMS
+from pyrevit import LOADER_DIR, ADDIN_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
     load_asm_file, calculate_dir_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 import pyrevit.coreutils.appdata as appdata
 
-from pyrevit.loader import LOADER_DIR
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
-from pyrevit.loader.addin import ADDIN_DIR, ADDIN_RESOURCE_DIR,\
-    get_addin_dll_file
+from pyrevit.loader.addin import get_addin_dll_file
 
 
 logger = get_logger(__name__)

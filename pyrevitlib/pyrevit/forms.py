@@ -1,52 +1,29 @@
 import os
 import os.path as op
-import clr
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
-
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
-clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('WindowsBase')
-clr.AddReference('IronPython.Wpf')
-
-# noinspection PyUnresolvedReferences
-import System.Windows
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-from System.Windows import Window
-# noinspection PyUnresolvedReferences
-from System.Windows.Media import SolidColorBrush, Color
-# noinspection PyUnresolvedReferences
-from System.Windows.Media.Imaging import BitmapImage
-# noinspection PyUnresolvedReferences
-from System.Windows.Forms import Screen
-# noinspection PyUnresolvedReferences
-from System.IO import StringReader
-# noinspection PyUnresolvedReferences
-import wpf
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import TaskDialog, TaskDialogCommonButtons, \
-                              TaskDialogResult
+from pyrevit import platform
+from pyrevit.revitapi import UI
 
 
 logger = get_logger(__name__)
 
 
-class WPFWindow(Window):
+class WPFWindow(platform.Windows.Window):
     def __init__(self, xaml_file, literal_string=False):
         self.Parent = self
         if not literal_string:
             if not op.exists(xaml_file):
-                wpf.LoadComponent(self, os.path.join(EXEC_PARAMS.command_path,
-                                                     xaml_file))
+                platform.wpf.LoadComponent(
+                    self,
+                    os.path.join(EXEC_PARAMS.command_path,
+                                 xaml_file)
+                    )
             else:
-                wpf.LoadComponent(self, xaml_file)
+                platform.wpf.LoadComponent(self, xaml_file)
         else:
-            wpf.LoadComponent(self, StringReader(xaml_file))
+            platform.wpf.LoadComponent(self, platform.StringReader(xaml_file))
 
     def show(self):
         return self.Show()
@@ -59,20 +36,23 @@ class WPFWindow(Window):
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
             wpf_element.Source = \
-                BitmapImage(Uri(os.path.join(EXEC_PARAMS.command_path,
-                                             image_file)))
+                platform.Imaging.BitmapImage(
+                    platform.Uri(os.path.join(EXEC_PARAMS.command_path,
+                                              image_file))
+                    )
         else:
-            wpf_element.Source = BitmapImage(Uri(image_file))
+            wpf_element.Source = \
+                platform.Imaging.BitmapImage(platform.Uri(image_file))
 
     @staticmethod
     def hide_element(*wpf_elements):
         for wpf_element in wpf_elements:
-            wpf_element.Visibility = System.Windows.Visibility.Collapsed
+            wpf_element.Visibility = platform.Windows.Visibility.Collapsed
 
     @staticmethod
     def show_element(*wpf_elements):
         for wpf_element in wpf_elements:
-            wpf_element.Visibility = System.Windows.Visibility.Visible
+            wpf_element.Visibility = platform.Windows.Visibility.Visible
 
 
 class TemplatePromptBar(WPFWindow):
@@ -85,9 +65,9 @@ class TemplatePromptBar(WPFWindow):
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Grid Background="#FFEA9F00">
             <TextBlock x:Name="message_tb"
-                   TextWrapping="Wrap" Text="TextBlock"
-                   TextAlignment="Center" VerticalAlignment="Center"
-                   Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+                       TextWrapping="Wrap" Text="TextBlock"
+                       TextAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
         </Grid>
     </Window>
     """
@@ -118,25 +98,25 @@ class WarningBar(TemplatePromptBar):
 
 
 def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
-    buttons = TaskDialogCommonButtons.Ok
+    buttons = UI.TaskDialogCommonButtons.Ok
 
     if any([cancel, yes, no, retry]):
-        buttons = TaskDialogCommonButtons.None
+        buttons = UI.TaskDialogCommonButtons.None
 
         if cancel:
-            buttons |= TaskDialogCommonButtons.Cancel
+            buttons |= UI.TaskDialogCommonButtons.Cancel
         if yes:
-            buttons |= TaskDialogCommonButtons.Yes
+            buttons |= UI.TaskDialogCommonButtons.Yes
         if no:
-            buttons |= TaskDialogCommonButtons.No
+            buttons |= UI.TaskDialogCommonButtons.No
         if retry:
-            buttons |= TaskDialogCommonButtons.Retry
+            buttons |= UI.TaskDialogCommonButtons.Retry
 
-    res = TaskDialog.Show(title, msg, buttons)
+    res = UI.TaskDialog.Show(title, msg, buttons)
 
-    if res == TaskDialogResult.Ok \
-        or res == TaskDialogResult.Yes \
-        or res == TaskDialogResult.Retry:
+    if res == UI.TaskDialogResult.Ok \
+        or res == UI.TaskDialogResult.Yes \
+        or res == UI.TaskDialogResult.Retry:
         return True
     else:
         return False

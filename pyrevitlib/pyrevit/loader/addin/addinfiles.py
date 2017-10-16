@@ -1,10 +1,9 @@
 import os
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
+from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, ADDIN_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import LOADER_ADDON_NAMESPACE
-from pyrevit.loader.basetypes import ADDIN_DIR
 
 
 logger = get_logger(__name__)
