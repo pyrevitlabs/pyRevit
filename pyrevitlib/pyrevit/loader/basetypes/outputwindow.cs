@@ -92,10 +92,10 @@ namespace PyRevitBaseClasses
 
         public void AppendToOutputList()
         {
-            var outputList = (List<object>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
+            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
             if (outputList == null)
             {
-                var newOutputList = new List<object>();
+                var newOutputList = new List<ScriptOutput>();
                 newOutputList.Add(this);
 
                 AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
@@ -109,17 +109,23 @@ namespace PyRevitBaseClasses
 
         public void RemoveFromOutputList()
         {
-            var outputList = (List<object>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
+            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
             if (outputList == null)
             {
                 return;
             }
             else
             {
-                if (outputList.Contains(this))
+                var newOutputList = new List<ScriptOutput>();
+                foreach(ScriptOutput outputWindow in outputList)
                 {
-                    outputList.Remove(this);
+                    if (outputWindow != this)
+                        newOutputList.Add(outputWindow);
                 }
+
+                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
+
+                outputList = null;
             }
         }
 

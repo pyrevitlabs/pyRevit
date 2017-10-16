@@ -23,6 +23,11 @@ class PyRevitOutputMgr:
         return list(AppDomain.CurrentDomain.GetData(output_list_entryname))
 
     @staticmethod
+    def _reset_outputwindow_cache():
+        output_list_entryname = EnvDictionaryKeys.outputWindows
+        return AppDomain.CurrentDomain.SetData(output_list_entryname, None)
+
+    @staticmethod
     def get_all_outputs(command=None):
         if command:
             return [x for x in PyRevitOutputMgr._get_all_open_output_windows()
@@ -35,6 +40,8 @@ class PyRevitOutputMgr:
         for output_wnd in PyRevitOutputMgr._get_all_open_output_windows():
             output_wnd.Close()
 
+        _reset_outputwindow_cache()
+
 
 class PyRevitOutputWindow:
     """Wrapper to interact with the output output window."""
@@ -42,7 +49,7 @@ class PyRevitOutputWindow:
     def __init__(self, window_handle):
         """Sets up the wrapper from the input dot net window handler"""
         self.__win__ = window_handle
-        self.__win__.UrlHandler = self._handle_protocol_url
+        # self.__win__.UrlHandler = self._handle_protocol_url
         self.cmd_uniq_name = self.__win__.OutputId
 
     @property

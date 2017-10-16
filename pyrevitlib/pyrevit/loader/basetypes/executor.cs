@@ -35,7 +35,7 @@ namespace PyRevitBaseClasses
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
             var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
-            compiler_options.ModuleName = pyrvtCmd.CommandUniqueId;
+            //compiler_options.ModuleName = "__main__";
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
             var errors = new ErrorReporter();
@@ -79,6 +79,9 @@ namespace PyRevitBaseClasses
             }
             finally
             {
+                scope = null;
+                script = null;
+
                 engineMgr.CleanupEngine(engine);
             }
         }
