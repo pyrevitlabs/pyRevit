@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Families Quickcheck - non-exhaustive quickcheck to detect corrupt Revit families.
-Last family id before corruption error is most likely the suspect.
+Families Quickcheck - non-exhaustive quickcheck to detect corrupt Revit
+families. Last family id before corruption error is most likely the suspect.
 
 Copyright (c) 2017 Frederic Beaupere
 github.com/frederic-beaupere
@@ -16,7 +16,8 @@ __title__ = 'Families Quickcheck'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Families Quickcheck - non-exhaustive quickcheck to detect corrupt families.'
+__doc__ = 'Families Quickcheck - '\
+          'non-exhaustive quickcheck to detect corrupt families.'
 
 import Autodesk
 from Autodesk.Revit.DB import FilteredElementCollector as Fec
