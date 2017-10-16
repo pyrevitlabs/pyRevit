@@ -171,7 +171,7 @@
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameters in scripts, Reload is required)</TextBlock>
+                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameter in scripts (__beta__ = True), Reload is required)</TextBlock>
                                 </WrapPanel>
                                 <WrapPanel Margin="10,5,0,5">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
@@ -271,26 +271,6 @@
                                 <TextBox x:Name="usagelogserver_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
                             </DockPanel>
                         </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Development:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
-                            <WrapPanel Margin="10,10,0,10">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameter in scripts (__beta__ = True), Reload is required)</TextBlock>
-                            </WrapPanel>
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </Expander>
-            <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-            <Expander Header="Runtime Compiler:" IsExpanded="False" Margin="10px">
-                <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
-                                                                                  to machine code. These settings affect compiler behaviour.</TextBlock>
-                    <StackPanel>
-                        <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
-                        <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands (Not Yet Implemented)</CheckBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
