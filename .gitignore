@@ -22,8 +22,9 @@ lib/*
 pyrevitlib/pyrevit/loader/addin/Source/\.vs/
 pyrevitlib/pyrevit/loader/addin/Source/pyRevitLoader/bin/
 pyrevitlib/pyrevit/loader/addin/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
 pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/\.vs/
+pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/bin/
+pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
 
 # ignore sphinx build files
 docs/_*
