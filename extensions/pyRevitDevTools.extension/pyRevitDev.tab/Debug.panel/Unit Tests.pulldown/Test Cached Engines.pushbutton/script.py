@@ -1,3 +1,6 @@
+from pyrevit.output import PyRevitOutputMgr
+
+
 __context__ = 'zerodoc'
 
 
@@ -9,6 +12,4 @@ print('Running in reused engine?\n{}'
       .format('Yes' if __cachedengine__ else 'No'))
 
 
-from pyrevit.output import PyRevitOutputMgr
-
-print PyRevitOutputMgr.get_all_outputs()
+print(PyRevitOutputMgr.get_all_outputs())

@@ -207,7 +207,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
     Args:
         asm_info (str): name or location of the assembly
-        by_partial_name (bool): returns all assemblies that include the asm_info
+        by_partial_name (bool): returns all assemblies that has the asm_info
         by_location (bool): returns all assemblies matching location
 
     Returns:
@@ -635,3 +635,7 @@ def unc_to_dletter(unc_path):
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
             return unc_path.replace(server_path, mapped_drive)
+
+
+def clipboard_copy(string_to_copy):
+    framework.Clipboard.SetText(string_to_copy)

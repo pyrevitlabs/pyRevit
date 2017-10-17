@@ -1,7 +1,9 @@
-from scriptutils import open_url
+"""Open JSON Formatter website."""
+
+from pyrevit import coreutils
 
 
 __context__ = 'zerodoc'
 
 
-open_url('http://www.jsoneditoronline.org/')
+coreutils.open_url('http://www.jsoneditoronline.org/')

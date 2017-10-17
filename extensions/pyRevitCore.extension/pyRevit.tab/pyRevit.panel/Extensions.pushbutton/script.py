@@ -3,7 +3,6 @@
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import plugins
-from pyrevit import versionmgr
 from pyrevit import script
 from pyrevit import forms
 
@@ -43,9 +42,11 @@ class ExtensionPackageListItem:
         self.ext_pkg = extension_package
         # setting up pretty type name that shows up on the list
         self.Type = 'Unknown'
-        if self.ext_pkg.type == plugins.extpackages.ExtensionTypes.LIB_EXTENSION:
+        if self.ext_pkg.type == \
+                plugins.extpackages.ExtensionTypes.LIB_EXTENSION:
             self.Type = 'IronPython Library'
-        elif self.ext_pkg.type == plugins.extpackages.ExtensionTypes.UI_EXTENSION:
+        elif self.ext_pkg.type == \
+                plugins.extpackages.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
         # setting up other list data
@@ -119,7 +120,8 @@ class ExtensionsWindow(forms.WPFWindow):
         for ext_dir in ext_dirs_list:
             ext_dir_install_menu_item = InstallPackageMenuItem()
             ext_dir_install_menu_item.install_path = ext_dir
-            ext_dir_install_menu_item.Header = 'Install to:  {}'.format(ext_dir)
+            ext_dir_install_menu_item.Header = \
+                'Install to:  {}'.format(ext_dir)
             ext_dir_install_menu_item.Click += self.install_ext_pkg
             self.ext_install_b.ContextMenu.AddChild(ext_dir_install_menu_item)
 
@@ -171,7 +173,8 @@ class ExtensionsWindow(forms.WPFWindow):
         if ext_pkg_item.ext_pkg.is_installed:
             self.show_element(self.ext_installed_l)
             self.ext_installed_l.Content = \
-                'Installed under:\n{}'.format(ext_pkg_item.ext_pkg.is_installed)
+                'Installed under:\n{}' \
+                .format(ext_pkg_item.ext_pkg.is_installed)
         else:
             self.hide_element(self.ext_installed_l)
 
@@ -232,12 +235,10 @@ class ExtensionsWindow(forms.WPFWindow):
             # Set current username and pass for the private repo
             self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
             self.repopassword_tb.Text = ext_pkg_item.ext_pkg.config.password
-        except:
+        except Exception:
             self.privaterepo_cb.IsChecked = False
             self.repopassword_tb.Text = self.repousername_tb.Text = ''
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def update_ext_info(self, sender, args):
         """Callback for updating info panel on package selection change
         """
@@ -245,15 +246,11 @@ class ExtensionsWindow(forms.WPFWindow):
         self._update_ext_action_buttons(self.selected_pkg)
         self._update_ext_settings_panel(self.selected_pkg)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handle_url_click(self, sender, args):
         """Callback for handling click on package website url
         """
         coreutils.open_url(sender.NavigateUri.AbsoluteUri)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handle_private_repo(self, sender, args):
         """Callback for updating private status of a package
         """
@@ -262,8 +259,6 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.accountcreds_dp.IsEnabled = False
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handle_install_button_popup(self, sender, args):
         """Callback for Install package destination context menu
 
@@ -276,8 +271,6 @@ class ExtensionsWindow(forms.WPFWindow):
             framework.Controls.Primitives.PlacementMode.Bottom
         sender.ContextMenu.IsOpen = True
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def save_pkg_settings(self, sender, args):
         """Reads package configuration from UI and saves to package config
         """
@@ -295,8 +288,6 @@ class ExtensionsWindow(forms.WPFWindow):
             logger.error('Error saving extension package settings.'
                          ' | {}'.format(pkg_sett_save_err))
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def install_ext_pkg(self, sender, args):
         """Installs the selected extension, then reloads pyRevit
         """
@@ -311,8 +302,6 @@ class ExtensionsWindow(forms.WPFWindow):
                          ' | {}'.format(pkg_install_err))
             self.Close()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def toggle_ext_pkg(self, sender, args):
         """Enables/Disables the selected exension, then reloads pyRevit
         """
@@ -321,8 +310,6 @@ class ExtensionsWindow(forms.WPFWindow):
         self.Close()
         call_reload()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def remove_ext_pkg(self, sender, args):
         """Removes the selected exension, then reloads pyRevit
         """
@@ -348,6 +335,8 @@ def open_ext_dirs_in_explorer(ext_dirs_list):
 
 
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
+
+
 def call_reload():
     from pyrevit.loader.sessionmgr import execute_command
     execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
@@ -357,8 +346,7 @@ def call_reload():
 # if Shift-Click on the tool, opens the extension package destinations in
 # windows explorer
 # otherwise, will show the Extension manager user interface
-# noinspection PyUnresolvedReferences
 if __shiftclick__:
-	open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
+    open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
 else:
-	ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()
+    ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()

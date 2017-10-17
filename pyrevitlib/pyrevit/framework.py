@@ -35,6 +35,7 @@ from System.Collections.Generic import List, Dictionary
 from System import Drawing
 from System import Windows
 from System.Windows import Forms
+from System.Windows.Forms import Clipboard
 from System.Windows import Controls
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 

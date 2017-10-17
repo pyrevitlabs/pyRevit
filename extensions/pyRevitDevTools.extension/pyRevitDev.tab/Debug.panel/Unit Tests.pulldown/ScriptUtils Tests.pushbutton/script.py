@@ -1,4 +1,4 @@
-"""Unit Tests for scriptutils module"""
+"""Unit Tests for scriptutils module."""
 
 
 __context__ = 'zerodoc'

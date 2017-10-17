@@ -1,5 +1,5 @@
-from pyrevit.coreutils.logger import get_logger
-logger = get_logger(__commandname__)
+from pyrevit.coreutils import logger
+slogger = logger.get_logger(__commandname__)
 
 
 __context__ = 'zerodoc'
@@ -12,5 +12,5 @@ if __forceddebugmode__:
     print('Ctrl-Clicked button')
 
 
-logger.debug('Debug message')
+slogger.debug('Debug message')
 print('Try different Modifier keys with this button to check results.')

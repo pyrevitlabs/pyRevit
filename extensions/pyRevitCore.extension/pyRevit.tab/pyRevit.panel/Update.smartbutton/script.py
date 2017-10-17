@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from time import sleep
 
 from pyrevit import HOME_DIR
 from pyrevit import coreutils
@@ -69,19 +68,19 @@ def _update_repo(repo_info):
         logger.info(':inbox_tray: Successfully updated: {} to {}'
                     .format(upped_repo_info.name,
                             upped_repo_info.last_commit_hash[:7]))
-    except:
+    except Exception:
         logger.info('Can not update repo: {}  (Run in debug to see why)'
                     .format(repo_info.name))
 
 
-# noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.core.checkupdates and _check_for_updates():
-            ui_button_cmp.set_icon(has_update_icon, icon_size=ribbon.ICON_LARGE)
+            ui_button_cmp.set_icon(has_update_icon,
+                                   icon_size=ribbon.ICON_LARGE)
         return True
-    except:
+    except Exception:
         return False
 
 

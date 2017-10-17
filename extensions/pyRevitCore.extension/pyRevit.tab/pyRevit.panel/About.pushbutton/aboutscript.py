@@ -37,36 +37,25 @@ class AboutWindow(forms.WPFWindow):
                                      .format(pyrvt_ver.get_formatted())
             if pyrvt_repo.branch != 'master':
                 self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
-        except:
+        except Exception:
             self.version_info.Text = ''
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def opengithubrepopage(self, sender, args):
         coreutils.open_url('https://github.com/eirannejad/pyRevit')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def opengithubcommits(self, sender, args):
-        coreutils.open_url('https://github.com/eirannejad/pyRevit/commits/master')
+        coreutils.open_url(
+            'https://github.com/eirannejad/pyRevit/commits/master')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def openrevisionhistory(self, sender, args):
         coreutils.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
         coreutils.open_url('http://eirannejad.github.io/pyRevit/credits/')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def openkeybaseprofile(self, sender, args):
         coreutils.open_url('https://keybase.io/ein')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handleclick(self, sender, args):
         self.Close()
 

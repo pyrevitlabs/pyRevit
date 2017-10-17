@@ -1,4 +1,4 @@
-"""Unit Tests for pyRevit"""
+"""Unit Tests for pyRevit."""
 
 import pyrevit.unittests as prtests
 

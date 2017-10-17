@@ -7,9 +7,7 @@ from scriptutils import this_script
 
 clr.AddReference('System')
 clr.AddReference('IronPython')
-# noinspection PyUnresolvedReferences
 from System.Collections.Generic import List
-# noinspection PyUnresolvedReferences
 import IronPython.Hosting
 import IronPython.Runtime
 

@@ -182,10 +182,9 @@ class SettingsWindow(forms.WPFWindow):
         new_states = {rvt_ver: checkbox.IsChecked
                       for rvt_ver, checkbox in self._addinfiles_cboxes.items()}
         new_states.pop(HOST_APP.version)
-        addinfiles.set_addinfiles_state(new_states, allusers=self.is_pyrevit_allusers)
+        addinfiles.set_addinfiles_state(new_states,
+                                        allusers=self.is_pyrevit_allusers)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def resetreportinglevel(self, sender, args):
         """Callback method for resetting reporting (logging) levels to defaults
         """
@@ -194,36 +193,26 @@ class SettingsWindow(forms.WPFWindow):
         self.debug_rb.IsChecked = False
         self.filelogging_cb.IsChecked = False
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def reset_requiredhostbuild(self, sender, args):
         """Callback method for resetting requried host version to current
         """
         self.requiredhostbuild_tb.Text = HOST_APP.build
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def resetcache(self, sender, args):
         """Callback method for resetting cache config to defaults
         """
         self.bincache_rb.IsChecked = True
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard
         """
         framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def copy_envvar_id(self, sender, args):
         """Callback method for copying selected env var name to clipboard
         """
         framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def addfolder(self, sender, args):
         """Callback method for adding extension folder to configs and list
         """
@@ -239,8 +228,6 @@ class SettingsWindow(forms.WPFWindow):
         else:
             self.extfolders_lb.ItemsSource = [new_path]
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def removefolder(self, sender, args):
         """Callback method for removing extension folder from configs and list
         """
@@ -250,15 +237,11 @@ class SettingsWindow(forms.WPFWindow):
             uniq_items.remove(selected_path)
             self.extfolders_lb.ItemsSource = list(uniq_items)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def removeallfolders(self, sender, args):
         """Callback method for removing all extension folders
         """
         self.extfolders_lb.ItemsSource = []
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def pick_usagelog_folder(self, sender, args):
         """Callback method for picking destination folder for usage log files
         """
@@ -267,15 +250,11 @@ class SettingsWindow(forms.WPFWindow):
         if new_path:
             self.usagelogfile_tb.Text = os.path.normpath(new_path)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def reset_usagelog_folder(self, sender, args):
         """Callback method for resetting usage log file folder to defaults
         """
         self.usagelogfile_tb.Text = usagelog.get_default_usage_logfilepath()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def open_usagelog_folder(self, sender, args):
         """Callback method for opening destination folder for usage log files
         """
@@ -283,8 +262,6 @@ class SettingsWindow(forms.WPFWindow):
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def savesettings(self, sender, args):
         """Callback method for saving pyRevit settings
         """
@@ -336,8 +313,6 @@ class SettingsWindow(forms.WPFWindow):
         self.update_addinfiles()
         self.Close()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def savesettingsandreload(self, sender, args):
         """Callback method for saving pyRevit settings and reloading
         """
@@ -352,7 +327,6 @@ class SettingsWindow(forms.WPFWindow):
 # windows explorer
 # otherwise, will show the Settings user interface
 
-# noinspection PyUnresolvedReferences
 if __shiftclick__:
     coreutils.show_file_in_explorer(user_config.config_file)
 else:

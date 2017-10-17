@@ -1,4 +1,4 @@
-"""Unit Tests for pyrevit.coreutils module"""
+"""Unit Tests for pyrevit.coreutils module."""
 
 
 __context__ = 'zerodoc'

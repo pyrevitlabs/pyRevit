@@ -1,25 +1,22 @@
-"""Site Designer has a bug that duplicates its standard line styles.
-This script will disable the Add-in.
-"""
-
 import os
 import os.path as op
 
-# noinspection PyUnresolvedReferences
-from System import AppDomain
-
-
-assmName = 'SiteDesigner'
+from pyrevit import framework
 
 
 __context__ = 'zerodoc'
+__doc__ = 'Site Designer has a bug that duplicates its standard line styles.' \
+          'This script will disable the Add-in.'
+
+
+assmName = 'SiteDesigner'
 
 
 def findassembly(assemblyname):
     """Finds the loaded assembly that contains assemblyname in name
     """
     alist = []
-    for loadedAssembly in AppDomain.CurrentDomain.GetAssemblies():
+    for loadedAssembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         if assemblyname in loadedAssembly.FullName:
             alist.append(loadedAssembly)
     return alist

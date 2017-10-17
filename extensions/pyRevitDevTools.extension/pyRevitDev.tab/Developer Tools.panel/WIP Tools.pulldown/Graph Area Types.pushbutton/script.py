@@ -3,7 +3,6 @@
 from scriptutils import this_script
 from revitutils import doc, selection
 
-# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area
 
 

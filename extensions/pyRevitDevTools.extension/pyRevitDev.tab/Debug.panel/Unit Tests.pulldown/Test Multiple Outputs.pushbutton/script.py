@@ -1,10 +1,12 @@
+from pyrevit.loader.sessionmgr import execute_command
+
+
 __context__ = 'zerodoc'
 
 
-from pyrevit.loader.sessionmgr import execute_command
-
-commandlist = ["pyRevitDevToolspyRevitDevDebugUnitTestsTestRPW",
-               "pyRevitToolspyRevitSelectionselectSelectListSelectionasClickableLinks"]
+commandlist = \
+    ["pyRevitDevToolspyRevitDevDebugUnitTestsTestRPW",
+     "pyRevitToolspyRevitSelectionselectSelectListSelectionasClickableLinks"]
 
 for cmd in commandlist:
     for i in range(5):

@@ -3,7 +3,6 @@ import clr
 import sys
 import scriptutils as su
 
-# noinspection PyUnresolvedReferences
 from Autodesk.Revit.DB import ElementId
 
 

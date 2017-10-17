@@ -1,4 +1,4 @@
-﻿__doc__ = 'Print the full path to the central model (if model is workshared).'
+__doc__ = 'Print the full path to the central model (if model is workshared).'
 
 
 from pyrevit.revit import DB, UI

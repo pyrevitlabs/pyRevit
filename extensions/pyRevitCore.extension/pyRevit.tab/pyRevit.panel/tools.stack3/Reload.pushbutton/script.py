@@ -1,9 +1,7 @@
-"""Searches the script folders and create buttons
-for the new script or newly installed extensions."""
-
-
 __cleanengine__ = True
 __context__ = 'zerodoc'
+__doc__ = 'Searches the script folders and create buttons' \
+          'for the new script or newly installed extensions.'
 
 
 from pyrevit import script

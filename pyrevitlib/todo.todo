@@ -1,11 +1,13 @@
 Shared engine fixes:
-☐ Fix pyRevitDevTools
 ☐ Fix pyRevitTools
-✔ Fix IronPython.Wpf import @done(2017-10-15 22:23)
-✔ Fix imports in pyrevit.forms module @done(2017-10-15 22:23)
+☐ Log files don't have command names. Bring that back
+☐ remove all 'unicode' from scripts
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Fix pyRevitDevTools @done(2017-10-16 20:05)
+    ✔ Fix IronPython.Wpf import @done(2017-10-15 22:23)
+    ✔ Fix imports in pyrevit.forms module @done(2017-10-15 22:23)
     ✔ Start testing tools and Fix Module level variables and other issues @done(2017-10-15 17:43)
     ✔ Fix File logging @done(2017-09-17 12:45)
     ✔ Consolidate the env var dictionary access @done(2017-09-17 10:02)

@@ -306,7 +306,6 @@ elif selected_switch == 'System Postable Commands':
             print('{0}'.format(str(pc).ljust(50)))
 
 elif selected_switch == 'Views':
-    # noinspection PyUnresolvedReferences
     element_ids = __revit__.ActiveUIDocument.Selection.GetElementIds()
     selection = [doc.GetElement(elId) for elId in element_ids]
 
