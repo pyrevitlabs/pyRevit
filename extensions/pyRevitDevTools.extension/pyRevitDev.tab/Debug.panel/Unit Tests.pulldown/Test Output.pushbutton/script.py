@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
-import clr
-import sys
-import scriptutils as su
-
-from Autodesk.Revit.DB import ElementId
+from pyrevit.revit import DB
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 
-su.this_script.output.print_md('**Testing log levels:**')
-su.logger.critical('Test Log Level')
-su.logger.warning('Test Log Level')
-su.logger.info('Test Log Level :ok_hand_sign:')
-su.logger.debug('Test Log Level')
+output = script.get_output()
+logger = script.get_logger()
 
-su.this_script.output.print_md('**Testing large buffer output (>1023 chars):**')
-su.this_script.output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
 
-su.this_script.output.print_md('**Testing linkify:**')
-print('Clickable element id: {}'.format(su.this_script.output.linkify(ElementId(1557))))
+output.print_md('**Testing log levels:**')
+logger.critical('Test Log Level')
+logger.warning('Test Log Level')
+logger.info('Test Log Level :ok_hand_sign:')
+logger.debug('Test Log Level')
+
+output.print_md('**Testing large buffer output (>1023 chars):**')
+output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
+
+output.print_md('**Testing linkify:**')
+print('Clickable element id: {}'
+      .format(output.linkify(DB.ElementId(1557))))
