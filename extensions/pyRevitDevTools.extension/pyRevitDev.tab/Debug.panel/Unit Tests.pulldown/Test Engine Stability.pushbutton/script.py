@@ -1,18 +1,17 @@
-import clr
-
 from pyrevit import PYTHON_LIB_DIR, MAIN_LIB_DIR
-from pyrevit.coreutils import Timer
+from pyrevit import coreutils
+from pyrevit import framework
+from pyrevit import script
 
-from scriptutils import this_script
-
-clr.AddReference('System')
-clr.AddReference('IronPython')
-from System.Collections.Generic import List
+framework.clr.AddReference('IronPython')
 import IronPython.Hosting
 import IronPython.Runtime
 
 
 __context__ = 'zerodoc'
+
+
+output = script.get_output()
 
 
 TEST_UNIT = 100
@@ -32,7 +31,7 @@ def run(engine, runtime):
 def make_engine():
     options = {"Frames": True, "FullFrames": True, "LightweightScopes": True}
     engine = IronPython.Hosting.Python.CreateEngine(options)
-    engine.SetSearchPaths(List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
+    engine.SetSearchPaths(framework.List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
     runtime = engine.Runtime
     return engine, runtime
 
@@ -46,18 +45,18 @@ output_times = []
 
 for idx in range(1, MAX_TESTS):
     engine, runtime = make_engine()
-    engine_timer = Timer()
+    engine_timer = coreutils.Timer()
     run(engine, runtime)
     eng_time = engine_timer.get_time()
     shutdown(runtime)
     engine_times.append(eng_time)
 
-    output_timer = Timer()
+    output_timer = coreutils.Timer()
     print('Engine {}: {}'.format(idx, eng_time))
     output_times.append(output_timer.get_time())
 
 
-chart = this_script.output.make_line_chart()
+chart = output.make_line_chart()
 # chart.options.scales = {'xAxes': [{'ticks': {'fixedStepSize': 5}, 'type': 'category', 'position': 'bottom'}],
 #                         'yAxes': [{'ticks': {'fixedStepSize': 10}}]}
 
