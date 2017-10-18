@@ -1,7 +1,8 @@
 Shared engine fixes:
-☐ Fix pyRevitTools
-☐ Log files don't have command names. Bring that back
+☐ fix pyRevitTools
+☐ log files don't have command names. Bring that back
 ☐ remove all 'unicode' from scripts
+☐ add date to log file names
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
