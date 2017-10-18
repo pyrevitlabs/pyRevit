@@ -54,11 +54,17 @@ def _setup_output_window():
     # The output stream will open the window if anything is being printed.
     outstr = loadertypes.ScriptOutputStream(out_window)
     sys.stdout = outstr
-    sys.stderr = outstr
+    # sys.stderr = outstr
     stdout_hndlr = get_stdout_hndlr()
     stdout_hndlr.stream = outstr
 
     return out_window
+
+
+def _cleanup_output_window(out_window):
+    sys.stdout = None
+    stdout_hndlr = get_stdout_hndlr()
+    stdout_hndlr.stream = None
 
 
 # Functions related to creating/loading a new pyRevit session
@@ -181,6 +187,8 @@ def load_session():
     except Exception as imp_err:
         logger.error('Error setting up self_destruct on output window | {}'
                      .format(imp_err))
+
+    _cleanup_output_window(output_window)
 
 
 # Functions related to finding/executing a command or script in current session
