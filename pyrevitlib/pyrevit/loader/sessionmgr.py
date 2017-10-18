@@ -44,7 +44,7 @@ def _clear_running_engines():
         return False
 
 
-def _setup_output_window():
+def _setup_output():
     from pyrevit.coreutils import loadertypes
     # create output window and assign handle
     out_window = loadertypes.ScriptOutput()
@@ -61,7 +61,7 @@ def _setup_output_window():
     return out_window
 
 
-def _cleanup_output_window(out_window):
+def _cleanup_output():
     sys.stdout = None
     stdout_hndlr = get_stdout_hndlr()
     stdout_hndlr.stream = None
@@ -160,7 +160,7 @@ def load_session():
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if EXEC_PARAMS.first_load:
-        output_window = _setup_output_window()
+        output_window = _setup_output()
 
     # initialize timer to measure load time
     timer = Timer()
@@ -188,7 +188,7 @@ def load_session():
         logger.error('Error setting up self_destruct on output window | {}'
                      .format(imp_err))
 
-    _cleanup_output_window(output_window)
+    _cleanup_output()
 
 
 # Functions related to finding/executing a command or script in current session
