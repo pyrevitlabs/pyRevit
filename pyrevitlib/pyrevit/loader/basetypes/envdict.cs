@@ -7,6 +7,7 @@ namespace PyRevitBaseClasses
 	public static class EnvDictionaryKeys
 	{
 		public static string docEngineDict = "pyRevitIpyEngines";
+        public static string docEngineDefaultStreamCfg = "pyRevitIpyEngineDefaultStreamCfg";
 
         public static string baseName = "PYREVIT";
 

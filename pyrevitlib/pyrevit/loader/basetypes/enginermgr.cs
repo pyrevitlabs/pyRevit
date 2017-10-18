@@ -8,8 +8,6 @@ namespace PyRevitBaseClasses
 {
     public class EngineManager
     {
-        private Stream _defaultOutput;
-
         public EngineManager() {}
 
         public ScriptEngine GetEngine(ref PyRevitCommandRuntime pyrvtCmd)
@@ -57,12 +55,25 @@ namespace PyRevitBaseClasses
             }
         }
 
+        public Tuple<Stream, System.Text.Encoding> DefaultOutputStreamConfig
+        {
+            get
+            {
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDefaultStreamCfg);
+            }
+
+            set
+            {
+                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDefaultStreamCfg, value);
+            }
+        }
+
         public Dictionary<string, ScriptEngine> ClearEngines()
         {
-            var engineDict = new Dictionary<string, ScriptEngine>();
-            AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDict, engineDict);
+            var newEngineDict = new Dictionary<string, ScriptEngine>();
+            AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDict, newEngineDict);
 
-            return engineDict;
+            return newEngineDict;
         }
 
         public void CleanupEngine(ScriptEngine engine)
@@ -94,6 +105,9 @@ namespace PyRevitBaseClasses
 
             // also, allow access to the RPL internals
             engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
+
+            // save the default stream for later resetting the streams
+            DefaultOutputStreamConfig = new Tuple<Stream, System.Text.Encoding>(engine.Runtime.IO.OutputStream, engine.Runtime.IO.OutputEncoding);
 
             return engine;
         }
@@ -183,10 +197,6 @@ namespace PyRevitBaseClasses
 
         private void SetupStreams(ScriptEngine engine, ScriptOutputStream outStream)
         {
-            // Setup IO streams
-            if(_defaultOutput == null)
-                _defaultOutput = engine.Runtime.IO.OutputStream;
-
             engine.Runtime.IO.SetOutput(outStream, System.Text.Encoding.UTF8);
         }
 
@@ -212,17 +222,17 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__forceddebugmode__",      (Object)null);
             builtin.SetVariable("__shiftclick__",           (Object)null);
             builtin.SetVariable("__result__",               (Object)null);
-
-
         }
 
         private void CleanupStreams(ScriptEngine engine)
         {
             // Remove IO streams references so GC can collect
-            var outStream = engine.Runtime.IO.OutputStream;
-            engine.Runtime.IO.SetOutput(_defaultOutput, System.Text.Encoding.UTF8);
-            outStream.Dispose();
-            outStream = null;
+            Tuple<Stream, System.Text.Encoding> outStream = this.DefaultOutputStreamConfig;
+            if (outStream != null)
+            {
+                engine.Runtime.IO.SetOutput(outStream.Item1, outStream.Item2);
+                outStream.Item1.Dispose();
+            }
         }
     }
 }
