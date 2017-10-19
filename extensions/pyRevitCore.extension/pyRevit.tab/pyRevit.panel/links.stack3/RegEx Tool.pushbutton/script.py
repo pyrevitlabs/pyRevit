@@ -1,9 +1,9 @@
 """Opens RegExr website that is used to create and test regular expressions."""
-from pyrevit import coreutils
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 
 url = 'http://regexr.com/'
-coreutils.open_url(url)
+script.open_url(url)

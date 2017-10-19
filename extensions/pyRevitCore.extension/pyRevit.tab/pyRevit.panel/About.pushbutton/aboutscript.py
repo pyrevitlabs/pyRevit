@@ -4,6 +4,7 @@ import sys
 from pyrevit import coreutils
 from pyrevit import versionmgr
 from pyrevit import forms
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
@@ -41,20 +42,20 @@ class AboutWindow(forms.WPFWindow):
             self.version_info.Text = ''
 
     def opengithubrepopage(self, sender, args):
-        coreutils.open_url('https://github.com/eirannejad/pyRevit')
+        script.open_url('https://github.com/eirannejad/pyRevit')
 
     def opengithubcommits(self, sender, args):
-        coreutils.open_url(
+        script.open_url(
             'https://github.com/eirannejad/pyRevit/commits/master')
 
     def openrevisionhistory(self, sender, args):
-        coreutils.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
+        script.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
 
     def opencredits(self, sender, args):
-        coreutils.open_url('http://eirannejad.github.io/pyRevit/credits/')
+        script.open_url('http://eirannejad.github.io/pyRevit/credits/')
 
     def openkeybaseprofile(self, sender, args):
-        coreutils.open_url('https://keybase.io/ein')
+        script.open_url('https://keybase.io/ein')
 
     def handleclick(self, sender, args):
         self.Close()

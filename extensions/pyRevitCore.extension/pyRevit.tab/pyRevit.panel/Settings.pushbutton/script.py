@@ -2,7 +2,6 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP
-from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
@@ -206,12 +205,12 @@ class SettingsWindow(forms.WPFWindow):
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard
         """
-        framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Value)
+        script.clipboard_copy(self.envvars_lb.SelectedItem.Value)
 
     def copy_envvar_id(self, sender, args):
         """Callback method for copying selected env var name to clipboard
         """
-        framework.Forms.Clipboard.SetText(self.envvars_lb.SelectedItem.Id)
+        script.clipboard_copy(self.envvars_lb.SelectedItem.Id)
 
     def addfolder(self, sender, args):
         """Callback method for adding extension folder to configs and list
@@ -328,6 +327,6 @@ class SettingsWindow(forms.WPFWindow):
 # otherwise, will show the Settings user interface
 
 if __shiftclick__:
-    coreutils.show_file_in_explorer(user_config.config_file)
+    script.show_file_in_explorer(user_config.config_file)
 else:
     SettingsWindow('SettingsWindow.xaml').show_dialog()

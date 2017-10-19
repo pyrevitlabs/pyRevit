@@ -16,12 +16,9 @@ from pyrevit.revit import api
 DEFAULT_SEPARATOR = ';'
 
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-
 class Timer:
     """Timer class using python native time module."""
+
     def __init__(self):
         self.start = time.time()
 
@@ -113,10 +110,6 @@ def verify_directory(folder):
         except OSError as err:
             raise err
     return folder
-
-
-def get_parent_directory(path):
-    return op.dirname(path)
 
 
 def join_strings(path_list, separator=DEFAULT_SEPARATOR):
@@ -318,8 +311,8 @@ def check_internet_connection(timeout=1000):
             response = client.GetResponse()
             response.GetResponseStream()
             return True
-        except:
-            return False
+        except Exception:
+                return False
 
     for url in ["http://google.com/",
                 "http://github.com/",
@@ -347,7 +340,7 @@ def read_source_file(source_file_path):
 def create_ext_command_attrs():
     regen_const_info = \
         framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
-           .GetConstructor(
+        .GetConstructor(
                framework.Array[framework.Type](
                    (api.Attributes.RegenerationOption,)
                    )
@@ -364,7 +357,7 @@ def create_ext_command_attrs():
     # add TransactionAttribute to framework.Type
     trans_constructor_info = \
         framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
-           .GetConstructor(
+        .GetConstructor(
                framework.Array[framework.Type](
                    (api.Attributes.TransactionMode,)
                    )
@@ -381,7 +374,8 @@ def create_ext_command_attrs():
     return [regen_attr_builder, trans_attrib_builder]
 
 
-def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
+def create_type(modulebuilder,
+                type_class, class_name, custom_attr_list, *args):
     # create type builder
     type_builder = \
         modulebuilder.DefineType(
@@ -430,25 +424,13 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     type_builder.CreateType()
 
 
-def show_file_in_explorer(file_path):
-    import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'
-                     .format(os.path.normpath(file_path)))
-
-
 def open_folder_in_explorer(folder_path):
     import subprocess
     subprocess.Popen(r'explorer /open,"{}"'
                      .format(os.path.normpath(folder_path)))
 
 
-def open_url(url):
-    """Opens url in a new tab in the default web browser."""
-    import webbrowser
-    return webbrowser.open_new_tab(url)
-
-
-def fully_remove_tree(dir_path):
+def fully_remove_dir(dir_path):
     import stat
 
     # noinspection PyUnusedLocal
@@ -619,7 +601,7 @@ def get_mapped_drives_dict():
         "SELECT * FROM Win32_MappedLogicalDisk"
         )
 
-    return {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    return {x['DeviceID']: x['ProviderName'] for x in searcher.Get()}
 
 
 def dletter_to_unc(dletter_path):
@@ -635,7 +617,3 @@ def unc_to_dletter(unc_path):
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
             return unc_path.replace(server_path, mapped_drive)
-
-
-def clipboard_copy(string_to_copy):
-    framework.Clipboard.SetText(string_to_copy)

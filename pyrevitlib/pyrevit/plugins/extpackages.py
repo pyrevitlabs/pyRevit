@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from pyrevit import PyRevitException, HOST_APP
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils import git, fully_remove_tree
+from pyrevit.coreutils import git, fully_remove_dir
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions import ExtensionTypes
@@ -303,7 +303,7 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
     if ext_pkg.is_removable:
         dir_to_remove = ext_pkg.is_installed
         if dir_to_remove:
-            fully_remove_tree(dir_to_remove)
+            fully_remove_dir(dir_to_remove)
             ext_pkg.remove_pkg_config()
             logger.info('Successfully removed extension from: {}'
                         .format(dir_to_remove))

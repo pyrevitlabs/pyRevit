@@ -1,9 +1,9 @@
 """Opens the python AEC Slack team."""
-from pyrevit import coreutils
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 
 url = 'https://pythonaec.slack.com/'
-coreutils.open_url(url)
+script.open_url(url)

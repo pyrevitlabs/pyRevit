@@ -249,7 +249,7 @@ class ExtensionsWindow(forms.WPFWindow):
     def handle_url_click(self, sender, args):
         """Callback for handling click on package website url
         """
-        coreutils.open_url(sender.NavigateUri.AbsoluteUri)
+        script.open_url(sender.NavigateUri.AbsoluteUri)
 
     def handle_private_repo(self, sender, args):
         """Callback for updating private status of a package
