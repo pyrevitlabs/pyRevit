@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 
 namespace PyRevitBaseClasses
@@ -12,6 +13,7 @@ namespace PyRevitBaseClasses
     {
 
         private bool _contentLoaded;
+        public bool ClosedByUser = false;
 
         System.Windows.Forms.Integration.WindowsFormsHost host;
         public System.Windows.Forms.WebBrowser renderer;
@@ -163,12 +165,19 @@ namespace PyRevitBaseClasses
         }
 
 
-        public void AppendText(String OutputText, String HtmlElementType)
+        public System.Windows.Forms.HtmlElement ComposeEntry(String OutputText, String HtmlElementType)
         {
             WaitReadyBrowser();
             var div = renderer.Document.CreateElement(HtmlElementType);
             div.InnerHtml = OutputText;
-            renderer.Document.Body.AppendChild(div);
+            return div;
+        }
+
+
+        public void AppendText(String OutputText, String HtmlElementType)
+        {
+            WaitReadyBrowser();
+            renderer.Document.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
             ScrollToBottom();
         }
 
@@ -228,19 +237,12 @@ namespace PyRevitBaseClasses
         }
 
 
-        public void SelfDestructTimer(int miliseconds)
+        public void SelfDestructTimer(int seconds)
         {
-            // Create a 30 min timer
-            var timer = new System.Timers.Timer(miliseconds);
-            // Hook up the Elapsed event for the timer.
-            timer.Elapsed += (sender, e) => SelfDestructTimerEvent(sender, e, this);
-            timer.Enabled = true;
-        }
-
-
-        private static void SelfDestructTimerEvent(object source, System.Timers.ElapsedEventArgs e, ScriptOutput output_window)
-        {
-            output_window.Close();
+            var dispatcherTimer = new DispatcherTimer();
+            dispatcherTimer.Tick += (sender, e) => Close();
+            dispatcherTimer.Interval = new TimeSpan(0, 0, seconds);
+            dispatcherTimer.Start();
         }
 
 
@@ -259,7 +261,10 @@ namespace PyRevitBaseClasses
 
             renderer.Navigating -= _navigateHandler;
             renderer.Dispose();
+
+            ClosedByUser = true;
         }
+
 
         public void Dispose()
         {

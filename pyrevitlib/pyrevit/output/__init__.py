@@ -20,7 +20,9 @@ class PyRevitOutputMgr:
     @staticmethod
     def _get_all_open_output_windows():
         output_list_entryname = EnvDictionaryKeys.outputWindows
-        return list(AppDomain.CurrentDomain.GetData(output_list_entryname))
+        output_list = AppDomain.CurrentDomain.GetData(output_list_entryname)
+        if output_list:
+            return list(output_list)
 
     @staticmethod
     def _reset_outputwindow_cache():
@@ -39,20 +41,25 @@ class PyRevitOutputMgr:
     def close_all_outputs():
         for output_wnd in PyRevitOutputMgr._get_all_open_output_windows():
             output_wnd.Close()
-
-        _reset_outputwindow_cache()
+        PyRevitOutputMgr._reset_outputwindow_cache()
 
 
 class PyRevitOutputWindow:
     """Wrapper to interact with the output output window."""
 
-    def __init__(self, window_handle):
+    def __init__(self):
         """Sets up the wrapper from the input dot net window handler"""
-        EXEC_PARAMS.window_handle.UrlHandler = self._handle_protocol_url
+        if EXEC_PARAMS.window_handle:
+            EXEC_PARAMS.window_handle.UrlHandler = self._handle_protocol_url
+
+    @property
+    def window(self):
+        return EXEC_PARAMS.window_handle
 
     @property
     def renderer(self):
-        return EXEC_PARAMS.window_handle.renderer
+        if self.window:
+            return self.window.renderer
 
     @staticmethod
     def _handle_protocol_url(url):
@@ -83,7 +90,8 @@ class PyRevitOutputWindow:
         return self.renderer.Document.GetElementsByTagName('head')[0]
 
     def self_destruct(self, seconds):
-        EXEC_PARAMS.window_handle.SelfDestructTimer(seconds * 1000)
+        if self.window:
+            self.window.SelfDestructTimer(seconds)
 
     def inject_to_head(self, element_tag, element_contents, attribs=None):
         html_element = self.renderer.Document.CreateElement(element_tag)
@@ -108,13 +116,16 @@ class PyRevitOutputWindow:
         return self._get_head_element().InnerHtml
 
     def set_title(self, new_title):
-        EXEC_PARAMS.window_handle.Text = new_title
+        if self.window:
+            self.window.Text = new_title
 
     def set_width(self, width):
-        EXEC_PARAMS.window_handle.Width = width
+        if self.window:
+            self.window.Width = width
 
     def set_height(self, height):
-        EXEC_PARAMS.window_handle.Height = height
+        if self.window:
+            self.window.Height = height
 
     def set_font(self, font_family_name, font_size):
         # noinspection PyUnresolvedReferences
@@ -129,52 +140,65 @@ class PyRevitOutputWindow:
         self.set_height(height)
 
     def get_title(self):
-        return EXEC_PARAMS.window_handle.Text
+        if self.window:
+            return self.window.Text
 
     def get_width(self):
-        return EXEC_PARAMS.window_handle.Width
+        if self.window:
+            return self.window.Width
 
     def get_height(self):
-        return EXEC_PARAMS.window_handle.Height
+        if self.window:
+            return self.window.Height
 
     def close(self):
-        EXEC_PARAMS.window_handle.Close()
+        if self.window:
+            self.window.Close()
 
     def close_others(self, all_open_outputs=False):
         if all_open_outputs:
             output_wnds = PyRevitOutputMgr.get_all_outputs()
-        else:
+        elif self.window:
             output_wnds = PyRevitOutputMgr.\
-                get_all_outputs(command=EXEC_PARAMS.window_handle.OutputId)
+                get_all_outputs(command=self.window.OutputId)
 
-        for output_wnd in output_wnds:
-            if output_wnd != EXEC_PARAMS.window_handle:
-                output_wnd.Close()
+        if output_wnds:
+            for output_wnd in output_wnds:
+                if self.window and output_wnd != self.window:
+                    output_wnd.Close()
 
     def hide(self):
-        EXEC_PARAMS.window_handle.Hide()
+        if self.window:
+            self.window.Hide()
 
     def show(self):
-        EXEC_PARAMS.window_handle.Show()
+        if self.window:
+            self.window.Show()
 
     def lock_size(self):
-        EXEC_PARAMS.window_handle.LockSize()
+        if self.window:
+            self.window.LockSize()
 
     def save_contents(self, dest_file):
-        html = self.renderer.Document.Body.OuterHtml.encode('ascii', 'ignore')
-        doc_txt = self.renderer.DocumentText
-        full_html = doc_txt.lower().replace('<body></body>', html)
-        with open(dest_file, 'w') as output_file:
-            output_file.write(full_html)
+        if self.renderer:
+            html = \
+                self.renderer.Document.Body.OuterHtml.encode('ascii', 'ignore')
+            doc_txt = self.renderer.DocumentText
+            full_html = doc_txt.lower().replace('<body></body>', html)
+            with open(dest_file, 'w') as output_file:
+                output_file.write(full_html)
 
     def open_url(self, dest_url):
-        self.renderer.Navigate(dest_url, False)
+        if self.renderer:
+            self.renderer.Navigate(dest_url, False)
 
     def update_progress(self, cur_value, max_value):
-        EXEC_PARAMS.window_handle.UpdateProgressBar(cur_value, max_value)
+        if self.window:
+            self.window.UpdateProgressBar(cur_value, max_value)
 
     def reset_progress(self):
-        EXEC_PARAMS.window_handle.UpdateProgressBar(0, 1)
+        if self.window:
+            self.window.UpdateProgressBar(0, 1)
 
     @staticmethod
     def emojize(md_str):
@@ -256,4 +280,4 @@ class PyRevitOutputWindow:
 
 
 def get_output():
-    return PyRevitOutputWindow(EXEC_PARAMS.window_handle)
+    return PyRevitOutputWindow()

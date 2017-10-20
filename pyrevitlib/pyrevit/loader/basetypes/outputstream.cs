@@ -14,6 +14,7 @@ namespace PyRevitBaseClasses
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
 
+
         public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
         {
             _outputBuffer = String.Empty;
@@ -45,38 +46,61 @@ namespace PyRevitBaseClasses
             return null;
         }
 
+
+        // this is for python stream compatibility
         public void write(string s)
         {
             Write(Encoding.ASCII.GetBytes(s), 0, s.Length);
         }
+
 
         public void WriteError(string error_msg)
         {
             var output = GetOutput();
             if(output != null)
             {
-                var err_div = output.renderer.Document.CreateElement(ExternalConfig.errordiv);
-                err_div.InnerHtml = error_msg.Replace("\n", "<br/>");
+                if (output.ClosedByUser)
+                {
+                    _gui = null;
+                    _outputBuffer = String.Empty;
+                    return;
+                }
+
+                var err_div = output.ComposeEntry(error_msg.Replace("\n", "<br/>"), ExternalConfig.errordiv);
 
                 var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
                 Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
             }
-
         }
 
-        /// Append the text in the buffer to gui.renderer
+
         public override void Write(byte[] buffer, int offset, int count)
         {
-            lock (this)
+            var output = GetOutput();
+            if (output != null)
             {
-                var output = GetOutput();
-                if (output != null)
+                if(output.ClosedByUser)
                 {
-                    if (!output.IsVisible)
+                    _gui = null;
+                    _outputBuffer = String.Empty;
+                    return;
+                }
+
+                if (!output.IsVisible)
+                {
+                    try
                     {
                         output.Show();
                         output.Focus();
                     }
+                    catch
+                    {
+                        return;
+                    }
+                }
+
+                lock (this)
+                {
 
                     var actualBuffer = new byte[count];
                     Array.Copy(buffer, offset, actualBuffer, 0, count);
@@ -105,51 +129,60 @@ namespace PyRevitBaseClasses
             }
         }
 
+
         public override void Flush()
         {
         }
+
 
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotImplementedException();
         }
 
+
         public override void SetLength(long value)
         {
             throw new NotImplementedException();
         }
 
-        /// Read from the _inputBuffer, block until a new line has been entered...
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
         }
+
 
         public override bool CanRead
         {
             get { return false; }
         }
 
+
         public override bool CanSeek
         {
             get { return false; }
         }
+
 
         public override bool CanWrite
         {
             get { return true; }
         }
 
+
         public override long Length
         {
             get { return 0; }
         }
+
 
         public override long Position
         {
             get { return 0; }
             set { }
         }
+
 
         new public void Dispose()
         {

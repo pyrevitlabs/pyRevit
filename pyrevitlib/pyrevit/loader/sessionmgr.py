@@ -161,6 +161,9 @@ def load_session():
     # if an output window is not provided, create one
     if EXEC_PARAMS.first_load:
         output_window = _setup_output()
+    else:
+        from pyrevit import script
+        output_window = script.get_output()
 
     # initialize timer to measure load time
     timer = Timer()
@@ -183,7 +186,12 @@ def load_session():
     try:
         timeout = user_config.core.startuplogtimeout
         if timeout > 0 and not loggers_have_errors():
-            output_window.self_destruct(timeout)
+            if EXEC_PARAMS.first_load:
+                # output_window is of type ScriptOutput
+                output_window.SelfDestructTimer(timeout)
+            else:
+                # output_window is of type PyRevitOutputWindow
+                output_window.self_destruct(timeout)
     except Exception as imp_err:
         logger.error('Error setting up self_destruct on output window | {}'
                      .format(imp_err))
