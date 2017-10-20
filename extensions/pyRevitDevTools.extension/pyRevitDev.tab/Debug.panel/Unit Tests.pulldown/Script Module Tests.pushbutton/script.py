@@ -6,4 +6,4 @@ __context__ = 'zerodoc'
 
 import pyrevit.unittests as prtests
 
-prtests.perform_scriptutilstests()
+prtests.perform_script_tests()

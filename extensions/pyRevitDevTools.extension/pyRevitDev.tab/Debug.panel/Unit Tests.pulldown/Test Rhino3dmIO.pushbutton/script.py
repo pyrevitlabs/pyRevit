@@ -1,3 +1,4 @@
+import rpw
 from rpw.extras.rhino import Rhino as rc
 
 

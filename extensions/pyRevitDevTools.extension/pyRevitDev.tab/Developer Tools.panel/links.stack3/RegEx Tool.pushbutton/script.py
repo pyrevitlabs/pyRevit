@@ -1,4 +1,4 @@
-from pyrevit import coreutils
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
@@ -6,4 +6,4 @@ __doc__ = 'Opens RegExr website that is used to create and test regular ' \
           'expressions in the default browser.'
 
 
-coreutils.open_url('http://regexr.com/')
+script.open_url('http://regexr.com/')
