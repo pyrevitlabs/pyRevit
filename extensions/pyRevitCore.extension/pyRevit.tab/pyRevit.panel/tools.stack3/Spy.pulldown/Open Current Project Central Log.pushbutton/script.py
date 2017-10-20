@@ -6,11 +6,8 @@ import os.path as op
 from pyrevit.revit import DB, UI
 
 
-doc = __activedoc__
-
-
-if doc.GetWorksharingCentralModelPath():
-    model_path = doc.GetWorksharingCentralModelPath()
+if __activedoc__.GetWorksharingCentralModelPath():
+    model_path = __activedoc__.GetWorksharingCentralModelPath()
     centralPath = \
         DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
     centralName = op.splitext(op.basename(centralPath))[0]

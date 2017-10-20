@@ -3,21 +3,17 @@ import os.path as op
 import pickle as pl
 import clr
 
+from pyrevit import framework
+from pyrevit import script
+from pyrevit.revit import DB, UI
 import pyrevit.coreutils.envvars as envvars
 
-from scriptutils import this_script
 
-clr.AddReference('PresentationCore')
-
-# noinspection PyUnresolvedReferences
-from System import EventHandler, Uri
-import Autodesk.Revit.DB as DB
-import Autodesk.Revit.UI.Events as UIEvents
-
-
-__doc__ = 'Keep views synchronized. This means that as you pan and zoom and switch between Plan and RCP views, this ' \
-          'tool will keep the views in the same zoomed area so you can keep working in the same area without '        \
-          'the need to zoom and pan again.\n This tool works best when the views are maximized.'
+__doc__ = 'Keep views synchronized. This means that as you pan and zoom and '\
+          'switch between Plan and RCP views, this tool will keep the views '\
+          'in the same zoomed area so you can keep working in the same '\
+          'area without the need to zoom and pan again.'\
+          '\n This tool works best when the views are maximized.'
 
 
 class Point:
@@ -42,7 +38,8 @@ def copyzoomstate(sender, args):
 
         if isinstance(args.CurrentActiveView, DB.ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
+            data_filename = project_name + '_pySyncRevitActiveViewZoomState'
+            data_file = script.get_instance_data_file(data_filename)
 
             cornerlist = current_ui_view.GetZoomCorners()
 
@@ -73,7 +70,8 @@ def applyzoomstate(sender, args):
 
         if isinstance(args.CurrentActiveView, DB.ViewPlan):
             project_name = op.splitext(op.basename(event_doc.PathName))[0]
-            data_file = this_script.get_instance_data_file(project_name + '_pySyncRevitActiveViewZoomState')
+            data_filename = project_name + '_pySyncRevitActiveViewZoomState'
+            data_file = script.get_instance_data_file(data_filename)
             f = open(data_file, 'r')
             p2 = pl.load(f)
             p1 = pl.load(f)
@@ -86,17 +84,21 @@ def applyzoomstate(sender, args):
 def togglestate():
     new_state = not envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR)
     envvars.set_pyrevit_env_var(SYNC_VIEW_ENV_VAR, new_state)
-    this_script.toggle_icon(new_state)
+    script.toggle_icon(new_state)
 
 
 # noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
-        __rvt__.ViewActivating += EventHandler[UIEvents.ViewActivatingEventArgs](copyzoomstate)
-        __rvt__.ViewActivated += EventHandler[UIEvents.ViewActivatedEventArgs](applyzoomstate)
+        __rvt__.ViewActivating += \
+            framework.EventHandler[
+                UI.Events.ViewActivatingEventArgs](copyzoomstate)
+        __rvt__.ViewActivated += \
+            framework.EventHandler[
+                UI.Events.ViewActivatedEventArgs](applyzoomstate)
         return True
-    except:
-        return False
+    except Exception:
+            return False
 
 
 if __name__ == '__main__':

@@ -2,12 +2,8 @@ __doc__ = 'Lists specific elements from the model database.'
 
 from pyrevit.framework import List
 from pyrevit.revit import DB, UI
-from pyrevit.revit import db
+from pyrevit.revit import doc
 from pyrevit.forms import userinput
-
-
-doc = __activedoc__
-uidoc = __activeuidoc__
 
 
 switches = ['Graphic Styles',
@@ -18,10 +14,10 @@ switches = ['Graphic Styles',
             'Model / Detail / Sketch Lines',
             'Project Parameters',
             'Data Schemas',
-            'Data DB.ExtensibleStorage.Schema Entities',
+            'Data Schema Entities',
             'Sketch Planes',
             'Views',
-            'DB.View Templates',
+            'View Templates',
             'Viewports',
             'Viewport Types',
             'Family Symbols',
@@ -39,12 +35,12 @@ switches = ['Graphic Styles',
             ]
 
 selected_switch = \
-    userinput.CommandSwitchWindow(sorted(switches), 'List elements of type:')\
-        .pick_cmd_switch()
+    userinput.CommandSwitchWindow(sorted(switches),
+                                  'List elements of type:').pick_cmd_switch()
 
 
 if selected_switch == 'Graphic Styles':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     gstyles = [i for i in cl.OfClass(DB.GraphicsStyle).ToElements()]
 
     for gs in gstyles:
@@ -60,7 +56,7 @@ if selected_switch == 'Graphic Styles':
                           parent.ljust(50)))
 
 elif selected_switch == 'Grids':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     grid_list = cl.OfCategory(DB.BuiltInCategory.OST_Grids)\
                   .WhereElementIsNotElementType().ToElements()
 
@@ -69,12 +65,12 @@ elif selected_switch == 'Grids':
                                          el.Id))
 
 elif selected_switch == 'Line Patterns':
-    cl = DB.FilteredElementCollector(doc).OfClass(DB.LinePatternElement)
+    cl = DB.FilteredElementCollector(__activedoc__).OfClass(DB.LinePatternElement)
     for i in cl:
         print(i.Name)
 
 elif selected_switch == 'Line Styles':
-    c = doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+    c = __activedoc__.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
     subcats = c.SubCategories
 
     for lineStyle in subcats:
@@ -83,9 +79,9 @@ elif selected_switch == 'Line Styles':
 
 elif selected_switch == 'Model / Detail / Sketch Lines':
     cat_list = List[DB.BuiltInCategory]([DB.BuiltInCategory.OST_Lines,
-                                      DB.BuiltInCategory.OST_SketchLines])
+                                         DB.BuiltInCategory.OST_SketchLines])
     elfilter = DB.ElementMulticategoryFilter(cat_list)
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     cllines = cl.WherePasses(elfilter)\
                 .WhereElementIsNotElementType().ToElements()
 
@@ -98,7 +94,7 @@ elif selected_switch == 'Model / Detail / Sketch Lines':
                       c.Category.Name))
 
 elif selected_switch == 'Project Parameters':
-    pm = doc.ParameterBindings
+    pm = __activedoc__.ParameterBindings
     it = pm.ForwardIterator()
     it.Reset()
     while it.MoveNext():
@@ -143,22 +139,23 @@ elif selected_switch == 'Data Schemas':
                       '\t\t\tCONTAINER TYPE:     {2}\n'
                       '\t\t\tKEY TYPE:           {3}\n'
                       '\t\t\tUNIT TYPE:          {4}\n'
-                      '\t\t\tVALUE TYPE:         {5}\n'.format(fl.FieldName,
-                                                               fl.Documentation,
-                                                               fl.ContainerType,
-                                                               fl.KeyType,
-                                                               fl.UnitType,
-                                                               fl.ValueType))
+                      '\t\t\tVALUE TYPE:         {5}\n'
+                      .format(fl.FieldName,
+                              fl.Documentation,
+                              fl.ContainerType,
+                              fl.KeyType,
+                              fl.UnitType,
+                              fl.ValueType))
 
 elif selected_switch == 'Sketch Planes':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     skechplanelist = [i for i in cl.OfClass(DB.SketchPlane).ToElements()]
 
     for gs in skechplanelist:
         print('NAME: {0} ID: {1}'.format(gs.Name.ljust(50), gs.Id))
 
 elif selected_switch == 'Viewports':
-    vps = DB.FilteredElementCollector(doc)\
+    vps = DB.FilteredElementCollector(__activedoc__)\
           .OfCategory(DB.BuiltInCategory.OST_Viewports)\
           .WhereElementIsNotElementType().ToElements()
 
@@ -166,30 +163,30 @@ elif selected_switch == 'Viewports':
         print('ID: {1}TYPE: {0}VIEWNAME: {2}'
               .format(v.Name.ljust(30),
                       str(v.Id).ljust(10),
-                      doc.GetElement(v.ViewId).ViewName))
+                      __activedoc__.GetElement(v.ViewId).ViewName))
 
 elif selected_switch == 'Viewport Types':
     vps = []
 
-    cl_views = DB.FilteredElementCollector(doc)
+    cl_views = DB.FilteredElementCollector(__activedoc__)
     vptypes = cl_views.OfClass(DB.ElementType).ToElements()
 
     for tp in vptypes:
-        wrapperd_tp = db.wrap(tp)
+        wrapperd_tp = doc.ElementWrapper(tp)
         if tp.FamilyName == 'Viewport':
             print('ID: {1} TYPE: {0}'.format(wrapperd_tp.name,
                                              str(tp.Id).ljust(10)))
 
 elif selected_switch == 'Family Symbols':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     eltype_list = cl.OfClass(DB.ElementType).ToElements()
 
     for et in eltype_list:
-        wrapperd_et = db.wrap(et)
+        wrapperd_et = doc.ElementWrapper(et)
         print(wrapperd_et.name, et.FamilyName)
 
 elif selected_switch == 'Levels':
-    levelslist = DB.FilteredElementCollector(doc)\
+    levelslist = DB.FilteredElementCollector(__activedoc__)\
                  .OfCategory(DB.BuiltInCategory.OST_Levels)\
                  .WhereElementIsNotElementType()
 
@@ -201,7 +198,7 @@ elif selected_switch == 'Levels':
                                   i.Elevation))
 
 elif selected_switch == 'Scope Boxes':
-    scopeboxes = DB.FilteredElementCollector(doc)\
+    scopeboxes = DB.FilteredElementCollector(__activedoc__)\
                  .OfCategory(DB.BuiltInCategory.OST_VolumeOfInterest)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -209,7 +206,7 @@ elif selected_switch == 'Scope Boxes':
         print('SCOPEBOX: {0}'.format(el.Name))
 
 elif selected_switch == 'Areas':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     arealist = cl.OfCategory(DB.BuiltInCategory.OST_Areas)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -228,7 +225,7 @@ elif selected_switch == 'Areas':
     print('\n\nTOTAL AREAS FOUND: {0}'.format(len(arealist)))
 
 elif selected_switch == 'Rooms':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     roomlist = cl.OfCategory(DB.BuiltInCategory.OST_Rooms)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -243,7 +240,7 @@ elif selected_switch == 'Rooms':
     print('\n\nTOTAL ROOMS FOUND: {0}'.format(len(roomlist)))
 
 elif selected_switch == 'External References':
-    location = doc.PathName
+    location = __activedoc__.PathName
     try:
         modelPath = DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
         transData = DB.TransmissionData.ReadTransmissionData(modelPath)
@@ -254,13 +251,13 @@ elif selected_switch == 'External References':
             path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(refpath)
             if '' == path:
                 path = '--NOT ASSIGNED--'
-            reftype = str(str(extRef.ExternalFileReferenceType) + ':').ljust(20)
-            print("{0}{1}".format(reftype, path))
-    except:
+            reftype = str(extRef.ExternalFileReferenceType) + ':'
+            print("{0}{1}".format(reftype.ljust(20), path))
+    except Exception:
         print('Model is not saved yet. Can not aquire location.')
 
 elif selected_switch == 'Revisions':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     revs = cl.OfCategory(DB.BuiltInCategory.OST_Revisions)\
              .WhereElementIsNotElementType()
 
@@ -274,10 +271,12 @@ elif selected_switch == 'Revisions':
                       str(rev.RevisionNumber).ljust(5),
                       str(rev.RevisionDate).ljust(10),
                       str(rev.NumberType.ToString()).ljust(15),
-                      str(rev.Description).replace('\n', '').replace('\r', '')))
+                      str(rev.Description).replace('\n', '').replace('\r', '')
+                      )
+              )
 
 elif selected_switch == 'Sheets':
-    cl_sheets = DB.FilteredElementCollector(doc)
+    cl_sheets = DB.FilteredElementCollector(__activedoc__)
     sheetsnotsorted = cl_sheets.OfCategory(DB.BuiltInCategory.OST_Sheets)\
                                .WhereElementIsNotElementType().ToElements()
     sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
@@ -289,7 +288,7 @@ elif selected_switch == 'Sheets':
                       s.LookupParameter('Sheet Name').AsString().ljust(50)))
 
 elif selected_switch == 'System Categories':
-    for cat in doc.Settings.Categories:
+    for cat in __activedoc__.Settings.Categories:
         print(cat.Name)
 
 elif selected_switch == 'System Postable Commands':
@@ -302,17 +301,17 @@ elif selected_switch == 'System Postable Commands':
                                            rcid.Id))
             else:
                 print('{0}'.format(str(pc).ljust(50)))
-        except:
+        except Exception:
             print('{0}'.format(str(pc).ljust(50)))
 
 elif selected_switch == 'Views':
-    element_ids = __revit__.ActiveUIDocument.Selection.GetElementIds()
-    selection = [doc.GetElement(elId) for elId in element_ids]
+    element_ids = __activeuidoc__.Selection.GetElementIds()
+    selection = [__activedoc__.GetElement(elId) for elId in element_ids]
 
     views = []
 
     if len(selection) == 0:
-        cl_views = DB.FilteredElementCollector(doc)
+        cl_views = DB.FilteredElementCollector(__activedoc__)
         views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                         .WhereElementIsNotElementType().ToElements()
     else:
@@ -338,8 +337,8 @@ elif selected_switch == 'Views':
                       underlayp.AsValueString().ljust(25)
                       if underlayp else '---'.ljust(25)))
 
-elif selected_switch == 'DB.View Templates':
-    cl_views = DB.FilteredElementCollector(doc)
+elif selected_switch == 'View Templates':
+    cl_views = DB.FilteredElementCollector(__activedoc__)
     views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                     .WhereElementIsNotElementType().ToElements()
 
@@ -348,27 +347,28 @@ elif selected_switch == 'DB.View Templates':
             print('ID: {1}		{0}'.format(v.ViewName, str(v.Id).ljust(10)))
 
 elif selected_switch == 'Worksets':
-    cl = DB.FilteredWorksetCollector(doc)
+    cl = DB.FilteredWorksetCollector(__activedoc__)
     worksetlist = cl.OfKind(DB.WorksetKind.UserWorkset)
 
-    if doc.IsWorkshared:
+    if __activedoc__.IsWorkshared:
         for ws in worksetlist:
             print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
     else:
         UI.TaskDialog.Show('pyRevit', 'Model is not workshared.')
 
 elif selected_switch == 'Revision Clouds':
-    cl = DB.FilteredElementCollector(doc)
+    cl = DB.FilteredElementCollector(__activedoc__)
     revs = cl.OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
              .WhereElementIsNotElementType()
 
     for rev in revs:
-        parent = doc.GetElement(rev.OwnerViewId)
+        parent = __activedoc__.GetElement(rev.OwnerViewId)
+        revnum = __activedoc__.GetElement(rev.RevisionId).RevisionNumber
         if isinstance(parent, DB.ViewSheet):
             print('REV#: {0}\t\t'
                   'ID: {3}\t\t'
                   'ON SHEET: {1} {2}'
-                  .format(doc.GetElement(rev.RevisionId).RevisionNumber,
+                  .format(revnum,
                           parent.SheetNumber,
                           parent.Name,
                           rev.Id))
@@ -376,7 +376,7 @@ elif selected_switch == 'Revision Clouds':
             print('REV#: {0}\t\t'
                   'ID: {2}\t\t'
                   'ON VIEW: {1}'
-                  .format(doc.GetElement(rev.RevisionId).RevisionNumber,
+                  .format(revnum,
                           parent.ViewName,
                           rev.Id))
 
@@ -390,8 +390,8 @@ elif selected_switch == 'Selected Line Coordinates':
         return False
 
 
-    for elId in uidoc.Selection.GetElementIds():
-        el = doc.GetElement(elId)
+    for elId in __activeuidoc__.Selection.GetElementIds():
+        el = __activedoc__.GetElement(elId)
         if isline(el):
             print('Line ID: {0}'.format(el.Id))
             print('Start:\t {0}'.format(el.GeometryCurve.GetEndPoint(0)))
@@ -399,11 +399,17 @@ elif selected_switch == 'Selected Line Coordinates':
         else:
             print('Elemend with ID: {0} is a not a line.\n'.format(el.Id))
 
-elif selected_switch == 'DB.ExtensibleStorage.Schema Entities':
-    allElements = list(DB.FilteredElementCollector(doc).WherePasses(
-        DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
-                        DB.ElementIsElementTypeFilter(True))))
-    guids = {sc.GUID.ToString(): sc.SchemaName for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
+elif selected_switch == 'Data Schema Entities':
+    allElements = \
+        list(DB.FilteredElementCollector(__activedoc__)
+               .WherePasses(
+                   DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
+                                      DB.ElementIsElementTypeFilter(True))
+            )
+        )
+
+    guids = {sc.GUID.ToString(): sc.SchemaName
+             for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
 
     for el in allElements:
         schemaGUIDs = el.GetEntitySchemaGuids()
