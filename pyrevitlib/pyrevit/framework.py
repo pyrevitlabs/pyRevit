@@ -26,6 +26,7 @@ from System.Net import WebClient, WebRequest
 
 from System import Type
 from System import Uri
+from System import EventHandler
 
 from System import DateTime, DateTimeOffset
 
