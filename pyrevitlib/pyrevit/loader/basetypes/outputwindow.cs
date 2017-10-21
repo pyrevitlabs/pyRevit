@@ -11,8 +11,10 @@ namespace PyRevitBaseClasses
 {
     public partial class ScriptOutput : Window, IComponentConnector, IDisposable
     {
-
         private bool _contentLoaded;
+        private bool _debugMode;
+
+        public string OutputId;
         public bool ClosedByUser = false;
 
         System.Windows.Forms.Integration.WindowsFormsHost host;
@@ -22,14 +24,12 @@ namespace PyRevitBaseClasses
         public delegate void CustomProtocolHandler(String url);
         public CustomProtocolHandler UrlHandler;
 
-        public string OutputId;
 
-
-        public ScriptOutput()
+        public ScriptOutput(bool debugMode=false)
         {
+            _debugMode = debugMode;
             InitializeComponent();
         }
-
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
@@ -43,6 +43,7 @@ namespace PyRevitBaseClasses
 
             this.Loaded += Window_Loaded;
             this.Closing += Window_Closing;
+            this.Closed += Window_Closed;
 
             host = new System.Windows.Forms.Integration.WindowsFormsHost();
 
@@ -68,6 +69,37 @@ namespace PyRevitBaseClasses
             // Add the interop host control to the Grid
             // control's collection of child controls.
             Grid baseGrid = new Grid();
+
+            if (_debugMode)
+            {
+                var rendererRow = new RowDefinition();
+                var splitterRow = new RowDefinition();
+                var replRow = new RowDefinition();
+
+                splitterRow.Height = new GridLength(6);
+                replRow.Height = new GridLength(100);
+
+                baseGrid.RowDefinitions.Add(rendererRow);
+                baseGrid.RowDefinitions.Add(splitterRow);
+                baseGrid.RowDefinitions.Add(replRow);
+
+                var splitter = new GridSplitter();
+                splitter.ResizeDirection = GridResizeDirection.Rows;
+                splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
+                splitter.Background = Brushes.LightGray;
+
+                var repl = new REPLControl();
+                repl.FontFamily = new FontFamily("Courier New");
+                repl.Text = " >>> REPL Prompt Coming Soon...";
+
+                Grid.SetRow(host, 0);
+                Grid.SetRow(splitter, 1);
+                Grid.SetRow(repl, 2);
+
+                baseGrid.Children.Add(splitter);
+                baseGrid.Children.Add(repl);
+            }
+
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
 
@@ -79,7 +111,6 @@ namespace PyRevitBaseClasses
             this.Title = "pyRevit";
         }
 
-
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -90,7 +121,6 @@ namespace PyRevitBaseClasses
         {
             this._contentLoaded = true;
         }
-
 
         public void AppendToOutputList()
         {
@@ -107,7 +137,6 @@ namespace PyRevitBaseClasses
                 outputList.Add(this);
             }
         }
-
 
         public void RemoveFromOutputList()
         {
@@ -131,24 +160,20 @@ namespace PyRevitBaseClasses
             }
         }
 
-
         public void WaitReadyBrowser()
         {
             System.Windows.Forms.Application.DoEvents();
         }
-
 
         public void LockSize()
         {
             this.ResizeMode = ResizeMode.NoResize;
         }
 
-
         public void UnlockSize()
         {
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
-
 
         public void ScrollToBottom()
         {
@@ -158,12 +183,10 @@ namespace PyRevitBaseClasses
             }
         }
 
-
         public void FocusOutput()
         {
             renderer.Focus();
         }
-
 
         public System.Windows.Forms.HtmlElement ComposeEntry(String OutputText, String HtmlElementType)
         {
@@ -173,7 +196,6 @@ namespace PyRevitBaseClasses
             return div;
         }
 
-
         public void AppendText(String OutputText, String HtmlElementType)
         {
             WaitReadyBrowser();
@@ -181,11 +203,9 @@ namespace PyRevitBaseClasses
             ScrollToBottom();
         }
 
-
         //private void renderer_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
         //{
         //}
-
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e)
         {
@@ -205,7 +225,6 @@ namespace PyRevitBaseClasses
             }
         }
 
-
         public void ShowProgressBar()
         {
             WaitReadyBrowser();
@@ -219,7 +238,6 @@ namespace PyRevitBaseClasses
                 renderer.Document.Body.AppendChild(pbar);
             }
         }
-
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
@@ -236,7 +254,6 @@ namespace PyRevitBaseClasses
             }
         }
 
-
         public void SelfDestructTimer(int seconds)
         {
             var dispatcherTimer = new DispatcherTimer();
@@ -245,32 +262,36 @@ namespace PyRevitBaseClasses
             dispatcherTimer.Start();
         }
 
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, System.EventArgs e)
         {
             AppendToOutputList();
         }
 
+        private void Window_Closing(object sender, System.EventArgs e)
+        {
+            
+        }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closed(object sender, System.EventArgs e)
         {
             RemoveFromOutputList();
 
-            var grid = (Grid)this.Content;
-            grid.Children.Remove(host);
-
             renderer.Navigating -= _navigateHandler;
-            renderer.Dispose();
+
+            var grid = (Grid)this.Content;
+            grid.Children.Clear();
 
             ClosedByUser = true;
         }
 
-
         public void Dispose()
         {
+            renderer.Dispose();
+
             _navigateHandler = null;
             UrlHandler = null;
             renderer = null;
+
             this.Content = null;
         }
     }
