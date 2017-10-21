@@ -130,8 +130,8 @@ namespace PyRevitBaseClasses
             _usageLogFilePath = envdict.usageLogFilePath;
             _usageLogServerUrl = envdict.usageLogServerUrl;
 
-            logEntry = new LogEntry(pyrvtCmd.RevitApp.Username,
-                                    pyrvtCmd.RevitApp.VersionNumber, pyrvtCmd.RevitApp.VersionBuild,
+            logEntry = new LogEntry(pyrvtCmd.app.Username,
+                                    pyrvtCmd.app.VersionNumber, pyrvtCmd.app.VersionBuild,
                                     envdict.sessionUUID, envdict.addonVersion,
                                     pyrvtCmd.DebugMode,
                                     pyrvtCmd.AlternateMode,

@@ -65,39 +65,6 @@ namespace PyRevitBaseClasses
             _altScriptMode = altScriptMode;
         }
 
-        public Application RevitApp
-        {
-            get
-            {
-                return _commandData.Application.Application;
-            }
-        }
-
-        public UIApplication RevitUIApp
-        {
-            get
-            {
-                return _commandData.Application;
-            }
-        }
-        public UIDocument RevitUIDoc
-        {
-            get
-            {
-                return _commandData.Application.ActiveUIDocument;
-            }
-        }
-        public Document RevitDoc
-        {
-            get
-            {
-                if (_commandData.Application.ActiveUIDocument != null)
-                    return _commandData.Application.ActiveUIDocument.Document;
-                else
-                    return null;
-            }
-        }
-
         public ExternalCommandData CommandData
         {
             get
@@ -113,7 +80,7 @@ namespace PyRevitBaseClasses
                 return _elements;
             }
         }
-    
+
 
         public string ScriptSourceFile
         {
@@ -189,7 +156,7 @@ namespace PyRevitBaseClasses
                 return _needsCleanEngine;
             }
         }
-   
+
         public bool NeedsFullFrameEngine
         {
             get
@@ -280,6 +247,52 @@ namespace PyRevitBaseClasses
                 _resultsDict = new Dictionary<String, String>();
 
             return _resultsDict;
+        }
+
+        public UIApplication uiapp
+        {
+            get
+            {
+                return _commandData.Application;
+            }
+        }
+
+        public Application app
+        {
+            get
+            {
+                return _commandData.Application.Application;
+            }
+        }
+
+        public UIDocument uidoc
+        {
+            get
+            {
+                return _commandData.Application.ActiveUIDocument;
+            }
+        }
+
+        public Document doc
+        {
+            get
+            {
+                if (_commandData.Application.ActiveUIDocument != null)
+                    return _commandData.Application.ActiveUIDocument.Document;
+                else
+                    return null;
+            }
+        }
+
+        public bool zerodoc
+        {
+            get
+            {
+                if (uidoc == null)
+                    return true;
+                else
+                    return false;
+            }
         }
 
         public void Dispose()

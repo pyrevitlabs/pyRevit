@@ -176,20 +176,10 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__externalcommand__", pyrvtCmd);
 
             // Add host application handle to the builtin to be globally visible everywhere
-            builtin.SetVariable("__revit__", pyrvtCmd.RevitUIApp);
+            builtin.SetVariable("__revit__", pyrvtCmd.uiapp);
 
-
-            // Add handles to current document and ui document
-            if (pyrvtCmd.RevitUIDoc != null) {
-                builtin.SetVariable("__activeuidoc__",  pyrvtCmd.RevitUIDoc);
-                builtin.SetVariable("__activedoc__",    pyrvtCmd.RevitDoc);
-                builtin.SetVariable("__zerodoc__",      false);
-            }
-            else {
-                builtin.SetVariable("__activeuidoc__",  (Object)null);
-                builtin.SetVariable("__activedoc__",    (Object)null);
-                builtin.SetVariable("__zerodoc__",      true);
-            }
+            // Add handle to command runtime class
+            builtin.SetVariable("_R", pyrvtCmd);
 
             // Adding data provided by IExternalCommand.Execute
             builtin.SetVariable("__commanddata__",          pyrvtCmd.CommandData);
@@ -223,9 +213,7 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__ipyenginemanager__",     (Object)null);
             builtin.SetVariable("__externalcommand__",      (Object)null);
             builtin.SetVariable("__revit__",                (Object)null);
-            builtin.SetVariable("__activeuidoc__",          (Object)null);
-            builtin.SetVariable("__activedoc__",            (Object)null);
-            builtin.SetVariable("__zerodoc__",              (Object)null);
+            builtin.SetVariable("_R",                       (Object)null);
             builtin.SetVariable("__commanddata__",          (Object)null);
             builtin.SetVariable("__elements__",             (Object)null);
             builtin.SetVariable("__commandpath__",          (Object)null);

@@ -136,6 +136,9 @@
     <Compile Include="..\..\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
+    <Compile Include="..\..\replctrl.cs">
+      <Link>replctrl.cs</Link>
+    </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>
     </Compile>
