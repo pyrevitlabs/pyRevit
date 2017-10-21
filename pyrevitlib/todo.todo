@@ -2,9 +2,11 @@ Shared engine fixes:
 ☐ fix pyRevitTools
 ☐ log files don't have command names. Bring that back
 ☐ add date to log file names
+☐ Fix occasional output window blackout
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ Fix wpf import on 2.7.3 @done(2017-10-21 16:15)
     ✔ Fix pyRevitDevTools @done(2017-10-16 20:05)
     ✔ Fix IronPython.Wpf import @done(2017-10-15 22:23)
     ✔ Fix imports in pyrevit.forms module @done(2017-10-15 22:23)
