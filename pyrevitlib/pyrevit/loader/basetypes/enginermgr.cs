@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using System.Collections.Generic;
+using PyRevitLoader;
 
 
 namespace PyRevitBaseClasses
@@ -109,6 +110,9 @@ namespace PyRevitBaseClasses
             // save the default stream for later resetting the streams
             DefaultOutputStreamConfig = new Tuple<Stream, System.Text.Encoding>(engine.Runtime.IO.OutputStream, engine.Runtime.IO.OutputEncoding);
 
+            // setup stdlib
+            SetupStdlib(engine);
+
             return engine;
         }
 
@@ -135,6 +139,14 @@ namespace PyRevitBaseClasses
         private ScriptEngine RefreshCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
         {
             return CreateNewCachedEngine(ref pyrvtCmd);
+        }
+
+        private void SetupStdlib(ScriptEngine engine)
+        {
+            // ask PyRevitLoader to add it's resource ZIP file that contains the IronPython
+            // standard library to this engine
+            var tempExec = new PyRevitLoader.ScriptExecutor();
+            tempExec.AddEmbeddedLib(engine);
         }
 
         private void SetupSearchPaths(ScriptEngine engine, string[] searchPaths)

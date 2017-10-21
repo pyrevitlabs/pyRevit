@@ -126,12 +126,14 @@ def _get_reference_file(ref_name):
 
 
 def _get_references():
-    ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
+    ref_list = ['pyRevitLoader',
+                'RevitAPI', 'RevitAPIUI',
+                'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'System', 'System.Core', 'System.Drawing',
+                'System', 'System.Core', 'System.Drawing', 'System.Xaml',
                 'System.Windows.Forms', 'System.Web.Extensions',
-                'PresentationCore', 'PresentationFramework', 'WindowsBase',
-                'System.Xaml', 'WindowsFormsIntegration']
+                'PresentationCore', 'PresentationFramework',
+                'WindowsBase', 'WindowsFormsIntegration']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
