@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
-from pyrevit.revit import api
+from pyrevit import api
 
 
 DEFAULT_SEPARATOR = ';'

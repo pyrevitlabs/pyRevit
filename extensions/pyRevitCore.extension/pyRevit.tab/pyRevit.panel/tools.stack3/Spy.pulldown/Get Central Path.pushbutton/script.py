@@ -1,10 +1,10 @@
 __doc__ = 'Print the full path to the central model (if model is workshared).'
 
 
-from pyrevit.revit import DB, UI
+from pyrevit import DB, UI
 
 
-doc = __activedoc__
+doc = _R.doc
 
 
 if doc.IsWorkshared:

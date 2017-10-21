@@ -5,7 +5,7 @@ import clr
 
 from pyrevit import framework
 from pyrevit import script
-from pyrevit.revit import DB, UI
+from pyrevit import DB, UI
 import pyrevit.coreutils.envvars as envvars
 
 

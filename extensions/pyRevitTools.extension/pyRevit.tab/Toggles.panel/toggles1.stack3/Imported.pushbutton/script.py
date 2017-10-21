@@ -1,11 +1,11 @@
 """Toggles visibility of imported categories on current view."""
 
-from pyrevit.revit import doc
+from pyrevit import revit
 
 
-@doc.carryout('Toggle Imported')
+@revit.carryout('Toggle Imported')
 def toggle_imported():
-    activeview = doc.get_activeview()
+    activeview = revit.get_activeview()
     activeview.AreImportCategoriesHidden = \
         not activeview.AreImportCategoriesHidden
 

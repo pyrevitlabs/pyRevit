@@ -3,7 +3,7 @@
 import os
 import os.path as op
 
-from pyrevit.revit import journals
+from pyrevit import journals
 
 
 # Checks to see if notepad++ program is installed and available.

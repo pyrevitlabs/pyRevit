@@ -3,11 +3,14 @@ __doc__ = 'Opens the central log for the current workshared project.'
 import os
 import os.path as op
 
-from pyrevit.revit import DB, UI
+from pyrevit import DB, UI
 
 
-if __activedoc__.GetWorksharingCentralModelPath():
-    model_path = __activedoc__.GetWorksharingCentralModelPath()
+doc = _R.doc
+
+
+if doc.GetWorksharingCentralModelPath():
+    model_path = doc.GetWorksharingCentralModelPath()
     centralPath = \
         DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
     centralName = op.splitext(op.basename(centralPath))[0]

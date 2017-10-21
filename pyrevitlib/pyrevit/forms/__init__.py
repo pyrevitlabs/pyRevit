@@ -4,7 +4,7 @@ import os.path as op
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import framework
-from pyrevit.revit import UI
+from pyrevit import UI
 
 
 logger = get_logger(__name__)

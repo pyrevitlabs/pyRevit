@@ -1,15 +1,13 @@
 from pyrevit import PyRevitException
-from pyrevit.revit import UI
 from pyrevit.coreutils import find_loaded_asm, read_source_file, get_str_hash
 from pyrevit.coreutils import create_type, load_asm_file,\
     create_ext_command_attrs
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
-
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import _get_references
-
 import pyrevit.coreutils.appdata as appdata
+from pyrevit import UI
 
 
 logger = get_logger(__name__)

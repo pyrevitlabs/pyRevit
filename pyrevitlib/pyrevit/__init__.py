@@ -48,7 +48,7 @@ sys.path.append(PYREVITLOADER_DIR)
 
 from pyrevit.framework import Process, IOException
 from pyrevit.framework import Forms
-
+from pyrevit.api import DB, UI
 
 # ------------------------------------------------------------------------------
 # Base Exceptions

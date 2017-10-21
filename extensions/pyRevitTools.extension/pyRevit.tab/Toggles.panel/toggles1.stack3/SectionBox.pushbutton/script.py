@@ -1,16 +1,16 @@
 """Toggles visibility of section box in current 3D view"""
 
 from pyrevit import framework
-from pyrevit.revit import DB, doc
+from pyrevit import revit,  DB
 
 
-@doc.carryout('Toggle Section Box')
+@revit.carryout('Toggle Section Box')
 def toggle_sectionbox():
     # activate the show hidden so we can collect
     # all elements (visible and hidden)
-    activeview = __activeuidoc__.ActiveView
+    activeview = _R.uidoc.ActiveView
     activeview.EnableRevealHiddenMode()
-    view_elements = DB.FilteredElementCollector(__activedoc__, activeview.Id)\
+    view_elements = DB.FilteredElementCollector(_R.doc, activeview.Id)\
                       .OfCategory(DB.BuiltInCategory.OST_SectionBox)\
                       .ToElements()
 

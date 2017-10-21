@@ -2,8 +2,8 @@ import json
 
 from pyrevit import HOST_APP
 from pyrevit.framework import List
-from pyrevit.revit import DB, UI
 from pyrevit.coreutils.logger import get_logger
+from pyrevit import DB, UI
 
 
 logger = get_logger(__name__)
