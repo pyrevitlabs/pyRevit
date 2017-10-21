@@ -212,7 +212,6 @@ def execute_script(script_path):
 
     from pyrevit import HOST_APP
     from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
-    from pyrevit import PYTHON_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR
     from pyrevit.coreutils import DEFAULT_SEPARATOR
     from pyrevit.coreutils.loadertypes import ScriptExecutor
 
@@ -223,8 +222,6 @@ def execute_script(script_path):
     script_name = op.basename(script_path)
     results_dict = Dictionary[str, str]()
     sys_paths = DEFAULT_SEPARATOR.join([MAIN_LIB_DIR,
-                                        PYTHON_LIB_DIR,
-                                        PYTHON_LIB_SITEPKGS_DIR,
                                         MISC_LIB_DIR])
 
     executor.ExecuteScript(script_path,

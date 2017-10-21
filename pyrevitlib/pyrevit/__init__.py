@@ -27,9 +27,7 @@ EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
-PYTHON_LIB_DIR = op.join(HOME_DIR, 'pylib')
-PYTHON_LIB_SITEPKGS_DIR = op.join(PYTHON_LIB_DIR, 'site-packages')
-MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
+MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
 
 PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 
