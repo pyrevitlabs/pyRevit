@@ -38,7 +38,7 @@ LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 PYREVITLOADER_DIR = \
-    op.join(LOADER_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
+    op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
 
 # add the framework dll path to the search paths
