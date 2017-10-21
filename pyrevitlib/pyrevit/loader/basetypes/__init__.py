@@ -5,7 +5,7 @@ import sys
 from pyrevit import PyRevitException, EXEC_PARAMS
 from pyrevit import LOADER_DIR, ADDIN_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
-    load_asm_file, calculate_dir_hash, find_type_by_name
+    load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 import pyrevit.coreutils.appdata as appdata
@@ -56,8 +56,10 @@ source_file_filter = '(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
     BASE_TYPES_DIR_HASH = \
-        calculate_dir_hash(INTERFACE_TYPES_DIR, '',
-                           source_file_filter)[:HASH_CUTOFF_LENGTH]
+        get_str_hash(
+            calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)
+            + EXEC_PARAMS.engine_ver
+            )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, LOADER_BASE_NAMESPACE)
     BASE_TYPES_ASM_FILE = appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
@@ -89,7 +91,8 @@ def _get_resource_file(resource_name):
 
 
 def _get_framework_module(fw_module):
-    # start with the newest sdk folder and work backwards trying to find the dll
+    # start with the newest sdk folder and
+    # work backwards trying to find the dll
     for sdk_folder in reversed(FRAMEWORK_DIRS):
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,

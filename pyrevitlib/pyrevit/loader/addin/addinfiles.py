@@ -1,9 +1,11 @@
 import os
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, ADDIN_DIR
+from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
+from pyrevit import ADDIN_DIR, PYREVITLOADER_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import LOADER_ADDON_NAMESPACE
+from pyrevit.loader import addin
 
 
 logger = get_logger(__name__)
@@ -98,7 +100,7 @@ def _set_addin_state_for(revit_version, addin_state, program_data=False):
                     f.writelines(
                         addinfile_contents.format(
                             addinname=LOADER_ADDON_NAMESPACE,
-                            addinfolder=ADDIN_DIR,
+                            addinfolder=PYREVITLOADER_DIR,
                             addinguid=ADDIN_GUID,
                             addinvendorid=ADDIN_VENDORID,
                             addinclassname=ADDIN_CLASSNAME
@@ -164,3 +166,44 @@ def is_pyrevit_for_allusers():
     allusers = find_programdata_manifest() is not None
     logger.debug('Is pyRevit installed for All users? {}'.format(allusers))
     return allusers
+
+
+def set_dynamocompat(compat_state=False):
+    loader_ver = \
+        addin.DYNAMOCOMPAT_PYREVITLOADER \
+        if compat_state else addin.LATEST_PYREVITLOADER
+
+    existing_addin_file = get_current_pyrevit_addin()
+
+    try:
+        with open(existing_addin_file, 'w') as f:
+            f.writelines(
+                addinfile_contents.format(
+                    addinname=LOADER_ADDON_NAMESPACE,
+                    addinfolder=op.join(ADDIN_DIR, loader_ver),
+                    addinguid=ADDIN_GUID,
+                    addinvendorid=ADDIN_VENDORID,
+                    addinclassname=ADDIN_CLASSNAME
+                )
+            )
+            logger.debug('Dynamo Compat Mode: {}'.format(compat_state))
+    except Exception as write_err:
+        logger.debug('Error writing {} | {}'
+                     .format(existing_addin_file, write_err))
+
+
+def get_dynamocompat():
+    existing_addin_file = get_current_pyrevit_addin()
+
+    try:
+        with open(existing_addin_file, 'r') as f:
+            for line in f.readlines():
+                if addin.DYNAMOCOMPAT_PYREVITLOADER in line:
+                    logger.debug('Dynamo Compat Mode is Active.')
+                    return True
+        logger.debug('Dynamo Compat Mode is Active.')
+    except Exception as read_err:
+        logger.debug('Error reading {} | {}'
+                     .format(existing_addin_file, read_err))
+
+    return False

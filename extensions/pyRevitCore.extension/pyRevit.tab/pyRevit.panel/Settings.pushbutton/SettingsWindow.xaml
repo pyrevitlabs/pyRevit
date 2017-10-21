@@ -74,7 +74,7 @@
                 <StackPanel>
                 <Expander Header="pyRevit Core Settings:" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
-                        <GroupBox Header="Version Control:">
+                        <GroupBox Header="General:">
                             <StackPanel>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
@@ -82,6 +82,11 @@
                                 </WrapPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">If activated, pyRevit will check updates for all installed extensions
                                                                                                at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="dynamocompatmode_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Dynamo 1.3 Compatibility Mode (Must Reload Revit)</TextBlock>
+                                </WrapPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">If activated, pyRevit runs under IronPython 2.7.3 for compatibility with Dynamo.</TextBlock>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="Reporting Level:" Margin="0,10,0,0">
