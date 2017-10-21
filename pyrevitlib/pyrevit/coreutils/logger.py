@@ -109,8 +109,7 @@ class LoggerWrapper(logging.Logger):
         self._curlevel = get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
         # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
-        # user Shift-clicks on the button EXEC_PARAMS.forced_debug_mode will
-        # be set by the command executor at script runtime
+        # user Ctrl-clicks on the button at script runtime.
         if EXEC_PARAMS.forced_debug_mode:
             self._curlevel = logging.DEBUG
 
