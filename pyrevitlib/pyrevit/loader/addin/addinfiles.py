@@ -65,17 +65,18 @@ def _addin_def_exists(revit_addin_dir):
     for fname in os.listdir(revit_addin_dir):
         if fname.lower().endswith('addin'):
             fullfname = op.join(revit_addin_dir, fname)
-            try:
-                with open(fullfname, 'r') as f:
-                    for line in f.readlines():
-                        if (LOADER_ADDON_NAMESPACE + '.dll').lower() \
-                                in line.lower():
-                            logger.debug('Addin file exists for pyRevit: {}'
-                                         .format(fullfname))
-                            return fullfname
-            except Exception as read_err:
-                logger.debug('Error reading {} | {}'
-                             .format(fullfname, read_err))
+            if op.isfile(fullfname):
+                try:
+                    with open(fullfname, 'r') as f:
+                        for line in f.readlines():
+                            if (LOADER_ADDON_NAMESPACE + '.dll').lower() \
+                                    in line.lower():
+                                logger.debug('Addin file exists for pyRevit:'
+                                             ' {}'.format(fullfname))
+                                return fullfname
+                except Exception as read_err:
+                    logger.debug('Error reading {} | {}'
+                                 .format(fullfname, read_err))
 
     return False
 
@@ -201,7 +202,7 @@ def get_dynamocompat():
                 if addin.DYNAMOCOMPAT_PYREVITLOADER in line:
                     logger.debug('Dynamo Compat Mode is Active.')
                     return True
-        logger.debug('Dynamo Compat Mode is Active.')
+        logger.debug('Dynamo Compat Mode is Not Active.')
     except Exception as read_err:
         logger.debug('Error reading {} | {}'
                      .format(existing_addin_file, read_err))

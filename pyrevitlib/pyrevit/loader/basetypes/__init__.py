@@ -3,7 +3,7 @@ import os.path as op
 import sys
 
 from pyrevit import PyRevitException, EXEC_PARAMS
-from pyrevit import LOADER_DIR, ADDIN_DIR, ADDIN_RESOURCE_DIR
+from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
     load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
@@ -18,8 +18,6 @@ logger = get_logger(__name__)
 
 
 if not EXEC_PARAMS.doc_mode:
-    sys.path.append(ADDIN_DIR)
-
     INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),

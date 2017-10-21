@@ -45,5 +45,5 @@ from Microsoft.CSharp import CSharpCodeProvider
 
 from System.Management import ManagementObjectSearcher
 
-clr.AddReference('IronPython.Wpf.dll')
+clr.AddReference('IronPython.Wpf')
 import wpf

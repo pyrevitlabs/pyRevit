@@ -39,7 +39,8 @@ LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 PYREVITLOADER_DIR = \
     op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
-ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
+ADDIN_RESOURCE_DIR = op.join(PYREVITLOADER_DIR,
+                             'Source', 'pyRevitLoader', 'Resources')
 
 # add the framework dll path to the search paths
 sys.path.append(ADDIN_DIR)
@@ -269,6 +270,8 @@ for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
         except (OSError, IOException) as err:
             raise PyRevitException('Can not access pyRevit folder at: {} | {}'
                                    .format(pyrvt_app_dir, err))
+    else:
+        sys.path.append(pyrvt_app_dir)
 
 
 # ------------------------------------------------------------------------------
