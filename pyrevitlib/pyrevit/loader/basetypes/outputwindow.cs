@@ -273,30 +273,31 @@ namespace PyRevitBaseClasses
 
         private void Window_Closing(object sender, System.EventArgs e)
         {
-            
+            RemoveFromOutputList();
+
+            renderer.Navigating -= _navigateHandler;
+            _navigateHandler = null;
+            UrlHandler = null;
         }
 
         private void Window_Closed(object sender, System.EventArgs e)
         {
-            RemoveFromOutputList();
-
-            renderer.Navigating -= _navigateHandler;
-
             var grid = (Grid)this.Content;
+
+            renderer.Dispose();
+
+            grid.Children.Remove(host);
             grid.Children.Clear();
+
+            renderer = null;
+            host = null;
+            this.Content = null;
 
             ClosedByUser = true;
         }
 
         public void Dispose()
         {
-            renderer.Dispose();
-
-            _navigateHandler = null;
-            UrlHandler = null;
-            renderer = null;
-
-            this.Content = null;
         }
     }
 }
