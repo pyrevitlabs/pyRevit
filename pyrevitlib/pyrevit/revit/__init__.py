@@ -3,8 +3,8 @@ import os.path as op
 from pyrevit import HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import framework
-from pyrevit.api import DB, UI
 from pyrevit.coreutils.logger import get_logger
+from pyrevit import DB, UI
 
 from Autodesk.Revit.DB import Element
 
@@ -24,7 +24,7 @@ class ElementWrapper(object):
                                    'derived from Element.')
 
     def __repr__(self):
-        return '<pyrevit.revit.db.{} % {} id:{}>' \
+        return '<pyrevit.revit.{} % {} id:{}>' \
                     .format(self.__class__.__name__,
                             self._wrapped_element.ToString(),
                             self._wrapped_element.Id)
@@ -82,8 +82,8 @@ class ElementWrapper(object):
 class CurrentElementSelection:
     def __init__(self):
         self.elements = \
-            [__activedoc__.GetElement(el_id)
-             for el_id in __activeuidoc__.Selection.GetElementIds()]
+            [_R.doc.GetElement(el_id)
+             for el_id in _R.uidoc.Selection.GetElementIds()]
 
     def __len__(self):
         return len(self.elements)
@@ -125,30 +125,30 @@ class CurrentElementSelection:
             return self.elements[len(self)-1]
 
     def set_to(self, element_list):
-        __activeuidoc__.Selection.SetElementIds(
+        _R.uidoc.Selection.SetElementIds(
             framework.List[ElementId](
                 self._get_element_ids(element_list)
             )
         )
-        __activeuidoc__.RefreshActiveView()
+        _R.uidoc.RefreshActiveView()
 
     def append(self, element_list):
         new_elids = self._get_element_ids(element_list)
         new_elids.extend(self.element_ids)
-        __activeuidoc__.Selection.SetElementIds(
+        _R.uidoc.Selection.SetElementIds(
             framework.List[ElementId](new_elids)
         )
         self.elements = \
-            [__activedoc__.GetElement(el_id) for el_id in new_elids]
+            [_R.doc.GetElement(el_id) for el_id in new_elids]
 
 
 class CurrentProjectInfo:
     def __init__(self):
-        if not __activedoc__.IsFamilyDocument:
-            self._info = __activedoc__.ProjectInformation
+        if not _R.doc.IsFamilyDocument:
+            self._info = _R.doc.ProjectInformation
             self.name = self._info.Name
-        self.location = __activedoc__.PathName
-        self.filename = op.splitext(op.basename(__activedoc__.PathName))[0]
+        self.location = _R.doc.PathName
+        self.filename = op.splitext(op.basename(_R.doc.PathName))[0]
 
 
 class Transaction():
@@ -170,7 +170,7 @@ class Transaction():
                  clear_after_rollback=False,
                  show_error_dialog=False):
         self._rvtxn = \
-            DB.Transaction(__activedoc__,
+            DB.Transaction(_R.doc,
                            name if name else DEFAULT_TRANSACTION_NAME)
         self._fail_hndlr_ops = self._rvtxn.GetFailureHandlingOptions()
         self._fail_hndlr_ops.SetClearAfterRollback(clear_after_rollback)
@@ -222,7 +222,7 @@ class DryTransaction(Transaction):
 class TransactionGroup():
     def __init__(self, name=None, assimilate=True):
         self._rvtxn_grp = \
-            DB.TransactionGroup(__activedoc__,
+            DB.TransactionGroup(_R.doc,
                                 name if name else DEFAULT_TRANSACTION_NAME)
         self.assimilate = assimilate
 
@@ -278,11 +278,11 @@ def _pick_obj(self, obj_type, pick_message, multiple=False, world=False):
                                  multiple, world))
         if multiple:
             refs = \
-                list(__activeuidoc__.Selection.PickObjects(obj_type,
+                list(_R.uidoc.Selection.PickObjects(obj_type,
                                                            pick_message))
         else:
             refs = []
-            refs.append(__activeuidoc__.Selection.PickObject(obj_type,
+            refs.append(_R.uidoc.Selection.PickObject(obj_type,
                                                              pick_message))
 
         if not refs:
@@ -292,7 +292,7 @@ def _pick_obj(self, obj_type, pick_message, multiple=False, world=False):
         logger.debug('Picked elements are: {}'.format(refs))
 
         if obj_type == UI.Selection.ObjectType.Element:
-            return_values = [__activedoc__.GetElement(ref) for ref in refs]
+            return_values = [_R.doc.GetElement(ref) for ref in refs]
         elif obj_type == UI.Selection.ObjectType.PointOnElement:
             if world:
                 return_values = [ref.GlobalPoint for ref in refs]
@@ -300,7 +300,7 @@ def _pick_obj(self, obj_type, pick_message, multiple=False, world=False):
                 return_values = [ref.UVPoint for ref in refs]
         else:
             return_values = \
-                [__activedoc__.GetElement(ref)
+                [_R.doc.GetElement(ref)
                     .GetGeometryObjectFromReference(ref)
                  for ref in refs]
 
@@ -376,7 +376,7 @@ def pick_linkeds(self, pick_message=''):
 
 def pick_point(self, pick_message=''):
     try:
-        return __activeuidoc__.Selection.PickPoint(pick_message)
+        return _R.uidoc.Selection.PickPoint(pick_message)
     except Exception:
             return None
 
@@ -413,7 +413,7 @@ def get_projectinfo():
 
 
 def get_activeview():
-    return __activeuidoc__.ActiveView
+    return _R.uidoc.ActiveView
 
 
 def get_selection():
