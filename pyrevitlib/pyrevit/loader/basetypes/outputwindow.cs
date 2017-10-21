@@ -257,7 +257,11 @@ namespace PyRevitBaseClasses
         public void SelfDestructTimer(int seconds)
         {
             var dispatcherTimer = new DispatcherTimer();
-            dispatcherTimer.Tick += (sender, e) => Close();
+            dispatcherTimer.Tick += (sender, e) => {
+                var dt = (DispatcherTimer)sender;
+                dt.Stop();
+                Close();
+                };
             dispatcherTimer.Interval = new TimeSpan(0, 0, seconds);
             dispatcherTimer.Start();
         }
