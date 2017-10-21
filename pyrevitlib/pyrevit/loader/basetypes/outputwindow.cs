@@ -89,8 +89,6 @@ namespace PyRevitBaseClasses
                 splitter.Background = Brushes.LightGray;
 
                 var repl = new REPLControl();
-                repl.FontFamily = new FontFamily("Verdana");
-                repl.Text = " >>> REPL Prompt Coming Soon...";
 
                 Grid.SetRow(host, 0);
                 Grid.SetRow(splitter, 1);
