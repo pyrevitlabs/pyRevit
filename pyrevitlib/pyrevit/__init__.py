@@ -11,6 +11,7 @@ import os
 import os.path as op
 import traceback
 
+import PyRevitLoader
 
 # ------------------------------------------------------------------------------
 # config environment paths
@@ -27,9 +28,7 @@ EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
-PYTHON_LIB_DIR = op.join(HOME_DIR, 'pylib')
-PYTHON_LIB_SITEPKGS_DIR = op.join(PYTHON_LIB_DIR, 'site-packages')
-MISC_LIB_DIR = op.join(HOME_DIR, 'lib')
+MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
 
 PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 
@@ -38,11 +37,13 @@ LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
 
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
+PYREVITLOADER_DIR = \
+    op.join(LOADER_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
 ADDIN_RESOURCE_DIR = op.join(ADDIN_DIR, 'Source', 'pyRevitLoader', 'Resources')
-PLATFORM_DLL_DIR = ADDIN_DIR
 
 # add the framework dll path to the search paths
-sys.path.append(PLATFORM_DLL_DIR)
+sys.path.append(ADDIN_DIR)
+sys.path.append(PYREVITLOADER_DIR)
 
 
 from pyrevit.framework import Process, IOException
@@ -171,6 +172,10 @@ class _ExecutorParams(object):
             return __ipyenginemanager__
         except NameError:
             raise AttributeError()
+
+    @property   # read-only
+    def engine_ver(self):
+        return PyRevitLoader.ScriptExecutor.EngineVersion
 
     @property  # read-only
     def first_load(self):

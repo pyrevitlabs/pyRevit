@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using System.Collections.Generic;
+using PyRevitLoader;
 
 
 namespace PyRevitBaseClasses
@@ -99,15 +100,21 @@ namespace PyRevitBaseClasses
                 
             var engine = IronPython.Hosting.Python.CreateEngine(flags);
 
+            // also, allow access to the PyRevitLoader internals
+            engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
+
+            // also, allow access to the PyRevitBaseClasses internals
+            engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
+
             // reference RevitAPI and RevitAPIUI
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.DB.Document).Assembly);
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.UI.TaskDialog).Assembly);
 
-            // also, allow access to the RPL internals
-            engine.Runtime.LoadAssembly(typeof(PyRevitBaseClasses.ScriptExecutor).Assembly);
-
             // save the default stream for later resetting the streams
             DefaultOutputStreamConfig = new Tuple<Stream, System.Text.Encoding>(engine.Runtime.IO.OutputStream, engine.Runtime.IO.OutputEncoding);
+
+            // setup stdlib
+            SetupStdlib(engine);
 
             return engine;
         }
@@ -135,6 +142,14 @@ namespace PyRevitBaseClasses
         private ScriptEngine RefreshCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
         {
             return CreateNewCachedEngine(ref pyrvtCmd);
+        }
+
+        private void SetupStdlib(ScriptEngine engine)
+        {
+            // ask PyRevitLoader to add it's resource ZIP file that contains the IronPython
+            // standard library to this engine
+            var tempExec = new PyRevitLoader.ScriptExecutor();
+            tempExec.AddEmbeddedLib(engine);
         }
 
         private void SetupSearchPaths(ScriptEngine engine, string[] searchPaths)

@@ -2,7 +2,7 @@ __fullframeengine__ = True
 
 from rpws import RevitServer
 
-rs = RevitServer('rno03p1rvtap01.teslamotors.com', '2015')
+rs = RevitServer('rshil02', '2017')
 
 for parent, folders, files, models in rs.walk():
     print(parent)

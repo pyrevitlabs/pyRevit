@@ -45,6 +45,8 @@ from Microsoft.CSharp import CSharpCodeProvider
 
 from System.Management import ManagementObjectSearcher
 
-
-clr.AddReference('IronPython.Wpf')
-import wpf
+try:
+    clr.AddReference('IronPython.Wpf')
+    import wpf
+except Exception:
+    pass

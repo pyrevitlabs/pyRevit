@@ -90,6 +90,8 @@ class SettingsWindow(forms.WPFWindow):
 
         self.rocketmode_cb.IsChecked = user_config.core.rocketmode
 
+        self.dynamocompatmode_cb.IsChecked = addinfiles.get_dynamocompat()
+
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list
         """
@@ -307,6 +309,8 @@ class SettingsWindow(forms.WPFWindow):
         # save all new values into config file
         user_config.save_changes()
 
+        # set dynamo compatibility mode
+        addinfiles.set_dynamocompat(self.dynamocompatmode_cb.IsChecked)
         # update usage logging and addin files
         self.update_usagelogging()
         self.update_addinfiles()

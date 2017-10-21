@@ -14,8 +14,7 @@ pyrevit.plugins.extpackages to check whether an extension is active or not.
 """
 
 from pyrevit import EXEC_PARAMS
-from pyrevit import MAIN_LIB_DIR, PYTHON_LIB_DIR, \
-                    MISC_LIB_DIR, PYTHON_LIB_SITEPKGS_DIR
+from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
@@ -220,9 +219,7 @@ def get_installed_ui_extensions():
     for ui_extension in ui_ext_list:
         _update_extension_syspaths(ui_extension,
                                    lib_ext_list,
-                                   [PYTHON_LIB_DIR,
-                                    PYTHON_LIB_SITEPKGS_DIR,
-                                    MAIN_LIB_DIR,
+                                   [MAIN_LIB_DIR,
                                     MISC_LIB_DIR])
 
     return ui_ext_list

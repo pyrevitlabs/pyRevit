@@ -29,8 +29,9 @@ logger = get_logger(__name__)
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that
     # the extension is based upon and also the user configuration version
-    return get_str_hash(BASE_TYPES_DIR_HASH \
-                        + user_config.get_config_version() \
+    return get_str_hash(BASE_TYPES_DIR_HASH
+                        + EXEC_PARAMS.engine_ver
+                        + user_config.get_config_version()
                         + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
 
 
