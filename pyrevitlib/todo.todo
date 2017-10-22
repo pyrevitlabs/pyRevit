@@ -3,6 +3,7 @@ Shared engine fixes:
 ☐ log files don't have command names. Bring that back
 ☐ add date to log file names
 ☐ Fix occasional output window blackout
+☐ Test dynamo compat mode in %programdata%
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
