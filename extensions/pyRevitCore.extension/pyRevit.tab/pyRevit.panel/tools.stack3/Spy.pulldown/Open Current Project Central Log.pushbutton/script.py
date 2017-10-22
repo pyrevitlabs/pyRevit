@@ -3,14 +3,11 @@ __doc__ = 'Opens the central log for the current workshared project.'
 import os
 import os.path as op
 
-from pyrevit import DB, UI
+from pyrevit import revit, DB, UI
 
 
-doc = _R.doc
-
-
-if doc.GetWorksharingCentralModelPath():
-    model_path = doc.GetWorksharingCentralModelPath()
+if revit.doc.GetWorksharingCentralModelPath():
+    model_path = revit.doc.GetWorksharingCentralModelPath()
     centralPath = \
         DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
     centralName = op.splitext(op.basename(centralPath))[0]

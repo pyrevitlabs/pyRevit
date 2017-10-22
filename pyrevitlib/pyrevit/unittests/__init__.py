@@ -7,11 +7,9 @@ suite to test the full functionality of that module, although only a subset of
 functions are used during startup and normal operations of pyRevit.
 """
 
+from pyrevit.unittests._testrunner import run_module_tests
 import warnings
 warnings.filterwarnings("ignore")
-
-# noinspection PyProtectedMember
-from pyrevit.unittests._testrunner import run_module_tests
 
 
 def perform_engine_tests():

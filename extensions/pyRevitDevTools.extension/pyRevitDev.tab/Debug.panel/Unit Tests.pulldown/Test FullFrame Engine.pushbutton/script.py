@@ -1,14 +1,7 @@
 __fullframeengine__ = True
 
-from rpws import RevitServer
+import requests
 
-rs = RevitServer('rshil02', '2017')
+r = requests.get('http://www.x.com')
 
-for parent, folders, files, models in rs.walk():
-    print(parent)
-    for fd in folders:
-        print('\t@d {}'.format(fd.path))
-    for f in files:
-        print('\t@f {}'.format(f.path))
-    for m in models:
-        print('\t@m {}'.format(m.path))
+print('X.com says: {}'.format(r.text))

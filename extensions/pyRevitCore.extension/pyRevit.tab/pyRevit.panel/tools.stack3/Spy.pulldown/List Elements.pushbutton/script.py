@@ -1,8 +1,7 @@
 __doc__ = 'Lists specific elements from the model database.'
 
 from pyrevit.framework import List
-from pyrevit import DB, UI
-from pyrevit import revit
+from pyrevit import revit, DB, UI
 from pyrevit.forms import userinput
 
 
@@ -40,7 +39,7 @@ selected_switch = \
 
 
 if selected_switch == 'Graphic Styles':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     gstyles = [i for i in cl.OfClass(DB.GraphicsStyle).ToElements()]
 
     for gs in gstyles:
@@ -56,7 +55,7 @@ if selected_switch == 'Graphic Styles':
                           parent.ljust(50)))
 
 elif selected_switch == 'Grids':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     grid_list = cl.OfCategory(DB.BuiltInCategory.OST_Grids)\
                   .WhereElementIsNotElementType().ToElements()
 
@@ -65,12 +64,12 @@ elif selected_switch == 'Grids':
                                          el.Id))
 
 elif selected_switch == 'Line Patterns':
-    cl = DB.FilteredElementCollector(_R.doc).OfClass(DB.LinePatternElement)
+    cl = DB.FilteredElementCollector(revit.doc).OfClass(DB.LinePatternElement)
     for i in cl:
         print(i.Name)
 
 elif selected_switch == 'Line Styles':
-    c = _R.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+    c = revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
     subcats = c.SubCategories
 
     for lineStyle in subcats:
@@ -81,7 +80,7 @@ elif selected_switch == 'Model / Detail / Sketch Lines':
     cat_list = List[DB.BuiltInCategory]([DB.BuiltInCategory.OST_Lines,
                                          DB.BuiltInCategory.OST_SketchLines])
     elfilter = DB.ElementMulticategoryFilter(cat_list)
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     cllines = cl.WherePasses(elfilter)\
                 .WhereElementIsNotElementType().ToElements()
 
@@ -94,7 +93,7 @@ elif selected_switch == 'Model / Detail / Sketch Lines':
                       c.Category.Name))
 
 elif selected_switch == 'Project Parameters':
-    pm = _R.doc.ParameterBindings
+    pm = revit.doc.ParameterBindings
     it = pm.ForwardIterator()
     it.Reset()
     while it.MoveNext():
@@ -148,14 +147,14 @@ elif selected_switch == 'Data Schemas':
                               fl.ValueType))
 
 elif selected_switch == 'Sketch Planes':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     skechplanelist = [i for i in cl.OfClass(DB.SketchPlane).ToElements()]
 
     for gs in skechplanelist:
         print('NAME: {0} ID: {1}'.format(gs.Name.ljust(50), gs.Id))
 
 elif selected_switch == 'Viewports':
-    vps = DB.FilteredElementCollector(_R.doc)\
+    vps = DB.FilteredElementCollector(revit.doc)\
           .OfCategory(DB.BuiltInCategory.OST_Viewports)\
           .WhereElementIsNotElementType().ToElements()
 
@@ -163,12 +162,12 @@ elif selected_switch == 'Viewports':
         print('ID: {1}TYPE: {0}VIEWNAME: {2}'
               .format(v.Name.ljust(30),
                       str(v.Id).ljust(10),
-                      _R.doc.GetElement(v.ViewId).ViewName))
+                      revit.doc.GetElement(v.ViewId).ViewName))
 
 elif selected_switch == 'Viewport Types':
     vps = []
 
-    cl_views = DB.FilteredElementCollector(_R.doc)
+    cl_views = DB.FilteredElementCollector(revit.doc)
     vptypes = cl_views.OfClass(DB.ElementType).ToElements()
 
     for tp in vptypes:
@@ -178,7 +177,7 @@ elif selected_switch == 'Viewport Types':
                                              str(tp.Id).ljust(10)))
 
 elif selected_switch == 'Family Symbols':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     eltype_list = cl.OfClass(DB.ElementType).ToElements()
 
     for et in eltype_list:
@@ -186,7 +185,7 @@ elif selected_switch == 'Family Symbols':
         print(wrapperd_et.name, et.FamilyName)
 
 elif selected_switch == 'Levels':
-    levelslist = DB.FilteredElementCollector(_R.doc)\
+    levelslist = DB.FilteredElementCollector(revit.doc)\
                  .OfCategory(DB.BuiltInCategory.OST_Levels)\
                  .WhereElementIsNotElementType()
 
@@ -198,7 +197,7 @@ elif selected_switch == 'Levels':
                                   i.Elevation))
 
 elif selected_switch == 'Scope Boxes':
-    scopeboxes = DB.FilteredElementCollector(_R.doc)\
+    scopeboxes = DB.FilteredElementCollector(revit.doc)\
                  .OfCategory(DB.BuiltInCategory.OST_VolumeOfInterest)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -206,7 +205,7 @@ elif selected_switch == 'Scope Boxes':
         print('SCOPEBOX: {0}'.format(el.Name))
 
 elif selected_switch == 'Areas':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     arealist = cl.OfCategory(DB.BuiltInCategory.OST_Areas)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -225,7 +224,7 @@ elif selected_switch == 'Areas':
     print('\n\nTOTAL AREAS FOUND: {0}'.format(len(arealist)))
 
 elif selected_switch == 'Rooms':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     roomlist = cl.OfCategory(DB.BuiltInCategory.OST_Rooms)\
                  .WhereElementIsNotElementType().ToElements()
 
@@ -240,7 +239,7 @@ elif selected_switch == 'Rooms':
     print('\n\nTOTAL ROOMS FOUND: {0}'.format(len(roomlist)))
 
 elif selected_switch == 'External References':
-    location = _R.doc.PathName
+    location = revit.doc.PathName
     try:
         modelPath = DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
         transData = DB.TransmissionData.ReadTransmissionData(modelPath)
@@ -257,7 +256,7 @@ elif selected_switch == 'External References':
         print('Model is not saved yet. Can not aquire location.')
 
 elif selected_switch == 'Revisions':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     revs = cl.OfCategory(DB.BuiltInCategory.OST_Revisions)\
              .WhereElementIsNotElementType()
 
@@ -276,7 +275,7 @@ elif selected_switch == 'Revisions':
               )
 
 elif selected_switch == 'Sheets':
-    cl_sheets = DB.FilteredElementCollector(_R.doc)
+    cl_sheets = DB.FilteredElementCollector(revit.doc)
     sheetsnotsorted = cl_sheets.OfCategory(DB.BuiltInCategory.OST_Sheets)\
                                .WhereElementIsNotElementType().ToElements()
     sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
@@ -288,7 +287,7 @@ elif selected_switch == 'Sheets':
                       s.LookupParameter('Sheet Name').AsString().ljust(50)))
 
 elif selected_switch == 'System Categories':
-    for cat in _R.doc.Settings.Categories:
+    for cat in revit.doc.Settings.Categories:
         print(cat.Name)
 
 elif selected_switch == 'System Postable Commands':
@@ -305,13 +304,13 @@ elif selected_switch == 'System Postable Commands':
             print('{0}'.format(str(pc).ljust(50)))
 
 elif selected_switch == 'Views':
-    element_ids = _R.uidoc.Selection.GetElementIds()
-    selection = [_R.doc.GetElement(elId) for elId in element_ids]
+    element_ids = revit.uidoc.Selection.GetElementIds()
+    selection = [revit.doc.GetElement(elId) for elId in element_ids]
 
     views = []
 
     if len(selection) == 0:
-        cl_views = DB.FilteredElementCollector(_R.doc)
+        cl_views = DB.FilteredElementCollector(revit.doc)
         views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                         .WhereElementIsNotElementType().ToElements()
     else:
@@ -338,7 +337,7 @@ elif selected_switch == 'Views':
                       if underlayp else '---'.ljust(25)))
 
 elif selected_switch == 'View Templates':
-    cl_views = DB.FilteredElementCollector(_R.doc)
+    cl_views = DB.FilteredElementCollector(revit.doc)
     views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                     .WhereElementIsNotElementType().ToElements()
 
@@ -347,23 +346,23 @@ elif selected_switch == 'View Templates':
             print('ID: {1}		{0}'.format(v.ViewName, str(v.Id).ljust(10)))
 
 elif selected_switch == 'Worksets':
-    cl = DB.FilteredWorksetCollector(_R.doc)
+    cl = DB.FilteredWorksetCollector(revit.doc)
     worksetlist = cl.OfKind(DB.WorksetKind.UserWorkset)
 
-    if _R.doc.IsWorkshared:
+    if revit.doc.IsWorkshared:
         for ws in worksetlist:
             print('WORKSET: {0} ID: {1}'.format(ws.Name.ljust(50), ws.Id))
     else:
         UI.TaskDialog.Show('pyRevit', 'Model is not workshared.')
 
 elif selected_switch == 'Revision Clouds':
-    cl = DB.FilteredElementCollector(_R.doc)
+    cl = DB.FilteredElementCollector(revit.doc)
     revs = cl.OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
              .WhereElementIsNotElementType()
 
     for rev in revs:
-        parent = _R.doc.GetElement(rev.OwnerViewId)
-        revnum = _R.doc.GetElement(rev.RevisionId).RevisionNumber
+        parent = revit.doc.GetElement(rev.OwnerViewId)
+        revnum = revit.doc.GetElement(rev.RevisionId).RevisionNumber
         if isinstance(parent, DB.ViewSheet):
             print('REV#: {0}\t\t'
                   'ID: {3}\t\t'
@@ -390,8 +389,8 @@ elif selected_switch == 'Selected Line Coordinates':
         return False
 
 
-    for elId in _R.uidoc.Selection.GetElementIds():
-        el = _R.doc.GetElement(elId)
+    for elId in revit.uidoc.Selection.GetElementIds():
+        el = revit.doc.GetElement(elId)
         if isline(el):
             print('Line ID: {0}'.format(el.Id))
             print('Start:\t {0}'.format(el.GeometryCurve.GetEndPoint(0)))
@@ -401,7 +400,7 @@ elif selected_switch == 'Selected Line Coordinates':
 
 elif selected_switch == 'Data Schema Entities':
     allElements = \
-        list(DB.FilteredElementCollector(_R.doc)
+        list(DB.FilteredElementCollector(revit.doc)
                .WherePasses(
                    DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
                                       DB.ElementIsElementTypeFilter(True))

@@ -8,9 +8,9 @@ from pyrevit import revit,  DB
 def toggle_sectionbox():
     # activate the show hidden so we can collect
     # all elements (visible and hidden)
-    activeview = _R.uidoc.ActiveView
+    activeview = revit.activeview
     activeview.EnableRevealHiddenMode()
-    view_elements = DB.FilteredElementCollector(_R.doc, activeview.Id)\
+    view_elements = DB.FilteredElementCollector(revit.doc, activeview.Id)\
                       .OfCategory(DB.BuiltInCategory.OST_SectionBox)\
                       .ToElements()
 

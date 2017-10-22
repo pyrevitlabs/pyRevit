@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyrevit.revit import DB
+from pyrevit import DB
 from pyrevit import script
 
 

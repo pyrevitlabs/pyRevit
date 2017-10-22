@@ -3,7 +3,7 @@
 import os
 import os.path as op
 
-from pyrevit import journals
+from pyrevit import revit
 
 
 # Checks to see if notepad++ program is installed and available.
@@ -12,7 +12,7 @@ def npplusplus_exists():
     return op.isfile(op.join(pffolder, 'Notepad++\\Notepad++.EXE'))
 
 
-current_journal = journals.get_current_journal_file()
+current_journal = revit.get_current_journal_file()
 
 if npplusplus_exists():
     os.system('start notepad++ -lvb -n9999999999 "{0}"'
