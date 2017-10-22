@@ -1,10 +1,4 @@
-"""pyRevit root level config for all pyrevit sub-modules.
-Sub-modules handle their specific configuration internally.
-"""
-
-PYREVIT_ADDON_NAME = 'pyRevit'
-VERSION_MAJOR = 4
-VERSION_MINOR = 4
+"""pyRevit root level config for all pyrevit sub-modules."""
 
 import sys
 import os
@@ -12,6 +6,10 @@ import os.path as op
 import traceback
 
 import PyRevitLoader
+
+PYREVIT_ADDON_NAME = 'pyRevit'
+VERSION_MAJOR = 4
+VERSION_MINOR = 4
 
 # ------------------------------------------------------------------------------
 # config environment paths
@@ -88,14 +86,36 @@ class PyRevitIOError(PyRevitException):
 class _HostApplication:
     """Contains current host version and provides comparison functions."""
     def __init__(self):
-        # define HOST_SOFTWARE
+        # verify __revit__
         try:
-            # noinspection PyUnresolvedReferences
-            self.uiapp = __revit__
-            self.app = self.uiapp.Application
+            r = __revit__
         except Exception:
             raise Exception('Critical Error: Host software is not supported. '
                             '(__revit__ handle is not available)')
+
+    @property
+    def uiapp(self):
+        return __revit__
+
+    @property
+    def app(self):
+        return self.uiapp.Application
+
+    @property
+    def uidoc(self):
+        return getattr(self.uiapp, 'ActiveUIDocument', None)
+
+    @property
+    def doc(self):
+        return getattr(self.uidoc, 'Document', None)
+
+    @property
+    def activeview(self):
+        return getattr(self.uidoc, 'ActiveView', None)
+
+    @property
+    def docs(self):
+        return getattr(self.app, 'Documents', None)
 
     @property
     def version(self):
@@ -144,16 +164,6 @@ class _HostApplication:
 
     def is_older_than(self, version):
         return int(self.version) < int(version)
-
-    @property
-    def doc(self):
-        """ Returns: uiapp.ActiveUIDocument.Document """
-        return getattr(self.uiapp.ActiveUIDocument, 'Document', None)
-
-    @property
-    def uidoc(self):
-        """ Returns: uiapp.ActiveUIDocument """
-        return getattr(self.uiapp, 'ActiveUIDocument', None)
 
 
 HOST_APP = _HostApplication()

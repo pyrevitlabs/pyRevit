@@ -249,7 +249,7 @@ namespace PyRevitBaseClasses
             return _resultsDict;
         }
 
-        public UIApplication uiapp
+        public UIApplication UIApp
         {
             get
             {
@@ -257,41 +257,11 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public Application app
+        public Application App
         {
             get
             {
                 return _commandData.Application.Application;
-            }
-        }
-
-        public UIDocument uidoc
-        {
-            get
-            {
-                return _commandData.Application.ActiveUIDocument;
-            }
-        }
-
-        public Document doc
-        {
-            get
-            {
-                if (_commandData.Application.ActiveUIDocument != null)
-                    return _commandData.Application.ActiveUIDocument.Document;
-                else
-                    return null;
-            }
-        }
-
-        public bool zerodoc
-        {
-            get
-            {
-                if (uidoc == null)
-                    return true;
-                else
-                    return false;
             }
         }
 

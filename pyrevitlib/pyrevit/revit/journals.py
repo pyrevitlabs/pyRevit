@@ -1,7 +1,4 @@
-"""
-Provides access to Revit Journals
-
-"""
+"""Provide access to Revit Journal Files."""
 
 import os.path as op
 

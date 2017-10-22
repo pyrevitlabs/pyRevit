@@ -176,10 +176,7 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__externalcommand__", pyrvtCmd);
 
             // Add host application handle to the builtin to be globally visible everywhere
-            builtin.SetVariable("__revit__", pyrvtCmd.uiapp);
-
-            // Add handle to command runtime class
-            builtin.SetVariable("_R", pyrvtCmd);
+            builtin.SetVariable("__revit__", pyrvtCmd.UIApp);
 
             // Adding data provided by IExternalCommand.Execute
             builtin.SetVariable("__commanddata__",          pyrvtCmd.CommandData);
@@ -212,8 +209,6 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__cachedengine__",         (Object)null);
             builtin.SetVariable("__ipyenginemanager__",     (Object)null);
             builtin.SetVariable("__externalcommand__",      (Object)null);
-            builtin.SetVariable("__revit__",                (Object)null);
-            builtin.SetVariable("_R",                       (Object)null);
             builtin.SetVariable("__commanddata__",          (Object)null);
             builtin.SetVariable("__elements__",             (Object)null);
             builtin.SetVariable("__commandpath__",          (Object)null);

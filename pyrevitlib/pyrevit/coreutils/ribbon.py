@@ -1028,3 +1028,12 @@ def get_current_ui():
     :rtype: _PyRevitUI
     """
     return _PyRevitUI()
+
+
+def get_uibutton(command_unique_name):
+    pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
+    for tab in pyrvt_tabs:
+        button = tab.find_child(command_unique_name)
+        if button:
+            return button
+    return None

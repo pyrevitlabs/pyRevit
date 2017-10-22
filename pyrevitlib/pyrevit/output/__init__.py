@@ -4,10 +4,11 @@ from pyrevit import EXEC_PARAMS
 from pyrevit.framework import AppDomain
 from pyrevit.framework import Drawing, Windows
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils import rvtprotocol, markdown, charts
+from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
+from pyrevit.output import urlscheme
 
 
 logger = get_logger(__name__)
@@ -50,7 +51,8 @@ class PyRevitOutputWindow:
     def __init__(self):
         """Sets up the wrapper from the input dot net window handler"""
         if EXEC_PARAMS.window_handle:
-            EXEC_PARAMS.window_handle.UrlHandler = _handle_protocol_url
+            EXEC_PARAMS.window_handle.UrlHandler = \
+                urlscheme.handle_scheme_url
 
     @property
     def window(self):
@@ -222,7 +224,7 @@ class PyRevitOutputWindow:
 
     @staticmethod
     def linkify(*args):
-        return prepare_html_str(rvtprotocol.make_url(args))
+        return prepare_html_str(urlscheme.make_url(args))
 
     def make_chart(self):
         return charts.PyRevitOutputChart(self)
@@ -252,31 +254,6 @@ class PyRevitOutputWindow:
 
     def make_bubble_chart(self):
         return charts.PyRevitOutputChart(self, chart_type=charts.BUBBLE_CHART)
-
-
-def _handle_protocol_url(url):
-    """
-    This is a function assgined to the ScriptOutput.UrlHandler which
-     is a delegate. Everytime WebBrowser is asked to handle a link with
-     a protocol other than http, it'll call this function.
-    System.Windows.Forms.WebBrowser returns a string with misc stuff
-     before the actual link, when it can't recognize the protocol.
-    This function cleans up the link for the pyRevit protocol handler.
-
-    Args:
-        url (str): the url coming from Forms.WebBrowser
-    """
-    try:
-        if rvtprotocol.PROTOCOL_NAME in url:
-            cleaned_url = url.split(rvtprotocol.PROTOCOL_NAME)[1]
-            # get rid of the slash at the end
-            if cleaned_url.endswith('/'):
-                cleaned_url = cleaned_url.replace('/', '')
-
-            # process cleaned data
-            rvtprotocol.process_url(cleaned_url)
-    except Exception as exec_err:
-        logger.error('Error handling link | {}'.format(exec_err))
 
 
 def get_output():
