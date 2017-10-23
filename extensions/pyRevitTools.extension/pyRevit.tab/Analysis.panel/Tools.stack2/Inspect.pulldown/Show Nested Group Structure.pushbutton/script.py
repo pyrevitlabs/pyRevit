@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """List the nested group structure around the selected group or element."""
 
-from scriptutils import this_script
-from revitutils import doc, uidoc, selection
-from Autodesk.Revit.DB import Element, ElementId, Group, GroupType
+from pyrevit import revit, DB
+from pyrevit import script
+
+
+output = script.get_output()
+selection = revit.get_selection()
+
 
 class GroupNode:
     def __init__(self, group_element, par=None):
@@ -20,12 +24,12 @@ class GroupNode:
 
     @property
     def members(self):
-        return [doc.GetElement(x) for x in self.group.GetMemberIds()]
+        return [revit.doc.GetElement(x) for x in self.group.GetMemberIds()]
 
     def find_subgroups(self):
         subgrps = []
         for mem in self.members:
-            if isinstance(mem, Group):
+            if isinstance(mem, DB.Group):
                 subgrps.append(GroupNode(mem))
         return subgrps
 
@@ -42,19 +46,22 @@ class GroupNode:
 def print_tree(groupnode, level, trunk='', branch=''):
     """recursive method for printing (nested) group structure"""
     inset = '\t'
-    fruit = branch + '■ {name} {id}' \
-              .format(name=groupnode.name,
-                      id=this_script.output.linkify(groupnode.id))
+    fruit = \
+        branch + '■ {name} {id}'\
+                 .format(name=groupnode.name, id=output.linkify(groupnode.id))
+
     if groupnode.id in selection.element_ids:
         print(fruit + '\t<<< selected group element')
-    elif any([x in selection.element_ids for x in [y.Id for y in groupnode.members if not isinstance(y, Group)]]):
+    elif any([x in selection.element_ids
+              for x in [y.Id for y in groupnode.members
+                        if not isinstance(y, DB.Group)]]):
         print(fruit + '\t<<< selected group members')
     else:
         print(fruit)
 
     count = len(groupnode)
     for idx, sub_grp in enumerate(groupnode):
-        last = idx == count -1
+        last = idx == count - 1
         if last:
             sub_grp_trunk = trunk + inset + ' '
             sub_grp_branch = trunk + inset + '└──'
@@ -72,10 +79,10 @@ if not selection.is_empty:
     for element in selection.elements:
         if hasattr(element, 'GroupId'):
             firstparent = element
-            while firstparent.GroupId != ElementId.InvalidElementId:
-                firstparent = doc.GetElement(firstparent.GroupId)
+            while firstparent.GroupId != DB.ElementId.InvalidElementId:
+                firstparent = revit.doc.GetElement(firstparent.GroupId)
 
-            if isinstance(firstparent, Group):
+            if isinstance(firstparent, DB.Group):
                 parent_groups.append(GroupNode(firstparent))
 
 

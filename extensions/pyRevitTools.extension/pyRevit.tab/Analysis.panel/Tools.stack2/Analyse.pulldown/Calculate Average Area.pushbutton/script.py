@@ -1,4 +1,4 @@
-from pyrevit.revit import doc, DB
+from pyrevit import revit, DB
 
 
 __doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select '\
@@ -6,15 +6,15 @@ __doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select '\
           'of that space type.'
 
 
-areas = DB.FilteredElementCollector(__activedoc__)\
+areas = DB.FilteredElementCollector(revit.doc)\
           .OfCategory(DB.BuiltInCategory.OST_Areas)\
           .WhereElementIsNotElementType().ToElements()
 
-rms = DB.FilteredElementCollector(__activedoc__)\
+rms = DB.FilteredElementCollector(revit.doc)\
         .OfCategory(DB.BuiltInCategory.OST_Rooms)\
         .WhereElementIsNotElementType().ToElements()
 
-spaces = DB.FilteredElementCollector(__activedoc__)\
+spaces = DB.FilteredElementCollector(revit.doc)\
            .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)\
            .WhereElementIsNotElementType().ToElements()
 
@@ -24,7 +24,7 @@ processed_items = {DB.Area: [],
                    DB.Mechanical.Space: []}
 
 
-selection = doc.get_selection()
+selection = revit.get_selection()
 
 
 for el in selection.elements:

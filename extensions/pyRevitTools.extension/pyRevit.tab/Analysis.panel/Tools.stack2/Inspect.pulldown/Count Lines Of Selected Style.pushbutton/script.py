@@ -3,15 +3,18 @@
 CTRL-Click: Lists every matching line
 """
 
-from scriptutils import logger
-from revitutils import doc, selection
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+from pyrevit import script
+from pyrevit import revit, DB
 
 
-cl = FilteredElementCollector(doc)
-cllines = cl.OfCategory(BuiltInCategory.OST_Lines or BuiltInCategory.OST_SketchLines).WhereElementIsNotElementType()
+logger = script.get_logger()
+selection = revit.get_selection()
+
+
+cl = DB.FilteredElementCollector(revit.doc)
+cllines = cl.OfCategory(DB.BuiltInCategory.OST_Lines
+                        or DB.BuiltInCategory.OST_SketchLines)\
+            .WhereElementIsNotElementType()
 
 for selected_line in selection.elements:
     selectedStyle = selected_line.LineStyle
@@ -19,10 +22,12 @@ for selected_line in selection.elements:
     count = 0
     for c in cllines:
         if c.LineStyle.Name == selectedStyle.Name:
-            logger.debug('{0:<10} {1:<25}{2:<8} {3:<15}'.format(c.Id,
-                                                                c.GetType().Name,
-                                                                c.LineStyle.Id,
-                                                                c.LineStyle.Name))
+            logger.debug('{0:<10} {1:<25}{2:<8} {3:<15}'
+                         .format(c.Id,
+                                 c.GetType().Name,
+                                 c.LineStyle.Id,
+                                 c.LineStyle.Name))
             count += 1
 
-    print('There are {} lines of style <{}> in the model.'.format(count, selectedStyle.Name))
+    print('There are {} lines of style <{}> in the model.'
+          .format(count, selectedStyle.Name))

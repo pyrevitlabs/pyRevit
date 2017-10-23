@@ -1,13 +1,13 @@
 """Lists all roof slopes in the model."""
 
 from pyrevit import script
-from pyrevit.revit import DB
+from pyrevit import revit, DB
 
 
 output = script.get_output()
 
 
-rooflist = DB.FilteredElementCollector(__activedoc__)\
+rooflist = DB.FilteredElementCollector(revit.doc)\
              .OfCategory(DB.BuiltInCategory.OST_Roofs)\
              .WhereElementIsNotElementType().ToElements()
 
