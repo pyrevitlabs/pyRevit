@@ -1,11 +1,11 @@
 Shared engine fixes:
 ☐ fix pyRevitTools
-☐ log files don't have command names. Bring that back
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✘ log files don't have command names. Bring that back @cancelled(2017-10-22 19:47)
     ✔ Fix occasional output window blackout @done(2017-10-22 16:14)
     ✔ Fix wpf import on 2.7.3 @done(2017-10-21 16:15)
     ✔ Fix pyRevitDevTools @done(2017-10-16 20:05)
