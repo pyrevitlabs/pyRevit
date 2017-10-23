@@ -86,5 +86,5 @@ class CurrentProjectInfo:
         return op.splitext(op.basename(self.location))[0]
 
 
-def get_project_info(self):
+def get_project_info():
     return CurrentProjectInfo()
