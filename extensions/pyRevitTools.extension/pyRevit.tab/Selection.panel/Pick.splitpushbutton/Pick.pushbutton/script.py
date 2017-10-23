@@ -33,27 +33,28 @@ def pickbycategory(catname):
         pass
 
 
-switch_window = userinput.CommandSwitchWindow(sorted(['Area',
-                                                      'Area Boundary',
-                                                      'Column',
-                                                      'Dimension',
-                                                      'Door',
-                                                      'Floor',
-                                                      'Framing',
-                                                      'Furniture',
-                                                      'Grid',
-                                                      'Rooms',
-                                                      'Room Tag',
-                                                      'Truss',
-                                                      'Wall',
-                                                      'Window',
-                                                      'Ceiling',
-                                                      'Section Box',
-                                                      'Elevation Mark',
-                                                      'Parking']),
-                                              'Pick only elements of type:')
+options = sorted(['Area',
+                  'Area Boundary',
+                  'Column',
+                  'Dimension',
+                  'Door',
+                  'Floor',
+                  'Framing',
+                  'Furniture',
+                  'Grid',
+                  'Rooms',
+                  'Room Tag',
+                  'Truss',
+                  'Wall',
+                  'Window',
+                  'Ceiling',
+                  'Section Box',
+                  'Elevation Mark',
+                  'Parking'])
 
-selected_switch = switch_window.pick_cmd_switch()
+selected_switch = \
+    userinput.CommandSwitchWindow.show(options,
+                                       message='Pick only elements of type:')
 
 if selected_switch:
     pickbycategory(selected_switch)

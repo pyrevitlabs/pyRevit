@@ -34,8 +34,8 @@ switches = ['Graphic Styles',
             ]
 
 selected_switch = \
-    userinput.CommandSwitchWindow(sorted(switches),
-                                  'List elements of type:').pick_cmd_switch()
+    userinput.CommandSwitchWindow.show(sorted(switches),
+                                       message='List elements of type:')
 
 
 if selected_switch == 'Graphic Styles':

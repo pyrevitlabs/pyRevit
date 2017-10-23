@@ -160,10 +160,9 @@ def process_sets(element_list):
 options = process_options(selection.elements)
 
 if options:
-    options_window = \
-        userinput.CommandSwitchWindow(sorted(options),
-                                      'Sum values of parameter:')
-    selected_switch = options_window.pick_cmd_switch()
+    selected_switch = \
+        userinput.CommandSwitchWindow.show(sorted(options),
+                                           message='Sum values of parameter:')
 
     # Calculating totals for each set and printing results
     if selected_switch:
