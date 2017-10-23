@@ -261,48 +261,42 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.list_lb.ItemsSource = self._context
 
 
-class CommandSwitchWindow:
-    def __init__(self, switches, message='Pick a command option:'):
-        self.Parent = self
+class CommandSwitchWindow(TemplateUserInputWindow):
+    layout = """
+    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            ShowInTaskbar="False" ResizeMode="NoResize"
+            WindowStartupLocation="CenterScreen"
+            HorizontalContentAlignment="Center"
+            WindowStyle="None"
+            AllowsTransparency="True"
+            Background="#00FFFFFF"
+            SizeToContent="Height"
+            PreviewKeyDown="handle_esc_key"
+            MouseUp="handle_click">
+        <Border CornerRadius="15"
+                Background="#DC373232">
+            <StackPanel x:Name="stack_panel" Margin="5">
+                <Label x:Name="message_label"
+                       Foreground="White"
+                       Margin="2,0,0,0" />
+                <WrapPanel x:Name="button_list" Margin="5" />
+            </StackPanel>
+        </Border>
+    </Window>
+    """
+
+    def _setup(self, **kwargs):
         self.selected_switch = ''
-        # Create window
-        self.my_window = framework.Windows.Window()
-        self.my_window.WindowStyle = framework.Windows.WindowStyle.None
-        self.my_window.AllowsTransparency = True
-        self.my_window.Background = None
-        self.my_window.Title = 'Command Options'
-        self.my_window.Width = 600
-        self.my_window.SizeToContent = framework.Windows.SizeToContent.Height
-        self.my_window.ResizeMode = framework.Windows.ResizeMode.CanMinimize
-        self.my_window.WindowStartupLocation = \
-            framework.Windows.WindowStartupLocation.CenterScreen
-        self.my_window.PreviewKeyDown += self.handle_esc_key
-        self.my_window.MouseUp += self.handle_click
-        border = framework.Controls.Border()
-        border.CornerRadius = framework.Windows.CornerRadius(15)
-        border.Background = \
-            framework.Windows.Media.SolidColorBrush(
-                framework.Windows.Media.Color.FromArgb(220, 55, 50, 50)
-            )
-        self.my_window.Content = border
+        self.Width = 600
+        self.Title = 'Command Options'
 
-        # Create StackPanel to Layout UI elements
-        stack_panel = framework.Controls.StackPanel()
-        stack_panel.Margin = framework.Windows.Thickness(5)
-        border.Child = stack_panel
+        message = kwargs.get('message', None)
 
-        label = framework.Controls.Label()
-        label.Foreground = framework.Windows.Media.Brushes.White
-        label.Content = message
-        label.Margin = framework.Windows.Thickness(2, 0, 0, 0)
-        stack_panel.Children.Add(label)
+        self.message_label.Content = \
+            message if message else 'Pick a command option:'
 
-        # Create WrapPanel for command options
-        self.button_list = framework.Controls.WrapPanel()
-        self.button_list.Margin = framework.Windows.Thickness(5)
-        stack_panel.Children.Add(self.button_list)
-
-        for switch in switches:
+        for switch in self._context:
             my_button = framework.Controls.Button()
             my_button.BorderBrush = framework.Windows.Media.Brushes.Black
             my_button.BorderThickness = framework.Windows.Thickness(0)
@@ -312,23 +306,16 @@ class CommandSwitchWindow:
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
-    # noinspection PyUnusedLocal
     def handle_click(self, sender, args):
-        self.my_window.Close()
+        self.Close()
 
-    # noinspection PyUnusedLocal
     def handle_esc_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
-            self.my_window.Close()
+            self.Close()
 
-    # noinspection PyUnusedLocal
     def process_switch(self, sender, args):
-        self.my_window.Close()
-        self.selected_switch = sender.Content
-
-    def pick_cmd_switch(self):
-        self.my_window.ShowDialog()
-        return self.selected_switch
+        self.Close()
+        self.response = sender.Content
 
 
 def pick_folder():
