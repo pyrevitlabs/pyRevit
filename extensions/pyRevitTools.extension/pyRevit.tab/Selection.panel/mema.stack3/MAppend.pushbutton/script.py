@@ -1,45 +1,31 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+import pickle
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from pyrevit import script
+from pyrevit import revit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Append current selection to memory. Works like the M+ button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
-
-# from Autodesk.Revit.DB import ElementId
-import os
-import os.path as op
-import pickle as pl
-from scriptutils import this_script
-from revitutils import uidoc
+__doc__ = 'Append current selection to memory. Works like the M+ button'\
+          ' in a calculator. This is a project-dependent (Revit *.rvt)'\
+          ' memory. Every project has its own memory saved in'\
+          ' user temp folder as *.pym files.'
 
 __context__ = 'Selection'
 
-datafile = this_script.get_document_data_file(0, "pym", command_name="SelList")
 
-selection = {elId.ToString() for elId in uidoc.Selection.GetElementIds()}
+datafile = script.get_document_data_file("SelList", "pym")
+
+
+selection = revit.get_selection()
+selected_ids = {str(elid.IntegerValue) for elid in selection.element_ids}
 
 try:
     f = open(datafile, 'r')
-    prevsel = pl.load(f)
-    newsel = prevsel.union(selection)
+    prevsel = pickle.load(f)
+    new_selection = prevsel.union(selected_ids)
     f.close()
-except:
-    newsel = selection
+except Exception:
+    new_selection = selected_ids
 
 f = open(datafile, 'w')
-pl.dump(newsel, f)
+pickle.dump(new_selection, f)
 f.close()

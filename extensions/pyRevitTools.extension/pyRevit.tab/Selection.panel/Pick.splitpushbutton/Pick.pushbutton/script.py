@@ -1,12 +1,8 @@
 """Activates selection tool that picks a specific type of element."""
 
 from pyrevit.framework import List
-from pyrevit.revit import DB, UI
-from scriptutils.userinput import CommandSwitchWindow
-
-
-doc = __activedoc__
-uidoc = __activeuidoc__
+from pyrevit import revit, DB, UI
+from pyrevit.forms import userinput
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
@@ -28,33 +24,36 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
 def pickbycategory(catname):
     try:
         sel = PickByCategorySelectionFilter(catname)
-        sellist = uidoc.Selection.PickElementsByRectangle(sel)
+        sellist = revit.uidoc.Selection.PickElementsByRectangle(sel)
         filteredlist = []
         for el in sellist:
             filteredlist.append(el.Id)
-        uidoc.Selection.SetElementIds(List[DB.ElementId](filteredlist))
-    except:
+        revit.uidoc.Selection.SetElementIds(List[DB.ElementId](filteredlist))
+    except Exception:
         pass
 
 
-selected_switch = CommandSwitchWindow(sorted(['Area',
-                                              'Area Boundary',
-                                              'Column',
-                                              'Dimension',
-                                              'Door',
-                                              'Floor',
-                                              'Framing',
-                                              'Furniture',
-                                              'Grid',
-                                              'Rooms',
-                                              'Room Tag',
-                                              'Truss',
-                                              'Wall',
-                                              'Window',
-                                              'Ceiling',
-                                              'Section Box',
-                                              'Elevation Mark',
-                                              'Parking', ]), 'Pick only elements of type:').pick_cmd_switch()
+switch_window = userinput.CommandSwitchWindow(sorted(['Area',
+                                                      'Area Boundary',
+                                                      'Column',
+                                                      'Dimension',
+                                                      'Door',
+                                                      'Floor',
+                                                      'Framing',
+                                                      'Furniture',
+                                                      'Grid',
+                                                      'Rooms',
+                                                      'Room Tag',
+                                                      'Truss',
+                                                      'Wall',
+                                                      'Window',
+                                                      'Ceiling',
+                                                      'Section Box',
+                                                      'Elevation Mark',
+                                                      'Parking']),
+                                              'Pick only elements of type:')
 
-if selected_switch is not '':
+selected_switch = switch_window.pick_cmd_switch()
+
+if selected_switch:
     pickbycategory(selected_switch)
