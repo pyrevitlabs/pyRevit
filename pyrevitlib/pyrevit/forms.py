@@ -1,9 +1,62 @@
-from pyrevit import framework
+import os
+import os.path as op
+
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
-from pyrevit import forms
+from pyrevit.coreutils.logger import get_logger
+from pyrevit import framework
+from pyrevit.framework import wpf
+from pyrevit import UI
 
 
-class TemplateUserInputWindow(forms.WPFWindow):
+logger = get_logger(__name__)
+
+
+class WPFWindow(framework.Windows.Window):
+    def __init__(self, xaml_file, literal_string=False):
+        self.Parent = self
+        if not literal_string:
+            if not op.exists(xaml_file):
+                wpf.LoadComponent(self,
+                                  os.path.join(EXEC_PARAMS.command_path,
+                                               xaml_file)
+                                  )
+            else:
+                wpf.LoadComponent(self, xaml_file)
+        else:
+            wpf.LoadComponent(self, framework.StringReader(xaml_file))
+
+    def show(self):
+        return self.Show()
+
+    def show_dialog(self):
+        return self.ShowDialog()
+
+    def set_image_source(self, element_name, image_file):
+        wpf_element = getattr(self, element_name)
+        if not op.exists(image_file):
+            # noinspection PyUnresolvedReferences
+            wpf_element.Source = \
+                framework.Imaging.BitmapImage(
+                    framework.Uri(os.path.join(EXEC_PARAMS.command_path,
+                                               image_file))
+                    )
+        else:
+            wpf_element.Source = \
+                framework.Imaging.BitmapImage(framework.Uri(image_file))
+
+    @staticmethod
+    def hide_element(*wpf_elements):
+        for wpf_element in wpf_elements:
+            wpf_element.Visibility = framework.Windows.Visibility.Collapsed
+
+    @staticmethod
+    def show_element(*wpf_elements):
+        for wpf_element in wpf_elements:
+            wpf_element.Visibility = framework.Windows.Visibility.Visible
+
+
+class TemplateUserInputWindow(WPFWindow):
     layout = """
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -14,7 +67,7 @@ class TemplateUserInputWindow(forms.WPFWindow):
     """
 
     def __init__(self, context, title, width, height, **kwargs):
-        forms.WPFWindow.__init__(self, self.layout, literal_string=True)
+        WPFWindow.__init__(self, self.layout, literal_string=True)
         self.Title = title
         self.Width = width
         self.Height = height
@@ -28,7 +81,8 @@ class TemplateUserInputWindow(forms.WPFWindow):
         pass
 
     @classmethod
-    def show(cls, context, title='User Input', width=300, height=400, **kwargs):
+    def show(cls, context,
+             title='User Input', width=300, height=400, **kwargs):
         dlg = cls(context, title, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
@@ -85,23 +139,21 @@ class SelectFromList(TemplateUserInputWindow):
     def _list_options(self, option_filter=None):
         if option_filter:
             option_filter = option_filter.lower()
-            self.list_lb.ItemsSource = [str(option) for option in self._context
-                                        if option_filter in str(option).lower()]
+            self.list_lb.ItemsSource = \
+                [str(option) for option in self._context
+                 if option_filter in str(option).lower()]
         else:
-            self.list_lb.ItemsSource = [str(option) for option in self._context]
+            self.list_lb.ItemsSource = \
+                [str(option) for option in self._context]
 
     def _get_options(self):
         return [option for option in self._context
                 if str(option) in self.list_lb.SelectedItems]
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def button_select(self, sender, args):
         self.response = self._get_options()
         self.Close()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def search_txt_changed(self, sender, args):
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
@@ -110,8 +162,6 @@ class SelectFromList(TemplateUserInputWindow):
 
         self._list_options(option_filter=self.search_tb.Text)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def clear_search(self, sender, args):
         self.search_tb.Text = ' '
         self.search_tb.Clear()
@@ -222,29 +272,19 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.list_lb.ItemsSource = None
         self.list_lb.ItemsSource = current_list
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def toggle_all(self, sender, args):
         self._set_states(flip=True)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def check_all(self, sender, args):
         self._set_states(state=True)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def uncheck_all(self, sender, args):
         self._set_states(state=False)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def button_select(self, sender, args):
         self.response = self._context
         self.Close()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def search_txt_changed(self, sender, args):
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
@@ -253,8 +293,6 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
         self._list_options(checkbox_filter=self.search_tb.Text)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def clear_search(self, sender, args):
         self.search_tb.Text = ' '
         self.search_tb.Clear()
@@ -316,6 +354,73 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     def process_switch(self, sender, args):
         self.Close()
         self.response = sender.Content
+
+
+class TemplatePromptBar(WPFWindow):
+    layout = """
+    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            WindowStyle="None" Background="{x:Null}"
+            ShowInTaskbar="False" ShowActivated="False"
+            WindowStartupLocation="Manual" ResizeMode="NoResize" Topmost="True"
+            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <Grid Background="#FFEA9F00">
+            <TextBlock x:Name="message_tb"
+                       TextWrapping="Wrap" Text="TextBlock"
+                       TextAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+        </Grid>
+    </Window>
+    """
+
+    def __init__(self, title='Message', height=24, **kwargs):
+        WPFWindow.__init__(self, self.layout, literal_string=True)
+        screen = HOST_APP.proc_screen
+        work_area = screen.WorkingArea
+        self.Top = work_area.Top
+        self.Left = work_area.Left
+        self.Width = work_area.Width
+        self.Height = height
+        self.message_tb.Text = title
+        self._setup(**kwargs)
+
+    def _setup(self, **kwargs):
+        pass
+
+    def __enter__(self):
+        self.Show()
+
+    def __exit__(self, exception, exception_value, traceback):
+        self.Close()
+
+
+class WarningBar(TemplatePromptBar):
+    pass
+
+
+def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
+    buttons = UI.TaskDialogCommonButtons.Ok
+
+    if any([cancel, yes, no, retry]):
+        buttons = UI.TaskDialogCommonButtons.None
+
+        if cancel:
+            buttons |= UI.TaskDialogCommonButtons.Cancel
+        if yes:
+            buttons |= UI.TaskDialogCommonButtons.Yes
+        if no:
+            buttons |= UI.TaskDialogCommonButtons.No
+        if retry:
+            buttons |= UI.TaskDialogCommonButtons.Retry
+
+    res = UI.TaskDialog.Show(title, msg, buttons)
+
+    if res == UI.TaskDialogResult.Ok \
+            or res == UI.TaskDialogResult.Yes \
+            or res == UI.TaskDialogResult.Retry:
+        return True
+    else:
+        return False
 
 
 def pick_folder():
