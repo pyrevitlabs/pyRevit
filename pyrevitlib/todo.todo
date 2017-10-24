@@ -1,4 +1,5 @@
 Shared engine fixes:
+☐ remove any reference to ScriptOutput internal components (e.g. renderer)
 ☐ fix pyRevitTools
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
