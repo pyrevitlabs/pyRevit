@@ -1,8 +1,9 @@
-import os, sys
+import os
+import sys
 import os.path as op
 
-from scriptutils.userinput import pick_folder
-from Autodesk.Revit.UI import TaskDialog
+from pyrevit import UI
+from pyrevit import forms
 
 
 __context__ = 'zerodoc'
@@ -17,11 +18,7 @@ __doc__ = 'Renames PDF sheets printed from Revit and removes the Central ' \
 if __shiftclick__:
     basefolder = op.expandvars('%userprofile%\\desktop')
 else:
-    basefolder = pick_folder()
-
-
-def alert(msg):
-    TaskDialog.Show('pyrevit', msg)
+    basefolder = forms.pick_folder()
 
 
 def renamePDF(pdffile):
@@ -44,10 +41,11 @@ if basefolder:
             # if PDF make a new file name and rename the exisitng PDF file
             newfile = renamePDF(pdffile)
             try:
-                os.rename(op.join(basefolder, pdffile), op.join(basefolder, newfile))
+                os.rename(op.join(basefolder, pdffile),
+                          op.join(basefolder, newfile))
                 sheetcount += 1
             except Exception as e:
                 print("Unexpected error:", sys.exc_info()[0])
 
     # let user know how many sheets have been renames
-    alert('{0} FILES RENAMED.'.format(sheetcount))
+    forms.alert('{0} FILES RENAMED.'.format(sheetcount))

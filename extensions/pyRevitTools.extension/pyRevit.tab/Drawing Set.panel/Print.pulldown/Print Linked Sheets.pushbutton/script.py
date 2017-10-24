@@ -2,44 +2,47 @@
 
 import os.path as op
 from pyrevit import USER_DESKTOP
-
-from scriptutils import logger
-from scriptutils.userinput import WPFWindow
-
-from revitutils import doc, all_docs
-
-import clr
-from Autodesk.Revit.DB import Element, FilteredElementCollector, BuiltInCategory, RevitLinkType, ViewSheet, \
-                              ViewSet, PrintRange, Transaction
+from pyrevit import framework
+from pyrevit import revit, DB
+from pyrevit import script
+from pyrevit import forms
 
 
-class PrintLinkedSheets(WPFWindow):
+logger = script.get_logger()
+
+
+class PrintLinkedSheets(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         self.linked_models = []
 
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         self._find_linked_models()
 
     def _find_linked_models(self):
-        cl = FilteredElementCollector(doc)
-        all_linked_models = cl.OfClass(clr.GetClrType(RevitLinkType)).ToElements()
+        cl = DB.FilteredElementCollector(revit.doc)
+        all_linked_models = \
+            cl.OfClass(framework.get_type(DB.RevitLinkType)).ToElements()
         self.linked_models = [lm for lm in all_linked_models
-                                 if RevitLinkType.IsLoaded(doc, lm.Id)] 
+                              if DB.RevitLinkType.IsLoaded(revit.doc, lm.Id)]
         self.linkedmodels_lb.ItemsSource = self.linked_models
         self.linkedmodels_lb.SelectedIndex = 0
 
     def _get_linked_model_doc(self):
         linked_model = self.linkedmodels_lb.SelectedItem
-        for open_doc in all_docs:
-            if open_doc.Title == Element.Name.GetValue(linked_model):
+        for open_doc in revit.docs:
+            if open_doc.Title == revit.ElementWrapper(linked_model).name:
                 return open_doc
 
     def _list_sheets(self):
         open_doc = self._get_linked_model_doc()
         if open_doc:
-            cl_sheets = FilteredElementCollector(open_doc)
-            sheetsnotsorted = cl_sheets.OfClass(clr.GetClrType(ViewSheet)).WhereElementIsNotElementType().ToElements()
-            linked_sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
+            cl_sheets = DB.FilteredElementCollector(open_doc)
+            sheetsnotsorted = \
+                cl_sheets.OfClass(framework.get_type(DB.ViewSheet))\
+                         .WhereElementIsNotElementType()\
+                         .ToElements()
+            linked_sheets = \
+                sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
             self.linkedsheets_lb.ItemsSource = linked_sheets
 
     def _get_printer(self):
@@ -54,22 +57,27 @@ class PrintLinkedSheets(WPFWindow):
         print_mgr.PrintToFile = True
 
         if combined:
-            # fixme: list sheets sets and let user decide which one to print. Changing sets is not possible
+            # fixme: list sheets sets and let user decide which one to print.
+            # Changing sets is not possible
             pass
             # print_mgr.CombinedFile = combined
-            # print_mgr.PrintRange = PrintRange.Select
-            # myviewset = ViewSet()
+            # print_mgr.PrintRange = DB.PrintRange.Select
+            # myviewset = DB.ViewSet()
             # viewsheetsetting = print_mgr.ViewSheetSetting
             # for sheet in self.linkedsheets_lb.SelectedItems:
             #     myviewset.Insert(sheet)
             # viewsheetsetting.CurrentViewSheetSet.Views = myviewset
-            # print_mgr.PrintToFileName = op.join(USER_DESKTOP, '{}.pdf'.format(open_doc.Title))
+            # print_mgr.PrintToFileName = \
+            #    op.join(USER_DESKTOP, '{}.pdf'.format(open_doc.Title))
             # print_mgr.SubmitPrint()
 
         else:
             # print_mgr.SelectNewPrintDriver("CutePDF Writer")
             for sheet in self.linkedsheets_lb.SelectedItems:
-                print_mgr.PrintToFileName = op.join(USER_DESKTOP, '{} - {}.pdf'.format(sheet.SheetNumber, sheet.Name))
+                print_mgr.PrintToFileName = \
+                    op.join(USER_DESKTOP, '{} - {}.pdf'
+                                          .format(sheet.SheetNumber,
+                                                  sheet.Name))
                 print_mgr.SubmitPrint(sheet)
 
     def selection_changed(self, sender, args):
@@ -93,6 +101,4 @@ class PrintLinkedSheets(WPFWindow):
         self._print_sheets(combined=True)
 
 
-if __name__ == '__main__':
-    # noinspection PyUnresolvedReferences
-    PrintLinkedSheets('PrintLinkedSheets.xaml').ShowDialog()
+PrintLinkedSheets('PrintLinkedSheets.xaml').ShowDialog()
