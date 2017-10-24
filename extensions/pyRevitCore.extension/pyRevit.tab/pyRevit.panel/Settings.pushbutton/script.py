@@ -6,7 +6,6 @@ from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
 from pyrevit import forms
-from pyrevit.forms import userinput
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 from pyrevit.loader.addin import addinfiles
@@ -217,7 +216,7 @@ class SettingsWindow(forms.WPFWindow):
     def addfolder(self, sender, args):
         """Callback method for adding extension folder to configs and list
         """
-        new_path = userinput.pick_folder()
+        new_path = forms.pick_folder()
 
         if new_path:
             new_path = os.path.normpath(new_path)
@@ -246,7 +245,7 @@ class SettingsWindow(forms.WPFWindow):
     def pick_usagelog_folder(self, sender, args):
         """Callback method for picking destination folder for usage log files
         """
-        new_path = userinput.pick_folder()
+        new_path = forms.pick_folder()
 
         if new_path:
             self.usagelogfile_tb.Text = os.path.normpath(new_path)

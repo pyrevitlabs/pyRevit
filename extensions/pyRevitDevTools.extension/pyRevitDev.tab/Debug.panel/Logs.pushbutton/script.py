@@ -5,7 +5,7 @@ import re
 
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
-from pyrevit.forms import userinput
+from pyrevit import forms
 from pyrevit import forms
 from pyrevit import script
 
@@ -250,7 +250,7 @@ class LogViewerWindow(forms.WPFWindow):
             self.entrymsg_tb.Text = self.current_log_entry.clean_msg
 
     def load_log_file(self, sender, args):
-        selected_file = userinput.pick_file('log')
+        selected_file = forms.pick_file('log')
         if selected_file:
             self._append_log_file(selected_file)
 

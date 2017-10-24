@@ -2,7 +2,7 @@ __doc__ = 'Lists specific elements from the model database.'
 
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
-from pyrevit.forms import userinput
+from pyrevit import forms
 
 
 switches = ['Graphic Styles',
@@ -34,8 +34,8 @@ switches = ['Graphic Styles',
             ]
 
 selected_switch = \
-    userinput.CommandSwitchWindow.show(sorted(switches),
-                                       message='List elements of type:')
+    forms.CommandSwitchWindow.show(sorted(switches),
+                                   message='List elements of type:')
 
 
 if selected_switch == 'Graphic Styles':

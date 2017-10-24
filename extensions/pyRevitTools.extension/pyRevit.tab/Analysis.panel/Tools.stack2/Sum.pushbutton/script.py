@@ -1,10 +1,9 @@
 from collections import namedtuple
 from customcollections import DefaultOrderedDict
 
-from pyrevit import script
-
-from pyrevit.forms import userinput
 from pyrevit import revit, DB
+from pyrevit import forms
+from pyrevit import script
 
 
 __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
@@ -161,8 +160,8 @@ options = process_options(selection.elements)
 
 if options:
     selected_switch = \
-        userinput.CommandSwitchWindow.show(sorted(options),
-                                           message='Sum values of parameter:')
+        forms.CommandSwitchWindow.show(sorted(options),
+                                       message='Sum values of parameter:')
 
     # Calculating totals for each set and printing results
     if selected_switch:

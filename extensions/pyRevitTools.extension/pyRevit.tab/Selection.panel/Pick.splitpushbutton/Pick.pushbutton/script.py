@@ -2,7 +2,7 @@
 
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
-from pyrevit.forms import userinput
+from pyrevit import forms
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
@@ -53,8 +53,8 @@ options = sorted(['Area',
                   'Parking'])
 
 selected_switch = \
-    userinput.CommandSwitchWindow.show(options,
-                                       message='Pick only elements of type:')
+    forms.CommandSwitchWindow.show(options,
+                                   message='Pick only elements of type:')
 
 if selected_switch:
     pickbycategory(selected_switch)
