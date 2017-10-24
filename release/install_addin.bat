@@ -1,3 +1,8 @@
+REM Activating Codepage for utf-8
+REM If any unicode characters exist in the paths,
+REM the output manifest file will be written in UTF-8 instead of ANSI
+chcp 65001
+
 cd /D %~dp0
 set releasepath=%CD%
 cd ..
