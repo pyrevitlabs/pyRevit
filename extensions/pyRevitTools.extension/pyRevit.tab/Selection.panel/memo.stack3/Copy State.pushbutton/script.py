@@ -1,48 +1,26 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Copies the state of desired parameter of the active view to memory. ' \
-          'e.g. Visibility Graphics settings or Zoom state. Run it how see how it works.'
-
-__author__ = 'Gui Talarico | github.com/gtalarico\nEhsan Iran-Nejad | eirannejad@gmail.com'
-
 import os
 import os.path as op
 import pickle
-from collections import namedtuple
 
-from Autodesk.Revit.DB import ElementId, TransactionGroup, Transaction, Viewport, ViewSheet, ViewPlan,          \
-                              ViewDrafting, BoundingBoxXYZ, XYZ, View3D, ViewOrientation3D, BuiltInParameter,   \
-                              FilteredElementCollector
-from Autodesk.Revit.UI import TaskDialog
+from pyrevit.framework import List
+from pyrevit import revit, DB, UI
+from pyrevit import forms
+from pyrevit import script
 
-from System.Collections.Generic import List
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
+__doc__ = 'Copies the state of desired parameter of the active'\
+          ' view to memory. e.g. Visibility Graphics settings or'\
+          ' Zoom state. Run it how see how it works.'
 
-import clr
-clr.AddReferenceByPartialName('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
-clr.AddReferenceByPartialName('System.Windows.Forms')
-clr.AddReferenceByPartialName('WindowsBase')
-import System.Windows
+__author__ = 'Gui Talarico | github.com/gtalarico\n'\
+             'Ehsan Iran-Nejad | eirannejad@gmail.com'
+
+
+class Point:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
 
 
 class BasePoint:
@@ -82,77 +60,23 @@ class TransformationMatrix:
         self.destmax = None
 
 
-class commandSwitches:
-    def __init__(self, switches, message = 'Pick a command option:'):
-        # Create window
-        self.my_window = System.Windows.Window()
-        self.my_window.WindowStyle = System.Windows.WindowStyle.None
-        self.my_window.AllowsTransparency = True
-        self.my_window.Background = None
-        self.my_window.Title = 'Command Options'
-        self.my_window.Width = 600
-        self.my_window.SizeToContent = System.Windows.SizeToContent.Height
-        self.my_window.ResizeMode = System.Windows.ResizeMode.CanMinimize
-        self.my_window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
-        self.my_window.PreviewKeyDown += self.handleEsc
-        border = System.Windows.Controls.Border()
-        border.CornerRadius  = System.Windows.CornerRadius(15)
-        border.Background = System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(220,55,50,50))
-        self.my_window.Content = border
+selected_switch = \
+    forms.CommandSwitchWindow.show(
+        ['View Zoom/Pan State',
+         '3D Section Box State',
+         'Viewport Placement on Sheet',
+         'Visibility Graphics'],
+        message='Select property to be copied to memory:'
+        )
 
-        # Create StackPanel to Layout UI elements
-        stack_panel = System.Windows.Controls.StackPanel()
-        stack_panel.Margin = System.Windows.Thickness(5)
-        border.Child = stack_panel
-
-        label = System.Windows.Controls.Label()
-        label.Foreground = System.Windows.Media.Brushes.White
-        label.Content = message
-        label.Margin = System.Windows.Thickness(2, 0, 0, 0)
-        stack_panel.Children.Add(label)
-
-        # Create WrapPanel for command options
-        self.button_list = System.Windows.Controls.WrapPanel()
-        self.button_list.Margin = System.Windows.Thickness(5)
-        stack_panel.Children.Add(self.button_list)
-
-        for switch in switches:
-            my_button = System.Windows.Controls.Button()
-            my_button.BorderBrush = System.Windows.Media.Brushes.Black
-            my_button.BorderThickness = System.Windows.Thickness(0)
-            my_button.Content = switch
-            my_button.Margin = System.Windows.Thickness(5, 0, 5, 5)
-            my_button.Padding = System.Windows.Thickness(5, 0, 5, 0)
-            my_button.Click += self.processSwitch
-            self.button_list.Children.Add(my_button)
-
-
-    def handleEsc(self, sender, args):
-        if (args.Key == System.Windows.Input.Key.Escape):
-            self.my_window.Close()
-
-
-    def processSwitch(self, sender, args):
-        self.my_window.Close()
-        global selected_switch
-        selected_switch = sender.Content
-
-    def pickCommandSwitch(self):
-        self.my_window.ShowDialog()
-
-selected_switch = ''
-usertemp = os.getenv('Temp')
-prjname = op.splitext(op.basename(doc.PathName))[0]
-
-commandSwitches(['View Zoom/Pan State',
-                 '3D Section Box State',
-                 'Viewport Placement on Sheet',
-                 'Visibility Graphics',
-                 ], 'Select property to be copied to memory:').pickCommandSwitch()
 
 if selected_switch == 'View Zoom/Pan State':
-    datafile = usertemp + '\\' + prjname + '_pySaveRevitActiveViewZoomState.pym'
-    av = uidoc.GetOpenUIViews()[0]
+    datafile = \
+        script.get_document_data_file(file_id='SaveRevitActiveViewZoomState',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
+
+    av = revit.uidoc.GetOpenUIViews()[0]
     cornerlist = av.GetZoomCorners()
 
     vc1 = cornerlist[0]
@@ -170,11 +94,15 @@ if selected_switch == 'View Zoom/Pan State':
     f.close()
 
 elif selected_switch == '3D Section Box State':
-    datafile = usertemp + '\\' + prjname + '_pySaveSectionBoxState.pym'
-    av = uidoc.ActiveGraphicalView
-    avui = uidoc.GetOpenUIViews()[0]
+    datafile = \
+        script.get_document_data_file(file_id='SaveSectionBoxState',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
 
-    if isinstance(av, View3D):
+    av = revit.activeview
+    avui = revit.uidoc.GetOpenUIViews()[0]
+
+    if isinstance(av, DB.View3D):
         sb = av.GetSectionBox()
         viewOrientation = av.GetOrientation()
 
@@ -202,7 +130,9 @@ elif selected_switch == '3D Section Box State':
         pickle.dump(vo, f)
         f.close()
     else:
-        TaskDialog.Show('pyrevit', 'You must be on a 3D view to copy Section Box settings.')
+        UI.TaskDialog.Show('pyrevit',
+                           'You must be on a 3D view to copy '
+                           'Section Box settings.')
 
 elif selected_switch == 'Viewport Placement on Sheet':
     """
@@ -216,54 +146,62 @@ elif selected_switch == 'Viewport Placement on Sheet':
     pyrevit Notice:
     pyrevit: repository at https://github.com/eirannejad/pyrevit
     """
-    Point = namedtuple('Point', ['X', 'Y','Z'])
     originalviewtype = ''
 
     selview = selvp = None
     vpboundaryoffset = 0.01
-    activeSheet = uidoc.ActiveGraphicalView
+    activeSheet = revit.activeview
     transmatrix = TransformationMatrix()
     revtransmatrix = TransformationMatrix()
 
     def sheet_to_view_transform(sheetcoord):
         global transmatrix
-        newx = transmatrix.destmin.X + (
-            ((sheetcoord.X - transmatrix.sourcemin.X) * (transmatrix.destmax.X - transmatrix.destmin.X)) / (
-                transmatrix.sourcemax.X - transmatrix.sourcemin.X))
-        newy = transmatrix.destmin.Y + (
-            ((sheetcoord.Y - transmatrix.sourcemin.Y) * (transmatrix.destmax.Y - transmatrix.destmin.Y)) / (
-                transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
-        return XYZ(newx, newy, 0.0)
+        newx = \
+            transmatrix.destmin.X \
+            + (((sheetcoord.X - transmatrix.sourcemin.X)
+                * (transmatrix.destmax.X - transmatrix.destmin.X))
+               / (transmatrix.sourcemax.X - transmatrix.sourcemin.X))
+
+        newy = \
+            transmatrix.destmin.Y \
+            + (((sheetcoord.Y - transmatrix.sourcemin.Y)
+                * (transmatrix.destmax.Y - transmatrix.destmin.Y))
+               / (transmatrix.sourcemax.Y - transmatrix.sourcemin.Y))
+
+        return DB.XYZ(newx, newy, 0.0)
 
     def set_tansform_matrix(selvp, selview):
         # making sure the cropbox is active.
         cboxactive = selview.CropBoxActive
         cboxvisible = selview.CropBoxVisible
-        cboxannoparam = selview.get_Parameter(BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE)
+        cboxannoparam = selview.get_Parameter(
+            DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE
+            )
+
         cboxannostate = cboxannoparam.AsInteger()
-        curviewelements = FilteredElementCollector(doc).OwnedByView(selview.Id).WhereElementIsNotElementType().ToElements()
+        curviewelements = DB.FilteredElementCollector(revit.doc)\
+                            .OwnedByView(selview.Id)\
+                            .WhereElementIsNotElementType()\
+                            .ToElements()
+
         viewspecificelements = []
         for el in curviewelements:
-            if  el.ViewSpecific                   \
-                and (not el.IsHidden(selview))   \
-                and el.CanBeHidden               \
-                and el.Category != None:
+            if el.ViewSpecific \
+                    and (not el.IsHidden(selview)) \
+                    and el.CanBeHidden \
+                    and el.Category is not None:
                 viewspecificelements.append(el.Id)
 
-        with TransactionGroup(doc, 'Activate and Read Cropbox Boundary') as tg:
-            tg.Start()
-            with Transaction(doc, 'Hiding all 2d elements') as t:
-                t.Start()
+        with revit.TransactionGroup('Activate & Read Cropbox Boundary'):
+            with revit.Transaction('Hiding all 2d elements'):
                 if viewspecificelements:
                     for elid in viewspecificelements:
                         try:
-                            selview.HideElements(List[ElementId](elid))
-                        except:
+                            selview.HideElements(List[DB.ElementId](elid))
+                        except Exception:
                             pass
-                t.Commit()
 
-            with Transaction(doc, 'Activate and Read Cropbox Boundary') as t:
-                t.Start()
+            with revit.Transaction('Activate & Read Cropbox Boundary'):
                 selview.CropBoxActive = True
                 selview.CropBoxVisible = False
                 cboxannoparam.Set(0)
@@ -279,15 +217,17 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     for l in cl:
                         modelucsx.append(l.GetEndPoint(0).X)
                         modelucsy.append(l.GetEndPoint(0).Y)
-                    cropmin = XYZ(min(modelucsx), min(modelucsy), 0.0)
-                    cropmax = XYZ(max(modelucsx), max(modelucsy), 0.0)
+                    cropmin = DB.XYZ(min(modelucsx), min(modelucsy), 0.0)
+                    cropmax = DB.XYZ(max(modelucsx), max(modelucsy), 0.0)
 
                     # get vp min max points in sheetUCS
                     ol = selvp.GetBoxOutline()
                     vptempmin = ol.MinimumPoint
-                    vpmin = XYZ(vptempmin.X + vpboundaryoffset, vptempmin.Y + vpboundaryoffset, 0.0)
+                    vpmin = DB.XYZ(vptempmin.X + vpboundaryoffset,
+                                   vptempmin.Y + vpboundaryoffset, 0.0)
                     vptempmax = ol.MaximumPoint
-                    vpmax = XYZ(vptempmax.X - vpboundaryoffset, vptempmax.Y - vpboundaryoffset, 0.0)
+                    vpmax = DB.XYZ(vptempmax.X - vpboundaryoffset,
+                                   vptempmax.Y - vpboundaryoffset, 0.0)
 
                     transmatrix.sourcemin = vpmin
                     transmatrix.sourcemax = vpmax
@@ -304,26 +244,29 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     cboxannoparam.Set(cboxannostate)
 
                     if viewspecificelements:
-                        selview.UnhideElements(List[ElementId](viewspecificelements))
+                        selview.UnhideElements(
+                            List[DB.ElementId](viewspecificelements)
+                            )
 
-                t.Commit()
-            tg.Assimilate()
+    datafile = \
+        script.get_document_data_file(file_id='SaveViewportLocation',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
 
-    datafile = usertemp + '\\' + prjname + '_pySaveViewportLocation.pym'
-
-    selected_ids = uidoc.Selection.GetElementIds()
+    selected_ids = revit.uidoc.Selection.GetElementIds()
 
     if selected_ids.Count == 1:
         vport_id = selected_ids[0]
         try:
-            vport = doc.GetElement(vport_id)
-        except:
-            TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
-        if isinstance(vport, Viewport):
-            view = doc.GetElement(vport.ViewId)
-            if view is not None and isinstance(view, ViewPlan):
-                with TransactionGroup(doc, 'Copy Viewport Location') as tg:
-                    tg.Start()
+            vport = revit.doc.GetElement(vport_id)
+        except Exception:
+            UI.TaskDialog.Show('pyrevit',
+                               'Select exactly one viewport.')
+
+        if isinstance(vport, DB.Viewport):
+            view = revit.doc.GetElement(vport.ViewId)
+            if view is not None and isinstance(view, DB.ViewPlan):
+                with revit.TransactionGroup('Copy Viewport Location'):
                     set_tansform_matrix(vport, view)
                     center = vport.GetBoxCenter()
                     modelpoint = sheet_to_view_transform(center)
@@ -334,8 +277,8 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         pickle.dump(originalviewtype, fp)
                         pickle.dump(center_pt, fp)
                         pickle.dump(model_pt, fp)
-                    tg.Assimilate()
-            elif view is not None and isinstance(view, ViewDrafting):
+
+            elif view is not None and isinstance(view, DB.ViewDrafting):
                 center = vport.GetBoxCenter()
                 center_pt = Point(center.X, center.Y, center.Z)
                 with open(datafile, 'wb') as fp:
@@ -343,14 +286,20 @@ elif selected_switch == 'Viewport Placement on Sheet':
                     pickle.dump(originalviewtype, fp)
                     pickle.dump(center_pt, fp)
             else:
-                TaskDialog.Show('pyrevit', 'This tool only works with Plan, RCP, and Detail views and viewports.')
+                UI.TaskDialog.Show('pyrevit',
+                                   'This tool only works with Plan, '
+                                   'RCP, and Detail views and viewports.')
     else:
-        TaskDialog.Show('pyrevit', 'Select at least one viewport. No more, no less!')
+        UI.TaskDialog.Show('pyrevit',
+                           'Select exactly one viewport.')
 
 elif selected_switch == 'Visibility Graphics':
-    datafile = usertemp + '\\' + prjname + '_pySaveVisibilityGraphicsState.pym'
+    datafile = \
+        script.get_document_data_file(file_id='SaveVisibilityGraphicsState',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
 
-    av = uidoc.ActiveGraphicalView
+    av = revit.activeview
 
     f = open(datafile, 'w')
     pickle.dump(int(av.Id.IntegerValue), f)
