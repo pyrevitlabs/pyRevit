@@ -1,4 +1,15 @@
+# -*- coding: utf-8 -*-
 """
+   ██▓███▓██   ██▓ ██▀███  ▓█████ ██▒   █▓ ██▓▄▄▄█████▓
+  ▓██░  ██▒██  ██▒▓██ ▒ ██▒▓█   ▀▓██░   █▒▓██▒▓  ██▒ ▓▒
+  ▓██░ ██▓▒▒██ ██░▓██ ░▄█ ▒▒███   ▓██  █▒░▒██▒▒ ▓██░ ▒░
+  ▒██▄█▓▒ ▒░ ▐██▓░▒██▀▀█▄  ▒▓█  ▄  ▒██ █░░░██░░ ▓██▓ ░
+  ▒██▒ ░  ░░ ██▒▓░░██▓ ▒██▒░▒████▒  ▒▀█░  ░██░  ▒██▒ ░
+  ▒▓▒░ ░  ░ ██▒▒▒ ░ ▒▓ ░▒▓░░░ ▒░ ░  ░ ▐░  ░▓    ▒ ░░
+  ░▒ ░    ▓██ ░▒░   ░▒ ░ ▒░ ░ ░  ░  ░ ░░   ▒ ░    ░
+  ░░      ▒ ▒ ░░    ░░   ░    ░       ░░   ▒ ░  ░
+          ░ ░        ░        ░  ░     ░   ░
+          ░ ░                         ░
 This is the starting point for pyRevit. At Revit loads the PyRevitLoader.dll
  addon at startup. This dll then creates an ironpython engine and runs
  pyRevitLoader.py (this script). It's the job of this script to setup the
