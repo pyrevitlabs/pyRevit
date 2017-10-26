@@ -16,5 +16,5 @@ selection = revit.get_selection()
 selected_ids = {str(elid.IntegerValue) for elid in selection.element_ids}
 
 f = open(datafile, 'w')
-pickle.dump(selected_ids, f)
+pickle.dump(sorted(selected_ids), f)
 f.close()

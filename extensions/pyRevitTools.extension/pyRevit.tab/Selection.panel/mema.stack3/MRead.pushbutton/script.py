@@ -26,4 +26,4 @@ try:
 
     selection.set_to(element_ids)
 except Exception:
-    print('CAN NOT FIND SELECTION FILE:\n{0}'.format(datafile))
+    pass
