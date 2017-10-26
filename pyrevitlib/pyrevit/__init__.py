@@ -5,7 +5,14 @@ import os
 import os.path as op
 import traceback
 
-import PyRevitLoader
+
+try:
+    import PyRevitLoader
+except ImportError:
+    # this means that pyRevit is not being loaded from a pyRevit engine
+    # e.g. when importing from RevitPythonShell
+    PyRevitLoader = None
+
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
@@ -35,10 +42,14 @@ LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
 
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
-PYREVITLOADER_DIR = \
-    op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
-ADDIN_RESOURCE_DIR = op.join(PYREVITLOADER_DIR,
-                             'Source', 'pyRevitLoader', 'Resources')
+
+if PyRevitLoader:
+    PYREVITLOADER_DIR = \
+        op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
+    ADDIN_RESOURCE_DIR = op.join(PYREVITLOADER_DIR,
+                                 'Source', 'pyRevitLoader', 'Resources')
+else:
+    PYREVITLOADER_DIR = ADDIN_RESOURCE_DIR = None
 
 # add the framework dll path to the search paths
 sys.path.append(ADDIN_DIR)
@@ -186,7 +197,8 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_ver(self):
-        return PyRevitLoader.ScriptExecutor.EngineVersion
+        if PyRevitLoader:
+            return PyRevitLoader.ScriptExecutor.EngineVersion
 
     @property  # read-only
     def first_load(self):
