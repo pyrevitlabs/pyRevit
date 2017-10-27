@@ -24,6 +24,8 @@ class PyRevitOutputMgr:
         output_list = AppDomain.CurrentDomain.GetData(output_list_entryname)
         if output_list:
             return list(output_list)
+        else:
+            return []
 
     @staticmethod
     def _reset_outputwindow_cache():
@@ -32,11 +34,11 @@ class PyRevitOutputMgr:
 
     @staticmethod
     def get_all_outputs(command=None):
+        open_outputs = PyRevitOutputMgr._get_all_open_output_windows()
         if command:
-            return [x for x in PyRevitOutputMgr._get_all_open_output_windows()
-                    if x.OutputId == command]
+            return [x for x in open_outputs if x.OutputId == command]
         else:
-            return PyRevitOutputMgr._get_all_open_output_windows()
+            return open_outputs
 
     @staticmethod
     def close_all_outputs():
