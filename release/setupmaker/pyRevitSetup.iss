@@ -106,11 +106,14 @@ function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   { Validate certain pages before allowing the user to proceed }
   Result := True;
-  if CurPageID = UsagePage.ID then
+  if WizardSilent <> True then
     begin
-      if UsagePage.Values[1] = True then
-        WizardForm.DirEdit.Text := ExpandConstant('{commonappdata}') + '\{#MyAppName}\{#MyAppName}{#MyAppVersion}'
-      else
-        WizardForm.DirEdit.Text := ExpandConstant('{userappdata}') + '\{#MyAppName}\{#MyAppName}{#MyAppVersion}';
+      if CurPageID = UsagePage.ID then
+        begin
+          if UsagePage.Values[1] = True then
+            WizardForm.DirEdit.Text := ExpandConstant('{commonappdata}') + '\{#MyAppName}\{#MyAppName}{#MyAppVersion}'
+          else
+            WizardForm.DirEdit.Text := ExpandConstant('{userappdata}') + '\{#MyAppName}\{#MyAppName}{#MyAppVersion}';
+        end;
     end;
 end;
