@@ -239,9 +239,27 @@ namespace PyRevitBaseClasses
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
+            if(this.ClosedByUser)
+            {
+                return;
+            }
+
             WaitReadyBrowser();
             if (renderer.Document != null)
             {
+                if (!this.IsVisible)
+                {
+                    try
+                    {
+                        this.Show();
+                        this.Focus();
+                    }
+                    catch
+                    {
+                        return;
+                    }
+                }
+
                 var pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbargraphid);
                 if (pbargraph == null)
                 {
@@ -284,7 +302,7 @@ namespace PyRevitBaseClasses
         private void Window_Closed(object sender, System.EventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
-   
+
             var grid = (Grid)outputWindow.Content;
             grid.Children.Remove(host);
             grid.Children.Clear();
