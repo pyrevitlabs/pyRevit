@@ -214,6 +214,11 @@ namespace PyRevitBaseClasses
                 {
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
+                else if (commandStr.StartsWith("file"))
+                {
+                    e.Cancel = false;
+                    return;
+                }
                 else
                 {
                     UrlHandler(e.Url.OriginalString);
