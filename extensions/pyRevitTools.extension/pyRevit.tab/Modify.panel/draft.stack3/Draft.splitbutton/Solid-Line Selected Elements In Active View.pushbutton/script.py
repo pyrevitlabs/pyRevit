@@ -1,35 +1,17 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from pyrevit import revit, DB
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+__doc__ = 'Sets the element graphic override to Solid projection '\
+          'lines for the selected elements.'
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
 
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+selection = revit.get_selection()
 
-__doc__ = 'Sets the element graphic override to Solid projection lines for the selected elements.'
-
-__window__.Close()
-from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, LinePatternElement
-
-doc = __revit__.ActiveUIDocument.Document
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
-
-with Transaction(doc, "Set Element to Solid Projection Line Pattern") as t:
-    t.Start()
+with revit.Transaction("Set Element to Solid Projection Line Pattern"):
     for el in selection:
         if el.ViewSpecific:
-            ogs = OverrideGraphicSettings()
-            ogs.SetProjectionLinePatternId(LinePatternElement.GetSolidPatternId())
-            doc.ActiveView.SetElementOverrides(el.Id, ogs)
-    t.Commit()
+            ogs = DB.OverrideGraphicSettings()
+            ogs.SetProjectionLinePatternId(
+                DB.LinePatternElement.GetSolidPatternId()
+                )
+            revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
