@@ -1,7 +1,10 @@
 """Converts the select text note element into UPPERCASE text."""
 
-from revitutils import doc, selection, Action
+from pyrevit import revit
 
-with Action('to Upper'):
+
+selection = revit.get_selection()
+
+with revit.Transaction('to Upper'):
     for el in selection.elements:
         el.Text = el.Text.upper()

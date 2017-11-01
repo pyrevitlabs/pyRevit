@@ -1,7 +1,10 @@
 """Converts the select text note element into lowercase text."""
 
-from revitutils import doc, selection, Action
+from pyrevit import revit
 
-with Action('to Lower'):
+
+selection = revit.get_selection()
+
+with revit.Transaction('to Lower'):
     for el in selection.elements:
         el.Text = el.Text.lower()
