@@ -188,7 +188,7 @@
                                                                                               this means that your custom python modules should not use any
                                                                                               module level variables that retain information from Revit like
                                                                                               the active document, element information, etc.
-                                                                                              Why? Yuuuuuge speed boost!!</TextBlock>
+                                                                                              Why Rocket Mode? Yuuuuuge speed boost!!</TextBlock>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>
