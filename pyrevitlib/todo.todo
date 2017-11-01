@@ -1,9 +1,16 @@
-Shared engine fixes:
-☐ remove any reference to ScriptOutput internal components (e.g. renderer)
+Main branch hotfix/feature:
+☐ Add option to gitservices tool to set remote tracking branch for updates
+
+4.5 beta publish:
 ☐ fix pyRevitTools
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
+☐ Create custom beta installer
+☐ remove any reference to ScriptOutput internal components (e.g. renderer)
+
+4.5 rc publish:
 ☐ Select All Clouds Of Specific Revision: Move to forms
+☐ Unify the Revision selection windows
 ☐ Fix all selections through api and use revit.selection
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
