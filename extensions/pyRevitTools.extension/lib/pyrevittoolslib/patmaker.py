@@ -1,46 +1,47 @@
-import clr
 import os.path as op
 from math import sqrt, pi, sin, cos, degrees
 
 from pyrevit import PyRevitException
-from pyrevit.coreutils import cleanup_filename, current_time, current_date
-from pyrevit.coreutils.logger import get_logger
-from revitutils import doc
-from revitutils import typeutils
-
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Transaction, FillPattern, FillPatternElement, FillGrid, \
-                              FillPatternTarget, FillPatternHostOrientation, UV, \
-                              FilteredElementCollector, FilledRegionType
+from pyrevit import framework
+from pyrevit.framework import List
+from pyrevit import coreutils
+from pyrevit import revit, DB
 
 
-logger = get_logger(__name__)
+logger = coreutils.logger.get_logger(__name__)
 
 
 PI = pi
 HALF_PI = PI/2.0
 ZERO_TOL = 5e-06
 
-MAX_MODEL_DOMAIN = 100.0                    # 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
-MAX_DETAIL_DOMAIN = MAX_MODEL_DOMAIN/10.0   # 0.002 < DRAFTING < 84.85 inches
+# 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
+MAX_MODEL_DOMAIN = 100.0
+
+# 0.002 < DRAFTING < 84.85 inches
+MAX_DETAIL_DOMAIN = MAX_MODEL_DOMAIN/10.0
 
 RATIO_RESOLUTION = 2
 
-DOT_TYPES = ['Line Segment', u'\u2795', u'\u274C', u'Diamond \u25C7', u'\u25EF']
+# not used
+DOT_TYPES = ['Line Segment',
+             u'\u2795',
+             u'\u274C',
+             u'Diamond \u25C7',
+             u'\u25EF']
 
 
 PAT_SEPARATOR = ', '
-PAT_FILE_TEMPLATE = ";        Written by \"Make Pattern\" tool for pyRevit\n"                             \
-                    ";          http://eirannejad.github.io/pyRevit/\n"                                   \
-                    ";-Date                                   : {date}\n"                                 \
-                    ";-Time                                   : {time}\n"                                 \
-                    ";-pyRevit Version                        : {version}\n"                              \
-                    ";-----------------------------------------------------------------------------\n"    \
-                    ";%UNITS=INCH\n"                                                                      \
-                    "*{name},created by pyRevit\n"                                                        \
-                    ";%TYPE={type}\n"
+PAT_FILE_TEMPLATE = \
+    ";        Written by \"Make Pattern\" tool for pyRevit\n"                 \
+    ";          http://eirannejad.github.io/pyRevit/\n"                       \
+    ";-Date                                   : {date}\n"                     \
+    ";-Time                                   : {time}\n"                     \
+    ";-pyRevit Version                        : {version}\n"                  \
+    ";---------------------------------------------------------------------\n"\
+    ";%UNITS=INCH\n"                                                          \
+    "*{name},created by pyRevit\n"                                            \
+    ";%TYPE={type}\n"
 
 
 class _PatternPoint:
@@ -85,25 +86,30 @@ class _PatternLine:
         """
         self.start_point = start_p if start_p.v <= end_p.v else end_p
         self.end_point = end_p if start_p.v <= end_p.v else start_p
-        self.u_vector = UV(1, 0)
+        self.u_vector = DB.UV(1, 0)
 
     def __repr__(self):
-        return '<_PatternLine Start:{} End:{} Length:{} Angle:{}>'.format(self.start_point, self.end_point,
-                                                                          self.length, self.angle)
+        return '<_PatternLine Start:{} End:{} Length:{} Angle:{}>'\
+               .format(self.start_point,
+                       self.end_point,
+                       self.length,
+                       self.angle)
 
     @property
     def direction(self):
-        return _PatternPoint(self.end_point.u - self.start_point.u, self.end_point.v - self.start_point.v)
+        return _PatternPoint(self.end_point.u - self.start_point.u,
+                             self.end_point.v - self.start_point.v)
 
     @property
     def angle(self):
         # always return angle to u direction
         # todo: fix and use actual math for angles to remove revit dependency
-        return self.u_vector.AngleTo(UV(self.direction.u, self.direction.v))
+        return self.u_vector.AngleTo(DB.UV(self.direction.u, self.direction.v))
 
     @property
     def center_point(self):
-        return _PatternPoint((self.end_point.u + self.start_point.u)/2.0, (self.end_point.v + self.start_point.v)/2.0)
+        return _PatternPoint((self.end_point.u + self.start_point.u)/2.0,
+                             (self.end_point.v + self.start_point.v)/2.0)
 
     @property
     def length(self):
@@ -113,14 +119,17 @@ class _PatternLine:
         a = self.start_point
         b = self.end_point
         c = point
-        if 0.0 <= abs((a.u - c.u) * (b.v - c.v) - (a.v - c.v) * (b.u - c.u)) <= tolerance:
+        if 0.0 <= abs((a.u - c.u) * (b.v - c.v)
+                      - (a.v - c.v) * (b.u - c.u)) <= tolerance:
             return True
         else:
             return False
 
     def intersect(self, pat_line):
-        xdiff = _PatternPoint(self.start_point.u - self.end_point.u, pat_line.start_point.u - pat_line.end_point.u)
-        ydiff = _PatternPoint(self.start_point.v - self.end_point.v, pat_line.start_point.v - pat_line.end_point.v)
+        xdiff = _PatternPoint(self.start_point.u - self.end_point.u,
+                              pat_line.start_point.u - pat_line.end_point.u)
+        ydiff = _PatternPoint(self.start_point.v - self.end_point.v,
+                              pat_line.start_point.v - pat_line.end_point.v)
 
         def det(a, b):
             return a.u * b.v - a.v * b.u
@@ -129,7 +138,8 @@ class _PatternLine:
         if div == 0:
             raise PyRevitException('Lines do not intersect.')
 
-        d = _PatternPoint(det(self.start_point, self.end_point), det(pat_line.start_point, pat_line.end_point))
+        d = _PatternPoint(det(self.start_point, self.end_point),
+                          det(pat_line.start_point, pat_line.end_point))
         int_point_x = det(d, xdiff) / div
         int_point_y = det(d, ydiff) / div
 
@@ -147,8 +157,10 @@ class _PatternSafeGrid:
         self._diag_angle = diag_angle
         # find out the axis line to calculate angle and length
         self._axis_line = _PatternLine(_PatternPoint(0, 0),
-                                       _PatternPoint(self._domain.u * u_tiles, self._domain.v * v_tiles))
-        # now determine the parameters necessary to calculate span, offset, and shift
+                                       _PatternPoint(self._domain.u * u_tiles,
+                                                     self._domain.v * v_tiles))
+        # now determine the parameters necessary to
+        # calculate span, offset, and shift
         self._determine_abstract_params(u_tiles, v_tiles)
 
     def __eq__(self, other):
@@ -176,7 +188,9 @@ class _PatternSafeGrid:
             else:
                 self._offset_direction = -1.0
 
-            self._angle = HALF_PI - self._axis_line.angle if not self._flipped else self._axis_line.angle - HALF_PI
+            self._angle = \
+                HALF_PI - self._axis_line.angle \
+                if not self._flipped else self._axis_line.angle - HALF_PI
             self._u_tiles = v_tiles
             self._v_tiles = u_tiles
             self._domain_u = self._domain.v
@@ -186,15 +200,19 @@ class _PatternSafeGrid:
         return self.shift
 
     def __repr__(self):
-        return '<_PatternSafeGrid GridAngle:{} Angle:{} U_Tiles:{} V_Tiles:{} ' \
-               'Domain_U:{} Domain_V:{} Offset_Dir:{} ' \
-               'Span:{} Offset:{} Shift:{}>'.format(self.grid_angle, self._angle, self._u_tiles, self._v_tiles,
-                                                    self._domain_u, self._domain_v, self._offset_direction,
-                                                    self.span, self.offset, self.shift)
+        return '<_PatternSafeGrid GridAngle:{} Angle:{} '\
+               'U_Tiles:{} V_Tiles:{} '\
+               'Domain_U:{} Domain_V:{} Offset_Dir:{} '\
+               'Span:{} Offset:{} Shift:{}>'\
+               .format(self.grid_angle, self._angle,
+                       self._u_tiles, self._v_tiles,
+                       self._domain_u, self._domain_v, self._offset_direction,
+                       self.span, self.offset, self.shift)
 
     @property
     def grid_angle(self):
-        return self._axis_line.angle if not self._flipped else PI - self._axis_line.angle
+        return self._axis_line.angle \
+               if not self._flipped else PI - self._axis_line.angle
 
     @property
     def span(self):
@@ -205,7 +223,8 @@ class _PatternSafeGrid:
         if self._angle == 0.0:
             return self._domain_v * self._offset_direction
         else:
-            return abs(self._domain_u * sin(self._angle) / self._v_tiles) * self._offset_direction
+            return abs(self._domain_u * sin(self._angle)
+                       / self._v_tiles) * self._offset_direction
 
     @property
     def shift(self):
@@ -216,7 +235,8 @@ class _PatternSafeGrid:
             u_mult = 0
             while u_mult < self._u_tiles:
                 for v_mult in range(0, self._v_tiles):
-                    grid_point = _PatternPoint(self._domain_u * u_mult, self._domain_v * v_mult)
+                    grid_point = _PatternPoint(self._domain_u * u_mult,
+                                               self._domain_v * v_mult)
                     if offset_line.point_on_line(grid_point):
                         return grid_point
                 u_mult += 1
@@ -233,7 +253,9 @@ class _PatternSafeGrid:
             offset_vector = _PatternPoint(offset_u, offset_v)
             # find the offset line
             abstract_axis_start_point = _PatternPoint(0, 0)
-            abstract_axis_end_point = _PatternPoint(self._domain_u * self._u_tiles, self._domain_v * self._v_tiles)
+            abstract_axis_end_point = \
+                _PatternPoint(self._domain_u * self._u_tiles,
+                              self._domain_v * self._v_tiles)
             offset_vector_start = abstract_axis_start_point + offset_vector
             offset_vector_end = abstract_axis_end_point + offset_vector
             offset_axis = _PatternLine(offset_vector_start, offset_vector_end)
@@ -242,7 +264,8 @@ class _PatternSafeGrid:
             nxt_grid_point = find_nxt_grid_point(offset_axis)
 
             if nxt_grid_point:
-                total_shift = offset_axis.start_point.distance_to(nxt_grid_point)
+                total_shift = \
+                    offset_axis.start_point.distance_to(nxt_grid_point)
                 return total_shift
             else:
                 return None
@@ -253,27 +276,33 @@ class _PatternDomain:
         self._origin = _PatternPoint(min(start_u, end_u), min(start_v, end_v))
         self._corner = _PatternPoint(max(start_u, end_u), max(start_v, end_v))
         self._domain = self._corner - self._origin
-        self._normalized_domain = _PatternPoint(1.0, 1.0 * (self._domain.v / self._domain.u))
+        self._normalized_domain = \
+            _PatternPoint(1.0, 1.0 * (self._domain.v / self._domain.u))
         if self._zero_domain():
             raise PyRevitException('Can not process zero domain.')
 
-        self.u_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(self._domain.u, 0))
-        self.v_vec = _PatternLine(_PatternPoint(0, 0), _PatternPoint(0, self._domain.v))
+        self.u_vec = _PatternLine(_PatternPoint(0, 0),
+                                  _PatternPoint(self._domain.u, 0))
+        self.v_vec = _PatternLine(_PatternPoint(0, 0),
+                                  _PatternPoint(0, self._domain.v))
 
         if model_pattern:
             self._max_domain = MAX_MODEL_DOMAIN
         else:
             self._max_domain = MAX_DETAIL_DOMAIN
 
-        self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0), _PatternPoint(self._domain.u, self._domain.v))
+        self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0),
+                                     _PatternPoint(self._domain.u,
+                                                   self._domain.v))
 
         self.safe_angles = []
         self._calculate_safe_angles()
 
     def __repr__(self):
-        return '<_PatternDomain U:{} V:{} SafeAngles:{}>'.format(self._domain.u,
-                                                                 self._domain.v,
-                                                                 len(self.safe_angles))
+        return '<_PatternDomain U:{} V:{} SafeAngles:{}>'\
+               .format(self._domain.u,
+                       self._domain.v,
+                       len(self.safe_angles))
 
     def _zero_domain(self):
         return self._domain.u == 0 or self._domain.v == 0
@@ -283,11 +312,25 @@ class _PatternDomain:
         u_mult = v_mult = 1
 
         # add standard angles to the list
-        self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, 0))
-        self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, 0, flipped=True))
-        self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult))
-        self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult, flipped=True))
-        self.safe_angles.append(_PatternSafeGrid(self._domain, self.diagonal.angle, 0, v_mult))
+        self.safe_angles.append(_PatternSafeGrid(self._domain,
+                                                 self.diagonal.angle,
+                                                 u_mult, 0))
+
+        self.safe_angles.append(_PatternSafeGrid(self._domain,
+                                                 self.diagonal.angle,
+                                                 u_mult, 0, flipped=True))
+
+        self.safe_angles.append(_PatternSafeGrid(self._domain,
+                                                 self.diagonal.angle,
+                                                 u_mult, v_mult))
+
+        self.safe_angles.append(_PatternSafeGrid(self._domain,
+                                                 self.diagonal.angle,
+                                                 u_mult, v_mult, flipped=True))
+
+        self.safe_angles.append(_PatternSafeGrid(self._domain,
+                                                 self.diagonal.angle,
+                                                 0, v_mult))
 
         # traverse the tile space and add safe grids to the list
         processed_ratios = {1.0}
@@ -296,23 +339,32 @@ class _PatternDomain:
                 ratio = round(v_mult/float(u_mult), RATIO_RESOLUTION)
                 if ratio not in processed_ratios:
                     # for every tile, also add the mirrored tile
-                    angle1 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult)
-                    angle2 = _PatternSafeGrid(self._domain, self.diagonal.angle, u_mult, v_mult, flipped=True)
+                    angle1 = _PatternSafeGrid(self._domain,
+                                              self.diagonal.angle,
+                                              u_mult, v_mult)
+
+                    angle2 = _PatternSafeGrid(self._domain,
+                                              self.diagonal.angle,
+                                              u_mult, v_mult, flipped=True)
                     if angle1.is_valid() and angle2.is_valid():
                         self.safe_angles.append(angle1)
                         self.safe_angles.append(angle2)
                         processed_ratios.add(ratio)
                     else:
-                        logger.warning('Skipping safe angle for grid point U:{} V:{}'.format(u_mult, v_mult))
+                        logger.warning('Skipping safe angle '
+                                       'for grid point U:{} V:{}'
+                                       .format(u_mult, v_mult))
                 v_mult += 1
             v_mult = 1
             u_mult += 1
 
     def get_domain_coords(self, pat_line):
-        return _PatternLine(pat_line.start_point - self._origin, pat_line.end_point - self._origin)
+        return _PatternLine(pat_line.start_point - self._origin,
+                            pat_line.end_point - self._origin)
 
     def get_grid_params(self, axis_angle):
-        return min(self.safe_angles, key=lambda x: abs(x.grid_angle - axis_angle))
+        return min(self.safe_angles,
+                   key=lambda x: abs(x.grid_angle - axis_angle))
 
 
 class _PatternGrid:
@@ -321,20 +373,20 @@ class _PatternGrid:
         self._grid = self._domain.get_grid_params(init_line.angle)
         logger.debug('Closest safe angle is: {}'.format(self._grid))
         self.angle = self._grid.grid_angle
-        self.span, self.offset, self.shift = self._grid.span, self._grid.offset, self._grid.shift
+        self.span, self.offset, self.shift = \
+            self._grid.span, self._grid.offset, self._grid.shift
 
         self.segment_lines = []
         init_line.rotate(init_line.center_point, self.angle - init_line.angle)
         self.segment_lines.append(init_line)
 
     def __repr__(self):
-        return '<_PatternGrid Angle:{} Span:{} Offset:{} Shift:{}>'.format(self.angle, self.span,
-                                                                           self.offset, self.shift)
+        return '<_PatternGrid Angle:{} Span:{} Offset:{} Shift:{}>'\
+               .format(self.angle, self.span, self.offset, self.shift)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def adopt_line(self, pat_line):
-        # todo: optimise grid creation. check overlap and combine overlapping lines into one grid
+        # todo: optimise grid creation. check overlap and combine
+        # overlapping lines into one grid
         return False
 
     @property
@@ -346,9 +398,13 @@ class _PatternGrid:
 
         # origin is the point that is closest to zero
         if self.angle <= HALF_PI:
-            return min(point_list, key=lambda x: x.distance_to(_PatternPoint(0, 0)))
+            return min(point_list,
+                       key=lambda x: x.distance_to(_PatternPoint(0, 0)))
         else:
-            return min(point_list, key=lambda x: x.distance_to(_PatternPoint(self._domain.u_vec.length, 0)))
+            return min(point_list,
+                       key=lambda x: x.distance_to(
+                           _PatternPoint(self._domain.u_vec.length, 0)
+                           ))
 
     @property
     def segments(self):
@@ -371,7 +427,8 @@ class _RevitPattern:
         self._scale = scale
 
     def __repr__(self):
-        return '<_RevitPattern Name:{} Model:{} Scale:{}>'.format(self._name, self._model_pat, self._scale)
+        return '<_RevitPattern Name:{} Model:{} Scale:{}>'\
+               .format(self._name, self._model_pat, self._scale)
 
     def append_line(self, pat_line):
         # get line in current domain
@@ -398,9 +455,10 @@ class _RevitPattern:
 
     @staticmethod
     def _make_fill_grid(pattern_grid, scale):
-        rvt_fill_grid = FillGrid()
+        rvt_fill_grid = DB.FillGrid()
         rvt_fill_grid.Angle = pattern_grid.angle
-        rvt_fill_grid.Origin = UV(pattern_grid.origin.u * scale, pattern_grid.origin.v * scale)
+        rvt_fill_grid.Origin = \
+            DB.UV(pattern_grid.origin.u * scale, pattern_grid.origin.v * scale)
         rvt_fill_grid.Offset = pattern_grid.offset * scale
         rvt_fill_grid.Shift = pattern_grid.shift * scale
         if pattern_grid.segments:
@@ -411,46 +469,54 @@ class _RevitPattern:
     @staticmethod
     def _make_fillpattern_element(rvt_fill_pat):
         # find existing filled pattern element matching name and pattern target
-        existing_fillpatternelements = FilteredElementCollector(doc).OfClass(clr.GetClrType(FillPatternElement))
+        existing_fillpatternelements = \
+            DB.FilteredElementCollector(revit.doc)\
+              .OfClass(framework.get_type(DB.FillPatternElement))
         fill_pat_element = None
         for exfpe in existing_fillpatternelements:
             exfp = exfpe.GetFillPattern()
             if rvt_fill_pat.Name == exfp.Name \
-                and rvt_fill_pat.Target == exfp.Target:
+                    and rvt_fill_pat.Target == exfp.Target:
                 fill_pat_element = exfpe
 
         if fill_pat_element:
-            with Transaction(doc, 'Create Fill Pattern') as t:
-                t.Start()
+            with revit.Transaction('Create Fill Pattern'):
                 fill_pat_element.SetFillPattern(rvt_fill_pat)
-                logger.debug('Updated FillPatternElement with id:{}'.format(fill_pat_element.Id))
-                t.Commit()
+                logger.debug('Updated FillPatternElement with id:{}'
+                             .format(fill_pat_element.Id))
         else:
-            with Transaction(doc, 'Create Fill Pattern') as t:
-                t.Start()
-                fill_pat_element = FillPatternElement.Create(doc, rvt_fill_pat)
-                logger.debug('Created FillPatternElement with id:{}'.format(fill_pat_element.Id))
-                t.Commit()
+            with revit.Transaction('Create Fill Pattern'):
+                fill_pat_element =\
+                    DB.FillPatternElement.Create(revit.doc, rvt_fill_pat)
+                logger.debug('Created FillPatternElement with id:{}'
+                             .format(fill_pat_element.Id))
 
         logger.debug('Fill Pattern:{}'.format(fill_pat_element.Name))
         fp = fill_pat_element.GetFillPattern()
         logger.debug('Fill Grids Count: {}'.format(len(fp.GetFillGrids())))
         for idx, fg in enumerate(fp.GetFillGrids()):
             logger.debug('FillGrid #{} '
-                         'Origin:{} Angle:{} Shift:{} Offset:{} Segments:{}'.format(idx, fg.Origin,
-                                                                                    fg.Angle, fg.Shift,
-                                                                                    fg.Offset, fg.GetSegments()))
+                         'Origin:{} Angle:{} Shift:{} Offset:{} Segments:{}'
+                         .format(idx, fg.Origin,
+                                 fg.Angle, fg.Shift,
+                                 fg.Offset, fg.GetSegments()))
         return fill_pat_element
 
     def create_pattern(self):
-        fill_grids = [self._make_fill_grid(pat_grid, self._scale) for pat_grid in self._pattern_grids]
+        fill_grids = [self._make_fill_grid(pat_grid, self._scale)
+                      for pat_grid in self._pattern_grids]
 
         # Make new FillPattern
-        fp_target = FillPatternTarget.Model if self._model_pat else FillPatternTarget.Drafting
-        fill_pat = FillPattern(self._name, fp_target, FillPatternHostOrientation.ToHost)
+        fp_target = \
+            DB.FillPatternTarget.Model \
+            if self._model_pat else DB.FillPatternTarget.Drafting
+
+        fill_pat = DB.FillPattern(self._name,
+                                  fp_target,
+                                  DB.FillPatternHostOrientation.ToHost)
 
         # Apply the FillGrids
-        fill_pat.SetFillGrids(List[FillGrid](fill_grids))
+        fill_pat.SetFillGrids(List[DB.FillGrid](fill_grids))
 
         # Create the FillPatternElement in current document
         return self._make_fillpattern_element(fill_pat)
@@ -458,14 +524,20 @@ class _RevitPattern:
     def get_pat_data(self):
         pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
         from pyrevit.versionmgr import PYREVIT_VERSION
-        pattern_desc = PAT_FILE_TEMPLATE.format(time=current_time(), date=current_date(),
-                                                version=PYREVIT_VERSION.get_formatted(),
-                                                name=self._name, type=pat_type)
+        pattern_desc = \
+            PAT_FILE_TEMPLATE.format(time=coreutils.current_time(),
+                                     date=coreutils.current_date(),
+                                     version=PYREVIT_VERSION.get_formatted(),
+                                     name=self._name,
+                                     type=pat_type)
+
         for pat_grid in self._pattern_grids:
-            grid_desc = PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
-                                            str(pat_grid.origin.u * self._scale), str(pat_grid.origin.v * self._scale),
-                                            str(pat_grid.shift * self._scale),
-                                            str(pat_grid.offset * self._scale)])
+            grid_desc = \
+                PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
+                                    str(pat_grid.origin.u * self._scale),
+                                    str(pat_grid.origin.v * self._scale),
+                                    str(pat_grid.shift * self._scale),
+                                    str(pat_grid.offset * self._scale)])
             grid_desc += PAT_SEPARATOR
             if pat_grid.segments:
                 scaled_segments = []
@@ -474,7 +546,8 @@ class _RevitPattern:
                         seg *= -1
                     scaled_segments.append(seg * self._scale)
 
-                grid_desc += PAT_SEPARATOR.join([str(seg_l) for seg_l in scaled_segments])
+                grid_desc += PAT_SEPARATOR.join([str(seg_l)
+                                                 for seg_l in scaled_segments])
 
             pattern_desc += grid_desc + '\n'
 
@@ -482,18 +555,21 @@ class _RevitPattern:
 
 
 def _make_filledregion(fillpattern_name, fillpattern_id):
-    filledregion_types = FilteredElementCollector(doc).OfClass(clr.GetClrType(FilledRegionType))
+    filledregion_types = DB.FilteredElementCollector(revit.doc)\
+                           .OfClass(framework.get_type(DB.FilledRegionType))
+
     source_fr = filledregion_types.FirstElement()
-    with Transaction(doc, 'Create Filled Region') as t:
-        t.Start()
+    with revit.Transaction('Create Filled Region'):
         new_fr = source_fr.Duplicate(fillpattern_name)
         new_fr.FillPatternId = fillpattern_id
-        t.Commit()
 
 
 def _export_pat(revit_pat, export_dir):
     pat_file_contents = revit_pat.get_pat_data()
-    with open(op.join(export_dir, '{}.pat'.format(cleanup_filename(revit_pat.name))), 'w') as pat_file:
+    with open(op.join(export_dir,
+                      '{}.pat'.format(
+                          coreutils.cleanup_filename(revit_pat.name)
+                          )), 'w') as pat_file:
         pat_file.write(pat_file_contents)
 
 
@@ -504,11 +580,18 @@ def _create_fill_pattern(revit_pat, create_filledregion=False):
             _make_filledregion(fillpat_element.Name, fillpat_element.Id)
         return fillpat_element
     except Exception as create_pat_err:
-        logger.error('Error creating pattern element. | {}'.format(create_pat_err))
+        logger.error('Error creating pattern element. | {}'
+                     .format(create_pat_err))
 
 
-def _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern=True, scale=1.0):
-    pat_domain = _PatternDomain(domain[0][0], domain[0][1], domain[1][0], domain[1][1], model_pattern)
+def _make_rvt_pattern(pat_name, pat_lines, domain,
+                      model_pattern=True, scale=1.0):
+    pat_domain = _PatternDomain(domain[0][0],
+                                domain[0][1],
+                                domain[1][0],
+                                domain[1][1],
+                                model_pattern)
+
     logger.debug('New pattern domain: {}'.format(pat_domain))
 
     revit_pat = _RevitPattern(pat_domain, pat_name, model_pattern, scale)
@@ -521,28 +604,33 @@ def _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern=True, scale=1.0
         try:
             revit_pat.append_line(pat_line)
         except Exception as pat_line_err:
-            logger.error('Error adding line: {} | {}'.format(line_coords, pat_line_err))
+            logger.error('Error adding line: {} | {}'
+                         .format(line_coords, pat_line_err))
 
     return revit_pat
 
 
-def make_pattern(pat_name, pat_lines, domain, model_pattern=True, create_filledregion=False, scale=1.0):
-    revit_pat = _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+def make_pattern(pat_name, pat_lines, domain,
+                 model_pattern=True, create_filledregion=False, scale=1.0):
+    revit_pat = \
+        _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
     return _create_fill_pattern(revit_pat, create_filledregion)
 
 
-def export_pattern(pat_name, pat_lines, domain, export_dir, model_pattern=True, scale=12.0):
-    revit_pat = _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+def export_pattern(pat_name, pat_lines, domain, export_dir,
+                   model_pattern=True, scale=12.0):
+    revit_pat = \
+        _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
     return _export_pat(revit_pat, export_dir)
 
 
-# noinspection PyUnusedLocal
 def adjust_pattern_lines(pat_lines, domain):
     # create the domain
     # create pattern
     # make a list of corrected lines
     # iterate over lines
-        # for every line tuple info, call _RevitPattern.adjust_line() on the line
+        # for every line tuple info,
+        # call _RevitPattern.adjust_line() on the line
         # add to the corrected lines list in tuple format
 
     # return corrected lines

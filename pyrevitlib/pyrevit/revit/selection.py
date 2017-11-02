@@ -70,7 +70,7 @@ class CurrentElementSelection:
              for el_id in new_elids]
 
 
-def _pick_obj(self, obj_type, pick_message, multiple=False, world=False):
+def _pick_obj(obj_type, pick_message, multiple=False, world=False):
     refs = []
 
     try:

@@ -1,32 +1,12 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from pyrevit import revit, DB
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+__doc__ = 'Flips the selected walls along their core axis and '\
+          'changes their location lines to Core Face Exterior.'
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
 
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+selection = revit.get_selection()
 
-__doc__ = 'Flips the selected walls along their core axis and changes their location lines to Core Face Exterior.'
-
-__window__.Close()
-from Autodesk.Revit.DB import TransactionGroup, Transaction, Wall
-
-doc = __revit__.ActiveUIDocument.Document
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
-
-tg = TransactionGroup(doc, "Search for linked elements")
-tg.Start()
 
 locLineValues = {'Wall Centerline': 0,
                  'Core Centerline': 1,
@@ -36,16 +16,14 @@ locLineValues = {'Wall Centerline': 0,
                  'Core Face: Interior': 5,
                  }
 
-for el in selection:
-    if isinstance(el, Wall):
-        param = el.LookupParameter('Location Line')
-        with Transaction(doc, 'Change Wall Location Line') as t:
-            t.Start()
-            param.Set(locLineValues['Core Centerline'])
-            t.Commit()
-        with Transaction(doc, 'Flip Selected Wall') as t:
-            t.Start()
-            el.Flip()
-            param.Set(locLineValues['Core Face: Exterior'])
-            t.Commit()
-tg.Commit()
+
+with revit.TransactionGroup("Search for linked elements"):
+    for el in selection:
+        if isinstance(el, DB.Wall):
+            param = el.LookupParameter('Location Line')
+            with revit.Transaction('Change Wall Location Line'):
+                param.Set(locLineValues['Core Centerline'])
+
+            with revit.Transaction('Flip Selected Wall'):
+                el.Flip()
+                param.Set(locLineValues['Core Face: Exterior'])
