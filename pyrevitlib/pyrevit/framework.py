@@ -46,6 +46,8 @@ from System.Windows.Forms import Clipboard
 from System.Windows import Controls
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 
+from System import Math
+
 from System.CodeDom import Compiler
 from Microsoft.CSharp import CSharpCodeProvider
 
