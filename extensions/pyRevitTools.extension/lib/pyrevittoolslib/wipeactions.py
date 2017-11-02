@@ -115,10 +115,10 @@ def remove_all_groups():
             and group_type.Category.Name != 'Attached Detail Groups'
 
     group_types = list(DB.FilteredElementCollector(revit.doc)
-                         .OfClass(framework.get_type.GetClrType(DB.GroupType))
+                         .OfClass(framework.get_type(DB.GroupType))
                          .ToElements())
     groups = list(DB.FilteredElementCollector(revit.doc)
-                    .OfClass(framework.get_type.GetClrType(DB.Group))
+                    .OfClass(framework.get_type(DB.Group))
                     .ToElements())
 
     output = script.get_output()
