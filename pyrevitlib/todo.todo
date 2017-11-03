@@ -7,6 +7,7 @@ Main branch hotfix/feature:
 ☐ Test dynamo compat mode in %programdata%
 ☐ Create custom beta installer
 ☐ remove any reference to ScriptOutput internal components (e.g. renderer)
+☐ review the extension hash system
 
 4.5 rc publish:
 ☐ Select All Clouds Of Specific Revision: Move to forms
@@ -15,6 +16,7 @@ Main branch hotfix/feature:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ the warning bar shows up incorrectly when system has scaling @done(2017-11-03 15:33)
     ✘ log files don't have command names. Bring that back @cancelled(2017-10-22 19:47)
     ✔ Fix occasional output window blackout @done(2017-10-22 16:14)
     ✔ Fix wpf import on 2.7.3 @done(2017-10-21 16:15)

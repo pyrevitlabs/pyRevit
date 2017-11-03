@@ -362,7 +362,8 @@ class TemplatePromptBar(WPFWindow):
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             WindowStyle="None" Background="{x:Null}"
             ShowInTaskbar="False" ShowActivated="False"
-            WindowStartupLocation="Manual" ResizeMode="NoResize" Topmost="True"
+            WindowStartupLocation="Manual"
+            ResizeMode="NoResize" Topmost="True"
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Grid Background="#FFEA9F00">
             <TextBlock x:Name="message_tb"
@@ -373,14 +374,15 @@ class TemplatePromptBar(WPFWindow):
     </Window>
     """
 
-    def __init__(self, title='Message', height=24, **kwargs):
+    def __init__(self, title='Message', height=32, **kwargs):
         WPFWindow.__init__(self, self.layout, literal_string=True)
-        screen = HOST_APP.proc_screen
-        work_area = screen.WorkingArea
-        self.Top = work_area.Top
-        self.Left = work_area.Left
-        self.Width = work_area.Width
-        self.Height = height
+        work_area = HOST_APP.proc_screen_workarea
+        scale_factor = HOST_APP.proc_screen_scalefactor
+
+        self.Top = work_area.Top * scale_factor
+        self.Left = work_area.Left * scale_factor
+        self.Width = work_area.Width * scale_factor
+        self.Height = height * scale_factor
         self.message_tb.Text = title
         self._setup(**kwargs)
 
