@@ -1,41 +1,32 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Exports selected schedules to TXT files on user desktop.
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
+Shift-Click:
+Rename files on Desktop
 """
 
-__doc__ = 'Exports selected schedules to TXT files on user desktop'
 
-from Autodesk.Revit.DB import ViewSchedule, ViewScheduleExportOptions, ExportColumnHeaders, ExportTextQualifier
 import os
 import os.path as op
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+from pyrevit import forms
+from pyrevit import revit, DB
 
-desktop = op.expandvars('%userprofile%\\desktop')
 
-vseop = ViewScheduleExportOptions()
-# vseop.ColumnHeaders = ExportColumnHeaders.None
-# vseop.TextQualifier = ExportTextQualifier.None
+# if user shift-clicks, default to user desktop,
+# otherwise ask for a folder containing the PDF files
+if __shiftclick__:
+    basefolder = op.expandvars('%userprofile%\\desktop')
+else:
+    basefolder = forms.pick_folder()
+
+
+vseop = DB.ViewScheduleExportOptions()
+# vseop.ColumnHeaders = DB.ExportColumnHeaders.None
+# vseop.TextQualifier = DB.ExportTextQualifier.None
 # vseop.FieldDelimiter = ','
 # vseop.Title = False
 
-for elId in uidoc.Selection.GetElementIds():
-    el = doc.GetElement(elId)
+for el in revit.get_selection():
     fname = "".join(x for x in el.ViewName if x not in ['*']) + '.txt'
-    el.Export(desktop, fname, vseop)
+    el.Export(basefolder, fname, vseop)
     print('EXPORTED: {0}\n      TO: {1}\n'.format(el.ViewName, fname))
