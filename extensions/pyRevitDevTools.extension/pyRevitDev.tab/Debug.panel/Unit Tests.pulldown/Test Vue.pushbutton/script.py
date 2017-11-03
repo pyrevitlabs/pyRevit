@@ -1,8 +1,10 @@
-from pyrevit import script
+from pyrevit import revit, DB
+from pyrevit import output, script
 
 
-uifile = script.get_bundle_file('ui.html')
-output = script.get_output()
+@output.route('/selectall')
+def selectall():
+    print('dfdfdf')
 
-output.show()
-output.open_url('file:///' + uifile)
+
+output.load_index(script.get_bundle_file('index.html'))

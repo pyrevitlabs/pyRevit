@@ -13,6 +13,11 @@ Main branch hotfix/feature:
 ☐ Unify the Revision selection windows
 ☐ Fix all selections through api and use revit.selection
 
+webapp output:
+☐ Need a javascript module for making requests to the outputwindow url handler
+☐ functions, decorated by output.route get registered with url handler
+☐ url handler calls the wrapped functions based on the input url from jscript
+
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
     ✘ log files don't have command names. Bring that back @cancelled(2017-10-22 19:47)

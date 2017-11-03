@@ -9,6 +9,7 @@ from pyrevit.coreutils.emoji import emojize
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 from pyrevit.output import urlscheme
+from pyrevit.output.webapp import route
 
 
 logger = get_logger(__name__)
@@ -171,6 +172,10 @@ class PyRevitOutputWindow:
         if self.renderer:
             self.renderer.Navigate(dest_url, False)
 
+    def open_page(self, dest_file):
+        self.show()
+        self.open_url('file:///' + dest_file)
+
     def update_progress(self, cur_value, max_value):
         if self.window:
             self.window.UpdateProgressBar(cur_value, max_value)
@@ -260,3 +265,8 @@ class PyRevitOutputWindow:
 
 def get_output():
     return PyRevitOutputWindow()
+
+
+def load_index(index_file):
+    output = get_output()
+    output.open_page(index_file)
