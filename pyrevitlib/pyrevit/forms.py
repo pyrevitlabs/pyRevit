@@ -5,7 +5,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import framework
-from pyrevit.framework import wpf
+from pyrevit.framework import wpf, Forms, Controls
 from pyrevit import UI
 
 
@@ -130,9 +130,9 @@ class SelectFromList(TemplateUserInputWindow):
         self.search_tb.Focus()
 
         if 'multiselect' in kwargs and not kwargs['multiselect']:
-            self.list_lb.SelectionMode = SelectionMode.Single
+            self.list_lb.SelectionMode = Controls.SelectionMode.Single
         else:
-            self.list_lb.SelectionMode = SelectionMode.Extended
+            self.list_lb.SelectionMode = Controls.SelectionMode.Extended
 
         self._list_options()
 
@@ -424,14 +424,14 @@ def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
 
 
 def pick_folder():
-    fb_dlg = framework.Forms.FolderBrowserDialog()
-    if fb_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
+    fb_dlg = Forms.FolderBrowserDialog()
+    if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
         return fb_dlg.SelectedPath
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
-    of_dlg = framework.Forms.OpenFileDialog()
+    of_dlg = Forms.OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
     else:
@@ -440,7 +440,7 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     of_dlg.Multiselect = multi_file
     if init_dir:
         of_dlg.InitialDirectory = init_dir
-    if of_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
+    if of_dlg.ShowDialog() == Forms.DialogResult.OK:
         if unc_paths:
             return coreutils.dletter_to_unc(of_dlg.FileName)
         return of_dlg.FileName
@@ -448,7 +448,7 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
-    sf_dlg = framework.Forms.SaveFileDialog()
+    sf_dlg = Forms.SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
     else:
@@ -460,7 +460,7 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
     # setting default filename
     sf_dlg.FileName = default_name
 
-    if sf_dlg.ShowDialog() == framework.Forms.DialogResult.OK:
+    if sf_dlg.ShowDialog() == Forms.DialogResult.OK:
         if unc_paths:
             return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName

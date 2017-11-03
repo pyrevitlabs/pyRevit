@@ -1,9 +1,5 @@
-from revitutils import doc, uidoc
-from Autodesk.Revit.DB import Transaction, Viewport, ViewSheet, \
-                              ScheduleSheetInstance, ViewType
-from Autodesk.Revit.DB import FilteredElementCollector as Fec
-from Autodesk.Revit.UI import TaskDialog
-from Autodesk.Revit.UI.Selection import ObjectType
+from pyrevit import revit, DB, UI
+
 
 __title__ = 'Copy/Update Selected Viewports To Selected Sheets'
 
@@ -18,19 +14,21 @@ __doc__ = 'Open the source sheet. Select other sheets in Project Browser. '\
 
 selSheets = []
 selViewports = []
-allSheetedSchedules = Fec(doc).OfClass(ScheduleSheetInstance).ToElements()
+allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
+                        .OfClass(DB.ScheduleSheetInstance)\
+                        .ToElements()
 
 
 # cleanup list of selected sheets
-for elId in uidoc.Selection.GetElementIds():
-    el = doc.GetElement(elId)
-    if isinstance(el, ViewSheet):
+for elId in revit.uidoc.Selection.GetElementIds():
+    el = revit.doc.GetElement(elId)
+    if isinstance(el, DB.ViewSheet):
         selSheets.append(el)
 
 # get a list of viewports to be copied, updated
 if len(selSheets) > 0:
     if int(__revit__.Application.VersionNumber) > 2014:
-        cursheet = uidoc.ActiveGraphicalView
+        cursheet = revit.uidoc.ActiveGraphicalView
         for v in selSheets:
             if cursheet.Id == v.Id:
                 selSheets.remove(v)
@@ -38,21 +36,20 @@ if len(selSheets) > 0:
         cursheet = selSheets[0]
         selSheets.remove(cursheet)
 
-    uidoc.ActiveView = cursheet
-    sel = uidoc.Selection.PickObjects(ObjectType.Element)
+    revit.uidoc.ActiveView = cursheet
+    sel = revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
     for el in sel:
-        selViewports.append(doc.GetElement(el))
+        selViewports.append(revit.doc.GetElement(el))
 
     if len(selViewports) > 0:
-        with Transaction(doc, 'Copy Viewports to Sheets') as t:
-            t.Start()
+        with revit.Transaction('Copy Viewports to Sheets'):
             for sht in selSheets:
-                existing_vps = [doc.GetElement(x)
+                existing_vps = [revit.doc.GetElement(x)
                                 for x in sht.GetAllViewports()]
                 existing_schedules = [x for x in allSheetedSchedules
                                       if x.OwnerViewId == sht.Id]
                 for vp in selViewports:
-                    if isinstance(vp, Viewport):
+                    if isinstance(vp, DB.Viewport):
                         # check if viewport already exists
                         # and update location and type
                         for exist_vp in existing_vps:
@@ -62,11 +59,14 @@ if len(selSheets) > 0:
                                 break
                         # if not, create a new viewport
                         else:
-                            new_vp = Viewport.Create(doc, sht.Id,
-                                                     vp.ViewId,
-                                                     vp.GetBoxCenter())
+                            new_vp = \
+                                DB.Viewport.Create(revit.doc,
+                                                   sht.Id,
+                                                   vp.ViewId,
+                                                   vp.GetBoxCenter())
+
                             new_vp.ChangeTypeId(vp.GetTypeId())
-                    elif isinstance(vp, ScheduleSheetInstance):
+                    elif isinstance(vp, DB.ScheduleSheetInstance):
                         # check if schedule already exists
                         # and update location
                         for exist_sched in existing_schedules:
@@ -75,11 +75,13 @@ if len(selSheets) > 0:
                                 break
                         # if not, place the schedule
                         else:
-                            ScheduleSheetInstance.Create(doc, sht.Id,
-                                                         vp.ScheduleId,
-                                                         vp.Point)
-            t.Commit()
+                            DB.ScheduleSheetInstance.Create(revit.doc,
+                                                            sht.Id,
+                                                            vp.ScheduleId,
+                                                            vp.Point)
     else:
-        TaskDialog.Show('pyrevit', 'At least one viewport must be selected.')
+        UI.TaskDialog.Show('pyrevit',
+                           'At least one viewport must be selected.')
 else:
-    TaskDialog.Show('pyrevit', 'At least one sheet must be selected.')
+    UI.TaskDialog.Show('pyrevit',
+                       'At least one sheet must be selected.')
