@@ -75,21 +75,22 @@ namespace PyRevitBaseClasses
             else if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin) &&
                      (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
             {
+                // start creating context menu
                 ContextMenu pyRevitCmdContextMenu = new ContextMenu();
 
-                MenuItem openSourceDirectory = new MenuItem();
-                openSourceDirectory.Header = "Open Script Folder";
-                //openSourceDirectory.Icon = new Image {
-                //    Source = new BitmapImage(new Uri("images/sample.png", UriKind.Relative))
-                //};
-                openSourceDirectory.Click += delegate {
-                    // combine the arguments together
-                    // it doesn't matter if there is a space after ','
-                    string argument = "/select, \"" + _script + "\"";
-                    System.Diagnostics.Process.Start("explorer.exe", argument);
-                };
-                pyRevitCmdContextMenu.Items.Add(openSourceDirectory);
+                // use a disabled menu item to show if the command requires clean engine
+                MenuItem cleanEngineStatus = new MenuItem();
+                cleanEngineStatus.Header = String.Format("Requests Clean Engine: {0}", _needsCleanEngine ? "Yes":"No");
+                cleanEngineStatus.IsEnabled = false;
+                pyRevitCmdContextMenu.Items.Add(cleanEngineStatus);
 
+                // use a disabled menu item to show if the command requires full frame engine
+                MenuItem fullFrameEngineStatus = new MenuItem();
+                fullFrameEngineStatus.Header = String.Format("Requests FullFrame Engine: {0}", _needsFullFrameEngine ? "Yes" : "No");
+                fullFrameEngineStatus.IsEnabled = false;
+                pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
+
+                // menu item to open help url if exists
                 if (_helpSource != null && _helpSource != "")
                 {
                     MenuItem openHelpSource = new MenuItem();
@@ -98,16 +99,41 @@ namespace PyRevitBaseClasses
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
 
+                // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
                 copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script);  };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
+                // menu item to copy alternate script path to clipboard, if exists
+                if (_alternateScriptSource != null && _alternateScriptSource != "")
+                {
+                    MenuItem copyAltScriptPath = new MenuItem();
+                    copyAltScriptPath.Header = "Copy Alternate Script Path";
+                    copyAltScriptPath.Click += delegate { System.Diagnostics.Process.Start(_alternateScriptSource); };
+                    pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
+                }
+
+                // menu item to copy bundle path to clipboard
                 MenuItem copyBundlePath = new MenuItem();
                 copyBundlePath.Header = "Copy Bundle Path";
                 copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(Path.GetDirectoryName(_script)); };
                 pyRevitCmdContextMenu.Items.Add(copyBundlePath);
 
+                // menu item to copy command unique name (assigned by pyRevit) to clipboard
+                MenuItem copyUniqueName = new MenuItem();
+                copyUniqueName.Header = String.Format("Copy Unique Id ({0})", _cmdUniqueName);
+                copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(_cmdUniqueName); };
+                pyRevitCmdContextMenu.Items.Add(copyUniqueName);
+
+                // menu item to copy ;-separated sys paths to clipboard
+                // Example: "path1;path2;path3"
+                MenuItem copySysPaths = new MenuItem();
+                copySysPaths.Header = "Copy Sys Paths";
+                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(_syspaths); };
+                pyRevitCmdContextMenu.Items.Add(copySysPaths);
+
+                // open the menu
                 pyRevitCmdContextMenu.IsOpen = true;
 
                 return Result.Succeeded;
