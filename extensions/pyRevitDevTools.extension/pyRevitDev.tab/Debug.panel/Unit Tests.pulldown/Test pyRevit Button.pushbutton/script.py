@@ -1,8 +1,11 @@
+"""This is the tooltip content"""
+
 from pyrevit.coreutils import logger
 slogger = logger.get_logger(__commandname__)
 
 
 __context__ = 'zerodoc'
+__helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 
 
 if __shiftclick__:

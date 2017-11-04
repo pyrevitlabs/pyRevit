@@ -3,6 +3,7 @@ from collections import OrderedDict
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import Uri, Imaging
+from pyrevit.framework import BindingFlags
 from pyrevit.api import UI, AdWindows
 
 
@@ -103,6 +104,16 @@ class _GenericPyRevitUIContainer:
         self._rvtapi_object = rvtapi_obj
         self.itemdata_mode = False
         self._dirty = True
+
+    def get_adwindows_object(self):
+        rvtapi_obj = self._rvtapi_object
+        getRibbonItemMethod = \
+            rvtapi_obj.GetType().GetMethod(
+                'getRibbonItem',
+                BindingFlags.NonPublic | BindingFlags.Instance
+                )
+        if getRibbonItemMethod:
+            return getRibbonItemMethod.Invoke(rvtapi_obj, None)
 
     def get_flagged_children(self, state=True):
         flagged_cmps = []
@@ -366,6 +377,15 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Item does not have extended '
                                  'tooltip property: {}'.format(tooltip_err))
 
+    def set_tooltip_video(self, tooltip_video):
+        try:
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj.ToolTip:
+                adwindows_obj.ToolTip.ExpandedVideo = Uri(tooltip_video)
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting tooltip video {} | {} '
+                                 .format(tooltip_video, ttvideo_err))
+
     def set_title(self, ui_title):
         if self.itemdata_mode:
             self.ui_title = ui_title
@@ -489,7 +509,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                  .format(icon_err))
 
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path='', tooltip='', tooltip_ext='',
+                           icon_path='',
+                           tooltip='', tooltip_ext='', tooltip_video='',
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
@@ -538,6 +559,9 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    existing_item.set_tooltip_video(tooltip_video)
+
                 if ui_title:
                     existing_item.set_title(ui_title)
 
@@ -596,6 +620,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
+            if tooltip_video:
+                new_button.set_tooltip_video(tooltip_video)
 
             new_button.set_dirty_flag()
             self._add_component(new_button)
@@ -718,7 +744,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                 pyrvt_ui_item.create_data_items()
 
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path='', tooltip='', tooltip_ext='',
+                           icon_path='',
+                           tooltip='', tooltip_ext='', tooltip_video='',
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
@@ -739,6 +766,9 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    existing_item.set_tooltip_video(tooltip_video)
+
                 if ui_title:
                     existing_item.set_title(ui_title)
                 try:
@@ -785,6 +815,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    new_button.set_tooltip_video(tooltip_video)
 
                 new_button.set_dirty_flag()
                 self._add_component(new_button)

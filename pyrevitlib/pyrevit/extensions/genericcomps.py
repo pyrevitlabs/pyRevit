@@ -257,6 +257,7 @@ class GenericUICommand(GenericUIComponent):
         GenericUIComponent.__init__(self)
         self.ui_title = None
         self.script_file = self.config_script_file = None
+        self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
         self.doc_string = self.author = None
         self.cmd_help_url = self.cmd_context = None
@@ -283,10 +284,15 @@ class GenericUICommand(GenericUIComponent):
 
         self.ui_title = self.name
 
-        full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
-        self.icon_file = full_file_path if op.exists(full_file_path) else None
+        icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
+        self.icon_file = icon_path if op.exists(icon_path) else None
         logger.debug('Command {}: Icon file is: {}'
                      .format(self, self.icon_file))
+
+        ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
+        self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None
+        logger.debug('Command {}: Tooltip video file is: {}'
+                     .format(self, self.ttvideo_file))
 
         self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
                                                    exts.CSHARP_SCRIPT_POSTFIX,
