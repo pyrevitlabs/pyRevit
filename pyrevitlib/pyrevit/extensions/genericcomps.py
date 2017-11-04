@@ -259,7 +259,7 @@ class GenericUICommand(GenericUIComponent):
         self.script_file = self.config_script_file = None
         self.max_revit_ver = self.min_revit_ver = None
         self.doc_string = self.author = None
-        self.cmd_options = self.cmd_context = None
+        self.cmd_help_url = self.cmd_context = None
         self.unique_name = self.unique_avail_name = None
         self.class_name = self.avail_class_name = None
         self.beta_cmd = False
@@ -346,8 +346,8 @@ class GenericUICommand(GenericUIComponent):
                 exts.MAX_REVIT_VERSION_PARAM)  # type: str
             self.min_revit_ver = script_content.extract_param(
                 exts.MIN_REVIT_VERSION_PARAM)  # type: str
-            self.cmd_options = script_content.extract_param(
-                exts.COMMAND_OPTIONS_PARAM)  # type: list
+            self.cmd_help_url = script_content.extract_param(
+                exts.COMMAND_HELP_URL)  # type: str
             self.cmd_context = script_content.extract_param(
                 exts.COMMAND_CONTEXT_PARAM)  # type: str
             self.beta_cmd = script_content.extract_param(
@@ -373,7 +373,7 @@ class GenericUICommand(GenericUIComponent):
         logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
         logger.debug('command tooltip: {}'.format(self.doc_string))
         logger.debug('Command author: {}'.format(self.author))
-        logger.debug('Command options: {}'.format(self.cmd_options))
+        logger.debug('Command help url: {}'.format(self.cmd_help_url))
 
         if self.beta_cmd:
             logger.debug('Command is in beta.')
@@ -416,8 +416,8 @@ class GenericUICommand(GenericUIComponent):
     def has_config_script(self):
         return self.config_script_file != self.script_file
 
-    def get_cmd_options(self):
-        return self.cmd_options
+    def get_help_url(self):
+        return self.cmd_help_url
 
     def get_full_script_address(self):
         return op.join(self.directory, self.script_file)

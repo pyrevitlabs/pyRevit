@@ -75,7 +75,7 @@ UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
 
-COMMAND_OPTIONS_PARAM = '__cmdoptions__'
+COMMAND_HELP_URL = '__helpurl__'
 COMMAND_CONTEXT_PARAM = '__context__'
 MIN_REVIT_VERSION_PARAM = '__min_revit_ver__'
 MAX_REVIT_VERSION_PARAM = '__max_revit_ver__'
