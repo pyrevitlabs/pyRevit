@@ -1,4 +1,4 @@
-print('\n'.join([x.Name for x in rbt.GetMethods(BindingFlags.Public | BindingFlags.Instance) if 'get' in x.Name.lower()]))
+print('\n'.join([x.Name for x in rb.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance) if 'get' in x.Name.lower()]))
 
 get_Id
 get_AutomationName
