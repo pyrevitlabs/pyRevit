@@ -10,6 +10,8 @@ from pyrevittoolslib import patmaker
 
 __title__ = 'Make\nPattern'
 
+__helpurl__ = 'https://www.youtube.com/watch?v=H7b8hjHbauE'
+
 __doc__ = 'Draw your pattern tile in a detail view using detail lines, '\
           'curves, circles or ellipses; select the pattern lines and curves '\
           'and run this tool. Give the pattern a name and '\
