@@ -30,6 +30,7 @@ from System import Reflection
 from System.Reflection import Assembly, AssemblyName
 from System.Reflection import TypeAttributes, MethodAttributes
 from System.Reflection import CallingConventions
+from System.Reflection import BindingFlags
 from System.Reflection.Emit import AssemblyBuilderAccess
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 

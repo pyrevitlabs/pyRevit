@@ -48,6 +48,9 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 
+# Component swf video for tooltips
+DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+
 # Command supported languages
 PYTHON_LANG = 'python'
 CSHARP_LANG = 'csharp'
