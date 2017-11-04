@@ -1,95 +1,89 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Copies selected legend views to all projects currently open in Revit."""
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Copies selected legend views to all projects currently open in Revit.'
-
-import sys
-from Autodesk.Revit.DB import *
-from System.Collections.Generic import List
-from Autodesk.Revit.UI import TaskDialog
-
-uidoc = __revit__.ActiveUIDocument
-activeDoc = __revit__.ActiveUIDocument.Document
+from pyrevit.framework import List
+from pyrevit import revit, DB, UI
+from pyrevit import script
 
 
-class CopyUseDestination(IDuplicateTypeNamesHandler):
+class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
     def OnDuplicateTypeNamesFound(self, args):
-        return DuplicateTypeAction.UseDestinationTypes
+        return DB.DuplicateTypeAction.UseDestinationTypes
 
 
 def error(msg):
-    TaskDialog.Show('pyrevit', msg)
-    sys.exit(0)
+    UI.TaskDialog.Show('pyrevit', msg)
+    script.exit()
 
 
 # find open documents other than the active doc
-openDocs = [d for d in __revit__.Application.Documents if not d.IsLinked]
-openDocs.remove(activeDoc)
-if len(openDocs) < 1:
-    error('Only one active document is found. At least two documents must be open. Operation cancelled.')
+open_docs = [d for d in revit.docs if not d.IsLinked]
+open_docs.remove(revit.doc)
+if len(open_docs) < 1:
+    error('Only one active document is found. '
+          'At least two documents must be open. Operation cancelled.')
 
 # get a list of selected legends
-selection = [activeDoc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() if
-             activeDoc.GetElement(elId).ViewType == ViewType.Legend]
+selection = [x for x in revit.get_selection()
+             if x.ViewType == DB.ViewType.Legend]
 
 if len(selection) > 0:
-    for doc in openDocs:
-        print('\n---PROCESSING DOCUMENT {0}---'.format(doc.Title))
+    for dest_doc in open_docs:
+        print('\n---PROCESSING DOCUMENT {0}---'.format(dest_doc.Title))
         # finding first available legend view
-        allViews = FilteredElementCollector(doc).OfClass(View)
-        baseLegendView = None
-        for v in allViews:
-            if v.ViewType == ViewType.Legend:
-                baseLegendView = v
+        base_legend_view = None
+        for v in DB.FilteredElementCollector(dest_doc).OfClass(DB.View):
+            if v.ViewType == DB.ViewType.Legend:
+                base_legend_view = v
                 break
-        if None == baseLegendView:
-            error('Document\n{0}\nmust have at least one Legend view.'.format(doc.Title))
+
+        if base_legend_view is None:
+            error('Document\n{0}\nmust have at least one Legend view.'
+                  .format(dest_doc.Title))
         # iterate over interfacetypes legend views
-        for srcView in selection:
-            print('\nCOPYING {0}'.format(srcView.ViewName))
+        for source_view in selection:
+            print('\nCOPYING {0}'.format(source_view.ViewName))
             # get legend view elements and exclude non-copyable elements
-            viewElements = FilteredElementCollector(activeDoc, srcView.Id).ToElements()
-            elementList = []
+            viewElements = \
+                DB.FilteredElementCollector(revit.doc, source_view.Id)\
+                  .ToElements()
+
+            element_list = []
             for el in viewElements:
-                if isinstance(el, Element) and el.Category:
-                    elementList.append(el.Id)
+                if isinstance(el, DB.Element) and el.Category:
+                    element_list.append(el.Id)
                 else:
                     print('SKIPPING ELEMENT WITH ID: {0}'.format(el.Id))
-            if len(elementList) < 1:
-                print('SKIPPING {0}. NO ELEMENTS FOUND.'.format(srcView.ViewName))
+            if len(element_list) < 1:
+                print('SKIPPING {0}. NO ELEMENTS FOUND.'
+                      .format(source_view.ViewName))
                 continue
+
             # start creating views and copying elements
-            with Transaction(doc, 'Copy Legends to this document') as t:
-                t.Start()
-                destView = doc.GetElement(baseLegendView.Duplicate(ViewDuplicateOption.Duplicate))
-                options = CopyPasteOptions()
-                options.SetDuplicateTypeNamesHandler(CopyUseDestination())
-                copiedElement = ElementTransformUtils.CopyElements(srcView,
-                                                                   List[ElementId](elementList),
-                                                                   destView,
-                                                                   None,
-                                                                   options)
+            with revit.Transaction('Copy Legends to this document'):
+                destView = dest_doc.GetElement(
+                    base_legend_view.Duplicate(
+                        DB.ViewDuplicateOption.Duplicate
+                        )
+                    )
+
+                options = DB.CopyPasteOptions()
+                options.SetDuplicateTypeNamesHandler(DB.CopyUseDestination())
+                copied_element = \
+                    DB.ElementTransformUtils.CopyElements(
+                        source_view,
+                        List[DB.ElementId](element_list),
+                        destView,
+                        None,
+                        options)
+
                 # matching element graphics overrides and view properties
-                for dest, src in zip(copiedElement, elementList):
-                    destView.SetElementOverrides(dest, srcView.GetElementOverrides(src))
-                destView.ViewName = srcView.ViewName
-                destView.Scale = srcView.Scale
-                t.Commit()
+                for dest, src in zip(copied_element, element_list):
+                    destView.SetElementOverrides(
+                        dest,
+                        source_view.GetElementOverrides(src)
+                        )
+
+                destView.ViewName = source_view.ViewName
+                destView.Scale = source_view.Scale
 else:
     error('At least one Legend view must be selected.')
