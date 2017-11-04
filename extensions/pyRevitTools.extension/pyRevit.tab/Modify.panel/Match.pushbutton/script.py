@@ -2,6 +2,8 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=H7b8hjHbauE'
+
 __doc__ = 'pick the source object that has the element graphics override '\
           'you like to match to, and then pick the destination objects '\
           'one by one and this tool will match the graphics.'\

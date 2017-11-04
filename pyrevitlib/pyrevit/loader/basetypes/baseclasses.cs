@@ -1,8 +1,12 @@
 using System;
+using System.IO;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 
 namespace PyRevitBaseClasses
@@ -14,6 +18,7 @@ namespace PyRevitBaseClasses
         private string _scriptSource = null;
         private string _alternateScriptSource = null;
         private string _syspaths = null;
+        private string _helpSource = null;
         private string _cmdName = null;
         private string _cmdBundle = null;
         private string _cmdExtension = null;
@@ -25,6 +30,7 @@ namespace PyRevitBaseClasses
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
                               string syspaths,
+                              string helpSource,
                               string cmdName,
                               string cmdBundle,
                               string cmdExtension,
@@ -35,6 +41,7 @@ namespace PyRevitBaseClasses
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
+            _helpSource = helpSource;
             _cmdName = cmdName;
             _cmdBundle = cmdBundle;
             _cmdExtension = cmdExtension;
@@ -56,40 +63,78 @@ namespace PyRevitBaseClasses
             bool _altScriptMode = false;
             bool _forcedDebugMode = false;
 
-            // If Ctrl-Alt-Shift clicking on the tool run in clean engine
+            // If Ctrl+Alt+Shift clicking on the tool run in clean engine
             if ((Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)) &&
                 (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)) &&
                 (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
             {
                 _refreshEngine = true;
             }
-            else
+
+            // If Alt+Shift clicking on button, open the context menu with options.
+            else if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin) &&
+                     (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
             {
-                // If Alt clicking on button, open the script in explorer and return.
-                if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
-                {
+                ContextMenu pyRevitCmdContextMenu = new ContextMenu();
+
+                MenuItem openSourceDirectory = new MenuItem();
+                openSourceDirectory.Header = "Open Script Folder";
+                //openSourceDirectory.Icon = new Image {
+                //    Source = new BitmapImage(new Uri("images/sample.png", UriKind.Relative))
+                //};
+                openSourceDirectory.Click += delegate {
                     // combine the arguments together
                     // it doesn't matter if there is a space after ','
                     string argument = "/select, \"" + _script + "\"";
-
                     System.Diagnostics.Process.Start("explorer.exe", argument);
-                    return Result.Succeeded;
-                }
-                else
-                {
-                    // If Shift clicking on button, run config script instead
-                    if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
-                    {
-                        _script = _alternateScriptSource;
-                        _altScriptMode = true;
-                    }
+                };
+                pyRevitCmdContextMenu.Items.Add(openSourceDirectory);
 
-                    // If Ctrl clicking on button, set forced debug mode.
-                    if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-                    {
-                        _forcedDebugMode = true;
-                    }
+                if (_helpSource != null && _helpSource != "")
+                {
+                    MenuItem openHelpSource = new MenuItem();
+                    openHelpSource.Header = "Open Help";
+                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(_helpSource); };
+                    pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
+
+                MenuItem copyScriptPath = new MenuItem();
+                copyScriptPath.Header = "Copy Script Path";
+                copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script);  };
+                pyRevitCmdContextMenu.Items.Add(copyScriptPath);
+
+                MenuItem copyBundlePath = new MenuItem();
+                copyBundlePath.Header = "Copy Bundle Path";
+                copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(Path.GetDirectoryName(_script)); };
+                pyRevitCmdContextMenu.Items.Add(copyBundlePath);
+
+                pyRevitCmdContextMenu.IsOpen = true;
+
+                return Result.Succeeded;
+            }
+
+            // If Alt clicking on button, open the script in explorer and return.
+            else if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
+            {
+                // combine the arguments together
+                // it doesn't matter if there is a space after ','
+                string argument = "/select, \"" + _script + "\"";
+
+                System.Diagnostics.Process.Start("explorer.exe", argument);
+                return Result.Succeeded;
+            }
+
+            // If Shift clicking on button, run config script instead
+            else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            {
+                _script = _alternateScriptSource;
+                _altScriptMode = true;
+            }
+
+            // If Ctrl clicking on button, set forced debug mode.
+            else if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                _forcedDebugMode = true;
             }
             #endregion
 
@@ -99,6 +144,7 @@ namespace PyRevitBaseClasses
                                                             _scriptSource,
                                                             _alternateScriptSource,
                                                             _syspaths,
+                                                            _helpSource,
                                                             _cmdName,
                                                             _cmdBundle,
                                                             _cmdExtension,
