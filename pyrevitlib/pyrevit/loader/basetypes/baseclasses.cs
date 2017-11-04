@@ -78,6 +78,15 @@ namespace PyRevitBaseClasses
                 // start creating context menu
                 ContextMenu pyRevitCmdContextMenu = new ContextMenu();
 
+                // menu item to open help url if exists
+                if (_helpSource != null && _helpSource != "")
+                {
+                    MenuItem openHelpSource = new MenuItem();
+                    openHelpSource.Header = "Open Help";
+                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(_helpSource); };
+                    pyRevitCmdContextMenu.Items.Add(openHelpSource);
+                }
+
                 // use a disabled menu item to show if the command requires clean engine
                 MenuItem cleanEngineStatus = new MenuItem();
                 cleanEngineStatus.Header = String.Format("Requests Clean Engine: {0}", _needsCleanEngine ? "Yes":"No");
@@ -90,15 +99,6 @@ namespace PyRevitBaseClasses
                 fullFrameEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
 
-                // menu item to open help url if exists
-                if (_helpSource != null && _helpSource != "")
-                {
-                    MenuItem openHelpSource = new MenuItem();
-                    openHelpSource.Header = "Open Help";
-                    openHelpSource.Click += delegate { System.Diagnostics.Process.Start(_helpSource); };
-                    pyRevitCmdContextMenu.Items.Add(openHelpSource);
-                }
-
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
@@ -110,7 +110,7 @@ namespace PyRevitBaseClasses
                 {
                     MenuItem copyAltScriptPath = new MenuItem();
                     copyAltScriptPath.Header = "Copy Alternate Script Path";
-                    copyAltScriptPath.Click += delegate { System.Diagnostics.Process.Start(_alternateScriptSource); };
+                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_alternateScriptSource); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
@@ -130,7 +130,7 @@ namespace PyRevitBaseClasses
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
                 copySysPaths.Header = "Copy Sys Paths";
-                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(_syspaths); };
+                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(_syspaths.Replace(";", "\r\n")); };
                 pyRevitCmdContextMenu.Items.Add(copySysPaths);
 
                 // open the menu
