@@ -1,33 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Exports all original imported images to chosen path and adds file size to image type name.'
-
 import os.path as op
 import math
 import re
-from System.Diagnostics import Stopwatch
-from Autodesk.Revit.DB import FilteredElementCollector as Fec
-from Autodesk.Revit.DB import ImageType
-from rpw.ui.forms import select_folder
-from rpw.db import Transaction
+
+from pyrevit.framework import Diagnostics
+from pyrevit import forms
+from pyrevit import revit, DB, UI
+from pyrevit import script
+
+
+__doc__ = 'Exports all original imported images to '\
+          'chosen path and adds file size to image type name.'
 
 
 def convert_size(size_bytes):
@@ -54,17 +37,17 @@ def cleanup(cleanup_str):
     return cleanup_str
 
 
-stopwatch = Stopwatch()
+stopwatch = Diagnostics.Stopwatch()
 stopwatch.Start()
 
-doc = __revit__.ActiveUIDocument.Document
 # dest_dir = op.expandvars('%userprofile%\\desktop')
-dest_dir = select_folder()
-img_types = Fec(doc).OfClass(ImageType).ToElements()
+dest_dir = forms.pick_folder()
+img_types = DB.FilteredElementCollector(revit.doc)\
+              .OfClass(DB.ImageType)\
+              .ToElements()
 
-with Transaction("rename_img_types"):
+with revit.Transaction("rename_img_types"):
     for img in img_types:
-
         # export images
         image = img.GetImage()
         image_name = op.basename(img.Path)
@@ -80,7 +63,9 @@ with Transaction("rename_img_types"):
 
         print('EXPORTING {0}: {1}'.format(img_size[1:-1].rjust(8), image_name))
 
-print("pyRevit Export All Raster Images exported {0} images to {1} in: ".format(len(img_types), dest_dir))
+print("pyRevit Export All Raster Images exported {0} images to {1} in: "
+      .format(len(img_types), dest_dir))
+
 stopwatch.Stop()
 timespan = stopwatch.Elapsed
 print(timespan)
