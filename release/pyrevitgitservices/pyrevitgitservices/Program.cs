@@ -40,13 +40,13 @@ namespace pyrevitgitservices
 
         static void Clone(List<string> cloneArgs)
         {
-            if (cloneArgs.Count == 1)
+            if (cloneArgs.Count == 2)
             {
-                var destPath = cloneArgs[0];
                 var cops = new CloneOptions();
                 cops.Checkout = true;
-                cops.BranchName = "master";
-                Console.WriteLine(String.Format("Cloning pyRevit into: {0}", destPath));
+                cops.BranchName = cloneArgs[0];
+                var destPath = cloneArgs[1];
+                Console.WriteLine(String.Format("Cloning pyRevit ({0}) into: {1}", cops.BranchName, destPath));
                 Repository.Clone("https://github.com/eirannejad/pyRevit.git", destPath, cops);
 
                 var repo = new Repository(destPath);
