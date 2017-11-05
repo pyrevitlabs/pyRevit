@@ -140,8 +140,11 @@ def find_matching_view(dest_doc, source_view):
     for v in DB.FilteredElementCollector(dest_doc).OfClass(DB.View):
         if v.ViewType == source_view.ViewType \
                 and v.ViewName == source_view.ViewName:
-            return v
-    return None
+            if source_view.ViewType == DB.ViewType.DrawingSheet:
+                if v.SheetNumber == source_view.SheetNumber:
+                    return v
+            else:
+                return v
 
 
 def get_view_contents(dest_doc, source_view):
