@@ -2,15 +2,17 @@ Main branch hotfix/feature:
 ☐ Add option to gitservices tool to set remote tracking branch for updates
 
 4.5 beta publish:
-☐ fix pyRevitTools
+✔ fix pyRevitTools @done(2017-11-04 19:17)
+☐ test tools for beta
+☐ Create custom beta installer
+☐ Publish video for developers on changes
+
+4.5 rc publish:
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
-☐ Create custom beta installer
 ☐ remove any reference to ScriptOutput internal components (e.g. renderer)
 ☐ review the extension hash system
 ☐ fix charts reach into output and output.utils
-
-4.5 rc publish:
 ☐ Select All Clouds Of Specific Revision: Move to forms
 ☐ Unify the Revision selection windows
 ☐ Fix all selections through api and use revit.selection
