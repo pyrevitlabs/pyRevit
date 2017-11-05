@@ -1,57 +1,43 @@
-'''
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
-
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
-
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-'''
-__doc__ = 'Uses the Worksharing tooltip to find out the element "owned" by the user in the current view.' \
-          'If current view is a sheet, the tools searches all the views placed on this sheet as well.' \
-          '"Owned" elements are the elements edited by the user since the last synchronize and release.'
-
-__window__.Close()
-
-from Autodesk.Revit.DB import WorksharingUtils, ElementId, FilteredElementCollector, ViewSheet
-from Autodesk.Revit.UI import TaskDialog
-from Autodesk.Revit.UI.Selection import ISelectionFilter
-from System.Collections.Generic import List
+from pyrevit import HOST_APP
+from pyrevit.framework import List
+from pyrevit import revit, DB, UI
 
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-# selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds() ]
+__doc__ = 'Uses the Worksharing tooltip to find out the element '\
+          '"owned" by the user in the current view.' \
+          'If current view is a sheet, the tools searches all the '\
+          'views placed on this sheet as well.' \
+          '"Owned" elements are the elements edited by the user '\
+          'since the last synchronize and release.'
+
 
 filteredlist = []
 viewlist = []
 
-if doc.IsWorkshared:
-    currentviewid = uidoc.ActiveGraphicalView.Id
+if revit.doc.IsWorkshared:
+    currentviewid = revit.activeview.Id
     viewlist.append(currentviewid)
-    if isinstance(uidoc.ActiveGraphicalView, ViewSheet):
-        vportids = uidoc.ActiveGraphicalView.GetAllViewports()
+    if isinstance(revit.activeview, DB.ViewSheet):
+        vportids = revit.activeview.GetAllViewports()
         for vportid in vportids:
-            viewlist.append(doc.GetElement(vportid).ViewId)
+            viewlist.append(revit.doc.GetElement(vportid).ViewId)
     for view in viewlist:
-        curviewelements = FilteredElementCollector(doc).OwnedByView(view).WhereElementIsNotElementType().ToElements()
+        curviewelements = DB.FilteredElementCollector(revit.doc)\
+                            .OwnedByView(view)\
+                            .WhereElementIsNotElementType()\
+                            .ToElements()
+
         if len(curviewelements) > 0:
             for el in curviewelements:
-                wti = WorksharingUtils.GetWorksharingTooltipInfo(doc, el.Id)
+                wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
+                                                                    el.Id)
                 # wti.Creator, wti.Owner, wti.LastChangedBy
-                if wti.Owner == __revit__.Application.Username:
+                if wti.Owner == HOST_APP.username:
                     filteredlist.append(el.Id)
-            uidoc.Selection.SetElementIds(List[ElementId](filteredlist))
+            revit.uidoc.Selection.SetElementIds(
+                List[DB.ElementId](filteredlist)
+                )
     else:
         pass
 else:
-    TaskDialog.Show('pyrevit','Model is not workshared.')
+    UI.TaskDialog.Show('pyrevit', 'Model is not workshared.')
