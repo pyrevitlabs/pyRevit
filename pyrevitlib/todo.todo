@@ -3,7 +3,7 @@ Main branch hotfix/feature:
 
 4.5 beta publish:
 ✔ fix pyRevitTools @done(2017-11-04 19:17)
-☐ test tools for beta
+✔ test tools for beta @done(2017-11-05 12:57)
 ☐ Create custom beta installer
 ☐ Publish video for developers on changes
 
