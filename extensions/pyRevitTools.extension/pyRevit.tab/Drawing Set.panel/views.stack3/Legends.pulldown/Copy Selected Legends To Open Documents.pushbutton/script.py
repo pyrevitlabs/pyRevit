@@ -59,7 +59,8 @@ if len(selection) > 0:
                 continue
 
             # start creating views and copying elements
-            with revit.Transaction('Copy Legends to this document'):
+            with revit.Transaction('Copy Legends to this document',
+                                   doc=dest_doc):
                 destView = dest_doc.GetElement(
                     base_legend_view.Duplicate(
                         DB.ViewDuplicateOption.Duplicate
@@ -67,7 +68,7 @@ if len(selection) > 0:
                     )
 
                 options = DB.CopyPasteOptions()
-                options.SetDuplicateTypeNamesHandler(DB.CopyUseDestination())
+                options.SetDuplicateTypeNamesHandler(CopyUseDestination())
                 copied_element = \
                     DB.ElementTransformUtils.CopyElements(
                         source_view,

@@ -51,7 +51,7 @@ if len(selection) > 0:
         with revit.Transaction('Duplicate Legend as Drafting'):
             destView = DB.ViewDrafting.Create(revit.doc, draftingViewType.Id)
             options = DB.CopyPasteOptions()
-            options.SetDuplicateTypeNamesHandler(DB.CopyUseDestination())
+            options.SetDuplicateTypeNamesHandler(CopyUseDestination())
             copiedElement = \
                 DB.ElementTransformUtils.CopyElements(
                     srcView,

@@ -64,7 +64,7 @@ for src_view in selection:
             )
 
         options = DB.CopyPasteOptions()
-        options.SetDuplicateTypeNamesHandler(DB.CopyUseDestination())
+        options.SetDuplicateTypeNamesHandler(CopyUseDestination())
         copied_element = \
             DB.ElementTransformUtils.CopyElements(
                 src_view,

@@ -56,12 +56,14 @@ if len(selection) > 0:
                 print('SKIPPING {0}. NO ELEMENTS FOUND.'
                       .format(source_view.ViewName))
                 continue
+
             # start creating views and copying elements
-            with revit.Transaction('Duplicate Legend as Drafting'):
+            with revit.Transaction('Duplicate Legend as Drafting',
+                                   doc=dest_doc):
                 destView = DB.ViewDrafting.Create(dest_doc,
                                                   draftingViewType.Id)
                 options = DB.CopyPasteOptions()
-                options.SetDuplicateTypeNamesHandler(DB.CopyUseDestination())
+                options.SetDuplicateTypeNamesHandler(CopyUseDestination())
                 copiedElement = \
                     DB.ElementTransformUtils.CopyElements(
                         source_view,
@@ -69,6 +71,7 @@ if len(selection) > 0:
                         destView,
                         None,
                         options)
+
                 # matching element graphics overrides and view properties
                 for dest, src in zip(copiedElement, element_list):
                     destView.SetElementOverrides(
