@@ -16,7 +16,8 @@ except ImportError:
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
-VERSION_MINOR = 4
+VERSION_MINOR = 5
+BUILD_METADATA = '-beta'
 
 # ------------------------------------------------------------------------------
 # config environment paths
