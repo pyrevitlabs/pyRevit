@@ -18,6 +18,7 @@ OutputBaseFilename={#MyAppName}Setup{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 SetupIconFile={#MyAppName}Setup.ico
+UninstallDisplayIcon={#MyAppName}Setup.ico
 AppCopyright=Copyright (c) 2014-2017 Ehsan Iran-Nejad
 DisableWelcomePage=no
 WizardImageFile=installerimage.bmp
