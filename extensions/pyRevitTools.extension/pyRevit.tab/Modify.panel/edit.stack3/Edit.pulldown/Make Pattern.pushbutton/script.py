@@ -76,11 +76,15 @@ class MakePatternWindow(WPFWindow):
 
         # ask user for origin and max domain points
         with WarningBar(title='Pick origin point (bottom-left corner of the pattern area):'):
+            logger.debug('Asking for boundary point (bottom-left).')
             pat_bottomleft = selection.utils.pick_point()
         if pat_bottomleft:
+            logger.debug('bottom-left point: {}'.format(pat_bottomleft))
             with WarningBar(title='Pick top-right corner of the pattern area:'):
+                logger.debug('Asking for boundary point (top-right).')
                 pat_topright = selection.utils.pick_point()
             if pat_topright:
+                logger.debug('top-right point: {}'.format(pat_bottomleft))
                 return (round_domain_coord(pat_bottomleft.X), round_domain_coord(pat_bottomleft.Y)), \
                        (round_domain_coord(pat_topright.X), round_domain_coord(pat_topright.Y))
 
@@ -156,10 +160,13 @@ class MakePatternWindow(WPFWindow):
     # noinspection PyMethodMayBeStatic
     def make_pattern(self, sender, args):
         if self._verify_name():
+            logger.debug('Name OK: {}'.format(self.pat_name))
             self.Hide()
             domain = self._pick_domain()
             if domain:
+                logger.debug('Domain: {}'.format(domain))
                 self._create_pattern(domain)
+
             self.Close()
 
     # noinspection PyUnusedLocal
