@@ -1,5 +1,5 @@
 #define MyAppName "pyRevit"
-#define MyAppVersion "-v4"
+#define MyAppVersion "-v45beta"
 #define MyAppPublisher "Ehsan Iran-Nejad"
 #define MyAppURL "http://eirannejad.github.io/pyRevit/"
 #define MyAppGit "https://github.com/eirannejad/pyRevit.git"
