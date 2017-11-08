@@ -6,6 +6,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
+__context__ = 'selection'
 __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
           'This tool studies the selected elements and their associated '   \
           'types and presents the user with a list of parameters that are ' \

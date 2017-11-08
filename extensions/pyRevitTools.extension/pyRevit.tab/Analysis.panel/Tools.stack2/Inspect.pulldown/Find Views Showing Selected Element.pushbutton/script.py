@@ -1,6 +1,10 @@
 """Lists all views that the selected elements is visible in."""
 from pyrevit import revit, DB
 
+
+__context__ = 'selection'
+
+
 selection = revit.get_selection()
 
 
@@ -28,7 +32,7 @@ for v in views:
     print('\tTotal found: {0}'.format(len(cl_els)))
 
     i = 0
-    for elId in revit.uidoc.Selection.GetElementIds():
+    for elId in selection:
         if elId in cl_els:
             i = + 1
             viewList.append(v)

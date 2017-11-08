@@ -1,6 +1,7 @@
 from pyrevit import revit, DB
 
 
+__context__ = 'selection'
 __doc__ = 'Brings selected object to Front of the current view. '\
           'This only works on elements that support this option.'
 

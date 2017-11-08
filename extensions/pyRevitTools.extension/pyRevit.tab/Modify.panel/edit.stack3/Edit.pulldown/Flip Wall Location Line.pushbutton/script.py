@@ -1,6 +1,7 @@
 from pyrevit import revit, DB
 
 
+__context__ = 'selection'
 __doc__ = 'Flips the selected walls along their core axis and '\
           'changes their location lines to Core Face Exterior.'
 

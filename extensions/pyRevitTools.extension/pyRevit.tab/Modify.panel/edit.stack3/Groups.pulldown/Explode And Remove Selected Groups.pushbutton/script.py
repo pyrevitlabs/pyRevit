@@ -1,6 +1,7 @@
 from pyrevit import revit, DB, UI
 
 
+__context__ = 'selection'
 __doc__ = 'Explodes all instances of the selected groups and removes '\
           'the group definition from project browser.'
 

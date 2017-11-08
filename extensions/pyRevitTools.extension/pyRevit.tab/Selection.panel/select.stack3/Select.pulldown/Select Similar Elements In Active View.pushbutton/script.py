@@ -2,6 +2,7 @@ from pyrevit.framework import List
 from pyrevit import revit, DB
 
 
+__context__ = 'selection'
 __doc__ = 'Selects elements similar to the currently '\
           'selected elements in the active view .'
 

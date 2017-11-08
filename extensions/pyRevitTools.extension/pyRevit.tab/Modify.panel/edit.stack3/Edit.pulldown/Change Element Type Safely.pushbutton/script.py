@@ -2,6 +2,7 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
+__context__ = 'selection'
 __doc__ = 'Changes element type of the selected elements to a the element '\
           'type of a picked element, while maintaining the values of all '\
           'instance parameters. First select all the elements that you want '\

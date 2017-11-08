@@ -2,6 +2,10 @@
 
 from pyrevit import revit
 
+
+__context__ = 'selection'
+
+
 selection = revit.get_selection()
 
 with revit.Transaction('Flip Facing Selected Doors'):
