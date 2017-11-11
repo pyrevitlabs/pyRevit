@@ -25,11 +25,13 @@ class CurrentElementSelection:
         if not isinstance(mixed_list, list):
             mixed_list = [mixed_list]
 
-        for el in mixed_list:
-            if isinstance(el, DB.ElementId):
-                element_id_list.append(el)
-            else:
-                element_id_list.append(el.Id)
+        for item in mixed_list:
+            if isinstance(item, DB.ElementId):
+                element_id_list.append(item)
+            elif isinstance(item, DB.Element):
+                element_id_list.append(item.Id)
+            elif type(item) == int:
+                element_id_list.append(DB.ElementId(item))
 
         return element_id_list
 
