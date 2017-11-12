@@ -5,7 +5,7 @@ import logging
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
-from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.emoji import emojize
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
@@ -41,10 +41,12 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_CRITICAL,
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 
 # must be the same in this file and pyrevit/loader/basetypes/envdict.cs
-GLOBAL_LOGGING_LEVEL_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_LOGGINGLEVEL'
-set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
-GLOBAL_FILELOGGING_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_FILELOGGING'
-set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, False)
+# this is because the csharp code hasn't been compiled when the
+# logger module is imported in the other modules
+GLOBAL_LOGGING_LEVEL_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOGGINGLEVEL'
+envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
+GLOBAL_FILELOGGING_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_FILELOGGING'
+envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, False)
 
 
 # Creating default file log name and status
@@ -105,8 +107,8 @@ class LoggerWrapper(logging.Logger):
 
     def isEnabledFor(self, level):
         # update current logging level and file logging state
-        self._filelogstate = get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
-        self._curlevel = get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+        self._filelogstate = envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
+        self._curlevel = envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
         # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
@@ -124,7 +126,7 @@ class LoggerWrapper(logging.Logger):
 
     @staticmethod
     def _reset_logger_env_vars(log_level):
-        set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, log_level)
+        envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, log_level)
 
     def has_errors(self):
         return self._has_errors
@@ -145,7 +147,7 @@ class LoggerWrapper(logging.Logger):
         self._reset_logger_env_vars(DEFAULT_LOGGING_LEVEL)
 
     def get_level(self):
-        return get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+        return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
 
 # setting up handlers and formatters -------------------------------------------
@@ -204,7 +206,7 @@ def get_logger(logger_name):
 
 
 def set_file_logging(status):
-    set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, status)
+    envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, status)
 
 
 def loggers_have_errors():

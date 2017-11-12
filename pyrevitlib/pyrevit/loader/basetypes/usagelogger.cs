@@ -61,21 +61,15 @@ namespace PyRevitBaseClasses
     }
 
 
-    public class ScriptUsageLogger
+    public static class ScriptUsageLogger
     {
-        private string _usageLogFilePath;
-        private string _usageLogServerUrl;
-        public LogEntry logEntry;
-
-        public ScriptUsageLogger() {}
-
-        public string MakeJSONLogEntry()
+        public static string MakeJSONLogEntry(LogEntry logEntry)
         {
             logEntry.TimeStamp();
             return new JavaScriptSerializer().Serialize(logEntry);
         }
 
-        public void PostUsageLogToServer()
+        public static void PostUsageLogToServer(string _usageLogServerUrl, LogEntry logEntry)
         {
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(_usageLogServerUrl);
             httpWebRequest.ContentType = "application/json";
@@ -83,7 +77,7 @@ namespace PyRevitBaseClasses
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
-                string json = MakeJSONLogEntry();
+                string json = MakeJSONLogEntry(logEntry);
 
                 streamWriter.Write(json);
                 streamWriter.Flush();
@@ -97,7 +91,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void WriteUsageLogToFile()
+        public static void WriteUsageLogToFile(string _usageLogFilePath, LogEntry logEntry)
         {
             // Read existing json data
             string jsonData = "[]";
@@ -120,35 +114,15 @@ namespace PyRevitBaseClasses
             System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
         }
 
-        public void LogUsage(ref PyRevitCommandRuntime pyrvtCmd)
+        public static void LogUsage(LogEntry logEntry)
         {
-            // get usage log state data from python dictionary saved in appdomain
-            // this needs to happen before command exection to get the values before the command changes them
-            var envdict = new EnvDictionary();
+            var envDict = new EnvDictionary();
 
-            // get live data from python dictionary saved in appdomain
-            _usageLogFilePath = envdict.usageLogFilePath;
-            _usageLogServerUrl = envdict.usageLogServerUrl;
+            if (envDict.usageLogState && envDict.usageLogServerUrl != null && !String.IsNullOrEmpty(envDict.usageLogServerUrl))
+                new Task(() => PostUsageLogToServer(envDict.usageLogServerUrl, logEntry)).Start();
 
-            logEntry = new LogEntry(pyrvtCmd.App.Username,
-                                    pyrvtCmd.App.VersionNumber, pyrvtCmd.App.VersionBuild,
-                                    envdict.sessionUUID, envdict.addonVersion,
-                                    pyrvtCmd.DebugMode,
-                                    pyrvtCmd.AlternateMode,
-                                    pyrvtCmd.CommandName,
-                                    pyrvtCmd.CommandBundle,
-                                    pyrvtCmd.CommandExtension,
-                                    pyrvtCmd.CommandUniqueId,
-                                    pyrvtCmd.ScriptSourceFile,
-                                    pyrvtCmd.ExecutionResult,
-                                    pyrvtCmd.GetResultsDictionary());
-
-            // log usage if usage logging in enabled
-            if (envdict.usageLogState && !String.IsNullOrEmpty(_usageLogServerUrl))
-                new Task(PostUsageLogToServer).Start();
-
-            if (envdict.usageLogState && !String.IsNullOrEmpty(_usageLogFilePath))
-                new Task(WriteUsageLogToFile).Start();
+            if (envDict.usageLogState && envDict.usageLogFilePath != null && !String.IsNullOrEmpty(envDict.usageLogFilePath))
+                new Task(() => WriteUsageLogToFile(envDict.usageLogFilePath, logEntry)).Start();
         }
     }
 }

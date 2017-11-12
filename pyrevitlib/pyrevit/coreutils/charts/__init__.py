@@ -2,8 +2,7 @@ import os.path as op
 from json import JSONEncoder
 
 from pyrevit import MAIN_LIB_DIR
-from pyrevit.coreutils import timestamp
-from pyrevit.output.utils import random_rgba_color
+from pyrevit.coreutils import timestamp, random_rgba_color
 
 # CHARTS_ENGINE = 'Chart.js'
 CHARTS_ENGINE = 'Chart.bundle.js'

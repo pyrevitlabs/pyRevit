@@ -21,9 +21,6 @@ namespace PyRevitBaseClasses
         public System.Windows.Forms.WebBrowser renderer;
 
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
-        public delegate void CustomProtocolHandler(String url);
-        public CustomProtocolHandler UrlHandler;
-
 
         public ScriptOutput(bool debugMode=false)
         {
@@ -52,9 +49,6 @@ namespace PyRevitBaseClasses
 
             _navigateHandler = new System.Windows.Forms.WebBrowserNavigatingEventHandler(renderer_Navigating);
             renderer.Navigating += _navigateHandler;
-
-            //renderer.DocumentCompleted +=
-                // new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(renderer_DocumentCompleted);
 
             renderer.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
             while (renderer.Document.Body == null)
@@ -120,44 +114,6 @@ namespace PyRevitBaseClasses
             this._contentLoaded = true;
         }
 
-        public void AppendToOutputList()
-        {
-            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
-            if (outputList == null)
-            {
-                var newOutputList = new List<ScriptOutput>();
-                newOutputList.Add(this);
-
-                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
-            }
-            else
-            {
-                outputList.Add(this);
-            }
-        }
-
-        public void RemoveFromOutputList()
-        {
-            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
-            if (outputList == null)
-            {
-                return;
-            }
-            else
-            {
-                var newOutputList = new List<ScriptOutput>();
-                foreach(ScriptOutput outputWindow in outputList)
-                {
-                    if (outputWindow != this)
-                        newOutputList.Add(outputWindow);
-                }
-
-                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
-
-                outputList = null;
-            }
-        }
-
         public void WaitReadyBrowser()
         {
             System.Windows.Forms.Application.DoEvents();
@@ -201,22 +157,19 @@ namespace PyRevitBaseClasses
             ScrollToBottom();
         }
 
-        //private void renderer_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
-        //{
-        //}
-
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e)
         {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
                 var commandStr = e.Url.ToString();
-                if (commandStr.StartsWith("http"))
+                if (commandStr.StartsWith("http") && !commandStr.StartsWith("http://localhost"))
                 {
                     System.Diagnostics.Process.Start(e.Url.ToString());
                 }
-                else
+                else if (commandStr.StartsWith("file"))
                 {
-                    UrlHandler(e.Url.OriginalString);
+                    e.Cancel = false;
+                    return;
                 }
 
                 e.Cancel = true;
@@ -285,18 +238,17 @@ namespace PyRevitBaseClasses
         private void Window_Loaded(object sender, System.EventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
-            outputWindow.AppendToOutputList();
+            ScriptOutputManager.AppendToOutputList(this);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
 
-            outputWindow.RemoveFromOutputList();
+            ScriptOutputManager.RemoveFromOutputList(this);
 
             outputWindow.renderer.Navigating -= _navigateHandler;
             outputWindow._navigateHandler = null;
-            outputWindow.UrlHandler = null;
         }
 
         private void Window_Closed(object sender, System.EventArgs e)

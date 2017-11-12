@@ -1,60 +1,22 @@
 from __future__ import print_function
 
 from pyrevit import EXEC_PARAMS
-from pyrevit.framework import AppDomain
-from pyrevit.framework import Drawing, Windows
-from pyrevit.coreutils import prepare_html_str
+from pyrevit import framework
+from pyrevit import coreutils
+from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
-from pyrevit.coreutils.emoji import emojize
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
-from pyrevit.output import urlscheme
+from pyrevit.coreutils import emoji
+from pyrevit.coreutils.loadertypes import ScriptOutputManager
 
 
-logger = get_logger(__name__)
+mlogger = logger.get_logger(__name__)
 
 
-class PyRevitOutputMgr:
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def _get_all_open_output_windows():
-        output_list_entryname = EnvDictionaryKeys.outputWindows
-        output_list = AppDomain.CurrentDomain.GetData(output_list_entryname)
-        if output_list:
-            return list(output_list)
-        else:
-            return []
-
-    @staticmethod
-    def _reset_outputwindow_cache():
-        output_list_entryname = EnvDictionaryKeys.outputWindows
-        return AppDomain.CurrentDomain.SetData(output_list_entryname, None)
-
-    @staticmethod
-    def get_all_outputs(command=None):
-        open_outputs = PyRevitOutputMgr._get_all_open_output_windows()
-        if command:
-            return [x for x in open_outputs if x.OutputId == command]
-        else:
-            return open_outputs
-
-    @staticmethod
-    def close_all_outputs():
-        for output_wnd in PyRevitOutputMgr._get_all_open_output_windows():
-            output_wnd.Close()
-        PyRevitOutputMgr._reset_outputwindow_cache()
-
-
-class PyRevitOutputWindow:
+class PyRevitOutputWindow(object):
     """Wrapper to interact with the output output window."""
 
     def __init__(self):
-        """Sets up the wrapper from the input dot net window handler"""
-        if EXEC_PARAMS.window_handle:
-            EXEC_PARAMS.window_handle.UrlHandler = \
-                urlscheme.handle_scheme_url
+        pass
 
     @property
     def window(self):
@@ -64,6 +26,11 @@ class PyRevitOutputWindow:
     def renderer(self):
         if self.window:
             return self.window.renderer
+
+    @property
+    def output_id(self):
+        if self.window:
+            return self.window.OutputId
 
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
@@ -109,10 +76,10 @@ class PyRevitOutputWindow:
     def set_font(self, font_family_name, font_size):
         # noinspection PyUnresolvedReferences
         self.renderer.Font = \
-            Drawing.Font(font_family_name,
-                         font_size,
-                         Drawing.FontStyle.Regular,
-                         Drawing.GraphicsUnit.Point)
+            framework.Drawing.Font(font_family_name,
+                                   font_size,
+                                   framework.Drawing.FontStyle.Regular,
+                                   framework.Drawing.GraphicsUnit.Point)
 
     def resize(self, width, height):
         self.set_width(width)
@@ -136,15 +103,10 @@ class PyRevitOutputWindow:
 
     def close_others(self, all_open_outputs=False):
         if all_open_outputs:
-            output_wnds = PyRevitOutputMgr.get_all_outputs()
-        elif self.window:
-            output_wnds = PyRevitOutputMgr.\
-                get_all_outputs(command=self.window.OutputId)
-
-        if output_wnds:
-            for output_wnd in output_wnds:
-                if self.window and output_wnd != self.window:
-                    output_wnd.Close()
+            ScriptOutputManager.CloseActiveScriptOutputs(self.window)
+        else:
+            ScriptOutputManager.CloseActiveScriptOutputs(self.window,
+                                                         self.output_id)
 
     def hide(self):
         if self.window:
@@ -171,6 +133,10 @@ class PyRevitOutputWindow:
         if self.renderer:
             self.renderer.Navigate(dest_url, False)
 
+    def open_page(self, dest_file):
+        self.show()
+        self.open_url('file:///' + dest_file)
+
     def update_progress(self, cur_value, max_value):
         if self.window:
             self.window.UpdateProgressBar(cur_value, max_value)
@@ -181,11 +147,11 @@ class PyRevitOutputWindow:
 
     @staticmethod
     def emojize(md_str):
-        print(emojize(md_str), end="")
+        print(emoji.emojize(md_str), end="")
 
     @staticmethod
     def print_html(html_str):
-        print(prepare_html_str(emojize(html_str)), end="")
+        print(coreutils.prepare_html_str(emoji.emojize(html_str)), end="")
 
     @staticmethod
     def print_code(code_str):
@@ -202,31 +168,30 @@ class PyRevitOutputWindow:
                    '{}' \
                    '</div>'
 
-        print(prepare_html_str(code_div.format(code_str.replace('    ',
-                                                                nbsp*4))),
-              end="")
+        print(coreutils.prepare_html_str(
+                code_div.format(
+                    code_str.replace('    ', nbsp*4))), end="")
 
     @staticmethod
     def print_md(md_str):
         tables_ext = 'pyrevit.coreutils.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
-        html_code = emojize(prepare_html_str(markdown_html))
+        html_code = emoji.emojize(coreutils.prepare_html_str(markdown_html))
         print(html_code, end="")
 
     def insert_divider(self):
         self.print_md('-----')
 
     def next_page(self):
-        self.print_html('<div style="page-break-after:always;">'
-                        '</div>'
-                        '<div>'
-                        '&nbsp'
-                        '</div>')
+        self.print_html('<div style="page-break-after:always;"></div>'
+                        '<div>&nbsp</div>')
 
     @staticmethod
     def linkify(*args):
-        return prepare_html_str(urlscheme.make_url(args))
+        # FIXME: Rewrite for the webapp backend
+        # return coreutils.prepare_html_str()
+        pass
 
     def make_chart(self):
         return charts.PyRevitOutputChart(self)

@@ -1,5 +1,16 @@
+using System;
+
 namespace PyRevitBaseClasses
 {
+    public static class DomainStorageKeys
+    {
+        public static string pyRevitEnvVarsDictKey = "pyRevitEnvVarsDict";
+        public static string pyRevitIpyEnginesDictKey = "pyRevitIpyEngines";
+        public static string pyRevitIpyEngineDefaultStreamCfgKey = "pyRevitIpyEngineDefaultStreamCfg";
+        public static string pyRevitScriptOutputsDictKey = "pyRevitOutputWindowsDict";
+        public static string pyRevitServerViewFunctionsDictKey = "pyRevitServerViewFunctionsDict";
+    }
+
     public static class ExternalConfig
     {
         public static string doctype = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">" +

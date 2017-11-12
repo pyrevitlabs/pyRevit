@@ -1,12 +1,13 @@
 from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.envvars import set_pyrevit_env_var
-from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
-
-import pyrevit.coreutils.git as git
+from pyrevit.coreutils import envvars
+from pyrevit.coreutils import git
 
 
 logger = get_logger(__name__)
+
+
+PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
 
 
 class PyRevitVersion(object):
@@ -57,7 +58,7 @@ def get_pyrevit_version():
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
         pyrvt_ver = PyRevitVersion('?')
 
-    set_pyrevit_env_var(EnvDictionaryKeys.addonVersion,
-                        pyrvt_ver.get_formatted())
+    envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
+                                pyrvt_ver.get_formatted())
 
     return pyrvt_ver
