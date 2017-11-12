@@ -6,6 +6,7 @@ import hashlib
 import time
 import datetime
 import shutil
+import random
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
@@ -617,3 +618,30 @@ def unc_to_dletter(unc_path):
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
             return unc_path.replace(server_path, mapped_drive)
+
+
+def random_color():
+    return random.randint(0, 255)
+
+
+def random_alpha():
+    return round(random.random(), 2)
+
+
+def random_hex_color():
+    return '#%02X%02X%02X' % (random_color(),
+                              random_color(),
+                              random_color())
+
+
+def random_rgb_color():
+    return 'rgb(%d, %d, %d)' % (random_color(),
+                                random_color(),
+                                random_color())
+
+
+def random_rgba_color():
+    return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
+                                       random_color(),
+                                       random_color(),
+                                       random_alpha())

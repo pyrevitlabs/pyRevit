@@ -1,10 +1,10 @@
 from pyrevit import revit, DB
-from pyrevit import output, script
+from pyrevit import script
 
 
-@output.route('/selectall')
-def selectall():
-    print('dfdfdf')
+# @output.route('/selectall')
+# def selectall():
+#     print('dfdfdf')
 
 
-output.load_index(script.get_bundle_file('index.html'))
+script.load_index()
