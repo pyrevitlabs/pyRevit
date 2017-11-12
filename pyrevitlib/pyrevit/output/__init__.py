@@ -6,45 +6,10 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import emoji
-from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
+from pyrevit.coreutils.loadertypes import ScriptOutputManager
 
 
 mlogger = logger.get_logger(__name__)
-
-
-class PyRevitOutputMgr(object):
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def _get_all_open_output_windows():
-        output_list_entryname = EnvDictionaryKeys.outputWindows
-        output_list = \
-            framework.AppDomain.CurrentDomain.GetData(output_list_entryname)
-        if output_list:
-            return list(output_list)
-        else:
-            return []
-
-    @staticmethod
-    def _reset_outputwindow_cache():
-        output_list_entryname = EnvDictionaryKeys.outputWindows
-        return framework.AppDomain.CurrentDomain.SetData(output_list_entryname,
-                                                         None)
-
-    @staticmethod
-    def get_all_outputs(command=None):
-        open_outputs = PyRevitOutputMgr._get_all_open_output_windows()
-        if command:
-            return [x for x in open_outputs if x.OutputId == command]
-        else:
-            return open_outputs
-
-    @staticmethod
-    def close_all_outputs():
-        for output_wnd in PyRevitOutputMgr._get_all_open_output_windows():
-            output_wnd.Close()
-        PyRevitOutputMgr._reset_outputwindow_cache()
 
 
 class PyRevitOutputWindow(object):
@@ -61,6 +26,11 @@ class PyRevitOutputWindow(object):
     def renderer(self):
         if self.window:
             return self.window.renderer
+
+    @property
+    def output_id(self):
+        if self.window:
+            return self.window.OutputId
 
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
@@ -133,15 +103,10 @@ class PyRevitOutputWindow(object):
 
     def close_others(self, all_open_outputs=False):
         if all_open_outputs:
-            output_wnds = PyRevitOutputMgr.get_all_outputs()
-        elif self.window:
-            output_wnds = PyRevitOutputMgr.\
-                get_all_outputs(command=self.window.OutputId)
-
-        if output_wnds:
-            for output_wnd in output_wnds:
-                if self.window and output_wnd != self.window:
-                    output_wnd.Close()
+            ScriptOutputManager.CloseActiveScriptOutputs(self.window)
+        else:
+            ScriptOutputManager.CloseActiveScriptOutputs(self.window,
+                                                         self.output_id)
 
     def hide(self):
         if self.window:

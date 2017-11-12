@@ -29,8 +29,12 @@ namespace PyRevitBaseClasses
         private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
         private WeakReference<ScriptOutputStream> _outputStream = new WeakReference<ScriptOutputStream>(null);
 
+        // get the state of variables before command execution; the command could potentially change the values
+        private EnvDictionary _envDict = new EnvDictionary();
+
         private int _execResults = 0;
         private Dictionary<String, String> _resultsDict = null;
+
 
         public PyRevitCommandRuntime(ExternalCommandData cmdData,
                                      ElementSet elements,
@@ -263,6 +267,40 @@ namespace PyRevitBaseClasses
             {
                 return _commandData.Application.Application;
             }
+        }
+
+        public string PyRevitVersion
+        {
+            get
+            {
+                return _envDict.pyRevitVersion;
+            }
+        }
+
+        public string SessionUUID
+        {
+            get
+            {
+                return _envDict.sessionUUID;
+            }
+        }
+
+        public LogEntry MakeLogEntry()
+        {
+            return new LogEntry(App.Username,
+                                App.VersionNumber,
+                                App.VersionBuild,
+                                SessionUUID,
+                                PyRevitVersion,
+                                DebugMode,
+                                AlternateMode,
+                                CommandName,
+                                CommandBundle,
+                                CommandExtension,
+                                CommandUniqueId,
+                                ScriptSourceFile,
+                                ExecutionResult,
+                                GetResultsDictionary());
         }
 
         public void Dispose()

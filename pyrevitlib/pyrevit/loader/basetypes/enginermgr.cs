@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using System.Collections.Generic;
-using PyRevitLoader;
 
 
 namespace PyRevitBaseClasses
@@ -47,7 +46,7 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDict);
+                var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitIpyEnginesDictKey);
 
                 if (engineDict == null)
                     engineDict = ClearEngines();
@@ -60,19 +59,19 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.docEngineDefaultStreamCfg);
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitIpyEngineDefaultStreamCfgKey);
             }
 
             set
             {
-                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDefaultStreamCfg, value);
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitIpyEngineDefaultStreamCfgKey, value);
             }
         }
 
         public Dictionary<string, ScriptEngine> ClearEngines()
         {
             var newEngineDict = new Dictionary<string, ScriptEngine>();
-            AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.docEngineDict, newEngineDict);
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitIpyEnginesDictKey, newEngineDict);
 
             return newEngineDict;
         }

@@ -41,6 +41,8 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_CRITICAL,
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 
 # must be the same in this file and pyrevit/loader/basetypes/envdict.cs
+# this is because the csharp code hasn't been compiled when the
+# logger module is imported in the other modules
 GLOBAL_LOGGING_LEVEL_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_LOGGINGLEVEL'
 set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
 GLOBAL_FILELOGGING_ENVVAR = PYREVIT_ADDON_NAME.upper() + '_FILELOGGING'

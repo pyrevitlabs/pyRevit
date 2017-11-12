@@ -114,44 +114,6 @@ namespace PyRevitBaseClasses
             this._contentLoaded = true;
         }
 
-        public void AppendToOutputList()
-        {
-            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
-            if (outputList == null)
-            {
-                var newOutputList = new List<ScriptOutput>();
-                newOutputList.Add(this);
-
-                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
-            }
-            else
-            {
-                outputList.Add(this);
-            }
-        }
-
-        public void RemoveFromOutputList()
-        {
-            var outputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(EnvDictionaryKeys.outputWindows);
-            if (outputList == null)
-            {
-                return;
-            }
-            else
-            {
-                var newOutputList = new List<ScriptOutput>();
-                foreach(ScriptOutput outputWindow in outputList)
-                {
-                    if (outputWindow != this)
-                        newOutputList.Add(outputWindow);
-                }
-
-                AppDomain.CurrentDomain.SetData(EnvDictionaryKeys.outputWindows, newOutputList);
-
-                outputList = null;
-            }
-        }
-
         public void WaitReadyBrowser()
         {
             System.Windows.Forms.Application.DoEvents();
@@ -276,14 +238,14 @@ namespace PyRevitBaseClasses
         private void Window_Loaded(object sender, System.EventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
-            outputWindow.AppendToOutputList();
+            ScriptOutputManager.AppendToOutputList(this);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
 
-            outputWindow.RemoveFromOutputList();
+            ScriptOutputManager.RemoveFromOutputList(this);
 
             outputWindow.renderer.Navigating -= _navigateHandler;
             outputWindow._navigateHandler = null;

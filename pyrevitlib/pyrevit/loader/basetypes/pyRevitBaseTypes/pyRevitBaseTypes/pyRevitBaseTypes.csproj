@@ -121,23 +121,26 @@
     <Compile Include="..\..\enginermgr.cs">
       <Link>enginermgr.cs</Link>
     </Compile>
-    <Compile Include="..\..\envdict.cs">
-      <Link>envdict.cs</Link>
+    <Compile Include="..\..\envvars.cs">
+      <Link>envvars.cs</Link>
     </Compile>
     <Compile Include="..\..\executor.cs">
       <Link>executor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\outputstream.cs">
-      <Link>outputstream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\outputwindow.cs">
-      <Link>outputwindow.cs</Link>
     </Compile>
     <Compile Include="..\..\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
     <Compile Include="..\..\replctrl.cs">
       <Link>replctrl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\scriptoutput.cs">
+      <Link>scriptoutput.cs</Link>
+    </Compile>
+    <Compile Include="..\..\scriptoutputmgr.cs">
+      <Link>scriptoutputmgr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\scriptoutputstream.cs">
+      <Link>scriptoutputstream.cs</Link>
     </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>

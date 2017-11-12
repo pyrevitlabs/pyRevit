@@ -55,7 +55,7 @@ def get_pyrevit_version():
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
         pyrvt_ver = PyRevitVersion('?')
 
-    set_pyrevit_env_var(EnvDictionaryKeys.addonVersion,
+    set_pyrevit_env_var(EnvDictionaryKeys.pyRevitVersion,
                         pyrvt_ver.get_formatted())
 
     return pyrvt_ver
