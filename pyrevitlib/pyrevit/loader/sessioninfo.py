@@ -6,23 +6,27 @@ from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 from pyrevit.versionmgr import get_pyrevit_version
 from pyrevit.coreutils import DEFAULT_SEPARATOR
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
+from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
-from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 
 
 logger = get_logger(__name__)
 
 
+PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
+PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
+PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
+
+
 def set_session_uuid(uuid_str):
-    set_pyrevit_env_var(EnvDictionaryKeys.sessionUUID, uuid_str)
+    envvars.set_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR, uuid_str)
 
 
 def get_session_uuid():
-    return get_pyrevit_env_var(EnvDictionaryKeys.sessionUUID)
+    return envvars.get_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR)
 
 
 def new_session_uuid():
@@ -41,7 +45,7 @@ def get_total_loaded_assm_count():
     Returns:
         total count (int): Total number of loaded assemblies.
     """
-    assm_count = get_pyrevit_env_var(EnvDictionaryKeys.loadedAssmCount)
+    assm_count = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR)
     if not assm_count:
         return 0
     else:
@@ -59,11 +63,11 @@ def set_total_loaded_assm_count(assm_count):
         assm_count (int): Number of loaded assemblies
     """
 
-    set_pyrevit_env_var(EnvDictionaryKeys.loadedAssmCount, assm_count)
+    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR, assm_count)
 
 
 def get_loaded_pyrevit_assemblies():
-    loaded_assms_str = get_pyrevit_env_var(EnvDictionaryKeys.loadedAssm)
+    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(DEFAULT_SEPARATOR)
     else:
@@ -71,7 +75,7 @@ def get_loaded_pyrevit_assemblies():
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
-    set_pyrevit_env_var(EnvDictionaryKeys.loadedAssm,
+    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR,
                         DEFAULT_SEPARATOR.join(loaded_assm_name_list))
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()

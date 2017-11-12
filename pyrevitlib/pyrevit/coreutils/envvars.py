@@ -5,6 +5,7 @@ from pyrevit.framework import AppDomain
 # must be the same in this file and pyrevit/loader/basetypes/_config.cs
 # DomainStorageKeys.pyRevitEnvVarsDictKey
 PYREVIT_ENV_VAR_DICT_NAME = 'pyRevitEnvVarsDict'
+PYREVIT_ENVVAR_PREFIX = PYREVIT_ADDON_NAME.upper()
 
 
 def get_pyrevit_env_vars():
