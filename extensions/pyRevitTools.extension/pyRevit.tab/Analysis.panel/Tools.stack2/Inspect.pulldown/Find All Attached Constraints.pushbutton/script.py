@@ -3,7 +3,7 @@
 from pyrevit import revit, DB
 
 
-selection = revit.get_selection()
+__context__ = 'selection'
 
 
 def listconstraints(selected_el):
@@ -37,5 +37,6 @@ def listconstraints(selected_el):
     print('\n')
 
 
+selection = revit.get_selection()
 for el in selection.elements:
     listconstraints(el)

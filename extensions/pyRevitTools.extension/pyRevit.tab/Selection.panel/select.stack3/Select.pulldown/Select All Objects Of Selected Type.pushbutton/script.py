@@ -3,9 +3,11 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
+__context__ = 'selection'
 __doc__ = 'Select all elements of the same type as selected element '\
           'and reports their IDs (sorted by the owner view if they '\
           'are View Specific objects)'
+
 
 output = script.get_output()
 

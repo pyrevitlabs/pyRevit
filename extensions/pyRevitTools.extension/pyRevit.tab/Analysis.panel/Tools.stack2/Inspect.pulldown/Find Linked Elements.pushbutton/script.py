@@ -2,6 +2,7 @@ from pyrevit import script
 from pyrevit import revit
 
 
+__context__ = 'selection'
 __doc__ = 'Lists all the elements that are tied to the selected element.'\
           ' For example elements tags or dimensions.'
 

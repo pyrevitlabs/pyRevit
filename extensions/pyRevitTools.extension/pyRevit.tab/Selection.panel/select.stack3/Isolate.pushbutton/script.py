@@ -3,8 +3,8 @@ from pyrevit import forms
 from pyrevit import revit, DB
 
 
-__doc = 'Isolates specific elements in current view and '\
-        'put the view in isolate element mode.'
+__doc__ = 'Isolates specific elements in current view and '\
+          'put the view in isolate element mode.'
 
 element_cats = {'Area Lines': DB.BuiltInCategory.OST_AreaSchemeLines,
                 'Doors': DB.BuiltInCategory.OST_Doors,

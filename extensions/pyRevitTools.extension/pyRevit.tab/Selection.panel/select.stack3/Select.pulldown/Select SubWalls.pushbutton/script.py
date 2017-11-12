@@ -2,6 +2,7 @@ from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 
 
+__context__ = 'selection'
 __doc__ = 'Select a series of stacked walls. Run this tool and it '\
           'will replace the selection with sub-walls '\
           'of the selected stacked walls.'

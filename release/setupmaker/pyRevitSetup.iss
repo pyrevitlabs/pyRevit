@@ -18,6 +18,7 @@ OutputBaseFilename={#MyAppName}Setup{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 SetupIconFile={#MyAppName}Setup.ico
+UninstallDisplayIcon={#MyAppName}Setup.ico
 AppCopyright=Copyright (c) 2014-2017 Ehsan Iran-Nejad
 DisableWelcomePage=no
 WizardImageFile=installerimage.bmp
@@ -33,7 +34,7 @@ Source: "..\..\release\pyrevitgitservices\pyrevitgitservices\bin\Release\*"; Des
 Type: filesandordirs; Name: "{app}\pyRevit"
 
 [Run]
-Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"clone {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
+Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"clone master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
 Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"setversion {app}\pyRevit {code:GetVersionHash}"; StatusMsg: "Setting repository version..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\install_addin.bat"; Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden

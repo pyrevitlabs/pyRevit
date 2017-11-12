@@ -1,10 +1,14 @@
-"""Selects all revision clouds in the model with comment matching selected revision cloud."""
-
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 
 
+__context__ = 'selection'
+__doc__ = 'Selects all revision clouds in the model with comment '\
+          'matching selected revision cloud.'
+
+
 selection = revit.get_selection()
+
 
 # collect all revision clouds
 cl = DB.FilteredElementCollector(revit.doc)

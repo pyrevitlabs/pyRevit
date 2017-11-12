@@ -30,6 +30,7 @@ from System import Reflection
 from System.Reflection import Assembly, AssemblyName
 from System.Reflection import TypeAttributes, MethodAttributes
 from System.Reflection import CallingConventions
+from System.Reflection import BindingFlags
 from System.Reflection.Emit import AssemblyBuilderAccess
 from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
 
@@ -45,6 +46,8 @@ from System.Windows import Forms
 from System.Windows.Forms import Clipboard
 from System.Windows import Controls
 from System.Windows.Media import Imaging, SolidColorBrush, Color
+
+from System import Math
 
 from System.CodeDom import Compiler
 from Microsoft.CSharp import CSharpCodeProvider

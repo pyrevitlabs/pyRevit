@@ -48,6 +48,9 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 
+# Component swf video for tooltips
+DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+
 # Command supported languages
 PYTHON_LANG = 'python'
 CSHARP_LANG = 'csharp'
@@ -75,7 +78,7 @@ UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
 
-COMMAND_OPTIONS_PARAM = '__cmdoptions__'
+COMMAND_HELP_URL = '__helpurl__'
 COMMAND_CONTEXT_PARAM = '__context__'
 MIN_REVIT_VERSION_PARAM = '__min_revit_ver__'
 MAX_REVIT_VERSION_PARAM = '__max_revit_ver__'

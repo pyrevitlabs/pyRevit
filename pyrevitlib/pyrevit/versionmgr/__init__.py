@@ -1,4 +1,4 @@
-from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR
+from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import git
@@ -14,6 +14,7 @@ class PyRevitVersion(object):
     """Contains current pyrevit version"""
     major = VERSION_MAJOR
     minor = VERSION_MINOR
+    metadata = BUILD_METADATA
     patch = ''
 
     def __init__(self, patch_number):
@@ -36,9 +37,10 @@ class PyRevitVersion(object):
 
     def get_formatted(self):
         """Returns 'major.minor:patch' in string"""
-        return '{}.{}:{}'.format(PyRevitVersion.major,
-                                 PyRevitVersion.minor,
-                                 self.patch)
+        return '{}.{}:{}{}'.format(PyRevitVersion.major,
+                                   PyRevitVersion.minor,
+                                   self.patch,
+                                   PyRevitVersion.metadata)
 
 
 def get_pyrevit_repo():

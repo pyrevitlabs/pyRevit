@@ -161,6 +161,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             smartbutton.icon_file,
             _make_button_tooltip(smartbutton),
             _make_button_tooltip_ext(smartbutton, ext_asm_info.name),
+            smartbutton.ttvideo_file,
             smartbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
@@ -244,6 +245,7 @@ def _produce_ui_linkbutton(ui_maker_params):
             _make_button_tooltip(linkbutton),
             _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
             None,
+            None,
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
         return parent_ui_item.button(linkbutton.name)
@@ -274,6 +276,7 @@ def _produce_ui_pushbutton(ui_maker_params):
             pushbutton.icon_file,
             _make_button_tooltip(pushbutton),
             _make_button_tooltip_ext(pushbutton, ext_asm_info.name),
+            pushbutton.ttvideo_file,
             pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))

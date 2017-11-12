@@ -36,7 +36,8 @@ class AboutWindow(forms.WPFWindow):
             pyrvt_ver = versionmgr.get_pyrevit_version()
             self.version_info.Text = ' v{}' \
                                      .format(pyrvt_ver.get_formatted())
-            if pyrvt_repo.branch != 'master':
+            if pyrvt_repo.branch != 'master' \
+                    and not pyrvt_repo.branch.startswith('release/'):
                 self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
         except Exception:
             self.version_info.Text = ''

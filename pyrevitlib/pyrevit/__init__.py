@@ -16,7 +16,8 @@ except ImportError:
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
-VERSION_MINOR = 4
+VERSION_MINOR = 5
+BUILD_METADATA = '-beta'
 
 # ------------------------------------------------------------------------------
 # config environment paths
@@ -57,6 +58,7 @@ sys.path.append(PYREVITLOADER_DIR)
 
 
 from pyrevit.framework import Process, IOException
+from pyrevit.framework import Windows
 from pyrevit.framework import Forms
 from pyrevit.api import DB, UI
 
@@ -169,6 +171,20 @@ class _HostApplication:
     def proc_screen(self):
         return Forms.Screen.FromHandle(
             Process.GetCurrentProcess().MainWindowHandle)
+
+    @property
+    def proc_screen_workarea(self):
+        screen = HOST_APP.proc_screen
+        if screen:
+            return screen.WorkingArea
+
+    @property
+    def proc_screen_scalefactor(self):
+        screen = HOST_APP.proc_screen
+        if screen:
+            scaled_width = Windows.SystemParameters.PrimaryScreenWidth
+            actual_wdith = screen.PrimaryScreen.WorkingArea.Width
+            return abs(scaled_width / actual_wdith)
 
     def is_newer_than(self, version):
         return int(self.version) > int(version)

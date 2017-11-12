@@ -22,10 +22,11 @@ class Transaction():
     >>> assert action.status == ActionStatus.Committed    # True
     """
     def __init__(self, name=None,
+                 doc=None,
                  clear_after_rollback=False,
                  show_error_dialog=False):
         self._rvtxn = \
-            DB.Transaction(HOST_APP.doc,
+            DB.Transaction(doc or HOST_APP.doc,
                            name if name else DEFAULT_TRANSACTION_NAME)
         self._fail_hndlr_ops = self._rvtxn.GetFailureHandlingOptions()
         self._fail_hndlr_ops.SetClearAfterRollback(clear_after_rollback)
@@ -75,9 +76,9 @@ class DryTransaction(Transaction):
 
 
 class TransactionGroup():
-    def __init__(self, name=None, assimilate=True):
+    def __init__(self, name=None, doc=None, assimilate=True):
         self._rvtxn_grp = \
-            DB.TransactionGroup(HOST_APP.doc,
+            DB.TransactionGroup(doc or HOST_APP.doc,
                                 name if name else DEFAULT_TRANSACTION_NAME)
         self.assimilate = assimilate
 
@@ -120,7 +121,7 @@ class TransactionGroup():
         return self._rvtxn_grp.HasEnded()
 
 
-def carryout(name):
+def carryout(name, doc=None):
     """Transaction Decorator
 
     Decorate any function with ``@doc.carryout('Txn name')``
@@ -140,7 +141,7 @@ def carryout(name):
     def wrap(f):
         @wraps(f)
         def wrapped_f(*args, **kwargs):
-            with Transaction(name):
+            with Transaction(name, doc=doc):
                 return_value = f(*args, **kwargs)
             return return_value
         return wrapped_f

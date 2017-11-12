@@ -1,6 +1,7 @@
 from pyrevit import revit, DB
 
 
+__context__ = 'selection'
 __doc__ = 'Find all Rooms/Areas/Spaces with identical names to the select '\
           'room, area or space and calculates the average area '\
           'of that space type.'

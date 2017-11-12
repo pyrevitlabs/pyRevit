@@ -1,32 +1,29 @@
-"""Tries to remove all sub-categories in current Detail Item family"""
+"""Tries to remove all sub-categories in current Detail Item family."""
 
-from scriptutils import logger
-from revitutils import doc
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Transaction, BuiltInCategory, GraphicsStyleType
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import TaskDialog
+from pyrevit import revit, DB, UI
+from pyrevit import script
 
 
-if doc.IsFamilyDocument:
-    det_item_cat = doc.OwnerFamily.FamilyCategory
+logger = script.get_logger()
+
+
+if revit.doc.IsFamilyDocument:
+    det_item_cat = revit.doc.OwnerFamily.FamilyCategory
 
     if 'Detail Item' in det_item_cat.Name:
-        with Transaction(doc, 'Wipe Detail Item Categories') as t:
-            t.Start()
-
+        with revit.Transaction('Wipe Detail Item Categories'):
             for sub_cat in det_item_cat.SubCategories:
                 logger.debug('Removing sub category: {}'.format(sub_cat.Name))
                 try:
-                    doc.Delete(sub_cat.Id)
+                    revit.doc.Delete(sub_cat.Id)
                     pass
-                except:
-                    logger.warning('Can not delete sub category: {}'.format(sub_cat.Name))
-                    continue
-
-            t.Commit()
+                except Exception:
+                        logger.warning('Can not delete sub category: {}'
+                                       .format(sub_cat.Name))
+                        continue
     else:
-        TaskDialog.Show('pyRevit','Family must be of type Detail Item.')
+        UI.TaskDialog.Show('pyRevit',
+                           'Family must be of type Detail Item.')
 else:
-    TaskDialog.Show('pyRevit','This script works only on an active family editor.')
+    UI.TaskDialog.Show('pyRevit',
+                       'This script works only on an active family editor.')

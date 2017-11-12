@@ -1,62 +1,39 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from pyrevit import revit, DB, UI
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+__context__ = 'selection'
+__doc__ = 'Explodes all instances of the selected groups and removes '\
+          'the group definition from project browser.'
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
 
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+selection = revit.get_selection()
 
-__doc__ = 'Explodes all instances of the selected groups and removes the group definition from project browser.'
+with revit.Transaction('Explode and Purge Selected Groups'):
+    grpTypes = set()
+    grps = []
+    attachedGrps = []
 
-__window__.Close()
-import clr
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Group, GroupType, Transaction, BuiltInParameter
-from Autodesk.Revit.UI import TaskDialog
+    for el in selection:
+        if isinstance(el, DB.GroupType):
+            grpTypes.add(el)
+        elif isinstance(el, DB.Group):
+            grpTypes.add(el.GroupType)
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
+    if len(grpTypes) == 0:
+        UI.TaskDialog.Show('pyrevit',
+                           'At least one group type must be selected.')
 
-t = Transaction(doc, 'Explode and Purge Selected Groups')
-t.Start()
+    for gt in grpTypes:
+        for grp in gt.Groups:
+            grps.append(grp)
 
-grpTypes = set()
-grps = []
-attachedGrps = []
+    for g in grps:
+        if g.LookupParameter('Attached to'):
+            attachedGrps.append(g.GroupType)
+        g.UngroupMembers()
 
-for el in selection:
-    if isinstance(el, GroupType):
-        grpTypes.add(el)
-    elif isinstance(el, Group):
-        grpTypes.add(el.GroupType)
+    for agt in attachedGrps:
+        revit.doc.Delete(agt.Id)
 
-if len(grpTypes) == 0:
-    TaskDialog.Show('pyrevit', 'At least one group type must be selected.')
-
-for gt in grpTypes:
-    for grp in gt.Groups:
-        grps.append(grp)
-
-for g in grps:
-    if g.LookupParameter('Attached to'):
-        attachedGrps.append(g.GroupType)
-    g.UngroupMembers()
-
-for agt in attachedGrps:
-    doc.Delete(agt.Id)
-
-for gt in grpTypes:
-    doc.Delete(gt.Id)
-
-t.Commit()
+    for gt in grpTypes:
+        revit.doc.Delete(gt.Id)

@@ -101,6 +101,7 @@ def _make_python_types(extension, module_builder, cmd_component):
                 cmd_component.get_full_script_address(),
                 cmd_component.get_full_config_script_address(),
                 join_strings(cmd_component.get_search_paths()),
+                cmd_component.get_help_url() or '',
                 cmd_component.name,
                 cmd_component.bundle_name,
                 extension.name,
