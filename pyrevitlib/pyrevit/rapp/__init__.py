@@ -1,10 +1,11 @@
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-from SocketServer import ThreadingMixIn
 import threading
 import argparse
 import re
 import cgi
 import json
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from SocketServer import ThreadingMixIn
+from functools import wraps
 
 from pyrevit import framework
 from pyrevit import revit, DB, UI
@@ -99,7 +100,15 @@ class SimpleHttpServer():
     self.waitForThread()
 
 
-server = SimpleHttpServer('127.0.0.1', 9220)
-print 'HTTP Server Running...........'
-server.start()
-#server.waitForThread()
+def start():
+    SimpleHttpServer('', 48884).start()
+    #server.waitForThread()
+
+
+def route(target_url):
+    def wrap(f):
+        @wraps(f)
+        def wrapped_f(*args, **kwargs):
+            return f(*args, **kwargs)
+        return wrapped_f
+    return wrap
