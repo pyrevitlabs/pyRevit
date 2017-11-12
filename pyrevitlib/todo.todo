@@ -1,30 +1,24 @@
-Main branch hotfix/feature:
-☐ Add option to gitservices tool to set remote tracking branch for updates
-
-4.5 beta publish:
-✔ fix pyRevitTools @done(2017-11-04 19:17)
-✔ test tools for beta @done(2017-11-05 12:57)
-✔ Create custom beta installer @done(2017-11-07 23:46)
-☐ Publish video for developers on changes
-
-4.5 rc publish:
-☐ revise the callback system to a restful api
+4.5rc:
+☐ find a better name for revit flask app
+☐ finish the flask app implementation
+☐ add flask app config to settings
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
-☐ remove any reference to ScriptOutput internal components (e.g. renderer)
 ☐ review the extension hash system
-☐ fix charts reach into output and output.utils
 ☐ Select All Clouds Of Specific Revision: Move to forms
 ☐ Unify the Revision selection windows
 ☐ Fix all selections through api and use revit.selection
-
-webapp output:
-☐ Need a javascript module for making requests to the outputwindow url handler
-☐ functions, decorated by output.route get registered with url handler
-☐ url handler calls the wrapped functions based on the input url from jscript
+☐ Add option to gitservices tool to set remote tracking branch for updates
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ fix charts reach into output and output.utils @done(2017-11-11 20:58)
+    ✔ remove any reference to ScriptOutput internal components (e.g. renderer) @done(2017-11-11 20:58)
+    ✔ revise the callback system to a restful api @done(2017-11-11 20:57)
+    ✔ fix pyRevitTools @done(2017-11-04 19:17)
+    ✔ test tools for beta @done(2017-11-05 12:57)
+    ✔ Create custom beta installer @done(2017-11-07 23:46)
+    ✔ Publish video for developers on changes @done(2017-11-11 20:57)
     ✔ the warning bar shows up incorrectly when system has scaling @done(2017-11-03 15:33)
     ✘ log files don't have command names. Bring that back @cancelled(2017-10-22 19:47)
     ✔ Fix occasional output window blackout @done(2017-10-22 16:14)
