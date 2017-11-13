@@ -9,6 +9,7 @@
 ☐ Unify the Revision selection windows
 ☐ Fix all selections through api and use revit.selection
 ☐ Add option to gitservices tool to set remote tracking branch for updates
+☐ Add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
