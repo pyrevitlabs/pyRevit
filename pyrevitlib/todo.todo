@@ -1,5 +1,4 @@
 4.5rc:
-☐ find a better name for revit flask app
 ☐ finish the flask app implementation
 ☐ add flask app config to settings
 ☐ add date to log file names
@@ -13,6 +12,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ find a better name for revit flask app @done(2017-11-13 17:25)
     ✔ fix charts reach into output and output.utils @done(2017-11-11 20:58)
     ✔ remove any reference to ScriptOutput internal components (e.g. renderer) @done(2017-11-11 20:58)
     ✔ revise the callback system to a restful api @done(2017-11-11 20:57)
