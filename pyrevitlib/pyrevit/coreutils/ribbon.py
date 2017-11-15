@@ -24,44 +24,24 @@ class PyRevitUIError(PyRevitException):
 
 class _ButtonIcons:
     def __init__(self, file_address):
-        logger.debug('Creating uri from: {}'.format(file_address))
-        uri = Uri(file_address)
+        self.smallBitmap = self.create_bitmap(file_address, ICON_SMALL)
+        self.mediumBitmap = self.create_bitmap(file_address, ICON_MEDIUM)
+        self.largeBitmap = self.create_bitmap(file_address, ICON_LARGE)
 
+    @staticmethod
+    def create_bitmap(file_address, image_size):
         logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(ICON_SMALL, file_address))
+                     .format(image_size, file_address))
         bitmap_image = Imaging.BitmapImage()
         bitmap_image.BeginInit()
-        bitmap_image.UriSource = uri
+        bitmap_image.UriSource = Uri(file_address)
         bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
         bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_SMALL
-        # bitmap_image.DecodePixelWidth = ICON_SMALL
+        dpi_scalefactor = 96.0 / Imaging.BitmapImage(Uri(file_address)).DpiX
+        adjusted_size = image_size / dpi_scalefactor
+        bitmap_image.DecodePixelHeight = adjusted_size
         bitmap_image.EndInit()
-        self.smallBitmap = bitmap_image
-
-        logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(ICON_MEDIUM, file_address))
-        bitmap_image = Imaging.BitmapImage()
-        bitmap_image.BeginInit()
-        bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_MEDIUM
-        # bitmap_image.DecodePixelWidth = ICON_MEDIUM
-        bitmap_image.EndInit()
-        self.mediumBitmap = bitmap_image
-
-        logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(ICON_LARGE, file_address))
-        bitmap_image = Imaging.BitmapImage()
-        bitmap_image.BeginInit()
-        bitmap_image.UriSource = uri
-        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
-        bitmap_image.DecodePixelHeight = ICON_LARGE
-        # bitmap_image.DecodePixelWidth = ICON_LARGE
-        bitmap_image.EndInit()
-        self.largeBitmap = bitmap_image
+        return bitmap_image
 
 
 # Superclass to all ui item classes --------------------------------------------
