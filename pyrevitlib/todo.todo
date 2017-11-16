@@ -9,6 +9,8 @@
 ☐ Fix all selections through api and use revit.selection
 ☐ Add option to gitservices tool to set remote tracking branch for updates
 ☐ Add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
+☐ Add core-only checkout support in installer (git clone -n / git checkout head path/dir)
+
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
