@@ -4,12 +4,14 @@
 ☐ add date to log file names
 ☐ Test dynamo compat mode in %programdata%
 ☐ review the extension hash system
-☐ Select All Clouds Of Specific Revision: Move to forms
-☐ Unify the Revision selection windows
-☐ Fix all selections through api and use revit.selection
-☐ Add option to gitservices tool to set remote tracking branch for updates
-☐ Add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
-☐ Add core-only checkout support in installer (git clone -n / git checkout head path/dir)
+☐ move to forms "Select All Clouds Of Specific Revision"
+☐ unify the Revision selection windows
+☐ fix all selections through api and use revit.selection
+☐ add option to gitservices tool to set remote tracking branch for updates
+☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
+☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
+☐ investigate adding animated icons
+☐ investigate adding panel options
 
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
