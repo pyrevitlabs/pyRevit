@@ -45,6 +45,7 @@ from System import Windows
 from System.Windows import Forms
 from System.Windows.Forms import Clipboard
 from System.Windows import Controls
+from System.Windows import Media
 from System.Windows.Media import Imaging, SolidColorBrush, Color
 
 from System import Math

@@ -21,9 +21,10 @@ CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 
 class UIMakerParams:
-    def __init__(self, parent_ui, component, asm_info, create_beta=False):
-        self.parent_ui = parent_ui
-        self.component = component
+    def __init__(self, par_ui, par_cmp, cmp, asm_info, create_beta=False):
+        self.parent_ui = par_ui
+        self.parent_cmp = par_cmp
+        self.component = cmp
         self.asm_info = asm_info
         self.create_beta_cmds = create_beta
 
@@ -146,6 +147,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     smartbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -158,7 +160,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             smartbutton.name,
             ext_asm_info.location,
             _get_effective_classname(smartbutton),
-            smartbutton.icon_file,
+            smartbutton.icon_file or parent.icon_file,
             _make_button_tooltip(smartbutton),
             _make_button_tooltip_ext(smartbutton, ext_asm_info.name),
             smartbutton.ttvideo_file,
@@ -219,6 +221,7 @@ def _produce_ui_linkbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -241,7 +244,7 @@ def _produce_ui_linkbutton(ui_maker_params):
             linked_asm.Location,
             _make_full_class_name(linked_asm.GetName().Name,
                                   linkbutton.command_class),
-            linkbutton.icon_file,
+            linkbutton.icon_file or parent.icon_file,
             _make_button_tooltip(linkbutton),
             _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
             None,
@@ -261,6 +264,7 @@ def _produce_ui_pushbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     pushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -273,7 +277,7 @@ def _produce_ui_pushbutton(ui_maker_params):
             pushbutton.name,
             ext_asm_info.location,
             _get_effective_classname(pushbutton),
-            pushbutton.icon_file,
+            pushbutton.icon_file or parent.icon_file,
             _make_button_tooltip(pushbutton),
             _make_button_tooltip_ext(pushbutton, ext_asm_info.name),
             pushbutton.ttvideo_file,
@@ -353,6 +357,7 @@ def _produce_ui_stacks(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_panel = ui_maker_params.parent_ui
+    stack_parent = ui_maker_params.parent_cmp
     stack_cmp = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -375,6 +380,7 @@ def _produce_ui_stacks(ui_maker_params):
         # more items it will raise an error)
         _recursively_produce_ui_items(
             UIMakerParams(parent_ui_panel,
+                          stack_parent,
                           stack_cmp,
                           ext_asm_info,
                           ui_maker_params.create_beta_cmds))
@@ -463,6 +469,7 @@ def _recursively_produce_ui_items(ui_maker_params):
                                  sub_cmp))
             ui_item = _component_creation_dict[sub_cmp.type_id](
                 UIMakerParams(ui_maker_params.parent_ui,
+                              ui_maker_params.component,
                               sub_cmp,
                               ui_maker_params.asm_info,
                               ui_maker_params.create_beta_cmds))
@@ -474,6 +481,7 @@ def _recursively_produce_ui_items(ui_maker_params):
         if ui_item and sub_cmp.is_container:
                 _recursively_produce_ui_items(
                     UIMakerParams(ui_item,
+                                  ui_maker_params.component,
                                   sub_cmp,
                                   ui_maker_params.asm_info,
                                   ui_maker_params.create_beta_cmds))
@@ -491,7 +499,7 @@ def update_pyrevit_ui(parsed_ext, ext_asm_info, create_beta=False):
     logger.debug('Creating/Updating ui for extension: {}'
                  .format(parsed_ext))
     _recursively_produce_ui_items(
-        UIMakerParams(current_ui, parsed_ext, ext_asm_info, create_beta))
+        UIMakerParams(current_ui, None, parsed_ext, ext_asm_info, create_beta))
 
 
 def cleanup_pyrevit_ui():
