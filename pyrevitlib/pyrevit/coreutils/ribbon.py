@@ -2,7 +2,10 @@ from collections import OrderedDict
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.framework import Uri, Imaging
+from pyrevit.framework import System, Uri
+from pyrevit.framework import IO
+from pyrevit.framework import Imaging
+from pyrevit.framework import Windows
 from pyrevit.framework import BindingFlags
 from pyrevit.api import UI, AdWindows
 
@@ -16,6 +19,8 @@ ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
 
+DEFAULT_DPI = 96
+
 
 # Helper classes and functions -------------------------------------------------
 class PyRevitUIError(PyRevitException):
@@ -24,24 +29,62 @@ class PyRevitUIError(PyRevitException):
 
 class _ButtonIcons:
     def __init__(self, file_address):
-        self.smallBitmap = self.create_bitmap(file_address, ICON_SMALL)
-        self.mediumBitmap = self.create_bitmap(file_address, ICON_MEDIUM)
-        self.largeBitmap = self.create_bitmap(file_address, ICON_LARGE)
+        try:
+            self.smallBitmap = _ButtonIcons.create_bitmap(file_address, ICON_SMALL)
+        except Exception as e:
+            print(e)
+        self.mediumBitmap = _ButtonIcons.create_bitmap(file_address, ICON_MEDIUM)
+        self.largeBitmap = _ButtonIcons.create_bitmap(file_address, ICON_LARGE)
 
     @staticmethod
-    def create_bitmap(file_address, image_size):
+    def recolour(image_data, size, stride, color):
+        step = stride / size
+        for i in range(0, stride, step):
+            for j in range(0, stride, step):
+                idx = (i * size) + j
+                # R = image_data[idx+2]
+                # G = image_data[idx+1]
+                # B = image_data[idx]
+                # luminance = (0.299*R + 0.587*G + 0.114*B)
+                image_data[idx] = color >> 0 & 0xff       # blue
+                image_data[idx+1] = color >> 8 & 0xff     # green
+                image_data[idx+2] = color >> 16 & 0xff    # red
+
+    @staticmethod
+    def create_bitmap(file_address, icon_size):
         logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(image_size, file_address))
-        bitmap_image = Imaging.BitmapImage()
-        bitmap_image.BeginInit()
-        bitmap_image.UriSource = Uri(file_address)
-        bitmap_image.CacheOption = Imaging.BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = Imaging.BitmapCreateOptions.DelayCreation
-        dpi_scalefactor = 96.0 / Imaging.BitmapImage(Uri(file_address)).DpiX
-        adjusted_size = image_size / dpi_scalefactor
-        bitmap_image.DecodePixelHeight = adjusted_size
-        bitmap_image.EndInit()
-        return bitmap_image
+                     .format(icon_size, file_address))
+        adjusted_icon_size = icon_size * 2
+        adjusted_dpi = DEFAULT_DPI * 2
+
+        base_image = Imaging.BitmapImage()
+        base_image.BeginInit()
+        base_image.UriSource = Uri(file_address)
+        base_image.DecodePixelHeight = adjusted_icon_size
+        base_image.EndInit()
+
+        image_size = base_image.PixelWidth
+        image_format = base_image.Format
+        image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
+
+        stride = image_size * image_byte_per_pixel
+        array_size = stride * image_size
+        image_data = System.Array.CreateInstance(System.Byte, array_size)
+        base_image.CopyPixels(image_data, stride, 0)
+
+        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
+
+        bitmap_source = \
+            Imaging.BitmapSource.Create(adjusted_icon_size,
+                                        adjusted_icon_size,
+                                        adjusted_dpi,
+                                        adjusted_dpi,
+                                        image_format,
+                                        None,
+                                        image_data,
+                                        stride)
+
+        return bitmap_source
 
 
 # Superclass to all ui item classes --------------------------------------------
@@ -322,21 +365,12 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
                                  '| {}'.format(icon_file, self))
 
         try:
-            self.get_rvtapi_object().Image = button_icon.smallBitmap
-            self.get_rvtapi_object().LargeImage = button_icon.mediumBitmap
+            rvtapi_obj = self.get_rvtapi_object()
+            rvtapi_obj.Image = button_icon.smallBitmap
+            rvtapi_obj.LargeImage = button_icon.mediumBitmap
             if icon_size == ICON_LARGE:
-                self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+                rvtapi_obj.LargeImage = button_icon.largeBitmap
             self._dirty = True
-        except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
-                                 .format(icon_err))
-
-    def get_icon(self):
-        try:
-            if self.get_rvtapi_object().Image:
-                return self.get_rvtapi_object().Image.UriSource.LocalPath
-            elif self.get_rvtapi_object().LargeImage:
-                return self.get_rvtapi_object().LargeImage.UriSource.LocalPath
         except Exception as icon_err:
             raise PyRevitUIError('Item does not have image property: {}'
                                  .format(icon_err))
@@ -469,21 +503,12 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                  '| {}'.format(icon_file, self))
 
         try:
-            self.get_rvtapi_object().Image = button_icon.smallBitmap
-            self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+            rvtapi_obj = self.get_rvtapi_object()
+            rvtapi_obj.Image = button_icon.smallBitmap
+            rvtapi_obj.LargeImage = button_icon.largeBitmap
             if icon_size == ICON_LARGE:
-                self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+                rvtapi_obj.LargeImage = button_icon.largeBitmap
             self._dirty = True
-        except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
-                                 .format(icon_err))
-
-    def get_icon(self):
-        try:
-            if self.get_rvtapi_object().Image:
-                return self.get_rvtapi_object().Image.UriSource.LocalPath
-            elif self.get_rvtapi_object().LargeImage:
-                return self.get_rvtapi_object().LargeImage.UriSource.LocalPath
         except Exception as icon_err:
             raise PyRevitUIError('Item does not have image property: {}'
                                  .format(icon_err))
@@ -512,19 +537,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                                    asm_update_err))
 
                 if not icon_path:
-                    logger.debug('Using parent item icon for {}'
-                                 .format(existing_item))
-                    parent_icon_path = self.get_icon()
-                    if parent_icon_path:
-                        # if button group shows the active button icon,
-                        # then the child buttons need to have large icons
-                        existing_item.set_icon(parent_icon_path,
-                                               icon_size=ICON_LARGE
-                                               if self._use_active_item_icon
-                                               else ICON_MEDIUM)
-                    else:
-                        logger.debug('Can not get item icon from {}'
-                                     .format(self))
+                    logger.debug('Icon not set for {}'.format(button_name))
                 else:
                     try:
                         # if button group shows the active button icon,
@@ -569,19 +582,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 new_button.set_title(ui_title)
 
             if not icon_path:
-                logger.debug('Using parent item icon for {}'
-                             .format(new_button))
-                parent_icon_path = self.get_icon()
-                if parent_icon_path:
-                    # if button group shows the active button icon,
-                    # then the child buttons need to have large icons
-                    new_button.set_icon(parent_icon_path,
-                                        icon_size=ICON_LARGE
-                                        if self._use_active_item_icon
-                                        else ICON_MEDIUM)
-                else:
-                    logger.debug('Can not get item icon from {}'
-                                 .format(self))
+                logger.debug('Icon not set for {}'.format(button_name))
             else:
                 logger.debug('Creating icon for push button {} from file: {}'
                              .format(button_name, icon_path))
