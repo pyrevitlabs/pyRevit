@@ -38,6 +38,7 @@ class _ButtonIcons:
 
     @staticmethod
     def recolour(image_data, size, stride, color):
+        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
         step = stride / size
         for i in range(0, stride, step):
             for j in range(0, stride, step):
@@ -56,11 +57,12 @@ class _ButtonIcons:
                      .format(icon_size, file_address))
         adjusted_icon_size = icon_size * 2
         adjusted_dpi = DEFAULT_DPI * 2
+        screen_scaling = HOST_APP.proc_screen_scalefactor
 
         base_image = Imaging.BitmapImage()
         base_image.BeginInit()
         base_image.UriSource = Uri(file_address)
-        base_image.DecodePixelHeight = adjusted_icon_size
+        base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
         base_image.EndInit()
 
         image_size = base_image.PixelWidth
@@ -72,13 +74,11 @@ class _ButtonIcons:
         image_data = System.Array.CreateInstance(System.Byte, array_size)
         base_image.CopyPixels(image_data, stride, 0)
 
-        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
-
         bitmap_source = \
-            Imaging.BitmapSource.Create(adjusted_icon_size,
-                                        adjusted_icon_size,
-                                        adjusted_dpi,
-                                        adjusted_dpi,
+            Imaging.BitmapSource.Create(adjusted_icon_size * screen_scaling,
+                                        adjusted_icon_size * screen_scaling,
+                                        adjusted_dpi * screen_scaling,
+                                        adjusted_dpi * screen_scaling,
                                         image_format,
                                         None,
                                         image_data,

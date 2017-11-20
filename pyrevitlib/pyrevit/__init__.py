@@ -182,8 +182,8 @@ class _HostApplication:
     def proc_screen_scalefactor(self):
         screen = HOST_APP.proc_screen
         if screen:
-            scaled_width = Windows.SystemParameters.PrimaryScreenWidth
-            actual_wdith = screen.PrimaryScreen.WorkingArea.Width
+            actual_wdith = Windows.SystemParameters.PrimaryScreenWidth
+            scaled_width = screen.PrimaryScreen.WorkingArea.Width
             return abs(scaled_width / actual_wdith)
 
     def is_newer_than(self, version):

@@ -6,6 +6,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import framework
 from pyrevit.framework import wpf, Forms, Controls
+from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit import UI
 
 
@@ -378,6 +379,7 @@ class TemplatePromptBar(WPFWindow):
         WPFWindow.__init__(self, self.layout, literal_string=True)
         work_area = HOST_APP.proc_screen_workarea
         scale_factor = HOST_APP.proc_screen_scalefactor
+        scale_factor = 1 / HOST_APP.proc_screen_scalefactor
 
         self.Top = work_area.Top * scale_factor
         self.Left = work_area.Left * scale_factor
