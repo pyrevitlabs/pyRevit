@@ -6,6 +6,9 @@
 ☐ review the extension hash system
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
+☐ add outside click to option selector window and about
+☐ add helper type C# classes (one is for buttonicon speed up)
+☐ upgrade about window looks
 ☐ fix all selections through api and use revit.selection
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
