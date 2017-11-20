@@ -314,7 +314,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             PreviewKeyDown="handle_esc_key"
             MouseUp="handle_click">
         <Border CornerRadius="15"
-                Background="#DC373232">
+                Background="#f323303d">
             <StackPanel x:Name="stack_panel" Margin="5">
                 <Label x:Name="message_label"
                        Foreground="White"
