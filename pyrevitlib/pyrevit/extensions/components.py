@@ -50,6 +50,10 @@ class PushButton(GenericUICommand):
     type_id = exts.PUSH_BUTTON_POSTFIX
 
 
+class PanelDialogPushButton(GenericUICommand):
+    type_id = exts.PANELDIALOG_BUTTON_POSTFIX
+
+
 class ToggleButton(GenericUICommand):
     type_id = exts.TOGGLE_BUTTON_POSTFIX
 

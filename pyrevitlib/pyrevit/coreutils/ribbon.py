@@ -632,11 +632,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
     button = _GenericPyRevitUIContainer._get_component
     ribbon_item = _GenericPyRevitUIContainer._get_component
 
-    def __init__(self, rvt_ribbon_panel):
+    def __init__(self, rvt_ribbon_panel, parent_tab):
         _GenericPyRevitUIContainer.__init__(self)
 
         self.name = rvt_ribbon_panel.Name
         self._rvtapi_object = rvt_ribbon_panel
+
+        self.parent_tab = parent_tab
 
         # when container is in itemdata_mode, only the necessary
         # RibbonItemData objects will be created for children a sunsequent
@@ -658,6 +660,11 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             else:
                 raise PyRevitUIError('Can not determin ribbon item type: {}'
                                      .format(revit_ribbon_item))
+
+    def get_adwindows_object(self):
+        for panel in self.parent_tab.Panels:
+            if panel.Source and panel.Source.Title == self.name:
+                return panel
 
     def open_stack(self):
         self.itemdata_mode = True
@@ -892,6 +899,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(False)
 
+    def set_dlglauncher(self, dlg_button):
+        adwnd_obj = self.get_adwindows_object()
+        adwnd_obj.Source.DialogLauncher = \
+            dlg_button.get_adwindows_object().Clone()
+        dlg_button.deactivate()
+        logger.debug('Added panel dialog button'.format(dlg_button.name))
+
 
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
     ribbon_panel = _GenericPyRevitUIContainer._get_component
@@ -946,7 +960,8 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                     HOST_APP.uiapp.CreateRibbonPanel(self.name, panel_name)
                 # creating _PyRevitRibbonPanel object and
                 # add new panel to list of current panels
-                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel)
+                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel,
+                                                         self._rvtapi_object)
                 pyrvt_ribbon_panel.set_dirty_flag()
                 self._add_component(pyrvt_ribbon_panel)
 
