@@ -27,7 +27,8 @@ namespace PyRevitBaseClasses
         public Dictionary<String, String> commandresults { get; set; }
         public string scriptpath { get; set; }
 
-        public LogEntry() {
+        public LogEntry()
+        {
 
         }
 
@@ -95,10 +96,12 @@ namespace PyRevitBaseClasses
         {
             // Read existing json data
             string jsonData = "[]";
-            if(File.Exists(_usageLogFilePath)) {
+            if (File.Exists(_usageLogFilePath))
+            {
                 jsonData = System.IO.File.ReadAllText(_usageLogFilePath);
             }
-            else {
+            else
+            {
                 System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
             }
 
