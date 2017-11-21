@@ -1,4 +1,4 @@
-"""This is the tooltip content"""
+"""This is the panel pushbutton (Could be used for panel config)."""
 
 from pyrevit.coreutils import logger
 slogger = logger.get_logger(__commandname__)
