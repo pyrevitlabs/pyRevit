@@ -37,3 +37,7 @@ ScriptOutputStream = base_module.ScriptOutputStream
 
 # usagelogger.cs
 ScriptUsageLogger = base_module.ScriptUsageLogger
+
+
+# helpers.cs
+PyRevitButtonIcon = base_module.PyRevitButtonIcon
