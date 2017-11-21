@@ -7,7 +7,6 @@
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
 ☐ add outside click to option selector window and about
-☐ add helper type C# classes (one is for buttonicon speed up)
 ☐ upgrade about window looks
 ☐ fix all selections through api and use revit.selection
 ☐ add option to gitservices tool to set remote tracking branch for updates
@@ -19,6 +18,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ add helper type C# classes (one is for buttonicon speed up) @done(2017-11-20 21:13)
     ✔ find a better name for revit flask app @done(2017-11-13 17:25)
     ✔ fix charts reach into output and output.utils @done(2017-11-11 20:58)
     ✔ remove any reference to ScriptOutput internal components (e.g. renderer) @done(2017-11-11 20:58)
