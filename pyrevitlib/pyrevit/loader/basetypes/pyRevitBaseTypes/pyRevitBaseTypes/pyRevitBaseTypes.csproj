@@ -127,6 +127,9 @@
     <Compile Include="..\..\executor.cs">
       <Link>executor.cs</Link>
     </Compile>
+    <Compile Include="..\..\helpers.cs">
+      <Link>helpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
