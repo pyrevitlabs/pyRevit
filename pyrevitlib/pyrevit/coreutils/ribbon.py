@@ -8,6 +8,7 @@ from pyrevit.framework import Imaging
 from pyrevit.framework import Windows
 from pyrevit.framework import BindingFlags
 from pyrevit.api import UI, AdWindows
+from pyrevit.coreutils import loadertypes
 
 
 logger = get_logger(__name__)
@@ -25,66 +26,6 @@ DEFAULT_DPI = 96
 # Helper classes and functions -------------------------------------------------
 class PyRevitUIError(PyRevitException):
     pass
-
-
-class _ButtonIcons:
-    def __init__(self, file_address):
-        try:
-            self.smallBitmap = _ButtonIcons.create_bitmap(file_address, ICON_SMALL)
-        except Exception as e:
-            print(e)
-        self.mediumBitmap = _ButtonIcons.create_bitmap(file_address, ICON_MEDIUM)
-        self.largeBitmap = _ButtonIcons.create_bitmap(file_address, ICON_LARGE)
-
-    @staticmethod
-    def recolour(image_data, size, stride, color):
-        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
-        step = stride / size
-        for i in range(0, stride, step):
-            for j in range(0, stride, step):
-                idx = (i * size) + j
-                # R = image_data[idx+2]
-                # G = image_data[idx+1]
-                # B = image_data[idx]
-                # luminance = (0.299*R + 0.587*G + 0.114*B)
-                image_data[idx] = color >> 0 & 0xff       # blue
-                image_data[idx+1] = color >> 8 & 0xff     # green
-                image_data[idx+2] = color >> 16 & 0xff    # red
-
-    @staticmethod
-    def create_bitmap(file_address, icon_size):
-        logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(icon_size, file_address))
-        adjusted_icon_size = icon_size * 2
-        adjusted_dpi = DEFAULT_DPI * 2
-        screen_scaling = HOST_APP.proc_screen_scalefactor
-
-        base_image = Imaging.BitmapImage()
-        base_image.BeginInit()
-        base_image.UriSource = Uri(file_address)
-        base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
-        base_image.EndInit()
-
-        image_size = base_image.PixelWidth
-        image_format = base_image.Format
-        image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
-
-        stride = image_size * image_byte_per_pixel
-        array_size = stride * image_size
-        image_data = System.Array.CreateInstance(System.Byte, array_size)
-        base_image.CopyPixels(image_data, stride, 0)
-
-        bitmap_source = \
-            Imaging.BitmapSource.Create(adjusted_icon_size * screen_scaling,
-                                        adjusted_icon_size * screen_scaling,
-                                        adjusted_dpi * screen_scaling,
-                                        adjusted_dpi * screen_scaling,
-                                        image_format,
-                                        None,
-                                        image_data,
-                                        stride)
-
-        return bitmap_source
 
 
 # Superclass to all ui item classes --------------------------------------------
@@ -358,18 +299,16 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         self._rvtapi_object.ItemText = self.ui_title
 
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
-        try:
-            button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
+        button_icon = \
+            loadertypes.PyRevitButtonIcon(
+                icon_file,
+                ICON_LARGE if icon_size == ICON_LARGE else ICON_MEDIUM
+                )
 
         try:
             rvtapi_obj = self.get_rvtapi_object()
-            rvtapi_obj.Image = button_icon.smallBitmap
-            rvtapi_obj.LargeImage = button_icon.mediumBitmap
-            if icon_size == ICON_LARGE:
-                rvtapi_obj.LargeImage = button_icon.largeBitmap
+            rvtapi_obj.Image = button_icon.SmallIcon
+            rvtapi_obj.LargeImage = button_icon.LargeIcon
             self._dirty = True
         except Exception as icon_err:
             raise PyRevitUIError('Item does not have image property: {}'
@@ -495,19 +434,17 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Item is not a split button. '
                                  '| {}'.format(sync_item_err))
 
-    def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
-        try:
-            button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
+    def set_icon(self, icon_file, icon_size=ICON_LARGE):
+        button_icon = \
+            loadertypes.PyRevitButtonIcon(
+                icon_file,
+                ICON_LARGE if icon_size == ICON_LARGE else ICON_MEDIUM
+                )
 
         try:
             rvtapi_obj = self.get_rvtapi_object()
-            rvtapi_obj.Image = button_icon.smallBitmap
-            rvtapi_obj.LargeImage = button_icon.largeBitmap
-            if icon_size == ICON_LARGE:
-                rvtapi_obj.LargeImage = button_icon.largeBitmap
+            rvtapi_obj.Image = button_icon.SmallIcon
+            rvtapi_obj.LargeImage = button_icon.LargeIcon
             self._dirty = True
         except Exception as icon_err:
             raise PyRevitUIError('Item does not have image property: {}'
