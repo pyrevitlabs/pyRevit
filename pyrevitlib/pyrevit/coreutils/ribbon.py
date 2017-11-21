@@ -30,6 +30,9 @@ class PyRevitUIError(PyRevitException):
 class _ButtonIcons:
     def __init__(self, file_address):
         self.icon_file_path = file_address
+        self.filestream = IO.FileStream(file_address,
+                                        IO.FileMode.Open,
+                                        IO.FileAccess.Read)
 
     @staticmethod
     def recolour(image_data, size, stride, color):
@@ -46,17 +49,16 @@ class _ButtonIcons:
                 image_data[idx+1] = color >> 8 & 0xff     # green
                 image_data[idx+2] = color >> 16 & 0xff    # red
 
-    @staticmethod
-    def create_bitmap(file_address, icon_size):
+    def create_bitmap(self, icon_size):
         logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(icon_size, file_address))
+                     .format(icon_size, self.icon_file_path))
         adjusted_icon_size = icon_size * 2
         adjusted_dpi = DEFAULT_DPI * 2
         screen_scaling = HOST_APP.proc_screen_scalefactor
 
         base_image = Imaging.BitmapImage()
         base_image.BeginInit()
-        base_image.UriSource = Uri(file_address)
+        base_image.StreamSource = self.filestream
         base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
         base_image.EndInit()
 
@@ -83,15 +85,15 @@ class _ButtonIcons:
 
     @property
     def smallBitmap(self):
-        return self.create_bitmap(self.icon_file_path, ICON_SMALL)
+        return self.create_bitmap(ICON_SMALL)
 
     @property
     def mediumBitmap(self):
-        return self.create_bitmap(self.icon_file_path, ICON_MEDIUM)
+        return self.create_bitmap(ICON_MEDIUM)
 
     @property
     def largeBitmap(self):
-        return self.create_bitmap(self.icon_file_path, ICON_LARGE)
+        return self.create_bitmap(ICON_LARGE)
 
 
 # Superclass to all ui item classes --------------------------------------------
