@@ -11,7 +11,8 @@ from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
     STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
     PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
     PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX,\
-    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER,\
+    PANEL_PUSH_BUTTON_POSTFIX
 
 
 logger = get_logger(__name__)
@@ -402,6 +403,38 @@ def _produce_ui_stacks(ui_maker_params):
                      .format(parent_ui_panel, err))
 
 
+def _produce_ui_panelpushbutton(ui_maker_params):
+    """
+
+    Args:
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+    """
+    parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
+    paneldlgbutton = ui_maker_params.component
+    ext_asm_info = ui_maker_params.asm_info
+
+    if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+        return None
+
+    logger.debug('Producing panel button: {}'.format(paneldlgbutton))
+    try:
+        parent_ui_item.create_panel_push_button(
+            paneldlgbutton.name,
+            ext_asm_info.location,
+            _get_effective_classname(paneldlgbutton),
+            _make_button_tooltip(paneldlgbutton),
+            _make_button_tooltip_ext(paneldlgbutton, ext_asm_info.name),
+            paneldlgbutton.ttvideo_file,
+            paneldlgbutton.avail_class_name,
+            update_if_exists=True)
+
+        return parent_ui_item.button(paneldlgbutton.name)
+    except PyRevitException as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
+
+
 def _produce_ui_panels(ui_maker_params):
     """
 
@@ -458,6 +491,7 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
                             SEPARATOR_IDENTIFIER: _produce_ui_separator,
                             SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
+                            PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
                             }
 
 

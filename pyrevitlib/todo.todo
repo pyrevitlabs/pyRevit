@@ -13,11 +13,12 @@
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
 ☐ investigate adding animated icons
-☐ investigate adding panel options
+☐ investigate contextual help: http://www.revitapidocs.com/2018.1/c4294178-9b46-3590-98b1-970af89e3c10.htm
 
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ investigate adding panel options @done(2017-11-20 23:49)
     ✔ add helper type C# classes (one is for buttonicon speed up) @done(2017-11-20 21:13)
     ✔ find a better name for revit flask app @done(2017-11-13 17:25)
     ✔ fix charts reach into output and output.utils @done(2017-11-11 20:58)

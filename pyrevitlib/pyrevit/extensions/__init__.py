@@ -35,6 +35,7 @@ STACKTHREE_BUTTON_POSTFIX = '.stack3'
 STACKTWO_BUTTON_POSTFIX = '.stack2'
 SPLIT_BUTTON_POSTFIX = '.splitbutton'
 SPLITPUSH_BUTTON_POSTFIX = '.splitpushbutton'
+PANEL_PUSH_BUTTON_POSTFIX = '.panelbutton'
 
 # Component layout elements
 DEFAULT_LAYOUT_FILE_NAME = '_layout'

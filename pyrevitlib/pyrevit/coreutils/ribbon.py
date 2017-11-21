@@ -632,11 +632,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
     button = _GenericPyRevitUIContainer._get_component
     ribbon_item = _GenericPyRevitUIContainer._get_component
 
-    def __init__(self, rvt_ribbon_panel):
+    def __init__(self, rvt_ribbon_panel, parent_tab):
         _GenericPyRevitUIContainer.__init__(self)
 
         self.name = rvt_ribbon_panel.Name
         self._rvtapi_object = rvt_ribbon_panel
+
+        self.parent_tab = parent_tab
 
         # when container is in itemdata_mode, only the necessary
         # RibbonItemData objects will be created for children a sunsequent
@@ -658,6 +660,11 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             else:
                 raise PyRevitUIError('Can not determin ribbon item type: {}'
                                      .format(revit_ribbon_item))
+
+    def get_adwindows_object(self):
+        for panel in self.parent_tab.Panels:
+            if panel.Source and panel.Source.Title == self.name:
+                return panel
 
     def open_stack(self):
         self.itemdata_mode = True
@@ -735,6 +742,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             if isinstance(pyrvt_ui_item, _PyRevitRibbonGroupItem):
                 pyrvt_ui_item.create_data_items()
 
+    def set_dlglauncher(self, dlg_button):
+        panel_adwnd_obj = self.get_adwindows_object()
+        button_adwnd_obj = dlg_button.get_adwindows_object()
+        panel_adwnd_obj.Source.Items.Remove(button_adwnd_obj)
+        panel_adwnd_obj.Source.DialogLauncher = button_adwnd_obj
+        logger.debug('Added panel dialog button'.format(dlg_button.name))
+
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
                            tooltip='', tooltip_ext='', tooltip_video='',
@@ -763,11 +777,15 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 if ui_title:
                     existing_item.set_title(ui_title)
-                try:
-                    existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
-                except PyRevitUIError as iconerr:
-                    logger.error('Error adding icon for {} '
-                                 '| {}'.format(button_name, iconerr))
+
+                if not icon_path:
+                    logger.debug('Icon not set for {}'.format(button_name))
+                else:
+                    try:
+                        existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
+                    except PyRevitUIError as iconerr:
+                        logger.error('Error adding icon for {} '
+                                     '| {}'.format(button_name, iconerr))
                 existing_item.activate()
             else:
                 raise PyRevitUIError('Push button already exits and update '
@@ -892,6 +910,17 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(False)
 
+    def create_panel_push_button(self, button_name, asm_location, class_name,
+                                 tooltip='', tooltip_ext='', tooltip_video='',
+                                 avail_class_name=None,
+                                 update_if_exists=False):
+        self.create_push_button(button_name,
+                                asm_location, class_name,
+                                None, tooltip, tooltip_ext, tooltip_video,
+                                avail_class_name,
+                                update_if_exists, None)
+        self.set_dlglauncher(self.button(button_name))
+
 
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
     ribbon_panel = _GenericPyRevitUIContainer._get_component
@@ -912,7 +941,8 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                 # feeding _sub_pyrvt_ribbon_panels with an instance of
                 # _PyRevitRibbonPanel for existing panels _PyRevitRibbonPanel
                 # will find its existing ribbon items internally
-                new_pyrvt_panel = _PyRevitRibbonPanel(revit_ui_panel)
+                new_pyrvt_panel = _PyRevitRibbonPanel(revit_ui_panel,
+                                                      self._rvtapi_object)
                 self._add_component(new_pyrvt_panel)
         except:
             # if .GetRibbonPanels fails, this tab is an existing native tab
@@ -946,7 +976,8 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                     HOST_APP.uiapp.CreateRibbonPanel(self.name, panel_name)
                 # creating _PyRevitRibbonPanel object and
                 # add new panel to list of current panels
-                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel)
+                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel,
+                                                         self._rvtapi_object)
                 pyrvt_ribbon_panel.set_dirty_flag()
                 self._add_component(pyrvt_ribbon_panel)
 
