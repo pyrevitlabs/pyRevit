@@ -1,5 +1,6 @@
 """pyRevit root level config for all pyrevit sub-modules."""
 
+import clr
 import sys
 import os
 import os.path as op
@@ -7,6 +8,7 @@ import traceback
 
 
 try:
+    clr.AddReference('PyRevitLoader')
     import PyRevitLoader
 except ImportError:
     # this means that pyRevit is not being loaded from a pyRevit engine
