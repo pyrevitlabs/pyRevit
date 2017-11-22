@@ -37,3 +37,8 @@ ScriptOutputStream = base_module.ScriptOutputStream
 
 # usagelogger.cs
 ScriptUsageLogger = base_module.ScriptUsageLogger
+
+
+# unmanaged.cs
+User32 = base_module.User32
+GDI32 = base_module.GDI32

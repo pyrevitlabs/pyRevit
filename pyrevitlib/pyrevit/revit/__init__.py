@@ -11,6 +11,7 @@ from pyrevit.revit import db
 from pyrevit.revit import journals
 from pyrevit.revit import selection
 from pyrevit.revit import transaction
+from pyrevit.revit import ui
 
 
 logger = get_logger(__name__)
