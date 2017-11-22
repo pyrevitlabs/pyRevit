@@ -14,6 +14,7 @@ namespace PyRevitBaseClasses
         private bool _contentLoaded;
         private bool _debugMode;
 
+        public string OutputUniqueId;
         public string OutputId;
         public bool ClosedByUser = false;
 
@@ -25,6 +26,7 @@ namespace PyRevitBaseClasses
         public ScriptOutput(bool debugMode=false)
         {
             _debugMode = debugMode;
+            OutputUniqueId = Guid.NewGuid().ToString();
             InitializeComponent();
         }
 

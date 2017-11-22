@@ -32,6 +32,11 @@ class PyRevitOutputWindow(object):
         if self.window:
             return self.window.OutputId
 
+    @property
+    def output_uniqueid(self):
+        if self.window:
+            return self.window.OutputUniqueId
+
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
 
