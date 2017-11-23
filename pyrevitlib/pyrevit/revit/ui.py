@@ -6,23 +6,29 @@ from pyrevit.api import AdWindows as ad
 from pyrevit.api import UIFramework as uf
 from pyrevit.api import UIFrameworkServices as ufs
 
-from pyrevit.coreutils.loadertypes import User32
+from pyrevit.coreutils.loadertypes import User32, RECT
 
 
-class RevitStatusBar(object):
-    @staticmethod
-    def GetStatusBarHwnd():
-        return User32.FindWindowEx(ad.ComponentManager.ApplicationWindow,
-                                   IntPtr.Zero,
-                                   "msctls_statusbar32",
-                                   "")
+def get_mainwindow_hwnd():
+    return ad.ComponentManager.ApplicationWindow
 
-    @staticmethod
-    def SetStatusText(text):
-        statusBarPtr = RevitStatusBar.GetStatusBarHwnd()
 
-        if (statusBarPtr != IntPtr.Zero):
-            User32.SetWindowText(statusBarPtr, text)
-            return True
+def get_statusbar_hwnd():
+    return User32.FindWindowEx(get_mainwindow_hwnd(),
+                               IntPtr.Zero,
+                               "msctls_statusbar32",
+                               "")
 
-        return False
+
+def set_statusbar_text(text):
+    statusBarPtr = get_statusbar_hwnd()
+
+    if (statusBarPtr != IntPtr.Zero):
+        User32.SetWindowText(statusBarPtr, text)
+        return True
+
+    return False
+
+
+def get_window_rectangle():
+    return User32.GetWindowRect(get_mainwindow_hwnd())

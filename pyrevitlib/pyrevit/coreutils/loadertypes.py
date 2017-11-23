@@ -40,5 +40,6 @@ ScriptUsageLogger = base_module.ScriptUsageLogger
 
 
 # unmanaged.cs
+RECT = base_module.RECT
 User32 = base_module.User32
 GDI32 = base_module.GDI32

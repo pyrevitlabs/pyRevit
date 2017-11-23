@@ -5,9 +5,12 @@ from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import framework
-from pyrevit.framework import wpf, Forms, Controls
+from pyrevit.framework import System
+from pyrevit.framework import Threading
+from pyrevit.framework import Interop
 from pyrevit.framework import wpf, Forms, Controls, Media
-from pyrevit import UI
+from pyrevit.api import AdWindows
+from pyrevit import revit, UI
 
 
 logger = get_logger(__name__)
@@ -15,7 +18,10 @@ logger = get_logger(__name__)
 
 class WPFWindow(framework.Windows.Window):
     def __init__(self, xaml_file, literal_string=False):
-        self.Parent = self
+        # self.Parent = self
+        wih = Interop.WindowInteropHelper(self)
+        wih.Owner = AdWindows.ComponentManager.ApplicationWindow
+
         if not literal_string:
             if not op.exists(xaml_file):
                 wpf.LoadComponent(self,
@@ -337,7 +343,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         for switch in self._context:
             my_button = framework.Controls.Button()
-            my_button.BorderBrush = framework.Windows.Media.Brushes.Black
+            my_button.BorderBrush = Media.Brushes.Black
             my_button.BorderThickness = framework.Windows.Thickness(0)
             my_button.Content = switch
             my_button.Margin = framework.Windows.Thickness(5, 0, 5, 5)
@@ -364,7 +370,49 @@ class TemplatePromptBar(WPFWindow):
             WindowStyle="None" Background="{x:Null}"
             ShowInTaskbar="False" ShowActivated="False"
             WindowStartupLocation="Manual"
-            ResizeMode="NoResize" Topmost="True"
+            ResizeMode="NoResize"
+            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <Grid>
+        </Grid>
+    </Window>
+    """
+
+    def __init__(self, height=32, **kwargs):
+        WPFWindow.__init__(self, self.layout, literal_string=True)
+        work_area = HOST_APP.proc_screen_workarea
+        scale_factor = HOST_APP.proc_screen_scalefactor
+        scale_factor = 1 / HOST_APP.proc_screen_scalefactor
+
+        window_rect = revit.get_window_rectangle()
+
+        # self.Top = work_area.Top * scale_factor
+        # self.Left = work_area.Left * scale_factor
+        # self.Width = work_area.Width * scale_factor
+        self.Top = window_rect.Top * scale_factor
+        self.Left = window_rect.Left * scale_factor
+        self.Width = (window_rect.Right - window_rect.Left) * scale_factor
+        self.Height = height
+        self._setup(**kwargs)
+
+    def _setup(self, **kwargs):
+        pass
+
+    def __enter__(self):
+        self.Show()
+        return self
+
+    def __exit__(self, exception, exception_value, traceback):
+        self.Close()
+
+
+class WarningBar(TemplatePromptBar):
+    layout = """
+    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            WindowStyle="None" Background="{x:Null}"
+            ShowInTaskbar="False" ShowActivated="False"
+            WindowStartupLocation="Manual"
+            ResizeMode="NoResize"
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Grid Background="#FFEA9F00">
             <TextBlock x:Name="message_tb"
@@ -375,31 +423,82 @@ class TemplatePromptBar(WPFWindow):
     </Window>
     """
 
-    def __init__(self, title='Message', height=32, **kwargs):
-        WPFWindow.__init__(self, self.layout, literal_string=True)
-        work_area = HOST_APP.proc_screen_workarea
-        scale_factor = HOST_APP.proc_screen_scalefactor
-        scale_factor = 1 / HOST_APP.proc_screen_scalefactor
+    def _setup(self, **kwargs):
+        self.message_tb.Text = kwargs.get('title', '')
 
-        self.Top = work_area.Top * scale_factor
-        self.Left = work_area.Left * scale_factor
-        self.Width = work_area.Width * scale_factor
-        self.Height = height * scale_factor
-        self.message_tb.Text = title
-        self._setup(**kwargs)
+
+class ProgressBar(TemplatePromptBar):
+    layout = """
+    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                WindowStyle="None" Background="{x:Null}"
+                ShowInTaskbar="False" ShowActivated="False"
+                WindowStartupLocation="Manual"
+                ResizeMode="NoResize"
+                ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <Window.Resources>
+            <Style x:Key="{x:Type ProgressBar}" TargetType="{x:Type ProgressBar}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ProgressBar}">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Determinate" />
+                                        <VisualState x:Name="Indeterminate">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Duration="00:00:00" Storyboard.TargetName="PART_Indicator" Storyboard.TargetProperty="Background">
+                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00" />
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Border x:Name="PART_Track" CornerRadius="0" BorderThickness="0" />
+                                <Border x:Name="PART_Indicator" CornerRadius="0" BorderThickness="0" HorizontalAlignment="Left" Background="#FFEA9F00" Margin="0">
+                                    <Grid ClipToBounds="True" x:Name="Animation">
+                                        <Border x:Name="PART_GlowRect" Width="200" HorizontalAlignment="Left" Background="#FFEA9F00" Margin="-200,0,0,0" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <SolidColorBrush Color="#FFF0F0F0" />
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Foreground">
+                    <Setter.Value>
+                        <SolidColorBrush Color="#FFEA9F00" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Window.Resources>
+        <Grid Background="#ff2c3e50">
+            <ProgressBar x:Name="pbar"/>
+            <TextBlock x:Name="pbar_text"
+                       TextWrapping="Wrap" Text="TextBlock"
+                       TextAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+        </Grid>
+    </Window>
+    """
 
     def _setup(self, **kwargs):
-        pass
+        self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
 
-    def __enter__(self):
-        self.Show()
+    def _update_pbar(self):
+        self.pbar.Maximum = self.max_value
+        self.pbar.Value = self.new_value
+        self.pbar_text.Text = '{} / {}'.format(self.new_value, self.max_value)
 
-    def __exit__(self, exception, exception_value, traceback):
-        self.Close()
-
-
-class WarningBar(TemplatePromptBar):
-    pass
+    def update_progress(self, new_value, max_value):
+        self.max_value = max_value
+        self.new_value = new_value
+        self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
+                                    Threading.DispatcherPriority.Background)
 
 
 def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):

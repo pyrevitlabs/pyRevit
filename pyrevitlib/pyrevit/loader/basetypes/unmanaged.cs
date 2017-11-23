@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows;
 
 
 namespace PyRevitBaseClasses
@@ -31,6 +32,16 @@ namespace PyRevitBaseClasses
     }
 
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;        // x position of upper-left corner
+        public int Top;         // y position of upper-left corner
+        public int Right;       // x position of lower-right corner
+        public int Bottom;      // y position of lower-right corner
+    }
+
+
     public class User32
     {
         public delegate bool EnumThreadDelegate(IntPtr hWnd, IntPtr lParam);
@@ -46,6 +57,9 @@ namespace PyRevitBaseClasses
 
         [DllImport("User32.dll")]
         public static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+        [DllImport("User32.dll", SetLastError = true)]
+        public static extern IntPtr GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("User32.dll")]
         public static extern IntPtr ReleaseDC(IntPtr hWnd, IntPtr hDC);
@@ -68,6 +82,13 @@ namespace PyRevitBaseClasses
                                   (hWnd, lParam) => { handles.Add(hWnd); return true; }, IntPtr.Zero);
 
             return handles;
+        }
+
+        public static RECT GetWindowRect(IntPtr windowHandle)
+        {
+            RECT wind32rect;
+            GetWindowRect(windowHandle, out wind32rect);
+            return wind32rect;
         }
     }
 }

@@ -43,6 +43,9 @@ class RevitWrapper(types.ModuleType):
         self.TransactionGroup = transaction.TransactionGroup
         self.carryout = transaction.carryout
 
+        self.set_statusbar_text = ui.set_statusbar_text
+        self.get_window_rectangle = ui.get_window_rectangle
+
     @property
     def uidoc(self):
         return HOST_APP.uidoc
