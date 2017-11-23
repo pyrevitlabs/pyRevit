@@ -6,18 +6,18 @@
 ☐ review the extension hash system
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
-☐ add outside click to option selector window and about
 ☐ upgrade about window looks
 ☐ fix all selections through api and use revit.selection
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
 ☐ investigate adding animated icons
-☐ add select element to csharp code to avoid linking window to python code (scriptoutputhelpers.cs)
 
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ add select element to csharp code to avoid linking window to python code (scriptoutputhelpers.cs) @done(2017-11-22 20:55)
+    ✘ add outside click to option selector window and about @cancelled(2017-11-22 19:56)
     ✔ fix reload when core csharp has changed and the window manager crashes on ScriptOutput versions @done(2017-11-22 18:52)
     ✔ investigate contextual help: http://www.revitapidocs.com/2018.1/c4294178-9b46-3590-98b1-970af89e3c10.htm @done(2017-11-21 10:33)
     ✔ investigate adding panel options @done(2017-11-20 23:49)

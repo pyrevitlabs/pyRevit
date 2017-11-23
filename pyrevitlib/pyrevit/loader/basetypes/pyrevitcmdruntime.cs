@@ -216,7 +216,7 @@ namespace PyRevitBaseClasses
                 else
                 {
                     // Stating a new output window
-                    var newOutput = new ScriptOutput(DebugMode);
+                    var newOutput = new ScriptOutput(DebugMode, UIApp);
                     newOutput.Title = _cmdName;              // Set output window title to command name
                     newOutput.OutputId = _cmdUniqueName;     // Set window identity to the command unique identifier
                     _scriptOutput = new WeakReference<ScriptOutput>(newOutput);

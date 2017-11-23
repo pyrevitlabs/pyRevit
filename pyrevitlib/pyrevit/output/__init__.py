@@ -7,6 +7,7 @@ from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import emoji
 from pyrevit.coreutils.loadertypes import ScriptOutputManager
+from pyrevit.output import rvtprotocol
 
 
 mlogger = logger.get_logger(__name__)
@@ -193,10 +194,8 @@ class PyRevitOutputWindow(object):
                         '<div>&nbsp</div>')
 
     @staticmethod
-    def linkify(*args):
-        # FIXME: Rewrite for the webapp backend
-        # return coreutils.prepare_html_str()
-        pass
+    def linkify(element_ids):
+        return coreutils.prepare_html_str(rvtprotocol.make_url(element_ids))
 
     def make_chart(self):
         return charts.PyRevitOutputChart(self)

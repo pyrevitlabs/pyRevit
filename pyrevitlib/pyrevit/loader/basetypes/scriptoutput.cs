@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Autodesk.Revit.UI;
 
 
 namespace PyRevitBaseClasses
@@ -13,6 +14,7 @@ namespace PyRevitBaseClasses
     {
         private bool _contentLoaded;
         private bool _debugMode;
+        private UIApplication _uiApp;
 
         public string OutputUniqueId;
         public string OutputId;
@@ -23,10 +25,13 @@ namespace PyRevitBaseClasses
 
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
 
-        public ScriptOutput(bool debugMode=false)
+        public ScriptOutput(bool debugMode=false, UIApplication uiApp = null)
         {
             _debugMode = debugMode;
+            _uiApp = uiApp;
+
             OutputUniqueId = Guid.NewGuid().ToString();
+
             InitializeComponent();
         }
 
@@ -163,12 +168,19 @@ namespace PyRevitBaseClasses
         {
             if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
             {
-                var commandStr = e.Url.ToString();
-                if (commandStr.StartsWith("http") && !commandStr.StartsWith("http://localhost"))
+                var inputUrl = e.Url.ToString();
+
+                if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost"))
                 {
-                    System.Diagnostics.Process.Start(e.Url.ToString());
+                    System.Diagnostics.Process.Start(inputUrl);
                 }
-                else if (commandStr.StartsWith("file"))
+                else if (inputUrl.StartsWith("revit"))
+                {
+                    e.Cancel = true;
+                    ScriptOutputHelpers.ProcessUrl(_uiApp, inputUrl);
+                    return;
+                }
+                else if (inputUrl.StartsWith("file"))
                 {
                     e.Cancel = false;
                     return;

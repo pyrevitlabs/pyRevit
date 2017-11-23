@@ -13,5 +13,7 @@ selection = revit.get_selection()
 if len(selection.element_ids) > 0:
     output.set_width(200)
 
+    print('All: {}'.format(output.linkify(selection.element_ids)))
+
     for idx, elid in enumerate(selection.element_ids):
         print('{}: {}'.format(idx+1, output.linkify(elid)))
