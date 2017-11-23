@@ -328,7 +328,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     <Setter Property="Foreground" Value="#23303d"/>
                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Padding" Value="8,2,8,2"/>
+                    <Setter Property="Padding" Value="10,2,10,2"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type Button}">
@@ -336,7 +336,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                         Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="3"
+                                        CornerRadius="10"
                                         Margin="0,0,5,5"
                                         SnapsToDevicePixels="true">
                                     <ContentPresenter Name="Presenter"
@@ -469,8 +469,11 @@ class WarningBar(TemplatePromptBar):
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Grid Background="#FFEA9F00">
             <TextBlock x:Name="message_tb"
-                       TextWrapping="Wrap" Text="TextBlock"
-                       TextAlignment="Center" VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Text="TextBlock"
+                       TextAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
         </Grid>
     </Window>
@@ -506,7 +509,7 @@ class ProgressBar(TemplatePromptBar):
                                         Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="3"
+                                        CornerRadius="10"
                                         SnapsToDevicePixels="true">
                                     <ContentPresenter Name="Presenter"
                                                       Margin="{TemplateBinding Padding}"
@@ -584,11 +587,10 @@ class ProgressBar(TemplatePromptBar):
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
             <Button HorizontalAlignment="Left"
                     VerticalAlignment="Center"
-                    Content="x"
+                    Content="Cancel"
                     Margin="12,0,0,0"
-                    Padding="0,-4,0,0"
+                    Padding="10,0,10,0"
                     Click="clicked_cancel"
-                    Width="18px"
                     Height="18px" />
         </Grid>
     </Window>
