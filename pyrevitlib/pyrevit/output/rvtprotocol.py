@@ -22,7 +22,7 @@ DEFAULT_LINK = '<a title="Click to select or show element" ' \
                'padding: 1px 4px; ' \
                'text-align: center; ' \
                'text-decoration: none; ' \
-               'display: inline-block;" href="{0}{1}">{2}</a>'
+               'display: inline-block;" {}>{}</a>'
 
 
 def make_url(element_ids):
@@ -35,6 +35,13 @@ def make_url(element_ids):
     for strid in strids:
         elementquery.append('element[]={}'.format(strid))
 
-    return DEFAULT_LINK.format(PROTOCOL_NAME,
-                               '&'.join(elementquery),
-                               ', '.join(strids))
+    reviturl = '&'.join(elementquery)
+    linkname = ', '.join(strids)
+
+    if len(reviturl) >= 2000:
+        alertjs = 'alert(&quot;Url was too long and discarded!&quot;);'
+        linkattrs = 'href="#" onClick="{}"'.format(alertjs)
+    else:
+        linkattrs = 'href="{0}{1}"'.format(PROTOCOL_NAME, reviturl)
+
+    return DEFAULT_LINK.format(linkattrs, linkname)
