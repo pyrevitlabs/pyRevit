@@ -206,8 +206,10 @@ class PyRevitOutputWindow(object):
         self.print_html('<div class="nextpage"></div><div>&nbsp</div>')
 
     @staticmethod
-    def linkify(element_ids):
-        return coreutils.prepare_html_str(linkmaker.make_link(element_ids))
+    def linkify(element_ids, title=None):
+        return coreutils.prepare_html_str(
+            linkmaker.make_link(element_ids, contents=title)
+            )
 
     def make_chart(self):
         return charts.PyRevitOutputChart(self)

@@ -14,13 +14,16 @@ namespace PyRevitBaseClasses
         {
             var parsedQuery = HttpUtility.ParseQueryString(inputUrl.Split('?')[1]);
 
-            var idList = new List<ElementId>();
-            foreach(string strId in parsedQuery["element[]"].Split(','))
+            if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null)
             {
-                idList.Add(new ElementId(Convert.ToInt32(strId)));
-            }
+                var idList = new List<ElementId>();
+                foreach (string strId in parsedQuery["element[]"].Split(','))
+                {
+                    idList.Add(new ElementId(Convert.ToInt32(strId)));
+                }
 
-            SelectElements(uiApp, idList);
+                SelectElements(uiApp, idList);
+            }
         }
 
         public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds)

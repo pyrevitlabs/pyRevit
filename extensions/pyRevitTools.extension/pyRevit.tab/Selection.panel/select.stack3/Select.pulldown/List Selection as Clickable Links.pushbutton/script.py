@@ -14,7 +14,8 @@ if len(selection.element_ids) > 0:
     output.set_width(200)
 
     if len(selection.element_ids) < 50:
-        print('All: {}'.format(output.linkify(selection.element_ids)))
+        print('{}'.format(output.linkify(selection.element_ids,
+                                         title='All Elements')))
 
     for idx, elid in enumerate(selection.element_ids):
         print('{}: {}'.format(idx+1, output.linkify(elid)))

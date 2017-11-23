@@ -8,13 +8,13 @@ from pyrevit.coreutils.logger import get_logger
 logger = get_logger(__name__)
 
 
-PROTOCOL_NAME = 'revit://select?'
+PROTOCOL_NAME = 'revit://outputhelpers?'
 
 DEFAULT_LINK = '<a title="Click to select or show element" ' \
                   'class="elementlink" {}>{}</a>'
 
 
-def make_link(element_ids):
+def make_link(element_ids, contents=None):
     elementquery = []
     if isinstance(element_ids, list):
         strids = [str(x.IntegerValue) for x in element_ids]
@@ -31,6 +31,8 @@ def make_link(element_ids):
         alertjs = 'alert(&quot;Url was too long and discarded!&quot;);'
         linkattrs = 'href="#" onClick="{}"'.format(alertjs)
     else:
-        linkattrs = 'href="{0}{1}"'.format(PROTOCOL_NAME, reviturl)
+        linkattrs = 'href="{}{}{}"'.format(PROTOCOL_NAME,
+                                           '&command=select&',
+                                           reviturl)
 
-    return DEFAULT_LINK.format(linkattrs, linkname)
+    return DEFAULT_LINK.format(linkattrs, contents or linkname)
