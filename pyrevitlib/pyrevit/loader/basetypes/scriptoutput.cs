@@ -6,7 +6,7 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
-
+using System.Text.RegularExpressions;
 
 namespace PyRevitBaseClasses
 {
@@ -16,13 +16,20 @@ namespace PyRevitBaseClasses
         private bool _debugMode;
         private UIApplication _uiApp;
 
+        // OutputUniqueId is set in constructor
+        // OutputUniqueId is unique for every output window
         public string OutputUniqueId;
+
+        // OutputId is set by the requesting pyRevit command
+        // OutputId is the same for all output windows that belong to a single pyRevit command
         public string OutputId;
+
+        // to track if user manually closed the window
         public bool ClosedByUser = false;
 
+        // Html renderer and its Winforms host, and navigate handler method
         System.Windows.Forms.Integration.WindowsFormsHost host;
         public System.Windows.Forms.WebBrowser renderer;
-
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
 
         public ScriptOutput(bool debugMode=false, UIApplication uiApp = null)
@@ -30,6 +37,7 @@ namespace PyRevitBaseClasses
             _debugMode = debugMode;
             _uiApp = uiApp;
 
+            // setup unique id for this output window
             OutputUniqueId = Guid.NewGuid().ToString();
 
             InitializeComponent();
@@ -57,12 +65,8 @@ namespace PyRevitBaseClasses
             _navigateHandler = new System.Windows.Forms.WebBrowserNavigatingEventHandler(renderer_Navigating);
             renderer.Navigating += _navigateHandler;
 
-            renderer.DocumentText = String.Format("{0}<html><body></body></html>", ExternalConfig.doctype);
-            while (renderer.Document.Body == null)
-                System.Windows.Forms.Application.DoEvents();
-
-            // Setup body style
-            renderer.Document.Body.Style = ExternalConfig.htmlstyle;
+            // setup the default html page
+            SetupDefaultPage();
 
             // Assign the WebBrowser control as the host control's child.
             host.Child = renderer;
@@ -119,6 +123,29 @@ namespace PyRevitBaseClasses
         void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target)
         {
             this._contentLoaded = true;
+        }
+
+        private void SetupDefaultPage(string styleSheetFilePath = null)
+        {
+            string cssFilePath;
+            if (styleSheetFilePath != null)
+                cssFilePath = styleSheetFilePath;
+            else
+                cssFilePath = GetStyleSheetFile();
+
+            // create the head with default styling
+            var dochead = String.Format(ExternalConfig.doctype, cssFilePath);
+            // create default html
+            renderer.DocumentText = String.Format("{0}<html><body></body></html>", dochead);
+
+            while (renderer.Document.Body == null)
+                System.Windows.Forms.Application.DoEvents();
+        }
+
+        private string GetStyleSheetFile()
+        {
+            var envDict = new EnvDictionary();
+            return envDict.activeStyleSheet;
         }
 
         public void WaitReadyBrowser()
@@ -195,10 +222,8 @@ namespace PyRevitBaseClasses
             WaitReadyBrowser();
             if (renderer.Document != null)
             {
-                var pbar = renderer.Document.CreateElement(ExternalConfig.progressbar);
-                var pbargraph = renderer.Document.CreateElement("div");
-                pbargraph.Id = ExternalConfig.progressbargraphid;
-                pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, 10);
+                var pbar = renderer.Document.CreateElement(ExternalConfig.progressindicator);
+                var pbargraph = renderer.Document.CreateElement(ExternalConfig.progressbar);
                 pbar.AppendChild(pbargraph);
                 renderer.Document.Body.AppendChild(pbar);
             }
@@ -227,13 +252,18 @@ namespace PyRevitBaseClasses
                     }
                 }
 
-                var pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbargraphid);
+                var pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
                 if (pbargraph == null)
                 {
                     ShowProgressBar();
-                    pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbargraphid);
+                    pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
                 }
-                pbargraph.Style = String.Format(ExternalConfig.progressbargraphstyle, (curValue / maxValue) * 100);
+
+                var newWidthStyleProperty = String.Format("width:{0}%;", (curValue / maxValue) * 100);
+                if (pbargraph.Style == null)
+                    pbargraph.Style = newWidthStyleProperty;
+                else
+                    pbargraph.Style = Regex.Replace(pbargraph.Style, "width:.+?;", newWidthStyleProperty, RegexOptions.IgnoreCase);
             }
         }
 

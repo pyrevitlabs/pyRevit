@@ -1,4 +1,5 @@
 from __future__ import print_function
+import os.path as op
 
 from pyrevit import EXEC_PARAMS
 from pyrevit import framework
@@ -6,11 +7,34 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import emoji
+from pyrevit.coreutils import envvars
+from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 from pyrevit.coreutils.loadertypes import ScriptOutputManager
-from pyrevit.output import rvtprotocol
+from pyrevit.output import linkmaker
+from pyrevit.userconfig import user_config
 
 
 mlogger = logger.get_logger(__name__)
+
+
+def set_stylesheet(stylesheet):
+    envvars.set_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet,
+                                stylesheet)
+
+
+def get_stylesheet():
+    return envvars.get_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet)
+
+
+# setup output window stylesheet
+DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+default_stylesheet = op.join(op.dirname(__file__), DEFAULT_STYLESHEET_NAME)
+
+active_stylesheet = \
+    user_config.core.get_option('outputstylesheet',
+                                default_value=default_stylesheet)
+
+set_stylesheet(active_stylesheet)
 
 
 class PyRevitOutputWindow(object):
@@ -161,22 +185,11 @@ class PyRevitOutputWindow(object):
 
     @staticmethod
     def print_code(code_str):
-        nbsp = '&nbsp;'
-        code_div = '<div style="font-family:courier new;' \
-                   'border-style: solid;' \
-                   'border-width:0 0 0 5;' \
-                   'border-color:#87b012;' \
-                   'background:#ececec;' \
-                   'color:#3e3d3d;' \
-                   'line-height: 150%;' \
-                   'padding:10;' \
-                   'margin:10 0 10 0">' \
-                   '{}' \
-                   '</div>'
+        code_div = '<div class="code">{}</div>'
 
         print(coreutils.prepare_html_str(
                 code_div.format(
-                    code_str.replace('    ', nbsp*4))), end="")
+                    code_str.replace('    ', '&nbsp;'*4))), end="")
 
     @staticmethod
     def print_md(md_str):
@@ -190,12 +203,11 @@ class PyRevitOutputWindow(object):
         self.print_md('-----')
 
     def next_page(self):
-        self.print_html('<div style="page-break-after:always;"></div>'
-                        '<div>&nbsp</div>')
+        self.print_html('<div class="nextpage"></div><div>&nbsp</div>')
 
     @staticmethod
     def linkify(element_ids):
-        return coreutils.prepare_html_str(rvtprotocol.make_url(element_ids))
+        return coreutils.prepare_html_str(linkmaker.make_link(element_ids))
 
     def make_chart(self):
         return charts.PyRevitOutputChart(self)

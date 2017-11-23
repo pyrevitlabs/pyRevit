@@ -10,19 +10,19 @@ logger = get_logger(__name__)
 DEBUG_OKAY_RESULT = 'PASSED'
 DEBUG_FAIL_RESULT = 'FAILED'
 
-RESULT_TEST_SUITE_START = '<div style="background:#e8e8e8; height:20px;">' \
+RESULT_TEST_SUITE_START = '<div class="unittest unitteststart">' \
                           'Test Suite: {suite}' \
                           '</div>'
 
-RESULT_DIV_OKAY = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+RESULT_DIV_OKAY = '<div class="unittest unittestokay">' \
                   ':white_heavy_check_mark: PASSED {test}' \
                   '</div>'
 
-RESULT_DIV_FAIL = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+RESULT_DIV_FAIL = '<div class="unittest unittestfail">' \
                   ':cross_mark: FAILED {test}' \
                   '</div>'
 
-RESULT_DIV_ERROR = '<div style="border-bottom: 1px solid gray; height:20px;">' \
+RESULT_DIV_ERROR = '<div class="unittest unittesterror">' \
                    ':heavy_large_circle: ERROR {test}' \
                    '</div>'
 

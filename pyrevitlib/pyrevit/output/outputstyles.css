@@ -1,0 +1,126 @@
+body {
+    color: #233749;
+    font-family: Verdana;
+    font-size: 9pt;
+    height: 100%;
+    margin: 0 0 15px 0;
+    padding: 0;
+    scrollbar-arrow-color: #666;
+    scrollbar-base-color: #EEE;
+    scrollbar-face-color: #DDD;
+    scrollbar-highlight-color: #EEE;
+    scrollbar-shadow-color: #EEE;
+    scrollbar-track-color: #EEE;
+}
+
+.entry {
+    margin-bottom: 3px;
+    margin-top: 3px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.errorentry {
+    background: #f9f2f4;
+    border-top: 5px solid #c7254e;
+    color: #c7254e;
+    margin-top:10px;
+    padding: 6px;
+}
+
+.logdefault {
+    margin: 10px 0 10px 0;
+    padding: 10px;
+    border-radius:5px;
+}
+
+.logerror {
+    background: #f9f2f4;
+    color: #c7254e;
+}
+
+.logwarning {
+    background: #F7F3F2;
+    color: #C64325;
+}
+
+.logcritical {
+    background: #c7254e;
+    color: white;
+}
+
+.emoji {
+    /*filter: gray;*/
+    /*filter: alpha(opacity=50);*/
+    margin:-4px 0 0 0;
+    vertical-align: middle;
+}
+
+.progressindicator {
+    background: #2c3e50;
+    border: 0;
+    bottom: 0;
+    font-size: 1pt;
+    height: 8px;
+    position: fixed;
+    width: 100%;
+}
+
+.progressbar {
+    background: #f39c12;
+    border: 0;
+    font-size:1pt;
+    height: 100%;
+    width: 1%;
+}
+
+.elementlink {
+    background-color: #2c3e50;
+    /*border: 1px solid #2c3e50;*/
+    border-radius:5px;
+    color: #ffffff;
+    display: inline-block;
+    font-size:8pt;
+    margin: 2px;
+    padding: 2px 6px;
+    text-align: center;
+    text-decoration: none;
+    vertical-align:middle;
+}
+
+.elementlink:visited {
+    background-color: #f39c12;
+}
+
+.code {
+    background: #faf8f0;
+    border-radius: 5px;
+    font-family: Monaco, Consolas, "Andale Mono", "DejaVu Sans Mono", monospace;
+    line-height: 140%;
+    padding-bottom: 20px;
+    padding-left: 20px;
+}
+
+.nextpage {
+    page-break-after: always;
+}
+
+.unittest {
+    padding: 3px;
+}
+
+.unitteststart {
+    background: #e8e8e8;
+}
+
+.unittestokay {
+    border-bottom: 1px solid gray;
+}
+
+.unittestfail {
+    border-bottom: 1px solid gray;
+}
+
+.unittesterror {
+    border-bottom: 1px solid gray;
+}

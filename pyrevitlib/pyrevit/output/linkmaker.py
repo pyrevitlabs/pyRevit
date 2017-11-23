@@ -11,21 +11,10 @@ logger = get_logger(__name__)
 PROTOCOL_NAME = 'revit://select?'
 
 DEFAULT_LINK = '<a title="Click to select or show element" ' \
-               'style="background-color: #2c3e50; ' \
-               'font-size:8pt; ' \
-               'color: #ffffff; ' \
-               'border: 1px solid #2c3e50; ' \
-               'border-radius:3px; ' \
-               'vertical-align:middle; '\
-               'margin:-4,0,-4,0; ' \
-               'margin: 2px; ' \
-               'padding: 1px 4px; ' \
-               'text-align: center; ' \
-               'text-decoration: none; ' \
-               'display: inline-block;" {}>{}</a>'
+                  'class="elementlink" {}>{}</a>'
 
 
-def make_url(element_ids):
+def make_link(element_ids):
     elementquery = []
     if isinstance(element_ids, list):
         strids = [str(x.IntegerValue) for x in element_ids]

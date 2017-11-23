@@ -22,3 +22,17 @@ output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
 output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'
       .format(output.linkify(DB.ElementId(1557))))
+
+output.print_md('**Testing code block:**')
+output.print_code(
+"""
+#include <iostream>
+using namespace std;
+
+int main()
+{
+    cout << "Hello world!" << endl;
+    return 0;
+}
+"""
+)

@@ -12,28 +12,19 @@ LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
 
-LOG_REC_FORMAT_HTML = prepare_html_str('<div style="{0}">{1}</div>')
+LOG_REC_FORMAT_HTML = prepare_html_str('<div class="logdefault {0}">{1}</div>')
 
-LOG_REC_STYLE_ERROR = 'background:#f9f2f4;' \
-                      'color:#c7254e;' \
-                      'padding:10px;' \
-                      'margin:10px 0px 10px 0px'
-LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_ERROR,
+LOG_REC_CLASS_ERROR = 'logerror'
+LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_ERROR,
                                                   LOG_REC_FORMAT)
 
-LOG_REC_STYLE_WARNING = 'background:#F7F3F2;' \
-                        'color:#C64325;' \
-                        'padding:10px;' \
-                        'margin:10px 0px 10px 0px'
-LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_WARNING,
+LOG_REC_CLASS_WARNING = 'logwarning'
+LOG_REC_FORMAT_WARNING = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_WARNING,
                                                     LOG_REC_FORMAT)
 
 
-LOG_REC_STYLE_CRITICAL = 'background:#c7254e;' \
-                         'color:white;' \
-                         'padding:10px;' \
-                         'margin:10px 0px 10px 0px'
-LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_STYLE_CRITICAL,
+LOG_REC_CLASS_CRITICAL = 'logcritical'
+LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_CRITICAL,
                                                      LOG_REC_FORMAT)
 
 
