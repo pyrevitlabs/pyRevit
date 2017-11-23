@@ -425,27 +425,36 @@ class TemplatePromptBar(WPFWindow):
 
     def __init__(self, height=32, **kwargs):
         WPFWindow.__init__(self, self.layout, literal_string=True)
-        work_area = HOST_APP.proc_screen_workarea
-        scale_factor = HOST_APP.proc_screen_scalefactor
+
+        self.user_height = height
+        self.update_window()
+
+        self._setup(**kwargs)
+
+    def update_window(self):
         scale_factor = 1 / HOST_APP.proc_screen_scalefactor
 
         window_rect = revit.get_window_rectangle()
 
-        # self.Top = work_area.Top * scale_factor
-        # self.Left = work_area.Left * scale_factor
-        # self.Width = work_area.Width * scale_factor
-        self.Top = window_rect.Top * scale_factor
-        self.Left = window_rect.Left * scale_factor
-        self.Width = (window_rect.Right - window_rect.Left) * scale_factor
-        self.Height = height
+        top = left = width = height = 0
 
+        width = (window_rect.Right - window_rect.Left) * scale_factor
+        height = self.user_height
+
+        top = window_rect.Top * scale_factor
         # in maximized window, the top will be off the screen (- value)
         # lets cut the height and re-adjust the top
-        if self.Top < 0:
-            self.Height -= abs(self.Top)
-            self.Top = 0
+        if top < 0:
+            height -= abs(top)
+            top = 0
 
-        self._setup(**kwargs)
+        left = window_rect.Left * scale_factor
+        # Left also might be off screen, let's fix that as well
+        if left < 0:
+            width -= abs(left)
+            left = 0
+
+        self.Top, self.Left, self.Width, self.Height = top, left, width, height
 
     def _setup(self, **kwargs):
         pass
@@ -601,6 +610,7 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
 
     def _update_pbar(self):
+        self.update_window()
         self.pbar.Maximum = self.max_value
         self.pbar.Value = self.new_value
         self.pbar_text.Text = '{} / {}'.format(self.new_value, self.max_value)
