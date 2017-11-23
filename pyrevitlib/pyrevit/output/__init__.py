@@ -108,9 +108,9 @@ class PyRevitOutputWindow(object):
 
     def close_others(self, all_open_outputs=False):
         if all_open_outputs:
-            ScriptOutputManager.CloseActiveScriptOutputs(self.window)
+            ScriptOutputManager.CloseActiveOutputWindows(self.window)
         else:
-            ScriptOutputManager.CloseActiveScriptOutputs(self.window,
+            ScriptOutputManager.CloseActiveOutputWindows(self.window,
                                                          self.output_id)
 
     def hide(self):

@@ -12,4 +12,5 @@ print('Running in reused engine?\n{}'
       .format('Yes' if __cachedengine__ else 'No'))
 
 
-print(ScriptOutputManager.ActiveScriptOutputs)
+for so in ScriptOutputManager.ActiveOutputWindows:
+    print(so.OutputId, so.OutputUniqueId)

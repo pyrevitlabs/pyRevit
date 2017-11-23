@@ -7,7 +7,7 @@ namespace PyRevitBaseClasses
         public static string pyRevitEnvVarsDictKey = "pyRevitEnvVarsDict";
         public static string pyRevitIpyEnginesDictKey = "pyRevitIpyEngines";
         public static string pyRevitIpyEngineDefaultStreamCfgKey = "pyRevitIpyEngineDefaultStreamCfg";
-        public static string pyRevitScriptOutputsDictKey = "pyRevitOutputWindowsDict";
+        public static string pyRevitOutputWindowsDictKey = "pyRevitOutputWindowsDict";
         public static string pyRevitServerViewFunctionsDictKey = "pyRevitServerViewFunctionsDict";
     }
 

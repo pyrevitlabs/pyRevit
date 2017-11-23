@@ -13,10 +13,12 @@
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
 ☐ investigate adding animated icons
+☐ add select element to csharp code to avoid linking window to python code (scriptoutputhelpers.cs)
 
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ fix reload when core csharp has changed and the window manager crashes on ScriptOutput versions @done(2017-11-22 18:52)
     ✔ investigate contextual help: http://www.revitapidocs.com/2018.1/c4294178-9b46-3590-98b1-970af89e3c10.htm @done(2017-11-21 10:33)
     ✔ investigate adding panel options @done(2017-11-20 23:49)
     ✔ add helper type C# classes (one is for buttonicon speed up) @done(2017-11-20 21:13)

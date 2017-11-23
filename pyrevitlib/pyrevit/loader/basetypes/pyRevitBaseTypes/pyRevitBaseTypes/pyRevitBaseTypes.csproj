@@ -127,9 +127,6 @@
     <Compile Include="..\..\executor.cs">
       <Link>executor.cs</Link>
     </Compile>
-    <Compile Include="..\..\helpers.cs">
-      <Link>helpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
@@ -144,6 +141,9 @@
     </Compile>
     <Compile Include="..\..\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\unmanaged.cs">
+      <Link>unmanaged.cs</Link>
     </Compile>
     <Compile Include="..\..\usagelogger.cs">
       <Link>usagelogger.cs</Link>

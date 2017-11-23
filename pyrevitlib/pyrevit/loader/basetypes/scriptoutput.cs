@@ -240,7 +240,7 @@ namespace PyRevitBaseClasses
         private void Window_Loaded(object sender, System.EventArgs e)
         {
             var outputWindow = (ScriptOutput)sender;
-            ScriptOutputManager.AppendToOutputList(this);
+            ScriptOutputManager.AppendToOutputWindowList(this);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

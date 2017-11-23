@@ -1,78 +1,126 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Windows.Forms;
 
 
 namespace PyRevitBaseClasses
 {
     public static class ScriptOutputManager
     {
-        public static List<ScriptOutput> ActiveScriptOutputs
+        public static FieldInfo GetField(Object outputWindow, string fieldName)
+        {
+            return outputWindow.GetType().GetField(fieldName);
+        }
+
+        public static MethodInfo GetMethod(Object outputWindow, string methodName)
+        {
+            return outputWindow.GetType().GetMethod(methodName);
+        }
+
+        public static string GetOutputWindowId(Object outputWindow, string defaultId = "")
+        {
+            var outputIdProp = GetField(outputWindow, "OutputId");
+            if (outputIdProp != null)
+            {
+                var outputId = outputIdProp.GetValue(outputWindow);
+                if (outputId != null)
+                    return (string)outputId;
+            }
+
+            return defaultId;
+        }
+
+        public static string GetOutputWindowUniqueId(Object outputWindow, string defaultId = "")
+        {
+            var uniqueIdProp = GetField(outputWindow, "OutputUniqueId");
+            if (uniqueIdProp != null)
+            {
+                var uniqueId = uniqueIdProp.GetValue(outputWindow);
+                if (uniqueId != null)
+                    return (string)uniqueId;
+            }
+
+            return defaultId;
+        }
+
+        public static void CallCloseMethod(Object outputObj)
+        {
+            var closeMethod = GetMethod(outputObj, "Close");
+
+            if (closeMethod != null)
+            {
+                closeMethod.Invoke(outputObj, null);
+            }
+        }
+
+        public static List<Object> ActiveOutputWindows
         {
             get
             {
-                var scriptOutputList = (List<ScriptOutput>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitScriptOutputsDictKey);
-                if (scriptOutputList == null)
+                var outputWindowList = (List<Object>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitOutputWindowsDictKey);
+                if (outputWindowList == null)
                 {
-                    var newScriptOutputList = new List<ScriptOutput>();
-                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitScriptOutputsDictKey, newScriptOutputList);
-                    return newScriptOutputList;
+                    var newOutputWindowList = new List<Object>();
+                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitOutputWindowsDictKey, newOutputWindowList);
+                    return newOutputWindowList;
                 }
                 else
-                    return scriptOutputList;
+                    return outputWindowList;
             }
 
             set
             {
-                AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitScriptOutputsDictKey, value);
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitOutputWindowsDictKey, value);
             }
         }
 
-        public static List<ScriptOutput> GetAllActiveOutputWindows(String scriptOutputId = null)
+        public static List<Object> GetAllActiveOutputWindows(String outputWindowId = null)
         {
-            if (scriptOutputId != null)
+            if (outputWindowId != null)
             {
-                var newScriptOutputList = new List<ScriptOutput>();
-                foreach (ScriptOutput activeScriptOutput in ActiveScriptOutputs)
-                    if (activeScriptOutput.OutputId == scriptOutputId)
-                        newScriptOutputList.Add(activeScriptOutput);
-                return newScriptOutputList;
+                var newOutputWindowList = new List<Object>();
+                foreach (Object activeScriptOutput in ActiveOutputWindows)
+                    if (GetOutputWindowId(activeScriptOutput) == outputWindowId)
+                        newOutputWindowList.Add(activeScriptOutput);
+                return newOutputWindowList;
             }
             else
-                return ActiveScriptOutputs;
+                return ActiveOutputWindows;
         }
 
-        public static void AppendToOutputList(ScriptOutput scriptOutput)
+        public static void AppendToOutputWindowList(Object outputWindow)
         {
-            ActiveScriptOutputs.Add(scriptOutput);
+            ActiveOutputWindows.Add(outputWindow);
         }
 
-        public static void RemoveFromOutputList(ScriptOutput scriptOutput)
+        public static void RemoveFromOutputList(Object outputWindow)
         {
-            var newScriptOutputList = new List<ScriptOutput>();
-            foreach (ScriptOutput activeScriptOutput in ActiveScriptOutputs)
+            var newOutputWindowList = new List<Object>();
+            foreach (Object activeOutputWindow in ActiveOutputWindows)
             {
-                if (activeScriptOutput != scriptOutput)
-                    newScriptOutputList.Add(activeScriptOutput);
+                if (GetOutputWindowUniqueId(activeOutputWindow) != GetOutputWindowUniqueId(outputWindow))
+                    newOutputWindowList.Add(activeOutputWindow);
             }
 
-            ActiveScriptOutputs = newScriptOutputList;
+            ActiveOutputWindows = newOutputWindowList;
         }
 
-        public static void CloseActiveScriptOutputs(ScriptOutput excludeScriptOutput, String scriptOutputId = null)
+        public static void CloseActiveOutputWindows(Object excludeOutputWindow = null, string filterOutputWindowId = null)
         {
-            if (excludeScriptOutput != null)
+            if (excludeOutputWindow != null)
             {
-                foreach (ScriptOutput activeScriptOutput in GetAllActiveOutputWindows(scriptOutputId))
-                    if (excludeScriptOutput != activeScriptOutput)
-                        activeScriptOutput.Close();
+                foreach (Object activeOutputWindow in GetAllActiveOutputWindows(filterOutputWindowId))
+                    if (GetOutputWindowUniqueId(excludeOutputWindow) != GetOutputWindowUniqueId(activeOutputWindow))
+                        CallCloseMethod(activeOutputWindow);
             }
             else
             {
-                foreach (ScriptOutput activeScriptOutput in GetAllActiveOutputWindows(scriptOutputId))
-                    activeScriptOutput.Close();
-            }
+                foreach (Object activeOutputWindow in GetAllActiveOutputWindows())
+                    CallCloseMethod(activeOutputWindow);
 
-            ActiveScriptOutputs = null;
+                ActiveOutputWindows = null;
+            }
         }
     }
 }
