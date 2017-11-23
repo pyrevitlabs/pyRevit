@@ -1,28 +1,114 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Foreground="#000" Height="550" Width="650" ShowInTaskbar="False" BorderThickness="0"
-        Background="{x:Null}" WindowStartupLocation="CenterScreen" Margin="0"
-        ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center"
-        UseLayoutRounding="False" FontFamily="Courier New" AllowsTransparency="True" WindowStyle="None"
-        KeyDown="handleclick" MouseDown="handleclick">
-    <Border BorderThickness="1" CornerRadius="15" BorderBrush="#dfdfdf">
+        Title="MainWindow"
+        Foreground="#000"
+        Height="550" Width="650" Margin="0"
+        ShowInTaskbar="False"
+        BorderThickness="0"
+        Background="{x:Null}"
+        WindowStartupLocation="CenterScreen"
+        ScrollViewer.VerticalScrollBarVisibility="Disabled"
+        HorizontalContentAlignment="Center"
+        UseLayoutRounding="False"
+        FontFamily="Courier New"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        KeyDown="handleclick"
+        MouseDown="handleclick">
+    <Border BorderThickness="1"
+            CornerRadius="15"
+            BorderBrush="#dfdfdf">
         <Border.Background>
             <SolidColorBrush Color="#fff"/>
         </Border.Background>
         <Grid>
-            <Image x:Name="pyrevit_logo" HorizontalAlignment="Left" Width="100" Height="110" Margin="25,20,0,0" VerticalAlignment="Top" />
-            <TextBlock x:Name="pyrevit_title" Margin="140,30,30,0" VerticalAlignment="Top" FontSize="44" MouseDown="opengithubcommits">
-                <Run Text="pyRevit"/><Run x:Name="version_info" Text="" FontSize="20"/><Run x:Name="branch_info" Text="" FontSize="14"/>
+            <Image x:Name="pyrevit_logo"
+                   Width="100" Height="110" Margin="25,20,0,0"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top" />
+            <TextBlock x:Name="pyrevit_title"
+                       Margin="140,30,30,0"
+                       VerticalAlignment="Top"
+                       FontSize="44"
+                       MouseDown="opengithubcommits">
+                <Run Text="pyRevit"/><Run x:Name="version_info"
+                                          FontSize="20"/>
             </TextBlock>
-            <Separator VerticalAlignment="Top" Margin="30,155,30,0" Background="#dfdfdf"/>
-            <TextBlock x:Name="pyrevit_subtitle" Margin="140,85,30,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="14" Text="python module and scripts for Autodesk Revit®" LineHeight="20"/>
-            <TextBlock x:Name="credits_title" Margin="30,175,30,0" TextWrapping="Wrap" Text="pyRevit uses some fine tools made by very talented people:" VerticalAlignment="Top" FontSize="14" TextAlignment="Center"/>
-            <Image x:Name="image_credits" Width="588" Margin="30,200,30,0" VerticalAlignment="Top" MouseDown="opencredits"/>
-            <Button x:Name="button_website" Content="Open Project on Github" Margin="30,0,30,170" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opengithubrepopage" Height="30" FontSize="16"/>
-            <Button x:Name="button_revs_page" Content="Open Revision History Page" Margin="30,0,30,135" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="openrevisionhistory" Height="30" FontSize="16"/>
-            <Button x:Name="button_credits_page" Content="Credits" Margin="30,0,30,100" VerticalAlignment="Bottom" BorderBrush="{x:Null}" Click="opencredits" Height="30" FontSize="16"/>
-            <TextBlock x:Name="coded_with_love" Margin="145,0,145,55" TextWrapping="Wrap" VerticalAlignment="Bottom" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center"><Run Text="&lt;/&gt; with "/><Run FontSize="16" FontFamily="Lucida Console" Text="♥"/><Run Text=" in Portland, OR"/><LineBreak/><TextBlock Text="© 2017 Ehsan Iran-Nejad"/></TextBlock>
-            <Image x:Name="keybase_profile" Width="32" Height="32" Margin="0,0,0,18" VerticalAlignment="Bottom" MouseDown="openkeybaseprofile"/>
+            <Separator VerticalAlignment="Top"
+                       Margin="30,155,30,0"
+                       Background="#dfdfdf"/>
+            <TextBlock x:Name="pyrevit_subtitle"
+                       Margin="140,85,30,0"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Top"
+                       FontSize="14"
+                       Text="python tools for Autodesk Revit®"
+                       LineHeight="20"/>
+            <TextBlock x:Name="credits_title"
+                       Margin="30,175,30,0"
+                       TextWrapping="Wrap"
+                       Text="pyRevit uses some fine tools made by very talented people"
+                       VerticalAlignment="Top"
+                       FontSize="14"
+                       TextAlignment="Center"/>
+            <Image x:Name="image_credits"
+                   Width="588"
+                   Margin="30,200,30,0"
+                   VerticalAlignment="Top"
+                   MouseDown="opencredits"/>
+            <Grid Margin="30,450,30,70">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Credits" FontSize="14"
+                        Click="opencredits"/>
+                <Button Grid.Column="1" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Docs" FontSize="14"
+                        Click="opendocs"/>
+                <Button Grid.Column="2" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Blog" FontSize="14"
+                        Click="openblog"/>
+                <Button Grid.Column="3" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Github" FontSize="14"
+                        Click="opengithubrepopage"/>
+                <Button Grid.Column="4" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="YouTube" FontSize="14"
+                        Click="openyoutubechannel"/>
+                <Button Grid.Column="5" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Support" FontSize="14"
+                        Click="opensupportpage"/>
+                <Button Grid.Column="6" Margin="10,0,10,0"
+                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
+                        Content="Release Notes" FontSize="14"
+                        Click="openreleasenotes"/>
+            </Grid>
+            <TextBlock x:Name="coded_with_love"
+                       Margin="145,0,145,20"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Bottom"
+                       FontSize="14"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center">
+                <Run Text="&lt;/&gt; with"/>
+                <Run FontSize="17" Text="♥"/>
+                <Run Text="in ['pdx', 'hio', 'rno']"/>
+                <LineBreak/>
+                <TextBlock Text="© 2015-2017 Ehsan Iran-Nejad"
+                           MouseDown="openkeybaseprofile"/>
+            </TextBlock>
         </Grid>
     </Border>
 </Window>

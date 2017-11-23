@@ -1,9 +1,9 @@
 """Opens the documentation page."""
 from pyrevit import script
+from pyrevit.versionmgr import urls
 
 
 __context__ = 'zerodoc'
 
 
-url = 'http://pyrevit.readthedocs.io/en/latest/'
-script.open_url(url)
+script.open_url(urls.docs)

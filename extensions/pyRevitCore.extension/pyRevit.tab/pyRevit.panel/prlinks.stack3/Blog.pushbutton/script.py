@@ -1,9 +1,9 @@
 """Opens the pyRevit blog."""
 from pyrevit import script
+from pyrevit.versionmgr import urls
 
 
 __context__ = 'zerodoc'
 
 
-url = 'http://eirannejad.github.io/pyRevit/'
-script.open_url(url)
+script.open_url(urls.blog)

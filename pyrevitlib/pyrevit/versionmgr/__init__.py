@@ -37,10 +37,10 @@ class PyRevitVersion(object):
 
     def get_formatted(self):
         """Returns 'major.minor:patch' in string"""
-        return '{}.{}:{}{}'.format(PyRevitVersion.major,
+        return '{}.{}{}:{}'.format(PyRevitVersion.major,
                                    PyRevitVersion.minor,
-                                   self.patch,
-                                   PyRevitVersion.metadata)
+                                   PyRevitVersion.metadata,
+                                   self.patch)
 
 
 def get_pyrevit_repo():

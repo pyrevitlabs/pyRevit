@@ -1,6 +1,8 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Settings" Height="690" Width="700" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="pyRevit Settings"
+        Height="500" Width="700"
+        ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <Window.Resources>
             <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
@@ -72,9 +74,9 @@
         </Grid>
             <ScrollViewer>
                 <StackPanel>
-                <Expander Header="pyRevit Core Settings:" IsExpanded="False" Margin="10px">
+                <Expander Header="pyRevit Core Settings" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
-                        <GroupBox Header="General:">
+                        <GroupBox Header="General">
                             <StackPanel>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
@@ -89,7 +91,7 @@
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">If activated, pyRevit runs under IronPython 2.7.3 for compatibility with Dynamo.</TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Reporting Level:" Margin="0,10,0,0">
+                        <GroupBox Header="Reporting Level" Margin="0,10,0,0">
                             <StackPanel>
                                 <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">No Reporting (logging.WARNING and above)</RadioButton>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">No reports will be printed from the logging system.
@@ -120,7 +122,7 @@
                                 <Button Content="Reset Reporting Level to default" Click="resetreportinglevel" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Caching:" Margin="0,10,0,0">
+                        <GroupBox Header="Caching" Margin="0,10,0,0">
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit caches the extension data so it can run faster.
                                                                                                This section controls the type of caching.
@@ -136,19 +138,19 @@
                                 <Button Content="Reset Caching to default" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Revit Versions:" Margin="0,10,0,0">
+                        <GroupBox Header="Revit Versions" Margin="0,10,0,0">
                             <StackPanel>
                                 <TextBlock x:Name="revitversions_tb"
                                            TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can disable or enable pyRevit for installed
                                                                                                Revit versions from here. This effectively removes the
-                                                                                               pyRevit.addin file from %appdata%/Autodesk/Revit/Addins folders.</TextBlock>
+                                                                                               pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.</TextBlock>
                                 <CheckBox x:Name="revit2015_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
                                 <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
                                 <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
                                 <CheckBox x:Name="revit2018_cb" Margin="10,5,0,10" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Runtime Checks:" Margin="0,10,0,0">
+                        <GroupBox Header="Runtime Checks" Margin="0,10,0,0">
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the required host build number.
                                                                                                pyRevit will show a warning if it's being run
@@ -171,12 +173,22 @@
                                 </DockPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Development:" Margin="0,10,0,0">
+                        <GroupBox Header="Runtime Compiler" Margin="0,10,0,0">
+                            <StackPanel Margin="10px">
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
+                                                                                              to machine code. These settings affect compiler behaviour.</TextBlock>
+                                <StackPanel>
+                                    <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
+                                    <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands (Not Yet Implemented)</CheckBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Development" Margin="0,10,0,0">
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameter in scripts (__beta__ = True), Reload is required)</TextBlock>
+                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
                                 </WrapPanel>
                                 <WrapPanel Margin="10,5,0,5">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
@@ -194,18 +206,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Runtime Compiler:" IsExpanded="False" Margin="10px">
-                    <StackPanel Margin="10px">
-                        <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
-                                                                                      to machine code. These settings affect compiler behaviour.</TextBlock>
-                        <StackPanel>
-                            <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
-                            <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands (Not Yet Implemented)</CheckBox>
-                        </StackPanel>
-                    </StackPanel>
-                </Expander>
-                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Environment Variables:" IsExpanded="False" Margin="10px">
+                <Expander Header="Environment Variables" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Environment Variables are set in current Application Domain (AppDomain) and
                                                                                       are available to scripts. They're used as global flags for setting
@@ -239,7 +240,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Usage Logging:" IsExpanded="False" Margin="10px">
+                <Expander Header="Usage Logging" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Usage logging system, records each use of tools under any of the pyRevit extensions.
                                                                                       You can activate usage logging to a local or network folder, or logging to an outside
@@ -279,7 +280,7 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Custom user extension folders:" IsExpanded="True" Margin="10px">
+                <Expander Header="Custom Extension Directories" IsExpanded="True" Margin="10px">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">pyRevit can search in custom folders for extensions.
                                                                                       You can setup your custom extensions in any directory and add the directory address here.
@@ -298,12 +299,12 @@
                         </DockPanel>
                     </StackPanel>
                 </Expander>
-                <GroupBox Header="Import / Export Settings:" Margin="10px">
+                <!-- <GroupBox Header="Import / Export Settings:" Margin="10px">
                     <StackPanel>
                         <Button Content="Import Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
                         <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
                     </StackPanel>
-                </GroupBox>
+                </GroupBox> -->
             </StackPanel>
             </ScrollViewer>
         </DockPanel>

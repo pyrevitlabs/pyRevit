@@ -3,6 +3,7 @@ import sys
 
 from pyrevit import coreutils
 from pyrevit import versionmgr
+from pyrevit.versionmgr import urls
 from pyrevit import forms
 from pyrevit import script
 
@@ -18,45 +19,55 @@ class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        self.set_image_source('image_credits', 'credits.png')
-        self.set_image_source('keybase_profile', 'keybase.png')
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
+        # self.set_image_source('image_credits', 'credits.png')
+        # self.set_image_source('pyrevit_logo', 'pyRevitrocketlogo.png')
+        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
                                       .format(sys.version_info.major,
                                               sys.version_info.minor,
                                               sys.version_info.micro)
 
-        if __cachedengine__:
-            self.set_image_source('pyrevit_logo', 'pyRevitrocketlogo.png')
-            self.pyrevit_subtitle.Text += '\nRocket mode enabled.'
-        else:
-            self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
-
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
             pyrvt_ver = versionmgr.get_pyrevit_version()
-            self.version_info.Text = ' v{}' \
-                                     .format(pyrvt_ver.get_formatted())
-            if pyrvt_repo.branch != 'master' \
-                    and not pyrvt_repo.branch.startswith('release/'):
-                self.branch_info.Text = ' ({})'.format(pyrvt_repo.branch)
+            nice_version = ' v{}'.format(pyrvt_ver.get_formatted())
+            branch_info = '{} branch'.format(pyrvt_repo.branch)
         except Exception:
-            self.version_info.Text = ''
+            nice_version = ''
+            branch_info = ''
 
-    def opengithubrepopage(self, sender, args):
-        script.open_url('https://github.com/eirannejad/pyRevit')
+        rocketmodetext = 'Rocket-mode {}'.format('enabled' if __cachedengine__
+                                                 else 'disabled')
 
-    def opengithubcommits(self, sender, args):
-        script.open_url(
-            'https://github.com/eirannejad/pyRevit/commits/master')
-
-    def openrevisionhistory(self, sender, args):
-        script.open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
+        self.version_info.Text = nice_version
+        self.pyrevit_subtitle.Text += '\n{} | {}'.format(rocketmodetext,
+                                                         branch_info)
 
     def opencredits(self, sender, args):
-        script.open_url('http://eirannejad.github.io/pyRevit/credits/')
+        script.open_url(urls.credits)
+
+    def opendocs(self, sender, args):
+        script.open_url(urls.docs)
+
+    def openblog(self, sender, args):
+        script.open_url(urls.blog)
+
+    def opengithubrepopage(self, sender, args):
+        script.open_url(urls.github)
+
+    def openyoutubechannel(self, sender, args):
+        script.open_url(urls.youtube)
+
+    def opensupportpage(self, sender, args):
+        script.open_url(urls.patron)
+
+    def opengithubcommits(self, sender, args):
+        script.open_url(urls.githubmastercommits)
+
+    def openreleasenotes(self, sender, args):
+        script.open_url(urls.releasenotes)
 
     def openkeybaseprofile(self, sender, args):
-        script.open_url('https://keybase.io/ein')
+        script.open_url(urls.profile_ein)
 
     def handleclick(self, sender, args):
         self.Close()
