@@ -1,4 +1,6 @@
 4.5rc:
+☐ add default css styling for links a:visited
+☐ add open view or owner view to the clickable id handler
 ☐ upgrade about window looks
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
