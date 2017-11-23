@@ -438,6 +438,13 @@ class TemplatePromptBar(WPFWindow):
         self.Left = window_rect.Left * scale_factor
         self.Width = (window_rect.Right - window_rect.Left) * scale_factor
         self.Height = height
+
+        # in maximized window, the top will be off the screen (- value)
+        # lets cut the height and re-adjust the top
+        if self.Top < 0:
+            self.Height -= abs(self.Top)
+            self.Top = 0
+
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
@@ -483,6 +490,53 @@ class ProgressBar(TemplatePromptBar):
                 ResizeMode="NoResize"
                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Window.Resources>
+            <Style TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Background" Value="#ffffff"/>
+                    <Setter Property="BorderBrush" Value="#cccccc"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Foreground" Value="#23303d"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="Padding" Value="8,2,8,2"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Border Name="Chrome"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="3"
+                                        SnapsToDevicePixels="true">
+                                    <ContentPresenter Name="Presenter"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      RecognizesAccessKey="True"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsEnabled" Value="false">
+                                        <Setter Property="Foreground" Value="#23303d" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#dddddd" />
+                                        <Setter Property="BorderBrush" Value="#cccccc" />
+                                        <Setter Property="Foreground" Value="#23303d" />
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#f39c12" />
+                                        <Setter Property="BorderBrush" Value="#f39c12"/>
+                                        <Setter Property="Foreground" Value="#ffffff"/>
+                                    </Trigger>
+                                    <Trigger Property="IsFocused" Value="true">
+                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="#1ba1e2" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+            </Style>
             <Style x:Key="{x:Type ProgressBar}" TargetType="{x:Type ProgressBar}">
                 <Setter Property="Template">
                     <Setter.Value>
@@ -528,17 +582,29 @@ class ProgressBar(TemplatePromptBar):
                        TextWrapping="Wrap" Text="TextBlock"
                        TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+            <Button HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Content="x"
+                    Margin="12,0,0,0"
+                    Padding="0,-4,0,0"
+                    Click="clicked_cancel"
+                    Width="18px"
+                    Height="18px" />
         </Grid>
     </Window>
     """
 
     def _setup(self, **kwargs):
+        self.cancelled = False
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
 
     def _update_pbar(self):
         self.pbar.Maximum = self.max_value
         self.pbar.Value = self.new_value
         self.pbar_text.Text = '{} / {}'.format(self.new_value, self.max_value)
+
+    def clicked_cancel(self, sender, args):
+        self.cancelled = True
 
     def update_progress(self, new_value, max_value):
         self.max_value = max_value
