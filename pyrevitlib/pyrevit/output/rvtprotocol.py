@@ -11,10 +11,10 @@ logger = get_logger(__name__)
 PROTOCOL_NAME = 'revit://select?'
 
 DEFAULT_LINK = '<a title="Click to select or show element" ' \
-               'style="background-color: #f5f7f2; ' \
+               'style="background-color: #2c3e50; ' \
                'font-size:8pt; ' \
-               'color: #649417; ' \
-               'border: 1px solid #649417; ' \
+               'color: #ffffff; ' \
+               'border: 1px solid #2c3e50; ' \
                'border-radius:3px; ' \
                'vertical-align:middle; '\
                'margin:-4,0,-4,0; ' \
