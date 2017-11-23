@@ -1,6 +1,5 @@
 4.5rc:
 ☐ add css styling option to Options
-☐ add open view or owner view to the clickable id handler
 ☐ upgrade about window looks
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
@@ -18,6 +17,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ add open view or owner view to the clickable id handler @done(2017-11-23 14:21)
     ✔ add default css styling for links a:visited @done(2017-11-23 13:14)
     ✔ add select element to csharp code to avoid linking window to python code (scriptoutputhelpers.cs) @done(2017-11-22 20:55)
     ✘ add outside click to option selector window and about @cancelled(2017-11-22 19:56)
