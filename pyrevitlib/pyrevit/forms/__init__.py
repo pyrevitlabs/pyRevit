@@ -319,6 +319,56 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             SizeToContent="Height"
             PreviewKeyDown="handle_esc_key"
             MouseUp="handle_click">
+        <Window.Resources>
+            <Style TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Background" Value="#ffffff"/>
+                    <Setter Property="BorderBrush" Value="#cccccc"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Foreground" Value="#23303d"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="Padding" Value="8,2,8,2"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Border Name="Chrome"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="3"
+                                        Margin="0,0,5,5"
+                                        SnapsToDevicePixels="true">
+                                    <ContentPresenter Name="Presenter"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      RecognizesAccessKey="True"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsEnabled" Value="false">
+                                        <Setter Property="Foreground" Value="#23303d" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#dddddd" />
+                                        <Setter Property="BorderBrush" Value="#cccccc" />
+                                        <Setter Property="Foreground" Value="#23303d" />
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#f39c12" />
+                                        <Setter Property="BorderBrush" Value="#f39c12"/>
+                                        <Setter Property="Foreground" Value="#ffffff"/>
+                                    </Trigger>
+                                    <Trigger Property="IsFocused" Value="true">
+                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="#1ba1e2" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+            </Style>
+        </Window.Resources>
         <Border CornerRadius="15"
                 Background="#f323303d">
             <StackPanel x:Name="stack_panel" Margin="5">
@@ -343,11 +393,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         for switch in self._context:
             my_button = framework.Controls.Button()
-            my_button.BorderBrush = Media.Brushes.Black
-            my_button.BorderThickness = framework.Windows.Thickness(0)
             my_button.Content = switch
-            my_button.Margin = framework.Windows.Thickness(5, 0, 5, 5)
-            my_button.Padding = framework.Windows.Thickness(5, 0, 5, 0)
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
