@@ -17,6 +17,9 @@ from pyrevit.userconfig import user_config
 mlogger = logger.get_logger(__name__)
 
 
+DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+
+
 def set_stylesheet(stylesheet):
     envvars.set_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet,
                                 stylesheet)
@@ -26,13 +29,19 @@ def get_stylesheet():
     return envvars.get_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet)
 
 
-# setup output window stylesheet
-DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
-default_stylesheet = op.join(op.dirname(__file__), DEFAULT_STYLESHEET_NAME)
+def get_default_stylesheet():
+    return op.join(op.dirname(__file__), DEFAULT_STYLESHEET_NAME)
 
+
+def reset_stylesheet():
+    envvars.set_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet,
+                                get_default_stylesheet())
+
+
+# setup output window stylesheet
 active_stylesheet = \
     user_config.core.get_option('outputstylesheet',
-                                default_value=default_stylesheet)
+                                default_value=get_default_stylesheet())
 
 set_stylesheet(active_stylesheet)
 

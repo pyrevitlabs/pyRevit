@@ -36,3 +36,5 @@ int main()
 }
 """
 )
+
+output.update_progress(50, 100)

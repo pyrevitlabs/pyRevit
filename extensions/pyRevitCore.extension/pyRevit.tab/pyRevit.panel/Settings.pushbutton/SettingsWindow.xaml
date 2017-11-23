@@ -1,7 +1,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="pyRevit Settings"
-        Height="500" Width="700"
+        Height="600" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <Window.Resources>
@@ -278,6 +278,23 @@
                             </DockPanel>
                         </StackPanel>
                     </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Output Window Settings" IsExpanded="True" Margin="10px">
+                    <DockPanel Margin="10,10,10,0">
+                        <TextBlock DockPanel.Dock="Left">Current CSS Style Sheet:</TextBlock>
+                        <WrapPanel DockPanel.Dock="Right">
+                            <Button Content="..."
+                                    Width="40" Margin="6,0,3,0"
+                                    Click="pick_stylesheet"
+                                    ToolTip="Pick a CSS style sheet to override the default."/>
+                            <Button Content="Reset"
+                                    Width="40" Margin="3,0,0,0"
+                                    Click="reset_stylesheet"
+                                    ToolTip="Reset CSS style sheet back to default"/>
+                        </WrapPanel>
+                        <TextBox x:Name="cur_stylesheet_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                    </DockPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
                 <Expander Header="Custom Extension Directories" IsExpanded="True" Margin="10px">

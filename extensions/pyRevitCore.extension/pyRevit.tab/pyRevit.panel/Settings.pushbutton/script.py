@@ -6,6 +6,7 @@ from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
 from pyrevit import forms
+from pyrevit import output
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 from pyrevit.loader.addin import addinfiles
@@ -50,6 +51,7 @@ class SettingsWindow(forms.WPFWindow):
                                    '2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb}
 
+        self._setup_outputsettings()
         self._setup_usagelogging()
         self._setup_addinfiles()
 
@@ -120,6 +122,10 @@ class SettingsWindow(forms.WPFWindow):
                          for k, v in envvars.get_pyrevit_env_vars().items()]
 
         self.envvars_lb.ItemsSource = env_vars_list
+
+    def _setup_outputsettings(self):
+        # output settings
+        self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
     def _setup_usagelogging(self):
         """Reads the pyRevit usage logging config and updates the ui
@@ -262,6 +268,19 @@ class SettingsWindow(forms.WPFWindow):
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
+    def pick_stylesheet(self, sender, args):
+        """Callback method for picking custom style sheet file
+        """
+        new_stylesheet = forms.pick_file(file_ext='css')
+
+        if new_stylesheet:
+            self.cur_stylesheet_tb.Text = os.path.normpath(new_stylesheet)
+
+    def reset_stylesheet(self, sender, args):
+        """Callback method for resetting custom style sheet file
+        """
+        self.cur_stylesheet_tb.Text = output.get_default_stylesheet()
+
     def savesettings(self, sender, args):
         """Callback method for saving pyRevit settings
         """
@@ -304,6 +323,13 @@ class SettingsWindow(forms.WPFWindow):
         user_config.usagelogging.active = self.usagelogging_cb.IsChecked
         user_config.usagelogging.logfilepath = self.usagelogfile_tb.Text
         user_config.usagelogging.logserverurl = self.usagelogserver_tb.Text
+
+        # output settings
+        output.set_stylesheet(self.cur_stylesheet_tb.Text)
+        if self.cur_stylesheet_tb.Text != output.get_default_stylesheet():
+            user_config.core.outputstylesheet = self.cur_stylesheet_tb.Text
+        else:
+            user_config.core.remove_option('outputstylesheet')
 
         # save all new values into config file
         user_config.save_changes()
