@@ -18,7 +18,8 @@ namespace PyRevitBaseClasses
                                        "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=9\" />" +
                                        "</head>";
 
-        public static string htmlstyle = "font-size:9pt;" +
+        public static string htmlstyle = "color: #233749;" +
+                                         "font-size:9pt;" +
                                          "font-family:Verdana;" +
                                          "margin:0px 0px 15px 0px;" +
                                          "padding:0px;height:100%;" +
@@ -52,13 +53,13 @@ namespace PyRevitBaseClasses
                                            "height:8px;" +
                                            "font-size:1pt;" +
                                            "border:0px;" +
-                                           "background:#EEE;" +
+                                           "background:#2c3e50;" +
                                            "\"></div>";
 
         public static string progressbargraphstyle = "font-size:1pt;" +
                                                      "width:{0}%;" +
                                                      "height:8px;" +
-                                                     "background:#b5d54b;" +
+                                                     "background:#f39c12;" +
                                                      "border:0px;";
 
         public static string progressbargraphid = "graph";
