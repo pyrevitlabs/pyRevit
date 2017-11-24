@@ -19,6 +19,8 @@ lib/*
 .idea/workspace.xml
 
 # ignore visual studio files
+.vs\*
+obj\*
 pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
 pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
 pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/obj/
