@@ -351,9 +351,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                         <Setter Property="Foreground" Value="#23303d" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#dddddd" />
-                                        <Setter Property="BorderBrush" Value="#cccccc" />
-                                        <Setter Property="Foreground" Value="#23303d" />
+                                        <Setter Property="Background" Value="#f39c12" />
+                                        <Setter Property="BorderBrush" Value="#f39c12" />
+                                        <Setter Property="Foreground" Value="White" />
                                     </Trigger>
                                     <Trigger Property="IsPressed" Value="True">
                                         <Setter Property="Background" Value="#f39c12" />
