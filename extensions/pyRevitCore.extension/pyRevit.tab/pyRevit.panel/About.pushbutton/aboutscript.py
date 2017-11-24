@@ -19,8 +19,7 @@ class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        # self.set_image_source('image_credits', 'credits.png')
-        # self.set_image_source('pyrevit_logo', 'pyRevitrocketlogo.png')
+        # self.set_image_source('image_credits', 'creditsnew.png')
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
                                       .format(sys.version_info.major,
                                               sys.version_info.minor,
@@ -35,7 +34,7 @@ class AboutWindow(forms.WPFWindow):
             nice_version = ''
             branch_info = ''
 
-        rocketmodetext = 'Rocket-mode {}'.format('enabled' if __cachedengine__
+        rocketmodetext = 'Rocket-mode {}'.format(u'enabled \U0001F680' if __cachedengine__
                                                  else 'disabled')
 
         self.version_info.Text = nice_version
