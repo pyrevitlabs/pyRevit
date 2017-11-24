@@ -1,7 +1,7 @@
 body {
     color: #233749;
-    font-family: Verdana;
-    font-size: 9pt;
+    font-family: Consolas;
+    font-size: 10pt;
     height: 100%;
     margin: 0 0 15px 0;
     padding: 0;
@@ -18,10 +18,12 @@ body {
     margin-top: 3px;
     padding-left: 6px;
     padding-right: 6px;
+    word-wrap: break-word;
 }
 
 .errorentry {
     background: #f9f2f4;
+    border-radius: 0 0 5px 5px;
     border-top: 5px solid #c7254e;
     color: #c7254e;
     margin-top:10px;
@@ -29,9 +31,9 @@ body {
 }
 
 .logdefault {
+    border-radius: 5px;
     margin: 10px 0 10px 0;
     padding: 10px;
-    border-radius:5px;
 }
 
 .logerror {
