@@ -1,11 +1,10 @@
 """Display the total area of different area types in a graph."""
 
-from pyrevit.revit import DB
+from pyrevit import revit, DB
 from pyrevit import script
-from revitutils import selection
 
 
-doc = __activedoc__
+doc = revit.doc
 output = script.get_output()
 
 areas = DB.FilteredElementCollector(doc) \
