@@ -7,100 +7,19 @@ from pyrevit import script
 logger = script.get_logger()
 
 
-class ConsolePrompt(forms.TemplateUserInputWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                ShowInTaskbar="False" ResizeMode="NoResize"
-                WindowStartupLocation="CenterScreen"
-                HorizontalContentAlignment="Center"
-                WindowStyle="None"
-                AllowsTransparency="True"
-                Background="#00FFFFFF"
-                SizeToContent="WidthAndHeight"
-                PreviewKeyDown="handle_kb_key">
-        <Window.Resources>
-            <Canvas x:Key="SearchIcon">
-                <Path Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
-                      Fill="White"/>
-                <Canvas.LayoutTransform>
-                    <ScaleTransform ScaleX="1.8" ScaleY="1.8"/>
-                </Canvas.LayoutTransform>
-            </Canvas>
-            <Canvas x:Key="TabIcon">
-                <Path Data="M20,18H22V6H20M11.59,7.41L15.17,11H1V13H15.17L11.59,16.58L13,18L19,12L13,6L11.59,7.41Z"
-                      Fill="LightGray" />
-                <Canvas.LayoutTransform>
-                    <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
-                </Canvas.LayoutTransform>
-            </Canvas>
-            <Style TargetType="{x:Type TextBox}">
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="OverridesDefaultStyle" Value="True"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="AllowDrop" Value="False"/>
-                <Setter Property="FontSize" Value="26"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="CaretBrush" Value="#00000000"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="{x:Type TextBoxBase}">
-                            <Border Name="Border"
-                                    Padding="2"
-                                    Background="{x:Null}"
-                                    BorderBrush="{x:Null}"
-                                    BorderThickness="0" >
-                                <ScrollViewer Margin="0" x:Name="PART_ContentHost"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Border" Property="Background" Value="{x:Null}"/>
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{x:Null}"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </Window.Resources>
-        <Border CornerRadius="15" Height="64" Background="#f323303d">
-            <DockPanel Margin="10,10,10,10">
-                <ContentControl DockPanel.Dock="Left"
-                                Height="44" Width="44"
-                                Content="{StaticResource SearchIcon}"
-                                KeyboardNavigation.IsTabStop="False"/>
-                <ContentControl x:Name="tab_icon"
-                                DockPanel.Dock="Right"
-                                Visibility="Collapsed"
-                                Margin="5,0,5,0"
-                                Height="36" Width="36"
-                                Content="{StaticResource TabIcon}"
-                                KeyboardNavigation.IsTabStop="False"/>
-                <Grid>
-                    <TextBox x:Name="directmatch_tb"
-                             IsEnabled="False"
-                             Foreground="LightGray"
-                             Margin="10,0,0,0"
-                             KeyboardNavigation.IsTabStop="False"/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBox x:Name="search_tb"
-                                 Margin="10,0,0,0"
-                                 TextChanged="search_txt_changed"/>
-                        <TextBox x:Name="wordsmatch_tb"
-                                 IsEnabled="False"
-                                 Foreground="LightGray"
-                                 KeyboardNavigation.IsTabStop="False"/>
-                    </StackPanel>
-                </Grid>
-            </DockPanel>
-        </Border>
-    </Window>
-    """
-
-    def _setup(self, **kwargs):
-        self.search_tb.Focus()
+class SearchPrompt(forms.WPFWindow):
+    def __init__(self, context, width, height, **kwargs):
+        forms.WPFWindow.__init__(self, 'SearchPrompt.xaml')
+        self.Width = width
         self.MinWidth = self.Width
-        self._context = sorted(self._context)
+        self.Height = height
+
+        self._context = sorted(context)
+        self.response = None
+
+        self.search_tb.Focus()
+        self.hide_element(self.tab_icon)
+        self.search_tb.Text = ''
         self.set_search_results()
 
     def update_results_display(self):
@@ -186,10 +105,19 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
             self.Close()
-        elif args.Key == framework.Windows.Input.Key.Tab:
+        elif args.Key == framework.Windows.Input.Key.Tab \
+                or args.Key == framework.Windows.Input.Key.Down:
             self._result_index += 1
             self.update_results_display()
+        elif args.Key == framework.Windows.Input.Key.Up:
+            self._result_index -= 1
+            self.update_results_display()
 
+    @classmethod
+    def show_prompt(cls, context, width=300, height=400, **kwargs):
+        dlg = cls(context, width, height, **kwargs)
+        dlg.ShowDialog()
+        return dlg.response
 
 pyrevit_cmds = {}
 
@@ -202,8 +130,8 @@ for cmd in sessionmgr.find_all_available_commands():
         pyrevit_cmds[cmd_inst.baked_cmdName] = cmd
 
 
-selected_cmd_name = ConsolePrompt.show(pyrevit_cmds.keys(),
-                                       width=600, height=100)
+selected_cmd_name = SearchPrompt.show_prompt(pyrevit_cmds.keys(),
+                                             width=600, height=100)
 
 if selected_cmd_name:
     selected_cmd = pyrevit_cmds[selected_cmd_name]
