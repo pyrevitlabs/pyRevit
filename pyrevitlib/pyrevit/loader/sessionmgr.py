@@ -30,7 +30,7 @@ from pyrevit.loader import sessioninfo
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
-from pyrevit import DB, UI
+from pyrevit import DB, UI, revit
 from pyrevit.framework import FormatterServices
 
 
@@ -72,7 +72,9 @@ def _cleanup_output():
     stdout_hndlr.stream = None
 
 
+# -----------------------------------------------------------------------------
 # Functions related to creating/loading a new pyRevit session
+# -----------------------------------------------------------------------------
 def _perform_onsessionload_ops():
     # clear the cached engines
     if not _clear_running_engines():
@@ -204,7 +206,10 @@ def load_session():
     _cleanup_output()
 
 
-# Functions related to finding/executing a command or script in current session
+# -----------------------------------------------------------------------------
+# Functions related to finding/executing
+# pyrevit command or script in current session
+# -----------------------------------------------------------------------------
 def execute_script(script_path):
     """Executes a script using pyRevit script executor.
 
@@ -239,17 +244,40 @@ def execute_script(script_path):
     return results_dict
 
 
-def find_all_available_commands():
+def find_all_commands(category_set=None):
     pyrvt_cmds = []
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
-            for pyrvt_type in loaded_assm[0].GetTypes():
+            all_exported_types = loaded_assm[0].GetTypes()
+            all_exported_type_names = [x.Name for x in all_exported_types]
+
+            cmd_only_types = []
+            for pyrvt_type in all_exported_types:
                 if not pyrvt_type.FullName.endswith(COMMAND_AVAILABILITY_NAME_POSTFIX) \
                         and LOADER_BASE_NAMESPACE not in pyrvt_type.FullName:
-                    pyrvt_cmds.append(pyrvt_type)
+                    cmd_only_types.append(pyrvt_type)
+
+            if category_set:
+                for pyrvt_type in cmd_only_types:
+                    avail_class_name = pyrvt_type.Name \
+                                       + COMMAND_AVAILABILITY_NAME_POSTFIX
+                    if avail_class_name in all_exported_type_names:
+                        for exported_type in all_exported_types:
+                            if exported_type.Name == avail_class_name:
+                                et = exported_type()
+                                if et.IsCommandAvailable(HOST_APP.uiapp,
+                                                         category_set):
+                                    pyrvt_cmds.append(pyrvt_type)
+                    else:
+                        pyrvt_cmds.append(pyrvt_type)
 
     return pyrvt_cmds
+
+
+def find_all_available_commands():
+    cset = revit.get_selection_category_set()
+    return find_all_commands(category_set=cset)
 
 
 def find_loaded_command(command_unique_name):

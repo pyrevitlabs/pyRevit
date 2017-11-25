@@ -37,6 +37,7 @@ class RevitWrapper(types.ModuleType):
         self.pick_linkeds = selection.pick_linkeds
         self.pick_point = selection.pick_point
         self.pick_rectangle = selection.pick_rectangle
+        self.get_selection_category_set = selection.get_selection_category_set
         self.get_selection = selection.get_selection
 
         self.Transaction = transaction.Transaction

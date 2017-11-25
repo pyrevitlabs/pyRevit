@@ -1,6 +1,10 @@
 from pyrevit.loader import sessionmgr
 from pyrevit import forms
 from pyrevit import framework
+from pyrevit import script
+
+
+logger = script.get_logger()
 
 
 class ConsolePrompt(forms.TemplateUserInputWindow):
@@ -13,14 +17,21 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
                 WindowStyle="None"
                 AllowsTransparency="True"
                 Background="#00FFFFFF"
-                SizeToContent="Height"
-                PreviewKeyDown="handle_esc_key">
+                SizeToContent="WidthAndHeight"
+                PreviewKeyDown="handle_kb_key">
         <Window.Resources>
             <Canvas x:Key="SearchIcon">
                 <Path Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
                       Fill="White"/>
                 <Canvas.LayoutTransform>
                     <ScaleTransform ScaleX="1.8" ScaleY="1.8"/>
+                </Canvas.LayoutTransform>
+            </Canvas>
+            <Canvas x:Key="TabIcon">
+                <Path Data="M20,18H22V6H20M11.59,7.41L15.17,11H1V13H15.17L11.59,16.58L13,18L19,12L13,6L11.59,7.41Z"
+                      Fill="LightGray" />
+                <Canvas.LayoutTransform>
+                    <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
                 </Canvas.LayoutTransform>
             </Canvas>
             <Style TargetType="{x:Type TextBox}">
@@ -30,6 +41,7 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
                 <Setter Property="AllowDrop" Value="False"/>
                 <Setter Property="FontSize" Value="26"/>
                 <Setter Property="Foreground" Value="White"/>
+                <Setter Property="CaretBrush" Value="#00000000"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type TextBoxBase}">
@@ -55,23 +67,30 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
             <DockPanel Margin="10,10,10,10">
                 <ContentControl DockPanel.Dock="Left"
                                 Height="44" Width="44"
-                                Content="{StaticResource SearchIcon}">
-                </ContentControl>
+                                Content="{StaticResource SearchIcon}"
+                                KeyboardNavigation.IsTabStop="False"/>
+                <ContentControl x:Name="tab_icon"
+                                DockPanel.Dock="Right"
+                                Visibility="Collapsed"
+                                Margin="5,0,5,0"
+                                Height="36" Width="36"
+                                Content="{StaticResource TabIcon}"
+                                KeyboardNavigation.IsTabStop="False"/>
                 <Grid>
-                    <TextBox x:Name="search_results_tb"
+                    <TextBox x:Name="directmatch_tb"
                              IsEnabled="False"
                              Foreground="LightGray"
-                             Text="pyRevit Search"
-                             Margin="10,0,0,0"/>
-                    <WrapPanel>
+                             Margin="10,0,0,0"
+                             KeyboardNavigation.IsTabStop="False"/>
+                    <StackPanel Orientation="Horizontal">
                         <TextBox x:Name="search_tb"
                                  Margin="10,0,0,0"
                                  TextChanged="search_txt_changed"/>
                         <TextBox x:Name="wordsmatch_tb"
-                                 Margin="10,0,0,0"
                                  IsEnabled="False"
-                                 Foreground="LightGray"/>
-                    </WrapPanel>
+                                 Foreground="LightGray"
+                                 KeyboardNavigation.IsTabStop="False"/>
+                    </StackPanel>
                 </Grid>
             </DockPanel>
         </Border>
@@ -80,41 +99,103 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
 
     def _setup(self, **kwargs):
         self.search_tb.Focus()
-        pass
+        self.MinWidth = self.Width
+        self._context = sorted(self._context)
+        self.set_search_results()
 
-    def search_txt_changed(self, sender, args):
-        if self.search_results_tb.Text \
-                or self.wordsmatch_tb.Text:
-            self.search_results_tb.Text = ''
-            self.wordsmatch_tb.Text = ''
+    def update_results_display(self):
+        self.directmatch_tb.Text = ''
+        self.wordsmatch_tb.Text = ''
+
+        results = sorted(set(self._search_results))
+        res_cout = len(results)
+
+        logger.debug(res_cout)
+        logger.debug(results)
+
+        if res_cout > 1:
+            self.show_element(self.tab_icon)
+        else:
+            self.hide_element(self.tab_icon)
+
+        if self._result_index >= res_cout:
+            self._result_index = 0
 
         cur_txt = self.search_tb.Text.lower()
-        cur_words = cur_txt.split(' ')
+
+        if not cur_txt:
+            self.directmatch_tb.Text = 'pyRevit Search'
+            return
+
+        if results:
+            cur_res = results[self._result_index]
+            logger.debug(cur_res)
+            if cur_res.lower().startswith(cur_txt):
+                logger.debug('directmatch_tb.Text', cur_res)
+                self.directmatch_tb.Text = \
+                    self.search_tb.Text + cur_res[len(cur_txt):]
+            else:
+                logger.debug('wordsmatch_tb.Text', cur_res)
+                self.wordsmatch_tb.Text = '- {}'.format(cur_res)
+
+            self.response = cur_res
+            return True
+
+        self.response = None
+        return False
+
+    def set_search_results(self, *args):
+        self._result_index = 0
+        self._search_results = []
+
+        for resultset in args:
+            self._search_results.extend(resultset)
+
+        self.update_results_display()
+
+    def find_direct_match(self):
+        results = []
+        cur_txt = self.search_tb.Text.lower()
         if cur_txt:
             for cmd_name in self._context:
                 if cmd_name.lower().startswith(cur_txt):
-                    self.response = cmd_name
-                    self.search_results_tb.Text = \
-                        self.search_tb.Text + cmd_name[len(cur_txt):]
-                    break
-                elif all([x in cmd_name.lower() for x in cur_words]):
-                    self.response = cmd_name
-                    self.wordsmatch_tb.Text = '- {}'.format(cmd_name)
-                    break
-        else:
-            self.search_results_tb.Text = ''
+                    results.append(cmd_name)
 
-    def handle_esc_key(self, sender, args):
+        return results
+
+    def find_word_match(self):
+        results = []
+        cur_txt = self.search_tb.Text.lower()
+        if cur_txt:
+            cur_words = cur_txt.split(' ')
+            for cmd_name in self._context:
+                if all([x in cmd_name.lower() for x in cur_words]):
+                    results.append(cmd_name)
+
+        return results
+
+    def search_txt_changed(self, sender, args):
+        dmresults = self.find_direct_match()
+        wordresults = self.find_word_match()
+        logger.debug(len(dmresults), len(wordresults))
+        self.set_search_results(dmresults, wordresults)
+
+    def handle_kb_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
             self.response = None
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
             self.Close()
+        elif args.Key == framework.Windows.Input.Key.Tab:
+            self._result_index += 1
+            self.update_results_display()
 
 
 pyrevit_cmds = {}
 
 
+# find all available commands (for current selection)
+# in currently active document
 for cmd in sessionmgr.find_all_available_commands():
     cmd_inst = cmd()
     if hasattr(cmd_inst, 'baked_cmdName'):
