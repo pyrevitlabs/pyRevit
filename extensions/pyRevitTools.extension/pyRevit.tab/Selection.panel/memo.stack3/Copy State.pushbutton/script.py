@@ -253,9 +253,9 @@ elif selected_switch == 'Viewport Placement on Sheet':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    selected_ids = revit.uidoc.Selection.GetElementIds()
+    selected_ids = revit.get_selection().element_ids
 
-    if selected_ids.Count == 1:
+    if len(selected_ids) == 1:
         vport_id = selected_ids[0]
         try:
             vport = revit.doc.GetElement(vport_id)

@@ -91,53 +91,39 @@ def get_source_style(element_id):
 
 
 def pick_and_match_dim_overrides(src_dim_id):
-    src_dim = revit.doc.GetElement(src_dim_id)
-    while True:
-        try:
-            dest_dim = revit.doc.GetElement(
-                revit.uidoc.Selection.PickObject(
-                    UI.Selection.ObjectType.Element
-                    )
-                )
+    with forms.WarningBar(title='Pick dimensions to match overrides:'):
+        src_dim = revit.doc.GetElement(src_dim_id)
+        while True:
+            dest_dim = revit.pick_element()
+
+            if not dest_dim:
+                break
 
             if isinstance(dest_dim, DB.Dimension):
                 with revit.Transaction('Match Dimension Overrides'):
                     setup_dim_overrides_per_config(src_dim, dest_dim)
-        except Exception:
-            break
 
 
 def pick_and_match_styles(src_style):
-    while True:
-        try:
-            dest_element = revit.doc.GetElement(
-                revit.uidoc.Selection.PickObject(
-                    UI.Selection.ObjectType.Element
-                    )
-                )
+    with forms.WarningBar(title='Pick objects to match overrides:'):
+        while True:
+            dest_element = revit.pick_element()
+
+            if not dest_element:
+                break
 
             with revit.Transaction('Match Graphics Overrides'):
                 revit.activeview.SetElementOverrides(dest_element.Id,
                                                      src_style)
-        except Exception:
-            break
 
 
 # fixme: modify to remember source style
-try:
-    with forms.WarningBar(title='Pick source object:'):
-        source_element = revit.doc.GetElement(
-            revit.uidoc.Selection.PickObject(
-                UI.Selection.ObjectType.Element
-                )
-            )
+with forms.WarningBar(title='Pick source object:'):
+    source_element = revit.pick_element()
 
+if source_element:
     if isinstance(source_element, DB.Dimension):
-        with forms.WarningBar(title='Pick dimensions to match overrides:'):
-            pick_and_match_dim_overrides(source_element.Id)
+        pick_and_match_dim_overrides(source_element.Id)
     else:
         source_style = get_source_style(source_element.Id)
-        with forms.WarningBar(title='Pick objects to match overrides:'):
-            pick_and_match_styles(source_style)
-except Exception:
-    pass
+        pick_and_match_styles(source_style)

@@ -16,4 +16,5 @@ selSet = []
 for el in textnotes:
     selSet.append(el.Id)
 
-revit.uidoc.Selection.SetElementIds(List[DB.ElementId](selSet))
+
+revit.get_selection().set_to(selSet)

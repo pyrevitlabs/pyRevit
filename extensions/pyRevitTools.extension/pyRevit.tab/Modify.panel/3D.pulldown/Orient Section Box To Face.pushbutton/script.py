@@ -1,15 +1,15 @@
 """Aligns the section box of the current 3D view to selected face."""
+
 from pyrevit.framework import Math
 from pyrevit import revit, DB, UI
 
 
 curview = revit.activeview
 
+
 if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
     try:
-        ref = revit.uidoc.Selection.PickObject(UI.Selection.ObjectType.Face)
-        el = revit.doc.GetElement(ref.ElementId)
-        face = el.GetGeometryObjectFromReference(ref)
+        face = revit.pick_face()
         box = curview.GetSectionBox()
         norm = face.ComputeNormal(DB.UV(0, 0)).Normalize()
         boxNormal = box.Transform.Basis[0].Normalize()

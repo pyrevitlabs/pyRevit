@@ -14,6 +14,8 @@ __doc__ = 'Uses the Worksharing tooltip to find out the element '\
 filteredlist = []
 viewlist = []
 
+selection = revit.get_selection()
+
 if revit.doc.IsWorkshared:
     currentviewid = revit.activeview.Id
     viewlist.append(currentviewid)
@@ -34,9 +36,7 @@ if revit.doc.IsWorkshared:
                 # wti.Creator, wti.Owner, wti.LastChangedBy
                 if wti.Owner == HOST_APP.username:
                     filteredlist.append(el.Id)
-            revit.uidoc.Selection.SetElementIds(
-                List[DB.ElementId](filteredlist)
-                )
+            selection.set_to(filteredlist)
     else:
         pass
 else:

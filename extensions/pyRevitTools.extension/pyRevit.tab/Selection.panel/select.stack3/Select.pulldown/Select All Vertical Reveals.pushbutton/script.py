@@ -15,4 +15,4 @@ for el in revealslist:
     if el.GetWallSweepInfo().IsVertical:
         selSet.append(el.Id)
 
-revit.uidoc.Selection.SetElementIds(List[DB.ElementId](selSet))
+revit.get_selection().set_to(selSet)

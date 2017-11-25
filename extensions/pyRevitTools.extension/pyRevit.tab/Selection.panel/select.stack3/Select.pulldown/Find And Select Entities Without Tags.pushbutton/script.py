@@ -27,6 +27,9 @@ selected_switch = \
                                    message='Find untagged elements of type:')
 
 
+selection = revit.get_selection()
+
+
 if selected_switch == 'Rooms':
     roomtags = DB.FilteredElementCollector(revit.doc, curview.Id)\
                  .OfCategory(DB.BuiltInCategory.OST_RoomTags)\
@@ -51,7 +54,7 @@ if selected_switch == 'Rooms':
             untaggedrooms.append(rmid)
 
     if len(untaggedrooms) > 0:
-        revit.uidoc.Selection.SetElementIds(List[DB.ElementId](untaggedrooms))
+        selection.set_to(untaggedrooms)
     else:
         UI.TaskDialog.Show('pyrevit', 'All rooms have associated tags.')
 
@@ -79,7 +82,7 @@ elif selected_switch == 'Areas':
             untaggedareas.append(areaid)
 
     if len(untaggedareas) > 0:
-        revit.uidoc.Selection.SetElementIds(List[DB.ElementId](untaggedareas))
+        selection.set_to(untaggedareas)
     else:
         UI.TaskDialog.Show('pyrevit', 'All areas have associated tags.')
 
@@ -130,9 +133,7 @@ elif selected_switch == 'Doors' \
                 untagged_elements.append(elid)
 
     if len(untagged_elements) > 0:
-        revit.uidoc.Selection.SetElementIds(
-            List[DB.ElementId](untagged_elements)
-            )
+        selection.set_to(untagged_elements)
     else:
         UI.TaskDialog.Show('pyrevit',
                            'All {} have associated tags.'.format(elname))

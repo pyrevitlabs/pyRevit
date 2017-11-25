@@ -9,9 +9,10 @@ __doc__ = 'Selects all elements (in model) of the same family '\
 
 matchlist = []
 
-for elId in revit.uidoc.Selection.GetElementIds():
+selection = revit.get_selection()
+
+for el in selection:
     try:
-        el = revit.doc.GetElement(elId)
         family = el.Symbol.Family
         symbolIdSet = family.GetFamilySymbolIds()
         for symid in symbolIdSet:
@@ -27,5 +28,5 @@ selSet = []
 for elid in matchlist:
     selSet.append(elid)
 
-revit.uidoc.Selection.SetElementIds(List[DB.ElementId](selSet))
+selection.set_to(selSet)
 revit.uidoc.RefreshActiveView()

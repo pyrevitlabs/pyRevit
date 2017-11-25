@@ -53,6 +53,6 @@ if len(selection) > 0:
                                           r.GetType().Name.ljust(20)
                                           ))
 
-    revit.uidoc.Selection.SetElementIds(List[DB.ElementId](filteredlist))
+    revit.get_selection().set_to(filteredlist)
 else:
     UI.TaskDialog.Show('pyrevit', 'At least one object must be selected.')

@@ -20,6 +20,6 @@ for el in selection:
             sub_walls.append(el.Id)
 
 if len(sub_walls) > 0:
-    revit.uidoc.Selection.SetElementIds(List[DB.ElementId](sub_walls))
+    selection.set_to(sub_walls)
 else:
     UI.TaskDialog.Show('pyRevit', 'Please select at least one Stacked wall.')

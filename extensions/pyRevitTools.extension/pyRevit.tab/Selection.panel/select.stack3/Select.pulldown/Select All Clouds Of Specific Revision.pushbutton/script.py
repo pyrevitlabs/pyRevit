@@ -64,7 +64,7 @@ class RevisionSelectorWindow:
             if revcloud.RevisionId.IntegerValue == sr.Id.IntegerValue:
                 clouds.append(revcloud.Id)
 
-        revit.uidoc.Selection.SetElementIds(List[DB.ElementId](clouds))
+        revit.get_selection().set_to(clouds)
 
     def showwindow(self):
         self.my_window.ShowDialog()

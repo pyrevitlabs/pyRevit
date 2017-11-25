@@ -31,7 +31,7 @@ if src_comment:
             clouds.append(revcloud.Id)
 
     # Replace revit selection with matched clouds
-    revit.uidoc.Selection.SetElementIds(List[DB.ElementId](clouds))
+    revit.get_selection().set_to(clouds)
 else:
     UI.TaskDialog.Show('pyRevit',
                        'At least one Revision Cloud must be selected.')

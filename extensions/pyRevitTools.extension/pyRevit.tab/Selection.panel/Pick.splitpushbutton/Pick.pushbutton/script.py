@@ -5,6 +5,9 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
+selection = revit.get_selection()
+
+
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
     def __init__(self, catname):
         self.category = catname
@@ -23,12 +26,12 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
 
 def pickbycategory(catname):
     try:
-        sel = PickByCategorySelectionFilter(catname)
-        sellist = revit.uidoc.Selection.PickElementsByRectangle(sel)
-        filteredlist = []
-        for el in sellist:
-            filteredlist.append(el.Id)
-        revit.uidoc.Selection.SetElementIds(List[DB.ElementId](filteredlist))
+        msfilter = PickByCategorySelectionFilter(catname)
+        selection_list = revit.pick_rectangle(pick_filter=msfilter)
+        filtered_list = []
+        for el in selection_list:
+            filtered_list.append(el.Id)
+        selection.set_to(filtered_list)
     except Exception:
         pass
 

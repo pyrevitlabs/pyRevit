@@ -304,8 +304,7 @@ elif selected_switch == 'System Postable Commands':
             print('{0}'.format(str(pc).ljust(50)))
 
 elif selected_switch == 'Views':
-    element_ids = revit.uidoc.Selection.GetElementIds()
-    selection = [revit.doc.GetElement(elId) for elId in element_ids]
+    selection = revit.get_selection()
 
     views = []
 
@@ -314,9 +313,9 @@ elif selected_switch == 'Views':
         views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                         .WhereElementIsNotElementType().ToElements()
     else:
-        for sel in selection:
-            if isinstance(sel, DB.View):
-                views.append(sel)
+        for el in selection:
+            if isinstance(el, DB.View):
+                views.append(el)
 
     for v in views:
         phasep = v.LookupParameter('Phase')
@@ -388,9 +387,9 @@ elif selected_switch == 'Selected Line Coordinates':
             return True
         return False
 
+    selection = revit.get_selection()
 
-    for elId in revit.uidoc.Selection.GetElementIds():
-        el = revit.doc.GetElement(elId)
+    for el in selection:
         if isline(el):
             print('Line ID: {0}'.format(el.Id))
             print('Start:\t {0}'.format(el.GeometryCurve.GetEndPoint(0)))

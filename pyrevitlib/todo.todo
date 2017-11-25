@@ -1,8 +1,6 @@
 4.5rc:
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
-☐ fix all selections through api and use revit.selection
-☐ Test dynamo compat mode in %programdata%
 
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
@@ -19,6 +17,8 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ fix all selections through api and use revit.selection @done(2017-11-24 18:10)
+    ✔ Test dynamo compat mode in %programdata% @done(2017-11-24 17:18)
     ✔ upgrade about window looks @done(2017-11-24 16:27)
     ✔ add css styling option to Options @done(2017-11-23 15:21)
     ✔ add open view or owner view to the clickable id handler @done(2017-11-23 14:21)

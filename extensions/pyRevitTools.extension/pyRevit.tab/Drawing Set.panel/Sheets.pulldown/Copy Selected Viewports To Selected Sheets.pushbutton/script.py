@@ -14,14 +14,14 @@ __doc__ = 'Open the source sheet. Select other sheets in Project Browser. '\
 
 selSheets = []
 selViewports = []
+selection = revit.get_selection()
 allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
                         .OfClass(DB.ScheduleSheetInstance)\
                         .ToElements()
 
 
 # cleanup list of selected sheets
-for elId in revit.uidoc.Selection.GetElementIds():
-    el = revit.doc.GetElement(elId)
+for el in selection:
     if isinstance(el, DB.ViewSheet):
         selSheets.append(el)
 
@@ -37,7 +37,7 @@ if len(selSheets) > 0:
         selSheets.remove(cursheet)
 
     revit.uidoc.ActiveView = cursheet
-    sel = revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
+    sel = revit.pick_elements()
     for el in sel:
         selViewports.append(revit.doc.GetElement(el))
 

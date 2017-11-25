@@ -14,8 +14,9 @@ cl = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
 matchlist = []
 selCatList = set()
 
-for elId in revit.uidoc.Selection.GetElementIds():
-    el = revit.doc.GetElement(elId)
+selection = revit.get_selection()
+
+for el in selection:
     try:
         selCatList.add(el.Category.Name)
     except Exception:
@@ -34,5 +35,5 @@ selSet = []
 for elid in matchlist:
     selSet.append(elid)
 
-revit.uidoc.Selection.SetElementIds(List[DB.ElementId](selSet))
+selection.set_to(selSet)
 revit.uidoc.RefreshActiveView()

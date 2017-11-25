@@ -5,13 +5,12 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__context__ = 'selection'
+__context__ = 'Dimensions'
 
 
 def add_plusminus():
     with revit.Transaction('add plusMinus to dims'):
-        for elId in revit.uidoc.Selection.GetElementIds():
-            el = revit.doc.GetElement(elId)
+        for el in revit.get_selection():
             if isinstance(el, DB.Dimension):
                 if len(list(el.Segments)) > 0:
                     for seg in el.Segments:
@@ -22,8 +21,7 @@ def add_plusminus():
 
 def override_dim_value():
     with revit.Transaction('Overrride dims value'):
-        for elId in revit.uidoc.Selection.GetElementIds():
-            el = revit.doc.GetElement(elId)
+        for el in revit.get_selection():
             if isinstance(el, DB.Dimension):
                 if len(list(el.Segments)) > 0:
                     for seg in el.Segments:
@@ -36,8 +34,7 @@ def override_dim_value():
 
 def set_to_eq():
     with revit.Transaction('EQ dimensions'):
-        for elId in revit.uidoc.Selection.GetElementIds():
-            el = revit.doc.GetElement(elId)
+        for el in revit.get_selection():
             if isinstance(el, DB.Dimension):
                 if len(list(el.Segments)) > 0:
                     for seg in el.Segments:
@@ -48,8 +45,7 @@ def set_to_eq():
 
 def set_to_vfrmfr():
     with revit.Transaction('VWM dimensions'):
-        for elId in revit.uidoc.Selection.GetElementIds():
-            el = revit.doc.GetElement(elId)
+        for el in revit.get_selection():
             if isinstance(el, DB.Dimension):
                 if len(list(el.Segments)) > 0:
                     for seg in el.Segments:
@@ -62,8 +58,7 @@ def set_to_vfrmfr():
 
 def set_to_vif():
     with revit.Transaction('VIF dimensions'):
-        for elId in revit.uidoc.Selection.GetElementIds():
-            el = revit.doc.GetElement(elId)
+        for el in revit.get_selection():
             if isinstance(el, DB.Dimension):
                 if len(list(el.Segments)) > 0:
                     for seg in el.Segments:

@@ -191,5 +191,13 @@ def pick_point(pick_message=''):
             return None
 
 
+def pick_rectangle(pick_message='', pick_filter=None):
+    if pick_filter:
+        return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_filter,
+                                                                pick_message)
+    else:
+        return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_message)
+
+
 def get_selection():
     return CurrentElementSelection()

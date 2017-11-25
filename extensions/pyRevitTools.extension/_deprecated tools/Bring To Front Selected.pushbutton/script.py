@@ -7,7 +7,7 @@ __doc__ = 'Brings selected object to Front of the current view. '\
 
 
 with revit.Transaction('Bring Selected To Front'):
-    for elId in revit.uidoc.Selection.GetElementIds():
+    for elId in revit.get_selection().element_ids:
         try:
             DB.DetailElementOrderUtils.BringForward(revit.doc,
                                                     revit.activeview,
