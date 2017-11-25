@@ -57,6 +57,8 @@ from Microsoft.CSharp import CSharpCodeProvider
 
 from System.Management import ManagementObjectSearcher
 
+from System.Runtime.Serialization import FormatterServices
+
 clr.AddReference('IronPython.Wpf')
 import wpf
 

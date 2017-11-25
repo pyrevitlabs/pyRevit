@@ -199,5 +199,13 @@ def pick_rectangle(pick_message='', pick_filter=None):
         return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_message)
 
 
+def get_selection_category_set():
+    selection = CurrentElementSelection()
+    cset = DB.CategorySet()
+    for element in selection:
+        cset.Insert(element.Category)
+    return cset
+
+
 def get_selection():
     return CurrentElementSelection()
