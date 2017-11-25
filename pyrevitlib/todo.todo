@@ -2,7 +2,6 @@
 ☐ move to forms "Select All Clouds Of Specific Revision"
 ☐ unify the Revision selection windows
 ☐ fix all selections through api and use revit.selection
-☐ upgrade about window looks
 ☐ Test dynamo compat mode in %programdata%
 
 ☐ add option to gitservices tool to set remote tracking branch for updates
@@ -20,6 +19,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ upgrade about window looks @done(2017-11-24 16:27)
     ✔ add css styling option to Options @done(2017-11-23 15:21)
     ✔ add open view or owner view to the clickable id handler @done(2017-11-23 14:21)
     ✔ add default css styling for links a:visited @done(2017-11-23 13:14)

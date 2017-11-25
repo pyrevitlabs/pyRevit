@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow"
         Foreground="#000"
-        Height="550" Width="650" Margin="0"
+        Height="285" Width="650" Margin="0"
         ShowInTaskbar="False"
         BorderThickness="0"
         Background="{x:Null}"
@@ -16,6 +16,50 @@
         KeyDown="handleclick"
         MouseDown="handleclick">
     <Window.Resources>
+        <SolidColorBrush x:Key="AboutWindowTextColor" Color="#2c3e50"/>
+        <SolidColorBrush x:Key="AboutWindowHightlightColor" Color="#f39c12"/>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground"
+                    Value="{StaticResource AboutWindowTextColor}"/>
+        </Style>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource AboutWindowTextColor}"/>
+            <Setter Property="BorderBrush" Value="#cccccc"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="10,0,10,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Margin="2"
+                                Height="20"
+                                SnapsToDevicePixels="true">
+                            <ContentPresenter Name="Presenter"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      RecognizesAccessKey="True"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AboutWindowHightlightColor}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource AboutWindowHightlightColor}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Canvas x:Key="pyRevitLogo">
             <Canvas.Resources>
                 <LinearGradientBrush x:Key="LogoDarkGradient"
@@ -91,11 +135,11 @@
             </Canvas.Resources>
             <Polygon Points="0,140.3 121.8,218.4 172.9,161 22.3,65 "
                      Fill="{StaticResource LogoDarkGradient}"/>
-            <Polygon Points="61.8,50.6 100,158.9 180.3,102.3 118.8,0 "
+            <Polygon Points="63,50.6 100,158.9 180.3,102.3 118.8,1 "
                      Fill="{StaticResource LogoDarkGradient}"/>
-            <Polygon Points="22.3,65 180.3,102.3 100,158.9 0,140.3 "
+            <Polygon Points="21.5,65 181.5,102.3 100,158.9 -1,140.3 "
                      Fill="{StaticResource LogoLightGradientA}"/>
-            <Polygon Points="122.4,166.2 198.1,132.8 121.8,218.4 "
+            <Polygon Points="122.4,166.2 198.1,132.8 121.8,219.5 "
                      Fill="{StaticResource LogoLightGradientB}"/>
             <Path Data="M185.7 58.8L118.8 0l-57 50.6l124.6 42.2L185.7 58.8z M150.3 64.8c-5.4 0-9.7-4.4-9.7-9.7  c0-5.4 4.4-9.7 9.7-9.7c5.4 0 9.7 4.4 9.7 9.7C160 60.5 155.6 64.8 150.3 64.8z"
                   Fill="{StaticResource LogoLightGradientC}"/>
@@ -111,115 +155,77 @@
     </Window.Resources>
     <Border BorderThickness="1"
             CornerRadius="15"
-            BorderBrush="#eee">
+            BorderBrush="#ddd">
         <Border.Background>
             <SolidColorBrush Color="#fff"/>
         </Border.Background>
-        <StackPanel Margin="20,20,20,20">
-            <Grid Height="128">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="128"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <ContentControl Content="{StaticResource pyRevitLogo}"
+        <Grid Margin="20,20,20,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ContentControl Content="{StaticResource pyRevitLogo}"
                                 Grid.Column="0"
+                                Margin="10,10,0,0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Top">
-                    <ContentControl.LayoutTransform>
-                        <ScaleTransform ScaleX=".6"  ScaleY=".6"/>
-                    </ContentControl.LayoutTransform>
-                </ContentControl>
-                <StackPanel Grid.Column="1"
+                <ContentControl.LayoutTransform>
+                    <ScaleTransform ScaleX="1"  ScaleY="1"/>
+                </ContentControl.LayoutTransform>
+            </ContentControl>
+            <StackPanel Grid.Column="1"
                             VerticalAlignment="Center">
-                    <TextBlock x:Name="pyrevit_title"
-                               VerticalAlignment="Top"
-                               FontSize="44"
-                               MouseDown="opengithubcommits">
-                        <Run Text="pyRevit"/><Run x:Name="version_info"
-                                                  FontSize="20"
-                                                  Text=" vX.X-XXXX:XXXXXXX"/>
-                    </TextBlock>
-                    <TextBlock x:Name="pyrevit_subtitle"
-                               TextWrapping="Wrap"
-                               VerticalAlignment="Top"
-                               FontSize="14"
-                               Text="python tools for Autodesk Revit®"
-                               LineHeight="20"/>
-                </StackPanel>
-            </Grid>
-            <Separator VerticalAlignment="Top"
-                       Margin="0,20,0,0"
-                       Background="#eee"/>
-            <TextBlock x:Name="credits_title"
-                       Margin="0,10,0,0"
-                       TextWrapping="Wrap"
-                       Text="pyRevit uses some fine tools made by very talented people"
-                       VerticalAlignment="Top"
-                       FontSize="14"
-                       TextAlignment="Center"/>
-            <Image x:Name="image_credits"
-                   Height="256"
-                   Margin="0,10,0,0"
-                   VerticalAlignment="Top"
-                   MouseDown="opencredits"/>
-            <Border BorderBrush="#eee"
-                    Height="30"
-                    BorderThickness="1,1,1,1"
-                    CornerRadius="5">
-                <Grid Height="22">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="2*" />
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Credits" FontSize="14"
-                        Click="opencredits"/>
-                    <Button Grid.Column="1"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Docs" FontSize="14"
-                        Click="opendocs"/>
-                    <Button Grid.Column="2"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Blog" FontSize="14"
-                        Click="openblog"/>
-                    <Button Grid.Column="3"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Github" FontSize="14"
-                        Click="opengithubrepopage"/>
-                    <Button Grid.Column="4"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="YouTube" FontSize="14"
-                        Click="openyoutubechannel"/>
-                    <Button Grid.Column="5"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Support" FontSize="14"
-                        Click="opensupportpage"/>
-                    <Button Grid.Column="6"
-                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}"
-                        Content="Release Notes" FontSize="14"
-                        Click="openreleasenotes"/>
-                </Grid>
-            </Border>
-            <TextBlock x:Name="coded_with_love"
-                       Margin="145,5 ,145,20"
-                       TextWrapping="Wrap"
-                       VerticalAlignment="Bottom"
-                       FontSize="14"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center">
-                <Run Text="&lt;/&gt; with"/>
-                <Run FontSize="17" Text="♥"/>
-                <Run Text="in ['pdx', 'hio', 'rno']"/>
-                <LineBreak/>
-                <TextBlock Text="© 2015-2017 Ehsan Iran-Nejad"
-                           MouseDown="openkeybaseprofile"/>
-            </TextBlock>
-        </StackPanel>
+                <TextBlock x:Name="pyrevit_title"
+                           VerticalAlignment="Top"
+                           HorizontalAlignment="Center"
+                           FontSize="44"
+                           MouseDown="opengithubcommits">
+                    <Run Text="pyRevit"/><Run x:Name="short_version_info"
+                                              FontSize="20"
+                                              Text=" vX.X"/>
+                </TextBlock>
+                <TextBlock x:Name="pyrevit_subtitle"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Top"
+                           FontSize="14"
+                           Text="python tools for Autodesk Revit®"
+                           LineHeight="20"/>
+                <WrapPanel Margin="0,15,0,0"
+                           HorizontalAlignment="Center">
+                    <Button Content="Credits" FontSize="14"
+                            Click="opencredits"/>
+                    <Button Content="Docs" FontSize="14"
+                            Click="opendocs"/>
+                    <Button Content="Blog" FontSize="14"
+                            Click="openblog"/>
+                    <Button Content="Github" FontSize="14"
+                            Click="opengithubrepopage"/>
+                    <Button Content="YouTube" FontSize="14"
+                            Click="openyoutubechannel"/>
+                </WrapPanel>
+                <WrapPanel HorizontalAlignment="Center">
+                    <Button Content="Support" FontSize="14"
+                            Click="opensupportpage"/>
+                    <Button Content="Release Notes" FontSize="14"
+                            Click="openreleasenotes"/>
+                </WrapPanel>
+                <TextBlock x:Name="coded_with_love"
+                           Margin="0,10,0,0"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Bottom"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center">
+                    <Run Text="&lt;/&gt; with"/>
+                    <Run FontSize="17" Text="♥"/>
+                    <Run Text="in ['pdx', 'hio', 'rno']"/>
+                    <LineBreak/>
+                    <TextBlock Text="© 2015-2017 Ehsan Iran-Nejad"
+                                MouseDown="openkeybaseprofile"/>
+                </TextBlock>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

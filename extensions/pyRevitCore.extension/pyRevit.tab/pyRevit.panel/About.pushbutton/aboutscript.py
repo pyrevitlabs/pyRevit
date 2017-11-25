@@ -19,27 +19,27 @@ class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        # self.set_image_source('image_credits', 'creditsnew.png')
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
-                                      .format(sys.version_info.major,
-                                              sys.version_info.minor,
-                                              sys.version_info.micro)
-
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
             pyrvt_ver = versionmgr.get_pyrevit_version()
             nice_version = ' v{}'.format(pyrvt_ver.get_formatted())
+            short_version = \
+                ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
             branch_info = '{} branch'.format(pyrvt_repo.branch)
         except Exception:
-            nice_version = ''
-            branch_info = ''
+            nice_version = short_version = branch_info = ''
 
         rocketmodetext = 'Rocket-mode {}'.format(u'enabled \U0001F680' if __cachedengine__
                                                  else 'disabled')
 
-        self.version_info.Text = nice_version
-        self.pyrevit_subtitle.Text += '\n{} | {}'.format(rocketmodetext,
-                                                         branch_info)
+        self.short_version_info.Text = short_version
+        self.pyrevit_subtitle.Text += '\n {} | {}'.format(nice_version,
+                                                          branch_info)
+        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
+                                      .format(sys.version_info.major,
+                                              sys.version_info.minor,
+                                              sys.version_info.micro)
+        self.pyrevit_subtitle.Text += '\n{}'.format(rocketmodetext)
 
     def opencredits(self, sender, args):
         script.open_url(urls.credits)

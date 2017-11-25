@@ -337,6 +337,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="10"
+                                        Height="20"
                                         Margin="0,0,5,5"
                                         SnapsToDevicePixels="true">
                                     <ContentPresenter Name="Presenter"

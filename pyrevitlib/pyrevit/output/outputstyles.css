@@ -1,6 +1,6 @@
 body {
     color: #233749;
-    font-family: Consolas;
+    font-family: Courier New;
     font-size: 10pt;
     height: 100%;
     margin: 0 0 15px 0;
@@ -82,7 +82,7 @@ body {
     border-radius:5px;
     color: #ffffff;
     display: inline-block;
-    font-size:8pt;
+    font-size: 8pt;
     margin: 2px;
     padding: 2px 6px;
     text-align: center;

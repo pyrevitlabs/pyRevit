@@ -35,12 +35,13 @@ class PyRevitVersion(object):
                      unicode(PyRevitVersion.minor), self.patch)
         return ver_tuple
 
-    def get_formatted(self):
+    def get_formatted(self, nopatch=False):
         """Returns 'major.minor:patch' in string"""
-        return '{}.{}{}:{}'.format(PyRevitVersion.major,
-                                   PyRevitVersion.minor,
-                                   PyRevitVersion.metadata,
-                                   self.patch)
+        formatted_ver = '{}.{}{}'.format(PyRevitVersion.major,
+                                         PyRevitVersion.minor,
+                                         PyRevitVersion.metadata)
+
+        return formatted_ver if nopatch else formatted_ver + ':' + self.patch
 
 
 def get_pyrevit_repo():
