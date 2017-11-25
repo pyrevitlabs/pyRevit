@@ -61,10 +61,17 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
                     <TextBox x:Name="search_results_tb"
                              IsEnabled="False"
                              Foreground="LightGray"
+                             Text="pyRevit Search"
                              Margin="10,0,0,0"/>
-                    <TextBox x:Name="search_tb"
-                             Margin="10,0,0,0"
-                             TextChanged="search_txt_changed"/>
+                    <WrapPanel>
+                        <TextBox x:Name="search_tb"
+                                 Margin="10,0,0,0"
+                                 TextChanged="search_txt_changed"/>
+                        <TextBox x:Name="wordsmatch_tb"
+                                 Margin="10,0,0,0"
+                                 IsEnabled="False"
+                                 Foreground="LightGray"/>
+                    </WrapPanel>
                 </Grid>
             </DockPanel>
         </Border>
@@ -76,16 +83,32 @@ class ConsolePrompt(forms.TemplateUserInputWindow):
         pass
 
     def search_txt_changed(self, sender, args):
-        matchlist = [x for x in self._context
-                     if self.search_tb.Text.lower() in x.lower()]
-        if len(matchlist) == 1:
-            self.search_tb.Text = matchlist[0]
+        if self.search_results_tb.Text \
+                or self.wordsmatch_tb.Text:
+            self.search_results_tb.Text = ''
+            self.wordsmatch_tb.Text = ''
+
+        cur_txt = self.search_tb.Text.lower()
+        cur_words = cur_txt.split(' ')
+        if cur_txt:
+            for cmd_name in self._context:
+                if cmd_name.lower().startswith(cur_txt):
+                    self.response = cmd_name
+                    self.search_results_tb.Text = \
+                        self.search_tb.Text + cmd_name[len(cur_txt):]
+                    break
+                elif all([x in cmd_name.lower() for x in cur_words]):
+                    self.response = cmd_name
+                    self.wordsmatch_tb.Text = '- {}'.format(cmd_name)
+                    break
+        else:
+            self.search_results_tb.Text = ''
 
     def handle_esc_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
+            self.response = None
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
-            self.response = self.search_tb.Text
             self.Close()
 
 
