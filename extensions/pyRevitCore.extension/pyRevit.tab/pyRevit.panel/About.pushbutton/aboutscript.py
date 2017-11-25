@@ -29,8 +29,10 @@ class AboutWindow(forms.WPFWindow):
         except Exception:
             nice_version = short_version = branch_info = ''
 
-        rocketmodetext = 'Rocket-mode {}'.format(u'enabled \U0001F680' if __cachedengine__
-                                                 else 'disabled')
+        rocketchar = u'\U0001F680' if sys.version_info.micro > 3 else ''
+        rocketmodetext = 'Rocket-mode {}'\
+                         .format(u'enabled ' + rocketchar if __cachedengine__
+                                 else 'disabled')
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text += '\n {} | {}'.format(nice_version,
