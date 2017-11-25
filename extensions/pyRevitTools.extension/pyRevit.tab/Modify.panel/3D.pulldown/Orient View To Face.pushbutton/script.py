@@ -1,5 +1,5 @@
 from pyrevit import HOST_APP
-from pyrevit import revit, DB
+from pyrevit import revit, DB, UI
 
 
 __doc__ = 'Reorients the current 3D view camera, perpendicular to the' \
@@ -7,30 +7,40 @@ __doc__ = 'Reorients the current 3D view camera, perpendicular to the' \
           'selected face for 3d drawing.'
 
 
-face = revit.pick_face()
+def reorient():
+    face = revit.pick_face()
 
-if face and isinstance(revit.activeview, DB.View3D):
-    with revit.Transaction('Orient to Selected Face'):
-        # calculate normal
-        if HOST_APP.is_newer_than(2015):
-            normal_vec = face.ComputeNormal(DB.UV(0, 0))
-        else:
-            normal_vec = face.Normal
+    if face and isinstance(revit.activeview, DB.View3D):
+        with revit.Transaction('Orient to Selected Face'):
+            # calculate normal
+            if HOST_APP.is_newer_than(2015):
+                normal_vec = face.ComputeNormal(DB.UV(0, 0))
+            else:
+                normal_vec = face.Normal
 
-        # create base plane for sketchplane
-        if HOST_APP.is_newer_than(2016):
-            base_plane = \
-                DB.Plane.CreateByNormalAndOrigin(normal_vec, face.Origin)
-        else:
-            base_plane = DB.Plane(normal_vec, face.Origin)
+            # create base plane for sketchplane
+            if HOST_APP.is_newer_than(2016):
+                base_plane = \
+                    DB.Plane.CreateByNormalAndOrigin(normal_vec, face.Origin)
+            else:
+                base_plane = DB.Plane(normal_vec, face.Origin)
 
-        # now that we have the base_plane and normal_vec
-        # let's create the sketchplane
-        sp = DB.SketchPlane.Create(revit.doc, base_plane)
+            # now that we have the base_plane and normal_vec
+            # let's create the sketchplane
+            sp = DB.SketchPlane.Create(revit.doc, base_plane)
 
-        # orient the 3D view looking at the sketchplane
-        revit.activeview.OrientTo(normal_vec.Negate())
-        # set the sketchplane to active
-        revit.uidoc.ActiveView.SketchPlane = sp
+            # orient the 3D view looking at the sketchplane
+            revit.activeview.OrientTo(normal_vec.Negate())
+            # set the sketchplane to active
+            revit.uidoc.ActiveView.SketchPlane = sp
 
-    revit.uidoc.RefreshActiveView()
+        revit.uidoc.RefreshActiveView()
+
+
+curview = revit.activeview
+
+if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
+    reorient()
+else:
+    UI.TaskDialog.Show("pyrevit",
+                       "You must be on a 3D view for this tool to work.")
