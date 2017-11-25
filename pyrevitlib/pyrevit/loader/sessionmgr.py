@@ -13,7 +13,8 @@ Everything else is private.
 import os.path as op
 import sys
 
-from pyrevit import EXEC_PARAMS
+from pyrevit import EXEC_PARAMS, HOST_APP
+from pyrevit import coreutils
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
@@ -27,6 +28,10 @@ from pyrevit.usagelog import setup_usage_logfile
 from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
 from pyrevit.loader import sessioninfo
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
+from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
+from pyrevit import DB, UI
+from pyrevit.framework import FormatterServices
 
 
 logger = get_logger(__name__)
@@ -234,6 +239,19 @@ def execute_script(script_path):
     return results_dict
 
 
+def find_all_available_commands():
+    pyrvt_cmds = []
+    for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+        if loaded_assm:
+            for pyrvt_type in loaded_assm[0].GetTypes():
+                if not pyrvt_type.FullName.endswith(COMMAND_AVAILABILITY_NAME_POSTFIX) \
+                        and LOADER_BASE_NAMESPACE not in pyrvt_type.FullName:
+                    pyrvt_cmds.append(pyrvt_type)
+
+    return pyrvt_cmds
+
+
 def find_loaded_command(command_unique_name):
     """Searches the pyRevit-generated assemblies under current session for
     the command with the matching unique name (class name) and returns the
@@ -253,16 +271,28 @@ def find_loaded_command(command_unique_name):
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
-    from pyrevit.coreutils import find_loaded_asm
-
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        loaded_assm = find_loaded_asm(loaded_assm_name)
+        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
             for pyrvt_type in loaded_assm[0].GetTypes():
                 if pyrvt_type.FullName == command_unique_name:
                     return pyrvt_type
 
     return None
+
+
+def execute_command_cls(cmd_class):
+    tmp_cmd_data = \
+        FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
+    tmp_cmd_data.Application = HOST_APP.uiapp
+    # tmp_cmd_data.IsReadOnly = False
+    # tmp_cmd_data.View = None
+    # tmp_cmd_data.JournalData = None
+
+    command_instance = cmd_class()
+    re = command_instance.Execute(tmp_cmd_data, '', DB.ElementSet())
+    command_instance = None
+    return re
 
 
 def execute_command(command_unique_name):
@@ -281,23 +311,5 @@ def execute_command(command_unique_name):
         logger.error('Can not find command with unique name: {}'
                      .format(command_unique_name))
         return None
-
-    from pyrevit import HOST_APP
-
-    # noinspection PyUnresolvedReferences
-    from System.Runtime.Serialization import FormatterServices
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Revit.DB import ElementSet
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Revit.UI import ExternalCommandData
-
-    tmp_cmd_data = FormatterServices.GetUninitializedObject(ExternalCommandData)
-    tmp_cmd_data.Application = HOST_APP.uiapp
-    # tmp_cmd_data.IsReadOnly = False
-    # tmp_cmd_data.View = None
-    # tmp_cmd_data.JournalData = None
-
-    command_instance = cmd_class()
-    re = command_instance.Execute(tmp_cmd_data, '', ElementSet())
-    command_instance = None
-    return re
+    else:
+        execute_command_cls(cmd_class)
