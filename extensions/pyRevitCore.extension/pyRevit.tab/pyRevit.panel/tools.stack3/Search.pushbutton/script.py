@@ -40,6 +40,9 @@ class SearchPrompt(forms.WPFWindow):
         if self._result_index >= res_cout:
             self._result_index = 0
 
+        if self._result_index < 0:
+            self._result_index = res_cout - 1
+
         cur_txt = self.search_tb.Text.lower()
 
         if not cur_txt:

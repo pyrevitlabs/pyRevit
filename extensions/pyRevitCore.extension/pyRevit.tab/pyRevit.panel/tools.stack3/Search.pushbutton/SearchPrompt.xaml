@@ -61,7 +61,7 @@
             <ContentControl x:Name="tab_icon"
                             DockPanel.Dock="Right"
                             Visibility="Visible"
-                            Margin="5,0,5,0"
+                            Margin="5,0,10,0"
                             Height="28" Width="28"
                             Content="{StaticResource TabIcon}"
                             KeyboardNavigation.IsTabStop="False"/>
