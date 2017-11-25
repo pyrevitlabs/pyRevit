@@ -9,6 +9,13 @@ import traceback
 
 try:
     clr.AddReference('PyRevitLoader')
+except Exception as e:
+    # probably older IronPython engine not being able to
+    # resolve to an already loaded assembly
+    # PyRevitLoader is executing this script.
+    pass
+
+try:
     import PyRevitLoader
 except ImportError:
     # this means that pyRevit is not being loaded from a pyRevit engine
