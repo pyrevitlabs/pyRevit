@@ -10,7 +10,8 @@ output = script.get_output()
 view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
                      DB.ViewType.FloorPlan: 'Floor Plan: ',
                      DB.ViewType.EngineeringPlan: 'Structural Plan: ',
-                     DB.ViewType.DraftingView: 'Drafting View: '}
+                     DB.ViewType.DraftingView: 'Drafting View: ',
+                     DB.ViewType.Section: 'Section: '}
 
 
 def find_unrefed_views(view_list):
