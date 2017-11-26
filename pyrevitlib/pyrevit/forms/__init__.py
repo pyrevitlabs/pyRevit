@@ -765,4 +765,4 @@ def select_sheets(title='Select Sheets', button_name='Select', width=300):
             width=width,)
 
     if return_options:
-        return [x.sheet_element for x in return_options]
+        return [x.sheet_element for x in return_options if x.state]

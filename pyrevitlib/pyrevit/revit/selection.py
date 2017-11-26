@@ -117,9 +117,9 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
         logger.debug('Processed return elements are: {}'.format(return_values))
 
         if type(return_values) is list:
-            if len(return_values) > 1:
+            if len(return_values) > 1 or multiple:
                 return return_values
-            elif len(return_values) == 1:
+        elif len(return_values) == 1:
                 return return_values[0]
         else:
             logger.error('Error processing picked elements. '
