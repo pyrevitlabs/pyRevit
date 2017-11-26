@@ -1,4 +1,7 @@
 4.5rc:
+☐ combine flip tools
+☐ combine find view tools
+
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
