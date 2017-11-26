@@ -89,7 +89,7 @@ namespace PyRevitBaseClasses
 
                 // use a disabled menu item to show if the command requires clean engine
                 MenuItem cleanEngineStatus = new MenuItem();
-                cleanEngineStatus.Header = String.Format("Requests Clean Engine: {0}", baked_needsCleanEngine ? "Yes":"No");
+                cleanEngineStatus.Header = String.Format("Requests Clean Engine: {0}", baked_needsCleanEngine ? "Yes" : "No");
                 cleanEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(cleanEngineStatus);
 
@@ -102,7 +102,7 @@ namespace PyRevitBaseClasses
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
-                copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script);  };
+                copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
                 // menu item to copy alternate script path to clipboard, if exists
@@ -199,7 +199,7 @@ namespace PyRevitBaseClasses
             pyrvtCmdRuntime = null;
 
             // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-            if ( re == 0)
+            if (re == 0)
                 return Result.Succeeded;
             else
                 return Result.Cancelled;
@@ -220,10 +220,20 @@ namespace PyRevitBaseClasses
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
         {
             // Categories allCats = uiApp.ActiveUIDocument.Document.Settings.Categories;
-            if (selectedCategories.IsEmpty) return false;
-            foreach(Category rvt_cat in selectedCategories){
-                if (rvt_cat.Name != this._categoryName) return false;
+            if (selectedCategories.IsEmpty)
+                return false;
+
+            try
+            {
+                foreach (Category rvt_cat in selectedCategories)
+                    if (rvt_cat.Name != this._categoryName)
+                        return false;
             }
+            catch (Exception)
+            {
+                return false;
+            }
+
             return true;
         }
     }
@@ -240,7 +250,9 @@ namespace PyRevitBaseClasses
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
         {
-            if (selectedCategories.IsEmpty) return false;
+            if (selectedCategories.IsEmpty)
+                return false;
+
             return true;
         }
     }
