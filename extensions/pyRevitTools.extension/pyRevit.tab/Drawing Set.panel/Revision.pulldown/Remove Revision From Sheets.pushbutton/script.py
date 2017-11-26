@@ -52,7 +52,10 @@ def remove_rev_from_sheets(revision_element, sheets=None):
             print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
 
 
-revision = forms.select_revisions(button_name='Remove Revision',
+revision = forms.select_revisions(button_name='Select Revision',
                                   multiselect=False)
-if revision:
-    remove_rev_from_sheets(revision)
+
+sheets = forms.select_sheets(button_name='Remove Revision')
+
+if revision and sheets:
+    remove_rev_from_sheets(revision, sheets)

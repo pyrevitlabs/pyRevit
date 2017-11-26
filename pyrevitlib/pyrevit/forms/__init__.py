@@ -699,8 +699,8 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
 
 
 class RevisionOption(object):
-    def __init__(self, rev_element):
-        self.revision_element = rev_element
+    def __init__(self, revision_element):
+        self.revision_element = revision_element
 
     def __str__(self):
         return '{}-{}-{}'.format(self.revision_element.RevisionNumber,
@@ -708,7 +708,21 @@ class RevisionOption(object):
                                  self.revision_element.RevisionDate)
 
 
-def select_revisions(button_name='Select',
+class SheetOption(object):
+    def __init__(self, sheet_element):
+        self.state = False
+        self.sheet_element = sheet_element
+        self.name = '{} - {}'.format(self.sheet_element.SheetNumber,
+                                     self.sheet_element.Name)
+        self.number = self.sheet_element.SheetNumber
+
+    def __nonzero__(self):
+        return self.state
+
+
+def select_revisions(title='Select Revision',
+                     button_name='Select',
+                     width=300,
                      multiselect=True):
     unsorted_revisions = \
         DB.FilteredElementCollector(revit.doc)\
@@ -722,13 +736,33 @@ def select_revisions(button_name='Select',
     return_options = \
         SelectFromList.show(
             revision_options,
-            title='Select Revision',
+            title=title,
             button_name=button_name,
+            width=width,
             multiselect=multiselect
             )
 
     if return_options:
-        if len(return_options) == 1:
+        if not multiselect and len(return_options) == 1:
             return return_options[0].revision_element
         else:
             return [x.revision_element for x in return_options]
+
+
+def select_sheets(title='Select Sheets', button_name='Select', width=300):
+    all_sheets = DB.FilteredElementCollector(revit.doc) \
+                   .OfClass(DB.ViewSheet) \
+                   .WhereElementIsNotElementType() \
+                   .ToElements()
+
+    # ask user for sheets
+    return_options = \
+        SelectFromCheckBoxes.show(
+            sorted([SheetOption(x) for x in all_sheets],
+                   key=lambda x: x.number),
+            title=title,
+            button_name=button_name,
+            width=width,)
+
+    if return_options:
+        return [x.sheet_element for x in return_options]

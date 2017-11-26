@@ -20,7 +20,7 @@ def set_rev_on_sheets(revision_element, sheets=None):
     with revit.Transaction('Set Revision on Sheets'):
         for s in sheets:
             revs = list(s.GetAdditionalRevisionIds())
-            revs.append(sr.Id)
+            revs.append(revision_element.Id)
             s.SetAdditionalRevisionIds(List[DB.ElementId](revs))
             affectedsheets.append(s)
 
@@ -33,7 +33,10 @@ def set_rev_on_sheets(revision_element, sheets=None):
             print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
 
 
-revision = forms.select_revisions(button_name='Set Revision',
+revision = forms.select_revisions(button_name='Select Revision',
                                   multiselect=False)
-if revision:
-    set_rev_on_sheets(revision)
+
+sheets = forms.select_sheets(button_name='Set Revision')
+
+if revision and sheets:
+    set_rev_on_sheets(revision, sheets)

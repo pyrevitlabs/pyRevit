@@ -54,17 +54,6 @@ class DestDoc:
         return self.state
 
 
-class SheetToCopy:
-    def __init__(self, sheet):
-        self.state = False
-        self.sheet = sheet
-        self.name = '{} - {}'.format(sheet.SheetNumber, sheet.Name)
-        self.number = sheet.SheetNumber
-
-    def __nonzero__(self):
-        return self.state
-
-
 def error_and_close(msg):
     UI.TaskDialog.Show('pyrevit', msg)
     sys.exit(0)
@@ -106,23 +95,12 @@ def get_dest_docs():
 
 
 def get_source_sheets():
-    all_sheets = DB.FilteredElementCollector(revit.doc) \
-                   .OfClass(DB.ViewSheet) \
-                   .WhereElementIsNotElementType() \
-                   .ToElements()
+    sheet_elements = forms.select_sheets(button_name='Copy Sheets')
 
-    return_options = \
-        forms.SelectFromCheckBoxes.show(
-            sorted([SheetToCopy(x) for x in all_sheets],
-                   key=lambda x: x.number),
-            title='Select Sheets to be Copied',
-            width=500,
-            button_name='Copy Sheets')
-
-    if return_options:
-        return [x.sheet for x in return_options if x]
-    else:
+    if not sheet_elements:
         sys.exit(0)
+
+    return sheet_elements
 
 
 def get_default_type(source_doc, type_group):
