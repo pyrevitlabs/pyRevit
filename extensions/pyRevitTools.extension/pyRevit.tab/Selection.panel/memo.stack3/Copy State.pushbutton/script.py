@@ -2,6 +2,7 @@ import os
 import os.path as op
 import pickle
 
+from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
@@ -60,12 +61,22 @@ class TransformationMatrix:
         self.destmax = None
 
 
+def make_picklable_list(revit_curve_list):
+    lines = []
+    for rvt_line in revit_curve_list:
+        p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
+        p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
+        lines.append((p1, p2))
+    return lines
+
+
 selected_switch = \
     forms.CommandSwitchWindow.show(
         ['View Zoom/Pan State',
          '3D Section Box State',
          'Viewport Placement on Sheet',
-         'Visibility Graphics'],
+         'Visibility Graphics',
+         'Crop Region'],
         message='Select property to be copied to memory:'
         )
 
@@ -303,4 +314,22 @@ elif selected_switch == 'Visibility Graphics':
 
     f = open(datafile, 'w')
     pickle.dump(int(av.Id.IntegerValue), f)
+    f.close()
+
+elif selected_switch == 'Crop Region':
+    datafile = \
+        script.get_document_data_file(file_id='SaveCropRegionState',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
+
+    av = revit.activeview
+    crsm = av.GetCropRegionShapeManager()
+
+    f = open(datafile, 'w')
+    if HOST_APP.is_newer_than(2015):
+        curvedata = crsm.GetCropShape()[0]
+    else:
+        curvedata = crsm.GetCropRegionShape()
+
+    pickle.dump(make_picklable_list(curvedata), f)
     f.close()

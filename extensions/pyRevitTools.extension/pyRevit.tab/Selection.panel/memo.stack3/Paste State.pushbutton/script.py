@@ -2,6 +2,7 @@ import os
 import os.path as op
 import pickle
 
+from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
@@ -66,12 +67,23 @@ class TransformationMatrix:
         self.destmax = None
 
 
+def unpickle_line_list(linelist):
+    curveloop = DB.CurveLoop()
+    for line in linelist:
+        p1 = DB.XYZ(line[0][0], line[0][1], 0)
+        p2 = DB.XYZ(line[1][0], line[1][1], 0)
+        curveloop.Append(DB.Line.CreateBound(p1, p2))
+
+    return curveloop
+
+
 selected_switch = \
     forms.CommandSwitchWindow.show(
         ['View Zoom/Pan State',
          '3D Section Box State',
          'Viewport Placement on Sheet',
-         'Visibility Graphics'],
+         'Visibility Graphics',
+         'Crop Region'],
         message='Select property to be applied to current view:'
         )
 
@@ -370,4 +382,28 @@ elif selected_switch == 'Visibility Graphics':
                 )
     except Exception:
         logger.error('CAN NOT FIND ANY VISIBILITY GRAPHICS '
+                     'SETTINGS IN MEMORY:\n{0}'.format(datafile))
+
+elif selected_switch == 'Crop Region':
+    datafile = \
+        script.get_document_data_file(file_id='SaveCropRegionState',
+                                      file_ext='pym',
+                                      add_cmd_name=False)
+
+    try:
+        f = open(datafile, 'r')
+        line_list = pickle.load(f)
+        f.close()
+        with revit.Transaction('Paste Crop Region'):
+            revit.activeview.CropBoxVisible = True
+            crsm = revit.activeview.GetCropRegionShapeManager()
+            cloop = unpickle_line_list(line_list)
+            if HOST_APP.is_newer_than(2015):
+                crsm.SetCropShape(cloop)
+            else:
+                crsm.SetCropRegionShape(cloop)
+
+        revit.uidoc.RefreshActiveView()
+    except Exception:
+        logger.error('CAN NOT FIND ANY CROP REGION '
                      'SETTINGS IN MEMORY:\n{0}'.format(datafile))
