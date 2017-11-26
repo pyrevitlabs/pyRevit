@@ -3,6 +3,7 @@ from pyrevit import revit
 
 
 __context__ = 'selection'
+__helpurl__ = 'https://www.youtube.com/watch?v=4IlvCkoOolw'
 __doc__ = 'Lists all the elements that are tied to the selected element.'\
           ' For example elements tags or dimensions.'
 

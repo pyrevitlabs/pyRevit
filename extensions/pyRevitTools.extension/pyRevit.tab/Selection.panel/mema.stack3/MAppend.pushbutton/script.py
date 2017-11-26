@@ -4,6 +4,7 @@ from pyrevit import script
 from pyrevit import revit
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=pAM-ARIXXLw'
 __doc__ = 'Append current selection to memory. Works like the M+ button'\
           ' in a calculator. This is a project-dependent (Revit *.rvt)'\
           ' memory. Every project has its own memory saved in'\

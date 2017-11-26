@@ -2,6 +2,7 @@ from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=pIjDd4dZng0'
 __doc__ = 'Reorients the current 3D view camera, perpendicular to the' \
           'selected face. This tool will set a sketch plane over the ' \
           'selected face for 3d drawing.'
@@ -10,7 +11,7 @@ __doc__ = 'Reorients the current 3D view camera, perpendicular to the' \
 def reorient():
     face = revit.pick_face()
 
-    if face and isinstance(revit.activeview, DB.View3D):
+    if face:
         with revit.Transaction('Orient to Selected Face'):
             # calculate normal
             if HOST_APP.is_newer_than(2015):

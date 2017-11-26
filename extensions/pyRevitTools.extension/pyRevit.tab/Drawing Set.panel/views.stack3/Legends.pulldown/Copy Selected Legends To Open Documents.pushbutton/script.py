@@ -5,6 +5,9 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=ThzcRM_Tj8g'
+
+
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
     def OnDuplicateTypeNamesFound(self, args):
         return DB.DuplicateTypeAction.UseDestinationTypes

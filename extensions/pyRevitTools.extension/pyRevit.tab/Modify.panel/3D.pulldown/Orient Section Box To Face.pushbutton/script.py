@@ -4,6 +4,9 @@ from pyrevit.framework import Math
 from pyrevit import revit, DB, UI
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=b050tpp4vCE&t=42s'
+
+
 curview = revit.activeview
 
 

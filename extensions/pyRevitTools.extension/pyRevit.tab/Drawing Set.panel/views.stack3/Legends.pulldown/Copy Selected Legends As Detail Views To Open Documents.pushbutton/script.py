@@ -3,6 +3,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=ThzcRM_Tj8g'
 __doc__ = 'Converts selected legend views to detail views and copies '\
           'them to all projects currently open in Revit.'
 

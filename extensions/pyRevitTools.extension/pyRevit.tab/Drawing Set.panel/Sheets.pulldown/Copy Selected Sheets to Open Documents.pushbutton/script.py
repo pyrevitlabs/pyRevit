@@ -6,6 +6,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import script
 
 
+__helpurl__ = 'https://www.youtube.com/watch?v=9Q-J6mWBYJI&t=17s'
 __doc__ = 'Copies selected or current sheet(s) to all ' \
           'projects currently open in Revit. Make sure the destination ' \
           'documents have at least one Legend view. (Revit API does not ' \
