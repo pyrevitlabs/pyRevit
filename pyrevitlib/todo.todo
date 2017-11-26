@@ -3,9 +3,6 @@
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
 
-☐ add date to log file names
-☐ review the extension hash system
-☐ investigate adding animated icons
 
 4.5:
 ☐ update script anatomy page
@@ -14,6 +11,9 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✘ add date to log file names @cancelled(2017-11-25 17:45)
+    ✔ review the extension hash system @done(2017-11-25 17:47) Doesn't exist
+    ✘ investigate adding animated icons @cancelled(2017-11-25 17:45)
     ✔ move to forms "Select All Clouds Of Specific Revision" @done(2017-11-25 17:41)
     ✔ unify the Revision selection windows @done(2017-11-25 17:41)
     ✔ fix all selections through api and use revit.selection @done(2017-11-24 18:10)
