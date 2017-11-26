@@ -1,4 +1,6 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
+from pyrevit import script
 
 
 __title__ = 'Copy/Update Selected Viewports To Selected Sheets'
@@ -12,21 +14,42 @@ __doc__ = 'Open the source sheet. Select other sheets in Project Browser. '\
           'location and viewport type will be updated.'
 
 
-selSheets = []
+logger = script.get_logger()
+
+
+def is_placable(view):
+    if view and view.ViewType and view.ViewType in [DB.ViewType.Schedule,
+                                                    DB.ViewType.DraftingView,
+                                                    DB.ViewType.Legend,
+                                                    DB.ViewType.CostReport,
+                                                    DB.ViewType.LoadsReport,
+                                                    DB.ViewType.ColumnSchedule,
+                                                    DB.ViewType.PanelSchedule]:
+        return True
+    return False
+
+
+def update_if_placed(vport, exst_vps):
+    for exst_vp in exst_vps:
+        if vport.ViewId == exst_vp.ViewId:
+            exst_vp.SetBoxCenter(vport.GetBoxCenter())
+            exst_vp.ChangeTypeId(vport.GetTypeId())
+            return True
+    return False
+
+
 selViewports = []
-selection = revit.get_selection()
+
 allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
                         .OfClass(DB.ScheduleSheetInstance)\
                         .ToElements()
 
 
-# cleanup list of selected sheets
-for el in selection:
-    if isinstance(el, DB.ViewSheet):
-        selSheets.append(el)
+selSheets = forms.select_sheets(title='Select Target Sheets',
+                                button_name='Select Sheets')
 
 # get a list of viewports to be copied, updated
-if len(selSheets) > 0:
+if selSheets and len(selSheets) > 0:
     if int(__revit__.Application.VersionNumber) > 2014:
         cursheet = revit.uidoc.ActiveGraphicalView
         for v in selSheets:
@@ -39,7 +62,7 @@ if len(selSheets) > 0:
     revit.uidoc.ActiveView = cursheet
     sel = revit.pick_elements()
     for el in sel:
-        selViewports.append(revit.doc.GetElement(el))
+        selViewports.append(el)
 
     if len(selViewports) > 0:
         with revit.Transaction('Copy Viewports to Sheets'):
@@ -50,15 +73,13 @@ if len(selSheets) > 0:
                                       if x.OwnerViewId == sht.Id]
                 for vp in selViewports:
                     if isinstance(vp, DB.Viewport):
+                        src_view = revit.doc.GetElement(vp.ViewId)
                         # check if viewport already exists
                         # and update location and type
-                        for exist_vp in existing_vps:
-                            if vp.ViewId == exist_vp.ViewId:
-                                exist_vp.SetBoxCenter(vp.GetBoxCenter())
-                                exist_vp.ChangeTypeId(vp.GetTypeId())
-                                break
+                        if update_if_placed(vp, existing_vps):
+                            break
                         # if not, create a new viewport
-                        else:
+                        elif is_placable(src_view):
                             new_vp = \
                                 DB.Viewport.Create(revit.doc,
                                                    sht.Id,
@@ -66,6 +87,11 @@ if len(selSheets) > 0:
                                                    vp.GetBoxCenter())
 
                             new_vp.ChangeTypeId(vp.GetTypeId())
+                        else:
+                            logger.warning('Skipping {}. This view type '
+                                           'can not be placed on '
+                                           'multiple sheets.'
+                                           .format(src_view.ViewName))
                     elif isinstance(vp, DB.ScheduleSheetInstance):
                         # check if schedule already exists
                         # and update location
