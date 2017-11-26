@@ -1,7 +1,4 @@
 4.5rc:
-☐ move to forms "Select All Clouds Of Specific Revision"
-☐ unify the Revision selection windows
-
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
@@ -17,6 +14,8 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ move to forms "Select All Clouds Of Specific Revision" @done(2017-11-25 17:41)
+    ✔ unify the Revision selection windows @done(2017-11-25 17:41)
     ✔ fix all selections through api and use revit.selection @done(2017-11-24 18:10)
     ✔ Test dynamo compat mode in %programdata% @done(2017-11-24 17:18)
     ✔ upgrade about window looks @done(2017-11-24 16:27)

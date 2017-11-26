@@ -10,7 +10,7 @@ from pyrevit.framework import Threading
 from pyrevit.framework import Interop
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
-from pyrevit import revit, UI
+from pyrevit import revit, UI, DB
 
 
 logger = get_logger(__name__)
@@ -124,7 +124,8 @@ class SelectFromList(TemplateUserInputWindow):
                                 Width="15px" Height="15px"/>
                     </StackPanel>
                 </DockPanel>
-                <Button Content="Select" Click="button_select"
+                <Button x:Name="select_b"
+                        Content="Select" Click="button_select"
                         DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
                 <ListView x:Name="list_lb" />
             </DockPanel>
@@ -140,6 +141,8 @@ class SelectFromList(TemplateUserInputWindow):
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
         else:
             self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+
+        self.select_b.Content = kwargs.get('button_name', '')
 
         self._list_options()
 
@@ -692,3 +695,39 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         if unc_paths:
             return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName
+
+
+class RevisionOption(object):
+    def __init__(self, rev_element):
+        self.revision_element = rev_element
+
+    def __str__(self):
+        return '{}-{}-{}'.format(self.revision_element.RevisionNumber,
+                                 self.revision_element.Description,
+                                 self.revision_element.RevisionDate)
+
+
+def select_revisions(button_name='Select',
+                     multiselect=True):
+    unsorted_revisions = \
+        DB.FilteredElementCollector(revit.doc)\
+          .OfCategory(DB.BuiltInCategory.OST_Revisions)\
+          .WhereElementIsNotElementType()
+
+    revisions = sorted(unsorted_revisions, key=lambda x: x.RevisionNumber)
+    revision_options = [RevisionOption(x) for x in revisions]
+
+    # ask user for revisions
+    return_options = \
+        SelectFromList.show(
+            revision_options,
+            title='Select Revision',
+            button_name=button_name,
+            multiselect=multiselect
+            )
+
+    if return_options:
+        if len(return_options) == 1:
+            return return_options[0].revision_element
+        else:
+            return [x.revision_element for x in return_options]
