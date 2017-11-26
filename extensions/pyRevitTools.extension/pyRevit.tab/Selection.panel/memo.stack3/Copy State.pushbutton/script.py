@@ -327,7 +327,11 @@ elif selected_switch == 'Crop Region':
 
     f = open(datafile, 'w')
     if HOST_APP.is_newer_than(2015):
-        curvedata = crsm.GetCropShape()[0]
+        clooplist = crsm.GetCropShape()
+        if clooplist:
+            curvedata = clooplist[0]
+        else:
+            script.exit()
     else:
         curvedata = crsm.GetCropRegionShape()
 
