@@ -11,7 +11,8 @@ view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
                      DB.ViewType.FloorPlan: 'Floor Plan: ',
                      DB.ViewType.EngineeringPlan: 'Structural Plan: ',
                      DB.ViewType.DraftingView: 'Drafting View: ',
-                     DB.ViewType.Section: 'Section: '}
+                     DB.ViewType.Section: 'Section: ',
+                     DB.ViewType.ThreeD: '3D View: '}
 
 
 def find_unrefed_views(view_list):
@@ -21,11 +22,12 @@ def find_unrefed_views(view_list):
         detnum = v.LookupParameter('Detail Number')
         refsheet = v.LookupParameter('Referencing Sheet')
         refviewport = v.LookupParameter('Referencing Detail')
+        refprefix = view_ref_prefixes.get(v.ViewType, '')
         if refsheet \
                 and refviewport \
                 and refsheet.AsString() != '' \
                 and refviewport.AsString() != '' \
-                or (view_ref_prefixes[v.ViewType] + v.ViewName) \
+                or (refprefix + v.ViewName) \
                 in view_refs_names:
             continue
         else:
