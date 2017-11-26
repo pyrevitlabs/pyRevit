@@ -81,11 +81,16 @@ class TemplateUserInputWindow(WPFWindow):
 
         self._context = context
         self.response = None
+        self.PreviewKeyDown += self.handle_esc_key
 
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
         pass
+
+    def handle_esc_key(self, sender, args):
+        if args.Key == framework.Windows.Input.Key.Escape:
+            self.Close()
 
     @classmethod
     def show(cls, context,
@@ -403,10 +408,6 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def handle_click(self, sender, args):
         self.Close()
-
-    def handle_esc_key(self, sender, args):
-        if args.Key == framework.Windows.Input.Key.Escape:
-            self.Close()
 
     def process_switch(self, sender, args):
         self.Close()
