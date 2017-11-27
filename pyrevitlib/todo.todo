@@ -1,5 +1,6 @@
 4.5rc:
 ☐ combine find view tools
+☐ combine list and reload link tools
 
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
