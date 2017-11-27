@@ -1,5 +1,4 @@
 4.5rc:
-☐ combine flip tools
 ☐ combine find view tools
 
 ☐ add option to gitservices tool to set remote tracking branch for updates
@@ -14,6 +13,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ combine flip tools @done(2017-11-26 20:33)
     ✘ add date to log file names @cancelled(2017-11-25 17:45)
     ✔ review the extension hash system @done(2017-11-25 17:47) Doesn't exist
     ✘ investigate adding animated icons @cancelled(2017-11-25 17:45)
