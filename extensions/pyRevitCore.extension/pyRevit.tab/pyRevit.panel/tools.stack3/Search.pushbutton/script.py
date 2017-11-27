@@ -4,6 +4,9 @@ from pyrevit import framework
 from pyrevit import script
 
 
+__context__ = 'zerodoc'
+
+
 logger = script.get_logger()
 
 

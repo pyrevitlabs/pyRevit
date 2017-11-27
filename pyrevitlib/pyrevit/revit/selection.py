@@ -8,9 +8,12 @@ logger = get_logger(__name__)
 
 class CurrentElementSelection:
     def __init__(self):
-        self.elements = \
-            [HOST_APP.doc.GetElement(el_id)
-             for el_id in HOST_APP.uidoc.Selection.GetElementIds()]
+        if HOST_APP.uidoc:
+            self.elements = \
+                [HOST_APP.doc.GetElement(el_id)
+                 for el_id in HOST_APP.uidoc.Selection.GetElementIds()]
+        else:
+            self.elements = []
 
     def __len__(self):
         return len(self.elements)

@@ -244,7 +244,7 @@ def execute_script(script_path):
     return results_dict
 
 
-def find_all_commands(category_set=None):
+def find_all_commands(category_set=None, zerodoc=False):
     pyrvt_cmds = []
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
@@ -258,7 +258,7 @@ def find_all_commands(category_set=None):
                         and LOADER_BASE_NAMESPACE not in pyrvt_type.FullName:
                     cmd_only_types.append(pyrvt_type)
 
-            if category_set:
+            if category_set or zerodoc:
                 for pyrvt_type in cmd_only_types:
                     avail_class_name = pyrvt_type.Name \
                                        + COMMAND_AVAILABILITY_NAME_POSTFIX
@@ -270,14 +270,16 @@ def find_all_commands(category_set=None):
                                                          category_set):
                                     pyrvt_cmds.append(pyrvt_type)
                     else:
-                        pyrvt_cmds.append(pyrvt_type)
+                        if not zerodoc:
+                            pyrvt_cmds.append(pyrvt_type)
 
     return pyrvt_cmds
 
 
 def find_all_available_commands():
     cset = revit.get_selection_category_set()
-    return find_all_commands(category_set=cset)
+    return find_all_commands(category_set=cset,
+                             zerodoc=HOST_APP.uidoc is None)
 
 
 def find_loaded_command(command_unique_name):
