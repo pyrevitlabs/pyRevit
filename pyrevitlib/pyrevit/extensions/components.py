@@ -18,6 +18,10 @@ logger = get_logger(__name__)
 # Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks,
 # Commands, or Command groups
 # ------------------------------------------------------------------------------
+class NoButton(GenericUICommand):
+    type_id = exts.NOGUI_COMMAND_POSTFIX
+
+
 class LinkButton(GenericUICommand):
     type_id = exts.LINK_BUTTON_POSTFIX
 
