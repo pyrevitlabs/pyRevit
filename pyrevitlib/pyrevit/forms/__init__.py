@@ -39,7 +39,7 @@ class WPFWindow(framework.Windows.Window):
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
 
         #23303d
-        self.Resources['pyRevitDarkerColor'] = \
+        self.Resources['pyRevitDarkerDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
 
         #ffffff
@@ -54,8 +54,10 @@ class WPFWindow(framework.Windows.Window):
             Media.SolidColorBrush(self.Resources['pyRevitDarkColor'])
         self.Resources['pyRevitAccentBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitAccentColor'])
-        self.Resources['pyRevitCommandOptionsBackgroundBrush'] = \
-            Media.SolidColorBrush(self.Resources['pyRevitDarkerColor'])
+
+        self.Resources['pyRevitDarkerDarkBrush'] = \
+            Media.SolidColorBrush(self.Resources['pyRevitDarkerDarkColor'])
+
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
@@ -107,14 +109,14 @@ class TemplateUserInputWindow(WPFWindow):
 
         self._context = context
         self.response = None
-        self.PreviewKeyDown += self.handle_esc_key
+        self.PreviewKeyDown += self.handle_input_key
 
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
         pass
 
-    def handle_esc_key(self, sender, args):
+    def handle_input_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
             self.Close()
 
@@ -351,15 +353,14 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             AllowsTransparency="True"
             Background="#00FFFFFF"
             SizeToContent="Height"
-            PreviewKeyDown="handle_esc_key"
             MouseUp="handle_click">
         <Window.Resources>
-            <Style TargetType="Button">
+            <Style TargetType="{x:Type Button}">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                     <Setter Property="Background" Value="#ffffff"/>
                     <Setter Property="BorderBrush" Value="#cccccc"/>
                     <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="{DynamicResource pyRevitCommandOptionsBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkerDarkBrush}"/>
                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Padding" Value="10,2,10,2"/>
@@ -382,7 +383,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsEnabled" Value="false">
-                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitCommandOptionsBackgroundBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkerDarkBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
@@ -402,13 +403,53 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                         </Setter.Value>
                     </Setter>
             </Style>
+            <Style TargetType="{x:Type TextBox}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="CaretBrush" Value="#00000000"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBoxBase}">
+                            <Border Name="Border"
+                                    Padding="2"
+                                    CornerRadius="10"
+                                    Background="{x:Null}"
+                                    BorderBrush="#66ffffff"
+                                    BorderThickness="1" >
+                                <Grid Margin="5,0,5,0">
+                                    <ScrollViewer Margin="0" x:Name="PART_ContentHost"/>
+                                    <TextBlock Text="{TemplateBinding Tag}"
+                                               Foreground="#66ffffff"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Border" Property="Background" Value="{x:Null}"/>
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{x:Null}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </Window.Resources>
         <Border CornerRadius="15"
-                Background="{DynamicResource pyRevitCommandOptionsBackgroundBrush}">
-            <StackPanel x:Name="stack_panel" Margin="5">
-                <Label x:Name="message_label"
-                       Foreground="White"
-                       Margin="2,0,0,0" />
+                Background="{DynamicResource pyRevitDarkerDarkBrush}">
+            <StackPanel x:Name="stack_panel" Margin="10">
+                <DockPanel Height="36">
+                    <Label x:Name="message_label"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           FontSize="14"
+                           Foreground="White" />
+                    <TextBox x:Name="search_tb"
+                             Margin="10,2,5,0"
+                             VerticalAlignment="Center"
+                             TextChanged="search_txt_changed"/>
+                </DockPanel>
                 <WrapPanel x:Name="button_list" Margin="5" />
             </StackPanel>
         </Border>
@@ -431,8 +472,46 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             my_button.Click += self.process_switch
             self.button_list.Children.Add(my_button)
 
+        self.search_tb.Focus()
+        self._filter_options()
+
+    def _filter_options(self, option_filter=None):
+        if option_filter:
+            self.search_tb.Tag = ''
+            option_filter = option_filter.lower()
+            for button in self.button_list.Children:
+                if option_filter not in button.Content.lower():
+                    button.Visibility = framework.Windows.Visibility.Collapsed
+                else:
+                    button.Visibility = framework.Windows.Visibility.Visible
+        else:
+            self.search_tb.Tag = 'Type to Filter'
+            for button in self.button_list.Children:
+                button.Visibility = framework.Windows.Visibility.Visible
+
+    def _get_visible_buttons(self):
+        buttons = []
+        for button in self.button_list.Children:
+            if button.Visibility == framework.Windows.Visibility.Visible:
+                buttons.append(button)
+        return buttons
+
     def handle_click(self, sender, args):
         self.Close()
+
+    def handle_input_key(self, sender, args):
+        if args.Key == framework.Windows.Input.Key.Escape:
+            if self.search_tb.Text:
+                self.search_tb.Text = ''
+            else:
+                self.Close()
+        elif args.Key == framework.Windows.Input.Key.Enter:
+            buttons = self._get_visible_buttons()
+            if len(buttons) == 1:
+                self.process_switch(buttons[0], None)
+
+    def search_txt_changed(self, sender, args):
+        self._filter_options(option_filter=self.search_tb.Text)
 
     def process_switch(self, sender, args):
         self.Close()
