@@ -396,7 +396,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                         <Setter Property="Foreground" Value="{DynamicResource pyRevitButtonForgroundBrush}"/>
                                     </Trigger>
                                     <Trigger Property="IsFocused" Value="true">
+                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
                                         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
+                                        <Setter Property="Foreground" Value="White" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -485,16 +487,19 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = framework.Windows.Visibility.Visible
         else:
-            self.search_tb.Tag = 'Type to Filter'
+            self.search_tb.Tag = 'Type to Filter / Tab to Select / Enter to Run'
             for button in self.button_list.Children:
                 button.Visibility = framework.Windows.Visibility.Visible
 
-    def _get_visible_buttons(self):
+    def _get_active_button(self):
         buttons = []
         for button in self.button_list.Children:
             if button.Visibility == framework.Windows.Visibility.Visible:
                 buttons.append(button)
-        return buttons
+        if len(buttons) == 1:
+            return buttons[0]
+        else:
+            return [x for x in buttons if x.IsFocused][0]
 
     def handle_click(self, sender, args):
         self.Close()
@@ -506,9 +511,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             else:
                 self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
-            buttons = self._get_visible_buttons()
-            if len(buttons) == 1:
-                self.process_switch(buttons[0], None)
+            self.process_switch(self._get_active_button(), None)
 
     def search_txt_changed(self, sender, args):
         self._filter_options(option_filter=self.search_tb.Text)
