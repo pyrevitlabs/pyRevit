@@ -1,5 +1,6 @@
 import os
 import os.path as op
+import string
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
@@ -17,21 +18,46 @@ logger = get_logger(__name__)
 
 
 class WPFWindow(framework.Windows.Window):
-    def __init__(self, xaml_file, literal_string=False):
+    def __init__(self, xaml_source, literal_string=False):
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
 
         if not literal_string:
-            if not op.exists(xaml_file):
+            if not op.exists(xaml_source):
                 wpf.LoadComponent(self,
                                   os.path.join(EXEC_PARAMS.command_path,
-                                               xaml_file)
+                                               xaml_source)
                                   )
             else:
-                wpf.LoadComponent(self, xaml_file)
+                wpf.LoadComponent(self, xaml_source)
         else:
-            wpf.LoadComponent(self, framework.StringReader(xaml_file))
+            wpf.LoadComponent(self, framework.StringReader(xaml_source))
+
+        #2c3e50
+        self.Resources['pyRevitDarkColor'] = \
+            Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
+
+        #23303d
+        self.Resources['pyRevitDarkerColor'] = \
+            Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
+
+        #ffffff
+        self.Resources['pyRevitButtonColor'] = \
+            Media.Color.FromArgb(0xFF, 0xff, 0xff, 0xff)
+
+        #f39c12
+        self.Resources['pyRevitAccentColor'] = \
+            Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)
+
+        self.Resources['pyRevitDarkBrush'] = \
+            Media.SolidColorBrush(self.Resources['pyRevitDarkColor'])
+        self.Resources['pyRevitAccentBrush'] = \
+            Media.SolidColorBrush(self.Resources['pyRevitAccentColor'])
+        self.Resources['pyRevitCommandOptionsBackgroundBrush'] = \
+            Media.SolidColorBrush(self.Resources['pyRevitDarkerColor'])
+        self.Resources['pyRevitButtonForgroundBrush'] = \
+            Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
     def show(self):
         return self.Show()
@@ -333,15 +359,14 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     <Setter Property="Background" Value="#ffffff"/>
                     <Setter Property="BorderBrush" Value="#cccccc"/>
                     <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="#23303d"/>
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitCommandOptionsBackgroundBrush}"/>
                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Padding" Value="10,2,10,2"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type Button}">
-                                <Border Name="Chrome"
-                                        Background="{TemplateBinding Background}"
+                                <Border Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="10"
@@ -357,20 +382,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsEnabled" Value="false">
-                                        <Setter Property="Foreground" Value="#23303d" />
+                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitCommandOptionsBackgroundBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#f39c12" />
-                                        <Setter Property="BorderBrush" Value="#f39c12" />
+                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
                                         <Setter Property="Foreground" Value="White" />
                                     </Trigger>
                                     <Trigger Property="IsPressed" Value="True">
-                                        <Setter Property="Background" Value="#f39c12" />
-                                        <Setter Property="BorderBrush" Value="#f39c12"/>
-                                        <Setter Property="Foreground" Value="#ffffff"/>
+                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitButtonForgroundBrush}"/>
                                     </Trigger>
                                     <Trigger Property="IsFocused" Value="true">
-                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="#1ba1e2" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -379,7 +404,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             </Style>
         </Window.Resources>
         <Border CornerRadius="15"
-                Background="#f323303d">
+                Background="{DynamicResource pyRevitCommandOptionsBackgroundBrush}">
             <StackPanel x:Name="stack_panel" Margin="5">
                 <Label x:Name="message_label"
                        Foreground="White"
@@ -481,7 +506,7 @@ class WarningBar(TemplatePromptBar):
             WindowStartupLocation="Manual"
             ResizeMode="NoResize"
             ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Grid Background="#FFEA9F00">
+        <Grid Background="{DynamicResource pyRevitAccentBrush}">
             <TextBlock x:Name="message_tb"
                        TextWrapping="Wrap"
                        Text="TextBlock"
@@ -507,20 +532,19 @@ class ProgressBar(TemplatePromptBar):
                 ResizeMode="NoResize"
                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <Window.Resources>
-            <Style TargetType="Button">
+            <Style TargetType="{x:Type Button}">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                     <Setter Property="Background" Value="#ffffff"/>
                     <Setter Property="BorderBrush" Value="#cccccc"/>
                     <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="#23303d"/>
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}"/>
                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Padding" Value="8,2,8,2"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type Button}">
-                                <Border Name="Chrome"
-                                        Background="{TemplateBinding Background}"
+                                <Border Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
                                         CornerRadius="10"
@@ -534,66 +558,155 @@ class ProgressBar(TemplatePromptBar):
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsEnabled" Value="false">
-                                        <Setter Property="Foreground" Value="#23303d" />
+                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="#dddddd" />
                                         <Setter Property="BorderBrush" Value="#cccccc" />
-                                        <Setter Property="Foreground" Value="#23303d" />
+                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsPressed" Value="True">
-                                        <Setter Property="Background" Value="#f39c12" />
-                                        <Setter Property="BorderBrush" Value="#f39c12"/>
+                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
                                         <Setter Property="Foreground" Value="#ffffff"/>
                                     </Trigger>
                                     <Trigger Property="IsFocused" Value="true">
-                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="#1ba1e2" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
             </Style>
-            <Style x:Key="{x:Type ProgressBar}" TargetType="{x:Type ProgressBar}">
+            <Style TargetType="{x:Type ProgressBar}">
+                <Setter Property="Background" Value="{DynamicResource pyRevitDarkBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}" />
+                <Setter Property="BorderBrush" Value="{x:Null}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="Maximum" Value="100" />
                 <Setter Property="Template">
                     <Setter.Value>
-                        <ControlTemplate TargetType="{x:Type ProgressBar}">
-                            <Grid>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Grid x:Name="Root">
+                                <Border x:Name="PART_Track"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}" />
+                                <Grid x:Name="ProgressBarRootGrid">
+                                    <Grid x:Name="IndeterminateRoot" Visibility="Collapsed">
+                                        <Rectangle x:Name="IndeterminateSolidFill"
+                                                   Margin="{TemplateBinding BorderThickness}"
+                                                   Fill="{DynamicResource pyRevitAccentBrush}"
+                                                   Opacity="1"
+                                                   RenderTransformOrigin="0.5,0.5"
+                                                   StrokeThickness="0" />
+                                        <Rectangle x:Name="IndeterminateGradientFill"
+                                                   Opacity=".2"
+                                                   Margin="{TemplateBinding BorderThickness}"
+                                                   StrokeThickness="1">
+                                            <Rectangle.Fill>
+                                                <LinearGradientBrush MappingMode="Absolute"
+                                                                     SpreadMethod="Repeat"
+                                                                     StartPoint="20,1" EndPoint="0,1">
+                                                    <LinearGradientBrush.Transform>
+                                                        <TransformGroup>
+                                                            <TranslateTransform x:Name="xTransform" X="0" />
+                                                            <SkewTransform AngleX="-30" />
+                                                        </TransformGroup>
+                                                    </LinearGradientBrush.Transform>
+                                                    <GradientStop Offset="0"
+                                                                  Color="{DynamicResource pyRevitAccentColor}" />
+                                                    <GradientStop Offset="0.499"
+                                                                  Color="{DynamicResource pyRevitAccentColor}" />
+                                                    <GradientStop Offset="0.500" Color="White"/>
+                                                    <GradientStop Offset="1.0" Color="White" />
+                                                </LinearGradientBrush>
+                                            </Rectangle.Fill>
+                                        </Rectangle>
+                                    </Grid>
+                                    <Grid x:Name="DeterminateRoot">
+                                        <Border x:Name="PART_Indicator"
+                                                HorizontalAlignment="Left"
+                                                Background="{DynamicResource pyRevitAccentBrush}">
+                                            <Rectangle x:Name="GradientFill"
+                                                   Opacity="0.7"
+                                                   Visibility="Collapsed">
+                                                <Rectangle.Fill>
+                                                    <LinearGradientBrush MappingMode="Absolute"
+                                                                         SpreadMethod="Repeat"
+                                                                         StartPoint="20,1" EndPoint="0,1">
+                                                        <LinearGradientBrush.Transform>
+                                                            <TransformGroup>
+                                                                <TranslateTransform X="0" />
+                                                                <SkewTransform AngleX="-30" />
+                                                            </TransformGroup>
+                                                        </LinearGradientBrush.Transform>
+                                                        <GradientStop Offset="0"
+                                                                      Color="{DynamicResource pyRevitAccentColor}" />
+                                                        <GradientStop Offset="0.651"
+                                                                      Color="{DynamicResource pyRevitAccentColor}" />
+                                                        <GradientStop Offset="0.093"
+                                                                      Color="{DynamicResource pyRevitAccentColor}" />
+                                                        <GradientStop Offset="0.548"
+                                                                      Color="{DynamicResource pyRevitAccentColor}" />
+                                                    </LinearGradientBrush>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Determinate" />
                                         <VisualState x:Name="Indeterminate">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Duration="00:00:00" Storyboard.TargetName="PART_Indicator" Storyboard.TargetProperty="Background">
-                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00" />
+                                            <Storyboard RepeatBehavior="Forever">
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IndeterminateRoot"
+                                                                           Storyboard.TargetProperty="(UIElement.Visibility)"
+                                                                           Duration="00:00:00">
+                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00">
+                                                        <DiscreteObjectKeyFrame.Value>
+                                                            <Visibility>Visible</Visibility>
+                                                        </DiscreteObjectKeyFrame.Value>
+                                                    </DiscreteObjectKeyFrame>
                                                 </ObjectAnimationUsingKeyFrames>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="DeterminateRoot"
+                                                                           Storyboard.TargetProperty="(UIElement.Visibility)"
+                                                                           Duration="00:00:00">
+                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00">
+                                                        <DiscreteObjectKeyFrame.Value>
+                                                            <Visibility>Collapsed</Visibility>
+                                                        </DiscreteObjectKeyFrame.Value>
+                                                    </DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="xTransform" Storyboard.TargetProperty="X">
+                                                    <SplineDoubleKeyFrame KeyTime="0" Value="0" />
+                                                    <SplineDoubleKeyFrame KeyTime="00:00:.35" Value="20" />
+                                                </DoubleAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <Border x:Name="PART_Track" CornerRadius="0" BorderThickness="0" />
-                                <Border x:Name="PART_Indicator" CornerRadius="0" BorderThickness="0" HorizontalAlignment="Left" Background="#FFEA9F00" Margin="0">
-                                    <Grid ClipToBounds="True" x:Name="Animation">
-                                        <Border x:Name="PART_GlowRect" Width="200" HorizontalAlignment="Left" Background="#FFEA9F00" Margin="-200,0,0,0" />
-                                    </Grid>
-                                </Border>
                             </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Orientation" Value="Vertical">
+                                    <Setter TargetName="Root" Property="LayoutTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="-90" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsIndeterminate" Value="true">
+                                    <Setter TargetName="DeterminateRoot" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="IndeterminateRoot" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
                         </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Background">
-                    <Setter.Value>
-                        <SolidColorBrush Color="#FFF0F0F0" />
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Foreground">
-                    <Setter.Value>
-                        <SolidColorBrush Color="#FFEA9F00" />
                     </Setter.Value>
                 </Setter>
             </Style>
         </Window.Resources>
-        <Grid Background="#ff2c3e50">
+        <Grid Background="{DynamicResource pyRevitDarkBrush}">
             <ProgressBar x:Name="pbar"/>
             <TextBlock x:Name="pbar_text"
                        TextWrapping="Wrap" Text="TextBlock"
@@ -613,12 +726,40 @@ class ProgressBar(TemplatePromptBar):
     def _setup(self, **kwargs):
         self.cancelled = False
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
+        self._title = kwargs.get('title', '{value}/{max_value}')
 
     def _update_pbar(self):
         self.update_window()
         self.pbar.Maximum = self.max_value
         self.pbar.Value = self.new_value
-        self.pbar_text.Text = '{} / {}'.format(self.new_value, self.max_value)
+
+        # updating title
+        title_text = \
+            string.Formatter().vformat(self._title,
+                                       (),
+                                       coreutils.SafeDict(
+                                           {'value': self.new_value,
+                                            'max_value': self.max_value}
+                                           ))
+
+        self.pbar_text.Text = title_text
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        if type(value) == str:
+            self._title = value
+
+    @property
+    def indeterminate(self):
+        return self.pbar.IsIndeterminate
+
+    @indeterminate.setter
+    def indeterminate(self, value):
+        self.pbar.IsIndeterminate = value
 
     def clicked_cancel(self, sender, args):
         self.cancelled = True

@@ -78,6 +78,11 @@ class FileWatcher(object):
         return os.stat(self._filepath).st_mtime != self._cached_stamp
 
 
+class SafeDict(dict):
+    def __missing__(self, key):
+        return '{' + key + '}'
+
+
 def get_all_subclasses(parent_classes):
     sub_classes = []
     # if super-class, get a list of sub-classes.
