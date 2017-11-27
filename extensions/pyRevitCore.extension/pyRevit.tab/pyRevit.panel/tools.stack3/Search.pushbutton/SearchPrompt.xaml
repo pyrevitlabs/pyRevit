@@ -23,6 +23,13 @@
                 <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
             </Canvas.LayoutTransform>
         </Canvas>
+        <Canvas x:Key="ReturnIcon">
+            <Path Data="M19,7V11H5.83L9.41,7.41L8,6L2,12L8,18L9.41,16.58L5.83,13H21V7H19Z"
+                  Fill="LightGray" />
+            <Canvas.LayoutTransform>
+                <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+            </Canvas.LayoutTransform>
+        </Canvas>
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
@@ -58,13 +65,20 @@
                             Height="44" Width="44"
                             Content="{StaticResource SearchIcon}"
                             KeyboardNavigation.IsTabStop="False"/>
+            <Grid DockPanel.Dock="Right">
             <ContentControl x:Name="tab_icon"
-                            DockPanel.Dock="Right"
                             Visibility="Visible"
                             Margin="5,0,10,0"
                             Height="28" Width="28"
                             Content="{StaticResource TabIcon}"
                             KeyboardNavigation.IsTabStop="False"/>
+            <ContentControl x:Name="return_icon"
+                            Visibility="Visible"
+                            Margin="5,0,10,0"
+                            Height="28" Width="28"
+                            Content="{StaticResource ReturnIcon}"
+                            KeyboardNavigation.IsTabStop="False"/>
+            </Grid>
             <Grid>
                 <TextBox x:Name="directmatch_tb"
                          IsEnabled="False"

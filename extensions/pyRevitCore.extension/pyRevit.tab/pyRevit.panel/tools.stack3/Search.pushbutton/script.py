@@ -19,6 +19,7 @@ class SearchPrompt(forms.WPFWindow):
 
         self.search_tb.Focus()
         self.hide_element(self.tab_icon)
+        self.hide_element(self.return_icon)
         self.search_tb.Text = ''
         self.set_search_results()
 
@@ -34,8 +35,13 @@ class SearchPrompt(forms.WPFWindow):
 
         if res_cout > 1:
             self.show_element(self.tab_icon)
+            self.hide_element(self.return_icon)
+        elif res_cout == 1:
+            self.hide_element(self.tab_icon)
+            self.show_element(self.return_icon)
         else:
             self.hide_element(self.tab_icon)
+            self.hide_element(self.return_icon)
 
         if self._result_index >= res_cout:
             self._result_index = 0
