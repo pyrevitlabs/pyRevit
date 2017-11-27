@@ -550,23 +550,29 @@ class TemplatePromptBar(WPFWindow):
 
         top = left = width = height = 0
 
-        width = (window_rect.Right - window_rect.Left) * scale_factor
+        width = window_rect.Right - window_rect.Left
         height = self.user_height
 
-        top = window_rect.Top * scale_factor
+
+        top = window_rect.Top
         # in maximized window, the top will be off the screen (- value)
         # lets cut the height and re-adjust the top
         if top < 0:
             height -= abs(top)
             top = 0
 
-        left = window_rect.Left * scale_factor
+        left = window_rect.Left
         # Left also might be off screen, let's fix that as well
         if left < 0:
-            width -= abs(left)
+            # deduct two times the left negative offset since this extra offset
+            # is on both sides
+            width -= abs(left * 2)
             left = 0
 
-        self.Top, self.Left, self.Width, self.Height = top, left, width, height
+        self.Top = top * scale_factor
+        self.Left = left * scale_factor
+        self.Width = width * scale_factor
+        self.Height =  height
 
     def _setup(self, **kwargs):
         pass
