@@ -1,6 +1,9 @@
+import requests
+
+
+__context__ = 'zerodoc'
 __fullframeengine__ = True
 
-import requests
 
 r = requests.get('http://www.x.com')
 

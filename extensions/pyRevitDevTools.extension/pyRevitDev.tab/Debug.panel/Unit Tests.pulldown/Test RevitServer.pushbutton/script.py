@@ -1,6 +1,9 @@
-__fullframeengine__ = True
-
 from rpws import RevitServer
+
+
+__fullframeengine__ = True
+__context__ = 'zerodoc'
+
 
 rs = RevitServer('rshil02', '2017')
 

@@ -1,5 +1,9 @@
 from pyrevit.forms import ProgressBar
 
+
+__context__ = 'zerodoc'
+
+
 # with ProgressBar(indeterminate=True) as pb:
 # with ProgressBar(title='Test Title', indeterminate=True) as pb:
 with ProgressBar() as pb:
