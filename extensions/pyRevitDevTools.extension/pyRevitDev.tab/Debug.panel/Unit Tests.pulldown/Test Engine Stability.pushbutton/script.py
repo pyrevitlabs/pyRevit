@@ -1,4 +1,4 @@
-from pyrevit import PYTHON_LIB_DIR, MAIN_LIB_DIR
+from pyrevit import MISC_LIB_DIR, MAIN_LIB_DIR
 from pyrevit import coreutils
 from pyrevit import framework
 from pyrevit import script
@@ -16,7 +16,7 @@ output = script.get_output()
 
 TEST_UNIT = 100
 MAX_TESTS = 5 * TEST_UNIT
-script = "import random; random.randint(1,10)"
+script = "import sys; print(sys.path)"
 
 
 def run(engine, runtime):
@@ -31,7 +31,7 @@ def run(engine, runtime):
 def make_engine():
     options = {"Frames": True, "FullFrames": True, "LightweightScopes": True}
     engine = IronPython.Hosting.Python.CreateEngine(options)
-    engine.SetSearchPaths(framework.List[str]([PYTHON_LIB_DIR, MAIN_LIB_DIR]))
+    engine.SetSearchPaths(framework.List[str]([MISC_LIB_DIR, MAIN_LIB_DIR]))
     runtime = engine.Runtime
     return engine, runtime
 
