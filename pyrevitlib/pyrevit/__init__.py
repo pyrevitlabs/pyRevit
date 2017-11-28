@@ -4,6 +4,7 @@ import clr
 import sys
 import os
 import os.path as op
+from collections import namedtuple
 import traceback
 
 
@@ -105,6 +106,10 @@ class PyRevitIOError(PyRevitException):
 # ------------------------------------------------------------------------------
 # Wrapper for __revit__ builtin parameter set in scope by C# Script Executor
 # ------------------------------------------------------------------------------
+_HostApplicationCommand = namedtuple('_HostApplicationCommand',
+                                     ['name', 'key', 'id', 'rvtobj'])
+
+
 class _HostApplication:
     """Contains current host version and provides comparison functions."""
     def __init__(self):
@@ -200,6 +205,23 @@ class _HostApplication:
 
     def is_older_than(self, version):
         return int(self.version) < int(version)
+
+    @staticmethod
+    def get_postable_commands():
+        postable_cmds = []
+        for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
+            try:
+                rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
+                postable_cmds.append(
+                    _HostApplicationCommand(name=str(pc),
+                                            key=rcid.Name,
+                                            id=rcid.Id,
+                                            rvtobj=rcid)
+                    )
+            except Exception:
+                pass
+
+        return postable_cmds
 
 
 HOST_APP = _HostApplication()

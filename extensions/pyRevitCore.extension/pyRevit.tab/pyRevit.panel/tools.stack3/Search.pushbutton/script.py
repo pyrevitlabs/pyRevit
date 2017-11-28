@@ -1,3 +1,4 @@
+from pyrevit import HOST_APP
 from pyrevit.loader import sessionmgr
 from pyrevit import forms
 from pyrevit import framework
@@ -131,7 +132,9 @@ class SearchPrompt(forms.WPFWindow):
         dlg.ShowDialog()
         return dlg.response
 
+
 pyrevit_cmds = {}
+postable_cmds = {x.name:x for x in HOST_APP.get_postable_commands()}
 
 
 # find all available commands (for current selection)
@@ -142,9 +145,15 @@ for cmd in sessionmgr.find_all_available_commands():
         pyrevit_cmds[cmd_inst.baked_cmdName] = cmd
 
 
-selected_cmd_name = SearchPrompt.show_prompt(pyrevit_cmds.keys(),
+all_commands = pyrevit_cmds.keys()
+all_commands.extend(postable_cmds.keys())
+
+selected_cmd_name = SearchPrompt.show_prompt(all_commands,
                                              width=600, height=100)
 
 if selected_cmd_name:
-    selected_cmd = pyrevit_cmds[selected_cmd_name]
-    sessionmgr.execute_command_cls(selected_cmd)
+    if selected_cmd_name in postable_cmds.keys():
+        __revit__.PostCommand(postable_cmds[selected_cmd_name].rvtobj)
+    else:
+        selected_cmd = pyrevit_cmds[selected_cmd_name]
+        sessionmgr.execute_command_cls(selected_cmd)
