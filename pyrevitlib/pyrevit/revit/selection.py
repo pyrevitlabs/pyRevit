@@ -9,17 +9,26 @@ logger = get_logger(__name__)
 class CurrentElementSelection:
     def __init__(self):
         if HOST_APP.uidoc:
-            self.elements = \
-                [HOST_APP.doc.GetElement(el_id)
-                 for el_id in HOST_APP.uidoc.Selection.GetElementIds()]
+            self._refs = \
+                [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
         else:
-            self.elements = []
+            self._refs = []
 
     def __len__(self):
-        return len(self.elements)
+        return len(self._refs)
 
     def __iter__(self):
-        return iter(self.elements)
+        for elref in self._refs:
+            yield HOST_APP.doc.GetElement(elref)
+
+    def __contains__(self, item):
+        if isinstance(item, DB.Element):
+            elref = item.Id
+        elif isinstance(item, DB.ElementId):
+            elref = item
+        else:
+            elref = DB.ElementId.InvalidElementId
+        return elref in self._refs
 
     @staticmethod
     def _get_element_ids(mixed_list):
@@ -40,21 +49,25 @@ class CurrentElementSelection:
 
     @property
     def is_empty(self):
-        return len(self.elements) == 0
+        return len(self._refs) == 0
+
+    @property
+    def elements(self):
+        return [HOST_APP.doc.GetElement(x) for x in self._refs]
 
     @property
     def element_ids(self):
-        return [el.Id for el in self.elements]
+        return self._refs
 
     @property
     def first(self):
-        if self.elements:
-            return self.elements[0]
+        if self._refs:
+            return HOST_APP.doc.GetElement(self._refs[0])
 
     @property
     def last(self):
-        if self.elements:
-            return self.elements[len(self)-1]
+        if self._refs:
+            return HOST_APP.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
         HOST_APP.uidoc.Selection.SetElementIds(
@@ -70,7 +83,7 @@ class CurrentElementSelection:
         HOST_APP.uidoc.Selection.SetElementIds(
             framework.List[DB.ElementId](new_elids)
         )
-        self.elements = \
+        self._refs = \
             [HOST_APP.doc.GetElement(el_id)
              for el_id in new_elids]
 
