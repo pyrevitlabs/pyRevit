@@ -800,7 +800,8 @@ class ProgressBar(TemplatePromptBar):
                        TextWrapping="Wrap" Text="TextBlock"
                        TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
-            <Button HorizontalAlignment="Left"
+            <Button x:Name="cancel_b"
+                    HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     Content="Cancel"
                     Margin="12,0,0,0"
@@ -850,6 +851,7 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.IsIndeterminate = value
 
     def clicked_cancel(self, sender, args):
+        self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True
 
     def update_progress(self, new_value, max_value):
