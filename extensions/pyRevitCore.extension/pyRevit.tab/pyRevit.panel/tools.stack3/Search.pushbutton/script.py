@@ -3,6 +3,7 @@ from pyrevit.loader import sessionmgr
 from pyrevit import forms
 from pyrevit import framework
 from pyrevit import script
+from collections import OrderedDict
 
 
 __context__ = 'zerodoc'
@@ -27,15 +28,25 @@ class SearchPrompt(forms.WPFWindow):
         self.search_tb.Text = ''
         self.set_search_results()
 
+    @property
+    def search_term(self):
+        return self.search_tb.Text.lower().strip()
+
+    @property
+    def search_input(self):
+        return self.search_tb.Text
+
     def update_results_display(self):
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
 
-        results = sorted(set(self._search_results))
+        # remove duplicates while keeping order
+        # results = list(set(self._search_results))
+        results = OrderedDict.fromkeys(self._search_results).keys()
         res_cout = len(results)
 
-        logger.debug(res_cout)
-        logger.debug(results)
+        logger.debug('unique results count: {}'.format(res_cout))
+        logger.debug('unique results: {}'.format(results))
 
         if res_cout > 1:
             self.show_element(self.tab_icon)
@@ -53,7 +64,7 @@ class SearchPrompt(forms.WPFWindow):
         if self._result_index < 0:
             self._result_index = res_cout - 1
 
-        cur_txt = self.search_tb.Text.lower()
+        cur_txt = self.search_term
 
         if not cur_txt:
             self.directmatch_tb.Text = 'pyRevit Search'
@@ -61,13 +72,13 @@ class SearchPrompt(forms.WPFWindow):
 
         if results:
             cur_res = results[self._result_index]
-            logger.debug(cur_res)
+            logger.debug('current result: {}'.format(cur_res))
             if cur_res.lower().startswith(cur_txt):
-                logger.debug('directmatch_tb.Text', cur_res)
+                logger.debug('directmatch_tb.Text: {}'.format(cur_res))
                 self.directmatch_tb.Text = \
                     self.search_tb.Text + cur_res[len(cur_txt):]
             else:
-                logger.debug('wordsmatch_tb.Text', cur_res)
+                logger.debug('wordsmatch_tb.Text: {}'.format(cur_res))
                 self.wordsmatch_tb.Text = '- {}'.format(cur_res)
 
             self.response = cur_res
@@ -81,13 +92,15 @@ class SearchPrompt(forms.WPFWindow):
         self._search_results = []
 
         for resultset in args:
-            self._search_results.extend(resultset)
+            logger.debug('result set: {}'.format(resultset))
+            self._search_results.extend(sorted(resultset))
 
+        logger.debug('results: {}'.format(self._search_results))
         self.update_results_display()
 
     def find_direct_match(self):
         results = []
-        cur_txt = self.search_tb.Text.lower()
+        cur_txt = self.search_term
         if cur_txt:
             for cmd_name in self._context:
                 if cmd_name.lower().startswith(cur_txt):
@@ -97,7 +110,7 @@ class SearchPrompt(forms.WPFWindow):
 
     def find_word_match(self):
         results = []
-        cur_txt = self.search_tb.Text.lower()
+        cur_txt = self.search_term
         if cur_txt:
             cur_words = cur_txt.split(' ')
             for cmd_name in self._context:
@@ -140,9 +153,8 @@ postable_cmds = {x.name:x for x in HOST_APP.get_postable_commands()}
 # find all available commands (for current selection)
 # in currently active document
 for cmd in sessionmgr.find_all_available_commands():
-    cmd_inst = cmd()
-    if hasattr(cmd_inst, 'baked_cmdName'):
-        pyrevit_cmds[cmd_inst.baked_cmdName] = cmd
+    if cmd.name:
+        pyrevit_cmds[cmd.name] = cmd
 
 
 all_commands = pyrevit_cmds.keys()
@@ -156,4 +168,4 @@ if selected_cmd_name:
         __revit__.PostCommand(postable_cmds[selected_cmd_name].rvtobj)
     else:
         selected_cmd = pyrevit_cmds[selected_cmd_name]
-        sessionmgr.execute_command_cls(selected_cmd)
+        sessionmgr.execute_command_cls(selected_cmd.extcmd_type)

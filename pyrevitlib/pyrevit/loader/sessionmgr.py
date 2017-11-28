@@ -210,6 +210,199 @@ def load_session():
 # Functions related to finding/executing
 # pyrevit command or script in current session
 # -----------------------------------------------------------------------------
+class PyRevitExternalCommandType(object):
+    def __init__(self, extcmd_type, extcmd_availtype):
+        self._extcmd_type = extcmd_type
+        self._extcmd = extcmd_type()
+        if extcmd_availtype:
+            self._extcmd_availtype = extcmd_availtype
+            self._extcmd_avail = extcmd_availtype()
+        else:
+            self._extcmd_availtype = None
+            self._extcmd_avail = None
+
+    @property
+    def extcmd_type(self):
+        return self._extcmd_type
+
+    @property
+    def typename(self):
+        return self._extcmd_type.FullName
+
+    @property
+    def extcmd_availtype(self):
+        return self._extcmd_availtype
+
+    @property
+    def avail_typename(self):
+        return self._extcmd_availtype.FullName
+
+    @property
+    def script(self):
+        return getattr(self._extcmd, 'baked_scriptSource', None)
+
+    @property
+    def alternate_script(self):
+        return getattr(self._extcmd, 'baked_alternateScriptSource', None)
+
+    @property
+    def syspaths(self):
+        return getattr(self._extcmd, 'baked_syspaths', None)
+
+    @property
+    def helpsource(self):
+        return getattr(self._extcmd, 'baked_helpSource', None)
+
+    @property
+    def name(self):
+        return getattr(self._extcmd, 'baked_cmdName', None)
+
+    @property
+    def bundle(self):
+        return getattr(self._extcmd, 'baked_cmdBundle', None)
+
+    @property
+    def extension(self):
+        return getattr(self._extcmd, 'baked_cmdExtension', None)
+
+    @property
+    def unique_id(self):
+        return getattr(self._extcmd, 'baked_cmdUniqueName', None)
+
+    @property
+    def needs_clean_engine(self):
+        return getattr(self._extcmd, 'baked_needsCleanEngine', None)
+
+    @property
+    def needs_fullframe_engine(self):
+        return getattr(self._extcmd, 'baked_needsFullFrameEngine', None)
+
+    def is_available(self, category_set, zerodoc=False):
+        if self._extcmd_availtype:
+            return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp,
+                                                         category_set)
+        elif not zerodoc:
+            return True
+
+        return False
+
+
+pyrevit_extcmdtype_cache = []
+
+
+def find_all_commands(category_set=None, cache=True):
+    global pyrevit_extcmdtype_cache
+
+    if cache and pyrevit_extcmdtype_cache:
+        pyrevit_extcmds = pyrevit_extcmdtype_cache
+    else:
+        pyrevit_extcmds = []
+        for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+            loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+            if loaded_assm:
+                all_exported_types = loaded_assm[0].GetTypes()
+                all_exported_type_names = [x.Name for x in all_exported_types]
+
+                for pyrvt_type in all_exported_types:
+                    tname = pyrvt_type.FullName
+                    availtname = pyrvt_type.Name \
+                                 + COMMAND_AVAILABILITY_NAME_POSTFIX
+                    pyrvt_availtype = None
+
+                    if not tname.endswith(COMMAND_AVAILABILITY_NAME_POSTFIX)\
+                            and LOADER_BASE_NAMESPACE not in tname:
+                        for exported_type in all_exported_types:
+                            if exported_type.Name == availtname:
+                                pyrvt_availtype = exported_type
+
+                        pyrevit_extcmds.append(
+                            PyRevitExternalCommandType(pyrvt_type,
+                                                       pyrvt_availtype)
+                            )
+        if cache:
+            pyrevit_extcmdtype_cache = pyrevit_extcmds
+
+    # now check commands in current context if requested
+    if category_set:
+        return [x for x in pyrevit_extcmds
+                if x.is_available(category_set=category_set,
+                                  zerodoc=HOST_APP.uidoc is None)]
+    else:
+        return pyrevit_extcmds
+
+
+def find_all_available_commands(use_current_context=True, cache=True):
+    if use_current_context:
+        cset = revit.get_selection_category_set()
+    else:
+        cset = None
+
+    return find_all_commands(category_set=cset, cache=cache)
+
+
+def find_pyrevitcmd(pyrevitcmd_unique_id):
+    """Searches the pyRevit-generated assemblies under current session for
+    the command with the matching unique name (class name) and returns the
+    command type. Notice that this returned value is a 'type' and should be
+    instantiated before use.
+
+    Example:
+        >>> cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
+        >>> command_instance = cmd()
+        >>> command_instance.Execute() # Provide commandData, message, elements
+
+    Args:
+        pyrevitcmd_unique_id (str): Unique name for the command
+
+    Returns:
+        Type for the command with matching unique name
+    """
+    # go through assmebles loaded under current pyRevit session
+    # and try to find the command
+    for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+        if loaded_assm:
+            for pyrvt_type in loaded_assm[0].GetTypes():
+                if pyrvt_type.FullName == pyrevitcmd_unique_id:
+                    return pyrvt_type
+
+    return None
+
+
+def execute_command_cls(extcmd_type):
+    tmp_cmd_data = \
+        FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
+    tmp_cmd_data.Application = HOST_APP.uiapp
+    # tmp_cmd_data.IsReadOnly = False
+    # tmp_cmd_data.View = None
+    # tmp_cmd_data.JournalData = None
+
+    command_instance = extcmd_type()
+    re = command_instance.Execute(tmp_cmd_data, '', DB.ElementSet())
+    command_instance = None
+    return re
+
+
+def execute_command(pyrevitcmd_unique_id):
+    """Executes a pyRevit command.
+
+    Args:
+        pyrevitcmd_unique_id (str): Unique/Class Name of the pyRevit command
+
+    Returns:
+        results from the executed command
+    """
+
+    cmd_class = find_pyrevitcmd(pyrevitcmd_unique_id)
+
+    if not cmd_class:
+        logger.error('Can not find command with unique name: {}'
+                     .format(pyrevitcmd_unique_id))
+        return None
+    else:
+        execute_command_cls(cmd_class)
+
+
 def execute_script(script_path):
     """Executes a script using pyRevit script executor.
 
@@ -242,104 +435,3 @@ def execute_script(script_path):
                            results_dict)
 
     return results_dict
-
-
-def find_all_commands(category_set=None, zerodoc=False):
-    pyrvt_cmds = []
-    for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
-        if loaded_assm:
-            all_exported_types = loaded_assm[0].GetTypes()
-            all_exported_type_names = [x.Name for x in all_exported_types]
-
-            cmd_only_types = []
-            for pyrvt_type in all_exported_types:
-                if not pyrvt_type.FullName.endswith(COMMAND_AVAILABILITY_NAME_POSTFIX) \
-                        and LOADER_BASE_NAMESPACE not in pyrvt_type.FullName:
-                    cmd_only_types.append(pyrvt_type)
-
-            if category_set or zerodoc:
-                for pyrvt_type in cmd_only_types:
-                    avail_class_name = pyrvt_type.Name \
-                                       + COMMAND_AVAILABILITY_NAME_POSTFIX
-                    if avail_class_name in all_exported_type_names:
-                        for exported_type in all_exported_types:
-                            if exported_type.Name == avail_class_name:
-                                et = exported_type()
-                                if et.IsCommandAvailable(HOST_APP.uiapp,
-                                                         category_set):
-                                    pyrvt_cmds.append(pyrvt_type)
-                    else:
-                        if not zerodoc:
-                            pyrvt_cmds.append(pyrvt_type)
-
-    return pyrvt_cmds
-
-
-def find_all_available_commands():
-    cset = revit.get_selection_category_set()
-    return find_all_commands(category_set=cset,
-                             zerodoc=HOST_APP.uidoc is None)
-
-
-def find_loaded_command(command_unique_name):
-    """Searches the pyRevit-generated assemblies under current session for
-    the command with the matching unique name (class name) and returns the
-    command type. Notice that this returned value is a 'type' and should be
-    instantiated before use.
-
-    Example:
-        >>> cmd = find_loaded_command('pyRevitCorepyRevitpyRevittoolsReload')
-        >>> command_instance = cmd()
-        >>> command_instance.Execute() # Provide commandData, message, elements
-
-    Args:
-        command_unique_name (str): Unique name for the command
-
-    Returns:
-        Type for the command with matching unique name
-    """
-    # go through assmebles loaded under current pyRevit session
-    # and try to find the command
-    for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
-        if loaded_assm:
-            for pyrvt_type in loaded_assm[0].GetTypes():
-                if pyrvt_type.FullName == command_unique_name:
-                    return pyrvt_type
-
-    return None
-
-
-def execute_command_cls(cmd_class):
-    tmp_cmd_data = \
-        FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
-    tmp_cmd_data.Application = HOST_APP.uiapp
-    # tmp_cmd_data.IsReadOnly = False
-    # tmp_cmd_data.View = None
-    # tmp_cmd_data.JournalData = None
-
-    command_instance = cmd_class()
-    re = command_instance.Execute(tmp_cmd_data, '', DB.ElementSet())
-    command_instance = None
-    return re
-
-
-def execute_command(command_unique_name):
-    """Executes a pyRevit command.
-
-    Args:
-        command_unique_name (str): Unique/Class Name of the pyRevit command
-
-    Returns:
-        results from the executed command
-    """
-
-    cmd_class = find_loaded_command(command_unique_name)
-
-    if not cmd_class:
-        logger.error('Can not find command with unique name: {}'
-                     .format(command_unique_name))
-        return None
-    else:
-        execute_command_cls(cmd_class)

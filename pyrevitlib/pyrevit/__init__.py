@@ -116,6 +116,7 @@ class _HostApplication:
         # verify __revit__
         try:
             r = __revit__
+            self._postable_cmds = None
         except Exception:
             raise Exception('Critical Error: Host software is not supported. '
                             '(__revit__ handle is not available)')
@@ -206,22 +207,22 @@ class _HostApplication:
     def is_older_than(self, version):
         return int(self.version) < int(version)
 
-    @staticmethod
-    def get_postable_commands():
-        postable_cmds = []
-        for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
-            try:
-                rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
-                postable_cmds.append(
-                    _HostApplicationCommand(name=str(pc),
-                                            key=rcid.Name,
-                                            id=rcid.Id,
-                                            rvtobj=rcid)
-                    )
-            except Exception:
-                pass
+    def get_postable_commands(self):
+        if not self._postable_cmds:
+            self._postable_cmds = []
+            for pc in UI.PostableCommand.GetValues(UI.PostableCommand):
+                try:
+                    rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
+                    self._postable_cmds.append(
+                        _HostApplicationCommand(name=str(pc),
+                                                key=rcid.Name,
+                                                id=rcid.Id,
+                                                rvtobj=rcid)
+                        )
+                except Exception:
+                    pass
 
-        return postable_cmds
+        return self._postable_cmds
 
 
 HOST_APP = _HostApplication()
