@@ -5,6 +5,9 @@ from pyrevit import DB
 from Autodesk.Revit.DB import Element
 
 
+__all__ = ['ElementWrapper', 'get_project_info']
+
+
 class ElementWrapper(object):
     def __init__(self, element):
         if isinstance(element, DB.Element):

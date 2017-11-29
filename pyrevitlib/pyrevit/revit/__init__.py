@@ -7,11 +7,12 @@ from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB, UI
 
-from pyrevit.revit import db
-from pyrevit.revit import journals
-from pyrevit.revit import selection
-from pyrevit.revit import transaction
-from pyrevit.revit import ui
+from pyrevit.revit.db import *
+from pyrevit.revit.journals import *
+from pyrevit.revit.selection import *
+from pyrevit.revit.transaction import *
+from pyrevit.revit.ui import *
+from pyrevit.revit import verify
 
 
 logger = get_logger(__name__)
@@ -19,34 +20,15 @@ logger = get_logger(__name__)
 
 class RevitWrapper(types.ModuleType):
     def __init__(self):
-        self.ElementWrapper = db.ElementWrapper
-        self.get_project_info = db.get_project_info
+        pass
 
-        self.get_journals_folder = journals.get_journals_folder
-        self.get_current_journal_file = journals.get_current_journal_file
-
-        self.pick_element = selection.pick_element
-        self.pick_elementpoint = selection.pick_elementpoint
-        self.pick_edge = selection.pick_edge
-        self.pick_face = selection.pick_face
-        self.pick_linked = selection.pick_linked
-        self.pick_elements = selection.pick_elements
-        self.pick_elementpoints = selection.pick_elementpoints
-        self.pick_edges = selection.pick_edges
-        self.pick_faces = selection.pick_faces
-        self.pick_linkeds = selection.pick_linkeds
-        self.pick_point = selection.pick_point
-        self.pick_rectangle = selection.pick_rectangle
-        self.get_selection_category_set = selection.get_selection_category_set
-        self.get_selection = selection.get_selection
-
-        self.Transaction = transaction.Transaction
-        self.DryTransaction = transaction.DryTransaction
-        self.TransactionGroup = transaction.TransactionGroup
-        self.carryout = transaction.carryout
-
-        self.set_statusbar_text = ui.set_statusbar_text
-        self.get_window_rectangle = ui.get_window_rectangle
+    def __getattr__(self, attr_name):
+        gbls = globals()
+        if attr_name in gbls:
+            return gbls[attr_name]
+        else:
+            raise AttributeError('\'module\' object has no attribute \'{}\''
+                                 .format(attr_name))
 
     @property
     def uidoc(self):

@@ -17,7 +17,7 @@ clr.ImportExtensions(System.Linq)
 
 from System import AppDomain, Version
 from System import Type
-from System import Uri
+from System import Uri, Guid
 from System import EventHandler
 from System import Array, IntPtr
 from System.Collections.Generic import List, Dictionary

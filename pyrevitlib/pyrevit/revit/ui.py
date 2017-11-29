@@ -9,6 +9,10 @@ from pyrevit.api import UIFrameworkServices as ufs
 from pyrevit.coreutils.loadertypes import User32, RECT
 
 
+__all__ = ['get_mainwindow_hwnd', 'get_statusbar_hwnd',
+           'set_statusbar_text', 'get_window_rectangle']
+
+
 def get_mainwindow_hwnd():
     return ad.ComponentManager.ApplicationWindow
 
