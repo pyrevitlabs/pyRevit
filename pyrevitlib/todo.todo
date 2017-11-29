@@ -1,12 +1,12 @@
 4.5rc:
 ☐ combine find view tools
 ☐ combine list and reload link tools
-☐ create cache for Search command
-☐ ignore context for .panelbuttons
 ☐ focus on last fitlered button in command options prompt
-☐ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256
+✔ create cache for Search command @done(2017-11-28 22:23)
+☐ ignore context for .panelbuttons
 ☐ add filter to extension window
 
+☐ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
