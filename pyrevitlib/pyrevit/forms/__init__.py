@@ -599,7 +599,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         if len(buttons) == 1:
             return buttons[0]
         else:
-            return [x for x in buttons if x.IsFocused][0]
+            for x in buttons:
+                if x.IsFocused:
+                    return x
 
     def handle_click(self, sender, args):
         self.Close()
@@ -621,7 +623,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def process_option(self, sender, args):
         self.Close()
-        self._setup_response(response=sender.Content)
+        if sender:
+            self._setup_response(response=sender.Content)
 
 
 class TemplatePromptBar(WPFWindow):
