@@ -354,8 +354,14 @@ class GenericUICommand(GenericUIComponent):
                 exts.MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_help_url = script_content.extract_param(
                 exts.COMMAND_HELP_URL)  # type: str
-            self.cmd_context = script_content.extract_param(
-                exts.COMMAND_CONTEXT_PARAM)  # type: str
+
+            # panel buttons should be active always
+            if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
+                self.cmd_context = script_content.extract_param(
+                    exts.COMMAND_CONTEXT_PARAM)  # type: str
+            else:
+                self.cmd_context = exts.CTX_ZERODOC
+
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
 

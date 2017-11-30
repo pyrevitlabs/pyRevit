@@ -1,10 +1,11 @@
 4.5rc:
 ☐ combine find view tools
 ☐ combine list and reload link tools
-☐ focus on last fitlered button in command options prompt
+✘ focus on last fitlered button in command options prompt @cancelled(2017-11-29 21:11)
 ✔ create cache for Search command @done(2017-11-28 22:23)
-☐ ignore context for .panelbuttons
+✔ ignore context for .panelbuttons @done(2017-11-29 21:19)
 ☐ add filter to extension window
+✔ add switch to commandoptions form @done(2017-11-29 21:11)
 ✔ print sheet tool to combine prints @done(2017-11-29 17:59)
 
 ☐ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256

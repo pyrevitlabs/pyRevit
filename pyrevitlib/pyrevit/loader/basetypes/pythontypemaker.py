@@ -8,6 +8,7 @@ from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
 
 from pyrevit.userconfig import user_config
 
+import pyrevit.extensions as exts
 import pyrevit.plugins.extpackages as extpkgs
 
 
@@ -49,12 +50,12 @@ def _make_python_avail_type(module_builder, cmd_component):
 
     context_str = cmd_component.cmd_context.lower()
 
-    if context_str == 'selection':
+    if context_str == exts.CTX_SELETION:
         create_type(module_builder, CMD_AVAIL_TYPE_SELECTION,
                     cmd_component.unique_avail_name, [],
                     cmd_component.cmd_context)
 
-    elif context_str == 'zerodoc':
+    elif context_str == exts.CTX_ZERODOC:
         create_type(module_builder, CMD_AVAIL_TYPE,
                     cmd_component.unique_avail_name, [])
 

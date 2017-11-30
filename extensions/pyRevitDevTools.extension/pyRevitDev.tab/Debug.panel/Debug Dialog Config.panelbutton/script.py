@@ -4,7 +4,9 @@ from pyrevit.coreutils import logger
 slogger = logger.get_logger(__commandname__)
 
 
-__context__ = 'zerodoc'
+# panelbutton should discard the __context__
+# they should always be active
+__context__ = 'selection'
 __helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 
 
