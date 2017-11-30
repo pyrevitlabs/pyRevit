@@ -564,8 +564,18 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             my_button.Click += self.process_option
             self.button_list.Children.Add(my_button)
 
+        self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    def _setup_response(self, response=None):
+        if self._switches:
+            switches = [x for x in self.button_list.Children
+                        if hasattr(x, 'IsChecked')]
+            self.response = response, {x.Content: x.IsChecked
+                                       for x in switches}
+        else:
+            self.response = response
 
     def _filter_options(self, option_filter=None):
         if option_filter:
@@ -611,13 +621,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def process_option(self, sender, args):
         self.Close()
-        if self._switches:
-            switches = [x for x in self.button_list.Children
-                        if hasattr(x, 'IsChecked')]
-            self.response = sender.Content, {x.Content:x.IsChecked
-                                             for x in switches}
-        else:
-            self.response = sender.Content
+        self._setup_response(response=sender.Content)
 
 
 class TemplatePromptBar(WPFWindow):
