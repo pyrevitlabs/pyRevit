@@ -1,6 +1,4 @@
 4.5rc:
-☐ add filter to extension window
-
 ☐ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
@@ -14,6 +12,7 @@
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ add filter to extension window @done(2017-11-30 10:51)
     ✔ combine find view tools @done(2017-11-30 10:30)
     ✔ combine list and reload link tools @done(2017-11-30 10:30)
     ✘ focus on last fitlered button in command options prompt @cancelled(2017-11-29 21:11)

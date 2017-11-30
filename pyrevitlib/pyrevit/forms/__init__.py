@@ -69,27 +69,35 @@ class WPFWindow(framework.Windows.Window):
         return self.ShowDialog()
 
     def set_image_source(self, element_name, image_file):
-        wpf_element = getattr(self, element_name)
+        wpfel = getattr(self, element_name)
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
-            wpf_element.Source = \
+            wpfel.Source = \
                 framework.Imaging.BitmapImage(
                     framework.Uri(os.path.join(EXEC_PARAMS.command_path,
                                                image_file))
                     )
         else:
-            wpf_element.Source = \
+            wpfel.Source = \
                 framework.Imaging.BitmapImage(framework.Uri(image_file))
 
     @staticmethod
     def hide_element(*wpf_elements):
-        for wpf_element in wpf_elements:
-            wpf_element.Visibility = framework.Windows.Visibility.Collapsed
+        for wpfel in wpf_elements:
+            wpfel.Visibility = framework.Windows.Visibility.Collapsed
 
     @staticmethod
     def show_element(*wpf_elements):
-        for wpf_element in wpf_elements:
-            wpf_element.Visibility = framework.Windows.Visibility.Visible
+        for wpfel in wpf_elements:
+            wpfel.Visibility = framework.Windows.Visibility.Visible
+
+    @staticmethod
+    def toggle_element(*wpf_elements):
+        for wpfel in wpf_elements:
+            if wpfel.Visibility == framework.Windows.Visibility.Visible:
+                self.hide_element(wpfel)
+            elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
+                self.show_element(wpfel)
 
 
 class TemplateUserInputWindow(WPFWindow):

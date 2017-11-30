@@ -28,7 +28,6 @@ class ExtensionPackageListItem:
         URL (str): Package website url, optional
         Installed (str): Package is installed, Yes/No
         Status (str): Package is Enabled/Disabled. '--' if not installed
-
     """
 
     def __init__(self, extension_package):
@@ -69,6 +68,10 @@ class ExtensionPackageListItem:
                 self.Version = self.ext_pkg.version[:7]
         else:
             self.Status = self.Version = '--'
+
+    def searchable_values(self):
+        return ' '.join([self.Type, self.Name, self.Desciption,
+                         self.Author, self.Status])
 
 
 class InstallPackageMenuItem(framework.Controls.MenuItem):
@@ -134,11 +137,11 @@ class ExtensionsWindow(forms.WPFWindow):
 
         """
 
-        cur_exts_list = []
+        self._exts_list = []
         for plugin_ext in ext_pkgs_list:
-            cur_exts_list.append(ExtensionPackageListItem(plugin_ext))
+            self._exts_list.append(ExtensionPackageListItem(plugin_ext))
 
-        self.extpkgs_lb.ItemsSource = cur_exts_list
+        self.extpkgs_lb.ItemsSource = self._exts_list
         self.extpkgs_lb.SelectedIndex = 0
 
     def _update_ext_info_panel(self, ext_pkg_item):
@@ -168,6 +171,14 @@ class ExtensionsWindow(forms.WPFWindow):
                 framework.Uri(ext_pkg_item.ext_pkg.author_profile)
         else:
             self.ext_author_t.Text = ''
+
+        # Update the repo link
+        if ext_pkg_item.GitURL:
+            self.ext_repolink_t.Text = ext_pkg_item.GitURL
+            self.ext_repolink_hl.NavigateUri = \
+                framework.Uri(ext_pkg_item.GitURL)
+        else:
+            self.ext_repolink_t.Text = ''
 
         # Update Installed folder info
         if ext_pkg_item.ext_pkg.is_installed:
@@ -239,12 +250,38 @@ class ExtensionsWindow(forms.WPFWindow):
             self.privaterepo_cb.IsChecked = False
             self.repopassword_tb.Text = self.repousername_tb.Text = ''
 
+    def _list_options(self, option_filter=None):
+        if option_filter:
+            option_filter = option_filter.lower()
+            self.extpkgs_lb.ItemsSource = \
+                [x for x in self._exts_list
+                 if option_filter in x.searchable_values().lower()]
+        else:
+            self.extpkgs_lb.ItemsSource = self._exts_list
+
+    def search_txt_changed(self, sender, args):
+        if self.search_tb.Text == '':
+            self.hide_element(self.clrsearch_b)
+        else:
+            self.show_element(self.clrsearch_b)
+
+        self._list_options(option_filter=self.search_tb.Text.lower())
+
+    def clear_search(self, sender, args):
+        self.search_tb.Text = ' '
+        self.search_tb.Clear()
+        self.extpkgs_lb.ItemsSource = self._exts_list
+
     def update_ext_info(self, sender, args):
         """Callback for updating info panel on package selection change
         """
-        self._update_ext_info_panel(self.selected_pkg)
-        self._update_ext_action_buttons(self.selected_pkg)
-        self._update_ext_settings_panel(self.selected_pkg)
+        if self.selected_pkg:
+            self.show_element(self.ext_infopanel)
+            self._update_ext_info_panel(self.selected_pkg)
+            self._update_ext_action_buttons(self.selected_pkg)
+            self._update_ext_settings_panel(self.selected_pkg)
+        else:
+            self.hide_element(self.ext_infopanel)
 
     def handle_url_click(self, sender, args):
         """Callback for handling click on package website url
