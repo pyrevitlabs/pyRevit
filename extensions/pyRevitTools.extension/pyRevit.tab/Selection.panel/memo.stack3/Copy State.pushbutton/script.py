@@ -325,15 +325,15 @@ elif selected_switch == 'Crop Region':
     av = revit.activeview
     crsm = av.GetCropRegionShapeManager()
 
-    f = open(datafile, 'w')
-    if HOST_APP.is_newer_than(2015):
-        clooplist = crsm.GetCropShape()
-        if clooplist:
-            curvedata = clooplist[0]
-        else:
-            script.exit()
-    else:
-        curvedata = crsm.GetCropRegionShape()
+    if crsm.Valid:
+        with open(datafile, 'w') as f:
+            if HOST_APP.is_newer_than(2015):
+                clooplist = crsm.GetCropShape()
+                if clooplist:
+                    curvedata = clooplist[0]
+                else:
+                    script.exit()
+            else:
+                curvedata = crsm.GetCropRegionShape()
 
-    pickle.dump(make_picklable_list(curvedata), f)
-    f.close()
+            pickle.dump(make_picklable_list(curvedata), f)
