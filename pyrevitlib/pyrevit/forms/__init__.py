@@ -595,7 +595,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = framework.Windows.Visibility.Visible
         else:
-            self.search_tb.Tag = 'Type to Filter / Tab to Select / Enter to Run'
+            self.search_tb.Tag = \
+                'Type to Filter / Tab to Select / Enter or Click to Run'
             for button in self.button_list.Children:
                 button.Visibility = framework.Windows.Visibility.Visible
 
