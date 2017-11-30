@@ -438,6 +438,88 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     </Setter.Value>
                 </Setter>
             </Style>
+        <Style TargetType="{x:Type ToggleButton}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#CCCCCC" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                    HorizontalAlignment="Center"
+                                    Padding="6,0,10,0"
+                                    CornerRadius="10"
+                                    Height="20"
+                                    Margin="0,0,5,5"
+                                    SnapsToDevicePixels="true">
+                            <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center">
+                                <Canvas Name="Layer_1"
+                                            Width="25"
+                                            Height="12"
+                                            VerticalAlignment="Center">
+                                    <Line Canvas.Top="6"
+                                              X1="5" X2="20"
+                                              Width="25"
+                                              StrokeThickness="1"
+                                              Stroke="{TemplateBinding BorderBrush}"/>
+                                    <Ellipse x:Name="ellipse"
+                                                 Canvas.Left="0"
+                                                 Width="12"
+                                                 Height="12"
+                                                 Fill="White"
+                                                 Stroke="{TemplateBinding BorderBrush}"
+                                                 StrokeThickness="1">
+                                        <Ellipse.RenderTransform>
+                                            <TranslateTransform X="0" Y="0" />
+                                        </Ellipse.RenderTransform>
+                                    </Ellipse>
+                                </Canvas>
+                                <TextBlock x:Name="buttontitle"
+                                               Text="{TemplateBinding Content}"
+                                               Margin="5,0,5,0"
+                                               Height="{TemplateBinding Height}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{TemplateBinding Foreground}"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True" >
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+                                                                           Storyboard.TargetName="ellipse">
+                                                <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
+                                            </DoubleAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
+                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+                                                                               Storyboard.TargetName="ellipse">
+                                                <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
+                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
+                                            </DoubleAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="true">
+                                <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         </Window.Resources>
         <Border CornerRadius="15"
                 Background="{DynamicResource pyRevitDarkerDarkBrush}">
@@ -465,14 +547,21 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.Title = 'Command Options'
 
         message = kwargs.get('message', None)
+        self._switches = kwargs.get('switches', [])
 
         self.message_label.Content = \
             message if message else 'Pick a command option:'
 
-        for switch in self._context:
+        # creates the switches first
+        for switch in self._switches:
+            my_togglebutton = framework.Controls.Primitives.ToggleButton()
+            my_togglebutton.Content = switch
+            self.button_list.Children.Add(my_togglebutton)
+
+        for option in self._context:
             my_button = framework.Controls.Button()
-            my_button.Content = switch
-            my_button.Click += self.process_switch
+            my_button.Content = option
+            my_button.Click += self.process_option
             self.button_list.Children.Add(my_button)
 
         self.search_tb.Focus()
@@ -512,14 +601,23 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             else:
                 self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
-            self.process_switch(self._get_active_button(), None)
+            self.process_option(self._get_active_button(), None)
+        elif args.Key != framework.Windows.Input.Key.Tab \
+                and args.Key != framework.Windows.Input.Key.Space:
+            self.search_tb.Focus()
 
     def search_txt_changed(self, sender, args):
         self._filter_options(option_filter=self.search_tb.Text)
 
-    def process_switch(self, sender, args):
+    def process_option(self, sender, args):
         self.Close()
-        self.response = sender.Content
+        if self._switches:
+            switches = [x for x in self.button_list.Children
+                        if hasattr(x, 'IsChecked')]
+            self.response = sender.Content, {x.Content:x.IsChecked
+                                             for x in switches}
+        else:
+            self.response = sender.Content
 
 
 class TemplatePromptBar(WPFWindow):

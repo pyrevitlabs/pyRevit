@@ -1,7 +1,10 @@
 """This is the tooltip content"""
 
-from pyrevit.coreutils import logger
-slogger = logger.get_logger(__commandname__)
+from pyrevit import forms
+from pyrevit import script
+
+
+slogger = script.get_logger()
 
 
 __context__ = 'zerodoc'
@@ -10,10 +13,26 @@ __helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 
 if __shiftclick__:
     print('Shift-Clicked button')
+    script.exit()
 
 if __forceddebugmode__:
     print('Ctrl-Clicked button')
+    script.exit()
 
 
-slogger.debug('Debug message')
-print('Try different Modifier keys with this button to check results.')
+selected_switch, switches = \
+    forms.CommandSwitchWindow.show(
+        ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'],
+        switches=['Switch 1', 'Switch 2'],
+        message='Select Option:'
+        )
+
+if selected_switch:
+    slogger.debug('Debug message')
+    print('Try different Modifier keys with '
+          'this button to check results. '
+          '\n Selected Option: {}'
+          '\n Switch 1 = {}'
+          '\n Switch 2 = {}'.format(selected_switch,
+                                    switches['Switch 1'],
+                                    switches['Switch 2']))
