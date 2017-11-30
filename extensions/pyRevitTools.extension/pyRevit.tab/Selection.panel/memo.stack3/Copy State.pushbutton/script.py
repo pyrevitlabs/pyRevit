@@ -198,19 +198,29 @@ elif selected_option == 'Viewport Placement on Sheet':
         viewspecificelements = []
         for el in curviewelements:
             if el.ViewSpecific \
-                    and (not el.IsHidden(selview)) \
-                    and el.CanBeHidden \
+                    and not el.IsHidden(selview) \
+                    and el.CanBeHidden(selview) \
                     and el.Category is not None:
+                viewspecificelements.append(el.Id)
+
+        basepoints = DB.FilteredElementCollector(revit.doc)\
+                       .OfClass(DB.BasePoint)\
+                       .WhereElementIsNotElementType()\
+                       .ToElements()
+
+        excludecategories = ['Survey Point',
+                             'Project Base Point']
+        for el in basepoints:
+            if el.Category and el.Category.Name in excludecategories:
                 viewspecificelements.append(el.Id)
 
         with revit.TransactionGroup('Activate & Read Cropbox Boundary'):
             with revit.Transaction('Hiding all 2d elements'):
                 if viewspecificelements:
-                    for elid in viewspecificelements:
-                        try:
-                            selview.HideElements(List[DB.ElementId](elid))
-                        except Exception:
-                            pass
+                    try:
+                        selview.HideElements(List[DB.ElementId](viewspecificelements))
+                    except Exception as e:
+                        logger.debug(e)
 
             with revit.Transaction('Activate & Read Cropbox Boundary'):
                 selview.CropBoxActive = True

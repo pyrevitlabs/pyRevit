@@ -27,6 +27,9 @@ class CurrentElementSelection:
         for elref in self._refs:
             yield HOST_APP.doc.GetElement(elref)
 
+    def __getitem__(self, key):
+        return self.elements[key]
+
     def __contains__(self, item):
         if isinstance(item, DB.Element):
             elref = item.Id
