@@ -5,6 +5,7 @@
 ✔ create cache for Search command @done(2017-11-28 22:23)
 ☐ ignore context for .panelbuttons
 ☐ add filter to extension window
+✔ print sheet tool to combine prints @done(2017-11-29 17:59)
 
 ☐ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256
 ☐ add option to gitservices tool to set remote tracking branch for updates
