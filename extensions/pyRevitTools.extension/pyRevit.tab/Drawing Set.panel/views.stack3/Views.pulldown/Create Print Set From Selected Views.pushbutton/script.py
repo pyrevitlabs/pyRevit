@@ -12,8 +12,7 @@ viewsheetsetting = printmanager.ViewSheetSetting
 
 # Collect selected views
 myviewset = DB.ViewSet()
-for el_id in revit.get_selection().element_ids:
-    el = revit.doc.GetElement(el_id)
+for el in revit.get_selection():
     if isinstance(el, DB.View):
         myviewset.Insert(el)
 

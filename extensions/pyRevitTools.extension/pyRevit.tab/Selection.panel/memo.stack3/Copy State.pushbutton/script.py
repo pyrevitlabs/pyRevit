@@ -70,7 +70,7 @@ def make_picklable_list(revit_curve_list):
     return lines
 
 
-selected_switch = \
+selected_option = \
     forms.CommandSwitchWindow.show(
         ['View Zoom/Pan State',
          '3D Section Box State',
@@ -81,7 +81,7 @@ selected_switch = \
         )
 
 
-if selected_switch == 'View Zoom/Pan State':
+if selected_option == 'View Zoom/Pan State':
     datafile = \
         script.get_document_data_file(file_id='SaveRevitActiveViewZoomState',
                                       file_ext='pym',
@@ -104,7 +104,7 @@ if selected_switch == 'View Zoom/Pan State':
     pickle.dump(p2, f)
     f.close()
 
-elif selected_switch == '3D Section Box State':
+elif selected_option == '3D Section Box State':
     datafile = \
         script.get_document_data_file(file_id='SaveSectionBoxState',
                                       file_ext='pym',
@@ -145,7 +145,7 @@ elif selected_switch == '3D Section Box State':
                            'You must be on a 3D view to copy '
                            'Section Box settings.')
 
-elif selected_switch == 'Viewport Placement on Sheet':
+elif selected_option == 'Viewport Placement on Sheet':
     """
     Copyright (c) 2016 Gui Talarico
 
@@ -304,7 +304,7 @@ elif selected_switch == 'Viewport Placement on Sheet':
         UI.TaskDialog.Show('pyrevit',
                            'Select exactly one viewport.')
 
-elif selected_switch == 'Visibility Graphics':
+elif selected_option == 'Visibility Graphics':
     datafile = \
         script.get_document_data_file(file_id='SaveVisibilityGraphicsState',
                                       file_ext='pym',
@@ -316,7 +316,7 @@ elif selected_switch == 'Visibility Graphics':
     pickle.dump(int(av.Id.IntegerValue), f)
     f.close()
 
-elif selected_switch == 'Crop Region':
+elif selected_option == 'Crop Region':
     datafile = \
         script.get_document_data_file(file_id='SaveCropRegionState',
                                       file_ext='pym',
