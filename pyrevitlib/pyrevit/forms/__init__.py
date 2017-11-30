@@ -615,7 +615,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         elif args.Key == framework.Windows.Input.Key.Enter:
             self.process_option(self._get_active_button(), None)
         elif args.Key != framework.Windows.Input.Key.Tab \
-                and args.Key != framework.Windows.Input.Key.Space:
+                and args.Key != framework.Windows.Input.Key.Space\
+                and args.Key != framework.Windows.Input.Key.LeftShift\
+                and args.Key != framework.Windows.Input.Key.RightShift:
             self.search_tb.Focus()
 
     def search_txt_changed(self, sender, args):
