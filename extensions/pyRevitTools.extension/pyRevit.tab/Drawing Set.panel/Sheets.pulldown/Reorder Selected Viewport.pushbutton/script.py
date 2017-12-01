@@ -17,11 +17,12 @@ def get_selected_viewports():
 def get_nonselected_viewports(sheet):
     svps = get_selected_viewports()
     svp_ids = [x.Id for x in svps]
-    vps = sheet.GetAllViewports()
-    if svp_ids:
-        return [revit.doc.GetElement(x) for x in vps if x not in svp_ids]
-    else:
-        return []
+    if isinstance(sheet, DB.ViewSheet):
+        vps = sheet.GetAllViewports()
+        if svp_ids:
+            return [revit.doc.GetElement(x) for x in vps if x not in svp_ids]
+
+    return []
 
 
 def capture_vp_config(viewport):
