@@ -42,6 +42,11 @@ detail_line_types = [DB.DetailLine,
                      DB.DetailNurbSpline]
 
 
+metric_units = [DB.DisplayUnitType.DUT_METERS,
+                DB.DisplayUnitType.DUT_CENTIMETERS,
+                DB.DisplayUnitType.DUT_MILLIMETERS]
+
+
 PICK_COORD_RESOLUTION = 10
 
 
@@ -54,9 +59,8 @@ class MakePatternWindow(forms.WPFWindow):
 
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
-        # self.dottypes_cb.ItemsSource = patmaker.DOT_TYPES
-        # self.dottypes_cb.SelectedIndex = 0
-        self.pat_name_tb.Focus()
+        self._setup_patnames()
+        self._setup_export_units()
 
     @property
     def is_detail_pat(self):
@@ -68,7 +72,7 @@ class MakePatternWindow(forms.WPFWindow):
 
     @property
     def pat_name(self):
-        return self.pat_name_tb.Text
+        return self.pat_name_cb.Text
 
     @property
     def allow_jiggle(self):
@@ -78,6 +82,11 @@ class MakePatternWindow(forms.WPFWindow):
     def create_filledregion(self):
         return self.createfilledregion_cb.IsChecked
 
+    @property
+    def export_scale(self):
+        # 12 for feet to inch, 304.8 for feet to mm
+        return 12.0 if self.export_units_cb.SelectedItem == 'INCH' else 304.8
+
     @staticmethod
     def _cleanup_selection(rvt_elements):
         lines = []
@@ -85,6 +94,23 @@ class MakePatternWindow(forms.WPFWindow):
             if type(element) in accpeted_lines:
                 lines.append(element)
         return lines
+
+    def _setup_patnames(self):
+        existing_pats = DB.FilteredElementCollector(revit.doc)\
+                          .OfClass(DB.FillPatternElement)\
+                          .ToElements()
+        self._existing_pats = [x.Name for x in existing_pats]
+        self.pat_name_cb.ItemsSource = self._existing_pats
+        self.pat_name_cb.Focus()
+
+    def _setup_export_units(self):
+        self.export_units_cb.ItemsSource = ['INCH', 'MM']
+        units = revit.doc.GetUnits()
+        length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
+        if length_fo.DisplayUnits in metric_units:
+            self.export_units_cb.SelectedIndex = 1
+        else:
+            self.export_units_cb.SelectedIndex = 0
 
     def _pick_domain(self):
         def round_domain_coord(coord):
@@ -139,10 +165,12 @@ class MakePatternWindow(forms.WPFWindow):
             pat_scale = 1.0
 
         if export_only:
-            patmaker.export_pattern(self.pat_name,
-                                    pat_lines, domain, export_path,
+            patmaker.export_pattern(export_path,
+                                    self.pat_name,
+                                    pat_lines, domain,
+                                    scale=pat_scale * self.export_scale,
                                     model_pattern=self.is_model_pat,
-                                    scale=pat_scale * 12.0)
+                                    allow_expansion=self.highestres_cb.IsChecked)
             UI.TaskDialog.Show('pyRevit',
                                'Pattern {} exported.'
                                .format(self.pat_name))
@@ -175,7 +203,7 @@ class MakePatternWindow(forms.WPFWindow):
         if self._verify_name():
             self.Hide()
             domain = self._pick_domain()
-            export_dir = script.pick_folder()
+            export_dir = forms.pick_folder()
             if domain and export_dir:
                 self._create_pattern(domain,
                                      export_only=True,

@@ -6,6 +6,7 @@ from pyrevit import framework
 from pyrevit.framework import List
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit import versionmgr
 
 
 logger = coreutils.logger.get_logger(__name__)
@@ -26,13 +27,6 @@ MAX_DOMAIN_MULT = 8
 RATIO_RESOLUTION = 2
 ANGLE_CORR_RATIO = 0.01
 
-# not used
-DOT_TYPES = ['Line Segment',
-             u'\u2795',
-             u'\u274C',
-             u'Diamond \u25C7',
-             u'\u25EF']
-
 
 PAT_SEPARATOR = ', '
 PAT_FILE_TEMPLATE = \
@@ -42,7 +36,7 @@ PAT_FILE_TEMPLATE = \
     ";-Time                                   : {time}\n"                     \
     ";-pyRevit Version                        : {version}\n"                  \
     ";---------------------------------------------------------------------\n"\
-    ";%UNITS=INCH\n"                                                          \
+    ";%UNITS={units}\n"                                                          \
     "*{name},created by pyRevit\n"                                            \
     ";%TYPE={type}\n"
 
@@ -563,11 +557,13 @@ class _RevitPattern:
 
     def get_pat_data(self):
         pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
-        from pyrevit.versionmgr import PYREVIT_VERSION
+        unit_type = 'INCH' if self._scale == 12 else 'MM'
+        pyrvtver = versionmgr.get_pyrevit_version()
         pattern_desc = \
             PAT_FILE_TEMPLATE.format(time=coreutils.current_time(),
                                      date=coreutils.current_date(),
-                                     version=PYREVIT_VERSION.get_formatted(),
+                                     version=pyrvtver.get_formatted(),
+                                     units=unit_type,
                                      name=self._name,
                                      type=pat_type)
 
@@ -655,14 +651,16 @@ def make_pattern(pat_name, pat_lines, domain, scale=1.0,
                  model_pattern=True, allow_expansion=False,
                  create_filledregion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, scale, model_pattern, allow_expansion)
+        _make_rvt_pattern(pat_name, pat_lines, domain, scale,
+                          model_pattern, allow_expansion)
     return _create_fill_pattern(revit_pat, create_filledregion)
 
 
-def export_pattern(pat_name, pat_lines, domain, export_dir,
-                   model_pattern=True, scale=12.0):
+def export_pattern(export_dir, pat_name, pat_lines, domain, scale=12.0,
+                   model_pattern=True, allow_expansion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+        _make_rvt_pattern(pat_name, pat_lines, domain, scale,
+                          model_pattern, allow_expansion)
     return _export_pat(revit_pat, export_dir)
 
 
