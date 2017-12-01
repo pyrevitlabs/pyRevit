@@ -54,8 +54,8 @@ class MakePatternWindow(forms.WPFWindow):
 
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
-        self.dottypes_cb.ItemsSource = patmaker.DOT_TYPES
-        self.dottypes_cb.SelectedIndex = 0
+        # self.dottypes_cb.ItemsSource = patmaker.DOT_TYPES
+        # self.dottypes_cb.SelectedIndex = 0
         self.pat_name_tb.Focus()
 
     @property
@@ -149,9 +149,10 @@ class MakePatternWindow(forms.WPFWindow):
         else:
             patmaker.make_pattern(self.pat_name,
                                   pat_lines, domain,
+                                  scale=pat_scale,
                                   model_pattern=self.is_model_pat,
-                                  create_filledregion=self.create_filledregion,
-                                  scale=pat_scale)
+                                  allow_expansion=self.highestres_cb.IsChecked,
+                                  create_filledregion=self.create_filledregion)
             UI.TaskDialog.Show('pyRevit',
                                'Pattern {} created/updated.'
                                .format(self.pat_name))
