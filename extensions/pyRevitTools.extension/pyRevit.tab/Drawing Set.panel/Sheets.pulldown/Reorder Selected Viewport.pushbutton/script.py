@@ -43,17 +43,22 @@ def bring_to_front(sheet, vp_list):
             new_vp.ChangeTypeId(config.type_id)
 
 
-selected_option = \
-    forms.CommandSwitchWindow.show(
-        ['Bring to Front', 'Send to Back'],
-        message='Select reordering method:'
-    )
+selected_vps = get_selected_viewports()
+
+if selected_vps:
+    selected_option = \
+        forms.CommandSwitchWindow.show(
+            ['Bring to Front', 'Send to Back'],
+            message='Select reordering method:'
+        )
 
 
-if selected_option:
-    if selected_option == 'Bring to Front':
-        viewports = get_selected_viewports()
-    elif selected_option == 'Send to Back':
-        viewports = get_nonselected_viewports(revit.activeview)
+    if selected_option:
+        if selected_option == 'Bring to Front':
+            viewports = get_selected_viewports()
+        elif selected_option == 'Send to Back':
+            viewports = get_nonselected_viewports(revit.activeview)
 
-    bring_to_front(revit.activeview, viewports)
+        bring_to_front(revit.activeview, viewports)
+else:
+    forms.alert('Select a Viewport first.')
