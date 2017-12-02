@@ -1,4 +1,8 @@
-"""Activates selection tool that picks a specific type of element."""
+"""Activates selection tool that picks a specific type of element.
+
+Shift-Click:
+Pick from all available categories.
+"""
 
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
@@ -36,24 +40,27 @@ def pickbycategory(catname):
         pass
 
 
-options = sorted(['Area',
-                  'Area Boundary',
-                  'Column',
-                  'Dimension',
-                  'Door',
-                  'Floor',
-                  'Framing',
-                  'Furniture',
-                  'Grid',
-                  'Rooms',
-                  'Room Tag',
-                  'Truss',
-                  'Wall',
-                  'Window',
-                  'Ceiling',
-                  'Section Box',
-                  'Elevation Mark',
-                  'Parking'])
+if __shiftclick__:
+    options = sorted([x.Name for x in revit.doc.Settings.Categories])
+else:
+    options = sorted(['Area',
+                      'Area Boundary',
+                      'Column',
+                      'Dimension',
+                      'Door',
+                      'Floor',
+                      'Framing',
+                      'Furniture',
+                      'Grid',
+                      'Rooms',
+                      'Room Tag',
+                      'Truss',
+                      'Wall',
+                      'Window',
+                      'Ceiling',
+                      'Section Box',
+                      'Elevation Mark',
+                      'Parking'])
 
 selected_switch = \
     forms.CommandSwitchWindow.show(options,
