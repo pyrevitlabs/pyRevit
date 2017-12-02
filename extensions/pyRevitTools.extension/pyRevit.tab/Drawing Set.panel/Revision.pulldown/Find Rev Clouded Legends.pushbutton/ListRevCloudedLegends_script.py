@@ -4,7 +4,7 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-__title__ = 'List Legends with Revision Clouds'
+__title__ = 'Find Legends with Revision Clouds'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
