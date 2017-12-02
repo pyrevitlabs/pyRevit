@@ -5,6 +5,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
+__title__ = 'Who did that??'
 __author__ = 'Ehsan Iran-Nejad\n'\
              'Frederic Beaupere'
 
