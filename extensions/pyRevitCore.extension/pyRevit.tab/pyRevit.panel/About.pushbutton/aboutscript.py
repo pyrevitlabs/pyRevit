@@ -4,6 +4,7 @@ import sys
 from pyrevit import coreutils
 from pyrevit import versionmgr
 from pyrevit.versionmgr import urls
+from pyrevit.versionmgr import about
 from pyrevit import forms
 from pyrevit import script
 
@@ -18,6 +19,8 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
 class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
+
+        pyrvtabout = about.get_pyrevit_about()
 
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
@@ -35,6 +38,7 @@ class AboutWindow(forms.WPFWindow):
                                  else 'disabled')
 
         self.short_version_info.Text = short_version
+        self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.pyrevit_subtitle.Text += '\n {} | {}'.format(nice_version,
                                                           branch_info)
         self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
@@ -42,6 +46,9 @@ class AboutWindow(forms.WPFWindow):
                                               sys.version_info.minor,
                                               sys.version_info.micro)
         self.pyrevit_subtitle.Text += '\n{}'.format(rocketmodetext)
+
+        self.madein_tb.Text = pyrvtabout.madein
+        self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
         script.open_url(urls.credits)
