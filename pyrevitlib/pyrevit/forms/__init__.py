@@ -361,7 +361,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             WindowStyle="None"
             AllowsTransparency="True"
             Background="#00FFFFFF"
-            SizeToContent="Height"
+            SizeToContent="Height" MaxHeight="500"
             MouseUp="handle_click">
         <Window.Resources>
             <Style TargetType="{x:Type Button}">
@@ -446,93 +446,93 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     </Setter.Value>
                 </Setter>
             </Style>
-        <Style TargetType="{x:Type ToggleButton}">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#CCCCCC" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border Background="{TemplateBinding Background}"
-                                    HorizontalAlignment="Center"
-                                    Padding="6,0,10,0"
-                                    CornerRadius="10"
-                                    Height="20"
-                                    Margin="0,0,5,5"
-                                    SnapsToDevicePixels="true">
-                            <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Center">
-                                <Canvas Name="Layer_1"
-                                            Width="25"
-                                            Height="12"
-                                            VerticalAlignment="Center">
-                                    <Line Canvas.Top="6"
-                                              X1="5" X2="20"
-                                              Width="25"
-                                              StrokeThickness="1"
-                                              Stroke="{TemplateBinding BorderBrush}"/>
-                                    <Ellipse x:Name="ellipse"
-                                                 Canvas.Left="0"
-                                                 Width="12"
-                                                 Height="12"
-                                                 Fill="White"
-                                                 Stroke="{TemplateBinding BorderBrush}"
-                                                 StrokeThickness="1">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform X="0" Y="0" />
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                </Canvas>
-                                <TextBlock x:Name="buttontitle"
-                                               Text="{TemplateBinding Content}"
-                                               Margin="5,0,5,0"
-                                               Height="{TemplateBinding Height}"
-                                               VerticalAlignment="Center"
-                                               Foreground="{TemplateBinding Foreground}"/>
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True" >
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
-                                                                           Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+            <Style TargetType="{x:Type ToggleButton}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
+                <Setter Property="Background" Value="White" />
+                <Setter Property="BorderBrush" Value="#CCCCCC" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border Background="{TemplateBinding Background}"
+                                        HorizontalAlignment="Center"
+                                        Padding="6,0,10,0"
+                                        CornerRadius="10"
+                                        Height="20"
+                                        Margin="0,0,5,5"
+                                        SnapsToDevicePixels="true">
+                                <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center">
+                                    <Canvas Name="Layer_1"
+                                                Width="25"
+                                                Height="12"
+                                                VerticalAlignment="Center">
+                                        <Line Canvas.Top="6"
+                                                  X1="5" X2="20"
+                                                  Width="25"
+                                                  StrokeThickness="1"
+                                                  Stroke="{TemplateBinding BorderBrush}"/>
+                                        <Ellipse x:Name="ellipse"
+                                                     Canvas.Left="0"
+                                                     Width="12"
+                                                     Height="12"
+                                                     Fill="White"
+                                                     Stroke="{TemplateBinding BorderBrush}"
+                                                     StrokeThickness="1">
+                                            <Ellipse.RenderTransform>
+                                                <TranslateTransform X="0" Y="0" />
+                                            </Ellipse.RenderTransform>
+                                        </Ellipse>
+                                    </Canvas>
+                                    <TextBlock x:Name="buttontitle"
+                                                   Text="{TemplateBinding Content}"
+                                                   Margin="5,0,5,0"
+                                                   Height="{TemplateBinding Height}"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{TemplateBinding Foreground}"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True" >
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
                                                                                Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                            <Trigger Property="IsFocused" Value="true">
-                                <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                                                    <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
+                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+                                                                                   Storyboard.TargetName="ellipse">
+                                                    <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
+                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="true">
+                                    <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </Window.Resources>
         <Border CornerRadius="15"
                 Background="{DynamicResource pyRevitDarkerDarkBrush}">
-            <StackPanel x:Name="stack_panel" Margin="10">
-                <DockPanel Height="36">
+            <DockPanel x:Name="stack_panel" Margin="10">
+                <DockPanel Height="36" DockPanel.Dock="Top">
                     <Label x:Name="message_label"
                            VerticalAlignment="Center"
                            DockPanel.Dock="Left"
@@ -543,8 +543,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                              VerticalAlignment="Center"
                              TextChanged="search_txt_changed"/>
                 </DockPanel>
-                <WrapPanel x:Name="button_list" Margin="5" />
-            </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Hidden">
+                        <WrapPanel x:Name="button_list" Margin="5" />
+                </ScrollViewer>
+            </DockPanel>
         </Border>
     </Window>
     """
