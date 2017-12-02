@@ -114,8 +114,7 @@ selviewports = []
 selboundary = []
 
 # pick viewport and line boundary from selection
-for elId in selection:
-    el = revit.doc.GetElement(elId)
+for el in selection:
     if isinstance(el, DB.Viewport):
         selviewports.append(el)
     elif isinstance(el, DB.CurveElement):

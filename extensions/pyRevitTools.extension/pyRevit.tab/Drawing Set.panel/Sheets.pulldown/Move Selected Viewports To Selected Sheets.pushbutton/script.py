@@ -1,65 +1,48 @@
+from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
+from pyrevit import forms
+from pyrevit import script
 
 
-__doc__ = 'Open interfacetypes sheet. Select ONE other sheet in '\
-          'Project Browser. Run this script (Keep focus on Project Browser '\
-          'otherwise the current selection will not show the selected '\
-          'sheets). Select Viewports and push Finish button on the '\
+__doc__ = 'Open the source sheet. Run this script and select destination '\
+          'sheets. Select Viewports and push Finish button on the '\
           'properties bar. The selected views will be MOVED to '\
-          'the selected sheet.'
+          'the destination sheets.'
 
 
-selection = revit.get_selection()
-
-selSheets = []
 selViewports = []
 
-for el in selection:
-    if isinstance(el, UI.ViewSheet):
-        selSheets.append(el)
+dest_sheet = forms.select_sheets(title='Select Target Sheets',
+                                 button_name='Select Sheets',
+                                 multiple=False)
 
-if 0 < len(selSheets) <= 2:
-    if int(__revit__.Application.VersionNumber) > 2014:
-        cursheet = revit.activeview
-        for v in selSheets:
-            if cursheet.Id == v.Id:
-                selSheets.remove(v)
-    else:
-        cursheet = selSheets[0]
-        selSheets.remove(cursheet)
-
-    revit.activeview = cursheet
-    sel = revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
+if dest_sheet:
+    cursheet = revit.activeview
+    sel = revit.pick_elements()
     for el in sel:
-        selViewports.append(revit.doc.GetElement(el))
+        selViewports.append(el)
 
     if len(selViewports) > 0:
         with revit.Transaction('Move Viewports'):
-            for sht in selSheets:
-                for vp in selViewports:
-                    if isinstance(vp, UI.Viewport):
-                        viewId = vp.ViewId
-                        vpCenter = vp.GetBoxCenter()
-                        vpTypeId = vp.GetTypeId()
-                        cursheet.DeleteViewport(vp)
-                        nvp = UI.Viewport.Create(revit.doc,
-                                                 sht.Id,
-                                                 viewId,
-                                                 vpCenter)
-                        nvp.ChangeTypeId(vpTypeId)
-                    elif isinstance(vp, UI.ScheduleSheetInstance):
-                        nvp = \
-                            UI.ScheduleSheetInstance.Create(
-                                revit.doc, sht.Id, vp.ScheduleId, vp.Point
-                                )
-                        revit.doc.Delete(vp.Id)
+            for vp in selViewports:
+                if isinstance(vp, DB.Viewport):
+                    viewId = vp.ViewId
+                    vpCenter = vp.GetBoxCenter()
+                    vpTypeId = vp.GetTypeId()
+                    cursheet.DeleteViewport(vp)
+                    nvp = DB.Viewport.Create(revit.doc,
+                                             dest_sheet.Id,
+                                             viewId,
+                                             vpCenter)
+                    nvp.ChangeTypeId(vpTypeId)
+                elif isinstance(vp, DB.ScheduleSheetInstance):
+                    nvp = \
+                        DB.ScheduleSheetInstance.Create(
+                            revit.doc, dest_sheet.Id, vp.ScheduleId, vp.Point
+                            )
+                    revit.doc.Delete(vp.Id)
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'At least one viewport must be selected.')
-elif len(selSheets) == 0:
-    UI.TaskDialog.Show('pyrevit',
-                       'You must select at least one sheet to add '
-                       'the selected viewports to.')
-elif len(selSheets) > 2:
-    UI.TaskDialog.Show('pyrevit',
-                       'Maximum of two sheets can only be selected.')
+        forms.alert('At least one viewport must be selected.')
+else:
+    forms.alert('You must select at least one sheet to add '
+                'the selected viewports to.')
