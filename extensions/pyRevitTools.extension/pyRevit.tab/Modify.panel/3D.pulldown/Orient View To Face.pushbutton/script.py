@@ -3,7 +3,7 @@ from pyrevit import revit, DB, UI
 
 
 __helpurl__ = 'https://www.youtube.com/watch?v=pIjDd4dZng0'
-__doc__ = 'Reorients the current 3D view camera, perpendicular to the' \
+__doc__ = 'Reorients the current 3D view camera, perpendicular to the ' \
           'selected face. This tool will set a sketch plane over the ' \
           'selected face for 3d drawing.'
 

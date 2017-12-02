@@ -12,8 +12,8 @@ import pyrevit.coreutils.envvars as envvars
 __doc__ = 'Keep views synchronized. This means that as you pan and zoom and '\
           'switch between Plan and RCP views, this tool will keep the views '\
           'in the same zoomed area so you can keep working in the same '\
-          'area without the need to zoom and pan again.'\
-          '\n This tool works best when the views are maximized.'
+          'area without the need to zoom and pan again.\n'\
+          'This tool works best when the views are maximized.'
 
 
 class Point:

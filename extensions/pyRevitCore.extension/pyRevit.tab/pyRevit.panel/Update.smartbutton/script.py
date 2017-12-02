@@ -17,7 +17,7 @@ output = script.get_output()
 
 __context__ = 'zerodoc'
 
-__doc__ = 'Downloads updates from the remote libgit repositories ' \
+__doc__ = 'Downloads updates from the remote git repositories ' \
           '(e.g github, bitbucket).'
 
 

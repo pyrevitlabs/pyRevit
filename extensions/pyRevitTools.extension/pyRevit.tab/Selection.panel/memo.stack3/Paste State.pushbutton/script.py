@@ -10,7 +10,7 @@ from pyrevit import script
 
 
 __doc__ = 'Applies the copied state to the active view. '\
-          'This works in conjunction with the copyState tool.'
+          'This works in conjunction with the Copy State tool.'
 
 logger = script.get_logger()
 
