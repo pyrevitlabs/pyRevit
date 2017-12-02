@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import uuid
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
@@ -343,7 +344,14 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
         return False
 
 
-# Classes holding non-native ui elements ---------------------------------------
+# Classes holding non-native ui elements --------------------------------------
+class _PyRevitSeparator(_GenericPyRevitUIContainer):
+    def __init__(self):
+        _GenericPyRevitUIContainer.__init__(self)
+        self.name = uuid.uuid1()
+        self.itemdata_mode = True
+
+
 class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
     def __init__(self, ribbon_button):
         _GenericPyRevitUIContainer.__init__(self)
@@ -497,6 +505,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_ribbon_item.ItemText = pyrvt_ui_item.get_title()
                 # replace data object with the newly create ribbon item
                 pyrvt_ui_item.set_rvtapi_object(rvtapi_ribbon_item)
+            elif isinstance(pyrvt_ui_item, _PyRevitSeparator):
+                self.get_rvtapi_object().AddSeparator()
 
         self.itemdata_mode = False
 
@@ -633,7 +643,11 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                  '| {}'.format(create_err))
 
     def add_separator(self):
-        self.get_rvtapi_object().AddSeparator()
+        if not self.itemdata_mode:
+            self.get_rvtapi_object().AddSeparator()
+        else:
+            sep_cmp = _PyRevitSeparator()
+            self._add_component(sep_cmp)
         self._dirty = True
 
 
