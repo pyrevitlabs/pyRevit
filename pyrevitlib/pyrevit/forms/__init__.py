@@ -1245,6 +1245,9 @@ class SheetOption(object):
     def __nonzero__(self):
         return self.state
 
+    def __str__(self):
+        return self.name
+
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
@@ -1275,20 +1278,31 @@ def select_revisions(title='Select Revision',
             return [x.revision_element for x in return_options]
 
 
-def select_sheets(title='Select Sheets', button_name='Select', width=300):
+def select_sheets(title='Select Sheets', button_name='Select',
+                  width=300, multiple=True):
     all_sheets = DB.FilteredElementCollector(revit.doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
 
-    # ask user for sheets
-    return_options = \
-        SelectFromCheckBoxes.show(
-            sorted([SheetOption(x) for x in all_sheets],
-                   key=lambda x: x.number),
-            title=title,
-            button_name=button_name,
-            width=width,)
-
-    if return_options:
-        return [x.sheet_element for x in return_options if x.state]
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.sheet_element for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_option:
+            return return_option[0].sheet_element
