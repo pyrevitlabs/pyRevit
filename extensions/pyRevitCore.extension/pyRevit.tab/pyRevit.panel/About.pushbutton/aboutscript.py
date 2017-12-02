@@ -12,7 +12,7 @@ from pyrevit import script
 __context__ = 'zerodoc'
 
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
-          'detailed information on how pyrevit works, updates about the' \
+          'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
 

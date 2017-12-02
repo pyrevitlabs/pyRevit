@@ -995,7 +995,8 @@ class SearchPrompt(WPFWindow):
         self.search_tip = kwargs.get('search_tip', '')
 
         self._search_db = sorted(search_db)
-        self.response = None
+        self._switches = kwargs.get('switches', [])
+        self._setup_response()
 
         self.search_tb.Focus()
         self.hide_element(self.tab_icon)
@@ -1003,13 +1004,33 @@ class SearchPrompt(WPFWindow):
         self.search_tb.Text = ''
         self.set_search_results()
 
-    @property
-    def search_term(self):
-        return self.search_tb.Text.lower().strip()
+    def _setup_response(self, response=None):
+        if self._switches:
+            switch_dict = dict.fromkeys(self._switches)
+            for mswitch in self.find_switch_match():
+                switch_dict[mswitch] = True
+            self.response = response, switch_dict
+        else:
+            self.response = response
 
     @property
     def search_input(self):
         return self.search_tb.Text
+
+    @search_input.setter
+    def search_input(self, value):
+        self.search_tb.Text = value
+
+    @property
+    def search_term(self):
+        return self.search_input.lower().strip()
+
+    @property
+    def search_term_noswitch(self):
+        term = self.search_term
+        for switch in self._switches:
+            term = term.replace(switch.lower() + ' ', '')
+        return term.strip()
 
     @property
     def search_matches(self):
@@ -1017,11 +1038,7 @@ class SearchPrompt(WPFWindow):
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
-    def update_search_term(self):
-        self.search_tb.Text = self.response + ' '
-        self.search_tb.CaretIndex = len(self.search_tb.Text)
-
-    def update_results_display(self):
+    def update_results_display(self, input_term=None):
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
 
@@ -1047,27 +1064,28 @@ class SearchPrompt(WPFWindow):
         if self._result_index < 0:
             self._result_index = res_cout - 1
 
-        cur_txt = self.search_term
+        if not input_term:
+            input_term = self.search_term_noswitch
 
-        if not cur_txt:
+        if not self.search_input:
             self.directmatch_tb.Text = self.search_tip
             return
 
         if results:
             cur_res = results[self._result_index]
             logger.debug('current result: {}'.format(cur_res))
-            if cur_res.lower().startswith(cur_txt):
+            if cur_res.lower().startswith(input_term):
                 logger.debug('directmatch_tb.Text: {}'.format(cur_res))
                 self.directmatch_tb.Text = \
-                    self.search_tb.Text + cur_res[len(cur_txt):]
+                    self.search_input + cur_res[len(input_term):]
             else:
                 logger.debug('wordsmatch_tb.Text: {}'.format(cur_res))
                 self.wordsmatch_tb.Text = '- {}'.format(cur_res)
 
-            self.response = cur_res
+            self._setup_response(cur_res)
             return True
 
-        self.response = None
+        self._setup_response()
         return False
 
     def set_search_results(self, *args):
@@ -1079,23 +1097,28 @@ class SearchPrompt(WPFWindow):
             self._search_results.extend(sorted(resultset))
 
         logger.debug('results: {}'.format(self._search_results))
-        self.update_results_display()
 
-    def find_direct_match(self):
+    def find_switch_match(self):
         results = []
         cur_txt = self.search_term
-        if cur_txt:
+        for switch in self._switches:
+            if switch.lower() in cur_txt:
+                results.append(switch)
+        return results
+
+    def find_direct_match(self, input_text):
+        results = []
+        if input_text:
             for cmd_name in self._search_db:
-                if cmd_name.lower().startswith(cur_txt):
+                if cmd_name.lower().startswith(input_text):
                     results.append(cmd_name)
 
         return results
 
-    def find_word_match(self):
+    def find_word_match(self, input_text):
         results = []
-        cur_txt = self.search_term
-        if cur_txt:
-            cur_words = cur_txt.split(' ')
+        if input_text:
+            cur_words = input_text.split(' ')
             for cmd_name in self._search_db:
                 if all([x in cmd_name.lower() for x in cur_words]):
                     results.append(cmd_name)
@@ -1103,23 +1126,21 @@ class SearchPrompt(WPFWindow):
         return results
 
     def search_txt_changed(self, sender, args):
-        dmresults = self.find_direct_match()
-        wordresults = self.find_word_match()
-        logger.debug(len(dmresults), len(wordresults))
+        input_term = self.search_term_noswitch
+        dmresults = self.find_direct_match(input_term)
+        wordresults = self.find_word_match(input_term)
         self.set_search_results(dmresults, wordresults)
+        self.update_results_display(input_term)
 
     def handle_kb_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
-            self.response = None
+            self._setup_response()
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Tab:
-            if False:
-                self.update_search_term()
-            else:
-                self._result_index += 1
-                self.update_results_display()
+            self._result_index += 1
+            self.update_results_display()
         elif args.Key == framework.Windows.Input.Key.Down:
             self._result_index += 1
             self.update_results_display()
@@ -1128,8 +1149,8 @@ class SearchPrompt(WPFWindow):
             self.update_results_display()
 
     @classmethod
-    def show_prompt(cls, search_db,
-                    width=600, height=100, **kwargs):
+    def show(cls, search_db,
+             width=600, height=100, **kwargs):
         dlg = cls(search_db, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
