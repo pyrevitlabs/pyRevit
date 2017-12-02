@@ -184,7 +184,9 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             self.list_lb.SelectionMode = Controls.SelectionMode.Extended
 
-        self.select_b.Content = kwargs.get('button_name', '')
+        button_name = kwargs.get('button_name', None)
+        if button_name:
+            self.select_b.Content = button_name
 
         self._list_options()
 
@@ -292,8 +294,9 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.clear_search(None, None)
         self.search_tb.Focus()
 
-        if 'button_name' in kwargs:
-            self.select_b.Content = kwargs['button_name']
+        button_name = kwargs.get('button_name', None)
+        if button_name:
+            self.select_b.Content = button_name
 
         self._list_options()
 
