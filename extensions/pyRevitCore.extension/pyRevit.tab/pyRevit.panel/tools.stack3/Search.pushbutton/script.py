@@ -1,3 +1,5 @@
+"""The best interface ever!"""
+
 import os
 import os.path as op
 
@@ -29,7 +31,35 @@ ALT_FLAG = '/alt'
 
 
 def print_help():
-    print('Switches:')
+    output = script.get_output()
+    output.set_width(500)
+    output.print_md(
+        '### Options:\n\n'
+        '- **{help}**: Prints this help\n\n'
+        '- **{help} COMMAND:** Opens the help url or prints the docstring\n\n'
+        '- **{doc} [{alt}] COMMAND:** Prints the command docstring\n\n'
+        '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
+        '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
+        '- **{clean} [{alt}] COMMAND:** Runs command with clean engine\n\n'
+        '- **{full} [{alt}] COMMAND:** Runs command with full-frame engine\n\n'
+        '- **{open} [{alt}] COMMAND:** Opens the command bundle folder\n\n'
+        '- **{show} [{alt}] COMMAND:** Shows the command source code\n\n'
+        '- **{atom} [{alt}] COMMAND:** Opens the command script in atom\n\n'
+        '- **{npp} [{alt}] COMMAND:** Opens the command script in notepad++\n\n'
+        '- **{np} [{alt}] COMMAND:** Opens the command script in notepad\n\n'
+        '- **{alt}:** Executes option on the alternate script.\n\n'
+        .format(help=HELP_SWITCH,
+                doc=DOC_SWITCH,
+                info=INFO_SWITCH,
+                clean=CLEAN_SWITCH,
+                full=FULLFRAME_SWITCH,
+                open=OPEN_SWITCH,
+                show=SHOW_SWITCH,
+                atom=ATOM_SWITCH,
+                npp=NPP_SWITCH,
+                np=NP_SWITCH,
+                alt=ALT_FLAG)
+        )
 
 
 def show_command_info(pyrvtcmd):
@@ -94,7 +124,7 @@ def open_in_editor(editor_name, selected_cmd, altsrc=False):
     source = \
         selected_cmd.script if not altsrc else selected_cmd.alternate_script
     if source:
-        os.popen('{} "{}"'.format(editor_name, source))
+        os.popen('- **{} "{}"'.format(editor_name, source))
 
 
 # get all default postable commands
