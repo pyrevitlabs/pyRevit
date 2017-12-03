@@ -107,12 +107,12 @@ class MakePatternWindow(forms.WPFWindow):
         fillpats = [x.GetFillPattern() for x in existing_pats]
         self._existing_modelpats = \
             sorted([x.Name for x in fillpats
-             if x.Target == DB.FillPatternTarget.Model
-             and x.Name.lower() not in readonly_patterns])
+                    if x.Target == DB.FillPatternTarget.Model
+                    and x.Name.lower() not in readonly_patterns])
         self._existing_draftingpats = \
             sorted([x.Name for x in fillpats
-             if x.Target == DB.FillPatternTarget.Drafting
-             and x.Name.lower() not in readonly_patterns])
+                    if x.Target == DB.FillPatternTarget.Drafting
+                    and x.Name.lower() not in readonly_patterns])
 
         self._setup_patnames_combobox()
 
