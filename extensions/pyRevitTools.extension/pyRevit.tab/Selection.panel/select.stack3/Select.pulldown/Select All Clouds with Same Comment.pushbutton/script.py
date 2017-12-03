@@ -1,5 +1,6 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __context__ = 'selection'
@@ -33,5 +34,4 @@ if src_comment:
     # Replace revit selection with matched clouds
     revit.get_selection().set_to(clouds)
 else:
-    UI.TaskDialog.Show('pyRevit',
-                       'At least one Revision Cloud must be selected.')
+    forms.alert('At least one Revision Cloud must be selected.')

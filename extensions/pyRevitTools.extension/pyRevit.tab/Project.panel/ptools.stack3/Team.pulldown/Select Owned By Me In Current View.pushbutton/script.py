@@ -1,6 +1,7 @@
 from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __doc__ = 'Uses the Worksharing tooltip to find out the element '\
@@ -40,4 +41,4 @@ if revit.doc.IsWorkshared:
     else:
         pass
 else:
-    UI.TaskDialog.Show('pyrevit', 'Model is not workshared.')
+    forms.alert('Model is not workshared.')

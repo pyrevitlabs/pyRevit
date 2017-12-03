@@ -1,6 +1,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 __helpurl__ = 'https://www.youtube.com/watch?v=ThzcRM_Tj8g'
@@ -14,7 +15,7 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
 
 
 def error(msg):
-    UI.TaskDialog.Show('pyrevit', msg)
+    forms.alert(msg)
     script.exit()
 
 

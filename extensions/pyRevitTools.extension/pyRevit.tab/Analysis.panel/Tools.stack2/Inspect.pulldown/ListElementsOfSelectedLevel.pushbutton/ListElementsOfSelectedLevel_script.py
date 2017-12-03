@@ -13,6 +13,8 @@ from collections import defaultdict
 
 from pyrevit import script
 from pyrevit import revit, DB
+from pyrevit import forms
+
 
 __title__ = 'List Elements of Selected Level(s)'
 __author__ = 'Frederic Beaupere'
@@ -40,7 +42,7 @@ for el in selection:
         levels.append(el)
 
 if not levels:
-    UI.TaskDialog.Show('pyRevit', 'At least one Level element must be selected.')
+    forms.alert('At least one Level element must be selected.')
 else:
     all_count = all_elements.Count
     print('\n' + str(all_count) + ' Elements found in project.')

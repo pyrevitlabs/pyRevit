@@ -141,13 +141,11 @@ elif selected_switch == '3D Section Box State':
 
             avui.ZoomToFit()
         else:
-            UI.TaskDialog.Show('pyrevit',
-                               'You must be on a 3D view to paste '
-                               'Section Box settings.')
+            forms.alert('You must be on a 3D view to paste '
+                        'Section Box settings.')
     except Exception:
-        UI.TaskDialog.Show('pyrevit',
-                           'Can not find any section box '
-                           'settings in memory:\n{0}'.format(datafile))
+        forms.alert('Can not find any section box '
+                    'settings in memory:\n{0}'.format(datafile))
 
 elif selected_switch == 'Viewport Placement on Sheet':
     """
@@ -319,15 +317,13 @@ elif selected_switch == 'Viewport Placement on Sheet':
                             else:
                                 raise OriginalIsViewDrafting
                     except IOError:
-                        UI.TaskDialog.Show('pyrevit',
-                                           'Could not find saved viewport '
-                                           'placement.\n'
-                                           'Copy a Viewport Placement first.')
+                        forms.alert('Could not find saved viewport '
+                                    'placement.\n'
+                                    'Copy a Viewport Placement first.')
                     except OriginalIsViewDrafting:
-                        UI.TaskDialog.Show('pyrevit',
-                                           'Viewport placement info is from a '
-                                           'drafting view and can not '
-                                           'be applied here.')
+                        forms.alert('Viewport placement info is from a '
+                                    'drafting view and can not '
+                                    'be applied here.')
                     else:
                         savedcenter_pt = DB.XYZ(savedcen_pt.x,
                                                 savedcen_pt.y,
@@ -352,15 +348,13 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         else:
                             raise OriginalIsViewPlan
                 except IOError:
-                    UI.TaskDialog.Show('pyrevit',
-                                       'Could not find saved viewport '
-                                       'placement.\n'
-                                       'Copy a Viewport Placement first.')
+                    forms.alert('Could not find saved viewport '
+                                'placement.\n'
+                                'Copy a Viewport Placement first.')
                 except OriginalIsViewPlan:
-                    UI.TaskDialog.Show('pyrevit',
-                                       'Viewport placement info is from '
-                                       'a model view and can not be '
-                                       'applied here.')
+                    forms.alert('Viewport placement info is from '
+                                'a model view and can not be '
+                                'applied here.')
                 else:
                     savedcenter_pt = DB.XYZ(savedcen_pt.x,
                                             savedcen_pt.y,
@@ -370,11 +364,10 @@ elif selected_switch == 'Viewport Placement on Sheet':
                         if PINAFTERSET:
                             vport.Pinned = True
             else:
-                UI.TaskDialog.Show('pyrevit',
-                                   'This tool only works with Plan, '
-                                   'RCP, and Detail views and viewports.')
+                forms.alert('This tool only works with Plan, '
+                            'RCP, and Detail views and viewports.')
     else:
-        UI.TaskDialog.Show('pyrevit', 'Select exactly one viewport.')
+        forms.alert('Select exactly one viewport.')
 
 elif selected_switch == 'Visibility Graphics':
     datafile = \

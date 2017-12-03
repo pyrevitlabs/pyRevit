@@ -2,6 +2,7 @@
 
 from pyrevit.framework import Math
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __helpurl__ = 'https://www.youtube.com/watch?v=b050tpp4vCE&t=42s'
@@ -39,8 +40,6 @@ def orientsectionbox(view):
 if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
     orientsectionbox(curview)
 elif isinstance(curview, DB.View3D) and not curview.IsSectionBoxActive:
-    UI.TaskDialog.Show("pyrevit",
-                       "The section box for View3D isn't active.")
+    forms.alert("The section box for View3D isn't active.")
 else:
-    UI.TaskDialog.Show("pyrevit",
-                       "You must be on a 3D view for this tool to work.")
+    forms.alert('You must be on a 3D view for this tool to work.')

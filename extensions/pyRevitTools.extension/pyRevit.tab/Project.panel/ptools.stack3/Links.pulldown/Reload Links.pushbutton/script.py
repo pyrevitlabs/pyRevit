@@ -32,8 +32,7 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
                 link.Reload()
                 print('Done\n')
     except Exception:
-        UI.TaskDialog.Show('pyRevit',
-                           'Model is not saved yet. Can not acquire location.')
+        forms.alert('Model is not saved yet. Can not acquire location.')
 
 
 linktypes = {'Revit Links': DB.ExternalFileReferenceType.RevitLink,

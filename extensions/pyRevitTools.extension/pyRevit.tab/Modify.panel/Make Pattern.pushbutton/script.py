@@ -171,9 +171,7 @@ class MakePatternWindow(forms.WPFWindow):
                                     scale=pat_scale * self.export_scale,
                                     model_pattern=self.is_model_pat,
                                     allow_expansion=self.highestres_cb.IsChecked)
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern {} exported.'
-                               .format(self.pat_name))
+            forms.alert('Pattern {} exported.'.format(self.pat_name))
         else:
             patmaker.make_pattern(self.pat_name,
                                   pat_lines, domain,
@@ -181,23 +179,17 @@ class MakePatternWindow(forms.WPFWindow):
                                   model_pattern=self.is_model_pat,
                                   allow_expansion=self.highestres_cb.IsChecked,
                                   create_filledregion=self.create_filledregion)
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern {} created/updated.'
-                               .format(self.pat_name))
+            forms.alert('Pattern {} created/updated.'.format(self.pat_name))
 
     def _verify_name(self):
         if not self.pat_name:
-            UI.TaskDialog.Show('pyRevit', 'Type a name for the pattern first')
+            forms.alert('Type a name for the pattern first')
             return False
         elif not re.search('[a-zA-Z0-9]', self.pat_name):
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern name must have at least '
-                               'one character or digit')
+            forms.alert('Pattern name must have at least '
+                        'one character or digit')
             return False
         return True
-
-    def open_help(self, sender, args):
-        pass
 
     def export_pat(self, sender, args):
         if self._verify_name():
@@ -218,10 +210,6 @@ class MakePatternWindow(forms.WPFWindow):
                 self._create_pattern(domain)
             self.Close()
 
-    def fix_angles(self, sender, args):
-        # self.Close()
-        UI.TaskDialog.Show('pyRevit', 'Work in progress...')
-
 
 # filter line types - only detail lines allowed
 def filter_detail_lines(element):
@@ -236,4 +224,4 @@ selected_elements = filter(filter_detail_lines, selection.elements)
 if len(selected_elements) > 0:
     MakePatternWindow('MakePatternWindow.xaml', selected_elements).ShowDialog()
 else:
-    UI.TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
+    forms.alert('At least one Detail Line must be selected.')

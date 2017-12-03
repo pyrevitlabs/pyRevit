@@ -104,8 +104,6 @@ if selSheets and len(selSheets) > 0:
                                                             vp.ScheduleId,
                                                             vp.Point)
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'At least one viewport must be selected.')
+        forms.alert('At least one viewport must be selected.')
 else:
-    UI.TaskDialog.Show('pyrevit',
-                       'At least one sheet must be selected.')
+    forms.alert('At least one sheet must be selected.')

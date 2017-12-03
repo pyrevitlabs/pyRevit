@@ -141,9 +141,7 @@ elif selected_option == '3D Section Box State':
         pickle.dump(vo, f)
         f.close()
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'You must be on a 3D view to copy '
-                           'Section Box settings.')
+        forms.alert('You must be on a 3D view to copy Section Box settings.')
 
 elif selected_option == 'Viewport Placement on Sheet':
     """
@@ -281,8 +279,7 @@ elif selected_option == 'Viewport Placement on Sheet':
         try:
             vport = revit.doc.GetElement(vport_id)
         except Exception:
-            UI.TaskDialog.Show('pyrevit',
-                               'Select exactly one viewport.')
+            forms.alert('Select exactly one viewport.')
 
         if isinstance(vport, DB.Viewport):
             view = revit.doc.GetElement(vport.ViewId)
@@ -307,12 +304,10 @@ elif selected_option == 'Viewport Placement on Sheet':
                     pickle.dump(originalviewtype, fp)
                     pickle.dump(center_pt, fp)
             else:
-                UI.TaskDialog.Show('pyrevit',
-                                   'This tool only works with Plan, '
-                                   'RCP, and Detail views and viewports.')
+                forms.alert('This tool only works with Plan, '
+                            'RCP, and Detail views and viewports.')
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'Select exactly one viewport.')
+        forms.alert('Select exactly one viewport.')
 
 elif selected_option == 'Visibility Graphics':
     datafile = \

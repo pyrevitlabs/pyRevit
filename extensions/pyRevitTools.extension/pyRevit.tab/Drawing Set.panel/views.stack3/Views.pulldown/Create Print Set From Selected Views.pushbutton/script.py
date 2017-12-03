@@ -2,6 +2,8 @@
 
 from pyrevit import framework
 from pyrevit import revit, DB, UI
+from pyrevit import forms
+
 
 sheetsetname = 'ViewPrintSet'
 
@@ -17,7 +19,7 @@ for el in revit.get_selection():
         myviewset.Insert(el)
 
 if myviewset.IsEmpty:
-    UI.TaskDialog.Show('pyRevit', 'At least one view must be selected.')
+    forms.alert('At least one view must be selected.')
 else:
     # Collect existing sheet sets
     viewsheetsets = DB.FilteredElementCollector(revit.doc)\

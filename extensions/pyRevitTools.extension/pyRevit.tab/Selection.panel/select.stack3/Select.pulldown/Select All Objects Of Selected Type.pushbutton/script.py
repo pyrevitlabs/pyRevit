@@ -1,6 +1,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 __context__ = 'selection'
@@ -55,4 +56,4 @@ if len(selection) > 0:
 
     revit.get_selection().set_to(filteredlist)
 else:
-    UI.TaskDialog.Show('pyrevit', 'At least one object must be selected.')
+    forms.alert('At least one object must be selected.')

@@ -4,6 +4,7 @@ import os
 import os.path as op
 
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 if revit.doc.GetWorksharingCentralModelPath():
@@ -20,4 +21,4 @@ if revit.doc.GetWorksharingCentralModelPath():
     else:
         os.system('start notepad "{0}"'.format(slogFile))
 else:
-    UI.TaskDialog.Show('pyRevit', 'Model is not workshared.')
+    forms.alert('Model is not workshared.')

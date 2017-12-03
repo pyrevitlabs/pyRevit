@@ -1,5 +1,6 @@
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 __doc__ = 'This tool will create a workset for the selected linked '\
@@ -30,5 +31,4 @@ if len(selection) > 0:
                     el.Parameter[DB.BuiltInParameter.ELEM_PARTITION_PARAM]
                 worksetParam.Set(newWs.Id.IntegerValue)
 else:
-    UI.TaskDialog.Show('pyrevit',
-                       'At least one linked element must be selected.')
+    forms.alert('At least one linked element must be selected.')

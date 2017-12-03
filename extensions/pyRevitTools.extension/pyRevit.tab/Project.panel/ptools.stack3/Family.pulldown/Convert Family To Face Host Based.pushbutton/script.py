@@ -1,6 +1,7 @@
 from pyrevit import framework
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 __doc__ = 'This script removes all instances of the selected element '\
@@ -30,12 +31,9 @@ def deleteallinstances(family):
         revit.doc.Delete(elid)
 
 
-res = UI.TaskDialog.Show('pyrevit',
-                         'All instances of the selected families '
-                         'will be removed for this conversion. '
-                         'Are you ready to proceed?',
-                         UI.TaskDialogCommonButtons.Yes
-                         | UI.TaskDialogCommonButtons.Cancel)
+res = forms.alert('All instances of the selected families '
+                  'will be removed for this conversion. '
+                  'Are you ready to proceed?', cancel=True, yes=True)
 
 if res == UI.TaskDialogResult.Yes:
     for el in revit.get_selection():

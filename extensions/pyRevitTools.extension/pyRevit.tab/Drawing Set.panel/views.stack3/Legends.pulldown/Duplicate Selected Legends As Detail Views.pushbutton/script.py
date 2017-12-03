@@ -3,6 +3,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
@@ -11,7 +12,7 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
 
 
 def error(msg):
-    UI.TaskDialog.Show('pyrevit', msg)
+    forms.alert(msg)
     script.exit()
 
 

@@ -41,15 +41,13 @@ for v in views:
         continue
 
 if not allFilters:
-    UI.TaskDialog.Show('pyRevit',
-                       'There are no filters available.')
+    forms.alert('There are no filters available.')
     script.exit()
 
 unusedFilters = allFilters - usedFiltersSet
 
 if not unusedFilters:
-    UI.TaskDialog.Show('pyRevit',
-                       'All filters are in use. No purging in necessary.')
+    forms.alert('All filters are in use. No purging in necessary.')
 
 # ask user for wipe actions
 return_options = \

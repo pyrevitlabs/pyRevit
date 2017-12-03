@@ -1,5 +1,6 @@
 from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __helpurl__ = 'https://www.youtube.com/watch?v=pIjDd4dZng0'
@@ -43,5 +44,4 @@ curview = revit.activeview
 if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
     reorient()
 else:
-    UI.TaskDialog.Show("pyrevit",
-                       "You must be on a 3D view for this tool to work.")
+    forms.alert('You must be on a 3D view for this tool to work.')

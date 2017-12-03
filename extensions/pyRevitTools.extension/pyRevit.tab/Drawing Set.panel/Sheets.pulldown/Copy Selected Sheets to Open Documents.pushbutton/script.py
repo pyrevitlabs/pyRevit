@@ -56,7 +56,7 @@ class DestDoc:
 
 
 def error_and_close(msg):
-    UI.TaskDialog.Show('pyrevit', msg)
+    forms.alert(msg)
     sys.exit(0)
 
 

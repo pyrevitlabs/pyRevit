@@ -1,5 +1,6 @@
 from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __doc__ = 'Lists all sheets containing elements currently "owned" '\
@@ -59,4 +60,4 @@ if revit.doc.IsWorkshared:
             pass
     print('\nAll done...')
 else:
-    UI.TaskDialog.Show('pyrevit', 'Model is not workshared.')
+    forms.alert('Model is not workshared.')

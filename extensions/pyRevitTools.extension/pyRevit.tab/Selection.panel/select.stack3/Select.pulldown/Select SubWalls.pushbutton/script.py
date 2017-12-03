@@ -1,5 +1,6 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __context__ = 'selection'
@@ -22,4 +23,4 @@ for el in selection:
 if len(sub_walls) > 0:
     selection.set_to(sub_walls)
 else:
-    UI.TaskDialog.Show('pyRevit', 'Please select at least one Stacked wall.')
+    forms.alert('Please select at least one Stacked wall.')

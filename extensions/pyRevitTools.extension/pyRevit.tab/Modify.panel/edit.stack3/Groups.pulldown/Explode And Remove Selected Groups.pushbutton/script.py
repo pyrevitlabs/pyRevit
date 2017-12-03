@@ -1,4 +1,5 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __context__ = 'selection'
@@ -20,8 +21,7 @@ with revit.Transaction('Explode and Purge Selected Groups'):
             grpTypes.add(el.GroupType)
 
     if len(grpTypes) == 0:
-        UI.TaskDialog.Show('pyrevit',
-                           'At least one group type must be selected.')
+        forms.alert('At least one group type must be selected.')
 
     for gt in grpTypes:
         for grp in gt.Groups:

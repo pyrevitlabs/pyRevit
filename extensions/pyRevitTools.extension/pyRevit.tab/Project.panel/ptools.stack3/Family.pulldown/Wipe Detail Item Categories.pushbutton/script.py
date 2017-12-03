@@ -2,6 +2,7 @@
 
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 logger = script.get_logger()
@@ -22,8 +23,6 @@ if revit.doc.IsFamilyDocument:
                                        .format(sub_cat.Name))
                         continue
     else:
-        UI.TaskDialog.Show('pyRevit',
-                           'Family must be of type Detail Item.')
+        forms.alert('Family must be of type Detail Item.')
 else:
-    UI.TaskDialog.Show('pyRevit',
-                       'This script works only on an active family editor.')
+    forms.alert('This script works only on an active family editor.')

@@ -145,7 +145,6 @@ with revit.TransactionGroup('Fixed Unpurgable Viewport Types'):
                                'might still be purgable.'.format(vp_type_name))
 
 
-UI.TaskDialog.Show('pyRevit',
-                   'Conversion Completed.\n'
-                   'Now you can remove the unused viewport '
-                   'types using Purge tool.')
+forms.alert('Conversion Completed.\n'
+            'Now you can remove the unused viewport '
+            'types using Purge tool.')
