@@ -85,7 +85,7 @@ def _make_python_types(extension, module_builder, cmd_component):
     # core is in rocket-mode
     #   AND extension is rocket-mode compatible
     #       AND the command is not asking for a clean engine
-    if user_config.core.rocketmode \
+    if user_config.core.get_option('rocketmode', False) \
         and _is_rocketmode_compat(extension.name) \
             and not cmd_component.requires_clean_engine:
                 use_clean_engine = False
