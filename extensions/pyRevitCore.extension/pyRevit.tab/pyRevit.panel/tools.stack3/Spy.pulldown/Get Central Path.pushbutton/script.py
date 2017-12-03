@@ -9,4 +9,4 @@ if revit.doc.IsWorkshared:
     model_path = revit.doc.GetWorksharingCentralModelPath()
     print(DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path))
 else:
-    forms.alert(Model is not workshared.')
+    forms.alert('Model is not workshared.')

@@ -1,4 +1,4 @@
-"""The best interface ever!"""
+"""The best interface ever!."""
 
 import os
 import os.path as op
@@ -42,11 +42,11 @@ def print_help():
         '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
         '- **{clean} [{alt}] COMMAND:** Runs command with clean engine\n\n'
         '- **{full} [{alt}] COMMAND:** Runs command with full-frame engine\n\n'
-        '- **{open} [{alt}] COMMAND:** Opens the command bundle folder\n\n'
-        '- **{show} [{alt}] COMMAND:** Shows the command source code\n\n'
-        '- **{atom} [{alt}] COMMAND:** Opens the command script in atom\n\n'
-        '- **{npp} [{alt}] COMMAND:** Opens the command script in notepad++\n\n'
-        '- **{np} [{alt}] COMMAND:** Opens the command script in notepad\n\n'
+        '- **{open} [{alt}] COMMAND:** Opens the bundle folder\n\n'
+        '- **{show} [{alt}] COMMAND:** Shows the source code\n\n'
+        '- **{atom} [{alt}] COMMAND:** Opens the script in atom\n\n'
+        '- **{npp} [{alt}] COMMAND:** Opens the script in notepad++\n\n'
+        '- **{np} [{alt}] COMMAND:** Opens the script in notepad\n\n'
         '- **{alt}:** Executes option on the alternate script.\n\n'
         .format(help=HELP_SWITCH,
                 doc=DOC_SWITCH,
@@ -124,11 +124,11 @@ def open_in_editor(editor_name, selected_cmd, altsrc=False):
     source = \
         selected_cmd.script if not altsrc else selected_cmd.alternate_script
     if source:
-        os.popen('- **{} "{}"'.format(editor_name, source))
+        os.popen('{} "{}"'.format(editor_name, source))
 
 
 # get all default postable commands
-postable_cmds = {x.name:x for x in HOST_APP.get_postable_commands()}
+postable_cmds = {x.name: x for x in HOST_APP.get_postable_commands()}
 
 # find all available commands (for current selection)
 # in currently active document
