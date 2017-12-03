@@ -7,10 +7,9 @@ from pyrevit import script
 
 
 __doc__ = 'Deducts selection from memory keeping the rest.\n'\
-          'Works like the M- button in a calculator.\n'\
-          'This is a project-dependent (Revit *.rvt) memory. '\
-          'Every project has its own memory save in user temp folder '\
-          'as *.pym files.'
+          'Works like the M- button in a calculator. '\
+          'This is a project-dependent memory. Every project has its own '\
+          'selection memory saved in %appdata%/pyRevit folder as *.pym files.'
 
 
 datafile = script.get_document_data_file("SelList", "pym")

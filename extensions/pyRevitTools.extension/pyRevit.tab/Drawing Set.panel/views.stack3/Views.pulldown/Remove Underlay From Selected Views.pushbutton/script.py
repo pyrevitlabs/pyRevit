@@ -6,6 +6,7 @@
 
 from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 selection = revit.get_selection()
@@ -27,4 +28,4 @@ if selection:
                     if p is not None:
                         p.Set(DB.ElementId.InvalidElementId)
 else:
-    UI.TaskDialog.Show('pyRevit', 'Select Views to Remove Underlay')
+    forms.alert('Select Views to Remove Underlay')

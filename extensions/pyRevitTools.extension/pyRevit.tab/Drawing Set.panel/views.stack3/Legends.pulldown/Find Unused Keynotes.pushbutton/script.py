@@ -3,6 +3,8 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
+
 
 usedkeynotes = set()
 keynotes = DB.FilteredElementCollector(revit.doc)\
@@ -18,8 +20,7 @@ kt = DB.KeynoteTable.GetKeynoteTable(revit.doc)
 entries = kt.GetKeyBasedTreeEntries()
 
 if not entries:
-    UI.TaskDialog.Show('pyrevit',
-                       'There are no keynotes set for this model.')
+    forms.alert('There are no keynotes set for this model.')
 else:
     for knote in kt.GetKeyBasedTreeEntries():
         allkeynotes.add(knote.Key)

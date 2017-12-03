@@ -5,13 +5,11 @@ from pyrevit import script
 
 __title__ = 'Copy/Update Selected Viewports To Selected Sheets'
 
-__doc__ = 'Open the source sheet. Select other sheets in Project Browser. '\
-          'Run this script (Keep focus on Project Browser otherwise the ' \
-          'current selection will not show the selected sheets). ' \
-          'Select Viewports and push Finish button on the properties bar. ' \
-          'The selected views will be added to the selected sheets. ' \
-          'If the view or schedule already exists on that sheet, the ' \
-          'location and viewport type will be updated.'
+__doc__ = 'Open the source sheet. Run this script and select destination '\
+          'sheets. Select Viewports and push Finish button on the '\
+          'properties bar. The selected views will be added to the '\
+          'destination sheets. If the view or schedule already exists on '\
+          'that sheet, the location and type will be updated.'
 
 
 logger = script.get_logger()
@@ -106,8 +104,6 @@ if selSheets and len(selSheets) > 0:
                                                             vp.ScheduleId,
                                                             vp.Point)
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'At least one viewport must be selected.')
+        forms.alert('At least one viewport must be selected.')
 else:
-    UI.TaskDialog.Show('pyrevit',
-                       'At least one sheet must be selected.')
+    forms.alert('At least one sheet must be selected.')

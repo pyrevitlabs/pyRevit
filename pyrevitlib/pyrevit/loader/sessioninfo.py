@@ -3,7 +3,8 @@ import uuid
 
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 
-from pyrevit.versionmgr import get_pyrevit_version
+from pyrevit import versionmgr
+from pyrevit.versionmgr import about
 from pyrevit.coreutils import DEFAULT_SEPARATOR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
@@ -85,14 +86,14 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
 def report_env():
     # log python version, home directory, config file, ...
     # get python version that includes last commit hash
-    pyrvt_ver = get_pyrevit_version().get_formatted()
+    pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
 
     system_diag()
 
     logger.info('pyRevit version: {} - '
                 ':coded: with :small-black-heart: '
-                'in Portland, OR'.format(pyrvt_ver))
-    if user_config.core.rocketmode:
+                'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
+    if user_config.core.get_option('rocketmode', False):
         logger.info('pyRevit Rocket Mode enabled. :rocket:')
     logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
                                                        HOST_APP.build,

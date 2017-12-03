@@ -1,4 +1,5 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 from pyrevittoolslib import diffutils
 
 
@@ -28,12 +29,11 @@ if len(view_list) == 2:
                                    compare_types=__shiftclick__,
                                    diff_results=res)
 
-    UI.TaskDialog.Show('pyRevit',
-                       'Views are smiliar (not identical).'
-                       if comp else 'Views are NOT smiliar.')
+    forms.alert('Views are smiliar (not identical).'
+                if comp else 'Views are NOT smiliar.')
 
     if not comp:
         revit.uidoc.ActiveView = view_list[0]
         selection.set_to(res.diff_elements)
 else:
-    UI.TaskDialog.Show('pyRevit', 'Exactly 2 views need to be selected.')
+    forms.alert('Exactly 2 views need to be selected.')

@@ -3,6 +3,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 logger = script.get_logger()
@@ -20,8 +21,7 @@ selection = [el for el in revit.get_selection()
 
 
 if not len(selection) > 0:
-    UI.TaskDialog.Show('pyRevit',
-                       'At least one Drafting view must be selected.')
+    forms.alert('At least one Drafting view must be selected.')
     script.exit()
 
 
@@ -33,8 +33,7 @@ for v in DB.FilteredElementCollector(revit.doc).OfClass(DB.View):
         break
 
 if not baseLegendView:
-    UI.TaskDialog.Show('pyRevit',
-                       'At least one Legend view must exist in the model.')
+    forms.alert('At least one Legend view must exist in the model.')
     script.exit()
 
 # iterate over interfacetypes drafting views

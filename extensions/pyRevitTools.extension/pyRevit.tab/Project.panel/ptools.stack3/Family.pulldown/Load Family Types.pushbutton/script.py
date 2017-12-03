@@ -27,15 +27,13 @@ if not selection.is_empty:
                      .format(selected_comp.Id))
         fam_symbol = selected_comp.Symbol.Family
     else:
-        UI.TaskDialog.Show('pyRevit',
-                           'System families do not have external '
-                           'type definition.')
+        forms.alert('System families do not have external '
+                    'type definition.')
         logger.debug('Cancelled. System families do not have '
                      'external type definition.')
         script.exit()
 else:
-    UI.TaskDialog.Show('pyRevit',
-                       'At least one family instance must be selected.')
+    forms.alert('At least one family instance must be selected.')
     logger.debug('Cancelled. No elements selected.')
     script.exit()
 
@@ -92,9 +90,8 @@ for sym_id in fam_symbol.GetFamilySymbolIds():
 fam_doc = revit.doc.EditFamily(fam_symbol)
 fam_doc_path = fam_doc.PathName
 if not op.exists(fam_doc_path):
-    UI.TaskDialog.Show('pyRevit',
-                       'Can not file original family file at\n{}'
-                       .format(fam_doc_path))
+    forms.alert('Can not file original family file at\n{}'
+                .format(fam_doc_path))
     logger.debug('Can not file original family file at {}'
                  .format(fam_doc_path))
     script.exit()
@@ -139,5 +136,4 @@ if options:
                              .format(fam_doc_path, load_err))
                 raise load_err
 else:
-    UI.TaskDialog.Show('pyRevit',
-                       'All the family types are already loaded.')
+    forms.alert('All the family types are already loaded.')

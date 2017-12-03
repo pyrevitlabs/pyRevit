@@ -1,4 +1,5 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __doc__ = 'Run this tool in a sheet view and click on viewports one '\
@@ -8,7 +9,7 @@ __doc__ = 'Run this tool in a sheet view and click on viewports one '\
 curview = revit.activeview
 
 if not isinstance(curview, DB.ViewSheet):
-    UI.TaskDialog.Show('pyrevit', 'You must be on a sheet to use this tool.')
+    forms.alert('You must be on a sheet to use this tool.')
 
 viewports = []
 for vpId in curview.GetAllViewports():

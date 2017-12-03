@@ -329,8 +329,16 @@ READONLY_VIEWS = [DB.ViewType.ProjectBrowser,
                   DB.ViewType.Internal]
 
 
+VIEWREF_PREFIX = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
+                  DB.ViewType.FloorPlan: 'Floor Plan: ',
+                  DB.ViewType.EngineeringPlan: 'Structural Plan: ',
+                  DB.ViewType.DraftingView: 'Drafting View: ',
+                  DB.ViewType.Section: 'Section: ',
+                  DB.ViewType.ThreeD: '3D View: '}
+
+
 def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
-                     header, action_title, action_cat):
+                     header, action_title, action_cat, keep_referenced=False):
     cl = DB.FilteredElementCollector(revit.doc)
     views = set(cl.OfClass(viewclass_to_purge)
                   .WhereElementIsNotElementType()
@@ -338,6 +346,27 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
 
     open_UIViews = revit.uidoc.GetOpenUIViews()
     open_views = [ov.ViewId.IntegerValue for ov in open_UIViews]
+
+    def is_referenced(v):
+        view_refs = DB.FilteredElementCollector(revit.doc)\
+                      .OfCategory(DB.BuiltInCategory.OST_ReferenceViewer)\
+                      .WhereElementIsNotElementType()\
+                      .ToElements()
+
+        view_refs_names = set()
+        for view_ref in view_refs:
+            ref_param = view_ref.LookupParameter('Target view')
+            view_refs_names.add(ref_param.AsValueString())
+
+        refsheet = v.LookupParameter('Referencing Sheet')
+        refviewport = v.LookupParameter('Referencing Detail')
+        refprefix = VIEWREF_PREFIX.get(v.ViewType, '')
+        if refsheet \
+                and refviewport \
+                and refsheet.AsString() != '' \
+                and refviewport.AsString() != '' \
+                or (refprefix + v.ViewName) in view_refs_names:
+            return True
 
     def confirm_removal(v):
         if isinstance(v, viewclass_to_purge):
@@ -352,6 +381,8 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
             elif '<' in v.ViewName:
                 return False
             elif v.Id.IntegerValue in open_views:
+                return False
+            elif keep_referenced and is_referenced(v):
                 return False
             else:
                 return True
@@ -376,12 +407,34 @@ def remove_all_views():
 
 
 @dependent
+def remove_all_unreferenced_views():
+    """Remove All Unreferenced Views (of any kind, except open views and sheets)"""
+
+    # (View3D, ViewPlan, ViewDrafting, ViewSection, ViewSchedule)
+    _purge_all_views(DB.View, None,
+                     'REMOVING UNREFERENCED RAFTING, PLAN, '
+                     'SECTION, AND ELEVATION VIEWS',
+                     'Remove All Unreferenced Views', 'View',
+                     keep_referenced=True)
+
+
+@dependent
 def remove_all_plans():
     """Remove All Views (Floor Plans only)"""
 
     _purge_all_views(DB.ViewPlan, DB.ViewType.FloorPlan,
                      'REMOVING PLAN VIEWS',
                      'Remove All Plan Views', 'Plan View')
+
+
+@dependent
+def remove_all_unreferenced_plans():
+    """Remove All Unreferenced Views (Floor Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.FloorPlan,
+                     'REMOVING UNREFERENCED PLAN VIEWS',
+                     'Remove All Unreferenced Plan Views', 'Plan View',
+                     keep_referenced=True)
 
 
 @dependent
@@ -394,6 +447,17 @@ def remove_all_rcps():
 
 
 @dependent
+def remove_all_unreferenced_rcps():
+    """Remove All Unreferenced Views (Reflected Ceiling Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.CeilingPlan,
+                     'REMOVING UNREFERENCED RCP VIEWS',
+                     'Remove All Unreferenced Reflected Ceiling Plans',
+                     'Ceiling View',
+                     keep_referenced=True)
+
+
+@dependent
 def remove_all_engplan():
     """Remove All Views (Engineering Plans only)"""
 
@@ -403,12 +467,33 @@ def remove_all_engplan():
 
 
 @dependent
-def remove_all_engplan():
+def remove_all_unreferenced_engplan():
+    """Remove All Unreferenced Views (Engineering Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.EngineeringPlan,
+                     'REMOVING UNREFERENCED ENGINEERING VIEWS',
+                     'Remove All Unreferenced Engineering Plans',
+                     'Engineering View',
+                     keep_referenced=True)
+
+
+@dependent
+def remove_all_areaplans():
     """Remove All Views (Area Plans only)"""
 
     _purge_all_views(DB.ViewPlan, DB.ViewType.AreaPlan,
                      'REMOVING AREA VIEWS',
                      'Remove All Area Plans', 'Area View')
+
+
+@dependent
+def remove_all_unreferenced_areaplans():
+    """Remove All Unreferenced Views (Area Plans only)"""
+
+    _purge_all_views(DB.ViewPlan, DB.ViewType.AreaPlan,
+                     'REMOVING UNREFERENCED AREA VIEWS',
+                     'Remove All Unreferenced Area Plans', 'Area View',
+                     keep_referenced=True)
 
 
 @dependent
@@ -421,12 +506,33 @@ def remove_all_threed():
 
 
 @dependent
+def remove_all_unreferenced_threed():
+    """Remove All Unreferenced Views (3D Views only)"""
+
+    _purge_all_views(DB.View3D, DB.ViewType.ThreeD,
+                     'REMOVING UNREFERENCED 3D VIEWS',
+                     'Remove All Unreferenced 3D Views', '3D View',
+                     keep_referenced=True)
+
+
+@dependent
 def remove_all_drafting():
     """Remove All Views (Drafting Views only)"""
 
     _purge_all_views(DB.ViewDrafting, None,
                      'REMOVING DRAFTING VIEWS',
                      'Remove All Drafting Views', 'Drafting View')
+
+
+@dependent
+def remove_all_unreferenced_drafting():
+    """Remove All Unreferenced Views (Drafting Views only)"""
+
+    _purge_all_views(DB.ViewDrafting, None,
+                     'REMOVING UNREFERENCED DRAFTING VIEWS',
+                     'Remove All Unreferenced Drafting Views',
+                     'Drafting View',
+                     keep_referenced=True)
 
 
 @dependent
@@ -438,11 +544,29 @@ def remove_all_sections():
 
 
 @dependent
+def remove_all_unreferenced_sections():
+    """Remove All Unreferenced Views (Sections only)"""
+    _purge_all_views(DB.ViewSection, DB.ViewType.Section,
+                     'REMOVING UNREFERENCED SECTION VIEWS',
+                     'Remove All Unreferenced Section Views', 'Section View',
+                     keep_referenced=True)
+
+
+@dependent
 def remove_all_elevations():
     """Remove All Views (Elevations only)"""
     _purge_all_views(DB.ViewSection, DB.ViewType.Elevation,
                      'REMOVING SECTION VIEWS',
-                     'Remove All Section Views', 'Section View')
+                     'Remove All Elevation Views', 'Elevation View')
+
+
+@dependent
+def remove_all_unreferenced_elevations():
+    """Remove All Unreferenced Views (Elevations only)"""
+    _purge_all_views(DB.ViewSection, DB.ViewType.Elevation,
+                     'REMOVING UNREFERENCED SECTION VIEWS',
+                     'Remove All Unreferenced Elevation Views', 'Elevation View',
+                     keep_referenced=True)
 
 
 @dependent

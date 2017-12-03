@@ -20,6 +20,7 @@ class BatchSheetMakerWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self._sheet_dict = dict()
         self._titleblock_id = None
+        self.sheets_tb.Focus()
 
     def _process_sheet_code(self):
         for sheet_code in str(self.sheets_tb.Text).split('\n'):

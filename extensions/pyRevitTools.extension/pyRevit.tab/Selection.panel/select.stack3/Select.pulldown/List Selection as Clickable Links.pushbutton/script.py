@@ -2,7 +2,7 @@ from pyrevit import script, revit
 
 
 __context__ = 'selection'
-__doc__ = 'Lists the selected element ids as clickable links.'\
+__doc__ = 'Lists the selected element ids as clickable links. '\
           'This is a quick way to go through a series of elements.'
 
 

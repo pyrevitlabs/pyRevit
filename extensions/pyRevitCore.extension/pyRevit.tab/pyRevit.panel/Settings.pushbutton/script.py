@@ -14,9 +14,9 @@ from pyrevit.loader.addin import addinfiles
 
 __context__ = 'zerodoc'
 
-__doc__ = 'Shows the preferences window for pyrevit. You can customize how ' \
-          'pyrevit loads and set some basic parameters here.' \
-          '\n\nShift-Click: Shows config file in explorer.'
+__doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
+          'pyRevit loads and set some basic parameters here.' \
+          '\n\nShift-Click:\nShows config file in explorer.'
 
 
 logger = script.get_logger()

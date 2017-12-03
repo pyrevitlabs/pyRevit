@@ -1,4 +1,4 @@
-"""Changes the selected view names to UPPERCASE."""
+"""Changes the selected view names."""
 
 from pyrevit import revit, DB
 from pyrevit import forms

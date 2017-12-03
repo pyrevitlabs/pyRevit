@@ -1,5 +1,6 @@
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
 
 
 __doc__ = 'This script removes all custom parameters that has not been used '\
@@ -10,11 +11,8 @@ __doc__ = 'This script removes all custom parameters that has not been used '\
 logger = script.get_logger()
 
 res = \
-    UI.TaskDialog.Show('pyRevit',
-                       'Make sure your models are saved and synced. '
-                       'Hit OK to continue...',
-                       UI.TaskDialogCommonButtons.Ok
-                       | UI.TaskDialogCommonButtons.Cancel)
+    forms.alert('Make sure your models are saved and synced. '
+                'Hit OK to continue...', cancel=True)
 
 if not res == UI.TaskDialogResult.Ok:
     script.exit()
@@ -87,5 +85,4 @@ if revit.doc.IsFamilyDocument:
 
     print('\n\nALL DONE.....................................')
 else:
-    UI.TaskDialog.Show('pyrevit',
-                       'This script works only on an active family editor.')
+    forms.alert('This script works only on an active family editor.')

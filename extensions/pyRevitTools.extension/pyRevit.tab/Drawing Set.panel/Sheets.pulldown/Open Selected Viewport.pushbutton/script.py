@@ -1,4 +1,5 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __doc__ = 'Opens the view associated to the selected viewport. '\
@@ -15,4 +16,4 @@ if len(selection) > 0 and isinstance(selection[0], DB.Viewport):
     view = revit.doc.GetElement(vpid)
     revit.uidoc.ActiveView = view
 else:
-    UI.TaskDialog.Show('pyrevit', 'Select a Viewport first')
+    forms.alert('Select a Viewport first')

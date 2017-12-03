@@ -1,4 +1,5 @@
 from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
 __context__ = 'selection'
@@ -24,4 +25,4 @@ for el in selection:
 if len(tagged_elements) > 0:
     selection.append(tagged_elements)
 else:
-    UI.TaskDialog.Show('pyrevit', 'Please select at least one element tag.')
+    forms.alert('Please select at least one element tag.')

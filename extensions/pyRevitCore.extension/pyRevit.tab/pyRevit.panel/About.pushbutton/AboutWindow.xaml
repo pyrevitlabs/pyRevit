@@ -190,7 +190,6 @@
                            TextWrapping="Wrap"
                            VerticalAlignment="Top"
                            FontSize="14"
-                           Text="python tools for Autodesk Revit®"
                            LineHeight="20"/>
                 <WrapPanel Margin="0,15,0,0"
                            HorizontalAlignment="Center">
@@ -220,10 +219,10 @@
                            TextAlignment="Center">
                     <Run Text="&lt;/&gt; with"/>
                     <Run FontSize="17" Text="♥"/>
-                    <Run Text="in ['pdx', 'hio', 'rno']"/>
+                    <Run x:Name="madein_tb"/>
                     <LineBreak/>
-                    <TextBlock Text="© 2015-2017 Ehsan Iran-Nejad"
-                                MouseDown="openkeybaseprofile"/>
+                    <TextBlock x:Name="copyright_tb"
+                               MouseDown="openkeybaseprofile"/>
                 </TextBlock>
             </StackPanel>
         </Grid>

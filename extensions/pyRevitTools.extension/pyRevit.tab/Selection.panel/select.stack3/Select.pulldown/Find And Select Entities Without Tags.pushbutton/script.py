@@ -9,8 +9,7 @@ from pyrevit import forms
 
 curview = revit.activeview
 if isinstance(curview, DB.ViewSheet):
-    UI.TaskDialog.Show('pyrevit',
-                       "You're on a Sheet. Activate a model view please.")
+    forms.alert("You're on a Sheet. Activate a model view please.")
     sys.exit(0)
 
 selected_switch = ''
@@ -56,7 +55,7 @@ if selected_switch == 'Rooms':
     if len(untaggedrooms) > 0:
         selection.set_to(untaggedrooms)
     else:
-        UI.TaskDialog.Show('pyrevit', 'All rooms have associated tags.')
+        forms.alert('All rooms have associated tags.')
 
 elif selected_switch == 'Areas':
     areatags = DB.FilteredElementCollector(revit.doc, curview.Id)\
@@ -84,7 +83,7 @@ elif selected_switch == 'Areas':
     if len(untaggedareas) > 0:
         selection.set_to(untaggedareas)
     else:
-        UI.TaskDialog.Show('pyrevit', 'All areas have associated tags.')
+        forms.alert('All areas have associated tags.')
 
 elif selected_switch == 'Doors' \
         or selected_switch == 'Windows' \
@@ -135,5 +134,4 @@ elif selected_switch == 'Doors' \
     if len(untagged_elements) > 0:
         selection.set_to(untagged_elements)
     else:
-        UI.TaskDialog.Show('pyrevit',
-                           'All {} have associated tags.'.format(elname))
+        forms.alert('All {} have associated tags.'.format(elname))

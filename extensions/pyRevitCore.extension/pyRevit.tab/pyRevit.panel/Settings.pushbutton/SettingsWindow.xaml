@@ -78,6 +78,17 @@
                     <StackPanel Margin="10px">
                         <GroupBox Header="General">
                             <StackPanel>
+                                <WrapPanel Margin="10,15,0,5">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Experimental / Reload Required)</TextBlock>
+                                </WrapPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
+                                                                                              If enabled, pyRevit will use a shared engine per each extension
+                                                                                              that supports the Rocket mode. For pyRevit developers,
+                                                                                              this means that your custom python modules should not use any
+                                                                                              module level variables that retain information from Revit like
+                                                                                              the active document, element information, etc.
+                                                                                              Why Rocket Mode? Yuuuuuge speed boost!!</TextBlock>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
                                     <TextBlock Margin="30,4,0,0">Check updates at startup</TextBlock>
@@ -190,17 +201,6 @@
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
                                     <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
                                 </WrapPanel>
-                                <WrapPanel Margin="10,5,0,5">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Experimental / Reload Required)</TextBlock>
-                                </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
-                                                                                              If enabled, pyRevit will use a shared engine per each extension
-                                                                                              that supports the Rocket mode. For pyRevit developers,
-                                                                                              this means that your custom python modules should not use any
-                                                                                              module level variables that retain information from Revit like
-                                                                                              the active document, element information, etc.
-                                                                                              Why Rocket Mode? Yuuuuuge speed boost!!</TextBlock>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>

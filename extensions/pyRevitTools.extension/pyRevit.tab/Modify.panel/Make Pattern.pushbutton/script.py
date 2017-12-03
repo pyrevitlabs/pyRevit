@@ -42,6 +42,15 @@ detail_line_types = [DB.DetailLine,
                      DB.DetailNurbSpline]
 
 
+metric_units = [DB.DisplayUnitType.DUT_METERS,
+                DB.DisplayUnitType.DUT_CENTIMETERS,
+                DB.DisplayUnitType.DUT_MILLIMETERS]
+
+
+# type in lower case
+readonly_patterns = ['solid fill']
+
+
 PICK_COORD_RESOLUTION = 10
 
 
@@ -54,9 +63,8 @@ class MakePatternWindow(forms.WPFWindow):
 
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
-        self.dottypes_cb.ItemsSource = patmaker.DOT_TYPES
-        self.dottypes_cb.SelectedIndex = 0
-        self.pat_name_tb.Focus()
+        self._setup_patnames()
+        self._setup_export_units()
 
     @property
     def is_detail_pat(self):
@@ -68,7 +76,7 @@ class MakePatternWindow(forms.WPFWindow):
 
     @property
     def pat_name(self):
-        return self.pat_name_tb.Text
+        return self.pat_name_cb.Text
 
     @property
     def allow_jiggle(self):
@@ -78,6 +86,11 @@ class MakePatternWindow(forms.WPFWindow):
     def create_filledregion(self):
         return self.createfilledregion_cb.IsChecked
 
+    @property
+    def export_scale(self):
+        # 12 for feet to inch, 304.8 for feet to mm
+        return 12.0 if self.export_units_cb.SelectedItem == 'INCH' else 304.8
+
     @staticmethod
     def _cleanup_selection(rvt_elements):
         lines = []
@@ -85,6 +98,39 @@ class MakePatternWindow(forms.WPFWindow):
             if type(element) in accpeted_lines:
                 lines.append(element)
         return lines
+
+    def _setup_patnames(self):
+        existing_pats = DB.FilteredElementCollector(revit.doc)\
+                          .OfClass(DB.FillPatternElement)\
+                          .ToElements()
+
+        fillpats = [x.GetFillPattern() for x in existing_pats]
+        self._existing_modelpats = \
+            [x.Name for x in fillpats
+             if x.Target == DB.FillPatternTarget.Model
+             and x.Name.lower() not in readonly_patterns]
+        self._existing_draftingpats = \
+            [x.Name for x in fillpats
+             if x.Target == DB.FillPatternTarget.Drafting
+             and x.Name.lower() not in readonly_patterns]
+
+        self._setup_patnames_combobox()
+
+    def _setup_patnames_combobox(self, model=True):
+        if model:
+            self.pat_name_cb.ItemsSource = self._existing_modelpats
+        else:
+            self.pat_name_cb.ItemsSource = self._existing_draftingpats
+        self.pat_name_cb.Focus()
+
+    def _setup_export_units(self):
+        self.export_units_cb.ItemsSource = ['INCH', 'MM']
+        units = revit.doc.GetUnits()
+        length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
+        if length_fo.DisplayUnits in metric_units:
+            self.export_units_cb.SelectedIndex = 1
+        else:
+            self.export_units_cb.SelectedIndex = 0
 
     def _pick_domain(self):
         def round_domain_coord(coord):
@@ -139,42 +185,44 @@ class MakePatternWindow(forms.WPFWindow):
             pat_scale = 1.0
 
         if export_only:
-            patmaker.export_pattern(self.pat_name,
-                                    pat_lines, domain, export_path,
+            patmaker.export_pattern(export_path,
+                                    self.pat_name,
+                                    pat_lines, domain,
+                                    scale=pat_scale * self.export_scale,
                                     model_pattern=self.is_model_pat,
-                                    scale=pat_scale * 12.0)
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern {} exported.'
-                               .format(self.pat_name))
+                                    allow_expansion=self.highestres_cb.IsChecked)
+            forms.alert('Pattern {} exported.'.format(self.pat_name))
         else:
             patmaker.make_pattern(self.pat_name,
                                   pat_lines, domain,
+                                  scale=pat_scale,
                                   model_pattern=self.is_model_pat,
-                                  create_filledregion=self.create_filledregion,
-                                  scale=pat_scale)
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern {} created/updated.'
-                               .format(self.pat_name))
+                                  allow_expansion=self.highestres_cb.IsChecked,
+                                  create_filledregion=self.create_filledregion)
+            forms.alert('Pattern {} created/updated.'.format(self.pat_name))
 
     def _verify_name(self):
         if not self.pat_name:
-            UI.TaskDialog.Show('pyRevit', 'Type a name for the pattern first')
+            forms.alert('Type a name for the pattern first')
             return False
         elif not re.search('[a-zA-Z0-9]', self.pat_name):
-            UI.TaskDialog.Show('pyRevit',
-                               'Pattern name must have at least '
-                               'one character or digit')
+            forms.alert('Pattern name must have at least '
+                        'one character or digit')
+            return False
+        elif self.pat_name.lower() in readonly_patterns:
+            forms.alert('Read-Only pattern with name "{}" already exists '
+                        .format(self.pat_name))
             return False
         return True
 
-    def open_help(self, sender, args):
-        pass
+    def target_changed(self, sender, args):
+        self._setup_patnames_combobox(model=self.is_model_cb.IsChecked)
 
     def export_pat(self, sender, args):
         if self._verify_name():
             self.Hide()
             domain = self._pick_domain()
-            export_dir = script.pick_folder()
+            export_dir = forms.pick_folder()
             if domain and export_dir:
                 self._create_pattern(domain,
                                      export_only=True,
@@ -188,10 +236,6 @@ class MakePatternWindow(forms.WPFWindow):
             if domain:
                 self._create_pattern(domain)
             self.Close()
-
-    def fix_angles(self, sender, args):
-        # self.Close()
-        UI.TaskDialog.Show('pyRevit', 'Work in progress...')
 
 
 # filter line types - only detail lines allowed
@@ -207,4 +251,4 @@ selected_elements = filter(filter_detail_lines, selection.elements)
 if len(selected_elements) > 0:
     MakePatternWindow('MakePatternWindow.xaml', selected_elements).ShowDialog()
 else:
-    UI.TaskDialog.Show('pyRevit', 'At least one Detail Line must be selected.')
+    forms.alert('At least one Detail Line must be selected.')

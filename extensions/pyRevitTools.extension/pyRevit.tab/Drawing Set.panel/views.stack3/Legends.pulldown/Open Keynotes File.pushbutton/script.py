@@ -4,6 +4,8 @@ import os
 
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import forms
+
 
 __author__ = 'Dan Mapes'
 __contact__ = 'https://github.com/DMapes'
@@ -19,7 +21,6 @@ path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
     )
 
 if not path:
-    UI.TaskDialog.Show('pyrevit',
-                       'No keynote file is assigned.')
+    forms.alert('No keynote file is assigned.')
 else:
     os.system('start notepad "{0}"'.format(path))

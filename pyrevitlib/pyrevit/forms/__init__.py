@@ -184,7 +184,9 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             self.list_lb.SelectionMode = Controls.SelectionMode.Extended
 
-        self.select_b.Content = kwargs.get('button_name', '')
+        button_name = kwargs.get('button_name', None)
+        if button_name:
+            self.select_b.Content = button_name
 
         self._list_options()
 
@@ -292,8 +294,9 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.clear_search(None, None)
         self.search_tb.Focus()
 
-        if 'button_name' in kwargs:
-            self.select_b.Content = kwargs['button_name']
+        button_name = kwargs.get('button_name', None)
+        if button_name:
+            self.select_b.Content = button_name
 
         self._list_options()
 
@@ -361,7 +364,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             WindowStyle="None"
             AllowsTransparency="True"
             Background="#00FFFFFF"
-            SizeToContent="Height"
+            SizeToContent="Height" MaxHeight="500"
             MouseUp="handle_click">
         <Window.Resources>
             <Style TargetType="{x:Type Button}">
@@ -446,93 +449,93 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     </Setter.Value>
                 </Setter>
             </Style>
-        <Style TargetType="{x:Type ToggleButton}">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#CCCCCC" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border Background="{TemplateBinding Background}"
-                                    HorizontalAlignment="Center"
-                                    Padding="6,0,10,0"
-                                    CornerRadius="10"
-                                    Height="20"
-                                    Margin="0,0,5,5"
-                                    SnapsToDevicePixels="true">
-                            <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Center">
-                                <Canvas Name="Layer_1"
-                                            Width="25"
-                                            Height="12"
-                                            VerticalAlignment="Center">
-                                    <Line Canvas.Top="6"
-                                              X1="5" X2="20"
-                                              Width="25"
-                                              StrokeThickness="1"
-                                              Stroke="{TemplateBinding BorderBrush}"/>
-                                    <Ellipse x:Name="ellipse"
-                                                 Canvas.Left="0"
-                                                 Width="12"
-                                                 Height="12"
-                                                 Fill="White"
-                                                 Stroke="{TemplateBinding BorderBrush}"
-                                                 StrokeThickness="1">
-                                        <Ellipse.RenderTransform>
-                                            <TranslateTransform X="0" Y="0" />
-                                        </Ellipse.RenderTransform>
-                                    </Ellipse>
-                                </Canvas>
-                                <TextBlock x:Name="buttontitle"
-                                               Text="{TemplateBinding Content}"
-                                               Margin="5,0,5,0"
-                                               Height="{TemplateBinding Height}"
-                                               VerticalAlignment="Center"
-                                               Foreground="{TemplateBinding Foreground}"/>
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True" >
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
-                                                                           Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+            <Style TargetType="{x:Type ToggleButton}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
+                <Setter Property="Background" Value="White" />
+                <Setter Property="BorderBrush" Value="#CCCCCC" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border Background="{TemplateBinding Background}"
+                                        HorizontalAlignment="Center"
+                                        Padding="6,0,10,0"
+                                        CornerRadius="10"
+                                        Height="20"
+                                        Margin="0,0,5,5"
+                                        SnapsToDevicePixels="true">
+                                <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center">
+                                    <Canvas Name="Layer_1"
+                                                Width="25"
+                                                Height="12"
+                                                VerticalAlignment="Center">
+                                        <Line Canvas.Top="6"
+                                                  X1="5" X2="20"
+                                                  Width="25"
+                                                  StrokeThickness="1"
+                                                  Stroke="{TemplateBinding BorderBrush}"/>
+                                        <Ellipse x:Name="ellipse"
+                                                     Canvas.Left="0"
+                                                     Width="12"
+                                                     Height="12"
+                                                     Fill="White"
+                                                     Stroke="{TemplateBinding BorderBrush}"
+                                                     StrokeThickness="1">
+                                            <Ellipse.RenderTransform>
+                                                <TranslateTransform X="0" Y="0" />
+                                            </Ellipse.RenderTransform>
+                                        </Ellipse>
+                                    </Canvas>
+                                    <TextBlock x:Name="buttontitle"
+                                                   Text="{TemplateBinding Content}"
+                                                   Margin="5,0,5,0"
+                                                   Height="{TemplateBinding Height}"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{TemplateBinding Foreground}"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True" >
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
                                                                                Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                            <Trigger Property="IsFocused" Value="true">
-                                <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                                                    <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
+                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
+                                                                                   Storyboard.TargetName="ellipse">
+                                                    <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
+                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="true">
+                                    <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </Window.Resources>
         <Border CornerRadius="15"
                 Background="{DynamicResource pyRevitDarkerDarkBrush}">
-            <StackPanel x:Name="stack_panel" Margin="10">
-                <DockPanel Height="36">
+            <DockPanel x:Name="stack_panel" Margin="10">
+                <DockPanel Height="36" DockPanel.Dock="Top">
                     <Label x:Name="message_label"
                            VerticalAlignment="Center"
                            DockPanel.Dock="Left"
@@ -543,8 +546,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                              VerticalAlignment="Center"
                              TextChanged="search_txt_changed"/>
                 </DockPanel>
-                <WrapPanel x:Name="button_list" Margin="5" />
-            </StackPanel>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Hidden">
+                        <WrapPanel x:Name="button_list" Margin="5" />
+                </ScrollViewer>
+            </DockPanel>
         </Border>
     </Window>
     """
@@ -595,7 +601,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 else:
                     button.Visibility = framework.Windows.Visibility.Visible
         else:
-            self.search_tb.Tag = 'Type to Filter / Tab to Select / Enter to Run'
+            self.search_tb.Tag = \
+                'Type to Filter / Tab to Select / Enter or Click to Run'
             for button in self.button_list.Children:
                 button.Visibility = framework.Windows.Visibility.Visible
 
@@ -988,7 +995,8 @@ class SearchPrompt(WPFWindow):
         self.search_tip = kwargs.get('search_tip', '')
 
         self._search_db = sorted(search_db)
-        self.response = None
+        self._switches = kwargs.get('switches', [])
+        self._setup_response()
 
         self.search_tb.Focus()
         self.hide_element(self.tab_icon)
@@ -996,13 +1004,33 @@ class SearchPrompt(WPFWindow):
         self.search_tb.Text = ''
         self.set_search_results()
 
-    @property
-    def search_term(self):
-        return self.search_tb.Text.lower().strip()
+    def _setup_response(self, response=None):
+        if self._switches:
+            switch_dict = dict.fromkeys(self._switches)
+            for mswitch in self.find_switch_match():
+                switch_dict[mswitch] = True
+            self.response = response, switch_dict
+        else:
+            self.response = response
 
     @property
     def search_input(self):
         return self.search_tb.Text
+
+    @search_input.setter
+    def search_input(self, value):
+        self.search_tb.Text = value
+
+    @property
+    def search_term(self):
+        return self.search_input.lower().strip()
+
+    @property
+    def search_term_noswitch(self):
+        term = self.search_term
+        for switch in self._switches:
+            term = term.replace(switch.lower() + ' ', '')
+        return term.strip()
 
     @property
     def search_matches(self):
@@ -1010,11 +1038,7 @@ class SearchPrompt(WPFWindow):
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
-    def update_search_term(self):
-        self.search_tb.Text = self.response + ' '
-        self.search_tb.CaretIndex = len(self.search_tb.Text)
-
-    def update_results_display(self):
+    def update_results_display(self, input_term=None):
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
 
@@ -1040,27 +1064,28 @@ class SearchPrompt(WPFWindow):
         if self._result_index < 0:
             self._result_index = res_cout - 1
 
-        cur_txt = self.search_term
+        if not input_term:
+            input_term = self.search_term_noswitch
 
-        if not cur_txt:
+        if not self.search_input:
             self.directmatch_tb.Text = self.search_tip
             return
 
         if results:
             cur_res = results[self._result_index]
             logger.debug('current result: {}'.format(cur_res))
-            if cur_res.lower().startswith(cur_txt):
+            if cur_res.lower().startswith(input_term):
                 logger.debug('directmatch_tb.Text: {}'.format(cur_res))
                 self.directmatch_tb.Text = \
-                    self.search_tb.Text + cur_res[len(cur_txt):]
+                    self.search_input + cur_res[len(input_term):]
             else:
                 logger.debug('wordsmatch_tb.Text: {}'.format(cur_res))
                 self.wordsmatch_tb.Text = '- {}'.format(cur_res)
 
-            self.response = cur_res
+            self._setup_response(cur_res)
             return True
 
-        self.response = None
+        self._setup_response()
         return False
 
     def set_search_results(self, *args):
@@ -1072,23 +1097,28 @@ class SearchPrompt(WPFWindow):
             self._search_results.extend(sorted(resultset))
 
         logger.debug('results: {}'.format(self._search_results))
-        self.update_results_display()
 
-    def find_direct_match(self):
+    def find_switch_match(self):
         results = []
         cur_txt = self.search_term
-        if cur_txt:
+        for switch in self._switches:
+            if switch.lower() in cur_txt:
+                results.append(switch)
+        return results
+
+    def find_direct_match(self, input_text):
+        results = []
+        if input_text:
             for cmd_name in self._search_db:
-                if cmd_name.lower().startswith(cur_txt):
+                if cmd_name.lower().startswith(input_text):
                     results.append(cmd_name)
 
         return results
 
-    def find_word_match(self):
+    def find_word_match(self, input_text):
         results = []
-        cur_txt = self.search_term
-        if cur_txt:
-            cur_words = cur_txt.split(' ')
+        if input_text:
+            cur_words = input_text.split(' ')
             for cmd_name in self._search_db:
                 if all([x in cmd_name.lower() for x in cur_words]):
                     results.append(cmd_name)
@@ -1096,23 +1126,21 @@ class SearchPrompt(WPFWindow):
         return results
 
     def search_txt_changed(self, sender, args):
-        dmresults = self.find_direct_match()
-        wordresults = self.find_word_match()
-        logger.debug(len(dmresults), len(wordresults))
+        input_term = self.search_term_noswitch
+        dmresults = self.find_direct_match(input_term)
+        wordresults = self.find_word_match(input_term)
         self.set_search_results(dmresults, wordresults)
+        self.update_results_display(input_term)
 
     def handle_kb_key(self, sender, args):
         if args.Key == framework.Windows.Input.Key.Escape:
-            self.response = None
+            self._setup_response()
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Enter:
             self.Close()
         elif args.Key == framework.Windows.Input.Key.Tab:
-            if False:
-                self.update_search_term()
-            else:
-                self._result_index += 1
-                self.update_results_display()
+            self._result_index += 1
+            self.update_results_display()
         elif args.Key == framework.Windows.Input.Key.Down:
             self._result_index += 1
             self.update_results_display()
@@ -1121,8 +1149,8 @@ class SearchPrompt(WPFWindow):
             self.update_results_display()
 
     @classmethod
-    def show_prompt(cls, search_db,
-                    width=600, height=100, **kwargs):
+    def show(cls, search_db,
+             width=600, height=100, **kwargs):
         dlg = cls(search_db, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
@@ -1217,6 +1245,9 @@ class SheetOption(object):
     def __nonzero__(self):
         return self.state
 
+    def __str__(self):
+        return self.name
+
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
@@ -1247,20 +1278,31 @@ def select_revisions(title='Select Revision',
             return [x.revision_element for x in return_options]
 
 
-def select_sheets(title='Select Sheets', button_name='Select', width=300):
+def select_sheets(title='Select Sheets', button_name='Select',
+                  width=300, multiple=True):
     all_sheets = DB.FilteredElementCollector(revit.doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
 
-    # ask user for sheets
-    return_options = \
-        SelectFromCheckBoxes.show(
-            sorted([SheetOption(x) for x in all_sheets],
-                   key=lambda x: x.number),
-            title=title,
-            button_name=button_name,
-            width=width,)
-
-    if return_options:
-        return [x.sheet_element for x in return_options if x.state]
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.sheet_element for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_option:
+            return return_option[0].sheet_element

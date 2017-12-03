@@ -6,6 +6,7 @@ from pyrevit import framework
 from pyrevit.framework import List
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit import versionmgr
 
 
 logger = coreutils.logger.get_logger(__name__)
@@ -21,14 +22,10 @@ MAX_MODEL_DOMAIN = 100.0
 # 0.002 < DRAFTING < 84.85 inches
 MAX_DETAIL_DOMAIN = MAX_MODEL_DOMAIN/10.0
 
-RATIO_RESOLUTION = 2
+MAX_DOMAIN_MULT = 8
 
-# not used
-DOT_TYPES = ['Line Segment',
-             u'\u2795',
-             u'\u274C',
-             u'Diamond \u25C7',
-             u'\u25EF']
+RATIO_RESOLUTION = 2
+ANGLE_CORR_RATIO = 0.01
 
 
 PAT_SEPARATOR = ', '
@@ -39,7 +36,7 @@ PAT_FILE_TEMPLATE = \
     ";-Time                                   : {time}\n"                     \
     ";-pyRevit Version                        : {version}\n"                  \
     ";---------------------------------------------------------------------\n"\
-    ";%UNITS=INCH\n"                                                          \
+    ";%UNITS={units}\n"                                                          \
     "*{name},created by pyRevit\n"                                            \
     ";%TYPE={type}\n"
 
@@ -272,80 +269,99 @@ class _PatternSafeGrid:
 
 
 class _PatternDomain:
-    def __init__(self, start_u, start_v, end_u, end_v, model_pattern):
+    def __init__(self, start_u, start_v, end_u, end_v,
+                 model_pattern, expandable):
         self._origin = _PatternPoint(min(start_u, end_u), min(start_v, end_v))
         self._corner = _PatternPoint(max(start_u, end_u), max(start_v, end_v))
-        self._domain = self._corner - self._origin
+        self._bounds = self._corner - self._origin
         self._normalized_domain = \
-            _PatternPoint(1.0, 1.0 * (self._domain.v / self._domain.u))
+            _PatternPoint(1.0, 1.0 * (self._bounds.v / self._bounds.u))
         if self._zero_domain():
             raise PyRevitException('Can not process zero domain.')
 
         self.u_vec = _PatternLine(_PatternPoint(0, 0),
-                                  _PatternPoint(self._domain.u, 0))
+                                  _PatternPoint(self._bounds.u, 0))
         self.v_vec = _PatternLine(_PatternPoint(0, 0),
-                                  _PatternPoint(0, self._domain.v))
+                                  _PatternPoint(0, self._bounds.v))
 
         if model_pattern:
             self._max_domain = MAX_MODEL_DOMAIN
         else:
             self._max_domain = MAX_DETAIL_DOMAIN
 
-        self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0),
-                                     _PatternPoint(self._domain.u,
-                                                   self._domain.v))
+        self._expandable = expandable
+        self._target_domain = self._max_domain
 
-        self.safe_angles = []
+        self.diagonal = _PatternLine(_PatternPoint(0.0, 0.0),
+                                     _PatternPoint(self._bounds.u,
+                                                   self._bounds.v))
+
         self._calculate_safe_angles()
 
     def __repr__(self):
         return '<_PatternDomain U:{} V:{} SafeAngles:{}>'\
-               .format(self._domain.u,
-                       self._domain.v,
+               .format(self._bounds.u,
+                       self._bounds.v,
                        len(self.safe_angles))
 
     def _zero_domain(self):
-        return self._domain.u == 0 or self._domain.v == 0
+        return self._bounds.u == 0 or self._bounds.v == 0
 
     def _calculate_safe_angles(self):
         # setup tile counters
         u_mult = v_mult = 1
+        self.safe_angles = []
+        processed_ratios = {1.0}
 
         # add standard angles to the list
-        self.safe_angles.append(_PatternSafeGrid(self._domain,
-                                                 self.diagonal.angle,
-                                                 u_mult, 0))
+        self.safe_angles.append(
+            _PatternSafeGrid(self._bounds,
+                             self.diagonal.angle,
+                             u_mult, 0)
+            )
 
-        self.safe_angles.append(_PatternSafeGrid(self._domain,
-                                                 self.diagonal.angle,
-                                                 u_mult, 0, flipped=True))
+        self.safe_angles.append(
+            _PatternSafeGrid(self._bounds,
+                             self.diagonal.angle,
+                             u_mult, 0, flipped=True)
+            )
 
-        self.safe_angles.append(_PatternSafeGrid(self._domain,
-                                                 self.diagonal.angle,
-                                                 u_mult, v_mult))
+        self.safe_angles.append(
+            _PatternSafeGrid(self._bounds,
+                             self.diagonal.angle,
+                             u_mult, v_mult)
+            )
 
-        self.safe_angles.append(_PatternSafeGrid(self._domain,
-                                                 self.diagonal.angle,
-                                                 u_mult, v_mult, flipped=True))
+        self.safe_angles.append(
+            _PatternSafeGrid(self._bounds,
+                             self.diagonal.angle,
+                             u_mult, v_mult, flipped=True)
+            )
 
-        self.safe_angles.append(_PatternSafeGrid(self._domain,
-                                                 self.diagonal.angle,
-                                                 0, v_mult))
+        self.safe_angles.append(
+            _PatternSafeGrid(self._bounds,
+                             self.diagonal.angle,
+                             0, v_mult)
+            )
 
         # traverse the tile space and add safe grids to the list
-        processed_ratios = {1.0}
-        while self._domain.u * u_mult <= self._max_domain/2.0:
-            while self._domain.v * v_mult <= self._max_domain/2.0:
-                ratio = round(v_mult/float(u_mult), RATIO_RESOLUTION)
+        while self._bounds.u * u_mult <= self._target_domain / 2.0:
+            v_mult = 1
+            while self._bounds.v * v_mult <= self._target_domain / 2.0:
+                ratio = round(v_mult / float(u_mult), RATIO_RESOLUTION)
                 if ratio not in processed_ratios:
                     # for every tile, also add the mirrored tile
-                    angle1 = _PatternSafeGrid(self._domain,
+                    angle1 = _PatternSafeGrid(self._bounds,
                                               self.diagonal.angle,
-                                              u_mult, v_mult)
+                                              u_mult,
+                                              v_mult)
 
-                    angle2 = _PatternSafeGrid(self._domain,
+                    angle2 = _PatternSafeGrid(self._bounds,
                                               self.diagonal.angle,
-                                              u_mult, v_mult, flipped=True)
+                                              u_mult,
+                                              v_mult,
+                                              flipped=True)
+
                     if angle1.is_valid() and angle2.is_valid():
                         self.safe_angles.append(angle1)
                         self.safe_angles.append(angle2)
@@ -355,8 +371,16 @@ class _PatternDomain:
                                        'for grid point U:{} V:{}'
                                        .format(u_mult, v_mult))
                 v_mult += 1
-            v_mult = 1
             u_mult += 1
+
+    def expand(self):
+        # expand target domain for more safe angles
+        if self._target_domain > self._max_domain * MAX_DOMAIN_MULT:
+            return False
+        else:
+            self._target_domain += self._max_domain / 2
+            self._calculate_safe_angles()
+            return True
 
     def get_domain_coords(self, pat_line):
         return _PatternLine(pat_line.start_point - self._origin,
@@ -366,11 +390,21 @@ class _PatternDomain:
         return min(self.safe_angles,
                    key=lambda x: abs(x.grid_angle - axis_angle))
 
+    def get_required_correction(self, axis_angle):
+        return abs(axis_angle - self.get_grid_params(axis_angle).grid_angle)
+
+    def get_best_angle(self, axis_angle):
+        if self._expandable:
+            while self.get_required_correction(axis_angle) >= ANGLE_CORR_RATIO:
+                if not self.expand():
+                    break
+        return self.get_grid_params(axis_angle)
+
 
 class _PatternGrid:
     def __init__(self, pat_domain, init_line):
         self._domain = pat_domain
-        self._grid = self._domain.get_grid_params(init_line.angle)
+        self._grid = self._domain.get_best_angle(init_line.angle)
         logger.debug('Closest safe angle is: {}'.format(self._grid))
         self.angle = self._grid.grid_angle
         self.span, self.offset, self.shift = \
@@ -523,11 +557,13 @@ class _RevitPattern:
 
     def get_pat_data(self):
         pat_type = 'MODEL' if self._model_pat else 'DRAFTING'
-        from pyrevit.versionmgr import PYREVIT_VERSION
+        unit_type = 'INCH' if self._scale == 12 else 'MM'
+        pyrvtver = versionmgr.get_pyrevit_version()
         pattern_desc = \
             PAT_FILE_TEMPLATE.format(time=coreutils.current_time(),
                                      date=coreutils.current_date(),
-                                     version=PYREVIT_VERSION.get_formatted(),
+                                     version=pyrvtver.get_formatted(),
+                                     units=unit_type,
                                      name=self._name,
                                      type=pat_type)
 
@@ -584,13 +620,14 @@ def _create_fill_pattern(revit_pat, create_filledregion=False):
                      .format(create_pat_err))
 
 
-def _make_rvt_pattern(pat_name, pat_lines, domain,
-                      model_pattern=True, scale=1.0):
+def _make_rvt_pattern(pat_name, pat_lines, domain, scale=1.0,
+                      model_pattern=True, allow_expansion=False):
     pat_domain = _PatternDomain(domain[0][0],
                                 domain[0][1],
                                 domain[1][0],
                                 domain[1][1],
-                                model_pattern)
+                                model_pattern,
+                                allow_expansion)
 
     logger.debug('New pattern domain: {}'.format(pat_domain))
 
@@ -610,17 +647,20 @@ def _make_rvt_pattern(pat_name, pat_lines, domain,
     return revit_pat
 
 
-def make_pattern(pat_name, pat_lines, domain,
-                 model_pattern=True, create_filledregion=False, scale=1.0):
+def make_pattern(pat_name, pat_lines, domain, scale=1.0,
+                 model_pattern=True, allow_expansion=False,
+                 create_filledregion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+        _make_rvt_pattern(pat_name, pat_lines, domain, scale,
+                          model_pattern, allow_expansion)
     return _create_fill_pattern(revit_pat, create_filledregion)
 
 
-def export_pattern(pat_name, pat_lines, domain, export_dir,
-                   model_pattern=True, scale=12.0):
+def export_pattern(export_dir, pat_name, pat_lines, domain, scale=12.0,
+                   model_pattern=True, allow_expansion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, model_pattern, scale)
+        _make_rvt_pattern(pat_name, pat_lines, domain, scale,
+                          model_pattern, allow_expansion)
     return _export_pat(revit_pat, export_dir)
 
 
