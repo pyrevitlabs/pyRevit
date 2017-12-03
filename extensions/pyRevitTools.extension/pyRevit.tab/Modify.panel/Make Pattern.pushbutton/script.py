@@ -47,6 +47,10 @@ metric_units = [DB.DisplayUnitType.DUT_METERS,
                 DB.DisplayUnitType.DUT_MILLIMETERS]
 
 
+# type in lower case
+readonly_patterns = ['solid fill']
+
+
 PICK_COORD_RESOLUTION = 10
 
 
@@ -99,8 +103,24 @@ class MakePatternWindow(forms.WPFWindow):
         existing_pats = DB.FilteredElementCollector(revit.doc)\
                           .OfClass(DB.FillPatternElement)\
                           .ToElements()
-        self._existing_pats = [x.Name for x in existing_pats]
-        self.pat_name_cb.ItemsSource = self._existing_pats
+
+        fillpats = [x.GetFillPattern() for x in existing_pats]
+        self._existing_modelpats = \
+            [x.Name for x in fillpats
+             if x.Target == DB.FillPatternTarget.Model
+             and x.Name.lower() not in readonly_patterns]
+        self._existing_draftingpats = \
+            [x.Name for x in fillpats
+             if x.Target == DB.FillPatternTarget.Drafting
+             and x.Name.lower() not in readonly_patterns]
+
+        self._setup_patnames_combobox()
+
+    def _setup_patnames_combobox(self, model=True):
+        if model:
+            self.pat_name_cb.ItemsSource = self._existing_modelpats
+        else:
+            self.pat_name_cb.ItemsSource = self._existing_draftingpats
         self.pat_name_cb.Focus()
 
     def _setup_export_units(self):
@@ -189,7 +209,14 @@ class MakePatternWindow(forms.WPFWindow):
             forms.alert('Pattern name must have at least '
                         'one character or digit')
             return False
+        elif self.pat_name.lower() in readonly_patterns:
+            forms.alert('Read-Only pattern with name "{}" already exists '
+                        .format(self.pat_name))
+            return False
         return True
+
+    def target_changed(self, sender, args):
+        self._setup_patnames_combobox(model=self.is_model_cb.IsChecked)
 
     def export_pat(self, sender, args):
         if self._verify_name():

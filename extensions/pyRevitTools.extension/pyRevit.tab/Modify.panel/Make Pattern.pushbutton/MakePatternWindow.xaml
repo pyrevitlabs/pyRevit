@@ -17,13 +17,15 @@
                     <RadioButton x:Name="is_detail_cb"
                                  GroupName="reporting_level"
                                  Margin="10,10,0,10"
-                                 IsChecked="False">
+                                 IsChecked="False"
+                                 Checked="target_changed">
                         Detail Pattern
                     </RadioButton>
                     <RadioButton x:Name="is_model_cb"
                                  GroupName="reporting_level"
                                  Margin="10,10,0,10"
-                                 IsChecked="True">
+                                 IsChecked="True"
+                                 Checked="target_changed">
                         Model Pattern
                     </RadioButton>
                 </WrapPanel>
