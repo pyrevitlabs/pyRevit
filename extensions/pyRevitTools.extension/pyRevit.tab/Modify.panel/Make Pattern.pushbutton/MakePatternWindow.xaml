@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Make Pattern"
         Height="350" Width="300" ResizeMode="NoResize"
-        ShowInTaskbar="False"
+        ShowInTaskbar="False" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         ScrollViewer.VerticalScrollBarVisibility="Disabled"
         HorizontalContentAlignment="Center">
