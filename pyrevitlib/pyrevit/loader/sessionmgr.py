@@ -370,7 +370,8 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
 
 def execute_command_cls(extcmd_type,
-                        clean_engine=None, fullframe_engine=None):
+                        clean_engine=None, fullframe_engine=None,
+                        alternate_mode=False):
     tmp_cmd_data = \
         FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
     tmp_cmd_data.Application = HOST_APP.uiapp
@@ -387,6 +388,10 @@ def execute_command_cls(extcmd_type,
     # force using fullframe engine
     if fullframe_engine:
         command_instance.baked_needsFullFrameEngine = fullframe_engine
+
+    # force using the alternate script
+    if alternate_mode:
+        command_instance.altScriptModeOverride = True
 
     re = command_instance.Execute(tmp_cmd_data, '', DB.ElementSet())
     command_instance = None

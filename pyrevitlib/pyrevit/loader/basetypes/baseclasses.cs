@@ -26,6 +26,12 @@ namespace PyRevitBaseClasses
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
 
+        // unlike fullframe or clean engine modes, the alternate script mode is determined at
+        // script execution by using a shortcut key combination. This parameter is created to
+        // trigger the alternate script mode when executing a command from a program and not
+        // from the Revit user interface.
+        public bool altScriptModeOverride = false;
+
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
@@ -151,7 +157,7 @@ namespace PyRevitBaseClasses
             }
 
             // If Shift clicking on button, run config script instead
-            else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift))
+            else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) || altScriptModeOverride)
             {
                 _script = baked_alternateScriptSource;
                 _altScriptMode = true;

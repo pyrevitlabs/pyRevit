@@ -27,6 +27,7 @@ SHOW_SWITCH = '/show'
 ATOM_SWITCH = '/atom'
 NPP_SWITCH = '/npp'
 NP_SWITCH = '/np'
+CONFIG_SWITCH = '/config'
 ALT_FLAG = '/alt'
 
 
@@ -47,6 +48,7 @@ def print_help():
         '- **{atom} [{alt}] COMMAND:** Opens the script in atom\n\n'
         '- **{npp} [{alt}] COMMAND:** Opens the script in notepad++\n\n'
         '- **{np} [{alt}] COMMAND:** Opens the script in notepad\n\n'
+        '- **{config}:** Executes the config script (like Shift+Click).\n\n'
         '- **{alt}:** Executes option on the alternate script.\n\n'
         .format(help=HELP_SWITCH,
                 doc=DOC_SWITCH,
@@ -58,6 +60,7 @@ def print_help():
                 atom=ATOM_SWITCH,
                 npp=NPP_SWITCH,
                 np=NP_SWITCH,
+                config=CONFIG_SWITCH,
                 alt=ALT_FLAG)
         )
 
@@ -156,6 +159,7 @@ matched_cmdname, switches = \
                                       ATOM_SWITCH,
                                       NPP_SWITCH,
                                       NP_SWITCH,
+                                      CONFIG_SWITCH,
                                       ALT_FLAG],
                             search_tip='pyRevit Search')
 
@@ -198,6 +202,8 @@ if matched_cmdname:
         else:
             clean_engine = switches[CLEAN_SWITCH]
             fullframe_engine = switches[FULLFRAME_SWITCH]
+            alternate_mode = switches[CONFIG_SWITCH] or switches[ALT_FLAG]
             sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
                                            clean_engine=clean_engine,
-                                           fullframe_engine=fullframe_engine)
+                                           fullframe_engine=fullframe_engine,
+                                           alternate_mode=alternate_mode)
