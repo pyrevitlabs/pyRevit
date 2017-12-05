@@ -563,6 +563,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         message = kwargs.get('message', None)
         self._switches = kwargs.get('switches', [])
 
+        configs = kwargs.get('config', None)
+
         self.message_label.Content = \
             message if message else 'Pick a command option:'
 
@@ -570,17 +572,28 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         for switch in self._switches:
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
+            if switch in configs:
+                self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
 
         for option in self._context:
             my_button = framework.Controls.Button()
             my_button.Content = option
             my_button.Click += self.process_option
+            if option in configs:
+                self._set_config(my_button, configs[option])
             self.button_list.Children.Add(my_button)
 
         self._setup_response()
         self.search_tb.Focus()
         self._filter_options()
+
+    @staticmethod
+    def _set_config(item, config_dict):
+        bg = config_dict.get('background', None)
+        if bg:
+            bg = bg.replace('0x', '#')
+            item.Background = Media.BrushConverter().ConvertFrom(bg)
 
     def _setup_response(self, response=None):
         if self._switches:
