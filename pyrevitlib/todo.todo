@@ -1,4 +1,6 @@
 pyrevit installer:
+☐ revise the availability class creation so there is one set of classes that all commands are tied to.
+   this helps with reloading since the new commands would be still tied to the same availability classes.
 ☐ add option to gitservices tool to set remote tracking branch for updates
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
