@@ -572,7 +572,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         for switch in self._switches:
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
-            if switch in configs:
+            if configs and option in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
 
@@ -580,7 +580,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             my_button = framework.Controls.Button()
             my_button.Content = option
             my_button.Click += self.process_option
-            if option in configs:
+            if configs and option in configs:
                 self._set_config(my_button, configs[option])
             self.button_list.Children.Add(my_button)
 
