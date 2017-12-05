@@ -5,7 +5,7 @@
 #define MyAppGit "https://github.com/eirannejad/pyRevit.git"
 
 [Setup]
-AppId={{B93A3916-AE34-493F-984E-6D02E492D328}
+AppId={{A31B9631-12A5-476E-BFDA-239E283F5D43}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
