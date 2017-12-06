@@ -20,6 +20,8 @@ SolidCompression=yes
 SetupIconFile={#MyAppName}Setup.ico
 UninstallDisplayIcon={#MyAppName}Setup.ico
 AppCopyright=Copyright (c) 2014-2017 Ehsan Iran-Nejad
+;Allow install by any user class. See pyRevit PR #262
+;PrivilegesRequired=lowest
 DisableWelcomePage=no
 WizardImageFile=installerimage.bmp
 LicenseFile=LICENSE
@@ -53,7 +55,7 @@ var
 
 procedure InitializeWizard;
 begin
-  { Create the user mode page }  
+  { Create the user mode page }
   UsagePage := CreateInputOptionPage(wpLicense,
     'Select Installation Type', 'For Current user or All users?',
     'Please specify how you would like to install pyRevit, then click Next.', True, False);
@@ -62,7 +64,7 @@ begin
   UsagePage.Values[0] := True;
   UsagePage.Values[0] := False;
 
-  { Create the user mode page }  
+  { Create the user mode page }
   VersionPage := CreateInputOptionPage(wpSelectDir,
     'Select Installation Version', 'Do you want the latest pyRevit or a specific version?',
     'Please specify which version of pyRevit you want, then click Next.', True, False);
@@ -71,7 +73,7 @@ begin
   VersionPage.Values[0] := True;
   VersionPage.Values[1] := False;
 
-  { Create the version page }  
+  { Create the version page }
   CommitHashPage := CreateInputQueryPage(VersionPage.ID,
     'Select pyRevit Version', '',
     'Please paste the full commit hash of the pyRevit version you like to install'
