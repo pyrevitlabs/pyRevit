@@ -23,6 +23,7 @@ AppCopyright=Copyright (c) 2014-2017 Ehsan Iran-Nejad
 DisableWelcomePage=no
 WizardImageFile=installerimage.bmp
 LicenseFile=LICENSE
+PrivilegesRequired=lowest
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
