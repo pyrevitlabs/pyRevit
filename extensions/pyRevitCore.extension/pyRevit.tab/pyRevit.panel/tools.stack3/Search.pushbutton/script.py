@@ -40,7 +40,6 @@ def print_help():
         '- **{help} COMMAND:** Opens the help url or prints the docstring\n\n'
         '- **{doc} [{alt}] COMMAND:** Prints the command docstring\n\n'
         '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
-        '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
         '- **{clean} [{alt}] COMMAND:** Runs command with clean engine\n\n'
         '- **{full} [{alt}] COMMAND:** Runs command with full-frame engine\n\n'
         '- **{open} [{alt}] COMMAND:** Opens the bundle folder\n\n'
