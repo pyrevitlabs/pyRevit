@@ -544,11 +544,28 @@ def remove_all_sections():
 
 
 @dependent
+def remove_all_detailsection():
+    """Remove All Views (Detail Views only)"""
+    _purge_all_views(DB.ViewSection, DB.ViewType.Detail,
+                     'REMOVING DETAIL VIEWS',
+                     'Remove All Detail Views', 'Detail View')
+
+
+@dependent
 def remove_all_unreferenced_sections():
     """Remove All Unreferenced Views (Sections only)"""
     _purge_all_views(DB.ViewSection, DB.ViewType.Section,
                      'REMOVING UNREFERENCED SECTION VIEWS',
                      'Remove All Unreferenced Section Views', 'Section View',
+                     keep_referenced=True)
+
+
+@dependent
+def remove_all_unreferenced_detailsection():
+    """Remove All Unreferenced Views (Detail Views only)"""
+    _purge_all_views(DB.ViewSection, DB.ViewType.Detail,
+                     'REMOVING UNREFERENCED DETAIL VIEWS',
+                     'Remove All Unreferenced Detail Views', 'Detail View',
                      keep_referenced=True)
 
 
