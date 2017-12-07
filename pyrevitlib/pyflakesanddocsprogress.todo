@@ -20,6 +20,7 @@
 
 # charts:
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\charts\__init__.py
+
 # emoji:
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\emoji\unicodes.py
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\emoji\__init__.py
@@ -97,9 +98,6 @@
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\extpackages.py
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\ipymodules.py
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\__init__.py
-
-# postern:
-☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\postern\__init__.py
 
 # revit:
 ☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\db.py
