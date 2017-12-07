@@ -680,23 +680,35 @@ class TemplatePromptBar(WPFWindow):
         self._setup(**kwargs)
 
     def update_window(self):
-        scale_factor = 1 / HOST_APP.proc_screen_scalefactor
+        screen_area = HOST_APP.proc_screen_workarea
+        scale_factor = 1.0 / HOST_APP.proc_screen_scalefactor
+        top = left = width = height = 0
 
         window_rect = revit.get_window_rectangle()
 
-        top = left = width = height = 0
-
+        # set width and height
         width = window_rect.Right - window_rect.Left
         height = self.user_height
 
         top = window_rect.Top
-        # in maximized window, the top will be off the screen (- value)
+        # in maximized window, the top might be off the active screen
+        # due to windows thicker window frames
         # lets cut the height and re-adjust the top
-        if top < 0:
-            height -= abs(top)
-            top = 0
+        top_diff = abs(screen_area.Top - top)
+        if 10 > top_diff > 0 and top_diff < height:
+            height -= top_diff
+            top = screen_area.Top
 
         left = window_rect.Left
+        # in maximized window, Left also might be off the active screen
+        # due to windows thicker window frames
+        # let's fix the width to accomodate the extra pixels as well
+        left_diff = abs(screen_area.Left - left)
+        if 10 > left_diff > 0 and left_diff < width:
+            # deduct two times the left negative offset since this extra
+            # offset happens on both left and right side
+            width -= left_diff * 2
+            left = screen_area.Left
 
         self.Top = top * scale_factor
         self.Left = left * scale_factor
