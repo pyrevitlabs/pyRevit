@@ -18,17 +18,24 @@ from pyrevit.revit import verify
 logger = get_logger(__name__)
 
 
+def get_imported_symbol(symbol_name):
+    return globals().get(symbol_name, None)
+
+
 class RevitWrapper(types.ModuleType):
     def __init__(self):
         pass
 
+    def __getattribute__(self, attr_name):
+        attr = get_imported_symbol(attr_name)
+        return attr or object.__getattribute__(self, attr_name)
+
     def __getattr__(self, attr_name):
-        gbls = globals()
-        if attr_name in gbls:
-            return gbls[attr_name]
-        else:
+        attr = get_imported_symbol(attr_name)
+        if not attr:
             raise AttributeError('\'module\' object has no attribute \'{}\''
-                                 .format(attr_name))
+                                 .format(symbol_name))
+        return attr
 
     @property
     def uidoc(self):
