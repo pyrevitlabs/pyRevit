@@ -7,7 +7,8 @@ from pyrevit import script
 slogger = script.get_logger()
 
 
-__context__ = 'zerodoc'
+# __context__ = 'zerodoc'
+__context__ = ['Walls', 'Text Notes']
 __helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 
 

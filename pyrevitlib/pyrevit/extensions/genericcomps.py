@@ -92,9 +92,7 @@ class GenericUIComponent(GenericComponent):
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
             logger.debug('Appending syspath: {} to {}'.format(path, self))
-            return self.syspath_search_paths.append(path)
-        else:
-            return None
+            self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
@@ -210,9 +208,7 @@ class GenericUIContainer(GenericUIComponent):
             logger.debug('Appending syspath: {} to {}'.format(path, self))
             for component in self._sub_components:
                 component.add_syspath(path)
-            return self.syspath_search_paths.append(path)
-        else:
-            return None
+            self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
@@ -320,6 +316,7 @@ class GenericUICommand(GenericUIComponent):
 
         # setting up search paths. These paths will be added to sys.path by
         # the command loader for easy imports.
+        self.syspath_search_paths.append(self.directory)
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
@@ -359,6 +356,8 @@ class GenericUICommand(GenericUIComponent):
             if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                 self.cmd_context = script_content.extract_param(
                     exts.COMMAND_CONTEXT_PARAM)  # type: str
+                if type(self.cmd_context) is list:
+                    self.cmd_context = ';'.join(self.cmd_context)
             else:
                 self.cmd_context = exts.CTX_ZERODOC
 
@@ -436,3 +435,8 @@ class GenericUICommand(GenericUIComponent):
 
     def get_full_config_script_address(self):
         return op.join(self.directory, self.config_script_file)
+
+    def add_syspath(self, path):
+        if path and not self.has_syspath(path):
+            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            self.syspath_search_paths.append(path)
