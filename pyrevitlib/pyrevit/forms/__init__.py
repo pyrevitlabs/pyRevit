@@ -62,8 +62,10 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
-    def show(self):
-        return self.Show()
+    def show(self, modal=False):
+        if modal:
+            return self.ShowDialog()
+        self.Show()
 
     def show_dialog(self):
         return self.ShowDialog()
