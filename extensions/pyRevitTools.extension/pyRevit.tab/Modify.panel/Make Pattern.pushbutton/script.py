@@ -5,7 +5,7 @@ from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit import script
 
-from pyrevittoolslib import patmaker
+import patmaker
 
 
 __title__ = 'Make\nPattern'
