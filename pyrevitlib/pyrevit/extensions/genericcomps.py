@@ -356,6 +356,8 @@ class GenericUICommand(GenericUIComponent):
             if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                 self.cmd_context = script_content.extract_param(
                     exts.COMMAND_CONTEXT_PARAM)  # type: str
+                if type(self.cmd_context) is list:
+                    self.cmd_context = ';'.join(self.cmd_context)
             else:
                 self.cmd_context = exts.CTX_ZERODOC
 

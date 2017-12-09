@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
@@ -216,11 +217,16 @@ namespace PyRevitBaseClasses
 
     public abstract class PyRevitCommandCategoryAvail : IExternalCommandAvailability
     {
-        private string _categoryName = "";
+        private string _contextCatNameCompareString;
 
         public PyRevitCommandCategoryAvail(string contextString)
         {
-            _categoryName = contextString;
+            List<string> contextCategoryNames = new List<string>();
+            foreach (string catName in contextString.Split(';'))
+                contextCategoryNames.Add(catName.ToLower());
+
+            contextCategoryNames.Sort();
+            _contextCatNameCompareString = String.Join("", contextCategoryNames);
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
@@ -231,8 +237,14 @@ namespace PyRevitBaseClasses
 
             try
             {
+                var selectedCategoryNames = new List<string>();
                 foreach (Category rvt_cat in selectedCategories)
-                    if (rvt_cat.Name != this._categoryName)
+                    selectedCategoryNames.Add(rvt_cat.Name.ToLower());
+
+                selectedCategoryNames.Sort();
+                string selectedCatNameCompareString = String.Join("", selectedCategoryNames);
+
+                if (selectedCatNameCompareString != _contextCatNameCompareString)
                         return false;
             }
             catch (Exception)
