@@ -57,9 +57,11 @@ PICK_COORD_RESOLUTION = 10
 class MakePatternWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, rvt_elements):
         # cleanup selection (pick only acceptable curves)
-        self.selected_lines = self._cleanup_selection(rvt_elements)
-        self.active_view = \
-            revit.doc.GetElement(self.selected_lines[0].OwnerViewId)
+        self.selected_lines, self.selected_fillgrids = \
+            self._cleanup_selection(rvt_elements)
+
+        # self.active_view = \
+        #     revit.doc.GetElement(self.selected_lines[0].OwnerViewId)
 
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
@@ -94,10 +96,17 @@ class MakePatternWindow(forms.WPFWindow):
     @staticmethod
     def _cleanup_selection(rvt_elements):
         lines = []
+        fillgrids = []
         for element in rvt_elements:
             if type(element) in accpeted_lines:
                 lines.append(element)
-        return lines
+            elif isinstance(element, DB.FilledRegion):
+                frtype = revit.doc.GetElement(element.GetTypeId())
+                fillpat_element = revit.doc.GetElement(frtype.FillPatternId)
+                fillpat = fillpat_element.GetFillPattern()
+                fillgrids.extend(fillpat.GetFillGrids())
+
+        return lines, fillgrids
 
     def _setup_patnames(self):
         existing_pats = DB.FilteredElementCollector(revit.doc)\
@@ -170,12 +179,15 @@ class MakePatternWindow(forms.WPFWindow):
                                             geom_curve.GetEndPoint(1))
                     )
 
-        call_params = 'Name:{} Model:{} FilledRegion:{} Domain:{} Lines:{}'\
+        call_params = 'Name:{} Model:{} FilledRegion:{} Domain:{}\n' \
+                      'Lines:{}\n'\
+                      'FillGrids:{}'\
                       .format(self.pat_name,
                               self.is_model_pat,
                               self.create_filledregion,
                               domain,
-                              pat_lines)
+                              pat_lines,
+                              self.selected_fillgrids)
 
         logger.debug(call_params)
 
@@ -185,16 +197,19 @@ class MakePatternWindow(forms.WPFWindow):
             pat_scale = 1.0
 
         if export_only:
-            patmaker.export_pattern(export_path,
-                                    self.pat_name,
-                                    pat_lines, domain,
-                                    scale=pat_scale * self.export_scale,
-                                    model_pattern=self.is_model_pat,
-                                    allow_expansion=self.highestres_cb.IsChecked)
+            patmaker.export_pattern(
+                export_path,
+                self.pat_name,
+                pat_lines, domain,
+                scale=pat_scale * self.export_scale,
+                model_pattern=self.is_model_pat,
+                allow_expansion=self.highestres_cb.IsChecked
+                )
             forms.alert('Pattern {} exported.'.format(self.pat_name))
         else:
             patmaker.make_pattern(self.pat_name,
                                   pat_lines, domain,
+                                  fillgrids=self.selected_fillgrids,
                                   scale=pat_scale,
                                   model_pattern=self.is_model_pat,
                                   allow_expansion=self.highestres_cb.IsChecked,
@@ -238,17 +253,8 @@ class MakePatternWindow(forms.WPFWindow):
             self.Close()
 
 
-# filter line types - only detail lines allowed
-def filter_detail_lines(element):
-    if type(element) in detail_line_types and element.OwnerViewId is not None:
-        return True
-    else:
-        return False
-
-
-# filter line types before making pattern
-selected_elements = filter(filter_detail_lines, selection.elements)
-if len(selected_elements) > 0:
-    MakePatternWindow('MakePatternWindow.xaml', selected_elements).ShowDialog()
+if not selection.is_empty:
+    MakePatternWindow('MakePatternWindow.xaml',
+                      selection.elements).show(modal=True)
 else:
     forms.alert('At least one Detail Line must be selected.')
