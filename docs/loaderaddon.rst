@@ -1,4 +1,4 @@
-pyRevit Core
+pyRevit Addon
 ============
 
 
@@ -38,10 +38,3 @@ pyRevitLoader Addin Implementation
 
 The source code for pyRevitLoader addin is under:
 ``pyrevitlib/pyrevit/addin/Source``
-
-
-Core modules
-************
-
-..  toctree::
-    :maxdepth: 2
