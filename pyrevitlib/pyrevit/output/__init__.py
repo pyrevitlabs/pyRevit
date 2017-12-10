@@ -39,11 +39,11 @@ def reset_stylesheet():
 
 
 # setup output window stylesheet
-active_stylesheet = \
-    user_config.core.get_option('outputstylesheet',
-                                default_value=get_default_stylesheet())
-
-set_stylesheet(active_stylesheet)
+if not EXEC_PARAMS.doc_mode:
+    active_stylesheet = \
+        user_config.core.get_option('outputstylesheet',
+                                    default_value=get_default_stylesheet())
+    set_stylesheet(active_stylesheet)
 
 
 class PyRevitOutputWindow(object):

@@ -35,9 +35,12 @@ DEFAULT_LOGGING_LEVEL = logging.WARNING
 # this is because the csharp code hasn't been compiled when the
 # logger module is imported in the other modules
 GLOBAL_LOGGING_LEVEL_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOGGINGLEVEL'
-envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, DEFAULT_LOGGING_LEVEL)
 GLOBAL_FILELOGGING_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_FILELOGGING'
-envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, False)
+if not EXEC_PARAMS.doc_mode:
+    envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR,
+                                DEFAULT_LOGGING_LEVEL)
+    envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR,
+                                False)
 
 
 # Creating default file log name and status
@@ -176,8 +179,9 @@ def get_file_hndlr():
         return file_hndlr
 
 
-# setting up public logger. this will be imported in with other modules --------
-logging.setLoggerClass(LoggerWrapper)
+# setting up public logger. this will be imported in with other modules -------
+if not EXEC_PARAMS.doc_mode:
+    logging.setLoggerClass(LoggerWrapper)
 
 
 loggers = {}

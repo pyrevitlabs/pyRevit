@@ -20,29 +20,60 @@ mlogger = logger.get_logger(__name__)
 
 
 def get_info():
+    """Return info on current pyRevit command.
+
+    Returns:
+        pyrevit.extensions.genericcomps.GenericUICommand: Command info object
+    """
     from pyrevit.extensions.extensionmgr import get_command_from_path
     return get_command_from_path(EXEC_PARAMS.command_path)
 
 
 def get_results():
+    """Return command results dictionary for logging.
+
+    Returns:
+        pyrevit.usagelog.record.CommandCustomResults: Command results dict
+    """
     from pyrevit.usagelog.record import CommandCustomResults
     return CommandCustomResults()
 
 
 def get_pyrevit_version():
+    """Return pyRevit version.
+
+    Returns:
+        pyrevit.versionmgr.PyRevitVersion: pyRevit version provider
+    """
     from pyrevit.versionmgr import PYREVIT_VERSION
     return PYREVIT_VERSION
 
 
 def get_logger():
+    """Create and return logger named for current script.
+
+    Returns:
+        pyrevit.coreutils.logger.LoggerWrapper: Logger object
+    """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
 
 def get_output():
+    """Return object wrapping output window for current script.
+
+    Returns:
+        pyrevit.output.PyRevitOutputWindow: Output wrapper object
+    """
     return output.get_output()
 
 
 def get_config():
+    """Create and return config section parser object for current script.
+
+    Returns:
+        pyrevit.coreutils.configparser.PyRevitConfigSectionParser:
+            Config section parser object
+    """
     from pyrevit.userconfig import user_config
     script_cfg_postfix = 'config'
 
@@ -55,16 +86,37 @@ def get_config():
 
 
 def save_config():
+    """Save pyRevit config.
+
+    Scripts should call this to save any changes they have done to their
+    config section object received from script.get_config() method.
+    """
     from pyrevit.userconfig import user_config
     user_config.save_changes()
 
 
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data.
-    These files are not marked by host Revit version and could be shared
-    between all Revit versions and instances. Data files are saved in
-    app directory and are NOT cleaned up at Revit restart.
-    Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_mydata.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_Command Name_mydata.data'
+
+    Universal data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -75,9 +127,27 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data.
-    Data files are saved in app directory and are NOT cleaned up
-    at Revit restart. Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_2018_mydata.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_2018_Command Name_mydata.data'
+
+    Data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -88,9 +158,25 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_instance_data_file(file_id, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data under
-    current Revit instance. Instance data files are saved in app
-    directory and are cleaned up at Revit restart.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata')
+        ... '.../pyRevit_2018_6684_mydata.tmp'
+        >>> script.get_document_data_file('mydata', add_cmd_name=True)
+        ... '.../pyRevit_2018_6684_Command Name_mydata.tmp'
+
+    Instance data files are cleaned up at pyRevit startup.
+
+    Args:
+        file_id (str): unique id for the filename
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -101,9 +187,27 @@ def get_instance_data_file(file_id, add_cmd_name=False):
 
 
 def get_document_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data under
-    current Revit version and for the current document.
-    Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_2018_mydata_Project1.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_2018_Command Name_mydata_Project1.data'
+
+    Document data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     proj_info = revit.get_project_info()
 
@@ -121,10 +225,24 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_bundle_file(file_name):
+    """Return full path to file under current script bundle.
+
+    Args:
+        file_name (str): bundle file name
+
+    Returns:
+        str: full bundle file path
+    """
     return op.join(EXEC_PARAMS.command_path, file_name)
 
 
 def journal_write(data_key, msg):
+    """Write key and value to active Revit journal for current command.
+
+    Args:
+        data_key (str): data key
+        msg (str): data value string
+    """
     # Get the StringStringMap class which can write data into.
     # noinspection PyUnresolvedReferences
     data_map = EXEC_PARAMS.command_data.JournalData
@@ -135,6 +253,14 @@ def journal_write(data_key, msg):
 
 
 def journal_read(data_key):
+    """Read value for provided key from active Revit journal.
+
+    Args:
+        data_key (str): data key
+
+    Returns:
+        str: data value string
+    """
     # Get the StringStringMap class which can write data into.
     # noinspection PyUnresolvedReferences
     data_map = EXEC_PARAMS.command_data.JournalData

@@ -437,9 +437,10 @@ else:
 # standard prefixes for naming pyrevit files (config, appdata and temp files)
 # -----------------------------------------------------------------------------
 if EXEC_PARAMS.doc_mode:
-    PYREVIT_FILE_PREFIX_UNIVERSAL = None
-    PYREVIT_FILE_PREFIX = None
-    PYREVIT_FILE_PREFIX_STAMPED = None
+    PYREVIT_FILE_PREFIX_UNIVERSAL = PYREVIT_FILE_PREFIX = \
+        PYREVIT_FILE_PREFIX_STAMPED = None
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = PYREVIT_FILE_PREFIX_USER = \
+        PYREVIT_FILE_PREFIX_STAMPED_USER = None
 else:
     # e.g. pyRevit_
     PYREVIT_FILE_PREFIX_UNIVERSAL = '{}'.format(PYREVIT_ADDON_NAME)

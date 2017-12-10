@@ -24,12 +24,13 @@ logger = get_logger(__name__)
 
 
 # location for default pyRevit config files
-ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
+if not EXEC_PARAMS.doc_mode:
+    ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
 
-# setup config file name and path
-CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
-                                                   file_ext='ini')
-logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
+    # setup config file name and path
+    CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
+                                                       file_ext='ini')
+    logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 
 
 # fix obsolete config file naming ----------------------------------------------
