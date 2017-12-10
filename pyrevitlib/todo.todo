@@ -1,5 +1,4 @@
 pyrevit installer:
-☐ add actual "Detail View" to wipe tool (referenced and unreferenced)
 ☐ revise the availability class creation so there is one set of classes that all commands are tied to.
    this helps with reloading since the new commands would be still tied to the same availability classes.
 ☐ add option to gitservices tool to set remote tracking branch for updates
@@ -14,6 +13,7 @@ blog updates:
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
+    ✔ add actual "Detail View" to wipe tool (referenced and unreferenced) @done(2017-12-09 17:37)
     ✔ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256 @done(2017-11-30 12:28)
     ✔ add filter to extension window @done(2017-11-30 10:51)
     ✔ combine find view tools @done(2017-11-30 10:30)
