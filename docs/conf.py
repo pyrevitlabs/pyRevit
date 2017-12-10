@@ -289,4 +289,4 @@ texinfo_documents = [
 
 
 # autodoc settings
-# autodoc_member_order = 'bysource'
+autodoc_member_order = 'alphabetical'

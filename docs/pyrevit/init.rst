@@ -1,5 +1,5 @@
-pyrevit
-=======
+:mod:`pyrevit`
+==============
 
 .. autoclass:: pyrevit.PyRevitException
 

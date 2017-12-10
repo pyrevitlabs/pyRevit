@@ -270,6 +270,11 @@ def journal_read(data_key):
 
 
 def get_button():
+    """Find and return current script ui button.
+
+    Returns:
+        pyrevit.coreutils.ribbon._PyRevitRibbonButton: ui button object
+    """
     from pyrevit.coreutils.ribbon import get_current_ui
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
     for tab in pyrvt_tabs:
@@ -280,6 +285,18 @@ def get_button():
 
 
 def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
+    """Set the state of button icon (on or off).
+
+    This method expects on.png and off.png in command bundle for on and off
+    icon states, unless full path of icon states are provided.
+
+    Args:
+        new_state (bool): state of the ui button icon.
+        on_icon_path (str, optional): full path of icon for on state.
+                                      default='on.png'
+        off_icon_path (str, optional): full path of icon for off state.
+                                       default='off.png'
+    """
     # find the ui button
     uibutton = get_button()
     if not uibutton:
@@ -307,26 +324,37 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
 
 
 def exit():
+    """Stop the script execution and exit."""
     sys.exit()
 
 
 def show_file_in_explorer(file_path):
+    """Show file in Windows Explorer."""
     import subprocess
     subprocess.Popen(r'explorer /select,"{}"'
                      .format(os.path.normpath(file_path)))
 
 
 def open_url(url):
-    """Opens url in a new tab in the default web browser."""
+    """Open url in a new tab in default webbrowser."""
     import webbrowser
     return webbrowser.open_new_tab(url)
 
 
 def clipboard_copy(string_to_copy):
+    """Copy string to Windows Clipboard."""
     framework.Clipboard.SetText(string_to_copy)
 
 
 def load_index(index_file='index.html'):
+    """Load html file into output window.
+
+    This method expects index.html file in the current command bundle,
+    unless full path to an html file is provided.
+
+    Args:
+        index_file (str, optional): full path of html file.
+    """
     outputwindow = get_output()
     if not op.isfile(index_file):
         index_file = get_bundle_file(index_file)
