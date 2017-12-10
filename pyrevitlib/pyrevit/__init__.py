@@ -73,7 +73,7 @@ sys.path.append(PYREVITLOADER_DIR)
 
 # pylama:ignore=E402
 # now we can start importing stuff
-from pyrevit.framework import Process, IOException
+from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
 from pyrevit.api import DB, UI  # noqa pylama ignore DB not being used here
@@ -119,6 +119,14 @@ class PyRevitIOError(PyRevitException):
 # namedtuple for passing information about a PostableCommand
 _HostAppPostableCommand = namedtuple('_HostAppPostableCommand',
                                      ['name', 'key', 'id', 'rvtobj'])
+"""namedtuple for passing information about a PostableCommand
+
+Attributes:
+    name (str): Postable command name
+    key (str): Postable command key string
+    id (int): Postable command id
+    rvtobj (RevitCommandId): Postable command Id Object
+"""
 
 
 class _HostApplication:

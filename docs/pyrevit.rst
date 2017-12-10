@@ -1,8 +1,14 @@
 pyRevit Module (pyrevit)
 ====================================
 
-.. automodule:: pyrevit
-    :special-members: __init__
+.. autoclass:: pyrevit.PyRevitException
+
+.. autoclass:: pyrevit.PyRevitIOError
+
+.. autoclass:: pyrevit._HostAppPostableCommand
+
+.. autoclass:: pyrevit._HostApplication
     :members:
-    :show-inheritance:
-    :private-members:
+
+.. autoclass:: pyrevit._ExecutorParams
+    :members:

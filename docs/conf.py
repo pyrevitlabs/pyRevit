@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-#
 # pyRevit documentation build configuration file, created by
 # sphinx-quickstart on Mon Jan  2 09:24:40 2017.
 #
@@ -18,9 +17,13 @@
 
 import os
 import sys
-import imp
-import builtins
 import logging
+
+if sys.version_info[0] >= 3:
+    import builtins
+else:
+    import __builtin__ as builtins
+
 
 logger = logging.getLogger(name='pyRevitDocumenter')
 
