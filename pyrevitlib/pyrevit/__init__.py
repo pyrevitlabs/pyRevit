@@ -125,7 +125,7 @@ Attributes:
     name (str): Postable command name
     key (str): Postable command key string
     id (int): Postable command id
-    rvtobj (RevitCommandId): Postable command Id Object
+    rvtobj (``RevitCommandId``): Postable command Id Object
 """
 
 
@@ -137,7 +137,7 @@ class _HostApplication:
     postable commands, and other functionality.
 
     Args:
-        host_uiapp (UIApplication): Instance of running host.
+        host_uiapp (``UIApplication``): Instance of running host.
 
     Example:
         >>> hostapp = _HostApplication(__revit__)
@@ -224,13 +224,13 @@ class _HostApplication:
 
     @property
     def proc_screen(self):
-        """:obj:`intptr`: Return handle to screen hosting current process."""
+        """``intptr``: Return handle to screen hosting current process."""
         return Forms.Screen.FromHandle(
             Process.GetCurrentProcess().MainWindowHandle)
 
     @property
     def proc_screen_workarea(self):
-        """System.Drawing.Rectangle: Return screen working area."""
+        """``System.Drawing.Rectangle``: Return screen working area."""
         screen = HOST_APP.proc_screen
         if screen:
             return screen.WorkingArea
@@ -312,7 +312,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_mgr(self):
-        """PyRevitBaseClasses.EngineManager: Return current engine manager."""
+        """``PyRevitBaseClasses.EngineManager``: Return engine manager."""
         try:
             return __ipyenginemanager__
         except NameError:
@@ -333,7 +333,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def pyrevit_command(self):
-        """PyRevitBaseClasses.PyRevitCommandRuntime: Return runtime command."""
+        """``PyRevitBaseClasses.PyRevitCommandRuntime``: Return command."""
         try:
             return __externalcommand__
         except NameError:
@@ -349,7 +349,7 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """PyRevitBaseClasses.ScriptOutput: Return current output window."""
+        """``PyRevitBaseClasses.ScriptOutput``: Return output window."""
         if self.pyrevit_command:
             return self.pyrevit_command.OutputWindow
 
@@ -373,7 +373,7 @@ class _ExecutorParams(object):
 
     @property
     def command_data(self):
-        """ExternalCommandData: Return current command data."""
+        """``ExternalCommandData``: Return current command data."""
         if self.pyrevit_command:
             return self.pyrevit_command.CommandData
 
@@ -392,7 +392,7 @@ class _ExecutorParams(object):
 
     @property
     def result_dict(self):
-        """Dictionary<String, String>: Return results dict for logging."""
+        """``Dictionary<String, String>``: Return results dict for logging."""
         if self.pyrevit_command:
             return self.pyrevit_command.GetResultsDictionary()
 

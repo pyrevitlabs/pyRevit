@@ -23,7 +23,8 @@ def get_info():
     """Return info on current pyRevit command.
 
     Returns:
-        pyrevit.extensions.genericcomps.GenericUICommand: Command info object
+        :obj:`pyrevit.extensions.genericcomps.GenericUICommand`:
+            Command info object
     """
     from pyrevit.extensions.extensionmgr import get_command_from_path
     return get_command_from_path(EXEC_PARAMS.command_path)
@@ -33,7 +34,8 @@ def get_results():
     """Return command results dictionary for logging.
 
     Returns:
-        pyrevit.usagelog.record.CommandCustomResults: Command results dict
+        :obj:`pyrevit.usagelog.record.CommandCustomResults`:
+            Command results dict
     """
     from pyrevit.usagelog.record import CommandCustomResults
     return CommandCustomResults()
@@ -43,7 +45,7 @@ def get_pyrevit_version():
     """Return pyRevit version.
 
     Returns:
-        pyrevit.versionmgr.PyRevitVersion: pyRevit version provider
+        :obj:`pyrevit.versionmgr.PyRevitVersion`: pyRevit version provider
     """
     from pyrevit.versionmgr import PYREVIT_VERSION
     return PYREVIT_VERSION
@@ -53,7 +55,7 @@ def get_logger():
     """Create and return logger named for current script.
 
     Returns:
-        pyrevit.coreutils.logger.LoggerWrapper: Logger object
+        :obj:`pyrevit.coreutils.logger.LoggerWrapper`: Logger object
     """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
@@ -62,7 +64,7 @@ def get_output():
     """Return object wrapping output window for current script.
 
     Returns:
-        pyrevit.output.PyRevitOutputWindow: Output wrapper object
+        :obj:`pyrevit.output.PyRevitOutputWindow`: Output wrapper object
     """
     return output.get_output()
 
@@ -71,7 +73,7 @@ def get_config():
     """Create and return config section parser object for current script.
 
     Returns:
-        pyrevit.coreutils.configparser.PyRevitConfigSectionParser:
+        :obj:`pyrevit.coreutils.configparser.PyRevitConfigSectionParser`:
             Config section parser object
     """
     from pyrevit.userconfig import user_config
@@ -273,7 +275,7 @@ def get_button():
     """Find and return current script ui button.
 
     Returns:
-        pyrevit.coreutils.ribbon._PyRevitRibbonButton: ui button object
+        :obj:`pyrevit.coreutils.ribbon._PyRevitRibbonButton`: ui button object
     """
     from pyrevit.coreutils.ribbon import get_current_ui
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()

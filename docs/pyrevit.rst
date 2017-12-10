@@ -10,3 +10,4 @@ pyRevit root level config and functionality for all pyrevit sub-modules.
    pyrevit/api.rst
    pyrevit/framework.rst
    pyrevit/script.rst
+   pyrevit/userconfig.rst
