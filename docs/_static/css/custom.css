@@ -1,0 +1,11 @@
+.wy-side-nav-search {
+    background-color: #f39c12;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: white;
+}
+
+.wy-nav-side {
+    background: #23303d;
+}

@@ -1,5 +1,9 @@
-:mod:`pyrevit`
-==============
+=======
+pyrevit
+=======
+
+Documentation
+*************
 
 .. autoclass:: pyrevit.PyRevitException
 
@@ -12,3 +16,9 @@
 
 .. autoclass:: pyrevit._ExecutorParams
     :members:
+
+
+Implementation
+**************
+
+.. literalinclude:: ../../pyrevitlib/pyrevit/__init__.py

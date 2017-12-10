@@ -1,5 +1,14 @@
-:mod:`pyrevit.framework`
-========================
+=================
+pyrevit.framework
+=================
+
+Documentation
+*************
 
 .. automodule:: pyrevit.framework
     :members:
+
+Implementation
+**************
+
+.. literalinclude:: ../../pyrevitlib/pyrevit/framework.py
