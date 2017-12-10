@@ -1,7 +1,8 @@
-The Plugins Module (pyrevit.plugins)
+pyRevit Module (pyrevit)
 ====================================
 
-.. automodule:: pyrevit.plugins.extpackages
+.. automodule:: pyrevit
     :special-members: __init__
     :members:
     :show-inheritance:
+    :private-members:

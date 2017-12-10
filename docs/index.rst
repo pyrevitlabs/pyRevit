@@ -13,7 +13,4 @@ Welcome to pyRevit's documentation!
     :hidden:
 
     core
-    scriptutils
-    revitutils
-    coretoolset
-    standardtoolset
+    pyrevit
