@@ -1,14 +1,11 @@
-pyRevit Module (pyrevit)
-====================================
+pyRevit Main Module
+===================
 
-.. autoclass:: pyrevit.PyRevitException
+pyRevit root level config and functionality for all pyrevit sub-modules.
 
-.. autoclass:: pyrevit.PyRevitIOError
+.. toctree::
+   :maxdepth: 2
 
-.. autoclass:: pyrevit._HostAppPostableCommand
-
-.. autoclass:: pyrevit._HostApplication
-    :members:
-
-.. autoclass:: pyrevit._ExecutorParams
-    :members:
+   pyrevit/init.rst
+   pyrevit/api.rst
+   pyrevit/framework.rst

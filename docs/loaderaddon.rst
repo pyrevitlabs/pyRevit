@@ -25,7 +25,7 @@ It's that simple really. See the sources below.
 From here on, the documentation page for the `pyrevit.loader` module will take you through all the steps of parsing extensions, making dll assemblies and creating the user interface for the parsed extensions.
 
 
-pyRevit Loader Implementation
+pyRevit loader script
 *****************************
 
 Here is the full source of ``pyRevitLoader.py``. The docstring explains how it works.
@@ -33,7 +33,7 @@ Here is the full source of ``pyRevitLoader.py``. The docstring explains how it w
 .. literalinclude:: ../pyrevitlib/pyrevit/loader/addin/pyRevitLoader.py
 
 
-pyRevitLoader Addin Implementation
+pyRevitLoader Addin Source
 **********************************
 
 The source code for pyRevitLoader addin is under:

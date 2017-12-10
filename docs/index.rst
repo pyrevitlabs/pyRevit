@@ -25,7 +25,7 @@ Index
 * :doc:`pyrevit`
 
 ..  toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :hidden:
     :caption: Modules
 
