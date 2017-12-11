@@ -384,6 +384,8 @@ def execute_command_cls(extcmd_type,
                         alternate_mode=False):
 
     command_instance = extcmd_type()
+    # this is a manual execution from python code and not by user
+    command_instance.executedByUser = False
 
     # force using clean engine
     command_instance.baked_needsCleanEngine = clean_engine
@@ -455,7 +457,8 @@ def execute_script(script_path, clean_engine=True, fullframe_engine=True):
             needsFullFrameEngine=fullframe_engine,
             refreshEngine=False,
             forcedDebugMode=False,
-            altScriptMode=False
+            altScriptMode=False,
+            executedFromUI=False
             )
 
     executor.ExecuteScript(

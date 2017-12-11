@@ -33,6 +33,11 @@ namespace PyRevitBaseClasses
         // from the Revit user interface.
         public bool altScriptModeOverride = false;
 
+        // this is true by default since commands are normally executed from ui.
+        // pyrevit module will set this to false, when manually executing a
+        // pyrevit command from python code. (e.g when executing reload after update)
+        public bool executedByUser = true;
+
 
         public PyRevitCommand(string scriptSource,
                               string alternateScriptSource,
@@ -173,20 +178,22 @@ namespace PyRevitBaseClasses
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtCmdRuntime = new PyRevitCommandRuntime(commandData, elements,
-                                                            baked_scriptSource,
-                                                            baked_alternateScriptSource,
-                                                            baked_syspaths,
-                                                            baked_helpSource,
-                                                            baked_cmdName,
-                                                            baked_cmdBundle,
-                                                            baked_cmdExtension,
-                                                            baked_cmdUniqueName,
-                                                            baked_needsCleanEngine,
-                                                            baked_needsFullFrameEngine,
-                                                            _refreshEngine,
-                                                            _forcedDebugMode,
-                                                            _altScriptMode);
+            var pyrvtCmdRuntime = new PyRevitCommandRuntime(cmdData: commandData,
+                                                            elements: elements,
+                                                            scriptSource: baked_scriptSource,
+                                                            alternateScriptSource: baked_alternateScriptSource,
+                                                            syspaths: baked_syspaths,
+                                                            helpSource: baked_helpSource,
+                                                            cmdName: baked_cmdName,
+                                                            cmdBundle: baked_cmdBundle,
+                                                            cmdExtension: baked_cmdExtension,
+                                                            cmdUniqueName: baked_cmdUniqueName,
+                                                            needsCleanEngine: baked_needsCleanEngine,
+                                                            needsFullFrameEngine: baked_needsFullFrameEngine,
+                                                            refreshEngine: _refreshEngine,
+                                                            forcedDebugMode: _forcedDebugMode,
+                                                            altScriptMode: _altScriptMode,
+                                                            executedFromUI: executedByUser);
             #endregion
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
