@@ -67,6 +67,10 @@ def compile_csharp(sourcefiles_list,
 
     provider = \
         CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
+
+    if not provider:
+        raise PyRevitException("Compile error: Can not get C# Code Provider.")
+
     return _compile_dotnet(provider,
                            cleanedup_source_list,
                            full_output_file_addr,
