@@ -359,12 +359,22 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
+    logger.debug('Searching for pyrevit command: {}'
+                 .format(pyrevitcmd_unique_id))
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+        logger.debug('Expecting assm: {}'.format(loaded_assm_name))
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
+            logger.debug('Found assm: {}'.format(loaded_assm_name))
+            logger.debug('Looking for pyRevit command...')
             for pyrvt_type in loaded_assm[0].GetTypes():
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
+                    logger.debug('Found pyRevit command in {}'
+                                 .format(loaded_assm_name))
                     return pyrvt_type
+            logger.debug('Could not find pyRevit command.')
+        else:
+            logger.debug('Can not find assm: {}'.format(loaded_assm_name))
 
     return None
 
