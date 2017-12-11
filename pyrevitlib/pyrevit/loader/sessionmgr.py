@@ -366,8 +366,8 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
             logger.debug('Found assm: {}'.format(loaded_assm_name))
-            logger.debug('Looking for pyRevit command...')
             for pyrvt_type in loaded_assm[0].GetTypes():
+                logger.debug('Found Type: {}'.format(pyrvt_type))
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
                     logger.debug('Found pyRevit command in {}'
                                  .format(loaded_assm_name))
