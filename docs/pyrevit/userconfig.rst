@@ -1,6 +1,6 @@
-==================
-pyrevit.userconfig
-==================
+=========================
+:mod:`pyrevit.userconfig`
+=========================
 
 Usage
 *****
@@ -21,7 +21,7 @@ Example:
 
 The :obj:`user_config` object is also the destination for reading and writing
 configuration by pyRevit scripts through :func:`get_config` of
-:mod:`pyrevit.scripts` module. Here is the function source:
+:mod:`pyrevit.script` module. Here is the function source:
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/script.py
     :pyobject: get_config

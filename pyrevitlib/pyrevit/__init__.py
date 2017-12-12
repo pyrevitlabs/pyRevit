@@ -119,7 +119,7 @@ class PyRevitIOError(PyRevitException):
 # namedtuple for passing information about a PostableCommand
 _HostAppPostableCommand = namedtuple('_HostAppPostableCommand',
                                      ['name', 'key', 'id', 'rvtobj'])
-"""namedtuple for passing information about a PostableCommand
+"""Private namedtuple for passing information about a PostableCommand
 
 Attributes:
     name (str): Postable command name
@@ -349,6 +349,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def executed_from_ui(self):
+        """bool: Check if command was executed from ui."""
         if self.pyrevit_command:
             return self.pyrevit_command.ExecutedFromUI
         else:

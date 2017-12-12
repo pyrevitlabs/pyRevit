@@ -1,3 +1,5 @@
+"""Handle creation of output window helper links."""
+
 import json
 
 from pyrevit import HOST_APP
@@ -15,6 +17,19 @@ DEFAULT_LINK = '<a title="Click to select or show element" ' \
 
 
 def make_link(element_ids, contents=None):
+    """Create link for given element ids.
+
+    This link is a special format link with revit:// scheme that is handled
+    by the output window to select the provided element ids in current project.
+    Scripts should not call this function directly. Creating clickable element
+    links is handled by the output wrapper object through the :func:`linkify`
+    method.
+
+    Example:
+        >>> output = pyrevit.output.get_output()
+        >>> for idx, elid in enumerate(element_ids):
+        >>>     print('{}: {}'.format(idx+1, output.linkify(elid)))
+    """
     elementquery = []
     if isinstance(element_ids, list):
         strids = [str(x.IntegerValue) for x in element_ids]

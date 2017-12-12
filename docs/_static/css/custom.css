@@ -54,6 +54,7 @@ a:visited {
 }
 
 .rst-content dl.method dt code.descname,
+.rst-content dl.staticmethod dt code.descname,
 .rst-content dl.attribute dt code.descname {
     color: #23303d;
 }
