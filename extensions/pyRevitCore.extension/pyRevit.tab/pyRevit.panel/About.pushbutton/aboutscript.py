@@ -32,22 +32,23 @@ class AboutWindow(forms.WPFWindow):
         except Exception:
             nice_version = short_version = branch_info = ''
 
-        rocketchar = u'\U0001F680' if sys.version_info.micro > 3 else ''
-        rocketmodetext = 'Rocket-mode {}'\
-                         .format(u'enabled ' + rocketchar if __cachedengine__
-                                 else 'disabled')
-
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
-        self.pyrevit_subtitle.Text += '\n {} | {}'.format(nice_version,
-                                                          branch_info)
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
-                                      .format(sys.version_info.major,
-                                              sys.version_info.minor,
-                                              sys.version_info.micro)
-        self.pyrevit_subtitle.Text += '\n{}'.format(rocketmodetext)
+        self.pyrevit_version.Text = nice_version
+        self.pyrevit_branch.Text = branch_info
+        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
+                                   .format(sys.version_info.major,
+                                           sys.version_info.minor,
+                                           sys.version_info.micro)
 
-        self.madein_tb.Text = pyrvtabout.madein
+        rocketmodetext = \
+            'Rocket-mode {}' \
+            .format('enabled ' if __cachedengine__ else 'disabled')
+        self.pyrevit_rmode.Text = rocketmodetext
+        if not __cachedengine__:
+            self.hide_element(self.rmode_icon)
+
+        self.madein_tb.Text = 'in {}'.format(pyrvtabout.madein)
         self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
