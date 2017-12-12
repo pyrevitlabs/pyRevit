@@ -31,6 +31,7 @@ switches = ['Graphic Styles',
             'System Categories',
             'System Postable Commands',
             'Worksets',
+            'Fill Grids',
             ]
 
 selected_switch = \
@@ -419,3 +420,21 @@ elif selected_switch == 'Data Schema Entities':
                               guids[guid.ToString()]))
 
     print('Iteration completed over {0} elements.'.format(len(allElements)))
+
+elif selected_switch == 'Fill Grids':
+    selection = revit.get_selection()
+    for el in selection:
+        if isinstance(el, DB.FilledRegion):
+            frt = revit.doc.GetElement(el.GetTypeId())
+            print('\n\n Filled Region Type: {}'
+                  .format(revit.ElementWrapper(frt).name))
+            fre = revit.doc.GetElement(frt.FillPatternId)
+            fp = fre.GetFillPattern()
+            for fg in fp.GetFillGrids():
+                print('FillGrid:')
+                print('\tOrigin: {}'.format(fg.Origin))
+                print('\tAngle: {}'.format(fg.Angle))
+                print('\tOffset: {}'.format(fg.Offset))
+                print('\tShift: {}'.format(fg.Shift))
+                for seg in fg.GetSegments():
+                    print('\tSegment: {}'.format(seg))
