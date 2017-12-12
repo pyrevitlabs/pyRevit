@@ -194,8 +194,7 @@
                 <TextBlock x:Name="pyrevit_title"
                            VerticalAlignment="Top"
                            HorizontalAlignment="Center"
-                           FontSize="44"
-                           MouseDown="opengithubcommits">
+                           FontSize="44">
                     <Run Text="pyRevit"/><Run x:Name="short_version_info"
                                               FontSize="20"
                                               Text=" vX.X"/>
@@ -237,7 +236,7 @@
                                    FontSize="14"
                                    LineHeight="20"
                                    Text="release/vX.X-beta"
-                                   MouseDown="opengithubcommits"/>
+                                   MouseDown="opengithubbranch"/>
                     </StackPanel>
                 </WrapPanel>
                 <TextBlock x:Name="pyrevit_engine"

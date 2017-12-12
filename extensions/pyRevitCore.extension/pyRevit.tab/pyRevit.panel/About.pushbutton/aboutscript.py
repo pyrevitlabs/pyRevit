@@ -28,14 +28,15 @@ class AboutWindow(forms.WPFWindow):
             nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
             short_version = \
                 ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
-            branch_info = '{}'.format(pyrvt_repo.branch)
+            self.branch_name = pyrvt_repo.branch
         except Exception:
-            nice_version = short_version = branch_info = ''
+            nice_version = short_version = ''
+            self.branch_name = None
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.pyrevit_version.Text = nice_version
-        self.pyrevit_branch.Text = branch_info
+        self.pyrevit_branch.Text = self.branch_name
         self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
                                    .format(sys.version_info.major,
                                            sys.version_info.minor,
@@ -70,7 +71,15 @@ class AboutWindow(forms.WPFWindow):
         script.open_url(urls.patron)
 
     def opengithubcommits(self, sender, args):
-        script.open_url(urls.githubmastercommits)
+        if self.branch_name:
+            commits_url = \
+                urls.githubbranchcommits.format(branch=self.branch_name)
+            script.open_url(commits_url)
+
+    def opengithubbranch(self, sender, args):
+        if self.branch_name:
+            branch_url = urls.githubbranch.format(branch=self.branch_name)
+            script.open_url(branch_url)
 
     def openreleasenotes(self, sender, args):
         script.open_url(urls.releasenotes)
