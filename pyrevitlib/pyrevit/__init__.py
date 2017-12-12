@@ -347,6 +347,13 @@ class _ExecutorParams(object):
         else:
             return False
 
+    @property   # read-only
+    def executed_from_ui(self):
+        if self.pyrevit_command:
+            return self.pyrevit_command.ExecutedFromUI
+        else:
+            return False
+
     @property   # read
     def window_handle(self):
         """``PyRevitBaseClasses.ScriptOutput``: Return output window."""

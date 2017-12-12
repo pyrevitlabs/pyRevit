@@ -26,6 +26,7 @@ namespace PyRevitBaseClasses
         private bool _refreshEngine = false;
         private bool _forcedDebugMode = false;
         private bool _altScriptMode = false;
+        private bool _execFromUI = false;
 
         private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
         private WeakReference<ScriptOutputStream> _outputStream = new WeakReference<ScriptOutputStream>(null);
@@ -51,7 +52,8 @@ namespace PyRevitBaseClasses
                                      bool needsFullFrameEngine,
                                      bool refreshEngine,
                                      bool forcedDebugMode,
-                                     bool altScriptMode)
+                                     bool altScriptMode,
+                                     bool executedFromUI)
         {
             _commandData = cmdData;
             _elements = elements;
@@ -70,6 +72,7 @@ namespace PyRevitBaseClasses
             _refreshEngine = refreshEngine;
             _forcedDebugMode = forcedDebugMode;
             _altScriptMode = altScriptMode;
+            _execFromUI = executedFromUI;
         }
 
         public ExternalCommandData CommandData
@@ -201,6 +204,14 @@ namespace PyRevitBaseClasses
             get
             {
                 return _altScriptMode;
+            }
+        }
+
+        public bool ExecutedFromUI
+        {
+            get
+            {
+                return _execFromUI;
             }
         }
 
