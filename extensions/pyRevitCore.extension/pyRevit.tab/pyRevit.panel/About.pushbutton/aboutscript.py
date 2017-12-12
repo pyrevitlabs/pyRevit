@@ -25,7 +25,7 @@ class AboutWindow(forms.WPFWindow):
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
             pyrvt_ver = versionmgr.get_pyrevit_version()
-            nice_version = ' v{}'.format(pyrvt_ver.get_formatted())
+            nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
             short_version = \
                 ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
             branch_info = '{}'.format(pyrvt_repo.branch)
@@ -43,7 +43,7 @@ class AboutWindow(forms.WPFWindow):
 
         rocketmodetext = \
             'Rocket-mode {}' \
-            .format('enabled ' if __cachedengine__ else 'disabled')
+            .format('enabled' if __cachedengine__ else 'disabled')
         self.pyrevit_rmode.Text = rocketmodetext
         if not __cachedengine__:
             self.hide_element(self.rmode_icon)
