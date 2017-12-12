@@ -23,6 +23,7 @@ Index
 **Modules**
 
 * :doc:`pyrevit`
+* :doc:`output`
 
 ..  toctree::
     :maxdepth: 2
