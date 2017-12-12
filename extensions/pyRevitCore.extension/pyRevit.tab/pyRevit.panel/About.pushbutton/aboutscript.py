@@ -28,7 +28,7 @@ class AboutWindow(forms.WPFWindow):
             nice_version = ' v{}'.format(pyrvt_ver.get_formatted())
             short_version = \
                 ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
-            branch_info = '{} branch'.format(pyrvt_repo.branch)
+            branch_info = '{}'.format(pyrvt_repo.branch)
         except Exception:
             nice_version = short_version = branch_info = ''
 
