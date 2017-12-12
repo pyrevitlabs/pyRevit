@@ -3,6 +3,9 @@ pyrevit installer:
 ☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
 ☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
 
+issue 266:
+☐ add export patterns option
+☐ fix scaling with overlapping patterns
 
 blog updates:
 ☐ update script anatomy page
