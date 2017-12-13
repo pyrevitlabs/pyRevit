@@ -62,6 +62,7 @@ class _ButtonIcons:
         base_image.StreamSource = self.filestream
         base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
         base_image.EndInit()
+        # self.filestream.Seek(0, IO.SeekOrigin.Begin)
 
         image_size = base_image.PixelWidth
         image_format = base_image.Format
@@ -81,7 +82,6 @@ class _ButtonIcons:
                                         None,
                                         image_data,
                                         stride)
-
         return bitmap_source
 
     @property
@@ -377,11 +377,6 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
             button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
-
-        try:
             rvtapi_obj = self.get_rvtapi_object()
             rvtapi_obj.Image = button_icon.smallBitmap
             if icon_size == ICON_LARGE:
@@ -390,7 +385,7 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
+            raise PyRevitUIError('Error in applying icon to button: {}'
                                  .format(icon_err))
 
     def set_tooltip(self, tooltip):
@@ -523,11 +518,6 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
     def set_icon(self, icon_file, icon_size=ICON_LARGE):
         try:
             button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
-
-        try:
             rvtapi_obj = self.get_rvtapi_object()
             rvtapi_obj.Image = button_icon.smallBitmap
             if icon_size == ICON_LARGE:
@@ -536,7 +526,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
+            raise PyRevitUIError('Error in applying icon to button: {}'
                                  .format(icon_err))
 
     def create_push_button(self, button_name, asm_location, class_name,
