@@ -55,18 +55,20 @@ PICK_COORD_RESOLUTION = 10
 
 
 class MakePatternWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name, rvt_elements):
-        # cleanup selection (pick only acceptable curves)
-        self.selected_lines, self.selected_fillgrids = \
-            self._cleanup_selection(rvt_elements)
-
-        # self.active_view = \
-        #     revit.doc.GetElement(self.selected_lines[0].OwnerViewId)
+    def __init__(self, xaml_file_name, rvt_elements=None):
+        self._selection = rvt_elements
+        self._export_only = False
 
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
-        self._setup_patnames()
-        self._setup_export_units()
+
+        if not self._selection:
+            self.resolver_ops.IsEnabled = False
+            self.create_b.IsEnabled = False
+            self._export_only = True
+
+        self.setup_patnames()
+        self.setup_export_units()
 
     @property
     def is_detail_pat(self):
@@ -93,10 +95,21 @@ class MakePatternWindow(forms.WPFWindow):
         # 12 for feet to inch, 304.8 for feet to mm
         return 12.0 if self.export_units_cb.SelectedItem == 'INCH' else 304.8
 
-    @staticmethod
-    def _cleanup_selection(rvt_elements):
+    def update_fillgrid(self, rvt_fillgrid, scale):
+        ext_origin = rvt_fillgrid.Origin
+        rvt_fillgrid.Origin = DB.UV(ext_origin.U * scale,
+                                    ext_origin.V * scale)
+        rvt_fillgrid.Offset *= scale
+        rvt_fillgrid.Shift *= scale
+
+        scaled_segments = [x * scale for x in rvt_fillgrid.GetSegments()]
+        rvt_fillgrid.SetSegments(scaled_segments)
+
+        return rvt_fillgrid
+
+    def cleanup_selection(self, rvt_elements, for_model=True):
         lines = []
-        fillgrids = []
+        adjusted_fillgrids = []
         for element in rvt_elements:
             if type(element) in accpeted_lines:
                 lines.append(element)
@@ -104,11 +117,18 @@ class MakePatternWindow(forms.WPFWindow):
                 frtype = revit.doc.GetElement(element.GetTypeId())
                 fillpat_element = revit.doc.GetElement(frtype.FillPatternId)
                 fillpat = fillpat_element.GetFillPattern()
-                fillgrids.extend(fillpat.GetFillGrids())
+                fillgrids = fillpat.GetFillGrids()
+                # adjust derafting patterns to current scale
+                if fillpat.Target == DB.FillPatternTarget.Drafting:
+                    adjusted_fillgrids = \
+                        [self.update_fillgrid(x, revit.activeview.Scale)
+                         for x in fillgrids]
+                else:
+                    adjusted_fillgrids.extend(fillgrids)
 
-        return lines, fillgrids
+        return lines, adjusted_fillgrids
 
-    def _setup_patnames(self):
+    def setup_patnames(self):
         existing_pats = DB.FilteredElementCollector(revit.doc)\
                           .OfClass(DB.FillPatternElement)\
                           .ToElements()
@@ -123,16 +143,16 @@ class MakePatternWindow(forms.WPFWindow):
                     if x.Target == DB.FillPatternTarget.Drafting
                     and x.Name.lower() not in readonly_patterns])
 
-        self._setup_patnames_combobox()
+        self.setup_patnames_combobox()
 
-    def _setup_patnames_combobox(self, model=True):
+    def setup_patnames_combobox(self, model=True):
         if model:
             self.pat_name_cb.ItemsSource = self._existing_modelpats
         else:
             self.pat_name_cb.ItemsSource = self._existing_draftingpats
         self.pat_name_cb.Focus()
 
-    def _setup_export_units(self):
+    def setup_export_units(self):
         self.export_units_cb.ItemsSource = ['INCH', 'MM']
         units = revit.doc.GetUnits()
         length_fo = units.GetFormatOptions(DB.UnitType.UT_Length)
@@ -141,7 +161,7 @@ class MakePatternWindow(forms.WPFWindow):
         else:
             self.export_units_cb.SelectedIndex = 0
 
-    def _pick_domain(self):
+    def pick_domain(self):
         def round_domain_coord(coord):
             return round(coord, PICK_COORD_RESOLUTION)
 
@@ -161,21 +181,29 @@ class MakePatternWindow(forms.WPFWindow):
 
         return False
 
-    def _make_pattern_line(self, start_xyz, end_xyz):
+    def make_pattern_line(self, start_xyz, end_xyz):
         return (start_xyz.X, start_xyz.Y), (end_xyz.X, end_xyz.Y)
 
-    def _create_pattern(self, domain, export_only=False, export_path=None):
-        pat_lines = []
+    def export_pattern(self):
+        pass
+
+    def create_pattern(self, domain, export_only=False, export_path=None):
+        # cleanup selection (pick only acceptable curves)
+        self.selected_lines, self.selected_fillgrids = \
+            self.cleanup_selection(self._selection,
+                                   for_model=self.is_model_pat)
+
+        line_tuples = []
         for det_line in self.selected_lines:
             geom_curve = det_line.GeometryCurve
             if type(geom_curve) in accpeted_curves:
                 tes_points = [tp for tp in geom_curve.Tessellate()]
                 for xyz1, xyz2 in coreutils.pairwise(tes_points):
-                    pat_lines.append(self._make_pattern_line(xyz1, xyz2))
+                    line_tuples.append(self.make_pattern_line(xyz1, xyz2))
 
             elif isinstance(geom_curve, DB.Line):
-                pat_lines.append(
-                    self._make_pattern_line(geom_curve.GetEndPoint(0),
+                line_tuples.append(
+                    self.make_pattern_line(geom_curve.GetEndPoint(0),
                                             geom_curve.GetEndPoint(1))
                     )
 
@@ -186,13 +214,13 @@ class MakePatternWindow(forms.WPFWindow):
                               self.is_model_pat,
                               self.create_filledregion,
                               domain,
-                              pat_lines,
+                              line_tuples,
                               self.selected_fillgrids)
 
         logger.debug(call_params)
 
         if not self.is_model_pat:
-            pat_scale = 1.0 / self.active_view.Scale
+            pat_scale = 1.0 / revit.activeview.Scale
         else:
             pat_scale = 1.0
 
@@ -200,7 +228,8 @@ class MakePatternWindow(forms.WPFWindow):
             patmaker.export_pattern(
                 export_path,
                 self.pat_name,
-                pat_lines, domain,
+                line_tuples, domain,
+                fillgrids=self.selected_fillgrids,
                 scale=pat_scale * self.export_scale,
                 model_pattern=self.is_model_pat,
                 allow_expansion=self.highestres_cb.IsChecked
@@ -208,7 +237,7 @@ class MakePatternWindow(forms.WPFWindow):
             forms.alert('Pattern {} exported.'.format(self.pat_name))
         else:
             patmaker.make_pattern(self.pat_name,
-                                  pat_lines, domain,
+                                  line_tuples, domain,
                                   fillgrids=self.selected_fillgrids,
                                   scale=pat_scale,
                                   model_pattern=self.is_model_pat,
@@ -216,7 +245,7 @@ class MakePatternWindow(forms.WPFWindow):
                                   create_filledregion=self.create_filledregion)
             forms.alert('Pattern {} created/updated.'.format(self.pat_name))
 
-    def _verify_name(self):
+    def verify_name(self):
         if not self.pat_name:
             forms.alert('Type a name for the pattern first')
             return False
@@ -231,30 +260,30 @@ class MakePatternWindow(forms.WPFWindow):
         return True
 
     def target_changed(self, sender, args):
-        self._setup_patnames_combobox(model=self.is_model_cb.IsChecked)
+        self.setup_patnames_combobox(model=self.is_model_cb.IsChecked)
 
     def export_pat(self, sender, args):
-        if self._verify_name():
+        if self._export_only:
+            self.Close()
+            self.export_pattern()
+        elif self.verify_name():
             self.Hide()
-            domain = self._pick_domain()
+            domain = self.pick_domain()
             export_dir = forms.pick_folder()
             if domain and export_dir:
-                self._create_pattern(domain,
+                self.create_pattern(domain,
                                      export_only=True,
                                      export_path=export_dir)
             self.Close()
 
     def make_pattern(self, sender, args):
-        if self._verify_name():
+        if self.verify_name():
             self.Hide()
-            domain = self._pick_domain()
+            domain = self.pick_domain()
             if domain:
-                self._create_pattern(domain)
+                self.create_pattern(domain)
             self.Close()
 
 
-if not selection.is_empty:
-    MakePatternWindow('MakePatternWindow.xaml',
-                      selection.elements).show(modal=True)
-else:
-    forms.alert('At least one Detail Line must be selected.')
+MakePatternWindow('MakePatternWindow.xaml',
+                  selection.elements).show(modal=True)

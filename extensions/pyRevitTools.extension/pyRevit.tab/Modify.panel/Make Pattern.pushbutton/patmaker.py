@@ -451,6 +451,47 @@ class _PatternGrid:
         return self.segment_lines
 
 
+class _RevitFillGrid:
+    def __init__(self, rvt_fillgrid, scale):
+        self._rvt_fillgrid = rvt_fillgrid
+        self._scale = scale
+
+    @property
+    def origin(self):
+        return _PatternPoint(self._rvt_fillgrid.Origin.U,
+                             self._rvt_fillgrid.Origin.V)
+
+    @property
+    def angle(self):
+        return self._rvt_fillgrid.Angle
+
+    @property
+    def offset(self):
+        return self._rvt_fillgrid.Offset
+
+    @property
+    def shift(self):
+        return self._rvt_fillgrid.Shift
+
+    @property
+    def segments(self):
+        return self._rvt_fillgrid.GetSegments()
+
+    def get_rvt_fillgrid(self):
+        rvt_fill_grid = DB.FillGrid()
+        rvt_fill_grid.Origin = DB.UV(self.origin.u * self._scale,
+                                     self.origin.v * self._scale)
+        rvt_fill_grid.Angle = self.angle
+        rvt_fill_grid.Offset = self.offset * self._scale
+        rvt_fill_grid.Shift = self.shift * self._scale
+
+        scaled_segments = [x * self._scale
+                           for x in self._rvt_fillgrid.GetSegments()]
+        rvt_fill_grid.SetSegments(scaled_segments)
+
+        return rvt_fill_grid
+
+
 class _RevitPattern:
     def __init__(self, pat_domain, pat_name, model_pat=True, scale=1.0):
         self._domain = pat_domain
@@ -466,7 +507,7 @@ class _RevitPattern:
                .format(self._name, self._model_pat, self._scale)
 
     def append_fillgrid(self, rvt_fillgrid):
-        self._input_fillgrids.append(rvt_fillgrid)
+        self._pattern_grids.append(_RevitFillGrid(rvt_fillgrid, self._scale))
 
     def append_line(self, pat_line):
         # get line in current domain
@@ -492,28 +533,22 @@ class _RevitPattern:
         return self._name
 
     def _make_fill_grid(self, pattern_grid):
-        scale = self._scale
-        rvt_fill_grid = DB.FillGrid()
-        rvt_fill_grid.Angle = pattern_grid.angle
-        rvt_fill_grid.Origin = \
-            DB.UV(pattern_grid.origin.u * scale,
-                  pattern_grid.origin.v * scale)
-        rvt_fill_grid.Offset = pattern_grid.offset * scale
-        rvt_fill_grid.Shift = pattern_grid.shift * scale
-        if pattern_grid.segments:
-            scaled_segments = [seg * scale for seg in pattern_grid.segments]
-            rvt_fill_grid.SetSegments(scaled_segments)
+        if isinstance(pattern_grid, _RevitFillGrid):
+            rvt_fill_grid = pattern_grid.get_rvt_fillgrid()
+        else:
+            scale = self._scale
+            rvt_fill_grid = DB.FillGrid()
+            rvt_fill_grid.Angle = pattern_grid.angle
+            rvt_fill_grid.Origin = \
+                DB.UV(pattern_grid.origin.u * scale,
+                      pattern_grid.origin.v * scale)
+            rvt_fill_grid.Offset = pattern_grid.offset * scale
+            rvt_fill_grid.Shift = pattern_grid.shift * scale
+            if pattern_grid.segments:
+                scaled_segments = [seg * scale for seg in pattern_grid.segments]
+                rvt_fill_grid.SetSegments(scaled_segments)
+
         return rvt_fill_grid
-
-    def _update_fillgrid(self, rvt_fillgrid):
-        scale = self._scale
-        ext_origin = rvt_fillgrid.Origin
-        rvt_fillgrid.Origin = DB.UV(ext_origin.U * scale,
-                                    ext_origin.V * scale)
-        rvt_fillgrid.Offset *= scale
-        rvt_fillgrid.Shift *= scale
-
-        return rvt_fillgrid
 
     @staticmethod
     def _make_fillpattern_element(rvt_fill_pat):
@@ -553,8 +588,6 @@ class _RevitPattern:
 
     def create_pattern(self):
         fill_grids = [self._make_fill_grid(x) for x in self._pattern_grids]
-        fill_grids.extend([self._update_fillgrid(x)
-                           for x in self._input_fillgrids])
 
         # Make new FillPattern
         fp_target = \
@@ -667,7 +700,8 @@ def _make_rvt_pattern(pat_name, pat_lines, domain, fillgrids=None, scale=1.0,
     return revit_pat
 
 
-def make_pattern(pat_name, pat_lines, domain, fillgrids=None, scale=1.0,
+def make_pattern(pat_name, pat_lines, domain,
+                 fillgrids=None, scale=1.0,
                  model_pattern=True, allow_expansion=False,
                  create_filledregion=False):
     revit_pat = \
@@ -676,9 +710,10 @@ def make_pattern(pat_name, pat_lines, domain, fillgrids=None, scale=1.0,
     return _create_fill_pattern(revit_pat, create_filledregion)
 
 
-def export_pattern(export_dir, pat_name, pat_lines, domain, scale=12.0,
+def export_pattern(export_dir, pat_name, pat_lines, domain,
+                   fillgrids=None, scale=12.0,
                    model_pattern=True, allow_expansion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, scale,
+        _make_rvt_pattern(pat_name, pat_lines, domain, fillgrids, scale,
                           model_pattern, allow_expansion)
     return _export_pat(revit_pat, export_dir)
