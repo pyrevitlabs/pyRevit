@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os.path as op
+import itertools
 
 from pyrevit import EXEC_PARAMS
 from pyrevit import framework
@@ -207,6 +208,52 @@ class PyRevitOutputWindow(object):
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = emoji.emojize(coreutils.prepare_html_str(markdown_html))
         print(html_code, end="")
+
+    def print_table(self, table_data, columns=[], formats=[],
+                    title='', last_line_style=''):
+        if last_line_style:
+            self.add_style('tr:last-child {{ {style} }}'
+                           .format(style=last_line_style))
+
+        zipper = itertools.izip_longest
+        adjust_base_col = '|'
+        adjust_extra_col = ':---|'
+        base_col = '|'
+        extra_col = '{data}|'
+        markdown_table = ''
+
+        # find max column count
+        max_col = max([len(x) for x in table_data])
+
+        header = ''
+        if columns:
+            header = base_col
+            for idx, col_name in zipper(range(max_col), columns, fillvalue=''):
+                header += extra_col.format(data=col_name)
+
+            header += '\n'
+
+        justifier = adjust_base_col
+        for idx in range(max_col):
+            justifier += adjust_extra_col
+
+        justifier += '\n'
+
+        rows = ''
+        for entry in table_data:
+            row = base_col
+            for idx, attrib, attr_format \
+                    in zipper(range(max_col), entry, formats, fillvalue=''):
+                if attr_format:
+                    value = attr_format.format(attrib)
+                else:
+                    value = attrib
+                row += extra_col.format(data=value)
+            rows += row + '\n'
+
+        table =  header + justifier + rows
+        self.print_md('### {title}'.format(title=title))
+        self.print_md(table)
 
     def insert_divider(self):
         self.print_md('-----')
