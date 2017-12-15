@@ -84,15 +84,13 @@ namespace PyRevitBaseClasses
 
         private ScriptEngine CreateNewEngine(ref PyRevitCommandRuntime pyrvtCmd, bool fullframe=false)
         {
-            var flags = new Dictionary<string, object>(){{ "LightweightScopes", true }};
+            var flags = new Dictionary<string, object>();
+
+            // default flags
+            flags["LightweightScopes"] = true;
 
             if (fullframe)
             {
-                // Disabling all frames to avoid the memory leak issue
-                // that would increase the % of time spent in GC dramatically
-                // Tried these options together and made the runtime much slower
-                //  { "GCStress", 0 },
-                //  { "MaxRecursion", 0 },
                 flags["Frames"] = true;
                 flags["FullFrames"] = true;
             }
