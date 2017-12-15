@@ -28,7 +28,10 @@ def createsheetset(revision_element):
                       .ToElements()
 
     allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
-    sheetsetname = 'Rev {0}: {1}'.format(revision_element.RevisionNumber,
+    revnum = revision_element.SequenceNumber
+    if hasattr(revision_element, 'RevisionNumber'):
+        revnum = revision_element.RevisionNumber
+    sheetsetname = 'Rev {0}: {1}'.format(revnum,
                                          revision_element.Description)
 
     with revit.Transaction('Create Revision Sheet Set'):
@@ -43,7 +46,7 @@ def createsheetset(revision_element):
             revs = sheet.GetAllRevisionIds()
             revids = [x.IntegerValue for x in revs]
             if revision_element.Id.IntegerValue in revids:
-                myviewset.Insert(s)
+                myviewset.Insert(sheet)
 
         # create new sheet set
         viewsheetsetting.CurrentViewSheetSet.Views = myviewset

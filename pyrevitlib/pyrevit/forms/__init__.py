@@ -1249,7 +1249,10 @@ class RevisionOption(object):
         self.revision_element = revision_element
 
     def __str__(self):
-        return '{}-{}-{}'.format(self.revision_element.RevisionNumber,
+        revnum = self.revision_element.SequenceNumber
+        if hasattr(self.revision_element, 'RevisionNumber'):
+            revnum = self.revision_element.RevisionNumber
+        return '{}-{}-{}'.format(revnum,
                                  self.revision_element.Description,
                                  self.revision_element.RevisionDate)
 
@@ -1278,7 +1281,7 @@ def select_revisions(title='Select Revision',
           .OfCategory(DB.BuiltInCategory.OST_Revisions)\
           .WhereElementIsNotElementType()
 
-    revisions = sorted(unsorted_revisions, key=lambda x: x.RevisionNumber)
+    revisions = sorted(unsorted_revisions, key=lambda x: x.SequenceNumber)
     revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
