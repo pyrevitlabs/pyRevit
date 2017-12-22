@@ -1329,3 +1329,10 @@ def select_sheets(title='Select Sheets', button_name='Select',
                 width=width)
         if return_option:
             return return_option[0].sheet_element
+
+
+def check_workshared(doc):
+    if not doc.IsWorkshared:
+        alert('Model is not workshared.')
+        return False
+    return True
