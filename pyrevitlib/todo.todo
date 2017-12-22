@@ -7,6 +7,9 @@ issue 266:
 ☐ add export patterns option
 ☐ fix scaling with overlapping patterns
 
+tool improv:
+☐ switches for Pick tool so users can select favorite categories
+
 blog updates:
 ☐ update script anatomy page
 ☐ do video on pyrevit features
