@@ -15,6 +15,7 @@ namespace PyRevitBaseClasses
         private string _scriptSource = null;
         private string _alternateScriptSource = null;
         private string _syspaths = null;
+        private string[] _arguments = null;
         private string _helpSource = null;
         private string _cmdName = null;
         private string _cmdBundle = null;
@@ -43,6 +44,7 @@ namespace PyRevitBaseClasses
                                      string scriptSource,
                                      string alternateScriptSource,
                                      string syspaths,
+                                     string[] arguments,
                                      string helpSource,
                                      string cmdName,
                                      string cmdBundle,
@@ -61,6 +63,8 @@ namespace PyRevitBaseClasses
             _scriptSource = scriptSource;
             _alternateScriptSource = alternateScriptSource;
             _syspaths = syspaths;
+            _arguments = arguments;
+
             _helpSource = helpSource;
             _cmdName = cmdName;
             _cmdBundle = cmdBundle;
@@ -119,11 +123,28 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public string[] ModuleSearchPaths
+        public List<string> ModuleSearchPaths
         {
             get
             {
-                return _syspaths.Split(';');
+                return new List<string>(_syspaths.Split(';'));
+            }
+        }
+
+        public List<string> Arguments
+        {
+            get
+            {
+                var argv = new List<string>();
+
+                // add script source as the first argument
+                argv.Add(ScriptSourceFile);
+
+                // if other arguments are available, add those as well
+                if (_arguments != null)
+                    argv.AddRange(_arguments);
+
+                return argv;
             }
         }
 
