@@ -2,6 +2,8 @@ import os
 import os.path as op
 import string
 from collections import OrderedDict
+import threading
+from functools import wraps
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
@@ -956,8 +958,16 @@ class ProgressBar(TemplatePromptBar):
     """
 
     def _setup(self, **kwargs):
+        self.max_value = 0
+        self.new_value = 0
+
         self.cancelled = False
+        has_cancel = kwargs.get('allow_cancel', True)
+        if not has_cancel:
+            self.hide_element(self.cancel_b)
+
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
+
         self._title = kwargs.get('title', '{value}/{max_value}')
 
     def _update_pbar(self):
@@ -975,6 +985,17 @@ class ProgressBar(TemplatePromptBar):
                                            ))
 
         self.pbar_text.Text = title_text
+
+    def _dispatch_updater(self):
+        self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
+                                    Threading.DispatcherPriority.Background)
+
+    @staticmethod
+    def _make_return_getter(f, ret):
+        @wraps(f)
+        def wrapped_f(*args, **kwargs):
+            ret.append(f(*args, **kwargs))
+        return wrapped_f
 
     @property
     def title(self):
@@ -997,11 +1018,20 @@ class ProgressBar(TemplatePromptBar):
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True
 
+    def wait_async(self, func, args=()):
+        returns = []
+        rgfunc = self._make_return_getter(func, returns)
+        t = threading.Thread(target=rgfunc, args=args)
+        t.start()
+        while t.is_alive():
+            self._dispatch_updater()
+
+        return returns[0] if returns else None
+
     def update_progress(self, new_value, max_value):
         self.max_value = max_value
         self.new_value = new_value
-        self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
-                                    Threading.DispatcherPriority.Background)
+        self._dispatch_updater()
 
 
 class SearchPrompt(WPFWindow):
@@ -1176,11 +1206,12 @@ class SearchPrompt(WPFWindow):
         return dlg.response
 
 
-def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
+def alert(msg, title='pyRevit',
+          cancel=False, yes=False, no=False, retry=False):
     buttons = UI.TaskDialogCommonButtons.Ok
 
     if any([cancel, yes, no, retry]):
-        buttons = UI.TaskDialogCommonButtons.None
+        buttons = UI.TaskDialogCommonButtons.None   # noqa
 
         if cancel:
             buttons |= UI.TaskDialogCommonButtons.Cancel
