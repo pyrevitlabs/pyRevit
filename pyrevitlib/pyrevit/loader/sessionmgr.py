@@ -398,7 +398,8 @@ def execute_command_cls(extcmd_type, arguments=None,
     # this is a manual execution from python code and not by user
     command_instance.executedFromUI = False
     # pass the arguments to the instance
-    command_instance.argumentList = Array[str](arguments)
+    if arguments:
+        command_instance.argumentList = Array[str](arguments)
     # force using clean engine
     command_instance.baked_needsCleanEngine = clean_engine
     # force using fullframe engine
