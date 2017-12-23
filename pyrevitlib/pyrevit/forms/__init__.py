@@ -942,10 +942,11 @@ class ProgressBar(TemplatePromptBar):
         <Grid Background="{DynamicResource pyRevitDarkBrush}">
             <ProgressBar x:Name="pbar"/>
             <TextBlock x:Name="pbar_text"
-                       TextWrapping="Wrap" Text="TextBlock"
+                       TextWrapping="Wrap"
                        TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
             <Button x:Name="cancel_b"
+                    Visibility="Collapsed"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     Content="Cancel"
@@ -958,16 +959,16 @@ class ProgressBar(TemplatePromptBar):
     """
 
     def _setup(self, **kwargs):
-        self.max_value = 0
+        self.max_value = 1
         self.new_value = 0
+        self.step = kwargs.get('step', 0)
 
         self.cancelled = False
-        has_cancel = kwargs.get('allow_cancel', True)
-        if not has_cancel:
-            self.hide_element(self.cancel_b)
+        has_cancel = kwargs.get('cancellable', False)
+        if has_cancel:
+            self.show_element(self.cancel_b)
 
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
-
         self._title = kwargs.get('title', '{value}/{max_value}')
 
     def _update_pbar(self):
@@ -1020,6 +1021,7 @@ class ProgressBar(TemplatePromptBar):
 
     def wait_async(self, func, args=()):
         returns = []
+        self.indeterminate = True
         rgfunc = self._make_return_getter(func, returns)
         t = threading.Thread(target=rgfunc, args=args)
         t.start()
@@ -1028,10 +1030,15 @@ class ProgressBar(TemplatePromptBar):
 
         return returns[0] if returns else None
 
-    def update_progress(self, new_value, max_value):
+    def reset(self):
+        self.update_progress(0, 1)
+
+    def update_progress(self, new_value, max_value=1):
         self.max_value = max_value
         self.new_value = new_value
-        self._dispatch_updater()
+        if self.new_value == 0 \
+                or (self.step > 0 and self.new_value % self.step == 0):
+            self._dispatch_updater()
 
 
 class SearchPrompt(WPFWindow):
