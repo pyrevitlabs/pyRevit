@@ -1036,8 +1036,12 @@ class ProgressBar(TemplatePromptBar):
     def update_progress(self, new_value, max_value=1):
         self.max_value = max_value
         self.new_value = new_value
-        if self.new_value == 0 \
-                or (self.step > 0 and self.new_value % self.step == 0):
+        if self.new_value == 0:
+            self._dispatch_updater()
+        elif self.step > 0:
+            if self.new_value % self.step == 0:
+                self._dispatch_updater()
+        else:
             self._dispatch_updater()
 
 
