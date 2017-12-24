@@ -13,14 +13,21 @@ __title__ = 'Make\nPattern'
 __helpurl__ = 'https://www.youtube.com/watch?v=H7b8hjHbauE'
 
 __doc__ = 'Draw your pattern tile in a detail view using detail lines, '\
-          'curves, circles or ellipses; select the pattern lines and curves '\
+          'curves, circles or ellipses, or even filled regions.\n'\
+          'Select the pattern lines and curves '\
           'and run this tool. Give the pattern a name and '\
           'hit "Create Pattern". The tool asks you to pick the boundary '\
           'corners of the pattern. The tool will process the input lines, '\
           'approximates the curves and splines with smaller lines and '\
           'finds the best angles for these lines and will '\
-          'generate a pattern. You can also check the option to create a '\
-          'filled region type for this new pattern.'
+          'generate a pattern. It also reads the patterns from selected '\
+          'filled regions and will combine with selected detail lines.'\
+          '\n\n'\
+          'TIP: You can export existing patterns if no lines are selected.'\
+          '\n\n'\
+          'TRICK: You can convert existing pattern types by selecting a '\
+          'filled region only and create the opposite pattern type '\
+          '(selected drafting filled region and create model pattern).'\
 
 
 logger = script.get_logger()
@@ -184,8 +191,27 @@ class MakePatternWindow(forms.WPFWindow):
     def make_pattern_line(self, start_xyz, end_xyz):
         return (start_xyz.X, start_xyz.Y), (end_xyz.X, end_xyz.Y)
 
-    def export_pattern(self):
-        pass
+    def export_pattern(self, export_dir):
+        patname = self.pat_name_cb.SelectedItem
+        existing_pats = DB.FilteredElementCollector(revit.doc)\
+                          .OfClass(DB.FillPatternElement)\
+                          .ToElements()
+
+        fillpats = [x.GetFillPattern() for x in existing_pats]
+        target_type = \
+            DB.FillPatternTarget.Model \
+                if self.is_model_pat else DB.FillPatternTarget.Drafting
+        searchpats = [x for x in fillpats if x.Target == target_type]
+        for fillpat in searchpats:
+            if fillpat.Name == patname:
+                patmaker.export_pattern(
+                    export_dir,
+                    patname,
+                    [], ((0, 0), (1, 1)),
+                    fillgrids=fillpat.GetFillGrids(),
+                    scale=self.export_scale,
+                    model_pattern=self.is_model_pat)
+                forms.alert('Pattern {} exported.'.format(patname))
 
     def create_pattern(self, domain, export_only=False, export_path=None):
         # cleanup selection (pick only acceptable curves)
@@ -265,15 +291,16 @@ class MakePatternWindow(forms.WPFWindow):
     def export_pat(self, sender, args):
         if self._export_only:
             self.Close()
-            self.export_pattern()
+            export_dir = forms.pick_folder()
+            self.export_pattern(export_dir)
         elif self.verify_name():
             self.Hide()
             domain = self.pick_domain()
             export_dir = forms.pick_folder()
             if domain and export_dir:
                 self.create_pattern(domain,
-                                     export_only=True,
-                                     export_path=export_dir)
+                                    export_only=True,
+                                    export_path=export_dir)
             self.Close()
 
     def make_pattern(self, sender, args):

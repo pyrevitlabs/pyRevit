@@ -37,7 +37,7 @@ PAT_FILE_TEMPLATE = \
     ";-pyRevit Version                        : {version}\n"                  \
     ";---------------------------------------------------------------------\n"\
     ";%UNITS={units}\n"                                                       \
-    "*{name},created by pyRevit\n"                                            \
+    "*{name},exported by pyRevit\n"                                            \
     ";%TYPE={type}\n"
 
 
