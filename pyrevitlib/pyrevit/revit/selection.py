@@ -3,10 +3,10 @@ from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
 
 
-__all__ = ['pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
+__all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
            'pick_linked', 'pick_elements', 'pick_elementpoints', 'pick_edges',
            'pick_faces', 'pick_linkeds', 'pick_point', 'pick_rectangle',
-           'get_selection_category_set', 'get_selection']
+           'get_selection_category_set', 'get_selection')
 
 
 logger = get_logger(__name__)

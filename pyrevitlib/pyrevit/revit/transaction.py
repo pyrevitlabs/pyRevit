@@ -2,8 +2,8 @@ from pyrevit import HOST_APP, DB
 from pyrevit.coreutils.logger import get_logger
 
 
-__all__ = ['carryout',
-           'Transaction', 'DryTransaction', 'TransactionGroup']
+__all__ = ('carryout',
+           'Transaction', 'DryTransaction', 'TransactionGroup')
 
 
 logger = get_logger(__name__)

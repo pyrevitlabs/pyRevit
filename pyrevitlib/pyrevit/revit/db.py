@@ -5,7 +5,7 @@ from pyrevit import DB
 from Autodesk.Revit.DB import Element
 
 
-__all__ = ['ElementWrapper', 'get_project_info']
+__all__ = ('ElementWrapper', 'get_project_info')
 
 
 class ElementWrapper(object):

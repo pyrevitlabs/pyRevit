@@ -12,8 +12,9 @@ from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit.transaction import *
 from pyrevit.revit.ui import *
-from pyrevit.revit import verify
-from pyrevit.revit import servertools
+from pyrevit.revit import query
+from pyrevit.revit import create
+from pyrevit.revit import serverutils
 
 
 logger = get_logger(__name__)
