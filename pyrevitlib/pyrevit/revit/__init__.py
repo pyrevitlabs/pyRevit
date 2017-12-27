@@ -54,5 +54,9 @@ class RevitWrapper(types.ModuleType):
     def activeview(self):
         return HOST_APP.activeview
 
+    @property
+    def servers(self):
+        return HOST_APP.available_servers
+
 
 sys.modules[__name__] = RevitWrapper()
