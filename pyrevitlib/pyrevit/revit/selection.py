@@ -92,9 +92,7 @@ class CurrentElementSelection:
         HOST_APP.uidoc.Selection.SetElementIds(
             framework.List[DB.ElementId](new_elids)
         )
-        self._refs = \
-            [HOST_APP.doc.GetElement(el_id)
-             for el_id in new_elids]
+        self._refs = new_elids
 
 
 def _pick_obj(obj_type, pick_message, multiple=False, world=False):

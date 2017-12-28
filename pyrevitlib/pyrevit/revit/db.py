@@ -1,11 +1,9 @@
-import os.path as op
-
-from pyrevit import HOST_APP, PyRevitException
+from pyrevit import PyRevitException
 from pyrevit import DB
 from Autodesk.Revit.DB import Element
 
 
-__all__ = ('ElementWrapper', 'get_project_info')
+__all__ = ('ElementWrapper', )
 
 
 class ElementWrapper(object):
@@ -70,24 +68,3 @@ class ElementWrapper(object):
 
     def get_param(self, param_name):
         return self._wrapped_element.LookupParameter(param_name)
-
-
-class CurrentProjectInfo:
-    @property
-    def name(self):
-        if not HOST_APP.doc.IsFamilyDocument:
-            return HOST_APP.doc.ProjectInformation.Name
-        else:
-            return ''
-
-    @property
-    def location(self):
-        return HOST_APP.doc.PathName
-
-    @property
-    def filename(self):
-        return op.splitext(op.basename(self.location))[0]
-
-
-def get_project_info():
-    return CurrentProjectInfo()

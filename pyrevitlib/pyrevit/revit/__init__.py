@@ -13,6 +13,7 @@ from pyrevit.revit.selection import *
 from pyrevit.revit.transaction import *
 from pyrevit.revit.ui import *
 from pyrevit.revit import query
+from pyrevit.revit.query import get_project_info
 from pyrevit.revit import create
 from pyrevit.revit import serverutils
 

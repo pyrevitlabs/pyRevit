@@ -18,6 +18,23 @@ class ModelSharedParam:
             return self.param_def.Name == other
 
 
+class CurrentProjectInfo:
+    @property
+    def name(self):
+        if not HOST_APP.doc.IsFamilyDocument:
+            return HOST_APP.doc.ProjectInformation.Name
+        else:
+            return ''
+
+    @property
+    def location(self):
+        return HOST_APP.doc.PathName
+
+    @property
+    def filename(self):
+        return op.splitext(op.basename(self.location))[0]
+
+
 def get_all_elements(doc=None):
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
              .WhereElementIsNotElementType()\
@@ -146,3 +163,7 @@ def get_defined_sharedparams():
     for def_group in get_sharedparam_definition_file().Groups:
         msp_list.extend([ModelSharedParam(x) for x in def_group.Definitions])
     return msp_list
+
+
+def get_project_info():
+    return CurrentProjectInfo()
