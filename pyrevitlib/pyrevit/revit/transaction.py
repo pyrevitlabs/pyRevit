@@ -12,6 +12,42 @@ logger = get_logger(__name__)
 DEFAULT_TRANSACTION_NAME = 'pyRevit Transaction'
 
 
+RESOLUTION_TYPES = [DB.FailureResolutionType.MoveElements,
+                    DB.FailureResolutionType.CreateElements,
+                    DB.FailureResolutionType.DetachElements,
+                    DB.FailureResolutionType.FixElements,
+                    DB.FailureResolutionType.SkipElements,
+                    DB.FailureResolutionType.QuitEditMode,
+                    DB.FailureResolutionType.UnlockConstraints,
+                    DB.FailureResolutionType.SetValue,
+                    DB.FailureResolutionType.SaveDocument]
+
+
+class FailureSwallower(DB.IFailuresPreprocessor):
+    called_proceed = False
+
+    def PreprocessFailures(self, failuresAccessor):
+        # delete all warnings
+        failuresAccessor.DeleteAllWarnings()
+        # go through failures and resolve
+        for failure in failuresAccessor.GetFailureMessages():
+            for res_type in RESOLUTION_TYPES:
+                if failure.HasResolutionOfType(res_type):
+                    logger.debug('resolving failure with: {}'
+                                 .format(res_type))
+                    failure.SetCurrentResolutionType(res_type)
+            failuresAccessor.ResolveFailure(failure)
+        if not self.called_proceed:
+            logger.debug('resolving failures with '
+                         'FailureProcessingResult.ProceedWithCommit')
+            self.called_proceed = True
+            return DB.FailureProcessingResult.ProceedWithCommit
+        else:
+            logger.debug('resolving failures with '
+                         'FailureProcessingResult.Continue')
+            return DB.FailureProcessingResult.Continue
+
+
 class Transaction():
     """Simplifies transactions by applying ``Transaction.Start()`` and
     ``Transaction.Commit()`` before and after the context.
@@ -28,14 +64,20 @@ class Transaction():
     def __init__(self, name=None,
                  doc=None,
                  clear_after_rollback=False,
-                 show_error_dialog=False):
+                 show_error_dialog=False,
+                 swallow_errors=False):
         self._rvtxn = \
             DB.Transaction(doc or HOST_APP.doc,
                            name if name else DEFAULT_TRANSACTION_NAME)
-        self._fail_hndlr_ops = self._rvtxn.GetFailureHandlingOptions()
-        self._fail_hndlr_ops.SetClearAfterRollback(clear_after_rollback)
-        self._fail_hndlr_ops.SetForcedModalHandling(show_error_dialog)
-        self._rvtxn.SetFailureHandlingOptions(self._fail_hndlr_ops)
+        self._fhndlr_ops = self._rvtxn.GetFailureHandlingOptions()
+        self._fhndlr_ops = \
+            self._fhndlr_ops.SetClearAfterRollback(clear_after_rollback)
+        self._fhndlr_ops = \
+            self._fhndlr_ops.SetForcedModalHandling(show_error_dialog)
+        if swallow_errors:
+            self._fhndlr_ops = \
+                self._fhndlr_ops.SetFailuresPreprocessor(FailureSwallower())
+        self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
 
     def __enter__(self):
         self._rvtxn.Start()
