@@ -106,6 +106,11 @@ namespace PyRevitBaseClasses
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
 
+            // taskbar progress object
+            var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
+            taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+            this.TaskbarItemInfo = taskbarinfo;
+
             // Setup window styles
             this.Background = Brushes.White;
             this.Width = 900;
@@ -231,7 +236,10 @@ namespace PyRevitBaseClasses
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
-            if(this.ClosedByUser)
+            var progValue = (curValue / maxValue);
+            this.TaskbarItemInfo.ProgressValue = progValue;
+
+            if (this.ClosedByUser)
             {
                 return;
             }
@@ -259,7 +267,7 @@ namespace PyRevitBaseClasses
                     pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
                 }
 
-                var newWidthStyleProperty = String.Format("width:{0}%;", (curValue / maxValue) * 100);
+                var newWidthStyleProperty = String.Format("width:{0}%;", progValue * 100);
                 if (pbargraph.Style == null)
                     pbargraph.Style = newWidthStyleProperty;
                 else
