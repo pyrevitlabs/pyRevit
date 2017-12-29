@@ -79,20 +79,15 @@ class CurrentElementSelection:
             return HOST_APP.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
+        self._refs = self._get_element_ids(element_list)
         HOST_APP.uidoc.Selection.SetElementIds(
-            framework.List[DB.ElementId](
-                self._get_element_ids(element_list)
+            framework.List[DB.ElementId](self._refs)
             )
-        )
         HOST_APP.uidoc.RefreshActiveView()
 
     def append(self, element_list):
-        new_elids = self._get_element_ids(element_list)
-        new_elids.extend(self.element_ids)
-        HOST_APP.uidoc.Selection.SetElementIds(
-            framework.List[DB.ElementId](new_elids)
-        )
-        self._refs = new_elids
+        self._refs.extend(self._get_element_ids(element_list))
+        self.set_to(self._refs)
 
 
 def _pick_obj(obj_type, pick_message, multiple=False, world=False):

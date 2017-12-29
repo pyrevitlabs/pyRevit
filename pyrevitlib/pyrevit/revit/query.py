@@ -62,12 +62,13 @@ def get_value_range(param_name, doc=None):
             value = get_param_value(targetparam)
             if type(value) == str and not value.isspace():
                 values.add(value)
-            else:
+            elif value is not None:
                 values.add(value)
     return values
 
 
-def get_elements_by_parameter(param_name, param_value, doc=None):
+def get_elements_by_parameter(param_name, param_value,
+                              doc=None, partial=False):
     # does not work in < 2016
     # spid = framework.Guid('24353a46-1313-46a4-a779-d33ffe9353ab')
     # pid = DB.SharedParameterElement.Lookup(revit.doc, spid)
@@ -82,9 +83,15 @@ def get_elements_by_parameter(param_name, param_value, doc=None):
     found_els = []
     for el in get_all_elements(doc):
         targetparam = el.LookupParameter(param_name)
-        if param_value == get_param_value(targetparam):
-            found_els.append(el)
-
+        if targetparam:
+            value = get_param_value(targetparam)
+            if partial \
+                    and value is not None \
+                    and type(value) == str \
+                    and param_value in value:
+                found_els.append(el)
+            elif param_value == value:
+                found_els.append(el)
     return found_els
 
 
