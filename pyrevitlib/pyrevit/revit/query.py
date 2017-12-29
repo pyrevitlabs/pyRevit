@@ -60,10 +60,13 @@ def get_value_range(param_name, doc=None):
         targetparam = el.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
-            if type(value) == str and not value.isspace():
-                values.add(value)
-            elif value is not None:
-                values.add(value)
+            if value is not None \
+                    and str(value).lower() != 'none':
+                if type(value) == str \
+                        and not value.isspace():
+                    values.add(value)
+                else:
+                    values.add(value)
     return values
 
 
