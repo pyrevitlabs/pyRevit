@@ -16,6 +16,7 @@ from pyrevit.revit import query
 from pyrevit.revit.query import get_project_info
 from pyrevit.revit import create
 from pyrevit.revit import serverutils
+from pyrevit.revit import files
 
 
 logger = get_logger(__name__)
