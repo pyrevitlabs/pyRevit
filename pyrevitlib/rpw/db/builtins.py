@@ -6,14 +6,13 @@ Revit.DB.BuiltInParameter.WALL_LOCATION_LINE
 Revit.DB.ElementId
 
 Note:
-    These classes were originally create to be used internally,
+    These classes were created to be used internally,
     but are documented here as some its functionalities could be
     helpful to others.
 
 ----------------------------------------------------------------
-"""
+""" ###
 
-###
 import re
 from rpw import revit, DB
 from rpw.base import BaseObject, BaseObjectWrapper
@@ -29,6 +28,7 @@ class _BiParameter(BaseObjectWrapper):
     Revit.DB.BuiltInParameter.WALL_LOCATION_LINE
     >>> BiParameter.get_id('WALL_LOCATION_LINE')
     Revit.DB.ElementId
+
     """
 
     _revit_object_class = DB.BuiltInParameter
@@ -57,7 +57,8 @@ class _BiParameter(BaseObjectWrapper):
         return enum
 
     def get_id(self, parameter_name):
-        """ Gets ElementId of Category by name
+        """
+        Gets ElementId of Category by name
 
         Args:
             parameter_name(``str``): Name of Built In Parameter

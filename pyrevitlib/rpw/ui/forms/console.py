@@ -9,10 +9,6 @@ Keyboard Shortcuts:
     * ``Down``  Iterate history down
     * ``Tab``  Iterate possible autocomplete options (works for dotted lookup)
 
-Warning:
-    Becareful with `Force Quit`. Under certain circumstances, it can crash Revit.
-    It crashes Dynamo very consistently.
-
 Note:
     The last stack frame is automatically injected is the context of the evaluation
     loop of the console: the local and global variables from where the Console
@@ -38,6 +34,7 @@ import inspect
 import logging
 import tempfile
 from collections import defaultdict
+import traceback
 
 from rpw.utils.rlcompleter import Completer
 from rpw.ui.forms.resources import Window
@@ -81,7 +78,7 @@ class Console(Window):
 
     CARET = '>>> '
 
-    def __init__(self, stack_level=1, stack_info=True, context=None):
+    def __init__(self, stack_level=1, stack_info=True, context=None, msg=''):
         """
         Args:
             stack_level (int): Default is 1. 0 Is the Console stack, 1 is the
@@ -89,6 +86,8 @@ class Console(Window):
             stack_info (bool): Display info about where call came from.
                                Will print filename name,  line no. and Caller
                                name.
+           msg (str): Message to display on start.
+                      Only available if using context
             context (dict): Optional Dictionary for when inspection is not
                             possible.
         """
@@ -133,9 +132,12 @@ class Console(Window):
         # Form Init
         self.ui.tbox.Focus()
         if not context and stack_info:
-            self.write_line('Caller: {} [ Line:{}] | File: {}'.format(stack_caller,
-                                                                      stack_lineno,
-                                                                      stack_filename))
+            self.write_line('Caller: {} [ Line:{}] | File: {}'.format(
+                                                              stack_caller,
+                                                              stack_lineno,
+                                                              stack_filename))
+        elif msg:
+            self.write_line(msg)
         else:
             self.tbox.Text = Console.CARET
 
@@ -204,18 +206,26 @@ class Console(Window):
             self.write_line(output)
             self.tbox.ScrollToEnd()
 
+    def format_exception(self):
+        """ Formats Last Exception"""
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        tb = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        last_exception = tb[-1]
+        output = 'Traceback:\n' + last_exception[:-1]
+        return output
+
     def evaluate(self, line):
         try:
             output = eval(line, self.stack_globals, self.stack_locals)
-        except SyntaxError as errmsg:
+        except SyntaxError as exc:
             try:
                 exec(line, self.stack_globals, self.stack_locals)
                 self._update_completer()  # Update completer with new locals
                 return
-            except Exception as errmsg:
-                output = errmsg
-        except Exception as errmsg:
-            output = errmsg
+            except Exception as exc:
+                output = self.format_exception()
+        except Exception as exc:
+            output = self.format_exception()
         return str(output)
 
     def OnKeyDownHandler(self, sender, args):
@@ -283,6 +293,10 @@ class Console(Window):
             caret_index = self.tbox.CaretIndex
             self.write_text(suggestion)
             self.tbox.CaretIndex = caret_index
+
+    def write(self, text):
+        """ Make Console usable as File Object """
+        self.write_line(line=text)
 
     def write_line(self, line=None):
         # Used for Code Output
