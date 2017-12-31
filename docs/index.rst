@@ -1,28 +1,48 @@
-Welcome to pyRevit's documentation!
-===================================
-
 ..  note::
-    This documentation is a work-in-progress. I'm working on the
-    documentation of the loader module at the moment and will continue
-    with  documenting the tools after this step. Thanks for your patience.
+    This documentation is a work-in-progress. Thanks for your patience.
 
 Index
 -----
 
 **Getting Started**
 
-* :doc:`loaderaddon`
+* :doc:`scriptanatomy`
+* :doc:`commandbutton`
+* :doc:`outputfeatures`
+* :doc:`bundles`
+* :doc:`creatingexts`
 
 ..  toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :hidden:
     :caption: Getting Started
 
+    scriptanatomy.rst
+    commandbutton.rst
+    outputfeatures.rst
+    bundles.rst
+    creatingexts.rst
+
+**pyRevit Core**
+
+* :doc:`loaderaddon`
+* :doc:`loadseq`
+
+..  toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: pyRevit Core
+
     loaderaddon.rst
+    loadseq.rst
 
 **Modules**
 
-* :doc:`pyrevit`
+* :doc:`pyrevit/init`
+* :doc:`pyrevit/api`
+* :doc:`pyrevit/framework`
+* :doc:`pyrevit/script`
+* :doc:`pyrevit/userconfig`
 * :doc:`output`
 
 ..  toctree::
@@ -30,5 +50,9 @@ Index
     :hidden:
     :caption: Modules
 
-    pyrevit.rst
+    pyrevit/init.rst
+    pyrevit/api.rst
+    pyrevit/framework.rst
+    pyrevit/script.rst
+    pyrevit/userconfig.rst
     output.rst

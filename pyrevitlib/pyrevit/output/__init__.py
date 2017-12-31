@@ -352,6 +352,28 @@ class PyRevitOutputWindow(object):
 
     def print_table(self, table_data, columns=[], formats=[],
                     title='', last_line_style=''):
+        """Print provided data in a table in output window.
+
+        Args:
+            table_data (:obj:`list` of iterables): 2D array of data
+            title (str): table title
+            columns (:obj:`list` str): list of column names
+            formats (:obj:`list` str): column data formats
+            last_line_style (str): css style of last row
+
+        Example:
+            >>> data = [
+            ... ['row1', 'data', 'data', 80 ],
+            ... ['row2', 'data', 'data', 45 ],
+            ... ]
+            >>> output.print_table(
+            ... table_data=data,
+            ... title="Example Table",
+            ... columns=["Row Name", "Column 1", "Column 2", "Percentage"],
+            ... formats=['', '', '', '{}%'],
+            ... last_line_style='color:red;'
+            ... )
+        """
         if last_line_style:
             self.add_style('tr:last-child {{ {style} }}'
                            .format(style=last_line_style))
@@ -361,7 +383,6 @@ class PyRevitOutputWindow(object):
         adjust_extra_col = ':---|'
         base_col = '|'
         extra_col = '{data}|'
-        markdown_table = ''
 
         # find max column count
         max_col = max([len(x) for x in table_data])
@@ -392,7 +413,7 @@ class PyRevitOutputWindow(object):
                 row += extra_col.format(data=value)
             rows += row + '\n'
 
-        table =  header + justifier + rows
+        table = header + justifier + rows
         self.print_md('### {title}'.format(title=title))
         self.print_md(table)
 

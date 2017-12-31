@@ -180,6 +180,7 @@ class _HostApplication:
 
     @property
     def available_servers(self):
+        """Return :obj:`list` of available Revit server names."""
         return list(self.app.GetRevitServerNetworkHosts())
 
     @property

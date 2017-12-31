@@ -1,3 +1,11 @@
+.wy-nav-content {
+    max-width: none;
+}
+
+.document {
+    max-width: 800px;
+}
+
 a {
     color: #23303d;
 }
@@ -24,12 +32,12 @@ a:visited {
 }
 
 .admonition.note {
-    background-color: #dedede;
-    color: #23303d;
+    background-color: #23303d;
+    color: white;
 }
 
 .rst-content .note .admonition-title {
-    background-color: #23303d;
+    background-color: #f39c12;
     color: white;
 }
 
@@ -95,4 +103,8 @@ a:visited {
 
 .wy-nav-top a {
     color: white;
+}
+
+.pre {
+    font-size: 13px;
 }

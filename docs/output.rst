@@ -1,5 +1,5 @@
-pyRevit Output Sub-module
-=========================
+:mod:`pyrevit.output`
+=====================
 
 Provides access and control over the pyRevit output window.
 
