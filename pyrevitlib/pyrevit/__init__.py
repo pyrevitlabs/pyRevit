@@ -179,6 +179,10 @@ class _HostApplication:
         return getattr(self.app, 'Documents', None)
 
     @property
+    def available_servers(self):
+        return list(self.app.GetRevitServerNetworkHosts())
+
+    @property
     def version(self):
         """str: Return version number (e.g. '2018')."""
         return self.app.VersionNumber

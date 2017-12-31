@@ -41,7 +41,10 @@ class OptionSet:
 
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
+    """Handle copy and paste errors."""
+
     def OnDuplicateTypeNamesFound(self, args):
+        """Use destination model types if duplicate."""
         return DB.DuplicateTypeAction.UseDestinationTypes
 
 

@@ -314,6 +314,7 @@ def check_internet_connection(timeout=1000):
             client = framework.WebRequest.Create(url_to_open)
             client.Method = "HEAD"
             client.Timeout = timeout
+            client.Proxy = framework.WebProxy.GetDefaultProxy()
             response = client.GetResponse()
             response.GetResponseStream()
             return True

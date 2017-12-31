@@ -43,7 +43,7 @@ from System import IO
 from System.IO import IOException, DriveInfo, Path, StringReader
 
 from System import Net
-from System.Net import WebClient, WebRequest
+from System.Net import WebClient, WebRequest, WebProxy
 
 from System import Drawing
 from System import Windows

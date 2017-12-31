@@ -32,6 +32,7 @@ from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
 from pyrevit import DB, UI, revit
 from pyrevit.framework import FormatterServices
+from pyrevit.framework import Array
 
 
 logger = get_logger(__name__)
@@ -359,12 +360,22 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
+    logger.debug('Searching for pyrevit command: {}'
+                 .format(pyrevitcmd_unique_id))
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
+        logger.debug('Expecting assm: {}'.format(loaded_assm_name))
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
+            logger.debug('Found assm: {}'.format(loaded_assm_name))
             for pyrvt_type in loaded_assm[0].GetTypes():
+                logger.debug('Found Type: {}'.format(pyrvt_type))
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
+                    logger.debug('Found pyRevit command in {}'
+                                 .format(loaded_assm_name))
                     return pyrvt_type
+            logger.debug('Could not find pyRevit command.')
+        else:
+            logger.debug('Can not find assm: {}'.format(loaded_assm_name))
 
     return None
 
@@ -379,14 +390,16 @@ def create_tmp_commanddata():
     return tmp_cmd_data
 
 
-def execute_command_cls(extcmd_type,
+def execute_command_cls(extcmd_type, arguments=None,
                         clean_engine=False, fullframe_engine=False,
                         alternate_mode=False):
 
     command_instance = extcmd_type()
     # this is a manual execution from python code and not by user
-    command_instance.executedByUser = False
-
+    command_instance.executedFromUI = False
+    # pass the arguments to the instance
+    if arguments:
+        command_instance.argumentList = Array[str](arguments)
     # force using clean engine
     command_instance.baked_needsCleanEngine = clean_engine
     # force using fullframe engine
@@ -421,7 +434,8 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path, clean_engine=True, fullframe_engine=True):
+def execute_script(script_path, arguments=None,
+                   clean_engine=True, fullframe_engine=True):
     """Executes a script using pyRevit script executor.
 
     Args:
@@ -448,6 +462,7 @@ def execute_script(script_path, clean_engine=True, fullframe_engine=True):
             scriptSource=script_path,
             alternateScriptSource=None,
             syspaths=sys_paths,
+            arguments=arguments,
             helpSource=None,
             cmdName=script_name,
             cmdBundle=None,

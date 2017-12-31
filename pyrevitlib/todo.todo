@@ -1,12 +1,5 @@
-pyrevit installer:
-☐ add option to gitservices tool to set remote tracking branch for updates
-☐ add setup utility to fix Revit config files: <loadFromRemoteSources enabled="true" />
-☐ add core-only checkout support in installer (git clone -n / git checkout head path/dir)
-
-
-blog updates:
-☐ update script anatomy page
-☐ do video on pyrevit features
+tool improv:
+☐ switches for Pick tool so users can select favorite categories
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:

@@ -13,13 +13,14 @@ class LinePatternElement(Element, ByNameCollectMixin):
 
     Attribute:
         _revit_object (DB.LinePatternElement): Wrapped ``DB.LinePatternElement``
+
     """
 
     _revit_object_class = DB.LinePatternElement
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
     def __repr__(self):
-        return Element.__repr__(self, data={'name': self.Name})
+        return Element.__repr__(self, data={'name': self.name})
 
 
 class FillPatternElement(LinePatternElement):

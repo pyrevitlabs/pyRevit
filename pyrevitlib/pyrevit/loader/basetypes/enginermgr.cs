@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Scripting.Hosting;
 using System.Collections.Generic;
+using IronPython.Hosting;
 
 
 namespace PyRevitBaseClasses
@@ -38,6 +39,7 @@ namespace PyRevitBaseClasses
             SetupStreams(engine, pyrvtCmd.OutputStream);
             SetupBuiltins(engine, ref pyrvtCmd, cachedEngine);
             SetupSearchPaths(engine, pyrvtCmd.ModuleSearchPaths);
+            SetupArguments(engine, pyrvtCmd.Arguments);
 
             return engine;
         }
@@ -84,19 +86,17 @@ namespace PyRevitBaseClasses
 
         private ScriptEngine CreateNewEngine(ref PyRevitCommandRuntime pyrvtCmd, bool fullframe=false)
         {
-            var flags = new Dictionary<string, object>(){{ "LightweightScopes", true }};
+            var flags = new Dictionary<string, object>();
+
+            // default flags
+            flags["LightweightScopes"] = true;
 
             if (fullframe)
             {
-                // Disabling all frames to avoid the memory leak issue
-                // that would increase the % of time spent in GC dramatically
-                // Tried these options together and made the runtime much slower
-                //  { "GCStress", 0 },
-                //  { "MaxRecursion", 0 },
                 flags["Frames"] = true;
                 flags["FullFrames"] = true;
             }
-                
+
             var engine = IronPython.Hosting.Python.CreateEngine(flags);
 
             // also, allow access to the PyRevitLoader internals
@@ -151,11 +151,21 @@ namespace PyRevitBaseClasses
             tempExec.AddEmbeddedLib(engine);
         }
 
-        private void SetupSearchPaths(ScriptEngine engine, string[] searchPaths)
+        private void SetupSearchPaths(ScriptEngine engine, List<string> searchPaths)
         {
-            // Process search paths provided to executor
-            // syspaths variable is a string of paths separated by ';'. Split syspath and update the search paths
+            // process search paths provided to executor
             engine.SetSearchPaths(searchPaths);
+        }
+
+        private void SetupArguments(ScriptEngine engine, List<string> arguments)
+        {
+            // setup arguments (sets sys.argv)
+            // engine.Setup.Options["Arguments"] = arguments;
+            // engine.Runtime.Setup.HostArguments = new List<object>(arguments);
+            var sysmodule = engine.GetSysModule();
+            var pythonArgv = new IronPython.Runtime.List();
+            pythonArgv.extend(arguments);
+            sysmodule.SetVariable("argv", pythonArgv);
         }
 
         private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd, bool cachedEngine)

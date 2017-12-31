@@ -25,29 +25,31 @@ class AboutWindow(forms.WPFWindow):
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
             pyrvt_ver = versionmgr.get_pyrevit_version()
-            nice_version = ' v{}'.format(pyrvt_ver.get_formatted())
+            nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
             short_version = \
                 ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
-            branch_info = '{} branch'.format(pyrvt_repo.branch)
+            self.branch_name = pyrvt_repo.branch
         except Exception:
-            nice_version = short_version = branch_info = ''
-
-        rocketchar = u'\U0001F680' if sys.version_info.micro > 3 else ''
-        rocketmodetext = 'Rocket-mode {}'\
-                         .format(u'enabled ' + rocketchar if __cachedengine__
-                                 else 'disabled')
+            nice_version = short_version = ''
+            self.branch_name = None
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
-        self.pyrevit_subtitle.Text += '\n {} | {}'.format(nice_version,
-                                                          branch_info)
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}'\
-                                      .format(sys.version_info.major,
-                                              sys.version_info.minor,
-                                              sys.version_info.micro)
-        self.pyrevit_subtitle.Text += '\n{}'.format(rocketmodetext)
+        self.pyrevit_version.Text = nice_version
+        self.pyrevit_branch.Text = self.branch_name
+        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
+                                   .format(sys.version_info.major,
+                                           sys.version_info.minor,
+                                           sys.version_info.micro)
 
-        self.madein_tb.Text = pyrvtabout.madein
+        rocketmodetext = \
+            'Rocket-mode {}' \
+            .format('enabled' if __cachedengine__ else 'disabled')
+        self.pyrevit_rmode.Text = rocketmodetext
+        if not __cachedengine__:
+            self.hide_element(self.rmode_icon)
+
+        self.madein_tb.Text = 'in {}'.format(pyrvtabout.madein)
         self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
@@ -69,7 +71,15 @@ class AboutWindow(forms.WPFWindow):
         script.open_url(urls.patron)
 
     def opengithubcommits(self, sender, args):
-        script.open_url(urls.githubmastercommits)
+        if self.branch_name:
+            commits_url = \
+                urls.githubbranchcommits.format(branch=self.branch_name)
+            script.open_url(commits_url)
+
+    def opengithubbranch(self, sender, args):
+        if self.branch_name:
+            branch_url = urls.githubbranch.format(branch=self.branch_name)
+            script.open_url(branch_url)
 
     def openreleasenotes(self, sender, args):
         script.open_url(urls.releasenotes)

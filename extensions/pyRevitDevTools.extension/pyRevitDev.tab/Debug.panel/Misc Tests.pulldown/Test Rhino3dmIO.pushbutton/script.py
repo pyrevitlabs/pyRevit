@@ -1,5 +1,4 @@
-import rpw
-from rpw.extras.rhino import Rhino as rc
+from pyrevit import rhino as rc
 
 
 pt1 = rc.Geometry.Point3d(0, 0, 0)

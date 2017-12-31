@@ -62,15 +62,19 @@ class GenericUIComponent(GenericComponent):
         the command full directory address.
         Example:
             self.direcotry =
-            '/pyRevit.package/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
+            '/pyRevit.extension/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
             unique name =
             pyRevitpyRevitEditFlipdoors
         """
         uname = ''
+        inside_ext = False
         dir_str = self.directory
         for dname in dir_str.split(op.sep):
+            if exts.UI_EXTENSION_POSTFIX in dname:
+                inside_ext = True
+
             name, ext = op.splitext(dname)
-            if ext != '':
+            if ext != '' and inside_ext:
                 uname += name
             else:
                 continue

@@ -12,7 +12,11 @@ from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit.transaction import *
 from pyrevit.revit.ui import *
-from pyrevit.revit import verify
+from pyrevit.revit import query
+from pyrevit.revit.query import get_project_info
+from pyrevit.revit import create
+from pyrevit.revit import serverutils
+from pyrevit.revit import files
 
 
 logger = get_logger(__name__)
@@ -52,6 +56,10 @@ class RevitWrapper(types.ModuleType):
     @property
     def activeview(self):
         return HOST_APP.activeview
+
+    @property
+    def servers(self):
+        return HOST_APP.available_servers
 
 
 if not EXEC_PARAMS.doc_mode:

@@ -79,6 +79,7 @@ namespace PyRevitBaseClasses
             }
             finally
             {
+                CleanupScope(engine, scope);
                 engineMgr.CleanupEngine(engine);
             }
         }
@@ -92,6 +93,17 @@ namespace PyRevitBaseClasses
 
             return scope;
         }
+
+
+        public void CleanupScope(ScriptEngine engine, ScriptScope scope)
+        {
+            var script = engine.CreateScriptSourceFromString("for __deref in dir():\n" +
+                                                             "    if not __deref.startswith('__'):\n" +
+                                                             "        del globals()[__deref]");
+            script.Compile();
+            script.Execute(scope);
+        }
+
 
         public void SetupScope(ScriptScope scope, ref PyRevitCommandRuntime pyrvtCmd)
         {

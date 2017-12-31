@@ -203,6 +203,7 @@ if matched_cmdname:
             fullframe_engine = switches[FULLFRAME_SWITCH]
             alternate_mode = switches[CONFIG_SWITCH] or switches[ALT_FLAG]
             sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
+                                           arguments=None,
                                            clean_engine=clean_engine,
                                            fullframe_engine=fullframe_engine,
                                            alternate_mode=alternate_mode)

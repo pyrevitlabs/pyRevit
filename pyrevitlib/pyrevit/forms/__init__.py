@@ -2,6 +2,8 @@ import os
 import os.path as op
 import string
 from collections import OrderedDict
+import threading
+from functools import wraps
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
@@ -940,10 +942,11 @@ class ProgressBar(TemplatePromptBar):
         <Grid Background="{DynamicResource pyRevitDarkBrush}">
             <ProgressBar x:Name="pbar"/>
             <TextBlock x:Name="pbar_text"
-                       TextWrapping="Wrap" Text="TextBlock"
+                       TextWrapping="Wrap"
                        TextAlignment="Center" VerticalAlignment="Center"
                        Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
             <Button x:Name="cancel_b"
+                    Visibility="Collapsed"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     Content="Cancel"
@@ -956,7 +959,15 @@ class ProgressBar(TemplatePromptBar):
     """
 
     def _setup(self, **kwargs):
+        self.max_value = 1
+        self.new_value = 0
+        self.step = kwargs.get('step', 0)
+
         self.cancelled = False
+        has_cancel = kwargs.get('cancellable', False)
+        if has_cancel:
+            self.show_element(self.cancel_b)
+
         self.pbar.IsIndeterminate = kwargs.get('indeterminate', False)
         self._title = kwargs.get('title', '{value}/{max_value}')
 
@@ -975,6 +986,17 @@ class ProgressBar(TemplatePromptBar):
                                            ))
 
         self.pbar_text.Text = title_text
+
+    def _dispatch_updater(self):
+        self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
+                                    Threading.DispatcherPriority.Background)
+
+    @staticmethod
+    def _make_return_getter(f, ret):
+        @wraps(f)
+        def wrapped_f(*args, **kwargs):
+            ret.append(f(*args, **kwargs))
+        return wrapped_f
 
     @property
     def title(self):
@@ -997,11 +1019,30 @@ class ProgressBar(TemplatePromptBar):
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True
 
-    def update_progress(self, new_value, max_value):
+    def wait_async(self, func, args=()):
+        returns = []
+        self.indeterminate = True
+        rgfunc = self._make_return_getter(func, returns)
+        t = threading.Thread(target=rgfunc, args=args)
+        t.start()
+        while t.is_alive():
+            self._dispatch_updater()
+
+        return returns[0] if returns else None
+
+    def reset(self):
+        self.update_progress(0, 1)
+
+    def update_progress(self, new_value, max_value=1):
         self.max_value = max_value
         self.new_value = new_value
-        self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
-                                    Threading.DispatcherPriority.Background)
+        if self.new_value == 0:
+            self._dispatch_updater()
+        elif self.step > 0:
+            if self.new_value % self.step == 0:
+                self._dispatch_updater()
+        else:
+            self._dispatch_updater()
 
 
 class SearchPrompt(WPFWindow):
@@ -1176,11 +1217,12 @@ class SearchPrompt(WPFWindow):
         return dlg.response
 
 
-def alert(msg, title='pyRevit', cancel=False, yes=False, no=False, retry=False):
+def alert(msg, title='pyRevit',
+          cancel=False, yes=False, no=False, retry=False):
     buttons = UI.TaskDialogCommonButtons.Ok
 
     if any([cancel, yes, no, retry]):
-        buttons = UI.TaskDialogCommonButtons.None
+        buttons = UI.TaskDialogCommonButtons.None   # noqa
 
         if cancel:
             buttons |= UI.TaskDialogCommonButtons.Cancel
@@ -1249,7 +1291,10 @@ class RevisionOption(object):
         self.revision_element = revision_element
 
     def __str__(self):
-        return '{}-{}-{}'.format(self.revision_element.RevisionNumber,
+        revnum = self.revision_element.SequenceNumber
+        if hasattr(self.revision_element, 'RevisionNumber'):
+            revnum = self.revision_element.RevisionNumber
+        return '{}-{}-{}'.format(revnum,
                                  self.revision_element.Description,
                                  self.revision_element.RevisionDate)
 
@@ -1278,7 +1323,7 @@ def select_revisions(title='Select Revision',
           .OfCategory(DB.BuiltInCategory.OST_Revisions)\
           .WhereElementIsNotElementType()
 
-    revisions = sorted(unsorted_revisions, key=lambda x: x.RevisionNumber)
+    revisions = sorted(unsorted_revisions, key=lambda x: x.SequenceNumber)
     revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
@@ -1326,3 +1371,10 @@ def select_sheets(title='Select Sheets', button_name='Select',
                 width=width)
         if return_option:
             return return_option[0].sheet_element
+
+
+def check_workshared(doc):
+    if not doc.IsWorkshared:
+        alert('Model is not workshared.')
+        return False
+    return True

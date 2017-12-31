@@ -8,6 +8,11 @@ Reference Wrappers
 >>> references[0].as_global_pt
 <rpw:XYZ>
 
+Linked Element
+
+>>> reference = pick.pick_linked_element()
+>>> element = reference.get_element()
+
 """
 
 import rpw
@@ -27,13 +32,21 @@ class Reference(Element):
 
     Attribute:
         _revit_object (DB.Reference): Wrapped ``DB.Reference``
+        doc (Document): Element Document
     """
 
     _revit_object_class = DB.Reference
 
-    def __init__(self, reference, doc=revit.doc):
-        super(Reference, self).__init__(reference)
+    def __init__(self, reference, linked=False):
+        if not linked:
+            doc = revit.doc
+        else:
+            link_instance = revit.doc.GetElement(reference.ElementId)
+            doc = link_instance.GetLinkDocument()
+
+        super(Reference, self).__init__(reference, doc=doc)
         self.doc = doc
+        self.linked = linked
 
     def __repr__(self):
         return super(Reference, self).__repr__(data={'id': self.id})
@@ -57,12 +70,12 @@ class Reference(Element):
     @property
     def id(self):
         """ ElementId of Reference """
-        return self._revit_object.ElementId
+        return self._revit_object.ElementId if not self.linked else self._revit_object.LinkedElementId
 
-    def get_element(self):
+    def get_element(self, wrapped=True):
         """ Element of Reference """
-        # TODO: Handle Linked Element
-        return self.doc.GetElement(self.id)
+        element = self.doc.GetElement(self.id)
+        return element if not wrapped else Element(element)
 
     def get_geometry(self):
         """ GeometryObject from Reference """

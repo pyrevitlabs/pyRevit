@@ -1,9 +1,10 @@
 """
->>> levels = rpw.db.Collector(of_category='Levels', is_type=True)
->>> walls = rpw.db.Collector(of_class='Wall', where=lambda x: x.parameters['Length'] > 5)
->>> desks = rpw.db.Collector(of_class='FamilyInstance', level='Level 1')
+Usage
 
-
+>>> from rpw import db
+>>> levels = db.Collector(of_category='Levels', is_type=True)
+>>> walls = db.Collector(of_class='Wall', where=lambda x: x.parameters['Length'] > 5)
+>>> desks = db.Collector(of_class='FamilyInstance', level='Level 1')
 
 Note:
     As of June 2017, these are the filters that have been implemented:
@@ -18,6 +19,9 @@ Note:
     | ``FamilySymbolFilter`` = ``family``
     | ``FamilyInstanceFilter`` = ``symbol``
     | ``ElementParameterFilter`` = ``parameter_filter``
+    | ``Exclusion`` = ``exclude``
+    | ``UnionWith`` = ``or_collector``
+    | ``IntersectWith`` = ``and_collector``
     | ``Custom`` = where
 
 """
@@ -29,9 +33,11 @@ from rpw.exceptions import RpwException, RpwTypeError, RpwCoerceError
 from rpw.db.element import Element
 from rpw.db.builtins import BicEnum, BipEnum
 from rpw.ui.selection import Selection
+from rpw.db.collection import ElementSet
 from rpw.utils.coerce import to_element_id, to_element_ids
 from rpw.utils.coerce import to_category, to_class
 from rpw.utils.logger import logger
+from rpw.utils.logger import deprecate_warning
 
 # More Info on Performance and ElementFilters:
 # http://thebuildingcoder.typepad.com/blog/2015/12/quick-slow-and-linq-element-filtering.html
@@ -95,10 +101,15 @@ class SuperSlowFilter(BaseFilter):
     """ Leave it for Last. Must unpack results """
     priority_group = 3
 
+class LogicalFilter(BaseFilter):
+    """ Leave it after Last as it must be completed """
+    priority_group = 4
 
 class FilterClasses():
     """
     Groups FilterClasses to facilitate discovery.
+
+    # TODO: Move Filter doc to Filter Classes
 
     Implementation Tracker:
     Quick
@@ -108,7 +119,9 @@ class FilterClasses():
         X Revit.DB.ElementIsElementTypeFilter = is_type / is_not_type
         X Revit.DB.ElementOwnerViewFilter = view
         X Revit.DB.FamilySymbolFilter = family
-        _ Revit.DB.ExclusionFilter = exclude
+        X Revit.DB.ExclusionFilter = exclude
+        X Revit.DB.IntersectWidth = and_collector
+        X Revit.DB.UnionWidth = or_collector
         _ Revit.DB.BoundingBoxContainsPointFilter
         _ Revit.DB.BoundingBoxIntersectsFilter
         _ Revit.DB.BoundingBoxIsInsideFilter
@@ -293,6 +306,36 @@ class FilterClasses():
             else:
                 return collector
 
+    class ExclusionFilter(QuickFilter):
+        keyword = 'exclude'
+
+        @classmethod
+        def process_value(cls, element_references):
+            element_set = ElementSet(element_references)
+            return DB.ExclusionFilter(element_set.as_element_id_list)
+
+    class InteresectFilter(LogicalFilter):
+        keyword = 'and_collector'
+
+        @classmethod
+        def process_value(cls, collector):
+            if hasattr(collector, 'unwrap'):
+                collector = collector.unwrap()
+            return collector
+
+        @classmethod
+        def apply(cls, doc, collector, value):
+            new_collector = cls.process_value(value)
+            return collector.IntersectWith(new_collector)
+
+    class UnionFilter(InteresectFilter):
+        keyword = 'or_collector'
+
+        @classmethod
+        def apply(cls, doc, collector, value):
+            new_collector = cls.process_value(value)
+            return collector.UnionWith(new_collector)
+
 
 class Collector(BaseObjectWrapper):
     """
@@ -300,7 +343,7 @@ class Collector(BaseObjectWrapper):
 
     Usage:
         >>> collector = Collector(of_class='View')
-        >>> elements = collector.elements
+        >>> elements = collector.get_elements()
 
         Multiple Filters:
 
@@ -329,9 +372,9 @@ class Collector(BaseObjectWrapper):
         >>> Collector(owner_view=None)
 
     Attributes:
-        collector.elements: Returns list of all `collected` elements
-        collector.first: Returns first found element, or ``None``
-        collector.wrapped_elements: Returns list with all elements wrapped.
+        collector.get_elements(): Returns list of all `collected` elements
+        collector.get_first(): Returns first found element, or ``None``
+        collector.get_elements(): Returns list with all elements wrapped.
                                     Elements will be instantiated using :any:`Element`
 
     Wrapped Element:
@@ -359,23 +402,21 @@ class Collector(BaseObjectWrapper):
             only one will be applied, in this order ``view`` > ``elements`` > ``element_ids``
 
         Filter Options:
-            * ``is_type`` (``bool``): Same as ``WhereElementIsElementType``
-            * ``is_not_type`` (``bool``): Same as ``WhereElementIsNotElementType``
-            * ``of_class`` (``Type``): Same as ``OfClass``. Type can be ``DB.SomeType`` or
-                                       string: ``DB.Wall`` or ``'Wall'``
-            * ``of_category`` (``BuiltInCategory``): Same as ``OfCategory``. Can be
-                                                     ``DB.BuiltInCategory.OST_Wall`` or ``'Wall'``
-            * ``owner_view`` (``DB.ElementId, View`): ``WhereElementIsViewIndependent(True)``
-            * ``is_view_independent`` (``bool``): ``WhereElementIsViewIndependent(True)``
-            * ``family`` (``DB.ElementId``, ``DB.Element``)`: Element or ElementId of Family
-            * ``symbol`` (``DB.ElementId``, ``DB.Element``)`: Element or ElementId of Symbol
-            * ``level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId
-                                                                           of Level, or Level Name
-            * ``not_level`` (``DB.Level``, ``DB.ElementId``, ``Level Name``)`: Level, ElementId of
-                                                                               Level, or Level Name
-            * ``parameter_filter`` (:any:`ParameterFilter`): Similar to
-                                                            ``ElementParameterFilter`` Class
-            * ``where`` (`function`): function to test your elements against
+            * is_type (``bool``): Same as ``WhereElementIsElementType``
+            * is_not_type (``bool``): Same as ``WhereElementIsNotElementType``
+            * of_class (``Type``): Same as ``OfClass``. Type can be ``DB.SomeType`` or string: ``DB.Wall`` or ``'Wall'``
+            * of_category (``BuiltInCategory``): Same as ``OfCategory``. Can be ``DB.BuiltInCategory.OST_Wall`` or ``'Wall'``
+            * owner_view (``DB.ElementId, View`): ``WhereElementIsViewIndependent(True)``
+            * is_view_independent (``bool``): ``WhereElementIsViewIndependent(True)``
+            * family (``DB.ElementId``, ``DB.Element``): Element or ElementId of Family
+            * symbol (``DB.ElementId``, ``DB.Element``): Element or ElementId of Symbol
+            * level (``DB.Level``, ``DB.ElementId``, ``Level Name``): Level, ElementId of Level, or Level Name
+            * not_level (``DB.Level``, ``DB.ElementId``, ``Level Name``): Level, ElementId of Level, or Level Name
+            * parameter_filter (:any:`ParameterFilter`): Applies ``ElementParameterFilter``
+            * exclude (`element_references`): Element(s) or ElementId(s) to exlude from result
+            * and_collector (``collector``): Collector to intersect with. Elements must be present in both
+            * or_collector (``collector``): Collector to Union with. Elements must be present on of the two.
+            * where (`function`): function to test your elements against
 
         """
         # Define Filtered Element Collector Scope + Doc
@@ -426,27 +467,38 @@ class Collector(BaseObjectWrapper):
 
     def __iter__(self):
         """ Uses iterator to reduce unecessary memory usage """
+        # TODO: Depracate or Make return Wrapped ?
         for element in self._collector:
             yield element
 
-    @property
-    def elements(self):
+    def get_elements(self, wrapped=True):
         """
         Returns list with all elements instantiated using :any:`Element`
         """
-        return [element for element in self.__iter__()]
+        if wrapped:
+            return [Element(el) for el in self.__iter__()]
+        else:
+            return [element for element in self.__iter__()]
+
+    @property
+    def elements(self):
+        """ Returns list with all elements """
+        deprecate_warning('Collector.elements',
+                          'Collector.get_elements(wrapped=True)')
+        return self.get_elements(wrapped=False)
 
     @property
     def wrapped_elements(self):
-        """ Returns list with all elements instantiated using :any:`Element` """
-        return [Element(el) for el in self.__iter__()]
+        """ Returns list with all elements instantiated using :any:`Element`"""
+        deprecate_warning('Collector.wrapped_elements',
+                          'Collector.get_elements(wrapped=True)')
+        return self.get_elements(wrapped=True)
 
     def select(self):
         """ Selects Collector Elements on the UI """
         Selection(self.element_ids)
 
-    @property
-    def first(self):
+    def get_first(self, wrapped=True):
         """
         Returns first element or `None`
 
@@ -454,18 +506,31 @@ class Collector(BaseObjectWrapper):
             Element (`DB.Element`, `None`): First element or None
         """
         try:
-            return self[0]
+            element = self[0]
+            return Element(element) if wrapped else element
         except IndexError:
             return None
 
-    @property
-    def element_ids(self):
+
+    # @property
+    # def get_first(self):
+    #     deprecate_warning('Collector.first', 'Collector.get_first()')
+    #     return self.get_first(wrapped=False)
+
+    def get_element_ids(self):
         """
         Returns list with all elements instantiated using :any:`Element`
         """
         return [element_id for element_id in self._collector.ToElementIds()]
 
+    @property
+    def element_ids(self):
+        deprecate_warning('Collector.element_ids',
+                          'Collector.get_element_ids()')
+        return self.get_element_ids()
+
     def __getitem__(self, index):
+        # TODO: Depracate or Make return Wrapped ?
         for n, element in enumerate(self.__iter__()):
             if n == index:
                 return element
@@ -475,14 +540,14 @@ class Collector(BaseObjectWrapper):
 
     def __bool__(self):
         """ Evaluates to `True` if Collector.elements is not empty [] """
-        return bool(self.elements)
+        return bool(self.get_elements(wrapped=False))
 
     def __len__(self):
-        """ Returns length of collector.elements """
+        """ Returns length of collector.get_elements() """
         try:
             return self._collector.GetElementCount()
         except AttributeError:
-            return len(self.elements)  # Revit 2015
+            return len(self.get_elements(wrapped=False))  # Revit 2015
 
     def __repr__(self):
         return super(Collector, self).__repr__(data={'count': len(self)})

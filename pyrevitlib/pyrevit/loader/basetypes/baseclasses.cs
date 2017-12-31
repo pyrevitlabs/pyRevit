@@ -36,7 +36,11 @@ namespace PyRevitBaseClasses
         // this is true by default since commands are normally executed from ui.
         // pyrevit module will set this to false, when manually executing a
         // pyrevit command from python code. (e.g when executing reload after update)
-        public bool executedByUser = true;
+        public bool executedFromUI = true;
+
+        // list of string arguments to be passed to executor.
+        // executor then sets the sys.argv with these arguments
+        public string[] argumentList = null;
 
 
         public PyRevitCommand(string scriptSource,
@@ -183,6 +187,7 @@ namespace PyRevitBaseClasses
                                                             scriptSource: baked_scriptSource,
                                                             alternateScriptSource: baked_alternateScriptSource,
                                                             syspaths: baked_syspaths,
+                                                            arguments: argumentList,
                                                             helpSource: baked_helpSource,
                                                             cmdName: baked_cmdName,
                                                             cmdBundle: baked_cmdBundle,
@@ -193,7 +198,7 @@ namespace PyRevitBaseClasses
                                                             refreshEngine: _refreshEngine,
                                                             forcedDebugMode: _forcedDebugMode,
                                                             altScriptMode: _altScriptMode,
-                                                            executedFromUI: executedByUser);
+                                                            executedFromUI: executedFromUI);
             #endregion
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
