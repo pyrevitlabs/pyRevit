@@ -37,4 +37,4 @@ pyRevitLoader Addin Source
 **********************************
 
 The source code for pyRevitLoader addin is under:
-``pyrevitlib/pyrevit/addin/Source``
+``pyrevitlib/pyrevit/addin/<loader version>/Source``
