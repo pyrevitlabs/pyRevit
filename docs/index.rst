@@ -7,7 +7,7 @@ Index
 **Getting Started**
 
 I suggest reading this section completely as it provides 99% of what you will
-need to know in developing scripts in pyRevit environment. Other sections dive
+need to know for developing scripts in pyRevit environment. Other sections dive
 deeper into pyRevit inner workings.
 
 * :doc:`scriptanatomy`
@@ -15,6 +15,7 @@ deeper into pyRevit inner workings.
 * :doc:`commandbutton`
 * :doc:`creatingexts`
 * :doc:`config`
+* :doc:`usagelogger`
 * :doc:`installer`
 
 ..  toctree::
@@ -27,6 +28,7 @@ deeper into pyRevit inner workings.
     commandbutton.rst
     creatingexts.rst
     config.rst
+    usagelogger.rst
     installer.rst
 
 **pyRevit Core**

@@ -3,7 +3,7 @@ Anatomy of a pyRevit Script
 
 pyRevit provides a few basic services to python scripts that use its engine.
 These fuctionalities are accessible through a few high level modules.
-This is a quick look at a these services and their associated python modules.
+This is a quick look at these services and their associated python modules.
 
 
 Basic script parameters
@@ -136,8 +136,26 @@ you can hold CTRL and click on a command button to put that command in DEBUG mod
     logger.debug('Yesss! Here is the debug message')
 
 
-Custom User Configuration for Scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Controlling Output Window
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each script can control its own output window:
+
+.. code-block:: python
+
+    from pyrevit import script
+
+    output = script.get_output()
+
+    output.set_height(600)
+    output.get_title()
+    output.set_title('More control please!')
+
+See :doc:`outputfeatures` for more info.
+
+
+Script Config
+^^^^^^^^^^^^^
 
 Each script can save and load configuration pyRevit's user configuration file:
 
@@ -160,6 +178,22 @@ See :func:`pyrevit.script.get_config` and :func:`pyrevit.script.save_config` for
     # read the config parameter value
     if config.firstparam:
         do_task_A()
+
+
+Logging Results
+^^^^^^^^^^^^^^^
+
+pyRevit has a usage logging system that can record all tool usages to either a json
+file or to a web server. Scripts can return custom data to this logging system.
+
+In example below, the script reports the amount of time it saved to the logging system:
+
+.. code-block:: python
+
+    from pyrevit import script
+
+    results = script.get_results()
+    results.timesaved = 10
 
 
 Using Temporary Files

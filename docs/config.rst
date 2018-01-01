@@ -1,4 +1,4 @@
-pyRevit Config File
-===================
+pyRevit Configuration
+=====================
 
 work in progress
