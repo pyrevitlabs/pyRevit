@@ -6,11 +6,16 @@ Index
 
 **Getting Started**
 
+I suggest reading this section completely as it provides 99% of what you will
+need to know in developing scripts in pyRevit environment. Other sections dive
+deeper into pyRevit inner workings.
+
 * :doc:`scriptanatomy`
-* :doc:`commandbutton`
 * :doc:`outputfeatures`
-* :doc:`bundles`
+* :doc:`commandbutton`
 * :doc:`creatingexts`
+* :doc:`config`
+* :doc:`installer`
 
 ..  toctree::
     :maxdepth: 2
@@ -18,10 +23,11 @@ Index
     :caption: Getting Started
 
     scriptanatomy.rst
-    commandbutton.rst
     outputfeatures.rst
-    bundles.rst
+    commandbutton.rst
     creatingexts.rst
+    config.rst
+    installer.rst
 
 **pyRevit Core**
 

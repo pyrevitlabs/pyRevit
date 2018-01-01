@@ -1,6 +1,8 @@
 :mod:`pyrevit.userconfig`
 =========================
 
+.. _usercfg:
+
 Usage
 *****
 
@@ -31,7 +33,7 @@ Example:
     >>> cfg = script.get_config()
     >>> cfg.property = value
     >>> cfg.get('property', default_value)
-    >>> script.save_changes()
+    >>> script.save_config()
 
 
 Documentation

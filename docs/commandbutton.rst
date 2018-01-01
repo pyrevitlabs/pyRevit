@@ -1,6 +1,8 @@
 Keyboard Shortcuts
 ==================
 
+.. _shiftclick:
+
 Shift-Click: Alternate/Config Script
 ------------------------------------
 
