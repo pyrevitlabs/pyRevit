@@ -1,5 +1,5 @@
 #define MyAppName "pyRevit"
-#define MyAppVersion "-v45rc"
+#define MyAppVersion "-v45"
 #define MyAppPublisher "Ehsan Iran-Nejad"
 #define MyAppURL "http://eirannejad.github.io/pyRevit/"
 #define MyAppGit "https://github.com/eirannejad/pyRevit.git"
@@ -36,7 +36,7 @@ Source: "..\..\release\pyrevitgitservices\pyrevitgitservices\bin\Release\*"; Des
 Type: filesandordirs; Name: "{app}\pyRevit"
 
 [Run]
-Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"clone release/v4.5-rc {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
+Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"clone master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
 Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"setversion {app}\pyRevit {code:GetVersionHash}"; StatusMsg: "Setting repository version..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\install_addin.bat"; Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
