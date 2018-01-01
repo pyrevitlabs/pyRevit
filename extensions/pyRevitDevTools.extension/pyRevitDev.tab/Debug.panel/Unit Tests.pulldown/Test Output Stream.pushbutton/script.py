@@ -24,8 +24,7 @@ print('Clickable element id: {}'
       .format(output.linkify(DB.ElementId(1557))))
 
 output.print_md('**Testing code block:**')
-output.print_code(
-"""
+output.print_code("""
 #include <iostream>
 using namespace std;
 
@@ -34,7 +33,14 @@ int main()
     cout << "Hello world!" << endl;
     return 0;
 }
-"""
-)
+""")
+
+output.print_table([[1, 2, 3],
+                    [1, 2, 3],
+                    [1, 2, 3]],
+                   columns=['Col 1', 'Col 2', 'Col 3'],
+                   formats=['', '', '{}%'],
+                   title='Test Table')
+
 
 output.update_progress(50, 100)

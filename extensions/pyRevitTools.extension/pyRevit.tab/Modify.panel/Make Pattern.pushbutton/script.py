@@ -292,7 +292,8 @@ class MakePatternWindow(forms.WPFWindow):
         if self._export_only:
             self.Close()
             export_dir = forms.pick_folder()
-            self.export_pattern(export_dir)
+            if export_dir:
+                self.export_pattern(export_dir)
         elif self.verify_name():
             self.Hide()
             domain = self.pick_domain()
