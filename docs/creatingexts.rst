@@ -241,6 +241,12 @@ There are a few more advanced bundle types in pyRevit as well. Here is some quic
 Smart Button Bundle
 ^^^^^^^^^^^^^^^^^^^
 
++--------------------------+
+|    Example               |
++--------------------------+
+| ``pyRevit.smartbutton``  |
++--------------------------+
+
 Smart buttons are python scripts that are written like modules.
 They should define ``__selfinit__`` function as shown below.
 This function gets executed at startup time to give a chance to the button to
@@ -266,8 +272,45 @@ initialization returns ``False`` and is unsuccessful.
     	run_self_initialization()
 
 
+No Button Bundle
+^^^^^^^^^^^^^^^^
+
++--------------------------+
+|    Example               |
++--------------------------+
+| ``pyRevit.nobutton``     |
++--------------------------+
+
+No-Button bundles are just like Pushbutton bundles except that they will never
+show up inside Revit UI and thus don't need any icons. The only method to run
+these commands is through pyRevit Search tool. These commands are meant for more
+advanced commands that not every user needs.
+
+Panel Button Bundle
+^^^^^^^^^^^^^^^^^^^
+
++--------------------------+
+|    Example               |
++--------------------------+
+| ``pyRevit.panelbutton``  |
++--------------------------+
+
+Panle Button bundles are just like Pushbutton bundles except that they will be
+set as the panel configuration button (small arrow at the corner of UI Panels).
+These bundles do not need to have an icon as the standard Small arrow icon is
+used for panel configuration buttons by default. These commands work just like
+any pyRevit command but their primary purpose should be to configure set of related
+tools in a panel.
+
+
 Link Button Bundle
 ^^^^^^^^^^^^^^^^^^
+
++--------------------------+
+|    Example               |
++--------------------------+
+| ``pyRevit.linkbutton``   |
++--------------------------+
 
 Link buttons can call a function from another Addin.
 To make a link button define the parameters below in the bundles ``script.py``:
