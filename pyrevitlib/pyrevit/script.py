@@ -100,8 +100,8 @@ def save_config():
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     """Return filename to be used by a user script to store data.
 
-    Format:
-        pyRevit_{file_id}.{file_ext}
+    File name is generated in this format:
+    ``pyRevit_{file_id}.{file_ext}``
 
     Example:
         >>> script.get_document_data_file('mydata', 'data')
@@ -131,8 +131,8 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
 def get_data_file(file_id, file_ext, add_cmd_name=False):
     """Return filename to be used by a user script to store data.
 
-    Format:
-        pyRevit_{Revit Version}_{file_id}.{file_ext}
+    File name is generated in this format:
+    ``pyRevit_{Revit Version}_{file_id}.{file_ext}``
 
     Example:
         >>> script.get_document_data_file('mydata', 'data')
@@ -162,8 +162,8 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
 def get_instance_data_file(file_id, add_cmd_name=False):
     """Return filename to be used by a user script to store data.
 
-    Format:
-        pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}
+    File name is generated in this format:
+    ``pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}``
 
     Example:
         >>> script.get_document_data_file('mydata')
@@ -191,8 +191,8 @@ def get_instance_data_file(file_id, add_cmd_name=False):
 def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     """Return filename to be used by a user script to store data.
 
-    Format:
-        pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}
+    File name is generated in this format:
+    ``pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}``
 
     Example:
         >>> script.get_document_data_file('mydata', 'data')
