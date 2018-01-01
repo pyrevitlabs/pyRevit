@@ -1,11 +1,13 @@
-from pyrevit.coreutils.console import charts
-from scriptutils import this_script
-
+from pyrevit.output import charts
+from pyrevit import script
 
 __context__ = 'zerodoc'
 
 
-this_script.output.set_width(600)
+output = script.get_output()
+
+
+output.set_width(600)
 
 
 test1_types = [charts.LINE_CHART,
@@ -21,7 +23,7 @@ test4_types = [charts.PIE_CHART,
 
 
 def get_test_chart(chart_type):
-    chart = this_script.output.make_chart()
+    chart = output.make_chart()
     chart.type = chart_type
     # chart.set_style('height:150px')
 
@@ -40,8 +42,8 @@ def test1_chart(chart_type):
     # chart.options.scales = {'yAxes': [{'stacked': True}]}
     # chart.set_height(100)
 
-
-    chart.data.labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    chart.data.labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                         'Friday', 'Saturday', 'Sunday']
 
     set_a = chart.data.new_dataset('set_a')
     set_a.data = [12, 19, 3, 17, 6, 3, 7]
@@ -106,7 +108,8 @@ def test3_chart(chart_type):
 
     set_a = chart.data.new_dataset('set_a')
     set_a.data = [100, 20, 50, 35, 70, 20]
-    # set_a.backgroundColor = ["#446119", "#547720", "#6b942d", "#7cad31", "#86c12b", "#8dd61c"]
+    # set_a.backgroundColor = ["#446119", "#547720", "#6b942d",
+    #                          "#7cad31", "#86c12b", "#8dd61c"]
 
     chart.randomize_colors()
     chart.draw()
@@ -132,6 +135,7 @@ def test4_chart(chart_type):
 
     chart.randomize_colors()
     chart.draw()
+
 
 for ct_type in test1_types:
     test1_chart(ct_type)

@@ -12,6 +12,7 @@ def select_folder():
     Uses Forms.FolderBrowserDialog(). For more information see:
     https://msdn.microsoft.com/en-us/library/system.windows.forms.openfiledialog.
 
+    >>> from rpw.ui.forms import select_folder
     >>> folderpath = select_folder()
     'C:\\folder\\path'
     """
@@ -30,6 +31,7 @@ def select_file(extensions='All Files (*.*)|*.*',
     Uses Forms.OpenFileDialog
     https://msdn.microsoft.com/en-us/library/system.windows.forms.filedialog.filter
 
+    >>> from rpw.ui.forms import select_file
     >>> filepath = select_file('Revit File ('*.rvt)|*.rvt')
     'C:\\folder\\file.rvt'
 

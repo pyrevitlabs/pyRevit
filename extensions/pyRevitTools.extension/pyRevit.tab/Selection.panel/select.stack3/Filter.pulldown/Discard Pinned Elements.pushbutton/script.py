@@ -1,12 +1,11 @@
 """Discards (not delete) pinned elements from current selection."""
 
-from revitutils import doc, uidoc, selection
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId, Group
+from pyrevit import revit, DB
 
 
 __context__ = 'Selection'
+
+selection = revit.get_selection()
 
 
 filtered_elements = []

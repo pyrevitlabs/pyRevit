@@ -4,29 +4,19 @@ import os.path as op
 import codecs
 
 from pyrevit import USER_DESKTOP
-from pyrevit.coreutils import verify_directory, cleanup_filename
-from scriptutils import this_script, open_url, logger
-from scriptutils.userinput import WPFWindow
-from revitutils import doc
+from pyrevit import framework
+from pyrevit.framework import Windows
+from pyrevit import coreutils
+from pyrevit import forms
+from pyrevit import revit, DB
+from pyrevit import script
 
-# noinspection PyUnresolvedReferences
-import clr
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Element, FilteredElementCollector, ViewSchedule, ViewSheet,\
-                              ViewScheduleExportOptions, ExportTextQualifier, ViewSet, \
-                              PrintRange, Transaction, ViewSheetSet
 
-clr.AddReference('PresentationCore')
-clr.AddReferenceByPartialName("PresentationFramework")
+logger = script.get_logger()
 
-# noinspection PyUnresolvedReferences
-from System.Windows import DragDrop, DragDropEffects
-# noinspection PyUnresolvedReferences
-from System.Windows import Setter, EventSetter, DragEventHandler, Style
-# noinspection PyUnresolvedReferences
-from System.Windows.Input import MouseButtonEventHandler
-# noinspection PyUnresolvedReferences
-from System.Windows.Controls import ListViewItem
+
+# Non Printable Char
+NPC = u'\u200e'
 
 
 class ViewSheetListItem(object):
@@ -42,25 +32,39 @@ class ViewSheetListItem(object):
         return self._sheet
 
 
-
-class PrintSheetsWindow(WPFWindow):
+class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
-        for cat in doc.Settings.Categories:
+        for cat in revit.doc.Settings.Categories:
             if cat.Name == 'Sheets':
                 self.sheet_cat_id = cat.Id
 
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
         self.schedules_cb.SelectedIndex = 0
 
-
         item_cstyle = self.sheets_lb.ItemContainerStyle
-        item_cstyle.Setters.Add(Setter(ListViewItem.AllowDropProperty, True))
-        item_cstyle.Setters.Add(EventSetter(ListViewItem.PreviewMouseLeftButtonDownEvent,
-                                                   MouseButtonEventHandler(self.preview_mouse_down)))
-        item_cstyle.Setters.Add(EventSetter(ListViewItem.DropEvent,
-                                                   DragEventHandler(self.drop_sheet)))
+
+        item_cstyle.Setters.Add(
+            Windows.Setter(
+                Windows.Controls.ListViewItem.AllowDropProperty,
+                True
+                )
+            )
+
+        item_cstyle.Setters.Add(
+            Windows.EventSetter(
+                Windows.Controls.ListViewItem.PreviewMouseLeftButtonDownEvent,
+                Windows.Input.MouseButtonEventHandler(self.preview_mouse_down)
+                )
+            )
+
+        item_cstyle.Setters.Add(
+            Windows.EventSetter(
+                Windows.Controls.ListViewItem.DropEvent,
+                Windows.DragEventHandler(self.drop_sheet)
+                )
+            )
 
     @property
     def selected_schedule(self):
@@ -83,16 +87,22 @@ class PrintSheetsWindow(WPFWindow):
         return self.indexspace_cb.IsChecked
 
     def _get_schedule_text_data(self, schedule_view):
-        schedule_data_file = this_script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
-        vseop = ViewScheduleExportOptions()
-        vseop.TextQualifier = ExportTextQualifier.None
-        schedule_view.Export(op.dirname(schedule_data_file), op.basename(schedule_data_file), vseop)
+        schedule_data_file = \
+            script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
+        vseop = DB.ViewScheduleExportOptions()
+        vseop.TextQualifier = DB.ExportTextQualifier.None
+        schedule_view.Export(op.dirname(schedule_data_file),
+                             op.basename(schedule_data_file),
+                             vseop)
 
         sched_data = []
         try:
-            with codecs.open(schedule_data_file, 'r', 'utf_16_le') as sched_data_file:
+            with codecs.open(schedule_data_file, 'r', 'utf_16_le') \
+                    as sched_data_file:
                 return sched_data_file.readlines()
-        except:
+        except Exception as open_err:
+            logger.error('Error opening sheet index export: {} | {}'
+                         .format(schedule_data_file, open_err))
             return sched_data
 
     def _order_sheets_by_schedule_data(self, schedule_view, sheet_list):
@@ -108,7 +118,7 @@ class PrintSheetsWindow(WPFWindow):
                     if sheet.SheetNumber in data_line:
                         ordered_sheets_dict[line_no] = sheet
                         break
-                except:
+                except Exception:
                     continue
 
         sorted_keys = sorted(ordered_sheets_dict.keys())
@@ -116,8 +126,10 @@ class PrintSheetsWindow(WPFWindow):
 
     def _get_ordered_schedule_sheets(self):
         schedule_view = self.selected_schedule
-        cl_sheets = FilteredElementCollector(doc, schedule_view.Id)
-        sheets = cl_sheets.OfClass(clr.GetClrType(ViewSheet)).WhereElementIsNotElementType().ToElements()
+        cl_sheets = DB.FilteredElementCollector(revit.doc, schedule_view.Id)
+        sheets = cl_sheets.OfClass(framework.get_type(DB.ViewSheet))\
+                          .WhereElementIsNotElementType()\
+                          .ToElements()
 
         return self._order_sheets_by_schedule_data(schedule_view, sheets)
 
@@ -126,54 +138,79 @@ class PrintSheetsWindow(WPFWindow):
                and not schedule_view.IsTemplate
 
     def _get_sheet_index_list(self):
-        cl_schedules = FilteredElementCollector(doc)
-        schedules = cl_schedules.OfClass(clr.GetClrType(ViewSchedule)).WhereElementIsNotElementType().ToElements()
+        cl_schedules = DB.FilteredElementCollector(revit.doc)
+        schedules = cl_schedules.OfClass(framework.get_type(DB.ViewSchedule))\
+                                .WhereElementIsNotElementType()\
+                                .ToElements()
 
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
     def _print_combined_sheets_in_order(self):
-        # todo: Revit does not follow the order of sheets as set by ViewSet
-        print_mgr = doc.PrintManager
-        print_mgr.PrintRange = PrintRange.Select
+        print_mgr = revit.doc.PrintManager
+        print_mgr.PrintRange = DB.PrintRange.Select
         viewsheet_settings = print_mgr.ViewSheetSetting
 
-        sheet_set = ViewSet()
+        sheet_set = DB.ViewSet()
 
-        for sheet in self.sheets_lb.ItemsSource:
-            sheet_set.Insert(sheet.revit_sheet)
+        # add non-printable char in front of sheet Numbers
+        # to push revit to sort them per user
+        original_sheetnums = []
+        with revit.Transaction('Fix Sheet Numbers') as t:
+            for idx, sheet in enumerate(self.sheets_lb.ItemsSource):
+                sht = sheet.revit_sheet
+                original_sheetnums.append(sht.SheetNumber)
+                sht.SheetNumber = NPC * (idx + 1) + sht.SheetNumber
+                sheet_set.Insert(sht)
 
         # Collect existing sheet sets
-        cl = FilteredElementCollector(doc)
-        viewsheetsets = cl.OfClass(clr.GetClrType(ViewSheetSet)).WhereElementIsNotElementType().ToElements()
+        cl = DB.FilteredElementCollector(revit.doc)
+        viewsheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet))\
+                          .WhereElementIsNotElementType()\
+                          .ToElements()
         all_viewsheetsets = {vss.Name: vss for vss in viewsheetsets}
 
         sheetsetname = 'OrderedPrintSet'
 
-        with Transaction(doc, 'Update Ordered Print Set') as t:
-            t.Start()
+        with revit.Transaction('Update Ordered Print Set') as t:
             # Delete existing matching sheet set
             if sheetsetname in all_viewsheetsets:
-                viewsheet_settings.CurrentViewSheetSet = all_viewsheetsets[sheetsetname]
+                viewsheet_settings.CurrentViewSheetSet = \
+                    all_viewsheetsets[sheetsetname]
                 viewsheet_settings.Delete()
 
             viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
             viewsheet_settings.SaveAs(sheetsetname)
-            t.Commit()
 
+        print_mgr.PrintOrderReverse = self.reverse_print
+        try:
+            print_mgr.CombinedFile = True
+        except Exception as e:
+            forms.alert(str(e) + '\nSet printer correctly in Print settings.')
+            script.exit()
         print_mgr.PrintToFile = True
-        print_mgr.CombinedFile = True
         print_mgr.PrintToFileName = op.join(r'C:', 'Ordered Sheet Set.pdf')
+        print_mgr.Apply()
         print_mgr.SubmitPrint()
 
+        # now fix the sheet names
+        with revit.Transaction('Restore Sheet Numbers') as t:
+            for sheet, sheetnum in zip(self.sheets_lb.ItemsSource,
+                                      original_sheetnums):
+                sht = sheet.revit_sheet
+                sht.SheetNumber = sheetnum
+
     def _print_sheets_in_order(self):
-        print_mgr = doc.PrintManager
+        print_mgr = revit.doc.PrintManager
         print_mgr.PrintToFile = True
         # print_mgr.CombinedFile = False
-        print_mgr.PrintRange = PrintRange.Current
+        print_mgr.PrintRange = DB.PrintRange.Current
         for sheet in self.sheets_lb.ItemsSource:
-            output_fname = cleanup_filename('{:05} {} - {}.pdf'.format(sheet.print_index,
-                                                                       sheet.number,
-                                                                       sheet.name))
+            output_fname = \
+                coreutils.cleanup_filename('{:05} {} - {}.pdf'
+                                           .format(sheet.print_index,
+                                                   sheet.number,
+                                                   sheet.name))
+
             print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
             if sheet.printable:
                 print_mgr.SubmitPrint(sheet.revit_sheet)
@@ -182,11 +219,10 @@ class PrintSheetsWindow(WPFWindow):
         for idx, sheet in enumerate(sheet_list):
             sheet.print_index = idx
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def selection_changed(self, sender, args):
         if self.selected_schedule:
-            sheet_list = [ViewSheetListItem(x) for x in self._get_ordered_schedule_sheets()]
+            sheet_list = [ViewSheetListItem(x)
+                          for x in self._get_ordered_schedule_sheets()]
 
             # reverse sheet if reverse is set
             if self.reverse_print:
@@ -216,8 +252,6 @@ class PrintSheetsWindow(WPFWindow):
                 # Show all sheets
                 self.sheets_lb.ItemsSource = sheet_list
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def print_sheets(self, sender, args):
         if self.sheets_lb.ItemsSource:
             self.Close()
@@ -226,22 +260,18 @@ class PrintSheetsWindow(WPFWindow):
             else:
                 self._print_sheets_in_order()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handle_url_click(self, sender, args):
-        open_url('https://github.com/McCulloughRT/PrintFromIndex')
+        script.open_url('https://github.com/McCulloughRT/PrintFromIndex')
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def preview_mouse_down(self, sender, args):
-       if isinstance(sender, ListViewItem):
-           if sender.DataContext.printable:
-               DragDrop.DoDragDrop(sender, sender.DataContext, DragDropEffects.Move)
+        if isinstance(sender, Windows.Controls.ListViewItem):
+            if sender.DataContext.printable:
+                Windows.DragDrop.DoDragDrop(sender,
+                                            sender.DataContext,
+                                            Windows.DragDropEffects.Move)
 
-           sender.IsSelected = False
+            sender.IsSelected = False
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def drop_sheet(self, sender, args):
         dropped_data = args.Data.GetData(ViewSheetListItem)
         target = sender.DataContext
@@ -256,5 +286,4 @@ class PrintSheetsWindow(WPFWindow):
         self.sheets_lb.Items.Refresh()
 
 
-if __name__ == '__main__':
-    PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()
+PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()

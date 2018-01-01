@@ -19,7 +19,7 @@ RESULT_DICT = {0: 'Succeeded',
 TIMESTAMP_FORMAT = '%Y/%m/%d %H:%M:%S:%f'
 
 
-class _CommandCustomResults(object):
+class CommandCustomResults(object):
     """
     This class provides an interface wrapper around the EXEC_PARAMS.result_dict
     dictionary that is provided by the ScriptExecutor C# object.
@@ -29,7 +29,7 @@ class _CommandCustomResults(object):
     to use wrapper around it.
 
     Example:
-        >>> _CommandCustomResults().returnparam = 'some return value'
+        >>> CommandCustomResults().returnparam = 'some return value'
 
     """
 
@@ -45,7 +45,7 @@ class _CommandCustomResults(object):
         return unicode(EXEC_PARAMS.result_dict[key])
 
     def __setattr__(self, key, value):
-        if key in _CommandCustomResults.RESERVED_NAMES:
+        if key in CommandCustomResults.RESERVED_NAMES:
             # making sure the script is not using a reserved name
             logger.error('{} is a standard log param. '
                          'Can not override this value.'.format(key))

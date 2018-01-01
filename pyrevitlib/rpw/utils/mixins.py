@@ -1,8 +1,9 @@
 """ Collection of Class Mixins """
 
-from rpw import revit, DB
-from rpw.db.element import Element
+import rpw
+# from rpw import revit, db, DB # Fixes Circular Import
 from rpw.exceptions import RpwCoerceError
+from rpw.utils.logger import deprecate_warning
 
 
 class ByNameCollectMixin():
@@ -19,11 +20,11 @@ class ByNameCollectMixin():
     @classmethod
     def by_name(cls, name):
         """
-        Mixin to provide instantiating by a name for classes that are collectible.
-        This is a mixin so specifi usage will vary for each for.
-        This method will call the :any:`collect` method of the class,
-        and return the first element with a matching ``Name`` property.
-        See implementation for more details.
+        Mixin to provide instantiating by a name for classes that are
+        collectible. This is a mixin so specifi usage will vary for each for.
+        This method will call the :any:`rpw.db.Element.collect`
+        method of the class, and return the first element with a
+        matching ``.name`` property.
 
         >>> LinePatternElement.by_name('Dash')
         <rpw:LinePatternElement name:Dash>
@@ -32,11 +33,10 @@ class ByNameCollectMixin():
         <rpw:FillPatternElement name:Solid>
 
         """
-        first = cls.collect(where=lambda e: e.name == name).first
-        if first:
-            return cls(first)
-        else:
-            raise RpwCoerceError('by_name({})'.format(name), cls)
+        e = cls.collect(where=lambda e: e.name.lower() == name.lower()).get_first()
+        if e:
+            return e
+        raise RpwCoerceError('by_name({})'.format(name), cls)
 
     @classmethod
     def by_name_or_element_ref(cls, reference):
@@ -46,7 +46,32 @@ class ByNameCollectMixin():
         """
         if isinstance(reference, str):
             return cls.by_name(reference)
-        elif isinstance(reference, DB.ElementId):
-            return Element.from_id(reference)
+        elif isinstance(reference, rpw.DB.ElementId):
+            return rpw.db.Element.from_id(reference)
         else:
             return cls(reference)
+
+
+
+class CategoryMixin():
+
+    """ Adds category and get_category methods.
+    """
+
+    @property
+    def _category(self):
+        """
+        Default Category Access Parameter. Overwrite on wrapper as needed.
+        See Family Wrapper for an example.
+        """
+        return self._revit_object.Category
+
+    @property
+    def category(self):
+        """ Wrapped ``DB.Category`` """
+        deprecate_warning('.category', 'get_category()')
+        return rpw.db.Category(self._category)
+
+    def get_category(self, wrapped=True):
+        """ Wrapped ``DB.Category``"""
+        return rpw.db.Category(self._category) if wrapped else self._category

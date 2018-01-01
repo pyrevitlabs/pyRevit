@@ -1,14 +1,7 @@
 from pyrevit import PyRevitException
+from pyrevit.framework import Array, Dictionary
+from pyrevit.framework import Compiler, CSharpCodeProvider
 from pyrevit.coreutils.logger import get_logger
-
-# noinspection PyUnresolvedReferences
-from System import Array
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import Dictionary
-# noinspection PyUnresolvedReferences
-from Microsoft.CSharp import CSharpCodeProvider
-# noinspection PyUnresolvedReferences
-from System.CodeDom import Compiler
 
 
 logger = get_logger(__name__)
@@ -50,8 +43,9 @@ def _compile_dotnet(code_provider,
                                               Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
-        error_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
-        raise PyRevitException("Compile error: {}".format(error_list))
+        err_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
+        err_str = '\n'.join(err_list)
+        raise PyRevitException("Compile error: {}".format(err_str))
 
     if full_output_file_addr is None:
         logger.debug('Compile to memory successful: {}'
@@ -73,6 +67,10 @@ def compile_csharp(sourcefiles_list,
 
     provider = \
         CSharpCodeProvider(Dictionary[str, str]({'CompilerVersion': 'v4.0'}))
+
+    if not provider:
+        raise PyRevitException("Compile error: Can not get C# Code Provider.")
+
     return _compile_dotnet(provider,
                            cleanedup_source_list,
                            full_output_file_addr,

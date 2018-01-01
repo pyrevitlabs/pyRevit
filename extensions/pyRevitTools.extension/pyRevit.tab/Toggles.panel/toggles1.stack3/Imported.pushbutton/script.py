@@ -1,10 +1,13 @@
-"""Toggles visibility of imported categories on current view"""
+"""Toggles visibility of imported categories on current view."""
 
-# from rpw import activeview, Action
-from revitutils import curview, Action
-activeview = curview
+from pyrevit import revit
 
 
-with Action('Toggle Imported'):
-    activeview.AreImportCategoriesHidden = \
-        not activeview.AreImportCategoriesHidden
+@revit.carryout('Toggle Imported')
+def toggle_imported():
+    aview = revit.activeview
+    aview.AreImportCategoriesHidden = \
+        not aview.AreImportCategoriesHidden
+
+
+toggle_imported()

@@ -9,9 +9,6 @@ class Transform(BaseObjectWrapper):
     """
     `DB.Transform` Wrapper
 
-    >>> from rpw.db import Transform
-    >>> Transform
-
     Attributes:
         _revit_object (DB.XYZ): Wrapped ``DB.Transform``
     """
@@ -21,6 +18,10 @@ class Transform(BaseObjectWrapper):
     @classmethod
     def rotate_vector(cls, vector, rotation, center=None, axis=None, radians=False):
         """ Rotate a Vector or point
+
+        Usage:
+        >>> from rpw import db
+        >>> db.Transform.rotate_vector(SomeVector, 90.0)
 
         Args:
             vector (``point-like``): Point like element.

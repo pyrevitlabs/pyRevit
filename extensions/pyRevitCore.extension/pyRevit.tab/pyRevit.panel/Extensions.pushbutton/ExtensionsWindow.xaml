@@ -1,12 +1,44 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Extension Manager" Height="600" Width="920" ShowInTaskbar="False" ResizeMode="CanResize"
+        Title="pyRevit Extension Manager" Height="700" Width="850" ShowInTaskbar="False" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+        <Window.Resources>
+            <Style x:Key="ClearButton" TargetType="Button">
+                <Setter Property="Background" Value="White"/>
+            </Style>
+        </Window.Resources>
         <DockPanel Margin="10" LastChildFill="True">
-            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10" DockPanel.Dock="Top">
-                List of Registered Extension Packages:
-            </TextBlock>
-            <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,10" Height="25">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock DockPanel.Dock="Left"
+                           Grid.Column="0"
+                           VerticalAlignment="Center">
+                           List of Registered Extension Packages:
+                </TextBlock>
+                <DockPanel Grid.Column="1">
+                    <TextBlock Margin="0,0,10,0"
+                               DockPanel.Dock="Left"
+                               VerticalAlignment="Center">
+                               Filter:
+                    </TextBlock>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBox x:Name="search_tb" Height="25px"
+                                 Padding="0,2,0,0"
+                                 TextChanged="search_txt_changed"/>
+                        <Button Style="{StaticResource ClearButton}"
+                                HorizontalAlignment="Right"
+                                x:Name="clrsearch_b" Content="x"
+                                Margin="0,-25,5,0" Padding="0,-4,0,0"
+                                Click="clear_search"
+                                Width="15px" Height="15px"
+                                Visibility="Collapsed"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+            <StackPanel x:Name="ext_infopanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
                 <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
                 <TextBlock Margin="5,0,0,0" FontSize="14" >
                     <Run x:Name="ext_desc_l"/>
@@ -19,26 +51,30 @@
                         <TextBlock x:Name="ext_author_t"/>
                     </Hyperlink>
                 </TextBlock>
+                <TextBlock Margin="5,0,0,0" FontSize="14" > Repository:
+                    <Hyperlink x:Name="ext_repolink_hl" Click="handle_url_click">
+                        <TextBlock x:Name="ext_repolink_t"/>
+                    </Hyperlink>
+                </TextBlock>
                 <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
                 <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
                 <GroupBox Header="Extension Package Settings:" Margin="0,10,0,0">
                     <StackPanel>
-                        <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,5" IsChecked="False"
+                        <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,0" IsChecked="False"
                                   Click="handle_private_repo"
                                   Checked="handle_private_repo"
                                   Unchecked="handle_private_repo">
-                            Git Repository is Private
+                            Git Repository is Private (Provide Account Credentials)
                         </CheckBox>
                         <DockPanel x:Name="accountcreds_dp" Margin="23,0,0,10" IsEnabled="False" >
-                            <Label Content="Account Credentials:" DockPanel.Dock="Top" />
                             <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
-                                    <Label Content="Username: " Width="80"/>
-                                    <TextBox x:Name="repousername_tb" Width="200"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
+                                    <Label Content="Username: "/>
+                                    <TextBox x:Name="repousername_tb" Width="300" Padding="0,2,0,0"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Label Content="Password: " Width="80"/>
-                                    <TextBox x:Name="repopassword_tb"  Width="200"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
+                                    <Label Content="Password: "/>
+                                    <TextBox x:Name="repopassword_tb"  Width="200" Padding="0,2,0,0"/>
                                 </StackPanel>
                             </WrapPanel>
                         </DockPanel>
@@ -75,12 +111,13 @@
                     <GridView>
                         <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
                         <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Type}"/>
-                        <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding GitURL}"/>
+                        <!-- <GridViewColumn Header="Git Repository URL" DisplayMemberBinding="{Binding GitURL}"/> -->
                         <GridViewColumn Header="Author" DisplayMemberBinding="{Binding Author}"/>
-                        <GridViewColumn Header="Built-in" DisplayMemberBinding="{Binding Builtin}"/>
-                        <GridViewColumn Header="Installed" DisplayMemberBinding="{Binding Installed}"/>
-                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}"/>
-                        <GridViewColumn Header="Last Commit" DisplayMemberBinding="{Binding Version}"/>
+                        <GridViewColumn Header="Built-in" DisplayMemberBinding="{Binding Builtin}" Width="60"/>
+                        <GridViewColumn Header="Rocket-Mode" DisplayMemberBinding="{Binding RocketMode}" Width="100"/>
+                        <GridViewColumn Header="Installed" DisplayMemberBinding="{Binding Installed}" Width="60"/>
+                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60"/>
+                        <GridViewColumn Header="Last Commit" DisplayMemberBinding="{Binding Version}" Width="100"/>
                     </GridView>
                 </ListView.View>
             </ListView>

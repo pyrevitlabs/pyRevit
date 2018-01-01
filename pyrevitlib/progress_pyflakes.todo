@@ -1,0 +1,135 @@
+# pyrevit:
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\api.py @done(2017-12-09 17:34)
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\framework.py @done(2017-12-09 17:34)
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\script.py @done(2017-12-10 00:32)
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\userconfig.py @done(2017-12-10 11:57)
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\__init__.py @done(2017-12-09 16:31)
+
+# coreutils:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\appdata.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\configparser.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\dotnetcompiler.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\envvars.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\git.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\loadertypes.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\logger.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\mathnet.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\moduleutils.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\ribbon.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\__init__.py
+
+# charts:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\charts\__init__.py
+
+# emoji:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\emoji\unicodes.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\emoji\__init__.py
+
+# markdown:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\blockparser.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\blockprocessors.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\inlinepatterns.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\odict.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\postprocessors.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\preprocessors.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\serializers.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\treeprocessors.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\util.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\__init__.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\__main__.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\__version__.py
+
+# extensions:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\abbr.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\admonition.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\attr_list.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\codehilite.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\def_list.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\extra.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\fenced_code.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\footnotes.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\headerid.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\meta.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\nl2br.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\sane_lists.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\smarty.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\smart_strong.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\tables.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\toc.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\wikilinks.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\coreutils\markdown\extensions\__init__.py
+
+# extensions:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\cacher_asc.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\cacher_bin.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\components.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\extensionmgr.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\genericcomps.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\parser.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\extensions\__init__.py
+
+# forms:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\forms\__init__.py
+
+# loader:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\asmmaker.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\sessioninfo.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\sessionmgr.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\systemdiag.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\uimaker.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\__init__.py
+
+# addin:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\addin\addinfiles.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\addin\pyRevitLoader.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\addin\__init__.py
+
+# basetypes:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\basetypes\csharptypemaker.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\basetypes\pythontypemaker.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\basetypes\typemaker.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\loader\basetypes\__init__.py
+
+# output:
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\output\linkmaker.py @done(2017-12-11 19:35)
+✔ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\output\__init__.py @done(2017-12-11 19:35)
+
+# plugins:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\extpackages.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\ipymodules.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\plugins\__init__.py
+
+# revit:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\db.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\journals.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\selection.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\transaction.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\ui.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\__init__.py
+
+# verify:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\revit\verify\__init__.py
+
+# unittests:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\outputtests.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\tooltests.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\_testrunner.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\__init__.py
+
+# ipytests:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\ipytests\enumtests.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\ipytests\ipycoretests.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\unittests\ipytests\__init__.py
+
+# usagelog:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\usagelog\db.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\usagelog\filters.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\usagelog\record.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\usagelog\__init__.py
+
+# versionmgr:
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\versionmgr\about.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\versionmgr\updater.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\versionmgr\upgrade.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\versionmgr\urls.py
+☐ C:/Users/eirannejad/AppData/Roaming/pyRevit/pyRevitDev/pyRevitDev/pyrevitlib/pyrevit\versionmgr\__init__.py

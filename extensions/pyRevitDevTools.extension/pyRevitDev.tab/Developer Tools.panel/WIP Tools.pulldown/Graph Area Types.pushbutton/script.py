@@ -1,14 +1,15 @@
 """Display the total area of different area types in a graph."""
 
-from scriptutils import this_script
-from revitutils import doc, selection
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import FilteredElementCollector, ElementId, BuiltInCategory, Area
+from pyrevit import revit, DB
+from pyrevit import script
 
 
-areas = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Areas)\
-                                     .WhereElementIsNotElementType().ToElements()
+doc = revit.doc
+output = script.get_output()
+
+areas = DB.FilteredElementCollector(doc) \
+          .OfCategory(DB.BuiltInCategory.OST_Areas) \
+          .WhereElementIsNotElementType().ToElements()
 
 
 total = dict()
@@ -20,13 +21,13 @@ for area in areas:
                 total[area_type] += area.Area
             else:
                 total[area_type] = area.Area
-    except:
+    except Exception:
         continue
 
-this_script.output.set_width(400)
-this_script.output.set_height(450)
+output.set_width(400)
+output.set_height(450)
 
-chart = this_script.output.make_pie_chart()
+chart = output.make_pie_chart()
 chart.data.labels = total.keys()
 area_dataset = chart.data.new_dataset('area types')
 area_dataset.data = [round(v, 2) for v in total.values()]

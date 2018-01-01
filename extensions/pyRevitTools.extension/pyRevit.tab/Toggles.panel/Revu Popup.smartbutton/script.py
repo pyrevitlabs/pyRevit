@@ -1,17 +1,20 @@
-# noinspection PyUnresolvedReferences
 import re
 import os.path as op
 import _winreg as wr
 
-from scriptutils import this_script, logger
+from pyrevit import script
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
+
+
+logger = script.get_logger()
 
 
 __context__ = 'zerodoc'
 __title__ = 'Revu\nPopup'
 
-__doc__ = 'Enables and disables the Revu PDF Printer prompt for filename option. ' \
-          'The Icon shows the current state of this setting.'
+
+__doc__ = 'Enables and disables the Revu PDF Printer prompt for '\
+          'filename option. The Icon shows the current state of this setting.'
 
 
 # op.sep = '\\'
@@ -33,7 +36,7 @@ def get_reg_key(key, subkey):
 
 def find_driver_key(driver_keys, parent_string, key):
     subkey_count, value_count, last_changed = wr.QueryInfoKey(key)
-    logger.debug('{} reg key has {} subkeys and {} values.' \
+    logger.debug('{} reg key has {} subkeys and {} values.'
                  .format(parent_string, subkey_count, value_count))
     for idx in range(0, subkey_count):
         subkey_name = wr.EnumKey(key, idx)
@@ -84,7 +87,7 @@ def set_filename_prompt_state(dkeys, state):
                               '1' if state else '0')
             return state
         except Exception as key_read_err:
-            logger.debug('Error accessing registry key value.' \
+            logger.debug('Error accessing registry key value.'
                          ' | {}'.format(key_read_err))
     else:
         logger.debug('No registry keys are available for revu printer driver.')
@@ -100,7 +103,7 @@ def query_filename_prompt_state(dkeys):
                 state |= int(key_state) > 0
             return state
         except Exception as key_read_err:
-            logger.debug('Error accessing registry key value.' \
+            logger.debug('Error accessing registry key value.'
                          ' | {}'.format(key_read_err))
     else:
         logger.debug('No registry keys are available for revu printer driver.')
@@ -139,7 +142,7 @@ def toggle_state():
             logger.debug('Prompt For FileName is Disabled. Enabling...')
             set_filename_prompt_state(dkeys, True)
 
-        this_script.toggle_icon(not curval)
+        script.toggle_icon(not curval)
         close_keys(dkeys)
 
 

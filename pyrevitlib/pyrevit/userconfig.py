@@ -1,39 +1,45 @@
-"""
-Handles reading, parsing, and saving of all user configurations.
-All other modules use this module to query user config.
+"""Handle reading and parsing, writin and saving of all user configurations.
 
+All other modules use this module to query user config.
 """
+
 import os
 import os.path as op
 import shutil
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
+from pyrevit.framework import IOException
+
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils.configparser import PyRevitConfigParser
 from pyrevit.coreutils.logger import get_logger, set_file_logging
-
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
+from pyrevit.versionmgr.upgrade import upgrade_user_config
 
 
 logger = get_logger(__name__)
 
 
+INIT_SETTINGS_SECTION = 'core'
+
+
 # location for default pyRevit config files
-ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
+if not EXEC_PARAMS.doc_mode:
+    ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
 
-# setup config file name and path
-CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
-                                                   file_ext='ini')
-logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
+    # setup config file name and path
+    CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
+                                                       file_ext='ini')
+    logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
+else:
+    ADMIN_CONFIG_DIR = CONFIG_FILE_PATH = None
 
 
-# fix obsolete config file naming ----------------------------------------------
+# =============================================================================
+# fix obsolete config file naming
 # config file (and all appdata files) used to include username in the filename
 # this fixes the existing config file with obsolete naming, to new format
-import os
-import os.path as op
+# pylama:ignore=E402
 from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_UNIVERSAL_USER
 
 OBSOLETE_CONFIG_FILENAME = '{}_{}'.format(PYREVIT_FILE_PREFIX_UNIVERSAL_USER,
@@ -54,16 +60,26 @@ if op.exists(OBSOLETE_CONFIG_FILEPATH):
                      'Then you can remove the old config file as pyRevit '
                      'will not be using that anymore. | {}'
                      .format(CONFIG_FILE_PATH, rename_err))
-# end fix obsolete config file naming ------------------------------------------
-
-
-INIT_SETTINGS_SECTION = 'core'
-COMMAND_ALIAS_SECTION = 'alias'
+# end fix obsolete config file naming
+# =============================================================================
 
 
 class PyRevitConfig(PyRevitConfigParser):
+    """Provide read/write access to pyRevit configuration.
+
+    Args:
+        cfg_file_path (str): full path to config file to be used.
+
+    Example:
+        >>> cfg = PyRevitConfig(cfg_file_path)
+        >>> cfg.add_section('sectionname')
+        >>> cfg.sectionname.property = value
+        >>> cfg.sectionname.get('property', default_value)
+        >>> cfg.save_changes()
+    """
+
     def __init__(self, cfg_file_path=None):
-        """Loads settings from settings file."""
+        """Load settings from provided config file and setup parser."""
         self.config_file = cfg_file_path
 
         # try opening and reading config file in order.
@@ -74,9 +90,11 @@ class PyRevitConfig(PyRevitConfigParser):
         self._update_env()
 
     def _update_env(self):
+        # update the debug level based on user config
         logger.reset_level()
 
         try:
+            # first check to see if command is not in forced debug mode
             if not EXEC_PARAMS.forced_debug_mode:
                 if self.core.debug:
                     logger.set_debug_mode()
@@ -89,14 +107,16 @@ class PyRevitConfig(PyRevitConfigParser):
             logger.debug('Error updating env variable per user config. | {}'
                          .format(env_update_err))
 
+    def get_config_version(self):
+        """Return version of config file used for change detection."""
+        return self.get_config_file_hash()
+
     def get_ext_root_dirs(self):
-        """
-        Returns a list of external extension directories set by the user
+        """Return a list of external extension directories set by the user.
 
         Returns:
-            list: list of strings. Paths of external extension directories
+            :obj:`list`: list of strings. External user extension directories.
         """
-
         dir_list = list()
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
         try:
@@ -107,26 +127,8 @@ class PyRevitConfig(PyRevitConfigParser):
 
         return dir_list
 
-    def get_alias(self, original_name):
-        """
-        Returns alias for given command name is any exists in user config.
-
-        Args:
-            original_name (str): original command name
-
-        Returns:
-            str: alias name for the given command
-            None: if no alias is set.
-        """
-
-        try:
-            return self.alias.get_option(original_name)
-        except AttributeError:
-            return None
-
     def save_changes(self):
-        """Saves user config into associated config file (.config_file)"""
-
+        """Save user config into associated config file."""
         try:
             PyRevitConfigParser.save(self, self.config_file)
         except Exception as save_err:
@@ -138,14 +140,11 @@ class PyRevitConfig(PyRevitConfigParser):
 
 
 def _set_hardcoded_config_values(parser):
-    """
-    Sets default config values for user configuration.
+    """Set default config values for user configuration.
 
     Args:
-        parser (userconfig.PyRevitConfig): parser to accept the default values
-
-    Returns:
-        None
+        parser (:obj:`pyrevit.userconfig.PyRevitConfig`):
+            parser to accept the default values
     """
     # hard-coded values
     parser.add_section('core')
@@ -158,21 +157,18 @@ def _set_hardcoded_config_values(parser):
     parser.core.compilecsharp = True
     parser.core.compilevb = True
     parser.core.loadbeta = False
-    parser.add_section('alias')
+    parser.core.rocketmode = False
 
 
 def _get_default_config_parser(config_file_path):
-    """
-    Creates a user settings file under appdata folder
-    with default hard-coded values.
+    """Create a user settings file.
 
     Args:
         config_file_path (str): config file full name and path
 
     Returns:
-        userconfig.PyRevitConfig: pyRevit config file handler
+        :obj:`pyrevit.userconfig.PyRevitConfig`: pyRevit config file handler
     """
-
     logger.debug('Creating default config file at: {} '
                  .format(CONFIG_FILE_PATH))
     touch(config_file_path)
@@ -197,6 +193,7 @@ def _get_default_config_parser(config_file_path):
 
 
 def _setup_admin_config():
+    """Setup the default config file with hardcoded values."""
     if not op.exists(CONFIG_FILE_PATH) \
             and op.isdir(ADMIN_CONFIG_DIR):
         for entry in os.listdir(ADMIN_CONFIG_DIR):
@@ -221,6 +218,7 @@ if not EXEC_PARAMS.doc_mode:
     # this pushes reading settings at first import of this module.
     try:
         user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE_PATH)
+        upgrade_user_config(user_config)
     except Exception as cfg_err:
         logger.debug('Can not read existing confing file at: {} | {}'
                      .format(CONFIG_FILE_PATH, cfg_err))

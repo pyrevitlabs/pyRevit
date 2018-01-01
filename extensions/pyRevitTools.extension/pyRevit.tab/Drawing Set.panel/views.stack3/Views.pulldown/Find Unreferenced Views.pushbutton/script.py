@@ -1,13 +1,18 @@
 """Lists views that have not been references by any other view."""
 
-from scriptutils import this_script
-from revitutils import doc, uidoc
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, View, ViewType
+from pyrevit import revit, DB
+from pyrevit import script
 
-view_ref_prefixes = {ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
-                     ViewType.FloorPlan: 'Floor Plan: ',
-                     ViewType.EngineeringPlan: 'Structural Plan: ',
-                     ViewType.DraftingView: 'Drafting View: '}
+
+output = script.get_output()
+
+
+view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
+                     DB.ViewType.FloorPlan: 'Floor Plan: ',
+                     DB.ViewType.EngineeringPlan: 'Structural Plan: ',
+                     DB.ViewType.DraftingView: 'Drafting View: ',
+                     DB.ViewType.Section: 'Section: ',
+                     DB.ViewType.ThreeD: '3D View: '}
 
 
 def find_unrefed_views(view_list):
@@ -17,23 +22,36 @@ def find_unrefed_views(view_list):
         detnum = v.LookupParameter('Detail Number')
         refsheet = v.LookupParameter('Referencing Sheet')
         refviewport = v.LookupParameter('Referencing Detail')
-        if refsheet and refviewport \
-           and refsheet.AsString() != '' and refviewport.AsString() != '' \
-           or (view_ref_prefixes[v.ViewType] + v.ViewName) in view_refs_names:
+        refprefix = view_ref_prefixes.get(v.ViewType, '')
+        if refsheet \
+                and refviewport \
+                and refsheet.AsString() != '' \
+                and refviewport.AsString() != '' \
+                or (refprefix + v.ViewName) \
+                in view_refs_names:
             continue
         else:
             print('-'*20)
-            print('NAME: {0}\nTYPE: {1}\nID: {2}\nPLACED ON DETAIL/SHEET: {4} / {3}'.format(
-                v.ViewName,
-                str(v.ViewType).ljust(20),
-                this_script.output.linkify(v.Id),
-                sheetnum.AsString() if sheetnum else '-',
-                detnum.AsString() if detnum else '-',
-            ))
+            print('NAME: {0}\nTYPE: {1}\nID: {2}\n'
+                  'PLACED ON DETAIL/SHEET: {4} / {3}'
+                  .format(v.ViewName,
+                          str(v.ViewType).ljust(20),
+                          output.linkify(v.Id),
+                          sheetnum.AsString() if sheetnum else '-',
+                          detnum.AsString() if detnum else '-'
+                          )
+                  )
 
 
-views = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
-view_refs = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_ReferenceViewer).WhereElementIsNotElementType().ToElements()
+views = DB.FilteredElementCollector(revit.doc)\
+          .OfCategory(DB.BuiltInCategory.OST_Views)\
+          .WhereElementIsNotElementType()\
+          .ToElements()
+
+view_refs = DB.FilteredElementCollector(revit.doc)\
+              .OfCategory(DB.BuiltInCategory.OST_ReferenceViewer)\
+              .WhereElementIsNotElementType()\
+              .ToElements()
 
 view_refs_names = set()
 for view_ref in view_refs:
@@ -45,7 +63,7 @@ mviews = []
 
 for v in views:
     if not v.IsTemplate:
-        if v.ViewType == ViewType.DraftingView:
+        if v.ViewType == DB.ViewType.DraftingView:
             dviews.append(v)
         else:
             mviews.append(v)

@@ -3,30 +3,20 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
+from pyrevit.framework import AppDomain, Version
+from pyrevit.framework import Assembly, AssemblyName, AssemblyBuilderAccess
 import pyrevit.coreutils.appdata as appdata
 from pyrevit.coreutils import load_asm_file, find_loaded_asm, get_file_name,\
     make_canonical_name
 from pyrevit.coreutils import get_str_hash, get_revit_instance_count
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit.versionmgr import get_pyrevit_version
 
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
 from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
+from pyrevit.userconfig import user_config
 
-
-if not EXEC_PARAMS.doc_mode:
-    clr.AddReference('PresentationCore')
-    clr.AddReference('RevitAPI')
-    clr.AddReference('RevitAPIUI')
-    clr.AddReference('System.Xml.Linq')
-
-# noinspection PyUnresolvedReferences
-from System import AppDomain, Version
-# noinspection PyUnresolvedReferences
-from System.Reflection import Assembly, AssemblyName
-# noinspection PyUnresolvedReferences
-from System.Reflection.Emit import AssemblyBuilderAccess
 
 # Generic named tuple for passing assembly information to other modules
 ExtensionAssemblyInfo = namedtuple('ExtensionAssemblyInfo',
@@ -38,9 +28,11 @@ logger = get_logger(__name__)
 
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that
-    # the extension is based upon
-    return get_str_hash(BASE_TYPES_DIR_HASH +
-                        extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
+    # the extension is based upon and also the user configuration version
+    return get_str_hash(BASE_TYPES_DIR_HASH
+                        + EXEC_PARAMS.engine_ver
+                        + user_config.get_config_version()
+                        + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
 
 
 def _make_ext_asm_fileid(extension):
@@ -86,7 +78,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
 
     # create assembly
     logger.debug('Building assembly for package: {}'.format(extension))
-    pyrvt_ver_int_tuple = PYREVIT_VERSION.as_int_tuple()
+    pyrvt_ver_int_tuple = get_pyrevit_version().as_int_tuple()
     win_asm_name = AssemblyName(Name=ext_asm_file_name,
                                 Version=Version(pyrvt_ver_int_tuple[0],
                                                 pyrvt_ver_int_tuple[1],

@@ -48,7 +48,7 @@
                         <CheckBox x:Name="indexspace_cb" Margin="10,10,0,5"
                                   IsChecked="True" Click="selection_changed">Include Non-Printable Sheets in Indexing
                         </CheckBox>
-                        <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="False">Combine into one file</CheckBox>
+                        <CheckBox x:Name="combine_cb" Margin="10,10,0,5" IsChecked="False" IsEnabled="True">Combine into one file</CheckBox>
                         <CheckBox x:Name="reverse_cb" Margin="10,10,0,5"
                                   IsChecked="False" Click="selection_changed">Reverse Print Order
                         </CheckBox>

@@ -1,17 +1,17 @@
-__doc__ = 'pick the source object that has the element graphics override you like to match to, '\
-          'and then pick the destination objects one by one and this tool will match the graphics.'\
-          '\n\nShift-Click: Shows Match Config window.'
-
-from revitutils import doc, uidoc
-from scriptutils import this_script
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Transaction, OverrideGraphicSettings, Dimension
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Selection import ObjectType
+from pyrevit import revit, DB, UI
+from pyrevit import script
+from pyrevit import forms
 
 
-my_config = this_script.config
+__helpurl__ = "https://www.youtube.com/watch?v=SrjyyGvarhw"
+
+__doc__ = 'Pick the source object that has the element graphics override '\
+          'you like to match to, and then pick the destination objects '\
+          'one by one and this tool will match the graphics overrides.'\
+          '\n\nShift-Click:\nShows Match Config window.'
+
+
+my_config = script.get_config()
 
 
 def setup_dim_overrides_per_config(from_dim, to_dim):
@@ -19,8 +19,9 @@ def setup_dim_overrides_per_config(from_dim, to_dim):
         to_dim.ValueOverride = from_dim.ValueOverride
     try:
         if my_config.dim_textposition:
-            to_dim.TextPosition = to_dim.Origin - (from_dim.Origin - from_dim.TextPosition)
-    except:
+            to_dim.TextPosition = to_dim.Origin \
+                                  - (from_dim.Origin - from_dim.TextPosition)
+    except Exception:
         pass
 
     if my_config.dim_above:
@@ -56,7 +57,9 @@ def setup_style_per_config(from_style, to_style):
         to_style.SetProjectionFillPatternId(from_style.ProjectionFillPatternId)
 
     if my_config.proj_fill_pattern_visibility:
-        to_style.SetProjectionFillPatternVisible(from_style.IsProjectionFillPatternVisible)
+        to_style.SetProjectionFillPatternVisible(
+            from_style.IsProjectionFillPatternVisible
+            )
 
     if my_config.cut_line_color:
         to_style.SetCutLineColor(from_style.CutLineColor)
@@ -79,53 +82,48 @@ def setup_style_per_config(from_style, to_style):
 
 def get_source_style(element_id):
     # get style of selected element
-    from_style = doc.ActiveView.GetElementOverrides(element_id)
+    from_style = revit.doc.ActiveView.GetElementOverrides(element_id)
     # make a new clean element style
-    src_style = OverrideGraphicSettings()
+    src_style = DB.OverrideGraphicSettings()
     # setup a new style per config and borrow from the selected element's style
     setup_style_per_config(from_style, src_style)
     return src_style
 
 
 def pick_and_match_dim_overrides(src_dim_id):
-    src_dim = doc.GetElement(src_dim_id)
-    while True:
-        try:
-            dest_dim = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element,
-                                                                 'Pick dimensions to match their overrides.'))
+    with forms.WarningBar(title='Pick dimensions to match overrides:'):
+        src_dim = revit.doc.GetElement(src_dim_id)
+        while True:
+            dest_dim = revit.pick_element()
 
-            if isinstance(dest_dim, Dimension):
-                with Transaction(doc, 'Match Dimension Overrides') as t:
-                    t.Start()
+            if not dest_dim:
+                break
+
+            if isinstance(dest_dim, DB.Dimension):
+                with revit.Transaction('Match Dimension Overrides'):
                     setup_dim_overrides_per_config(src_dim, dest_dim)
-                    t.Commit()
-        except:
-            break
 
 
 def pick_and_match_styles(src_style):
-    while True:
-        try:
-            dest_element = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element,
-                                                                     'Pick objects to change their graphic overrides.'))
-            curview = doc.ActiveView
+    with forms.WarningBar(title='Pick objects to match overrides:'):
+        while True:
+            dest_element = revit.pick_element()
 
-            with Transaction(doc, 'Match Graphics Overrides') as t:
-                t.Start()
-                curview.SetElementOverrides(dest_element.Id, src_style)
-                t.Commit()
-        except:
-            break
+            if not dest_element:
+                break
+
+            with revit.Transaction('Match Graphics Overrides'):
+                revit.activeview.SetElementOverrides(dest_element.Id,
+                                                     src_style)
 
 
 # fixme: modify to remember source style
-try:
-    source_element = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element, 'Pick source object.'))
+with forms.WarningBar(title='Pick source object:'):
+    source_element = revit.pick_element()
 
-    if isinstance(source_element, Dimension):
+if source_element:
+    if isinstance(source_element, DB.Dimension):
         pick_and_match_dim_overrides(source_element.Id)
     else:
         source_style = get_source_style(source_element.Id)
         pick_and_match_styles(source_style)
-except:
-    pass

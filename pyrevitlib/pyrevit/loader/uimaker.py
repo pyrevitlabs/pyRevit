@@ -11,7 +11,8 @@ from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
     STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
     PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
     PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX,\
-    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER
+    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER,\
+    PANEL_PUSH_BUTTON_POSTFIX
 
 
 logger = get_logger(__name__)
@@ -21,9 +22,10 @@ CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
 
 
 class UIMakerParams:
-    def __init__(self, parent_ui, component, asm_info, create_beta=False):
-        self.parent_ui = parent_ui
-        self.component = component
+    def __init__(self, par_ui, par_cmp, cmp, asm_info, create_beta=False):
+        self.parent_ui = par_ui
+        self.parent_cmp = par_cmp
+        self.component = cmp
         self.asm_info = asm_info
         self.create_beta_cmds = create_beta
 
@@ -146,6 +148,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     smartbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -158,9 +161,11 @@ def _produce_ui_smartbutton(ui_maker_params):
             smartbutton.name,
             ext_asm_info.location,
             _get_effective_classname(smartbutton),
-            smartbutton.icon_file,
+            smartbutton.icon_file or parent.icon_file,
             _make_button_tooltip(smartbutton),
             _make_button_tooltip_ext(smartbutton, ext_asm_info.name),
+            smartbutton.ttvideo_file,
+            smartbutton.get_help_url() or '',
             smartbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
@@ -171,10 +176,8 @@ def _produce_ui_smartbutton(ui_maker_params):
     logger.debug('Importing smart button as module: {}'.format(smartbutton))
     # replacing EXEC_PARAMS.command_name value with button name so the
     # init script can log under its own name
-    orig_cmd_name = EXEC_PARAMS.command_name
-    orig_cmd_path = EXEC_PARAMS.command_path
-    EXEC_PARAMS.command_name = smartbutton.name
-    EXEC_PARAMS.command_path = smartbutton.get_full_script_address()
+    __builtins__['__commandname__'] = smartbutton.name
+    __builtins__['__commandpath__'] = smartbutton.get_full_script_address()
 
     new_uibutton = parent_ui_item.button(smartbutton.name)
 
@@ -183,8 +186,8 @@ def _produce_ui_smartbutton(ui_maker_params):
         importedscript = imp.load_source(smartbutton.unique_name,
                                          smartbutton.script_file)
         # resetting EXEC_PARAMS.command_name to original
-        EXEC_PARAMS.command_name = orig_cmd_name
-        EXEC_PARAMS.command_path = orig_cmd_path
+        __builtins__['__commandname__'] = None
+        __builtins__['__commandpath__'] = None
         logger.debug('Import successful: {}'.format(importedscript))
         logger.debug('Running self initializer: {}'.format(smartbutton))
 
@@ -220,6 +223,7 @@ def _produce_ui_linkbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -242,9 +246,11 @@ def _produce_ui_linkbutton(ui_maker_params):
             linked_asm.Location,
             _make_full_class_name(linked_asm.GetName().Name,
                                   linkbutton.command_class),
-            linkbutton.icon_file,
+            linkbutton.icon_file or parent.icon_file,
             _make_button_tooltip(linkbutton),
             _make_button_tooltip_ext(linkbutton, ext_asm_info.name),
+            None,
+            None,
             None,
             update_if_exists=True,
             ui_title=_make_ui_title(linkbutton))
@@ -261,6 +267,7 @@ def _produce_ui_pushbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
     pushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -273,9 +280,11 @@ def _produce_ui_pushbutton(ui_maker_params):
             pushbutton.name,
             ext_asm_info.location,
             _get_effective_classname(pushbutton),
-            pushbutton.icon_file,
+            pushbutton.icon_file or parent.icon_file,
             _make_button_tooltip(pushbutton),
             _make_button_tooltip_ext(pushbutton, ext_asm_info.name),
+            pushbutton.ttvideo_file,
+            pushbutton.get_help_url() or '',
             pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
@@ -352,6 +361,7 @@ def _produce_ui_stacks(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_panel = ui_maker_params.parent_ui
+    stack_parent = ui_maker_params.parent_cmp
     stack_cmp = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
@@ -374,6 +384,7 @@ def _produce_ui_stacks(ui_maker_params):
         # more items it will raise an error)
         _recursively_produce_ui_items(
             UIMakerParams(parent_ui_panel,
+                          stack_parent,
                           stack_cmp,
                           ext_asm_info,
                           ui_maker_params.create_beta_cmds))
@@ -393,6 +404,39 @@ def _produce_ui_stacks(ui_maker_params):
     except Exception as err:
         logger.error('Can not create stack under this parent: {} | {}'
                      .format(parent_ui_panel, err))
+
+
+def _produce_ui_panelpushbutton(ui_maker_params):
+    """
+
+    Args:
+        ui_maker_params (UIMakerParams): Standard parameters for making ui item
+    """
+    parent_ui_item = ui_maker_params.parent_ui
+    parent = ui_maker_params.parent_cmp
+    paneldlgbutton = ui_maker_params.component
+    ext_asm_info = ui_maker_params.asm_info
+
+    if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
+        return None
+
+    logger.debug('Producing panel button: {}'.format(paneldlgbutton))
+    try:
+        parent_ui_item.create_panel_push_button(
+            paneldlgbutton.name,
+            ext_asm_info.location,
+            _get_effective_classname(paneldlgbutton),
+            _make_button_tooltip(paneldlgbutton),
+            _make_button_tooltip_ext(paneldlgbutton, ext_asm_info.name),
+            paneldlgbutton.ttvideo_file,
+            paneldlgbutton.get_help_url() or '',
+            paneldlgbutton.avail_class_name,
+            update_if_exists=True)
+
+        return parent_ui_item.button(paneldlgbutton.name)
+    except PyRevitException as err:
+        logger.error('UI error: {}'.format(err.message))
+        return None
 
 
 def _produce_ui_panels(ui_maker_params):
@@ -451,6 +495,7 @@ _component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
                             LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
                             SEPARATOR_IDENTIFIER: _produce_ui_separator,
                             SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
+                            PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
                             }
 
 
@@ -462,6 +507,7 @@ def _recursively_produce_ui_items(ui_maker_params):
                                  sub_cmp))
             ui_item = _component_creation_dict[sub_cmp.type_id](
                 UIMakerParams(ui_maker_params.parent_ui,
+                              ui_maker_params.component,
                               sub_cmp,
                               ui_maker_params.asm_info,
                               ui_maker_params.create_beta_cmds))
@@ -473,6 +519,7 @@ def _recursively_produce_ui_items(ui_maker_params):
         if ui_item and sub_cmp.is_container:
                 _recursively_produce_ui_items(
                     UIMakerParams(ui_item,
+                                  ui_maker_params.component,
                                   sub_cmp,
                                   ui_maker_params.asm_info,
                                   ui_maker_params.create_beta_cmds))
@@ -490,7 +537,7 @@ def update_pyrevit_ui(parsed_ext, ext_asm_info, create_beta=False):
     logger.debug('Creating/Updating ui for extension: {}'
                  .format(parsed_ext))
     _recursively_produce_ui_items(
-        UIMakerParams(current_ui, parsed_ext, ext_asm_info, create_beta))
+        UIMakerParams(current_ui, None, parsed_ext, ext_asm_info, create_beta))
 
 
 def cleanup_pyrevit_ui():

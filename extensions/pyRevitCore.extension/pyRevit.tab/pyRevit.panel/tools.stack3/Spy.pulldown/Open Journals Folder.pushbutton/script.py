@@ -1,9 +1,9 @@
 """Opens the Revit journals folder for current user."""
 
 
-from scriptutils import coreutils
-import revitutils.journals as journals
+from pyrevit import coreutils
+from pyrevit import revit
 
 
-journals_folder = journals.get_journals_folder()
+journals_folder = revit.get_journals_folder()
 coreutils.open_folder_in_explorer(journals_folder)

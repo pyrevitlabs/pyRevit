@@ -12,12 +12,28 @@ lib/*
 !lib/README.md
 !lib/enum
 !lib/customcollections
+!lib/requests
+!lib/urllib3
 
 # ignore pyCharm workspace settings
 .idea/workspace.xml
 
+# ignore visual studio files
+.vs\*
+obj\*
+pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
+pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
+pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/obj/
+pyrevitlib/pyrevit/loader/addin/272/Source/\.vs/
+pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/bin/
+pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/obj/
+pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/\.vs/
+pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/bin/
+pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
+
 # ignore sphinx build files
 docs/_*
+!docs/_static
 
 # ignore release files
 release/*.exe

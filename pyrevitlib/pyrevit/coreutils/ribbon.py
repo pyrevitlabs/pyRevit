@@ -1,37 +1,14 @@
 from collections import OrderedDict
-
-import clr
+import uuid
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils.logger import get_logger
-
-clr.AddReference('RevitAPIUI')
-clr.AddReference('PresentationCore')
-# noinspection PyUnresolvedReferences
-from System import Uri
-# noinspection PyUnresolvedReferences
-from System.Windows.Media.Imaging import BitmapImage,\
-                                         BitmapCacheOption, BitmapCreateOptions
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import PushButton, PulldownButton, SplitButton
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI import RibbonItemData, PushButtonData,\
-                              PulldownButtonData, SplitButtonData
-
-try:
-    clr.AddReference('AdWindows')
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import ComponentManager
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import RibbonRowPanel, RibbonButton, \
-        RibbonFoldPanel, RibbonSplitButton
-    # noinspection PyUnresolvedReferences
-    from Autodesk.Windows import RibbonToggleButton, RibbonSeparator,\
-        RibbonPanelBreak, RibbonRowPanel, RibbonSeparator
-except Exception as err:
-    raise PyRevitException('Can not establish ui module. '
-                           'Error referencing AdWindow | {}'.format(err))
+from pyrevit.framework import System, Uri
+from pyrevit.framework import IO
+from pyrevit.framework import Imaging
+from pyrevit.framework import Windows
+from pyrevit.framework import BindingFlags
+from pyrevit.api import UI, AdWindows
 
 
 logger = get_logger(__name__)
@@ -43,6 +20,8 @@ ICON_SMALL = 16
 ICON_MEDIUM = 24
 ICON_LARGE = 32
 
+DEFAULT_DPI = 96
+
 
 # Helper classes and functions -------------------------------------------------
 class PyRevitUIError(PyRevitException):
@@ -51,25 +30,71 @@ class PyRevitUIError(PyRevitException):
 
 class _ButtonIcons:
     def __init__(self, file_address):
-        self.smallBitmap = self.create_bitmap(file_address, ICON_SMALL)
-        self.mediumBitmap = self.create_bitmap(file_address, ICON_MEDIUM)
-        self.largeBitmap = self.create_bitmap(file_address, ICON_LARGE)
+        self.icon_file_path = file_address
+        self.filestream = IO.FileStream(file_address,
+                                        IO.FileMode.Open,
+                                        IO.FileAccess.Read)
 
     @staticmethod
-    def create_bitmap(file_address, image_size):
-        logger.debug('Creating {0}x{0} bitmap from: {1}'
-                     .format(image_size, file_address))
-        bitmap_image = BitmapImage()
-        bitmap_image.BeginInit()
-        bitmap_image.UriSource = Uri(file_address)
-        bitmap_image.CacheOption = BitmapCacheOption.OnLoad
-        bitmap_image.CreateOptions = BitmapCreateOptions.DelayCreation
-        dpi_scalefactor = 96.0 / BitmapImage(Uri(file_address)).DpiX
-        adjusted_size = image_size / dpi_scalefactor
-        bitmap_image.DecodePixelHeight = adjusted_size
-        bitmap_image.EndInit()
-        return bitmap_image
+    def recolour(image_data, size, stride, color):
+        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
+        step = stride / size
+        for i in range(0, stride, step):
+            for j in range(0, stride, step):
+                idx = (i * size) + j
+                # R = image_data[idx+2]
+                # G = image_data[idx+1]
+                # B = image_data[idx]
+                # luminance = (0.299*R + 0.587*G + 0.114*B)
+                image_data[idx] = color >> 0 & 0xff       # blue
+                image_data[idx+1] = color >> 8 & 0xff     # green
+                image_data[idx+2] = color >> 16 & 0xff    # red
 
+    def create_bitmap(self, icon_size):
+        logger.debug('Creating {0}x{0} bitmap from: {1}'
+                     .format(icon_size, self.icon_file_path))
+        adjusted_icon_size = icon_size * 2
+        adjusted_dpi = DEFAULT_DPI * 2
+        screen_scaling = HOST_APP.proc_screen_scalefactor
+
+        base_image = Imaging.BitmapImage()
+        base_image.BeginInit()
+        base_image.StreamSource = self.filestream
+        base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
+        base_image.EndInit()
+        # self.filestream.Seek(0, IO.SeekOrigin.Begin)
+
+        image_size = base_image.PixelWidth
+        image_format = base_image.Format
+        image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
+
+        stride = image_size * image_byte_per_pixel
+        array_size = stride * image_size
+        image_data = System.Array.CreateInstance(System.Byte, array_size)
+        base_image.CopyPixels(image_data, stride, 0)
+
+        bitmap_source = \
+            Imaging.BitmapSource.Create(adjusted_icon_size * screen_scaling,
+                                        adjusted_icon_size * screen_scaling,
+                                        adjusted_dpi * screen_scaling,
+                                        adjusted_dpi * screen_scaling,
+                                        image_format,
+                                        None,
+                                        image_data,
+                                        stride)
+        return bitmap_source
+
+    @property
+    def smallBitmap(self):
+        return self.create_bitmap(ICON_SMALL)
+
+    @property
+    def mediumBitmap(self):
+        return self.create_bitmap(ICON_MEDIUM)
+
+    @property
+    def largeBitmap(self):
+        return self.create_bitmap(ICON_LARGE)
 
 
 # Superclass to all ui item classes --------------------------------------------
@@ -112,6 +137,16 @@ class _GenericPyRevitUIContainer:
         self._rvtapi_object = rvtapi_obj
         self.itemdata_mode = False
         self._dirty = True
+
+    def get_adwindows_object(self):
+        rvtapi_obj = self._rvtapi_object
+        getRibbonItemMethod = \
+            rvtapi_obj.GetType().GetMethod(
+                'getRibbonItem',
+                BindingFlags.NonPublic | BindingFlags.Instance
+                )
+        if getRibbonItemMethod:
+            return getRibbonItemMethod.Invoke(rvtapi_obj, None)
 
     def get_flagged_children(self, state=True):
         flagged_cmps = []
@@ -201,105 +236,106 @@ class _GenericRevitNativeUIContainer(_GenericPyRevitUIContainer):
         return True
 
     def deactivate(self):
-        raise PyRevitUIError('Can not de/activate native item: {}'.format(self))
+        raise PyRevitUIError('Can not de/activate native item: {}'
+                             .format(self))
 
     activate = deactivate
 
 
 class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_button):
+    def __init__(self, adwnd_ribbon_button):
         _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = \
-            unicode(adskwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
-        self._rvtapi_object = adskwnd_ribbon_button
+            unicode(adwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
+        self._rvtapi_object = adwnd_ribbon_button
 
 
 class _RevitNativeRibbonGroupItem(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_item):
+    def __init__(self, adwnd_ribbon_item):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_item.Source.Title
-        self._rvtapi_object = adskwnd_ribbon_item
+        self.name = adwnd_ribbon_item.Source.Title
+        self._rvtapi_object = adwnd_ribbon_item
 
         # finding children on this button group
-        for adskwnd_ribbon_button in adskwnd_ribbon_item.Items:
-            self._add_component(_RevitNativeRibbonButton(adskwnd_ribbon_button))
+        for adwnd_ribbon_button in adwnd_ribbon_item.Items:
+            self._add_component(_RevitNativeRibbonButton(adwnd_ribbon_button))
 
     button = _GenericRevitNativeUIContainer._get_component
 
 
 class _RevitNativeRibbonPanel(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_panel):
+    def __init__(self, adwnd_ribbon_panel):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_panel.Source.Title
-        self._rvtapi_object = adskwnd_ribbon_panel
+        self.name = adwnd_ribbon_panel.Source.Title
+        self._rvtapi_object = adwnd_ribbon_panel
 
-        all_adskwnd_ribbon_items = []
+        all_adwnd_ribbon_items = []
         # getting a list of existing items under this panel
         # RibbonFoldPanel items are not visible. they automatically fold
         # buttons into stack on revit ui resize since RibbonFoldPanel are
         # not visible it does not make sense to create objects for them.
         # This pre-cleaner loop, finds the RibbonFoldPanel items and
         # adds the children to the main list
-        for adskwnd_ribbon_item in adskwnd_ribbon_panel.Source.Items:
-            if isinstance(adskwnd_ribbon_item, RibbonFoldPanel):
+        for adwnd_ribbon_item in adwnd_ribbon_panel.Source.Items:
+            if isinstance(adwnd_ribbon_item, AdWindows.RibbonFoldPanel):
                 try:
-                    for sub_rvtapi_item in adskwnd_ribbon_item.Items:
-                        all_adskwnd_ribbon_items.append(sub_rvtapi_item)
+                    for sub_rvtapi_item in adwnd_ribbon_item.Items:
+                        all_adwnd_ribbon_items.append(sub_rvtapi_item)
                 except Exception as append_err:
                     logger.debug('Can not get RibbonFoldPanel children: {} '
-                                 '| {}'.format(adskwnd_ribbon_item,
+                                 '| {}'.format(adwnd_ribbon_item,
                                                append_err))
             else:
-                all_adskwnd_ribbon_items.append(adskwnd_ribbon_item)
+                all_adwnd_ribbon_items.append(adwnd_ribbon_item)
 
         # processing the panel slideout for exising ribbon items
-        for adskwnd_slideout_item \
-                in adskwnd_ribbon_panel.Source.SlideOutPanelItemsView:
-            all_adskwnd_ribbon_items.append(adskwnd_slideout_item)
+        for adwnd_slideout_item \
+                in adwnd_ribbon_panel.Source.SlideOutPanelItemsView:
+            all_adwnd_ribbon_items.append(adwnd_slideout_item)
 
         # processing the cleaned children list and
         # creating pyRevit native ribbon objects
-        for adskwnd_ribbon_item in all_adskwnd_ribbon_items:
+        for adwnd_ribbon_item in all_adwnd_ribbon_items:
             try:
-                if isinstance(adskwnd_ribbon_item, RibbonButton) \
-                        or isinstance(adskwnd_ribbon_item, RibbonToggleButton):
+                if isinstance(adwnd_ribbon_item,
+                              AdWindows.RibbonButton) \
+                        or isinstance(adwnd_ribbon_item,
+                                      AdWindows.RibbonToggleButton):
                     self._add_component(
-                        _RevitNativeRibbonButton(adskwnd_ribbon_item)
-                    )
-                elif isinstance(adskwnd_ribbon_item, RibbonSplitButton):
+                        _RevitNativeRibbonButton(adwnd_ribbon_item))
+                elif isinstance(adwnd_ribbon_item,
+                                AdWindows.RibbonSplitButton):
                     self._add_component(
-                        _RevitNativeRibbonGroupItem(adskwnd_ribbon_item)
-                    )
+                        _RevitNativeRibbonGroupItem(adwnd_ribbon_item))
 
             except Exception as append_err:
                 logger.debug('Can not create native ribbon item: {} '
-                             '| {}'.format(adskwnd_ribbon_item, append_err))
+                             '| {}'.format(adwnd_ribbon_item, append_err))
 
     ribbon_item = _GenericRevitNativeUIContainer._get_component
 
 
 class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
-    def __init__(self, adskwnd_ribbon_tab):
+    def __init__(self, adwnd_ribbon_tab):
         _GenericRevitNativeUIContainer.__init__(self)
 
-        self.name = adskwnd_ribbon_tab.Title
-        self._rvtapi_object = adskwnd_ribbon_tab
+        self.name = adwnd_ribbon_tab.Title
+        self._rvtapi_object = adwnd_ribbon_tab
 
         # getting a list of existing panels under this tab
         try:
-            for adskwnd_ribbon_panel in adskwnd_ribbon_tab.Panels:
+            for adwnd_ribbon_panel in adwnd_ribbon_tab.Panels:
                 # only listing visible panels
-                if adskwnd_ribbon_panel.IsVisible:
+                if adwnd_ribbon_panel.IsVisible:
                     self._add_component(
-                        _RevitNativeRibbonPanel(adskwnd_ribbon_panel)
+                        _RevitNativeRibbonPanel(adwnd_ribbon_panel)
                     )
         except Exception as append_err:
             logger.debug('Can not get native panels for this native tab: {} '
-                         '| {}'.format(adskwnd_ribbon_tab,
-                                       append_err))
+                         '| {}'.format(adwnd_ribbon_tab, append_err))
 
     ribbon_panel = _GenericRevitNativeUIContainer._get_component
 
@@ -308,7 +344,14 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
         return False
 
 
-# Classes holding non-native ui elements ---------------------------------------
+# Classes holding non-native ui elements --------------------------------------
+class _PyRevitSeparator(_GenericPyRevitUIContainer):
+    def __init__(self):
+        _GenericPyRevitUIContainer.__init__(self)
+        self.name = uuid.uuid1()
+        self.itemdata_mode = True
+
+
 class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
     def __init__(self, ribbon_button):
         _GenericPyRevitUIContainer.__init__(self)
@@ -319,7 +362,8 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         # when container is in itemdata_mode, self._rvtapi_object is a
         # RibbonItemData and not an actual ui item a sunsequent call to
         # create_data_items will create ui for RibbonItemData objects
-        self.itemdata_mode = isinstance(self._rvtapi_object, RibbonItemData)
+        self.itemdata_mode = isinstance(self._rvtapi_object,
+                                        UI.RibbonItemData)
 
         self.ui_title = self.name
         if not self.itemdata_mode:
@@ -333,28 +377,15 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
             button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
-
-        try:
-            self.get_rvtapi_object().Image = button_icon.smallBitmap
-            self.get_rvtapi_object().LargeImage = button_icon.mediumBitmap
+            rvtapi_obj = self.get_rvtapi_object()
+            rvtapi_obj.Image = button_icon.smallBitmap
             if icon_size == ICON_LARGE:
-                self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+                rvtapi_obj.LargeImage = button_icon.largeBitmap
+            else:
+                rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
-                                 .format(icon_err))
-
-    def get_icon(self):
-        try:
-            if self.get_rvtapi_object().Image:
-                return self.get_rvtapi_object().Image.UriSource.LocalPath
-            elif self.get_rvtapi_object().LargeImage:
-                return self.get_rvtapi_object().LargeImage.UriSource.LocalPath
-        except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
+            raise PyRevitUIError('Error in applying icon to button: {}'
                                  .format(icon_err))
 
     def set_tooltip(self, tooltip):
@@ -372,6 +403,20 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         except Exception as tooltip_err:
             raise PyRevitUIError('Item does not have extended '
                                  'tooltip property: {}'.format(tooltip_err))
+
+    def set_tooltip_video(self, tooltip_video):
+        try:
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj.ToolTip:
+                adwindows_obj.ToolTip.ExpandedVideo = Uri(tooltip_video)
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting tooltip video {} | {} '
+                                 .format(tooltip_video, ttvideo_err))
+
+    def set_contexthelp(self, ctxhelpurl):
+        if ctxhelpurl:
+            ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
+            self.get_rvtapi_object().SetContextualHelp(ch)
 
     def set_title(self, ui_title):
         if self.itemdata_mode:
@@ -415,7 +460,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         # itemdata_mode, only the necessary RibbonItemData objects will
         # be created for children a sunsequent call to create_data_items
         # will create ui for RibbonItemData objects
-        self.itemdata_mode = isinstance(self._rvtapi_object, RibbonItemData)
+        self.itemdata_mode = isinstance(self._rvtapi_object,
+                                        UI.RibbonItemData)
 
         # if button group shows the active button icon, then the child
         # buttons need to have large icons
@@ -432,8 +478,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonButton(revit_button))
 
     def _is_splitbutton(self):
-        return isinstance(self._rvtapi_object, SplitButton) \
-               or isinstance(self._rvtapi_object, SplitButtonData)
+        return isinstance(self._rvtapi_object, UI.SplitButton) \
+               or isinstance(self._rvtapi_object, UI.SplitButtonData)
 
     def set_rvtapi_object(self, rvtapi_obj):
         _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
@@ -454,6 +500,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_ribbon_item.ItemText = pyrvt_ui_item.get_title()
                 # replace data object with the newly create ribbon item
                 pyrvt_ui_item.set_rvtapi_object(rvtapi_ribbon_item)
+            elif isinstance(pyrvt_ui_item, _PyRevitSeparator):
+                self.get_rvtapi_object().AddSeparator()
 
         self.itemdata_mode = False
 
@@ -467,35 +515,24 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Item is not a split button. '
                                  '| {}'.format(sync_item_err))
 
-    def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
+    def set_icon(self, icon_file, icon_size=ICON_LARGE):
         try:
             button_icon = _ButtonIcons(icon_file)
-        except Exception:
-            raise PyRevitUIError('Can not create icon from given file: {} '
-                                 '| {}'.format(icon_file, self))
-
-        try:
-            self.get_rvtapi_object().Image = button_icon.smallBitmap
-            self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+            rvtapi_obj = self.get_rvtapi_object()
+            rvtapi_obj.Image = button_icon.smallBitmap
             if icon_size == ICON_LARGE:
-                self.get_rvtapi_object().LargeImage = button_icon.largeBitmap
+                rvtapi_obj.LargeImage = button_icon.largeBitmap
+            else:
+                rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
-                                 .format(icon_err))
-
-    def get_icon(self):
-        try:
-            if self.get_rvtapi_object().Image:
-                return self.get_rvtapi_object().Image.UriSource.LocalPath
-            elif self.get_rvtapi_object().LargeImage:
-                return self.get_rvtapi_object().LargeImage.UriSource.LocalPath
-        except Exception as icon_err:
-            raise PyRevitUIError('Item does not have image property: {}'
+            raise PyRevitUIError('Error in applying icon to button: {}'
                                  .format(icon_err))
 
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path='', tooltip='', tooltip_ext='',
+                           icon_path='',
+                           tooltip='', tooltip_ext='', tooltip_video='',
+                           cxthelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
@@ -513,22 +550,11 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                 .AvailabilityClassName = avail_class_name
                 except Exception as asm_update_err:
                         logger.debug('Error updating button asm info: {} '
-                                     '| {}'.format(button_name, asm_update_err))
+                                     '| {}'.format(button_name,
+                                                   asm_update_err))
 
                 if not icon_path:
-                    logger.debug('Using parent item icon for {}'
-                                 .format(existing_item))
-                    parent_icon_path = self.get_icon()
-                    if parent_icon_path:
-                        # if button group shows the active button icon,
-                        # then the child buttons need to have large icons
-                        existing_item.set_icon(parent_icon_path,
-                                               icon_size=ICON_LARGE
-                                               if self._use_active_item_icon
-                                               else ICON_MEDIUM)
-                    else:
-                        logger.debug('Can not get item icon from {}'
-                                     .format(self))
+                    logger.debug('Icon not set for {}'.format(button_name))
                 else:
                     try:
                         # if button group shows the active button icon,
@@ -543,6 +569,11 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    existing_item.set_tooltip_video(tooltip_video)
+
+                existing_item.set_contexthelp(cxthelpurl)
+
                 if ui_title:
                     existing_item.set_title(ui_title)
 
@@ -555,7 +586,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         logger.debug('Parent does not include this button. Creating: {}'
                      .format(button_name))
         try:
-            button_data = PushButtonData(button_name, button_name,
+            button_data = UI.PushButtonData(button_name, button_name,
                                          asm_location, class_name)
             if avail_class_name:
                 button_data.AvailabilityClassName = avail_class_name
@@ -570,19 +601,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 new_button.set_title(ui_title)
 
             if not icon_path:
-                logger.debug('Using parent item icon for {}'
-                             .format(new_button))
-                parent_icon_path = self.get_icon()
-                if parent_icon_path:
-                    # if button group shows the active button icon,
-                    # then the child buttons need to have large icons
-                    new_button.set_icon(parent_icon_path,
-                                        icon_size=ICON_LARGE
-                                        if self._use_active_item_icon
-                                        else ICON_MEDIUM)
-                else:
-                    logger.debug('Can not get item icon from {}'
-                                 .format(self))
+                logger.debug('Icon not set for {}'.format(button_name))
             else:
                 logger.debug('Creating icon for push button {} from file: {}'
                              .format(button_name, icon_path))
@@ -601,6 +620,10 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
+            if tooltip_video:
+                new_button.set_tooltip_video(tooltip_video)
+
+            new_button.set_contexthelp(cxthelpurl)
 
             new_button.set_dirty_flag()
             self._add_component(new_button)
@@ -610,7 +633,11 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                  '| {}'.format(create_err))
 
     def add_separator(self):
-        self.get_rvtapi_object().AddSeparator()
+        if not self.itemdata_mode:
+            self.get_rvtapi_object().AddSeparator()
+        else:
+            sep_cmp = _PyRevitSeparator()
+            self._add_component(sep_cmp)
         self._dirty = True
 
 
@@ -619,11 +646,13 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
     button = _GenericPyRevitUIContainer._get_component
     ribbon_item = _GenericPyRevitUIContainer._get_component
 
-    def __init__(self, rvt_ribbon_panel):
+    def __init__(self, rvt_ribbon_panel, parent_tab):
         _GenericPyRevitUIContainer.__init__(self)
 
         self.name = rvt_ribbon_panel.Name
         self._rvtapi_object = rvt_ribbon_panel
+
+        self.parent_tab = parent_tab
 
         # when container is in itemdata_mode, only the necessary
         # RibbonItemData objects will be created for children a sunsequent
@@ -637,13 +666,19 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             # feeding _sub_native_ribbon_items with an instance of
             # _PyRevitRibbonGroupItem for existing group items
             # _PyRevitRibbonPanel will find its existing ribbon items internally
-            if isinstance(revit_ribbon_item, PulldownButton):
-                self._add_component(_PyRevitRibbonGroupItem(revit_ribbon_item))
-            elif isinstance(revit_ribbon_item, PushButton):
+            if isinstance(revit_ribbon_item, UI.PulldownButton):
+                self._add_component(
+                    _PyRevitRibbonGroupItem(revit_ribbon_item))
+            elif isinstance(revit_ribbon_item, UI.PushButton):
                 self._add_component(_PyRevitRibbonButton(revit_ribbon_item))
             else:
                 raise PyRevitUIError('Can not determin ribbon item type: {}'
                                      .format(revit_ribbon_item))
+
+    def get_adwindows_object(self):
+        for panel in self.parent_tab.Panels:
+            if panel.Source and panel.Source.Title == self.name:
+                return panel
 
     def open_stack(self):
         self.itemdata_mode = True
@@ -721,8 +756,17 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             if isinstance(pyrvt_ui_item, _PyRevitRibbonGroupItem):
                 pyrvt_ui_item.create_data_items()
 
+    def set_dlglauncher(self, dlg_button):
+        panel_adwnd_obj = self.get_adwindows_object()
+        button_adwnd_obj = dlg_button.get_adwindows_object()
+        panel_adwnd_obj.Source.Items.Remove(button_adwnd_obj)
+        panel_adwnd_obj.Source.DialogLauncher = button_adwnd_obj
+        logger.debug('Added panel dialog button'.format(dlg_button.name))
+
     def create_push_button(self, button_name, asm_location, class_name,
-                           icon_path='', tooltip='', tooltip_ext='',
+                           icon_path='',
+                           tooltip='', tooltip_ext='', tooltip_video='',
+                           ctxhelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
@@ -743,13 +787,22 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    existing_item.set_tooltip_video(tooltip_video)
+
+                existing_item.set_contexthelp(ctxhelpurl)
+
                 if ui_title:
                     existing_item.set_title(ui_title)
-                try:
-                    existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
-                except PyRevitUIError as iconerr:
-                    logger.error('Error adding icon for {} '
-                                 '| {}'.format(button_name, iconerr))
+
+                if not icon_path:
+                    logger.debug('Icon not set for {}'.format(button_name))
+                else:
+                    try:
+                        existing_item.set_icon(icon_path, icon_size=ICON_LARGE)
+                    except PyRevitUIError as iconerr:
+                        logger.error('Error adding icon for {} '
+                                     '| {}'.format(button_name, iconerr))
                 existing_item.activate()
             else:
                 raise PyRevitUIError('Push button already exits and update '
@@ -758,7 +811,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             logger.debug('Parent does not include this button. Creating: {}'
                          .format(button_name))
             try:
-                button_data = PushButtonData(button_name, button_name,
+                button_data = UI.PushButtonData(button_name, button_name,
                                              asm_location, class_name)
                 if avail_class_name:
                     button_data.AvailabilityClassName = avail_class_name
@@ -789,6 +842,10 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
+                if tooltip_video:
+                    new_button.set_tooltip_video(tooltip_video)
+
+                new_button.set_contexthelp(ctxhelpurl)
 
                 new_button.set_dirty_flag()
                 self._add_component(new_button)
@@ -849,7 +906,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
     def create_pulldown_button(self, item_name, icon_path,
                                update_if_exists=False):
-        self._create_button_group(PulldownButtonData, item_name, icon_path,
+        self._create_button_group(UI.PulldownButtonData, item_name, icon_path,
                                   update_if_exists)
 
     def create_split_button(self, item_name, icon_path,
@@ -858,7 +915,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Revits earlier than 2017 do not support '
                                  'split buttons in a stack.')
         else:
-            self._create_button_group(SplitButtonData, item_name, icon_path,
+            self._create_button_group(UI.SplitButtonData, item_name, icon_path,
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(True)
 
@@ -868,9 +925,22 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Revits earlier than 2017 do not support '
                                  'split buttons in a stack.')
         else:
-            self._create_button_group(SplitButtonData, item_name, icon_path,
+            self._create_button_group(UI.SplitButtonData, item_name, icon_path,
                                       update_if_exists)
             self.ribbon_item(item_name).sync_with_current_item(False)
+
+    def create_panel_push_button(self, button_name, asm_location, class_name,
+                                 tooltip='', tooltip_ext='', tooltip_video='',
+                                 cxthelpurl=None,
+                                 avail_class_name=None,
+                                 update_if_exists=False):
+        self.create_push_button(button_name,
+                                asm_location, class_name,
+                                None, tooltip, tooltip_ext, tooltip_video,
+                                cxthelpurl,
+                                avail_class_name,
+                                update_if_exists, None)
+        self.set_dlglauncher(self.button(button_name))
 
 
 class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
@@ -892,7 +962,8 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                 # feeding _sub_pyrvt_ribbon_panels with an instance of
                 # _PyRevitRibbonPanel for existing panels _PyRevitRibbonPanel
                 # will find its existing ribbon items internally
-                new_pyrvt_panel = _PyRevitRibbonPanel(revit_ui_panel)
+                new_pyrvt_panel = _PyRevitRibbonPanel(revit_ui_panel,
+                                                      self._rvtapi_object)
                 self._add_component(new_pyrvt_panel)
         except:
             # if .GetRibbonPanels fails, this tab is an existing native tab
@@ -926,7 +997,8 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                     HOST_APP.uiapp.CreateRibbonPanel(self.name, panel_name)
                 # creating _PyRevitRibbonPanel object and
                 # add new panel to list of current panels
-                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel)
+                pyrvt_ribbon_panel = _PyRevitRibbonPanel(ribbon_panel,
+                                                         self._rvtapi_object)
                 pyrvt_ribbon_panel.set_dirty_flag()
                 self._add_component(pyrvt_ribbon_panel)
 
@@ -948,7 +1020,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
         # Iterating over tabs,
         # because ComponentManager.Ribbon.Tabs.FindTab(tab.name)
         # does not return invisible tabs
-        for revit_ui_tab in ComponentManager.Ribbon.Tabs:
+        for revit_ui_tab in AdWindows.ComponentManager.Ribbon.Tabs:
             # feeding self._sub_pyrvt_ribbon_tabs with an instance of
             # _PyRevitRibbonTab or _RevitNativeRibbonTab for each existing
             # tab. _PyRevitRibbonTab or _RevitNativeRibbonTab will find
@@ -995,7 +1067,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                 # not return the created tab object.
                 # so find the tab object in exiting ui
                 revit_tab_ctrl = None
-                for exiting_rvt_ribbon_tab in ComponentManager.Ribbon.Tabs:
+                for exiting_rvt_ribbon_tab in AdWindows.ComponentManager.Ribbon.Tabs:
                     if exiting_rvt_ribbon_tab.Title == tab_name:
                         revit_tab_ctrl = exiting_rvt_ribbon_tab
 
@@ -1032,3 +1104,12 @@ def get_current_ui():
     :rtype: _PyRevitUI
     """
     return _PyRevitUI()
+
+
+def get_uibutton(command_unique_name):
+    pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
+    for tab in pyrvt_tabs:
+        button = tab.find_child(command_unique_name)
+        if button:
+            return button
+    return None

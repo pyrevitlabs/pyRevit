@@ -1,4 +1,4 @@
-"""Unit Tests for IronPython engine"""
+"""Unit Tests for IronPython engine."""
 
 
 __context__ = 'zerodoc'

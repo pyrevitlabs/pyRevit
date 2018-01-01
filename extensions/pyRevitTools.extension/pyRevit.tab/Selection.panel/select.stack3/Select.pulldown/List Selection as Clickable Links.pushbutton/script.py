@@ -1,9 +1,21 @@
-"""Lists the selected element ids as clickable links. This is a quick way to go through a series of elements."""
+from pyrevit import script, revit
 
-from scriptutils import this_script
-from revitutils import selection
 
-this_script.output.set_width(200)
+__context__ = 'selection'
+__doc__ = 'Lists the selected element ids as clickable links. '\
+          'This is a quick way to go through a series of elements.'
 
-for idx, elid in enumerate(selection.element_ids):
-    print('{}: {}'.format(idx+1, this_script.output.linkify(elid)))
+
+output = script.get_output()
+selection = revit.get_selection()
+
+
+if len(selection.element_ids) > 0:
+    output.set_width(200)
+
+    if len(selection.element_ids) < 50:
+        print('{}'.format(output.linkify(selection.element_ids,
+                                         title='All Elements')))
+
+    for idx, elid in enumerate(selection.element_ids):
+        print('{}: {}'.format(idx+1, output.linkify(elid)))

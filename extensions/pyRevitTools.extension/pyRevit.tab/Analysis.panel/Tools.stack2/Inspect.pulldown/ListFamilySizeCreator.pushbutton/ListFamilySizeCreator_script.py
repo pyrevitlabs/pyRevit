@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Lists all families and their sizes.
+"""List all families and their sizes.
 
 Copyright (c) 2017 Frederic Beaupere
 github.com/frederic-beaupere
@@ -10,21 +9,18 @@ PyRevit Notice:
 Copyright (c) 2014-2017 Ehsan Iran-Nejad
 pyRevit: repository at https://github.com/eirannejad/pyRevit
 """
+import os.path as op
+import math
+from collections import defaultdict
+
+from pyrevit import revit, DB
 
 __title__ = 'Lists Family Sizes'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
+
 __doc__ = 'Lists all families and their sizes.'
-
-
-import os.path as op
-import math
-from collections import defaultdict
-import Autodesk
-from Autodesk.Revit.DB import FilteredElementCollector as Fec
-from Autodesk.Revit.DB import WorksharingUtils
-from revitutils import doc
 
 
 def convert_size(size_bytes):
@@ -37,15 +33,20 @@ def convert_size(size_bytes):
     return "{}{}".format(size, size_unit[i])
 
 
-all_fams = Fec(doc).OfClass(Autodesk.Revit.DB.Family).ToElements()
+all_fams = DB.FilteredElementCollector(revit.doc)\
+             .OfClass(DB.Family)\
+             .ToElements()
+
 fams_creator = defaultdict(list)
 
 for fam in all_fams:
     if fam.IsEditable:
-        fam_doc = doc.EditFamily(fam)
+        fam_doc = revit.doc.EditFamily(fam)
         fam_path = fam_doc.PathName
         fam_size = "0"
-        fam_creator = WorksharingUtils.GetWorksharingTooltipInfo(doc, fam.Id).Creator
+        fam_creator = \
+            DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
+                                                          fam.Id).Creator
         if fam_path:
             if op.exists(fam_path):
                 fam_size = str(op.getsize(fam_path))
@@ -65,4 +66,6 @@ for creator in fams_creator:
         else:
             size_prefix = convert_size(size_prefix)
         print(size_prefix, fam_name)
-    print("{1} families, found total size: {0}".format(convert_size(sum_size_created), len(fams_creator[creator])))
+    print("{1} families, found total size: {0}"
+          .format(convert_size(sum_size_created),
+                  len(fams_creator[creator])))

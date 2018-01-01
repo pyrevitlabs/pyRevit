@@ -12,6 +12,14 @@ from rpw.exceptions import RpwTypeError
 
 
 def to_element_id(element_reference):
+    """
+    Coerces Element References (Element, ElementId, ...) to Element Id
+
+    >>> from rpw.utils.coerce import to_element_id
+    >>> to_element_id(SomeElement)
+    <Element Id>
+
+    """
     if hasattr(element_reference, 'Id'):
         element_id = element_reference.Id
     elif isinstance(element_reference, DB.Reference):
@@ -28,7 +36,9 @@ def to_element_id(element_reference):
 
 
 def to_element_ids(element_references):
-    """ Coerces an element or list of elements into element ids. Elements remain unchanged.
+    """
+    Coerces an element or list of elements into element ids.
+    Elements remain unchanged.
     This will always return a list, even if only one element is passed.
 
     >>> from rpw.utils.coerce import to_element_ids
@@ -51,22 +61,27 @@ def to_element_ids(element_references):
 
 # TODO: Add case to unwrap rpw elements
 def to_element(element_reference, doc=revit.doc):
-    if isinstance(element_reference, DB.ElementId):
+    """ Same as to_elements but for a single object """
+    if isinstance(element_reference, DB.Element):
+        element = element_reference
+    elif isinstance(element_reference, DB.ElementId):
         element = doc.GetElement(element_reference)
     elif isinstance(element_reference, DB.Reference):
         element = doc.GetElement(element_reference)
     elif isinstance(element_reference, int):
         element = doc.GetElement(DB.ElementId(element_reference))
-    elif isinstance(element_reference, DB.Element):
-        element = element_reference
+    elif hasattr(element_reference, 'unwrap'):
+        element = element_reference.unwrap()
     else:
         raise RpwTypeError('Element, ElementId, or int', type(element_reference))
     return element
 
 
 def to_elements(element_references, doc=revit.doc):
-    """ Coerces element reference (``int``, or ``ElementId``) into ``DB.Element``.
-    Remains unchanged if it's already ``DB.Element``. Accepts single object or lists
+    """
+    Coerces element reference (``int``, or ``ElementId``) into ``DB.Element``.
+    Remains unchanged if it's already ``DB.Element``.
+    Accepts single object or lists.
 
     >>> from rpw.utils.coerce import to_elements
     >>> to_elements(DB.ElementId)
@@ -115,7 +130,7 @@ def to_category(category_reference, fuzzy=True):
     >>> from rpw.utils.coerce import to_category
     >>> to_category('OST_Walls')
     BuiltInCategory.OST_Walls
-    >>> to_category('Wall')
+    >>> to_category('Walls')
     BuiltInCategory.OST_Walls
     >>> to_category(BuiltInCategory.OST_Walls)
     BuiltInCategory.OST_Walls
@@ -141,7 +156,8 @@ def to_category(category_reference, fuzzy=True):
 
 
 def to_category_id(category_reference, fuzzy=True):
-    """ Coerces a category, category name or category id to a Category Id.
+    """
+    Coerces a category, category name or category id to a Category Id.
 
     >>> from rpw.utils.coerce import to_category_id
     >>> to_category_id('OST_Walls')
@@ -166,6 +182,10 @@ def to_iterable(item_or_iterable):
     """
     Ensures input is iterable
 
+    >>> from rpw.utils.coerce import to_iterable
+    >>> to_iterable(SomeElement)
+    [SomeElement]
+
     Args:
         any (iterable, non-iterable)
 
@@ -188,12 +208,12 @@ def to_pascal_case(snake_str):
     return "".join(x.title() for x in components)
 
 
-def dictioary_to_string(dictionary):
-    """ Makes a string with key:value pairs from a dictionary
+# def dictioary_to_string(dictionary):
+#     """ Makes a string with key:value pairs from a dictionary
 
-    >>> dictionary_to_string({'name': 'value'})
-    'name:value'
-    >>> dictionary_to_string({'name': 'value', 'id':5})
-    'name:value id:5'
-    """
-    return ' '.join(['{0}:{1}'.format(k, v) for k, v in dictionary.iteritems()])
+#     >>> dictionary_to_string({'name': 'value'})
+#     'name:value'
+#     >>> dictionary_to_string({'name': 'value', 'id':5})
+#     'name:value id:5'
+#     """
+#     return ' '.join(['{0}:{1}'.format(k, v) for k, v in dictionary.iteritems()])

@@ -1,3 +1,12 @@
+"""
+.NET imports
+
+This module ensures most commonly used .NET classes are loaded for you.for
+
+>>> from rpw.utils.dotnet import List, Enum, Process
+
+"""
+
 import sys
 
 from rpw.utils.logger import logger
