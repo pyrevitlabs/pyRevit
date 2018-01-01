@@ -38,7 +38,7 @@ class GenericUIComponent(GenericComponent):
     def __init__(self):
         GenericComponent.__init__(self)
         self.directory = None
-        self.original_name = self.name = None
+        self.name = None
         self.unique_name = None
         self.library_path = None
         self.syspath_search_paths = []
@@ -53,7 +53,7 @@ class GenericUIComponent(GenericComponent):
 
     def __repr__(self):
         return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
-            .format(self.type_id, self.original_name, self.directory)
+            .format(self.type_id, self.name, self.directory)
 
     def _get_unique_name(self):
         """Creates a unique name for the command. This is used to uniquely
@@ -82,7 +82,7 @@ class GenericUIComponent(GenericComponent):
 
     @property
     def bundle_name(self):
-        return self.original_name + self.type_id
+        return self.name + self.type_id
 
     def get_search_paths(self):
         return self.syspath_search_paths
@@ -124,15 +124,7 @@ class GenericUIContainer(GenericUIComponent):
 
         self._sub_components = []
 
-        self.original_name = op.splitext(op.basename(self.directory))[0]
-
-        alias = user_config.get_alias(self.original_name)
-        if alias and alias != self.original_name:
-            logger.debug('Alias name is: {}'.format(self.name))
-            self.name = alias
-        else:
-            self.name = self.original_name
-
+        self.name = op.splitext(op.basename(self.directory))[0]
         self.ui_title = self.name
 
         # each container can store custom libraries under
@@ -152,7 +144,7 @@ class GenericUIContainer(GenericUIComponent):
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
             logger.debug('Icon file is: {}'
-                         .format(self.original_name, self.icon_file))
+                         .format(self.name, self.icon_file))
 
     def __iter__(self):
         return iter(self._get_components_per_layout())
@@ -176,7 +168,7 @@ class GenericUIContainer(GenericUIComponent):
             _processed_cmps = []
             for layout_item in self.layout_list:
                 for cmp_index, component in enumerate(self._sub_components):
-                    if component.original_name == layout_item:
+                    if component.name == layout_item:
                         _processed_cmps.append(component)
                         layout_index += 1
                         break
@@ -270,19 +262,12 @@ class GenericUICommand(GenericUIComponent):
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
-        self.original_name = op.splitext(op.basename(self.directory))[0]
-        alias = user_config.get_alias(self.original_name)
-        if alias and alias != self.original_name:
-            logger.debug('Alias name is: {}'.format(self.name))
-            self.name = alias
-        else:
-            self.name = self.original_name
+        self.name = op.splitext(op.basename(self.directory))[0]
+        self.ui_title = self.name
 
         # setting up a unique availability name for command.
         self.unique_avail_name = \
             self.unique_name + exts.COMMAND_AVAILABILITY_NAME_POSTFIX
-
-        self.ui_title = self.name
 
         icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = icon_path if op.exists(icon_path) else None

@@ -1,7 +1,7 @@
 import types
 import sys
 
-from pyrevit import HOST_APP
+from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
@@ -62,4 +62,5 @@ class RevitWrapper(types.ModuleType):
         return HOST_APP.available_servers
 
 
-sys.modules[__name__] = RevitWrapper()
+if not EXEC_PARAMS.doc_mode:
+    sys.modules[__name__] = RevitWrapper()

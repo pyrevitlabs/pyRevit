@@ -20,11 +20,11 @@ logger = get_logger(__name__)
 
 
 GIT_LIB = 'LibGit2Sharp'
-libgit_dll = get_addin_dll_file(GIT_LIB)
-logger.debug('Loading dll: {}'.format(libgit_dll))
-
 
 if not EXEC_PARAMS.doc_mode:
+    libgit_dll = get_addin_dll_file(GIT_LIB)
+    logger.debug('Loading dll: {}'.format(libgit_dll))
+
     try:
         clr.AddReferenceToFileAndPath(libgit_dll)
         # public libgit module

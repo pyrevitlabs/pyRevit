@@ -20,29 +20,62 @@ mlogger = logger.get_logger(__name__)
 
 
 def get_info():
+    """Return info on current pyRevit command.
+
+    Returns:
+        :obj:`pyrevit.extensions.genericcomps.GenericUICommand`:
+            Command info object
+    """
     from pyrevit.extensions.extensionmgr import get_command_from_path
     return get_command_from_path(EXEC_PARAMS.command_path)
 
 
 def get_results():
+    """Return command results dictionary for logging.
+
+    Returns:
+        :obj:`pyrevit.usagelog.record.CommandCustomResults`:
+            Command results dict
+    """
     from pyrevit.usagelog.record import CommandCustomResults
     return CommandCustomResults()
 
 
 def get_pyrevit_version():
+    """Return pyRevit version.
+
+    Returns:
+        :obj:`pyrevit.versionmgr.PyRevitVersion`: pyRevit version provider
+    """
     from pyrevit.versionmgr import PYREVIT_VERSION
     return PYREVIT_VERSION
 
 
 def get_logger():
+    """Create and return logger named for current script.
+
+    Returns:
+        :obj:`pyrevit.coreutils.logger.LoggerWrapper`: Logger object
+    """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
 
 def get_output():
+    """Return object wrapping output window for current script.
+
+    Returns:
+        :obj:`pyrevit.output.PyRevitOutputWindow`: Output wrapper object
+    """
     return output.get_output()
 
 
 def get_config():
+    """Create and return config section parser object for current script.
+
+    Returns:
+        :obj:`pyrevit.coreutils.configparser.PyRevitConfigSectionParser`:
+            Config section parser object
+    """
     from pyrevit.userconfig import user_config
     script_cfg_postfix = 'config'
 
@@ -55,16 +88,37 @@ def get_config():
 
 
 def save_config():
+    """Save pyRevit config.
+
+    Scripts should call this to save any changes they have done to their
+    config section object received from script.get_config() method.
+    """
     from pyrevit.userconfig import user_config
     user_config.save_changes()
 
 
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data.
-    These files are not marked by host Revit version and could be shared
-    between all Revit versions and instances. Data files are saved in
-    app directory and are NOT cleaned up at Revit restart.
-    Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_mydata.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_Command Name_mydata.data'
+
+    Universal data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -75,9 +129,27 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data.
-    Data files are saved in app directory and are NOT cleaned up
-    at Revit restart. Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_2018_mydata.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_2018_Command Name_mydata.data'
+
+    Data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -88,9 +160,25 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_instance_data_file(file_id, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data under
-    current Revit instance. Instance data files are saved in app
-    directory and are cleaned up at Revit restart.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata')
+        ... '.../pyRevit_2018_6684_mydata.tmp'
+        >>> script.get_document_data_file('mydata', add_cmd_name=True)
+        ... '.../pyRevit_2018_6684_Command Name_mydata.tmp'
+
+    Instance data files are cleaned up at pyRevit startup.
+
+    Args:
+        file_id (str): unique id for the filename
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     if add_cmd_name:
         script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
@@ -101,9 +189,27 @@ def get_instance_data_file(file_id, add_cmd_name=False):
 
 
 def get_document_data_file(file_id, file_ext, add_cmd_name=False):
-    """Returns a filename to be used by a user script to store data under
-    current Revit version and for the current document.
-    Script should manage cleaning up these data files.
+    """Return filename to be used by a user script to store data.
+
+    Format:
+        pyRevit_{Revit Version}_{file_id}_{Project Name}.{file_ext}
+
+    Example:
+        >>> script.get_document_data_file('mydata', 'data')
+        ... '.../pyRevit_2018_mydata_Project1.data'
+        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        ... '.../pyRevit_2018_Command Name_mydata_Project1.data'
+
+    Document data files are not cleaned up at pyRevit startup.
+    Script should manage cleaning up these files.
+
+    Args:
+        file_id (str): unique id for the filename
+        file_ext (str): file extension
+        add_cmd_name (bool, optional): add command name to file name
+
+    Returns:
+        str: full file path
     """
     proj_info = revit.get_project_info()
 
@@ -121,10 +227,24 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
 
 
 def get_bundle_file(file_name):
+    """Return full path to file under current script bundle.
+
+    Args:
+        file_name (str): bundle file name
+
+    Returns:
+        str: full bundle file path
+    """
     return op.join(EXEC_PARAMS.command_path, file_name)
 
 
 def journal_write(data_key, msg):
+    """Write key and value to active Revit journal for current command.
+
+    Args:
+        data_key (str): data key
+        msg (str): data value string
+    """
     # Get the StringStringMap class which can write data into.
     # noinspection PyUnresolvedReferences
     data_map = EXEC_PARAMS.command_data.JournalData
@@ -135,6 +255,14 @@ def journal_write(data_key, msg):
 
 
 def journal_read(data_key):
+    """Read value for provided key from active Revit journal.
+
+    Args:
+        data_key (str): data key
+
+    Returns:
+        str: data value string
+    """
     # Get the StringStringMap class which can write data into.
     # noinspection PyUnresolvedReferences
     data_map = EXEC_PARAMS.command_data.JournalData
@@ -144,6 +272,11 @@ def journal_read(data_key):
 
 
 def get_button():
+    """Find and return current script ui button.
+
+    Returns:
+        :obj:`pyrevit.coreutils.ribbon._PyRevitRibbonButton`: ui button object
+    """
     from pyrevit.coreutils.ribbon import get_current_ui
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
     for tab in pyrvt_tabs:
@@ -154,6 +287,18 @@ def get_button():
 
 
 def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
+    """Set the state of button icon (on or off).
+
+    This method expects on.png and off.png in command bundle for on and off
+    icon states, unless full path of icon states are provided.
+
+    Args:
+        new_state (bool): state of the ui button icon.
+        on_icon_path (str, optional): full path of icon for on state.
+                                      default='on.png'
+        off_icon_path (str, optional): full path of icon for off state.
+                                       default='off.png'
+    """
     # find the ui button
     uibutton = get_button()
     if not uibutton:
@@ -181,26 +326,37 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
 
 
 def exit():
+    """Stop the script execution and exit."""
     sys.exit()
 
 
 def show_file_in_explorer(file_path):
+    """Show file in Windows Explorer."""
     import subprocess
     subprocess.Popen(r'explorer /select,"{}"'
                      .format(os.path.normpath(file_path)))
 
 
 def open_url(url):
-    """Opens url in a new tab in the default web browser."""
+    """Open url in a new tab in default webbrowser."""
     import webbrowser
     return webbrowser.open_new_tab(url)
 
 
 def clipboard_copy(string_to_copy):
+    """Copy string to Windows Clipboard."""
     framework.Clipboard.SetText(string_to_copy)
 
 
 def load_index(index_file='index.html'):
+    """Load html file into output window.
+
+    This method expects index.html file in the current command bundle,
+    unless full path to an html file is provided.
+
+    Args:
+        index_file (str, optional): full path of html file.
+    """
     outputwindow = get_output()
     if not op.isfile(index_file):
         index_file = get_bundle_file(index_file)

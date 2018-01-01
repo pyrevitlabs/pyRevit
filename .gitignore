@@ -33,6 +33,7 @@ pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
 
 # ignore sphinx build files
 docs/_*
+!docs/_static
 
 # ignore release files
 release/*.exe

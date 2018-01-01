@@ -1,2 +1,0 @@
-Revit utilities module (revitutils)
-===================================

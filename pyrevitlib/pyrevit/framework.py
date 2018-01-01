@@ -1,3 +1,5 @@
+"""Provide access to DotNet Framework."""
+
 import clr
 
 import System
@@ -15,6 +17,8 @@ clr.AddReferenceByPartialName('WindowsBase')
 # add linq extensions?
 clr.ImportExtensions(System.Linq)
 
+# pylama:ignore=E402,W0611
+# pylama ignore imports not on top and not used
 from System import AppDomain, Version
 from System import Type
 from System import Uri, Guid
@@ -65,4 +69,9 @@ import wpf
 
 
 def get_type(fw_object):
+    """Return CLR type of an object.
+
+    Args:
+        fw_object: Dotnet Framework Object Instance
+    """
     return clr.GetClrType(fw_object)
