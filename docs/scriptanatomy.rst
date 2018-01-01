@@ -90,6 +90,8 @@ Currently, pyRevit support three types of command availability types.
         __context__ = ['Space Tags', 'Spaces']
 
 
+.. _scriptmodule:
+
 pyrevit.script Module
 ---------------------
 
