@@ -15,68 +15,66 @@ my_config = script.get_config()
 
 
 def setup_dim_overrides_per_config(from_dim, to_dim):
-    if my_config.dim_override:
+    if my_config.get_option('dim_override', True):
         to_dim.ValueOverride = from_dim.ValueOverride
-    try:
-        if my_config.dim_textposition:
-            to_dim.TextPosition = to_dim.Origin \
-                                  - (from_dim.Origin - from_dim.TextPosition)
-    except Exception:
-        pass
 
-    if my_config.dim_above:
+    if my_config.get_option('dim_textposition', False):
+        to_dim.TextPosition = to_dim.Origin \
+                              - (from_dim.Origin - from_dim.TextPosition)
+
+    if my_config.get_option('dim_above', True):
         to_dim.Above = from_dim.Above
-    if my_config.dim_below:
+    if my_config.get_option('dim_below', True):
         to_dim.Below = from_dim.Below
-    if my_config.dim_prefix:
+    if my_config.get_option('dim_prefix', True):
         to_dim.Prefix = from_dim.Prefix
-    if my_config.dim_suffix:
+    if my_config.get_option('dim_suffix', True):
         to_dim.Suffix = from_dim.Suffix
 
 
 def setup_style_per_config(from_style, to_style):
-    if my_config.halftone:
+    if my_config.get_option('halftone', True):
         to_style.SetHalftone(from_style.Halftone)
 
-    if my_config.transparency:
+    if my_config.get_option('transparency', True):
         to_style.SetSurfaceTransparency(from_style.Transparency)
 
-    if my_config.proj_line_color:
+    if my_config.get_option('proj_line_color', True):
         to_style.SetProjectionLineColor(from_style.ProjectionLineColor)
 
-    if my_config.proj_line_pattern:
+    if my_config.get_option('proj_line_pattern', True):
         to_style.SetProjectionLinePatternId(from_style.ProjectionLinePatternId)
 
-    if my_config.proj_line_weight:
+    if my_config.get_option('proj_line_weight', True):
         to_style.SetProjectionLineWeight(from_style.ProjectionLineWeight)
 
-    if my_config.proj_fill_color:
+    if my_config.get_option('proj_fill_color', True):
         to_style.SetProjectionFillColor(from_style.ProjectionFillColor)
 
-    if my_config.proj_fill_pattern:
+    if my_config.get_option('proj_fill_pattern', True):
         to_style.SetProjectionFillPatternId(from_style.ProjectionFillPatternId)
 
-    if my_config.proj_fill_pattern_visibility:
+    if my_config.get_option('proj_fill_pattern_visibility', True):
         to_style.SetProjectionFillPatternVisible(
             from_style.IsProjectionFillPatternVisible
             )
 
-    if my_config.cut_line_color:
+    if my_config.get_option('cut_line_color', True):
         to_style.SetCutLineColor(from_style.CutLineColor)
 
-    if my_config.cut_line_pattern:
+    if my_config.get_option('cut_line_pattern', True):
         to_style.SetCutLinePatternId(from_style.CutLinePatternId)
 
-    if my_config.cut_line_weight:
+    if my_config.get_option('cut_line_weight', True):
         to_style.SetCutLineWeight(from_style.CutLineWeight)
 
-    if my_config.cut_fill_color:
+    if my_config.get_option('cut_fill_color', True):
         to_style.SetCutFillColor(from_style.CutFillColor)
 
-    if my_config.cut_fill_pattern:
+    if my_config.get_option('cut_fill_pattern', True):
         to_style.SetCutFillPatternId(from_style.CutFillPatternId)
 
-    if my_config.cut_fill_pattern_visibility:
+    if my_config.get_option('cut_fill_pattern_visibility', True):
         to_style.SetCutFillPatternVisible(from_style.IsCutFillPatternVisible)
 
 
