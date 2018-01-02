@@ -1,4 +1,5 @@
 from pyrevit import PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit.framework import Array, Dictionary
 from pyrevit.framework import Compiler, CSharpCodeProvider
 from pyrevit.coreutils.logger import get_logger
@@ -43,7 +44,7 @@ def _compile_dotnet(code_provider,
                                               Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
-        err_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
+        err_list = [safe_strtype(err) for err in compiler.Errors.GetEnumerator()]
         err_str = '\n'.join(err_list)
         raise PyRevitException("Compile error: {}".format(err_str))
 

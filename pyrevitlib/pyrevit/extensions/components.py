@@ -2,6 +2,7 @@ import os
 import os.path as op
 
 from pyrevit import PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
@@ -200,7 +201,7 @@ class Extension(GenericUIContainer):
 
     @property
     def ext_hash_value(self):
-        return get_str_hash(unicode(self.get_cache_data()))
+        return get_str_hash(safe_strtype(self.get_cache_data()))
 
     # def _write_dir_hash(self, hash_value):
     #     if os.access(self.hash_cache, os.W_OK):

@@ -416,7 +416,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
                 if re.search(file_filter, filename, flags=re.IGNORECASE):
                     modtime = op.getmtime(op.join(root, filename))
                     mtime_sum += modtime
-    return get_str_hash(unicode(mtime_sum))
+    return get_str_hash(safe_strtype(mtime_sum))
 
 
 def prepare_html_str(input_string):
@@ -630,7 +630,7 @@ def _inc_or_dec_string(st, shift):
                 carry = shift
             else:
                 carry = 0
-            next_str += unicode(curr_digit)
+            next_str += safe_strtype(curr_digit)
 
         else:
             next_str += st[index]

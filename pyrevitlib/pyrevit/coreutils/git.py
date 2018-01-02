@@ -10,6 +10,7 @@ import importlib
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
@@ -123,7 +124,7 @@ def _make_pull_signature():
 
 
 def _process_git_error(exception_err):
-    exception_msg = unicode(exception_err)
+    exception_msg = safe_strtype(exception_err)
     if '401' in exception_msg:
         raise PyRevitGitAuthenticationError(exception_msg)
     else:
@@ -150,7 +151,7 @@ def git_pull(repo_info):
                           _make_pull_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
                                                    head_msg))
@@ -169,7 +170,7 @@ def git_fetch(repo_info):
                            _make_fetch_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
                                                    head_msg))
@@ -217,7 +218,7 @@ def compare_branch_heads(repo_info):
             except Exception as compare_err:
                 logger.error('Can not compare branch {} in repo: {} | {}'
                              .format(branch, repo,
-                                     unicode(compare_err).replace('\n', '')))
+                                     safe_strtype(compare_err).replace('\n', '')))
 
 
 def get_all_new_commits(repo_info):

@@ -6,6 +6,7 @@ import threading
 from functools import wraps
 
 from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import framework
@@ -198,15 +199,15 @@ class SelectFromList(TemplateUserInputWindow):
         if option_filter:
             option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [str(option) for option in self._context
-                 if option_filter in str(option).lower()]
+                [safe_strtype(option) for option in self._context
+                 if option_filter in safe_strtype(option).lower()]
         else:
             self.list_lb.ItemsSource = \
-                [str(option) for option in self._context]
+                [safe_strtype(option) for option in self._context]
 
     def _get_options(self):
         return [option for option in self._context
-                if str(option) in self.list_lb.SelectedItems]
+                if safe_strtype(option) in self.list_lb.SelectedItems]
 
     def button_select(self, sender, args):
         self.response = self._get_options()
