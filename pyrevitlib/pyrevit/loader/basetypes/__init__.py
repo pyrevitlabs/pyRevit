@@ -3,6 +3,7 @@ import os.path as op
 import sys
 
 from pyrevit import PyRevitException, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
     load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
@@ -153,7 +154,7 @@ def _generate_base_classes_asm():
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
-        errors = str(compile_err).replace('Compile error: ', '')
+        errors = safe_strtype(compile_err).replace('Compile error: ', '')
         logger.critical('Can not compile base types code into assembly.\n{}'
                         .format(errors))
         raise compile_err

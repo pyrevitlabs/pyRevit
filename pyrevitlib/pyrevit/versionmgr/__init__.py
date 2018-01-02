@@ -1,4 +1,5 @@
 from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import git
@@ -18,7 +19,7 @@ class PyRevitVersion(object):
     patch = ''
 
     def __init__(self, patch_number):
-        self.patch = unicode(patch_number)[:7]
+        self.patch = safe_strtype(patch_number)[:7]
 
     def as_int_tuple(self):
         """Returns version as an int tuple (major, minor, patch)"""
@@ -31,8 +32,8 @@ class PyRevitVersion(object):
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')"""
-        ver_tuple = (unicode(PyRevitVersion.major),
-                     unicode(PyRevitVersion.minor), self.patch)
+        ver_tuple = (safe_strtype(PyRevitVersion.major),
+                     safe_strtype(PyRevitVersion.minor), self.patch)
         return ver_tuple
 
     def get_formatted(self, nopatch=False):

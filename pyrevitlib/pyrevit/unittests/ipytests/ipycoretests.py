@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from unittest import TestCase
+from pyrevit.compat import safe_strtype
 
 
 class TestCIronPythonEngine(TestCase):
@@ -7,5 +8,5 @@ class TestCIronPythonEngine(TestCase):
         """Convert unicode test"""
         ustr1 = '中國哲學書電子化計劃'
         ustr2 = 'A200•'
-        temp = str(ustr1)
-        temp = str(ustr2)
+        temp = safe_strtype(ustr1)
+        temp = safe_strtype(ustr2)

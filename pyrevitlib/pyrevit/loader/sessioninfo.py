@@ -4,6 +4,7 @@ import uuid
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
+from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
 from pyrevit.coreutils import DEFAULT_SEPARATOR
 from pyrevit.coreutils.logger import get_logger
@@ -31,7 +32,7 @@ def get_session_uuid():
 
 
 def new_session_uuid():
-    uuid_str = unicode(uuid.uuid1())
+    uuid_str = safe_strtype(uuid.uuid1())
     set_session_uuid(uuid_str)
     return uuid_str
 

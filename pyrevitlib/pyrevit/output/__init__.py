@@ -5,6 +5,7 @@ import os.path as op
 import itertools
 
 from pyrevit import EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -321,7 +322,8 @@ class PyRevitOutputWindow(object):
             >>> output = pyrevit.output.get_output()
             >>> output.print_html('<strong>Title</strong>')
         """
-        print(coreutils.prepare_html_str(emoji.emojize(html_str)), end="")
+        print(coreutils.prepare_html_str(emoji.emojize(html_str)),
+              end="")
 
     @staticmethod
     def print_code(code_str):

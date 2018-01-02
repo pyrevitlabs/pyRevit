@@ -2,6 +2,7 @@ from collections import OrderedDict
 import uuid
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import System, Uri
 from pyrevit.framework import IO
@@ -247,7 +248,7 @@ class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
         _GenericRevitNativeUIContainer.__init__(self)
 
         self.name = \
-            unicode(adwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
+            safe_strtype(adwnd_ribbon_button.AutomationName).replace('\r\n', ' ')
         self._rvtapi_object = adwnd_ribbon_button
 
 

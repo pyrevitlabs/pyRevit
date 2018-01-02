@@ -73,6 +73,7 @@ sys.path.append(PYREVITLOADER_DIR)
 
 # pylama:ignore=E402
 # now we can start importing stuff
+from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
@@ -287,7 +288,7 @@ class _HostApplication:
                     rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
                     self._postable_cmds.append(
                         # wrap postable command info in custom namedtuple
-                        _HostAppPostableCommand(name=str(pc),
+                        _HostAppPostableCommand(name=safe_strtype(pc),
                                                 key=rcid.Name,
                                                 id=rcid.Id,
                                                 rvtobj=rcid)

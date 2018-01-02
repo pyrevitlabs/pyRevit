@@ -3,6 +3,7 @@
 import datetime
 
 from pyrevit import EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -42,7 +43,7 @@ class CommandCustomResults(object):
     def __getattr__(self, key):
         # return value of the given key,
         # let it raise exception if the value is not there
-        return unicode(EXEC_PARAMS.result_dict[key])
+        return safe_strtype(EXEC_PARAMS.result_dict[key])
 
     def __setattr__(self, key, value):
         if key in CommandCustomResults.RESERVED_NAMES:
@@ -51,7 +52,7 @@ class CommandCustomResults(object):
                          'Can not override this value.'.format(key))
         else:
             # if all is okay lets add the key:value to the return dict
-            EXEC_PARAMS.result_dict.Add(key, unicode(value))
+            EXEC_PARAMS.result_dict.Add(key, safe_strtype(value))
 
 
 class UsageRecord:
@@ -107,10 +108,10 @@ class UsageRecord:
     def __eq__(self, other):
         # fixme: this won't work since the dictionaries are not ordered
         # compares hash of the internal dictionaries for comparison
-        return hash(str(self.__dict__)) == hash(str(other.__dict__))
+        return hash(safe_strtype(self.__dict__)) == hash(safe_strtype(other.__dict__))
 
     def __hash__(self):
-        return hash(str(self.__dict__))
+        return hash(safe_strtype(self.__dict__))
 
     def __lt__(self, other):
         # less-than operator overload for object comparison
@@ -164,7 +165,7 @@ class UsageRecord:
         Returns:
             dict: original dictionary used to create/update this record.
         """
-        rec_string = str(self._src_dict)
+        rec_string = safe_strtype(self._src_dict)
         rec_string = rec_string \
             .replace('\'', '\"') \
             .replace('False', 'false') \
@@ -180,7 +181,7 @@ class UsageRecord:
         """
 
         for value in self._src_dict.values():
-            if search_term in unicode(value).lower():
+            if search_term in safe_strtype(value).lower():
                 return True
 
     def update(self, src_dict):

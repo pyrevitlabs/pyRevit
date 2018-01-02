@@ -2,6 +2,7 @@ import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
 from pyrevit import PyRevitException, PyRevitIOError
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils import get_str_hash
 
 
@@ -53,7 +54,7 @@ class PyRevitConfigSectionParser(object):
         else:
             try:
                 return self._parser.set(self._section_name,
-                                        param_name, unicode(value))
+                                        param_name, safe_strtype(value))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))

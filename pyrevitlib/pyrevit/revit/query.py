@@ -3,6 +3,7 @@
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit import DB
 
 
@@ -61,7 +62,7 @@ def get_value_range(param_name, doc=None):
         if targetparam:
             value = get_param_value(targetparam)
             if value is not None \
-                    and str(value).lower() != 'none':
+                    and safe_strtype(value).lower() != 'none':
                 if type(value) == str \
                         and not value.isspace():
                     values.add(value)
