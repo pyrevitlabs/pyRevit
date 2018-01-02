@@ -12,6 +12,7 @@ import random
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import api
 
@@ -357,7 +358,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
     for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
             if asm_info.lower() in \
-                    unicode(loaded_assembly.GetName().Name).lower():
+                    safe_strtype(loaded_assembly.GetName().Name).lower():
                 loaded_asm_list.append(loaded_assembly)
         elif by_location:
             try:
@@ -367,7 +368,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
             except Exception:
                 continue
         elif asm_info.lower() == \
-                unicode(loaded_assembly.GetName().Name).lower():
+                safe_strtype(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
     return loaded_asm_list
