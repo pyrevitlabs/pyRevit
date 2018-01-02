@@ -51,6 +51,7 @@ deeper into pyRevit inner workings.
 * :doc:`pyrevit/framework`
 * :doc:`pyrevit/script`
 * :doc:`pyrevit/userconfig`
+* :doc:`coreutils`
 * :doc:`output`
 
 ..  toctree::
@@ -63,4 +64,5 @@ deeper into pyRevit inner workings.
     pyrevit/framework.rst
     pyrevit/script.rst
     pyrevit/userconfig.rst
+    coreutils.rst
     output.rst

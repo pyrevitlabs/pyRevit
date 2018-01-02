@@ -1,3 +1,5 @@
+"""Misc Helper functions for pyRevit."""
+
 import os
 import os.path as op
 import re
@@ -14,24 +16,52 @@ from pyrevit import framework
 from pyrevit import api
 
 
+# pylama:ignore=D105
 DEFAULT_SEPARATOR = ';'
 
 
 class Timer:
-    """Timer class using python native time module."""
+    """Timer class using python native time module.
+
+    Example:
+        >>> timer = Timer()
+        >>> timer.get_time()
+        ... 12
+    """
 
     def __init__(self):
+        """Initialize and Start Timer."""
         self.start = time.time()
 
     def restart(self):
+        """Restart Timer."""
         self.start = time.time()
 
     def get_time(self):
+        """Get Elapsed Time."""
         return time.time() - self.start
 
 
 class ScriptFileParser:
+    """Parse python script to extract variables and docstrings.
+
+    Primarily designed to assist pyRevit in determining script configurations
+    but can work for any python script.
+
+    Example:
+        >>> finder = ScriptFileParser('/path/to/coreutils/__init__.py')
+        >>> finder.docstring()
+        ... "Misc Helper functions for pyRevit."
+        >>> finder.extract_param('SomeValue', [])
+        ... []
+    """
+
     def __init__(self, file_address):
+        """Initialize and read provided python script.
+
+        Args:
+            file_address (str): python script file path
+        """
         self.file_addr = file_address
         try:
             with open(file_address, 'r') as f:
@@ -41,12 +71,23 @@ class ScriptFileParser:
                                    .format(self.file_addr, err))
 
     def get_docstring(self):
+        """Get global docstring."""
         doc_str = ast.get_docstring(self.ast_tree)
         if doc_str:
             return doc_str.decode('utf-8')
         return None
 
     def extract_param(self, param_name, default_value=None):
+        """Find variable and extract its value.
+
+        Args:
+            param_name (str): variable name
+            default_value (any):
+                default value to be returned if variable does not exist
+
+        Returns:
+            any: value of the variable or :obj:`None`
+        """
         try:
             for child in ast.iter_child_nodes(self.ast_tree):
                 if hasattr(child, 'targets'):
@@ -65,25 +106,64 @@ class ScriptFileParser:
 
 
 class FileWatcher(object):
+    """Simple file version watcher.
+
+    This is a simple utility class to look for changes in a file based on
+    its timestamp.
+
+    Example:
+        >>> watcher = FileWatcher('/path/to/file.ext')
+        >>> watcher.has_changed()
+        ... True
+    """
+
     def __init__(self, filepath):
+        """Initialize and read timestamp of provided file.
+
+        Args:
+            filepath (str): file path
+        """
         self._cached_stamp = 0
         self._filepath = filepath
         self.update_tstamp()
 
     def update_tstamp(self):
+        """Update the cached timestamp for later comparison."""
         self._cached_stamp = os.stat(self._filepath).st_mtime
 
     @property
     def has_changed(self):
+        """Compare current file timestamp to the cached timestamp."""
         return os.stat(self._filepath).st_mtime != self._cached_stamp
 
 
 class SafeDict(dict):
+    """Dictionary that does not fail on any key.
+
+    This is a dictionary subclass to help with string formatting with unknown
+    key values.
+
+    Example:
+        >>> string = '{target} {attr} is {color}.'
+        >>> safedict = SafeDict({'target': 'Apple',
+        ...                      'attr':   'Color'})
+        >>> string.format(safedict)  # will not fail with missing 'color' key
+        ... 'Apple Color is {color}.'
+    """
+
     def __missing__(self, key):
         return '{' + key + '}'
 
 
 def get_all_subclasses(parent_classes):
+    """Return all subclasses of a python class.
+
+    Args:
+        parent_classes (list): list of python classes
+
+    Returns:
+        list: list of python subclasses
+    """
     sub_classes = []
     # if super-class, get a list of sub-classes.
     # Otherwise use component_class to create objects.
@@ -100,6 +180,14 @@ def get_all_subclasses(parent_classes):
 
 
 def get_sub_folders(search_folder):
+    """Get a list of all subfolders directly inside provided folder.
+
+    Args:
+        search_folder (str): folder path
+
+    Returns:
+        list: list of subfolder names
+    """
     sub_folders = []
     for f in os.listdir(search_folder):
         if op.isdir(op.join(search_folder, f)):
@@ -108,8 +196,17 @@ def get_sub_folders(search_folder):
 
 
 def verify_directory(folder):
-    """Checks if the folder exists and if not creates the folder.
-    Returns OSError on folder making errors."""
+    """Check if the folder exists and if not create the folder.
+
+    Args:
+        folder (str): path of folder to verify
+
+    Returns:
+        str: path of verified folder, equals to provided folder
+
+    Raises:
+        OSError on folder creation error.
+    """
     if not op.exists(folder):
         try:
             os.makedirs(folder)
@@ -118,9 +215,19 @@ def verify_directory(folder):
     return folder
 
 
-def join_strings(path_list, separator=DEFAULT_SEPARATOR):
-    if path_list:
-        return separator.join(path_list)
+def join_strings(str_list, separator=DEFAULT_SEPARATOR):
+    """Join strings using provided separator.
+
+    Args:
+        str_list (list): list of string values
+        separator (str): single separator character,
+            defaults to DEFAULT_SEPARATOR
+
+    Returns:
+        str: joined string
+    """
+    if str_list:
+        return separator.join(str_list)
     return ''
 
 
@@ -149,6 +256,22 @@ SPECIAL_CHARS = {' ': '',
 
 
 def cleanup_string(input_str):
+    """Replace special characters in string with another string.
+
+    This function was created to help cleanup pyRevit command unique names from
+    any special characters so C# class names can be created based on those
+    unique names.
+
+    ``coreutils.SPECIAL_CHARS`` is the conversion table for this function.
+
+    Args:
+        input_str (str): input string to be cleaned
+
+    Example:
+        >>> src_str = 'TEST@Some*<value>'
+        >>> cleanup_string(src_str)
+        ... "TESTATSomeSTARvalue"
+    """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
         input_str = input_str.replace(char, repl)
@@ -157,10 +280,24 @@ def cleanup_string(input_str):
 
 
 def get_revit_instance_count():
+    """Return number of open host app instances.
+
+    Returns:
+        int: number of open host app instances.
+    """
     return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
 def run_process(proc, cwd=''):
+    """Run shell process silently.
+
+    Args:
+        proc (str): process executive name
+        cwd (str): current working directory
+
+    Exmaple:
+        >>> run_process('notepad.exe', 'c:/')
+    """
     import subprocess
     return subprocess.Popen(proc,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -168,11 +305,14 @@ def run_process(proc, cwd=''):
 
 
 def inspect_calling_scope_local_var(variable_name):
-    """Traces back the stack to find the variable in the caller local stack.
-    Example:
+    """Trace back the stack to find the variable in the caller local stack.
+
     PyRevitLoader defines __revit__ in builtins and __window__ in locals.
     Thus, modules have access to __revit__ but not to __window__.
     This function is used to find __window__ in the caller stack.
+
+    Args:
+        variable_name (str): variable name to look up in caller local scope
     """
     import inspect
 
@@ -185,11 +325,10 @@ def inspect_calling_scope_local_var(variable_name):
 
 
 def inspect_calling_scope_global_var(variable_name):
-    """Traces back the stack to find the variable in the caller local stack.
-    Example:
-    PyRevitLoader defines __revit__ in builtins and __window__ in locals.
-    Thus, modules have access to __revit__ but not to __window__.
-    This function is used to find __window__ in the caller stack.
+    """Trace back the stack to find the variable in the caller global stack.
+
+    Args:
+        variable_name (str): variable name to look up in caller global scope
     """
     import inspect
 
@@ -202,7 +341,7 @@ def inspect_calling_scope_global_var(variable_name):
 
 
 def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
-    """
+    """Find loaded assembly based on name, partial name, or location.
 
     Args:
         asm_info (str): name or location of the assembly
@@ -211,8 +350,8 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
     Returns:
         list: List of all loaded assemblies matching the provided info
-              If only one assembly has been found, it returns the assembly.
-              None will be returned if assembly is not loaded.
+        If only one assembly has been found, it returns the assembly.
+        :obj:`None` will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
     for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
@@ -225,7 +364,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
                 if op.normpath(loaded_assembly.Location) == \
                         op.normpath(asm_info):
                     loaded_asm_list.append(loaded_assembly)
-            except:
+            except Exception:
                 continue
         elif asm_info.lower() == \
                 unicode(loaded_assembly.GetName().Name).lower():
@@ -569,10 +708,10 @@ def reformat_string(orig_str, orig_format, new_format):
         new_format(str): New pattern (how to recompose the data)
 
     Example:
-    >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
-                        '{section} - {loc} - {mat} - {rating} - {name}',
-                        '{section}:{mat}:{rating} - {name} ({loc})'))
-    >>> '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
+        >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
+                            '{section} - {loc} - {mat} - {rating} - {name}',
+                            '{section}:{mat}:{rating} - {name} ({loc})'))
+        ... '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
 
     Returns:
         str: Reformatted string
