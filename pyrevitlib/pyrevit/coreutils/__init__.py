@@ -375,10 +375,26 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
 
 def load_asm(asm_name):
+    """Load assembly by name into current domain.
+
+    Args:
+        asm_name (str): assembly name
+
+    Returns:
+        returns the loaded assembly, None if not loaded.
+    """
     return framework.AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
+    """Load assembly by file into current domain.
+
+    Args:
+        asm_file (str): assembly file path
+
+    Returns:
+        returns the loaded assembly, None if not loaded.
+    """
     try:
         return framework.Assembly.LoadFrom(asm_file)
     except Exception:
@@ -386,6 +402,18 @@ def load_asm_file(asm_file):
 
 
 def find_type_by_name(assembly, type_name):
+    """Find type by name in assembly.
+
+    Args:
+        assembly (:obj:`Assembly`): assembly to find the type in
+        type_name (str): type name
+
+    Returns:
+        returns the type if found.
+
+    Raises:
+        :obj:`PyRevitException` if type not found.
+    """
     base_class = assembly.GetType(type_name)
     if base_class is not None:
         return base_class
@@ -395,19 +423,59 @@ def find_type_by_name(assembly, type_name):
 
 
 def make_canonical_name(*args):
+    """Join arguments with dot creating a unique id.
+
+    Args:
+        *args: Variable length argument list of type :obj:`str`
+
+    Returns:
+        str: dot separated unique name
+
+    Example:
+        >>> make_canonical_name('somename', 'someid', 'txt')
+        ... "somename.someid.txt"
+    """
     return '.'.join(args)
 
 
 def get_file_name(file_path):
+    """Return file basename of the given file.
+
+    Args:
+        file_path (str): file path
+    """
     return op.splitext(op.basename(file_path))[0]
 
 
 def get_str_hash(source_str):
+    """Calculate hash value of given string.
+
+    Current implementation uses :func:`hashlib.md5` hash function.
+
+    Args:
+        source_str (str): source str
+
+    Returns:
+        str: hash value as string
+    """
     return hashlib.md5(source_str.encode('utf-8', 'ignore')).hexdigest()
 
 
 def calculate_dir_hash(dir_path, dir_filter, file_filter):
-    """Creates a unique hash # to represent state of directory."""
+    r"""Create a unique hash to represent state of directory.
+
+    Args:
+        dir_path (str): target directory
+        dir_filter (str): exclude directories matching this regex
+        file_filter (str): exclude files matching this regex
+
+    Returns:
+        str: hash value as string
+
+    Example:
+        >>> calculate_dir_hash(source_path, '\.extension', '\.json')
+        ... "1a885a0cae99f53d6088b9f7cee3bf4d"
+    """
     mtime_sum = 0
     for root, dirs, files in os.walk(dir_path):
         if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
@@ -420,10 +488,42 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
 
 
 def prepare_html_str(input_string):
+    """Reformat html string and prepare for pyRevit output window.
+
+    pyRevit output window renders html content. But this means that < and >
+    characters in outputs from python (e.g. <class at xxx>) will be treated
+    as html tags. To avoid this, all <> characters that are defining
+    html content need to be replaced with special phrases. pyRevit output
+    later translates these phrases back in to < and >. That is how pyRevit
+    ditinquishes between <> printed from python and <> that define html.
+
+    Args:
+        input_string (str): input html string
+
+    Example:
+        >>> prepare_html_str('<p>Some text</p>')
+        ... "&clt;p&cgt;Some text&clt;/p&cgt;"
+    """
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
 
 
 def reverse_html(input_html):
+    """Reformat codified pyRevit output html string back to normal html.
+
+    pyRevit output window renders html content. But this means that < and >
+    characters in outputs from python (e.g. <class at xxx>) will be treated
+    as html tags. To avoid this, all <> characters that are defining
+    html content need to be replaced with special phrases. pyRevit output
+    later translates these phrases back in to < and >. That is how pyRevit
+    ditinquishes between <> printed from python and <> that define html.
+
+    Args:
+        input_html (str): input codified html string
+
+    Example:
+        >>> prepare_html_str('&clt;p&cgt;Some text&clt;/p&cgt;')
+        ... "<p>Some text</p>"
+    """
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
 
 
@@ -449,6 +549,16 @@ def reverse_html(input_html):
 
 
 def check_internet_connection(timeout=1000):
+    """Check if internet connection is available.
+
+    Pings a few well-known websites to check if internet connection is present.
+
+    Args:
+        timeout (int): timeout in milliseconds
+
+    Returns:
+        bool: True if internet connection is present.
+    """
     def can_access(url_to_open):
         try:
             client = framework.WebRequest.Create(url_to_open)
@@ -471,11 +581,28 @@ def check_internet_connection(timeout=1000):
 
 
 def touch(fname, times=None):
+    """Update the timestamp on the given file.
+
+    Args:
+        fname (str): target file path
+        times (int): number of times to touch the file
+    """
     with open(fname, 'a'):
         os.utime(fname, times)
 
 
 def read_source_file(source_file_path):
+    """Read text file and return contents.
+
+    Args:
+        source_file_path (str): target file path
+
+    Returns:
+        str: file contents
+
+    Raises:
+        :obj:`PyRevitException` on read error
+    """
     try:
         with open(source_file_path, 'r') as code_file:
             return code_file.read()
@@ -485,6 +612,16 @@ def read_source_file(source_file_path):
 
 
 def create_ext_command_attrs():
+    """Create dotnet attributes for Revit extenrnal commads.
+
+    This method is used in creating custom dotnet types for pyRevit commands
+    and compiling them into a DLL assembly. Current implementation sets
+    ``RegenerationOption.Manual`` and ``TransactionMode.Manual``
+
+    Returns:
+        list: list of :obj:`CustomAttributeBuilder` for
+        :obj:`RegenerationOption` and :obj:`TransactionMode` attributes.
+    """
     regen_const_info = \
         framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
         .GetConstructor(
@@ -523,6 +660,37 @@ def create_ext_command_attrs():
 
 def create_type(modulebuilder,
                 type_class, class_name, custom_attr_list, *args):
+    """Create a dotnet type for a pyRevit command.
+
+    See ``baseclasses.cs`` code for the template pyRevit command dotnet type
+    and its constructor default arguments that must be provided here.
+
+    Args:
+        modulebuilder (:obj:`ModuleBuilder`): dotnet module builder
+        type_class (type): source dotnet type for the command
+        class_name (str): name for the new type
+        custom_attr_list (:obj:`list`): list of dotnet attributes for the type
+        *args: list of arguments to be used with type constructor
+
+    Returns:
+        type: returns created dotnet type
+
+    Example:
+        >>> asm_builder = AppDomain.CurrentDomain.DefineDynamicAssembly(
+        ... win_asm_name, AssemblyBuilderAccess.RunAndSave, filepath
+        ... )
+        >>> module_builder = asm_builder.DefineDynamicModule(
+        ... ext_asm_file_name, ext_asm_full_file_name
+        ... )
+        >>> create_type(
+        ... module_builder,
+        ... PyRevitCommand,
+        ... "PyRevitSomeCommandUniqueName",
+        ... coreutils.create_ext_command_attrs(),
+        ... [scriptpath, atlscriptpath, searchpath, helpurl, name,
+        ... bundle, extension, uniquename, False, False])
+        ... <type PyRevitSomeCommandUniqueName>
+    """
     # create type builder
     type_builder = \
         modulebuilder.DefineType(
