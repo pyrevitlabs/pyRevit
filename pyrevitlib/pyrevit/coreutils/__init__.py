@@ -9,6 +9,7 @@ import time
 import datetime
 import shutil
 import random
+import stat
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
@@ -740,15 +741,22 @@ def create_type(modulebuilder,
 
 
 def open_folder_in_explorer(folder_path):
+    """Open given folder in Windows Explorer.
+
+    Args:
+        folder_path (str): directory path
+    """
     import subprocess
     subprocess.Popen(r'explorer /open,"{}"'
                      .format(os.path.normpath(folder_path)))
 
 
 def fully_remove_dir(dir_path):
-    import stat
+    """Remove directory recursively.
 
-    # noinspection PyUnusedLocal
+    Args:
+        dir_path (str): directory path
+    """
     def del_rw(action, name, exc):
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
@@ -757,24 +765,49 @@ def fully_remove_dir(dir_path):
 
 
 def cleanup_filename(file_name):
+    """Cleanup file name from special characters.
+
+    Args:
+        file_name (str): file name
+
+    Returns:
+        str: cleaned up file name
+
+    Example:
+        >>> cleanup_filename('Myfile-(3).txt')
+        ... "Myfile3.txt"
+    """
     return re.sub('[^\w_.)( -]', '', file_name)
 
 
-def _inc_or_dec_string(st, shift):
+def _inc_or_dec_string(str_id, shift):
+    """Increment or decrement identifier.
+
+    Args:
+        str_id (str): identifier e.g. A310a
+        shift (int): number of steps to change the identifier
+
+    Returns:
+        str: modified identifier
+
+    Example:
+        >>> _inc_or_dec_string('A319z')
+        ... 'A320a'
+    """
     next_str = ""
-    index = len(st) - 1
+    index = len(str_id) - 1
     carry = shift
 
     while index >= 0:
-        if st[index].isalpha():
-            if st[index].islower():
+        if str_id[index].isalpha():
+            if str_id[index].islower():
                 reset_a = 'a'
                 reset_z = 'z'
             else:
                 reset_a = 'A'
                 reset_z = 'Z'
 
-            curr_digit = (ord(st[index]) + carry)
+            curr_digit = (ord(str_id[index]) + carry)
             if curr_digit < ord(reset_a):
                 curr_digit = ord(reset_z) - ((ord(reset_a) - curr_digit) - 1)
                 carry = shift
@@ -787,9 +820,9 @@ def _inc_or_dec_string(st, shift):
             curr_digit = chr(curr_digit)
             next_str += curr_digit
 
-        elif st[index].isdigit():
+        elif str_id[index].isdigit():
 
-            curr_digit = int(st[index]) + carry
+            curr_digit = int(str_id[index]) + carry
             if curr_digit > 9:
                 curr_digit = 0 + ((curr_digit - 9)-1)
                 carry = shift
@@ -801,7 +834,7 @@ def _inc_or_dec_string(st, shift):
             next_str += safe_strtype(curr_digit)
 
         else:
-            next_str += st[index]
+            next_str += str_id[index]
 
         index -= 1
 
@@ -809,51 +842,144 @@ def _inc_or_dec_string(st, shift):
 
 
 def increment_str(input_str, step):
+    """Incremenet identifier.
+
+    Args:
+        input_str (str): identifier e.g. A310a
+        step (int): number of steps to change the identifier
+
+    Returns:
+        str: modified identifier
+
+    Example:
+        >>> increment_str('A319z')
+        ... 'A320a'
+    """
     return _inc_or_dec_string(input_str, abs(step))
 
 
 def decrement_str(input_str, step):
+    """Decrement identifier.
+
+    Args:
+        input_str (str): identifier e.g. A310a
+        step (int): number of steps to change the identifier
+
+    Returns:
+        str: modified identifier
+
+    Example:
+        >>> decrement_str('A310a')
+        ... 'A309z'
+    """
     return _inc_or_dec_string(input_str, -abs(step))
 
 
 def filter_null_items(src_list):
+    """Remove None items in the given list.
+
+    Args:
+        src_list (:obj:`list`): list of any items
+
+    Returns:
+        :obj:`list`: cleaned list
+    """
     return list(filter(bool, src_list))
 
 
 def reverse_dict(input_dict):
+    """Reverse the key, value pairs.
+
+    Args:
+        input_dict (:obj:`dict`): source ordered dict
+
+    Returns:
+        :obj:`defaultdict`: reversed dictionary
+
+    Example:
+        >>> reverse_dict({1: 2, 3: 4})
+        ... defaultdict(<type 'list'>, {2: [1], 4: [3]})
+    """
     output_dict = defaultdict(list)
     for key, value in input_dict.items():
         output_dict[value].append(key)
     return output_dict
 
 
-def pairwise(iterable):
-    from itertools import tee, izip
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return izip(a, b)
-
-
 def timestamp():
+    """Return timestamp for current time.
+
+    Returns:
+        str: timestamp in string format
+
+    Example:
+        >>> timestamp()
+        ... '01003075032506808'
+    """
     return datetime.datetime.now().strftime("%m%j%H%M%S%f")
 
 
 def current_time():
+    """Return formatted current time.
+
+    Current implementation uses %H:%M:%S to format time.
+
+    Returns:
+        str: formatted current time.
+
+    Example:
+        >>> current_time()
+        ... '07:50:53'
+    """
     return datetime.datetime.now().strftime("%H:%M:%S")
 
 
 def current_date():
+    """Return formatted current date.
+
+    Current implementation uses %Y-%m-%d to format date.
+
+    Returns:
+        str: formatted current date.
+
+    Example:
+        >>> current_date()
+        ... '2018-01-03'
+    """
     return datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 def is_blank(input_string):
+    """Check if input string is blank (multiple white spaces is blank).
+
+    Args:
+        input_string (str): input string
+
+    Returns:
+        bool: True if string is blank
+
+    Example:
+        >>> is_blank('   ')
+        ... True
+    """
     if input_string and input_string.strip():
         return False
     return True
 
 
 def is_url_valid(url_string):
+    """Check if given URL is in valid format.
+
+    Args:
+        url_string (str): URL string
+
+    Returns:
+        bool: True if URL is in valid format
+
+    Example:
+        >>> is_url_valid('https://www.google.com')
+        ... True
+    """
     regex = re.compile(
             r'^(?:http|ftp)s?://'                   # http:// or https://
             r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
@@ -867,26 +993,25 @@ def is_url_valid(url_string):
 
 
 def reformat_string(orig_str, orig_format, new_format):
-    """Reformats a string into a new format.
+    """Reformat a string into a new format.
+
     Extracts information from a string based on a given pattern,
     and recreates a new string based on the given new pattern.
 
-    Arguments:
-        orig_str(str): Original string to be reformatted
-        orig_format(str): Pattern of the original string (data to be extracted)
-        new_format(str): New pattern (how to recompose the data)
+    Args:
+        orig_str (str): Original string to be reformatted
+        orig_format (str): Pattern of the original str (data to be extracted)
+        new_format (str): New pattern (how to recompose the data)
+
+    Returns:
+        str: Reformatted string
 
     Example:
         >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
                             '{section} - {loc} - {mat} - {rating} - {name}',
                             '{section}:{mat}:{rating} - {name} ({loc})'))
         ... '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
-
-    Returns:
-        str: Reformatted string
-
     """
-
     # find the tags
     tag_extractor = re.compile('{(.*?)}')
     tags = tag_extractor.findall(orig_format)
@@ -911,6 +1036,7 @@ def reformat_string(orig_str, orig_format, new_format):
 
 
 def get_mapped_drives_dict():
+    """Return a dictionary of currently mapped network drive."""
     searcher = framework.ManagementObjectSearcher(
         "root\\CIMV2",
         "SELECT * FROM Win32_MappedLogicalDisk"
@@ -920,6 +1046,19 @@ def get_mapped_drives_dict():
 
 
 def dletter_to_unc(dletter_path):
+    """Convert drive letter path into UNC path of that drive.
+
+    Args:
+        dletter_path (str): drive letter path
+
+    Returns:
+        str: UNC path
+
+    Example:
+        >>> # assuming J: is mapped to //filestore/server/jdrive
+        >>> dletter_to_unc('J:/somefile.txt')
+        ... '//filestore/server/jdrive/somefile.txt'
+    """
     drives = get_mapped_drives_dict()
     dletter = dletter_path[:2]
     for mapped_drive, server_path in drives.items():
@@ -928,6 +1067,19 @@ def dletter_to_unc(dletter_path):
 
 
 def unc_to_dletter(unc_path):
+    """Convert UNC path into drive letter path.
+
+    Args:
+        unc_path (str): UNC path
+
+    Returns:
+        str: drive letter path
+
+    Example:
+        >>> # assuming J: is mapped to //filestore/server/jdrive
+        >>> unc_to_dletter('//filestore/server/jdrive/somefile.txt')
+        ... 'J:/somefile.txt'
+    """
     drives = get_mapped_drives_dict()
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
@@ -935,26 +1087,46 @@ def unc_to_dletter(unc_path):
 
 
 def random_color():
+    """Return a random color channel value (between 0 and 255)."""
     return random.randint(0, 255)
 
 
 def random_alpha():
+    """Return a random alpha value (between 0 and 1.00)."""
     return round(random.random(), 2)
 
 
 def random_hex_color():
+    """Return a random color in hex format.
+
+    Example:
+        >>> random_hex_color()
+        ... '#FF0000'
+    """
     return '#%02X%02X%02X' % (random_color(),
                               random_color(),
                               random_color())
 
 
 def random_rgb_color():
+    """Return a random color in rgb format.
+
+    Example:
+        >>> random_rgb_color()
+        ... 'rgb(255, 0, 0)'
+    """
     return 'rgb(%d, %d, %d)' % (random_color(),
                                 random_color(),
                                 random_color())
 
 
 def random_rgba_color():
+    """Return a random color in rgba format.
+
+    Example:
+        >>> random_rgba_color()
+        ... 'rgba(255, 0, 0, 0.5)'
+    """
     return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
                                        random_color(),
                                        random_color(),
