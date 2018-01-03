@@ -48,6 +48,7 @@ deeper into pyRevit inner workings.
 
 * :doc:`pyrevit/init`
 * :doc:`pyrevit/api`
+* :doc:`pyrevit/compat`
 * :doc:`pyrevit/framework`
 * :doc:`pyrevit/script`
 * :doc:`pyrevit/userconfig`
@@ -61,6 +62,7 @@ deeper into pyRevit inner workings.
 
     pyrevit/init.rst
     pyrevit/api.rst
+    pyrevit/compat.rst
     pyrevit/framework.rst
     pyrevit/script.rst
     pyrevit/userconfig.rst
