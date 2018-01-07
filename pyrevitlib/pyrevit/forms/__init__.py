@@ -151,10 +151,10 @@ class TemplateUserInputWindow(WPFWindow):
 
     Args:
         context (any): window context element(s)
-        title (type): window title
-        width (type): window width
-        height (type): window height
-        **kwargs (type): other arguments to be passed to window
+        title (str): window title
+        width (int): window width
+        height (int): window height
+        **kwargs: other arguments to be passed to :func:`_setup`
     """
 
     xaml_source = 'BaseWindow.xaml'
@@ -200,6 +200,22 @@ class TemplateUserInputWindow(WPFWindow):
 
 
 class SelectFromList(TemplateUserInputWindow):
+    """Standard form to select from a list of items.
+
+    Args:
+        context (list[str]): list of items to be selected from
+        title (str): window title
+        width (int): window width
+        height (int): window height
+        button_name (str): name of select button
+        multiselect (bool): allow multi-selection
+
+    Example:
+        >>> items = ['item1', 'item2', 'item3']
+        >>> SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
+    """
+
     xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
@@ -233,10 +249,12 @@ class SelectFromList(TemplateUserInputWindow):
                 if safe_strtype(option) in self.list_lb.SelectedItems]
 
     def button_select(self, sender, args):
+        """Handle select button click."""
         self.response = self._get_options()
         self.Close()
 
     def search_txt_changed(self, sender, args):
+        """Handle text change in search box."""
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
         else:
@@ -245,12 +263,43 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options(option_filter=self.search_tb.Text)
 
     def clear_search(self, sender, args):
+        """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
         self.list_lb.ItemsSource = self._context
 
 
 class SelectFromCheckBoxes(TemplateUserInputWindow):
+    """Standard form to select from a list of check boxes.
+
+    Check box items passed in context to this standard form, must implement
+    ``name`` and ``state`` parameter and ``__nonzero__`` method for truth
+    value testing.
+
+    Args:
+        context (list[object]): list of items to be selected from
+        title (str): window title
+        width (int): window width
+        height (int): window height
+        button_name (str): name of select button
+
+    Example:
+        >>> class MyOption(object):
+        ...     def __init__(self, name, state=False):
+        ...         self.state = state
+        ...         self.name = name
+        ...
+        ...     def __nonzero__(self):
+        ...         return self.state
+        ...
+        ...     def __str__(self):
+        ...         return self.name
+        >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
+        >>> res = SelectFromCheckBoxes.show(ops, button_name='Select Item')
+        >>> [bool(x) for x in res]  # or [x.state for x in res]
+        ... [True, False, True]
+    """
+
     xaml_source = 'SelectFromCheckboxes.xaml'
 
     def _setup(self, **kwargs):
@@ -292,19 +341,24 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.list_lb.ItemsSource = current_list
 
     def toggle_all(self, sender, args):
+        """Handle toggle all button to toggle state of all check boxes."""
         self._set_states(flip=True)
 
     def check_all(self, sender, args):
+        """Handle check all button to mark all check boxes as checked."""
         self._set_states(state=True)
 
     def uncheck_all(self, sender, args):
+        """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
     def button_select(self, sender, args):
+        """Handle select button click."""
         self.response = self._context
         self.Close()
 
     def search_txt_changed(self, sender, args):
+        """Handle text change in search box."""
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
         else:
@@ -313,12 +367,51 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self._list_options(checkbox_filter=self.search_tb.Text)
 
     def clear_search(self, sender, args):
+        """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
         self.list_lb.ItemsSource = self._context
 
 
 class CommandSwitchWindow(TemplateUserInputWindow):
+    """Standard form to select from a list of command options.
+
+    Args:
+        context (list[str]): list of command options to choose from
+        switches (list[str]): list of on/off switches
+        message (str): window title message
+        config (dict): dictionary of config dicts for options or switches
+
+    Returns:
+        str: name of selected option
+
+    Returns:
+        tuple(str, dict): if ``switches`` option is used, returns a tuple
+        of selection option name and dict of switches
+
+    Example:
+        This is an example with series of command options:
+
+        >>> ops = ['option1', 'option2', 'option3', 'option4']
+        >>> CommandSwitchWindow.show(ops, message='Select Option')
+        ... 'option2'
+
+        A more advanced example of combining command options, on/off switches,
+        and option or switch configuration options:
+
+        >>> ops = ['option1', 'option2', 'option3', 'option4']
+        >>> switches = ['switch1', 'switch2']
+        >>> cfgs = {'option1': { 'background': '0xFF55FF'}}
+        >>> rops, rswitches = CommandSwitchWindow.show(ops,
+        ...                                            switches=switches
+        ...                                            message='Select Option',
+        ...                                            config=cfgs)
+        >>> rops
+        ... 'option2'
+        >>> rswitches
+        ... {'switch1': False, 'switch2': True}
+    """
+
     xaml_source = 'CommandSwitchWindow.xaml'
 
     def _setup(self, **kwargs):
@@ -398,9 +491,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                     return x
 
     def handle_click(self, sender, args):
+        """Handle mouse click."""
         self.Close()
 
     def handle_input_key(self, sender, args):
+        """Handle keyboard inputs."""
         if args.Key == framework.Windows.Input.Key.Escape:
             if self.search_tb.Text:
                 self.search_tb.Text = ''
@@ -415,9 +510,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             self.search_tb.Focus()
 
     def search_txt_changed(self, sender, args):
+        """Handle text change in search box."""
         self._filter_options(option_filter=self.search_tb.Text)
 
     def process_option(self, sender, args):
+        """Handle click on command option button."""
         self.Close()
         if sender:
             self._setup_response(response=sender.Content)
