@@ -8,4 +8,5 @@ Misc Helper functions for pyRevit.
    :maxdepth: 2
 
    coreutils/init.rst
+   coreutils/pyutils.rst
    coreutils/mathnet.rst

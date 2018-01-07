@@ -57,7 +57,8 @@ class MockObject(object):
     # Defines for custom override for objects where the type is important
     # This is needed for example, so forms won't inherit form MockObject
     # which breaks sphinx autodoc
-    MOCK_OVERRIDE = {'System.Windows.Window': object,
+    MOCK_OVERRIDE = {'Windows.Window': object,
+                     'System.Windows.Window': object,
                      'Controls.Label': object,
                      'Controls.Button': object,
                      'Controls.TextBox': object,
@@ -72,10 +73,8 @@ class MockObject(object):
     def __getattr__(self, attr):
         logger.debug("Getting Atts:{} from {}')".format(attr, self.fullname))
         path_and_attr = '.'.join([self.fullname, attr])
-        # print(path_and_attr)
-        if path_and_attr in MockObject.MOCK_OVERRIDE:
-            return MockObject.MOCK_OVERRIDE[path_and_attr]
-        return MockObject(fullname=attr)
+        override_obj = MockObject.MOCK_OVERRIDE.get(path_and_attr, None)
+        return override_obj or MockObject(fullname=attr)
 
     def __iter__(self):
         yield iter(self)
