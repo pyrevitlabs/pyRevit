@@ -1,3 +1,5 @@
+"""Reusable WPF forms for pyRevit."""
+
 import os
 import os.path as op
 import string
@@ -22,7 +24,23 @@ logger = get_logger(__name__)
 
 
 class WPFWindow(framework.Windows.Window):
+    r"""WPF Window base class for all pyRevit forms.
+
+    Args:
+        xaml_source (str): xaml source filepath or xaml content
+        literal_string (bool): xaml_source contains xaml content, not filepath
+
+    Example:
+        >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
+        >>>          'WindowStartupLocation="CenterScreen" ' \
+        >>>          'HorizontalContentAlignment="Center">' \
+        >>>          '</Window>'
+        >>> w = WPFWindow(layout, literal_string=True)
+        >>> w.show()
+    """
+
     def __init__(self, xaml_source, literal_string=False):
+        """Initialize WPF window and resources."""
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
@@ -38,19 +56,19 @@ class WPFWindow(framework.Windows.Window):
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
-        #2c3e50
+        #2c3e50 #noqa
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
 
-        #23303d
+        #23303d #noqa
         self.Resources['pyRevitDarkerDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
 
-        #ffffff
+        #ffffff #noqa
         self.Resources['pyRevitButtonColor'] = \
             Media.Color.FromArgb(0xFF, 0xff, 0xff, 0xff)
 
-        #f39c12
+        #f39c12 #noqa
         self.Resources['pyRevitAccentColor'] = \
             Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)
 
@@ -66,14 +84,22 @@ class WPFWindow(framework.Windows.Window):
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
     def show(self, modal=False):
+        """Show window."""
         if modal:
             return self.ShowDialog()
         self.Show()
 
     def show_dialog(self):
+        """Show modal window."""
         return self.ShowDialog()
 
     def set_image_source(self, element_name, image_file):
+        """Set source file for image element.
+
+        Args:
+            element_name (str): xaml image element name
+            image_file (str): image file path
+        """
         wpfel = getattr(self, element_name)
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
@@ -88,16 +114,31 @@ class WPFWindow(framework.Windows.Window):
 
     @staticmethod
     def hide_element(*wpf_elements):
+        """Collapse elements.
+
+        Args:
+            *wpf_elements (str): element names to be collaped
+        """
         for wpfel in wpf_elements:
             wpfel.Visibility = framework.Windows.Visibility.Collapsed
 
     @staticmethod
     def show_element(*wpf_elements):
+        """Show collapsed elements.
+
+        Args:
+            *wpf_elements (str): element names to be set to visible.
+        """
         for wpfel in wpf_elements:
             wpfel.Visibility = framework.Windows.Visibility.Visible
 
     @staticmethod
     def toggle_element(*wpf_elements):
+        """Toggle visibility of elements.
+
+        Args:
+            *wpf_elements (str): element names to be toggled.
+        """
         for wpfel in wpf_elements:
             if wpfel.Visibility == framework.Windows.Visibility.Visible:
                 self.hide_element(wpfel)
@@ -106,17 +147,22 @@ class WPFWindow(framework.Windows.Window):
 
 
 class TemplateUserInputWindow(WPFWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen"
-            HorizontalContentAlignment="Center">
-    </Window>
+    """Base class for pyRevit user input standard forms.
+
+    Args:
+        context (any): window context element(s)
+        title (type): window title
+        width (type): window width
+        height (type): window height
+        **kwargs (type): other arguments to be passed to window
     """
 
+    xaml_source = 'BaseWindow.xaml'
+
     def __init__(self, context, title, width, height, **kwargs):
-        WPFWindow.__init__(self, self.layout, literal_string=True)
+        """Initialize user input window."""
+        WPFWindow.__init__(self,
+                           op.join(op.dirname(__file__), self.xaml_source))
         self.Title = title
         self.Width = width
         self.Height = height
@@ -128,56 +174,33 @@ class TemplateUserInputWindow(WPFWindow):
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
+        """Private method to be overriden by subclasses for window setup."""
         pass
 
     def handle_input_key(self, sender, args):
+        """Handle keyboard input."""
         if args.Key == framework.Windows.Input.Key.Escape:
             self.Close()
 
     @classmethod
     def show(cls, context,
              title='User Input', width=300, height=400, **kwargs):
+        """Show user input window.
+
+        Args:
+            context (any): window context element(s)
+            title (type): window title
+            width (type): window width
+            height (type): window height
+            **kwargs (type): other arguments to be passed to window
+        """
         dlg = cls(context, title, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
 
 
 class SelectFromList(TemplateUserInputWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen"
-            HorizontalContentAlignment="Center">
-            <Window.Resources>
-                <Style x:Key="ClearButton" TargetType="Button">
-                    <Setter Property="Background" Value="White"/>
-                </Style>
-            </Window.Resources>
-            <DockPanel Margin="10">
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                    <TextBlock FontSize="14" Margin="0,3,10,0"
-                               DockPanel.Dock="Left">
-                               Filter:
-                    </TextBlock>
-                    <StackPanel>
-                        <TextBox x:Name="search_tb" Height="25px"
-                                 TextChanged="search_txt_changed"/>
-                        <Button Style="{StaticResource ClearButton}"
-                                HorizontalAlignment="Right"
-                                x:Name="clrsearch_b" Content="x"
-                                Margin="0,-25,5,0" Padding="0,-4,0,0"
-                                Click="clear_search"
-                                Width="15px" Height="15px"/>
-                    </StackPanel>
-                </DockPanel>
-                <Button x:Name="select_b"
-                        Content="Select" Click="button_select"
-                        DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
-                <ListView x:Name="list_lb" />
-            </DockPanel>
-    </Window>
-    """
+    xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
         self.hide_element(self.clrsearch_b)
@@ -228,71 +251,7 @@ class SelectFromList(TemplateUserInputWindow):
 
 
 class SelectFromCheckBoxes(TemplateUserInputWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen"
-            HorizontalContentAlignment="Center">
-            <Window.Resources>
-                <Style x:Key="ClearButton" TargetType="Button">
-                    <Setter Property="Background" Value="White"/>
-                </Style>
-            </Window.Resources>
-            <DockPanel Margin="10">
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                    <TextBlock FontSize="14" Margin="0,3,10,0" \
-                               DockPanel.Dock="Left">Filter:</TextBlock>
-                    <StackPanel>
-                        <TextBox x:Name="search_tb" Height="25px"
-                                 TextChanged="search_txt_changed"/>
-                        <Button Style="{StaticResource ClearButton}"
-                                HorizontalAlignment="Right"
-                                x:Name="clrsearch_b" Content="x"
-                                Margin="0,-25,5,0" Padding="0,-4,0,0"
-                                Click="clear_search"
-                                Width="15px" Height="15px"/>
-                    </StackPanel>
-                </DockPanel>
-                <StackPanel DockPanel.Dock="Bottom">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="checkall_b"
-                                Grid.Column="0" Grid.Row="0"
-                                Content="Check" Click="check_all"
-                                Margin="0,10,3,0"/>
-                        <Button x:Name="uncheckall_b"
-                                Grid.Column="1" Grid.Row="0"
-                                Content="Uncheck" Click="uncheck_all"
-                                Margin="3,10,3,0"/>
-                        <Button x:Name="toggleall_b"
-                                Grid.Column="2" Grid.Row="0"
-                                Content="Toggle" Click="toggle_all"
-                                Margin="3,10,0,0"/>
-                    </Grid>
-                    <Button x:Name="select_b" Content=""
-                            Click="button_select" Margin="0,10,0,0"/>
-                </StackPanel>
-                <ListView x:Name="list_lb">
-                    <ListView.ItemTemplate>
-                         <DataTemplate>
-                           <StackPanel>
-                             <CheckBox Content="{Binding name}"
-                                       IsChecked="{Binding state}"/>
-                           </StackPanel>
-                         </DataTemplate>
-                   </ListView.ItemTemplate>
-                </ListView>
-            </DockPanel>
-    </Window>
-    """
+    xaml_source = 'SelectFromCheckboxes.xaml'
 
     def _setup(self, **kwargs):
         self.hide_element(self.clrsearch_b)
@@ -360,205 +319,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
 
 class CommandSwitchWindow(TemplateUserInputWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            ShowInTaskbar="False" ResizeMode="NoResize"
-            WindowStartupLocation="CenterScreen"
-            HorizontalContentAlignment="Center"
-            WindowStyle="None"
-            AllowsTransparency="True"
-            Background="#00FFFFFF"
-            SizeToContent="Height" MaxHeight="500"
-            MouseUp="handle_click">
-        <Window.Resources>
-            <Style TargetType="{x:Type Button}">
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                    <Setter Property="Background" Value="#ffffff"/>
-                    <Setter Property="BorderBrush" Value="#cccccc"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkerDarkBrush}"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Padding" Value="10,2,10,2"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="10"
-                                        Height="20"
-                                        Margin="0,0,5,5"
-                                        SnapsToDevicePixels="true">
-                                    <ContentPresenter Name="Presenter"
-                                                      Margin="{TemplateBinding Padding}"
-                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                      RecognizesAccessKey="True"
-                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsEnabled" Value="false">
-                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkerDarkBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="Foreground" Value="White" />
-                                    </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitButtonForgroundBrush}"/>
-                                    </Trigger>
-                                    <Trigger Property="IsFocused" Value="true">
-                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="Foreground" Value="White" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-            </Style>
-            <Style TargetType="{x:Type TextBox}">
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="OverridesDefaultStyle" Value="True"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="AllowDrop" Value="False"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="CaretBrush" Value="#00000000"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="{x:Type TextBoxBase}">
-                            <Border Name="Border"
-                                    Padding="2"
-                                    CornerRadius="10"
-                                    Background="{x:Null}"
-                                    BorderBrush="#66ffffff"
-                                    BorderThickness="1" >
-                                <Grid Margin="5,0,5,0">
-                                    <ScrollViewer Margin="0" x:Name="PART_ContentHost"/>
-                                    <TextBlock Text="{TemplateBinding Tag}"
-                                               Foreground="#66ffffff"/>
-                                </Grid>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Border" Property="Background" Value="{x:Null}"/>
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{x:Null}"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-            <Style TargetType="{x:Type ToggleButton}">
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
-                <Setter Property="Background" Value="White" />
-                <Setter Property="BorderBrush" Value="#CCCCCC" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ToggleButton">
-                            <Border Background="{TemplateBinding Background}"
-                                        HorizontalAlignment="Center"
-                                        Padding="6,0,10,0"
-                                        CornerRadius="10"
-                                        Height="20"
-                                        Margin="0,0,5,5"
-                                        SnapsToDevicePixels="true">
-                                <StackPanel Orientation="Horizontal"
-                                                HorizontalAlignment="Center">
-                                    <Canvas Name="Layer_1"
-                                                Width="25"
-                                                Height="12"
-                                                VerticalAlignment="Center">
-                                        <Line Canvas.Top="6"
-                                                  X1="5" X2="20"
-                                                  Width="25"
-                                                  StrokeThickness="1"
-                                                  Stroke="{TemplateBinding BorderBrush}"/>
-                                        <Ellipse x:Name="ellipse"
-                                                     Canvas.Left="0"
-                                                     Width="12"
-                                                     Height="12"
-                                                     Fill="White"
-                                                     Stroke="{TemplateBinding BorderBrush}"
-                                                     StrokeThickness="1">
-                                            <Ellipse.RenderTransform>
-                                                <TranslateTransform X="0" Y="0" />
-                                            </Ellipse.RenderTransform>
-                                        </Ellipse>
-                                    </Canvas>
-                                    <TextBlock x:Name="buttontitle"
-                                                   Text="{TemplateBinding Content}"
-                                                   Margin="5,0,5,0"
-                                                   Height="{TemplateBinding Height}"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{TemplateBinding Foreground}"/>
-                                </StackPanel>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True" >
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="#2c3e50" Duration="0:0:0.1" />
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
-                                                                               Storyboard.TargetName="ellipse">
-                                                    <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
-                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="15"/>
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="ellipse" Storyboard.TargetProperty="Fill.Color" To="White" Duration="0:0:0.1" />
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)"
-                                                                                   Storyboard.TargetName="ellipse">
-                                                    <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
-                                                    <SplineDoubleKeyFrame KeyTime="0:0:0.1" Value="0"/>
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                                <Trigger Property="IsFocused" Value="true">
-                                    <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                    <Setter Property="Foreground" Value="White" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </Window.Resources>
-        <Border CornerRadius="15"
-                Background="{DynamicResource pyRevitDarkerDarkBrush}">
-            <DockPanel x:Name="stack_panel" Margin="10">
-                <DockPanel Height="36" DockPanel.Dock="Top">
-                    <Label x:Name="message_label"
-                           VerticalAlignment="Center"
-                           DockPanel.Dock="Left"
-                           FontSize="14"
-                           Foreground="White" />
-                    <TextBox x:Name="search_tb"
-                             Margin="10,2,5,0"
-                             VerticalAlignment="Center"
-                             TextChanged="search_txt_changed"/>
-                </DockPanel>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Hidden">
-                        <WrapPanel x:Name="button_list" Margin="5" />
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
-    </Window>
-    """
+    xaml_source = 'CommandSwitchWindow.xaml'
 
     def _setup(self, **kwargs):
         self.selected_switch = ''
@@ -663,18 +424,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
 
 class TemplatePromptBar(WPFWindow):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            WindowStyle="None" Background="{x:Null}"
-            ShowInTaskbar="False" ShowActivated="False"
-            WindowStartupLocation="Manual"
-            ResizeMode="NoResize"
-            ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Grid>
-        </Grid>
-    </Window>
-    """
+    xaml_source = 'TemplatePromptBar.xaml'
 
     def __init__(self, height=32, **kwargs):
         WPFWindow.__init__(self, self.layout, literal_string=True)
@@ -732,232 +482,14 @@ class TemplatePromptBar(WPFWindow):
 
 
 class WarningBar(TemplatePromptBar):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            WindowStyle="None" Background="{x:Null}"
-            ShowInTaskbar="False" ShowActivated="False"
-            WindowStartupLocation="Manual"
-            ResizeMode="NoResize"
-            ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Grid Background="{DynamicResource pyRevitAccentBrush}">
-            <TextBlock x:Name="message_tb"
-                       TextWrapping="Wrap"
-                       Text="TextBlock"
-                       TextAlignment="Center"
-                       VerticalAlignment="Center"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
-        </Grid>
-    </Window>
-    """
+    xaml_source = 'WarningBar.xaml'
 
     def _setup(self, **kwargs):
         self.message_tb.Text = kwargs.get('title', '')
 
 
 class ProgressBar(TemplatePromptBar):
-    layout = """
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                WindowStyle="None" Background="{x:Null}"
-                ShowInTaskbar="False" ShowActivated="False"
-                WindowStartupLocation="Manual"
-                ResizeMode="NoResize"
-                ScrollViewer.VerticalScrollBarVisibility="Disabled">
-        <Window.Resources>
-            <Style TargetType="{x:Type Button}">
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                    <Setter Property="Background" Value="#ffffff"/>
-                    <Setter Property="BorderBrush" Value="#cccccc"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Padding" Value="8,2,8,2"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="10"
-                                        SnapsToDevicePixels="true">
-                                    <ContentPresenter Name="Presenter"
-                                                      Margin="{TemplateBinding Padding}"
-                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                      RecognizesAccessKey="True"
-                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsEnabled" Value="false">
-                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#dddddd" />
-                                        <Setter Property="BorderBrush" Value="#cccccc" />
-                                        <Setter Property="Foreground" Value="{DynamicResource pyRevitDarkBrush}" />
-                                    </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
-                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
-                                        <Setter Property="Foreground" Value="#ffffff"/>
-                                    </Trigger>
-                                    <Trigger Property="IsFocused" Value="true">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}" />
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-            </Style>
-            <Style TargetType="{x:Type ProgressBar}">
-                <Setter Property="Background" Value="{DynamicResource pyRevitDarkBrush}" />
-                <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}" />
-                <Setter Property="BorderBrush" Value="{x:Null}" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="IsTabStop" Value="False" />
-                <Setter Property="Maximum" Value="100" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ProgressBar">
-                            <Grid x:Name="Root">
-                                <Border x:Name="PART_Track"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}" />
-                                <Grid x:Name="ProgressBarRootGrid">
-                                    <Grid x:Name="IndeterminateRoot" Visibility="Collapsed">
-                                        <Rectangle x:Name="IndeterminateSolidFill"
-                                                   Margin="{TemplateBinding BorderThickness}"
-                                                   Fill="{DynamicResource pyRevitAccentBrush}"
-                                                   Opacity="1"
-                                                   RenderTransformOrigin="0.5,0.5"
-                                                   StrokeThickness="0" />
-                                        <Rectangle x:Name="IndeterminateGradientFill"
-                                                   Opacity=".2"
-                                                   Margin="{TemplateBinding BorderThickness}"
-                                                   StrokeThickness="1">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush MappingMode="Absolute"
-                                                                     SpreadMethod="Repeat"
-                                                                     StartPoint="20,1" EndPoint="0,1">
-                                                    <LinearGradientBrush.Transform>
-                                                        <TransformGroup>
-                                                            <TranslateTransform x:Name="xTransform" X="0" />
-                                                            <SkewTransform AngleX="-30" />
-                                                        </TransformGroup>
-                                                    </LinearGradientBrush.Transform>
-                                                    <GradientStop Offset="0"
-                                                                  Color="{DynamicResource pyRevitAccentColor}" />
-                                                    <GradientStop Offset="0.499"
-                                                                  Color="{DynamicResource pyRevitAccentColor}" />
-                                                    <GradientStop Offset="0.500" Color="White"/>
-                                                    <GradientStop Offset="1.0" Color="White" />
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
-                                    </Grid>
-                                    <Grid x:Name="DeterminateRoot">
-                                        <Border x:Name="PART_Indicator"
-                                                HorizontalAlignment="Left"
-                                                Background="{DynamicResource pyRevitAccentBrush}">
-                                            <Rectangle x:Name="GradientFill"
-                                                   Opacity="0.7"
-                                                   Visibility="Collapsed">
-                                                <Rectangle.Fill>
-                                                    <LinearGradientBrush MappingMode="Absolute"
-                                                                         SpreadMethod="Repeat"
-                                                                         StartPoint="20,1" EndPoint="0,1">
-                                                        <LinearGradientBrush.Transform>
-                                                            <TransformGroup>
-                                                                <TranslateTransform X="0" />
-                                                                <SkewTransform AngleX="-30" />
-                                                            </TransformGroup>
-                                                        </LinearGradientBrush.Transform>
-                                                        <GradientStop Offset="0"
-                                                                      Color="{DynamicResource pyRevitAccentColor}" />
-                                                        <GradientStop Offset="0.651"
-                                                                      Color="{DynamicResource pyRevitAccentColor}" />
-                                                        <GradientStop Offset="0.093"
-                                                                      Color="{DynamicResource pyRevitAccentColor}" />
-                                                        <GradientStop Offset="0.548"
-                                                                      Color="{DynamicResource pyRevitAccentColor}" />
-                                                    </LinearGradientBrush>
-                                                </Rectangle.Fill>
-                                            </Rectangle>
-                                        </Border>
-                                    </Grid>
-                                </Grid>
-                                <VisualStateManager.VisualStateGroups>
-                                    <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="Determinate" />
-                                        <VisualState x:Name="Indeterminate">
-                                            <Storyboard RepeatBehavior="Forever">
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IndeterminateRoot"
-                                                                           Storyboard.TargetProperty="(UIElement.Visibility)"
-                                                                           Duration="00:00:00">
-                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00">
-                                                        <DiscreteObjectKeyFrame.Value>
-                                                            <Visibility>Visible</Visibility>
-                                                        </DiscreteObjectKeyFrame.Value>
-                                                    </DiscreteObjectKeyFrame>
-                                                </ObjectAnimationUsingKeyFrames>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="DeterminateRoot"
-                                                                           Storyboard.TargetProperty="(UIElement.Visibility)"
-                                                                           Duration="00:00:00">
-                                                    <DiscreteObjectKeyFrame KeyTime="00:00:00">
-                                                        <DiscreteObjectKeyFrame.Value>
-                                                            <Visibility>Collapsed</Visibility>
-                                                        </DiscreteObjectKeyFrame.Value>
-                                                    </DiscreteObjectKeyFrame>
-                                                </ObjectAnimationUsingKeyFrames>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="xTransform" Storyboard.TargetProperty="X">
-                                                    <SplineDoubleKeyFrame KeyTime="0" Value="0" />
-                                                    <SplineDoubleKeyFrame KeyTime="00:00:.35" Value="20" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateManager.VisualStateGroups>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="Orientation" Value="Vertical">
-                                    <Setter TargetName="Root" Property="LayoutTransform">
-                                        <Setter.Value>
-                                            <RotateTransform Angle="-90" />
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                                <Trigger Property="IsIndeterminate" Value="true">
-                                    <Setter TargetName="DeterminateRoot" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="IndeterminateRoot" Property="Visibility" Value="Visible" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </Window.Resources>
-        <Grid Background="{DynamicResource pyRevitDarkBrush}">
-            <ProgressBar x:Name="pbar"/>
-            <TextBlock x:Name="pbar_text"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
-            <Button x:Name="cancel_b"
-                    Visibility="Collapsed"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Content="Cancel"
-                    Margin="12,0,0,0"
-                    Padding="10,0,10,0"
-                    Click="clicked_cancel"
-                    Height="18px" />
-        </Grid>
-    </Window>
-    """
+    xaml_source = 'ProgressBar.xaml'
 
     def _setup(self, **kwargs):
         self.max_value = 1
