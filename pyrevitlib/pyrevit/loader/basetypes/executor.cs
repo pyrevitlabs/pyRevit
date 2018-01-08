@@ -79,7 +79,11 @@ namespace PyRevitBaseClasses
             }
             finally
             {
-                CleanupScope(engine, scope);
+                // clean the scope unless the script is requesting clean engine
+                // this is a temporary convention to allow users to keep global references in the scope
+                if(!pyrvtCmd.NeedsCleanEngine)
+                    CleanupScope(engine, scope);
+
                 engineMgr.CleanupEngine(engine);
             }
         }
