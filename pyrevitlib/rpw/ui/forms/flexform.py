@@ -10,13 +10,15 @@ class FlexForm(Window):
     """
     Flex Form Usage
 
+    >>> from rpw.ui.forms import (FlexForm, Label, ComboBox, TextBox, TextBox,
+    ...                           Separator, Button)
     >>> components = [Label('Pick Style:'),
-                      ComboBox('combobox1', {'Opt 1': 10.0, 'Opt 2', 20.0}),
-                      Label('Enter Name:'),
-                      TextBox('textbox1', Text="Default Value"),
-                      CheckBox('checkbox1', 'Check this'),
-                      Separator(),
-                      Button('Select')]
+    ...               ComboBox('combobox1', {'Opt 1': 10.0, 'Opt 2', 20.0}),
+    ...               Label('Enter Name:'),
+    ...               TextBox('textbox1', Text="Default Value"),
+    ...               CheckBox('checkbox1', 'Check this'),
+    ...               Separator(),
+    ...               Button('Select')]
     >>> form = FlexForm('Title', components)
     >>> form.show()
     >>> # User selects `Opt 1`, types 'Wood' in TextBox, and select Checkbox

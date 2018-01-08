@@ -15,6 +15,8 @@ def SelectFromList(title, options, description=None, sort=True, exit_on_close=Tr
         exit_on_close (bool): Form will call sys.exit() if Closed on X. [default: True]
 
     Usage:
+
+        >>> from rpw.ui.forms import SelectFromList
         >>> value = SelectFromList('Test Window', ['1','2','3'])
         >>> # Dropdown shows '1', '2' ,'3'. User clicks Select '1'
         >>> print(value)
@@ -48,6 +50,8 @@ def TextInput(title, default=None, description=None, sort=True, exit_on_close=Tr
         exit_on_close (bool): Form will call sys.exit() if Closed on X. [default: True]
 
     Usage:
+
+        >>> from rpw.ui.forms import TextInput
         >>> value = TextInput('Title', default="3")
         >>> print(value)
         3

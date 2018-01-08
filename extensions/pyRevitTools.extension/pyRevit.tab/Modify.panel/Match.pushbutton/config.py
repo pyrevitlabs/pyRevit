@@ -1,61 +1,54 @@
-from scriptutils import this_script
-from scriptutils.userinput import WPFWindow
+"""Configuration window for Match tool."""
+
+from pyrevit import forms
+from pyrevit import script
 
 
-my_config = this_script.config
-
-
-class MatchPropConfigWindow(WPFWindow):
+class MatchPropConfigWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
-        try:
-            self.halftone.IsChecked = my_config.halftone
-            self.transparency.IsChecked = my_config.transparency
-            self.proj_line_color.IsChecked = my_config.proj_line_color
-            self.proj_line_pattern.IsChecked = my_config.proj_line_pattern
-            self.proj_line_weight.IsChecked = my_config.proj_line_weight
-            self.proj_fill_color.IsChecked = my_config.proj_fill_color
-            self.proj_fill_pattern.IsChecked = my_config.proj_fill_pattern
-            self.proj_fill_pattern_visibility.IsChecked = my_config.proj_fill_pattern_visibility
-            self.cut_line_color.IsChecked = my_config.cut_line_color
-            self.cut_line_pattern.IsChecked = my_config.cut_line_pattern
-            self.cut_line_weight.IsChecked = my_config.cut_line_weight
-            self.cut_fill_color.IsChecked = my_config.cut_fill_color
-            self.cut_fill_pattern.IsChecked = my_config.cut_fill_pattern
-            self.cut_fill_pattern_visibility.IsChecked = my_config.cut_fill_pattern_visibility
+        self._config = script.get_config()
 
-            self.dim_override.IsChecked = my_config.dim_override
-            self.dim_textposition.IsChecked = my_config.dim_textposition
-            self.dim_above.IsChecked = my_config.dim_above
-            self.dim_below.IsChecked = my_config.dim_below
-            self.dim_prefix.IsChecked = my_config.dim_prefix
-            self.dim_suffix.IsChecked = my_config.dim_suffix
+        self.halftone.IsChecked = \
+            self._config.get_option('halftone', True)
+        self.transparency.IsChecked = \
+            self._config.get_option('transparency', True)
+        self.proj_line_color.IsChecked = \
+            self._config.get_option('proj_line_color', True)
+        self.proj_line_pattern.IsChecked = \
+            self._config.get_option('proj_line_pattern', True)
+        self.proj_line_weight.IsChecked = \
+            self._config.get_option('proj_line_weight', True)
+        self.proj_fill_color.IsChecked = \
+            self._config.get_option('proj_fill_color', True)
+        self.proj_fill_pattern.IsChecked = \
+            self._config.get_option('proj_fill_pattern', True)
+        self.proj_fill_pattern_visibility.IsChecked = \
+            self._config.get_option('proj_fill_pattern_visibility', True)
+        self.cut_line_color.IsChecked = \
+            self._config.get_option('cut_line_color', True)
+        self.cut_line_pattern.IsChecked = \
+            self._config.get_option('cut_line_pattern', True)
+        self.cut_line_weight.IsChecked = \
+            self._config.get_option('cut_line_weight', True)
+        self.cut_fill_color.IsChecked = \
+            self._config.get_option('cut_fill_color', True)
+        self.cut_fill_pattern.IsChecked = \
+            self._config.get_option('cut_fill_pattern', True)
+        self.cut_fill_pattern_visibility.IsChecked = \
+            self._config.get_option('cut_fill_pattern_visibility', True)
 
-        except:
-            self.halftone.IsChecked = my_config.halftone = True
-            self.transparency.IsChecked = my_config.transparency = True
-            self.proj_line_color.IsChecked = my_config.proj_line_color = True
-            self.proj_line_pattern.IsChecked = my_config.proj_line_pattern = True
-            self.proj_line_weight.IsChecked = my_config.proj_line_weight = True
-            self.proj_fill_color.IsChecked = my_config.proj_fill_color = True
-            self.proj_fill_pattern.IsChecked = my_config.proj_fill_pattern = True
-            self.proj_fill_pattern_visibility.IsChecked = my_config.proj_fill_pattern_visibility = True
-            self.cut_line_color.IsChecked = my_config.cut_line_color = True
-            self.cut_line_pattern.IsChecked = my_config.cut_line_pattern = True
-            self.cut_line_weight.IsChecked = my_config.cut_line_weight = True
-            self.cut_fill_color.IsChecked = my_config.cut_fill_color = True
-            self.cut_fill_pattern.IsChecked = my_config.cut_fill_pattern = True
-            self.cut_fill_pattern_visibility.IsChecked = my_config.cut_fill_pattern_visibility = True
+        self.dim_override.IsChecked = \
+            self._config.get_option('dim_override', True)
+        self.dim_textposition.IsChecked = \
+            self._config.get_option('dim_textposition', False)
+        self.dim_above.IsChecked = self._config.get_option('dim_above', True)
+        self.dim_below.IsChecked = self._config.get_option('dim_below', True)
+        self.dim_prefix.IsChecked = self._config.get_option('dim_prefix', True)
+        self.dim_suffix.IsChecked = self._config.get_option('dim_suffix', True)
 
-            self.dim_override.IsChecked = my_config.dim_override = True
-            self.dim_textposition.IsChecked = my_config.dim_textposition = False
-            self.dim_above.IsChecked = my_config.dim_above = True
-            self.dim_below.IsChecked = my_config.dim_below = True
-            self.dim_prefix.IsChecked = my_config.dim_prefix = True
-            self.dim_suffix.IsChecked = my_config.dim_suffix = True
-
-            this_script.save_config()
+        script.save_config()
 
     def set_all(self, state):
         self.halftone.IsChecked = state
@@ -80,44 +73,39 @@ class MatchPropConfigWindow(WPFWindow):
         self.dim_prefix.IsChecked = state
         self.dim_suffix.IsChecked = state
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def check_all(self, sender, args):
         self.set_all(True)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def check_none(self, sender, args):
         self.set_all(False)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def save_options(self, sender, args):
-        my_config.halftone = self.halftone.IsChecked
-        my_config.transparency = self.transparency.IsChecked
-        my_config.proj_line_color = self.proj_line_color.IsChecked
-        my_config.proj_line_pattern = self.proj_line_pattern.IsChecked
-        my_config.proj_line_weight = self.proj_line_weight.IsChecked
-        my_config.proj_fill_color = self.proj_fill_color.IsChecked
-        my_config.proj_fill_pattern = self.proj_fill_pattern.IsChecked
-        my_config.proj_fill_pattern_visibility = self.proj_fill_pattern_visibility.IsChecked
-        my_config.cut_line_color = self.cut_line_color.IsChecked
-        my_config.cut_line_pattern = self.cut_line_pattern.IsChecked
-        my_config.cut_line_weight = self.cut_line_weight.IsChecked
-        my_config.cut_fill_color = self.cut_fill_color.IsChecked
-        my_config.cut_fill_pattern = self.cut_fill_pattern.IsChecked
-        my_config.cut_fill_pattern_visibility = self.cut_fill_pattern_visibility.IsChecked
+        self._config.halftone = self.halftone.IsChecked
+        self._config.transparency = self.transparency.IsChecked
+        self._config.proj_line_color = self.proj_line_color.IsChecked
+        self._config.proj_line_pattern = self.proj_line_pattern.IsChecked
+        self._config.proj_line_weight = self.proj_line_weight.IsChecked
+        self._config.proj_fill_color = self.proj_fill_color.IsChecked
+        self._config.proj_fill_pattern = self.proj_fill_pattern.IsChecked
+        self._config.proj_fill_pattern_visibility = \
+            self.proj_fill_pattern_visibility.IsChecked
+        self._config.cut_line_color = self.cut_line_color.IsChecked
+        self._config.cut_line_pattern = self.cut_line_pattern.IsChecked
+        self._config.cut_line_weight = self.cut_line_weight.IsChecked
+        self._config.cut_fill_color = self.cut_fill_color.IsChecked
+        self._config.cut_fill_pattern = self.cut_fill_pattern.IsChecked
+        self._config.cut_fill_pattern_visibility = \
+            self.cut_fill_pattern_visibility.IsChecked
 
-        my_config.dim_override = self.dim_override.IsChecked
-        my_config.dim_textposition = self.dim_textposition.IsChecked
-        my_config.dim_above = self.dim_above.IsChecked
-        my_config.dim_below = self.dim_below.IsChecked
-        my_config.dim_prefix = self.dim_prefix.IsChecked
-        my_config.dim_suffix = self.dim_suffix.IsChecked
+        self._config.dim_override = self.dim_override.IsChecked
+        self._config.dim_textposition = self.dim_textposition.IsChecked
+        self._config.dim_above = self.dim_above.IsChecked
+        self._config.dim_below = self.dim_below.IsChecked
+        self._config.dim_prefix = self.dim_prefix.IsChecked
+        self._config.dim_suffix = self.dim_suffix.IsChecked
 
-        this_script.save_config()
+        script.save_config()
         self.Close()
 
 
-if __name__ == '__main__':
-    MatchPropConfigWindow('MatchConfigWindow.xaml').ShowDialog()
+MatchPropConfigWindow('MatchConfigWindow.xaml').ShowDialog()

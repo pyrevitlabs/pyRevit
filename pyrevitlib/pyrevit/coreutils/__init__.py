@@ -5,39 +5,21 @@ import ast
 import hashlib
 import time
 import datetime
-import clr
 import shutil
+import random
 from collections import defaultdict
 
 from pyrevit import HOST_APP, PyRevitException
-
-# noinspection PyUnresolvedReferences
-from System import AppDomain,  Array, Type
-# noinspection PyUnresolvedReferences
-from System.Diagnostics import Process
-# noinspection PyUnresolvedReferences
-from System.Reflection import Assembly, TypeAttributes,         \
-                              MethodAttributes, CallingConventions
-# noinspection PyUnresolvedReferences
-from System.Reflection.Emit import CustomAttributeBuilder, OpCodes
-# noinspection PyUnresolvedReferences
-from System.Net import WebClient, WebRequest
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.Attributes import RegenerationAttribute,    \
-                                      RegenerationOption,       \
-                                      TransactionAttribute, TransactionMode
+from pyrevit import framework
+from pyrevit import api
 
 
 DEFAULT_SEPARATOR = ';'
 
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-
 class Timer:
     """Timer class using python native time module."""
+
     def __init__(self):
         self.start = time.time()
 
@@ -64,7 +46,7 @@ class ScriptFileParser:
             return doc_str.decode('utf-8')
         return None
 
-    def extract_param(self, param_name):
+    def extract_param(self, param_name, default_value=None):
         try:
             for child in ast.iter_child_nodes(self.ast_tree):
                 if hasattr(child, 'targets'):
@@ -79,7 +61,26 @@ class ScriptFileParser:
                                    'in script file for : {} | {}'
                                    .format(param_name, self.file_addr, err))
 
-        return None
+        return default_value
+
+
+class FileWatcher(object):
+    def __init__(self, filepath):
+        self._cached_stamp = 0
+        self._filepath = filepath
+        self.update_tstamp()
+
+    def update_tstamp(self):
+        self._cached_stamp = os.stat(self._filepath).st_mtime
+
+    @property
+    def has_changed(self):
+        return os.stat(self._filepath).st_mtime != self._cached_stamp
+
+
+class SafeDict(dict):
+    def __missing__(self, key):
+        return '{' + key + '}'
 
 
 def get_all_subclasses(parent_classes):
@@ -117,10 +118,6 @@ def verify_directory(folder):
     return folder
 
 
-def get_parent_directory(path):
-    return op.dirname(path)
-
-
 def join_strings(path_list, separator=DEFAULT_SEPARATOR):
     if path_list:
         return separator.join(path_list)
@@ -132,7 +129,7 @@ SPECIAL_CHARS = {' ': '',
                  '~': '',
                  '!': 'EXCLAM',
                  '@': 'AT',
-                 '#': 'NUM',
+                 '#': 'SHARP',
                  '$': 'DOLLAR',
                  '%': 'PERCENT',
                  '^': '',
@@ -160,7 +157,7 @@ def cleanup_string(input_str):
 
 
 def get_revit_instance_count():
-    return len(list(Process.GetProcessesByName(HOST_APP.proc_name)))
+    return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
 def run_process(proc, cwd=''):
@@ -209,7 +206,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
     Args:
         asm_info (str): name or location of the assembly
-        by_partial_name (bool): returns all assemblies that include the asm_info
+        by_partial_name (bool): returns all assemblies that has the asm_info
         by_location (bool): returns all assemblies matching location
 
     Returns:
@@ -218,7 +215,7 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
               None will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
-    for loaded_assembly in AppDomain.CurrentDomain.GetAssemblies():
+    for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
             if asm_info.lower() in \
                     unicode(loaded_assembly.GetName().Name).lower():
@@ -238,11 +235,14 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
 
 
 def load_asm(asm_name):
-    return AppDomain.CurrentDomain.Load(asm_name)
+    return framework.AppDomain.CurrentDomain.Load(asm_name)
 
 
 def load_asm_file(asm_file):
-    return Assembly.LoadFrom(asm_file)
+    try:
+        return framework.Assembly.LoadFrom(asm_file)
+    except Exception:
+        return None
 
 
 def find_type_by_name(assembly, type_name):
@@ -288,7 +288,7 @@ def reverse_html(input_html):
 
 
 # def check_internet_connection():
-#     client = WebClient()
+#     client = framework.WebClient()
 #     try:
 #         client.OpenRead("http://www.google.com")
 #         return True
@@ -311,14 +311,15 @@ def reverse_html(input_html):
 def check_internet_connection(timeout=1000):
     def can_access(url_to_open):
         try:
-            client = WebRequest.Create(url_to_open)
+            client = framework.WebRequest.Create(url_to_open)
             client.Method = "HEAD"
             client.Timeout = timeout
+            client.Proxy = framework.WebProxy.GetDefaultProxy()
             response = client.GetResponse()
             response.GetResponseStream()
             return True
-        except:
-            return False
+        except Exception:
+                return False
 
     for url in ["http://google.com/",
                 "http://github.com/",
@@ -345,31 +346,50 @@ def read_source_file(source_file_path):
 
 def create_ext_command_attrs():
     regen_const_info = \
-        clr.GetClrType(RegenerationAttribute) \
-           .GetConstructor(Array[Type]((RegenerationOption,)))
+        framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
+        .GetConstructor(
+               framework.Array[framework.Type](
+                   (api.Attributes.RegenerationOption,)
+                   )
+               )
 
     regen_attr_builder = \
-        CustomAttributeBuilder(regen_const_info,
-                               Array[object]((RegenerationOption.Manual,)))
+        framework.CustomAttributeBuilder(
+            regen_const_info,
+            framework.Array[object](
+                (api.Attributes.RegenerationOption.Manual,)
+                )
+            )
 
-    # add TransactionAttribute to type
+    # add TransactionAttribute to framework.Type
     trans_constructor_info = \
-        clr.GetClrType(TransactionAttribute) \
-           .GetConstructor(Array[Type]((TransactionMode,)))
+        framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
+        .GetConstructor(
+               framework.Array[framework.Type](
+                   (api.Attributes.TransactionMode,)
+                   )
+               )
 
     trans_attrib_builder = \
-        CustomAttributeBuilder(trans_constructor_info,
-                               Array[object]((TransactionMode.Manual,)))
+        framework.CustomAttributeBuilder(
+            trans_constructor_info,
+            framework.Array[object](
+                (api.Attributes.TransactionMode.Manual,)
+                )
+            )
 
     return [regen_attr_builder, trans_attrib_builder]
 
 
-def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
+def create_type(modulebuilder,
+                type_class, class_name, custom_attr_list, *args):
     # create type builder
     type_builder = \
-        modulebuilder.DefineType(class_name,
-                                 TypeAttributes.Class | TypeAttributes.Public,
-                                 type_class)
+        modulebuilder.DefineType(
+            class_name,
+            framework.TypeAttributes.Class | framework.TypeAttributes.Public,
+            type_class
+            )
 
     for custom_attr in custom_attr_list:
         type_builder.SetCustomAttribute(custom_attr)
@@ -378,38 +398,37 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     type_list = []
     param_list = []
     for param in args:
-        if type(param) == str:
+        if type(param) == str \
+                or type(param) == int:
             type_list.append(type(param))
             param_list.append(param)
 
     # call base constructor
-    ci = type_class.GetConstructor(Array[Type](type_list))
+    ci = type_class.GetConstructor(framework.Array[framework.Type](type_list))
     # create class constructor builder
-    const_builder = type_builder.DefineConstructor(MethodAttributes.Public,
-                                                   CallingConventions.Standard,
-                                                   Array[Type](()))
+    const_builder = \
+        type_builder.DefineConstructor(framework.MethodAttributes.Public,
+                                       framework.CallingConventions.Standard,
+                                       framework.Array[framework.Type](()))
     # add constructor parameters to stack
     gen = const_builder.GetILGenerator()
-    gen.Emit(OpCodes.Ldarg_0)  # Load "this" onto eval stack
+    gen.Emit(framework.OpCodes.Ldarg_0)  # Load "this" onto eval stack
 
     # add constructor input params to the stack
-    for param in param_list:
-        gen.Emit(OpCodes.Ldstr, param)
+    for param_type, param in zip(type_list, param_list):
+        if param_type == str:
+            gen.Emit(framework.OpCodes.Ldstr, param)
+        elif param_type == int:
+            gen.Emit(framework.OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
-    gen.Emit(OpCodes.Call, ci)
+    gen.Emit(framework.OpCodes.Call, ci)
     # Fill some space - this is how it is generated for equivalent C# code
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Nop)
-    gen.Emit(OpCodes.Ret)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Nop)
+    gen.Emit(framework.OpCodes.Ret)
     type_builder.CreateType()
-
-
-def show_file_in_explorer(file_path):
-    import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'
-                     .format(os.path.normpath(file_path)))
 
 
 def open_folder_in_explorer(folder_path):
@@ -418,13 +437,7 @@ def open_folder_in_explorer(folder_path):
                      .format(os.path.normpath(folder_path)))
 
 
-def open_url(url):
-    """Opens url in a new tab in the default web browser."""
-    import webbrowser
-    return webbrowser.open_new_tab(url)
-
-
-def fully_remove_tree(dir_path):
+def fully_remove_dir(dir_path):
     import stat
 
     # noinspection PyUnusedLocal
@@ -589,13 +602,17 @@ def reformat_string(orig_str, orig_format, new_format):
     return new_format.format(**reformat_dict)
 
 
-def dletter_to_unc(dletter_path):
-    clr.AddReference('System.Management')
-    from System.Management import ManagementObjectSearcher
-    searcher = ManagementObjectSearcher("root\\CIMV2",
-                                        "SELECT * FROM Win32_MappedLogicalDisk")
+def get_mapped_drives_dict():
+    searcher = framework.ManagementObjectSearcher(
+        "root\\CIMV2",
+        "SELECT * FROM Win32_MappedLogicalDisk"
+        )
 
-    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    return {x['DeviceID']: x['ProviderName'] for x in searcher.Get()}
+
+
+def dletter_to_unc(dletter_path):
+    drives = get_mapped_drives_dict()
     dletter = dletter_path[:2]
     for mapped_drive, server_path in drives.items():
         if dletter.lower() == mapped_drive.lower():
@@ -603,12 +620,34 @@ def dletter_to_unc(dletter_path):
 
 
 def unc_to_dletter(unc_path):
-    clr.AddReference('System.Management')
-    from System.Management import ManagementObjectSearcher
-    searcher = ManagementObjectSearcher("root\\CIMV2",
-                                        "SELECT * FROM Win32_MappedLogicalDisk")
-
-    drives = {x['DeviceID']:x['ProviderName'] for x in searcher.Get()}
+    drives = get_mapped_drives_dict()
     for mapped_drive, server_path in drives.items():
         if server_path in unc_path:
             return unc_path.replace(server_path, mapped_drive)
+
+
+def random_color():
+    return random.randint(0, 255)
+
+
+def random_alpha():
+    return round(random.random(), 2)
+
+
+def random_hex_color():
+    return '#%02X%02X%02X' % (random_color(),
+                              random_color(),
+                              random_color())
+
+
+def random_rgb_color():
+    return 'rgb(%d, %d, %d)' % (random_color(),
+                                random_color(),
+                                random_color())
+
+
+def random_rgba_color():
+    return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
+                                       random_color(),
+                                       random_color(),
+                                       random_alpha())

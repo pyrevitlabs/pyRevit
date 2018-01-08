@@ -16,3 +16,7 @@ class PyRevitPluginRemoveException(PyRevitException):
 
 
 PLUGIN_EXT_DEF_FILE = 'extensions.json'
+
+
+import pyrevit.plugins.extpackages
+import pyrevit.plugins.ipymodules

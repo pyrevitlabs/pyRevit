@@ -1,19 +1,21 @@
 """Hides all grid bubbles in the active view."""
 
-
-from rpw import doc, uidoc, db, DB
-
-from Autodesk.Revit.DB import DatumEnds
+from pyrevit import revit, DB
 
 
-grids = DB.FilteredElementCollector(doc)\
+__min_revit_ver__ = 2016
+
+
+grids = DB.FilteredElementCollector(revit.doc)\
           .OfCategory(DB.BuiltInCategory.OST_Grids)\
           .WhereElementIsNotElementType().ToElements()
 
+try:
+    with revit.Transaction('Hide Grid Bubbles'):
+        for grid in grids:
+            grid.HideBubbleInView(DB.DatumEnds.End0, revit.activeview)
+            grid.HideBubbleInView(DB.DatumEnds.End1, revit.activeview)
+except Exception:
+    pass
 
-with db.Transaction('Hide Grid Bubbles'):
-    for grid in grids:
-        grid.HideBubbleInView(DB.DatumEnds.End0, uidoc.ActiveView)
-        grid.HideBubbleInView(DB.DatumEnds.End1, uidoc.ActiveView)
-
-uidoc.RefreshActiveView()
+revit.uidoc.RefreshActiveView()

@@ -1,7 +1,9 @@
 """Opens the documentation page for RevitPythonWrapper."""
+from pyrevit import script
+
 
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('http://revitpythonwrapper.readthedocs.io/en/latest/')
+url = 'http://revitpythonwrapper.readthedocs.io/en/latest/'
+script.open_url(url)

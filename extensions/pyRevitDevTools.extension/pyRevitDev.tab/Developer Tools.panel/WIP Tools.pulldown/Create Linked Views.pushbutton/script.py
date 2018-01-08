@@ -70,5 +70,4 @@ class CreateLinkedViews(WPFWindow):
 
 
 if __name__ == '__main__':
-    # noinspection PyUnresolvedReferences
     CreateLinkedViews('CreateLinkedViews.xaml').ShowDialog()

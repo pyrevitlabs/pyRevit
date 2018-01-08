@@ -1,7 +1,9 @@
-"""Opens the git repository page for RevitPythonWrapper"""
+"""Opens the git repository page for RevitPythonWrapper."""
+from pyrevit import script
+
 
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('https://github.com/gtalarico/revitpythonwrapper')
+url = 'https://github.com/gtalarico/revitpythonwrapper'
+script.open_url(url)

@@ -1,21 +1,27 @@
-"""pyRevit log viewer for debugging"""
+"""pyRevit log viewer for debugging."""
 
 import os.path as op
 import re
-import clr
 
-from pyrevit import USER_DESKTOP
-from pyrevit.coreutils.logger import FILE_LOG_FILENAME
-from pyrevit.coreutils import verify_directory, cleanup_filename
+from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
-from scriptutils import this_script, open_url, logger
-from scriptutils.userinput import WPFWindow, pick_file
+from pyrevit import forms
+from pyrevit import forms
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 
-log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s{1}(\d{2}:\d{2}:\d{2},\d{3})\s{1}(.*)\:\s{1}\[(.*?)\]\s{1}(.+)')
+slogger = script.get_logger()
+
+
+log_entry_parser = re.compile('(\d{4}-\d{2}-\d{2})\s'
+                              '{1}(\d{2}:\d{2}:\d{2},\d{3})\s'
+                              '{1}(.*)\:\s'
+                              '{1}\[(.*?)\]\s'
+                              '{1}(.+)')
+
 logging_command_parser = re.compile('<(.*)>\s(.*)')
 
 
@@ -45,7 +51,7 @@ class EntryFilter:
             if getattr(entry, self.type_id) == self.filter_value:
                 if search_term:
                     if search_term.lower() in entry.message.lower() \
-                    or search_term.lower() in entry.clean_msg.lower():
+                            or search_term.lower() in entry.clean_msg.lower():
                         filtered_list.append(entry)
                 else:
                     filtered_list.append(entry)
@@ -64,7 +70,7 @@ class EntryNoneFilter(EntryFilter):
             filtered_list = []
             for entry in entry_list:
                 if search_term.lower() in entry.message.lower() \
-                or search_term.lower() in entry.clean_msg.lower():
+                        or search_term.lower() in entry.clean_msg.lower():
                     filtered_list.append(entry)
             return filtered_list
         else:
@@ -94,9 +100,12 @@ class EntryCommandFilter(EntryFilter):
 class LogMessageListItem(object):
     def __init__(self, log_entry):
         self._log_entry = log_entry
-        self.date, self.time, self.level, self.module, self.message = log_entry_parser.findall(self._log_entry)[0]
+        self.date, self.time, \
+            self.level, self.module, \
+            self.message = log_entry_parser.findall(self._log_entry)[0]
         try:
-            self.command, self.module = logging_command_parser.findall(self.module)[0]
+            self.command, self.module = \
+                logging_command_parser.findall(self.module)[0]
         except Exception as err:
             self.command = None
 
@@ -109,16 +118,18 @@ class LogMessageListItem(object):
         return self.command
 
 
-class LogViewerWindow(WPFWindow):
+class LogViewerWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
         self.hide_element(self.clrsearch_b)
         self._current_entry_list = list()
-        self._log_files = {op.basename(f):f for f in appdata.list_data_files('log')}
+        self._log_files = \
+            {op.basename(f): f for f in appdata.list_data_files('log')}
         self.logfiles_cb.ItemsSource = self._log_files.keys()
-        if FILE_LOG_FILENAME in self._log_files.keys():
-            self.logfiles_cb.SelectedIndex = self.logfiles_cb.ItemsSource.index(FILE_LOG_FILENAME)
+        if logger.FILE_LOG_FILENAME in self._log_files.keys():
+            self.logfiles_cb.SelectedIndex = \
+                self.logfiles_cb.ItemsSource.index(logger.FILE_LOG_FILENAME)
         else:
             self.logfiles_cb.SelectedIndex = 0
 
@@ -147,11 +158,14 @@ class LogViewerWindow(WPFWindow):
                         log_file_line += 1
                         prev_entry = new_entry
                     except Exception as err:
-                        logger.debug('Error processing entry at {}:{}'.format(op.basename(file_path), log_file_line))
+                        slogger.debug('Error processing entry at {}:{}'
+                                      .format(op.basename(file_path),
+                                              log_file_line))
                         prev_entry.message += log_entry
                         log_file_line += 1
         except Exception as read_err:
-            logger.error('Error reading log file: {} | {}'.format(file_path, read_err))
+            logger.error('Error reading log file: {} | {}'
+                         .format(file_path, read_err))
 
         return entry_list
 
@@ -159,7 +173,8 @@ class LogViewerWindow(WPFWindow):
         base_name = op.basename(log_file)
         self._log_files[base_name] = log_file
         self.logfiles_cb.ItemsSource = self._log_files.keys()
-        self.logfiles_cb.SelectedIndex = self.logfiles_cb.ItemsSource.index(base_name)
+        self.logfiles_cb.SelectedIndex = \
+            self.logfiles_cb.ItemsSource.index(base_name)
 
     @staticmethod
     def _extract_filters(log_entry_list):
@@ -183,10 +198,9 @@ class LogViewerWindow(WPFWindow):
 
         return filter_list
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def log_file_changed(self, sender, args):
-        self._current_entry_list = self._read_log_file(self._log_files[self.current_log_file])
+        self._current_entry_list = \
+            self._read_log_file(self._log_files[self.current_log_file])
         if self._current_entry_list:
             filter_list = self._extract_filters(self._current_entry_list)
 
@@ -196,21 +210,19 @@ class LogViewerWindow(WPFWindow):
             self.filter_cb.ItemsSource = filter_list
             self.filter_cb.SelectedIndex = 0
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def filter_changed(self, sender, args):
         cur_filter = self.current_filter
         # self.logitems_lb.UnselectAll()
         if cur_filter:
-            filtered_list = cur_filter.filter_entries(self._current_entry_list, search_term=self.search_tb.Text)
+            filtered_list = \
+                cur_filter.filter_entries(self._current_entry_list,
+                                          search_term=self.search_tb.Text)
             self.logitems_lb.ItemsSource = filtered_list
         else:
             self.logitems_lb.ItemsSource = self._current_entry_list
 
         self.logitems_lb.ScrollIntoView(self.current_log_entry)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def search_txt_changed(self, sender, args):
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
@@ -219,19 +231,17 @@ class LogViewerWindow(WPFWindow):
 
         cur_filter = self.current_filter
         if cur_filter:
-            filtered_list = cur_filter.filter_entries(self._current_entry_list, search_term=self.search_tb.Text)
+            filtered_list = \
+                cur_filter.filter_entries(self._current_entry_list,
+                                          search_term=self.search_tb.Text)
             self.logitems_lb.ItemsSource = filtered_list
         else:
             self.logitems_lb.ItemsSource = self._current_entry_list
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def clear_search(self, sender, args):
         self.search_tb.Text = ' '
         self.search_tb.Clear()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def log_entry_changed(self, sender, args):
         # self.entrymsg_tb.Navigate("about:blank")
         # self.entrymsg_tb.Document.Write('<html><head></head><body>')
@@ -239,13 +249,10 @@ class LogViewerWindow(WPFWindow):
         if self.current_log_entry:
             self.entrymsg_tb.Text = self.current_log_entry.clean_msg
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def load_log_file(self, sender, args):
-        selected_file = pick_file('log')
+        selected_file = forms.pick_file('log')
         if selected_file:
             self._append_log_file(selected_file)
 
 
-if __name__ == '__main__':
-    LogViewerWindow('LogViewerWindow.xaml').ShowDialog()
+LogViewerWindow('LogViewerWindow.xaml').ShowDialog()

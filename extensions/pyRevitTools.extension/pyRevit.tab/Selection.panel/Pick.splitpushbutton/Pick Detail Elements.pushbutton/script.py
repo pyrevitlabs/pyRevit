@@ -1,20 +1,18 @@
 """Activates selection tool that picks only Detail 2D elements."""
 
-from revitutils import uidoc
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Group, ElementId
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Selection import ISelectionFilter
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
+from pyrevit.framework import List
+from pyrevit import revit, DB, UI
 
 
-class MassSelectionFilter(ISelectionFilter):
+selection = revit.get_selection()
+
+
+class MassSelectionFilter(UI.Selection.ISelectionFilter):
     # standard API override function
     def AllowElement(self, element):
         if element.ViewSpecific:
-            if not isinstance(element, Group) and element.GroupId != element.GroupId.InvalidElementId:
+            if not isinstance(element, DB.Group) \
+                    and element.GroupId != element.GroupId.InvalidElementId:
                 return False
             else:
                 return True
@@ -25,16 +23,15 @@ class MassSelectionFilter(ISelectionFilter):
     def AllowReference(self, refer, point):
         return False
 
-
 try:
-    sel = MassSelectionFilter()
-    sellist = uidoc.Selection.PickElementsByRectangle(sel)
+    msfilter = MassSelectionFilter()
+    selection_list = revit.pick_rectangle(pick_filter=msfilter)
 
-    filteredlist = []
-    for el in sellist:
-        filteredlist.append(el.Id)
+    filtered_list = []
+    for el in selection_list:
+        filtered_list.append(el.Id)
 
-    uidoc.Selection.SetElementIds(List[ElementId](filteredlist))
-    uidoc.RefreshActiveView()
-except:
+    selection.set_to(filtered_list)
+    revit.uidoc.RefreshActiveView()
+except Exception:
     pass

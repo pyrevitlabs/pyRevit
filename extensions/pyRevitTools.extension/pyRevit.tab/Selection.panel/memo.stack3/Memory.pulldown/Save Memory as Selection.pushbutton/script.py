@@ -5,24 +5,23 @@ import os.path as op
 import pickle as pl
 
 from pyrevit.coreutils import timestamp
-from revitutils import doc
-from Autodesk.Revit.DB import Transaction
-from Autodesk.Revit.DB import ElementId
-from Autodesk.Revit.DB import SelectionFilterElement
+from pyrevit import revit, DB
+from pyrevit import script
 
-usertemp = os.getenv('Temp')
-prjname = op.splitext(op.basename(doc.PathName))[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
-f = open(datafile, 'r')
 
-cursel = pl.load(f)
-f.close()
+proj_info = revit.get_project_info()
+datafile = script.get_document_data_file("SelList", "pym")
 
-filtername = 'SavedSelection_' + prjname + '_' + timestamp()
+if op.exists(datafile):
+    if proj_info.name:
+        filtername = 'SavedSelection_' + proj_info.name + '_' + timestamp()
+    else:
+        filtername = 'SavedSelection_' + timestamp()
 
-t = Transaction(doc, 'pySaveSelection')
-t.Start()
-selFilter = SelectionFilterElement.Create(doc, filtername)
-for elid in cursel:
-    selFilter.AddSingle(ElementId(int(elid)))
-t.Commit()
+    with open(datafile, 'r') as f:
+        cursel = pl.load(f)
+
+    with revit.Transaction('pySaveSelection'):
+        selFilter = DB.SelectionFilterElement.Create(revit.doc, filtername)
+        for elid in cursel:
+            selFilter.AddSingle(DB.ElementId(int(elid)))

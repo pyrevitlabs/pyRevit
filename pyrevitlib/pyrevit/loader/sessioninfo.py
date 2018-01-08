@@ -3,10 +3,11 @@ import uuid
 
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
 
-from pyrevit.versionmgr import PYREVIT_VERSION
+from pyrevit import versionmgr
+from pyrevit.versionmgr import about
 from pyrevit.coreutils import DEFAULT_SEPARATOR
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.envvars import set_pyrevit_env_var, get_pyrevit_env_var
+from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
@@ -16,18 +17,17 @@ from pyrevit.loader.systemdiag import system_diag
 logger = get_logger(__name__)
 
 
-SESSION_UUID_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_uuidISC'
-
-LOADEDASSM_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_loadedassms'
-LOADEDASSM_COUNT_ISC_KEYNAME = PYREVIT_ADDON_NAME + '_assmcount'
+PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
+PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
+PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
 
 
 def set_session_uuid(uuid_str):
-    set_pyrevit_env_var(SESSION_UUID_ISC_KEYNAME, uuid_str)
+    envvars.set_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR, uuid_str)
 
 
 def get_session_uuid():
-    return get_pyrevit_env_var(SESSION_UUID_ISC_KEYNAME)
+    return envvars.get_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR)
 
 
 def new_session_uuid():
@@ -46,7 +46,7 @@ def get_total_loaded_assm_count():
     Returns:
         total count (int): Total number of loaded assemblies.
     """
-    assm_count = get_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME)
+    assm_count = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR)
     if not assm_count:
         return 0
     else:
@@ -64,11 +64,11 @@ def set_total_loaded_assm_count(assm_count):
         assm_count (int): Number of loaded assemblies
     """
 
-    set_pyrevit_env_var(LOADEDASSM_COUNT_ISC_KEYNAME, assm_count)
+    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR, assm_count)
 
 
 def get_loaded_pyrevit_assemblies():
-    loaded_assms_str = get_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME)
+    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(DEFAULT_SEPARATOR)
     else:
@@ -76,7 +76,7 @@ def get_loaded_pyrevit_assemblies():
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
-    set_pyrevit_env_var(LOADEDASSM_ISC_KEYNAME,
+    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR,
                         DEFAULT_SEPARATOR.join(loaded_assm_name_list))
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()
@@ -86,13 +86,15 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
 def report_env():
     # log python version, home directory, config file, ...
     # get python version that includes last commit hash
-    pyrvt_ver = PYREVIT_VERSION.get_formatted()
+    pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
 
     system_diag()
 
     logger.info('pyRevit version: {} - '
                 ':coded: with :small-black-heart: '
-                'in Portland, OR'.format(pyrvt_ver))
+                'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
+    if user_config.core.get_option('rocketmode', False):
+        logger.info('pyRevit Rocket Mode enabled. :rocket:')
     logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
                                                        HOST_APP.build,
                                                        HOST_APP.proc_id))

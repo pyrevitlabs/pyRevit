@@ -1,7 +1,9 @@
 """Opens the git repository page."""
+from pyrevit import script
+from pyrevit.versionmgr import urls
+
 
 __context__ = 'zerodoc'
 
 
-from scriptutils import open_url
-open_url('https://github.com/eirannejad/pyRevit')
+script.open_url(urls.github)

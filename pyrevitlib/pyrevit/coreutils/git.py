@@ -6,18 +6,14 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
-import clr
 import importlib
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+from pyrevit.framework import clr
+from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.addin import get_addin_dll_file
-
-# noinspection PyUnresolvedReferences
-import System
-# noinspection PyUnresolvedReferences
-from System import DateTime, DateTimeOffset
 
 
 logger = get_logger(__name__)
@@ -26,21 +22,17 @@ logger = get_logger(__name__)
 GIT_LIB = 'LibGit2Sharp'
 
 if not EXEC_PARAMS.doc_mode:
-    # todo: figure out how to import extensions on the caller's scope.
-    clr.AddReference("System.Core")
-    clr.ImportExtensions(System.Linq)
-    # clr.AddReferenceByName(GIT_LIB)
+    libgit_dll = get_addin_dll_file(GIT_LIB)
+    logger.debug('Loading dll: {}'.format(libgit_dll))
+
     try:
-        clr.AddReferenceToFileAndPath(get_addin_dll_file(GIT_LIB))
-    except:
-        logger.error('Can not load %s module. '
+        clr.AddReferenceToFileAndPath(libgit_dll)
+        # public libgit module
+        libgit = importlib.import_module(GIT_LIB)
+    except Exception as load_err:
+        logger.error('Can not load {} module. '
                      'This module is necessary for getting pyRevit version '
-                     'and staying updated.' % GIT_LIB)
-
-
-if not EXEC_PARAMS.doc_mode:
-    # public libgit module
-    libgit = importlib.import_module(GIT_LIB)
+                     'and staying updated. | {}'.format(GIT_LIB, load_err))
 
 
 class PyRevitGitAuthenticationError(PyRevitException):

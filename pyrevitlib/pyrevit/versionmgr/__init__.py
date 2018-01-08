@@ -1,17 +1,20 @@
-from pyrevit import PYREVIT_ADDON_NAME
-from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, EXEC_PARAMS
+from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.envvars import set_pyrevit_env_var
-import pyrevit.coreutils.git as git
+from pyrevit.coreutils import envvars
+from pyrevit.coreutils import git
 
 
 logger = get_logger(__name__)
+
+
+PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
 
 
 class PyRevitVersion(object):
     """Contains current pyrevit version"""
     major = VERSION_MAJOR
     minor = VERSION_MINOR
+    metadata = BUILD_METADATA
     patch = ''
 
     def __init__(self, patch_number):
@@ -32,11 +35,13 @@ class PyRevitVersion(object):
                      unicode(PyRevitVersion.minor), self.patch)
         return ver_tuple
 
-    def get_formatted(self):
+    def get_formatted(self, nopatch=False):
         """Returns 'major.minor:patch' in string"""
-        return '{}.{}:{}'.format(PyRevitVersion.major,
-                                 PyRevitVersion.minor,
-                                 self.patch)
+        formatted_ver = '{}.{}{}'.format(PyRevitVersion.major,
+                                         PyRevitVersion.minor,
+                                         PyRevitVersion.metadata)
+
+        return formatted_ver if nopatch else formatted_ver + ':' + self.patch
 
 
 def get_pyrevit_repo():
@@ -46,17 +51,15 @@ def get_pyrevit_repo():
         logger.error('Can not create repo from directory: {} | {}'
                      .format(HOME_DIR, repo_err))
 
-if not EXEC_PARAMS.doc_mode:
+
+def get_pyrevit_version():
     try:
-        PYREVIT_REPO = get_pyrevit_repo()
-        PYREVIT_VERSION = PyRevitVersion(PYREVIT_REPO.last_commit_hash)
+        pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
         logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
-        PYREVIT_VERSION = PyRevitVersion('?')
+        pyrvt_ver = PyRevitVersion('?')
 
-    set_pyrevit_env_var(PYREVIT_ADDON_NAME + '_versionISC',
-                        PYREVIT_VERSION.get_formatted())
+    envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
+                                pyrvt_ver.get_formatted())
 
-else:
-    PYREVIT_REPO = None
-    PYREVIT_VERSION = None
+    return pyrvt_ver

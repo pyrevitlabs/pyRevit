@@ -1,47 +1,48 @@
 # -*- coding: utf-8 -*-
-import Autodesk.Revit.DB as DB
-from System.Collections.Generic import List
-
 import os
+import os.path as op
 import sys
-import pickle as pl
+import pickle
 
-from scriptutils import this_script, logger
-from revitutils import uidoc, doc
+from pyrevit.framework import List
+from pyrevit import revit, DB
+from pyrevit import script
 
-datafile = this_script.get_document_data_file(0, "pym", command_name="SelList")
-datafile_i = this_script.get_document_data_file(0, "pym", command_name="Iter")
+
+logger = script.get_logger()
+
+datafile = script.get_document_data_file("SelList", "pym")
+index_datafile = script.get_document_data_file("SelListPrevNextIndex", "pym")
+
+
+selection = revit.get_selection()
 
 
 def iterate(mode, step_size=1):
-    if os.path.isfile(datafile_i):
-        f = open(datafile_i, 'r')
-        cur_i = pl.load(f)
-        f.close()
+    if op.exists(index_datafile):
+        with open(index_datafile, 'r') as f:
+            idx = pickle.load(f)
 
-        if (mode == '-'):
-            i = cur_i - step_size
+        if mode == '-':
+            idx = idx - step_size
         else:
-            i = cur_i + step_size
+            idx = idx + step_size
     else:
-        i = 0
+        idx = 0
 
     try:
-        f = open(datafile, 'r')
-        cursel = pl.load(f)
-        f.close()
-        _i = i
-        if (i < 0):
-            i = abs(i / len(cursel)) * len(cursel) + i
-        elif (i >= len(cursel)):
-            i = i - abs(i / len(cursel)) * len(cursel)
+        with open(datafile, 'r') as df:
+            cursel = pickle.load(df)
 
-        eId = DB.ElementId(int(list(cursel)[i]))
-        uidoc.Selection.SetElementIds(List[DB.ElementId]([eId]))
+        if idx < 0:
+            idx = abs(idx / len(cursel)) * len(cursel) + idx
+        elif idx >= len(cursel):
+            idx = idx - abs(idx / len(cursel)) * len(cursel)
 
-        f = open(datafile_i, 'w')
-        pl.dump(i, f)
-        f.close()
+        selection.set_to([DB.ElementId(int(list(cursel)[idx]))])
 
-    except:
-        logger.debug('Selection file {0} does not exit'.format(datafile))
+        with open(index_datafile, 'w') as f:
+            pickle.dump(idx, f)
+
+    except Exception as io_err:
+        logger.error('Error read/write to: {} | {}'.format(datafile, io_err))

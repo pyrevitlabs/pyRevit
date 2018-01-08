@@ -1,12 +1,13 @@
 """
 `uidoc.Selection` Wrapper
 """
+import sys
 
 import rpw
 from rpw import revit, DB, UI
 from rpw.utils.dotnet import List
 from rpw.base import BaseObjectWrapper, BaseObject
-from rpw.exceptions import RpwTypeError
+from rpw.exceptions import RpwTypeError, RevitExceptions
 from rpw.utils.logger import logger
 from rpw.utils.coerce import to_element_ids, to_elements, to_iterable
 from rpw.db.collection import ElementSet
@@ -26,7 +27,8 @@ if revit.host and revit.doc:
 
 class Selection(BaseObjectWrapper, ElementSet):
     """
-    >>> selection = rpw.ui.Selection()
+    >>> from rpw import ui
+    >>> selection = ui.Selection()
     >>> selection[0]
     FirstElement
     >>> selection.element_ids
@@ -84,7 +86,7 @@ class Selection(BaseObjectWrapper, ElementSet):
 
     def update(self):
         """ Forces UI selection to match the Selection() object """
-        self._revit_object.SetElementIds(self.as_element_id_list)
+        self._revit_object.SetElementIds(self.get_element_ids(as_list=True))
 
     def clear(self):
         """ Clears Selection
@@ -98,6 +100,18 @@ class Selection(BaseObjectWrapper, ElementSet):
         ElementSet.clear(self)
         self.update()
 
+    def __getitem__(self, index):
+        """
+        Overrides ElementSet __getitem__ to retrieve from selection
+        based on index.
+        """
+        # https://github.com/gtalarico/revitpythonwrapper/issues/32
+        for n, element in enumerate(self.__iter__()):
+            if n ==index:
+                return element
+        else:
+            raise IndexError('Index is out of range')
+
     def __bool__(self):
         """
         Returns:
@@ -108,7 +122,7 @@ class Selection(BaseObjectWrapper, ElementSet):
         >>> Selection() is True
         True
         """
-        return bool(len(self))
+        return super(Selection, obj).__bool__()
 
     def __repr__(self):
         return super(Selection, self).__repr__(data={'count': len(self)})
@@ -119,26 +133,33 @@ class Pick(BaseObject):
 
     Handles all pick* methods in the Seletion Class
 
-    >>> picker = rpw.ui.Pick()
-    >>> pick.pick_element()
+    >>> from rpw import ui
+    >>> ui.Pick.pick_element()
     <rpw:reference>
-    >>> pick.pick_element(multiple=True)
+    >>> ui.Pick.pick_element(multiple=True)
     [<rpw:reference>, ...]
     """
 
-    def _pick(self, obj_type, msg='Pick:', multiple=False):
+    @classmethod
+    def _pick(cls, obj_type, msg='Pick:', multiple=False, linked=False):
         """ Note: Moved Reference Logic to Referenc Wrapper."""
-        if multiple:
-            references = PickObjects(obj_type, msg)
-        else:
-            reference = PickObject(obj_type, msg)
+
+        try:
+            if multiple:
+                references = PickObjects(obj_type, msg)
+            else:
+                reference = PickObject(obj_type, msg)
+        except RevitExceptions.OperationCanceledException:
+            logger.debug('ui.Pick aborted by user')
+            sys.exit(0)
 
         if multiple:
-            return [Reference(ref) for ref in references]
+            return [Reference(ref, linked=linked) for ref in references]
         else:
-            return Reference(reference)
+            return Reference(reference, linked=linked)
 
-    def pick_box(self, msg, style='directional'):
+    @classmethod
+    def pick_box(cls, msg, style='directional'):
         """
         PickBox
 
@@ -154,7 +175,8 @@ class Pick(BaseObject):
         pick_box = PickBox(PICK_STYLE[style])
         return (XYZ(pick_box.Min), XYZ(pick_box.Max))
 
-    def pick_by_rectangle(self, msg):
+    @classmethod
+    def pick_by_rectangle(cls, msg):
         """
         PickBox
 
@@ -166,7 +188,8 @@ class Pick(BaseObject):
         refs = PickElementsByRectangle(msg)
         return [Element(ref) for ref in refs]
 
-    def pick_element(self, msg='Pick Element(s)', multiple=False):
+    @classmethod
+    def pick_element(cls, msg='Pick Element(s)', multiple=False):
         """
         Pick Element
 
@@ -177,9 +200,10 @@ class Pick(BaseObject):
         Returns:
             reference (``Reference``): :any:`Reference` Class
         """
-        return self._pick(ObjectType.Element, msg=msg, multiple=multiple)
+        return cls._pick(ObjectType.Element, msg=msg, multiple=multiple)
 
-    def pick_pt_on_element(self, msg='Pick Pt On Element(s)', multiple=False):
+    @classmethod
+    def pick_pt_on_element(cls, msg='Pick Pt On Element(s)', multiple=False):
         """
         Pick Point On Element
 
@@ -190,9 +214,10 @@ class Pick(BaseObject):
         Returns:
             reference (``Reference``): :any:`Reference` Class
         """
-        return self._pick(ObjectType.PointOnElement, msg=msg, multiple=multiple)
+        return cls._pick(ObjectType.PointOnElement, msg=msg, multiple=multiple)
 
-    def pick_edge(self, msg='Pick Edge(s)', multiple=False):
+    @classmethod
+    def pick_edge(cls, msg='Pick Edge(s)', multiple=False):
         """
         Pick Edge
 
@@ -203,9 +228,10 @@ class Pick(BaseObject):
         Returns:
             reference (``Reference``): :any:`Reference` Class
         """
-        return self._pick(ObjectType.Edge, msg=msg, multiple=multiple)
+        return cls._pick(ObjectType.Edge, msg=msg, multiple=multiple)
 
-    def pick_face(self, msg='Pick Face(s)', multiple=False):
+    @classmethod
+    def pick_face(cls, msg='Pick Face(s)', multiple=False):
         """
         Pick Face
 
@@ -216,9 +242,10 @@ class Pick(BaseObject):
         Returns:
             reference (``Reference``): :any:`Reference` Class
         """
-        return self._pick(ObjectType.Face, msg=msg, multiple=multiple)
+        return cls._pick(ObjectType.Face, msg=msg, multiple=multiple)
 
-    def pick_linked_element(self, msg='Pick Linked Element', multiple=False):
+    @classmethod
+    def pick_linked_element(cls, msg='Pick Linked Element', multiple=False):
         """
         Pick Linked Element
 
@@ -229,9 +256,10 @@ class Pick(BaseObject):
         Returns:
             reference (``Reference``): :any:`Reference` Class
         """
-        return self._pick(ObjectType.LinkedElement, msg=msg, multiple=multiple)
+        return cls._pick(ObjectType.LinkedElement, msg=msg, multiple=multiple, linked=True)
 
-    def pick_pt(self, msg='Pick Point', snap=None):
+    @classmethod
+    def pick_pt(cls, msg='Pick Point', snap=None):
         """
         Pick Point location
 

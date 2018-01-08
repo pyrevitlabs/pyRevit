@@ -1,17 +1,12 @@
-from scriptutils import logger, this_script
-from scriptutils.userinput import CommandSwitchWindow
-from revitutils import doc, selection
-
 from collections import namedtuple
 from customcollections import DefaultOrderedDict
 
-out = this_script.output
-ParamDef = namedtuple('ParamDef', ['name', 'type'])
+from pyrevit import revit, DB
+from pyrevit import forms
+from pyrevit import script
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Element, CurveElement, ElementId, \
-                              StorageType, ParameterType
 
+__context__ = 'selection'
 __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
           'This tool studies the selected elements and their associated '   \
           'types and presents the user with a list of parameters that are ' \
@@ -21,11 +16,19 @@ __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
 __title__ = 'Sum Total'
 
 
+selection = revit.get_selection()
+
+logger = script.get_logger()
+output = script.get_output()
+
+ParamDef = namedtuple('ParamDef', ['name', 'type'])
+
+
 def is_calculable_param(param):
-    if param.StorageType == StorageType.Double:
+    if param.StorageType == DB.StorageType.Double:
         return True
 
-    if param.StorageType == StorageType.Integer:
+    if param.StorageType == DB.StorageType.Integer:
         val_str = param.AsValueString()
         if val_str and unicode(val_str).lower().isdigit():
             return True
@@ -37,9 +40,9 @@ def calc_param_total(element_list, param_name):
     sum_total = 0.0
 
     def _add_total(total, param):
-        if param.StorageType == StorageType.Double:
+        if param.StorageType == DB.StorageType.Double:
             total += param.AsDouble()
-        elif param.StorageType == StorageType.Integer:
+        elif param.StorageType == DB.StorageType.Integer:
             total += param.AsInteger()
 
         return total
@@ -47,7 +50,7 @@ def calc_param_total(element_list, param_name):
     for el in element_list:
         param = el.LookupParameter(param_name)
         if not param:
-            el_type = doc.GetElement(el.GetTypeId())
+            el_type = revit.doc.GetElement(el.GetTypeId())
             type_param = el_type.LookupParameter(param_name)
             if not type_param:
                 logger.error('Elemend with ID: {} '
@@ -85,9 +88,9 @@ def format_volume(total):
                                         (total/35.3147)*1000000))
 
 
-formatter_funcs = {ParameterType.Length: format_length,
-                   ParameterType.Area: format_area,
-                   ParameterType.Volume: format_volume}
+formatter_funcs = {DB.ParameterType.Length: format_length,
+                   DB.ParameterType.Area: format_area,
+                   DB.ParameterType.Volume: format_volume}
 
 
 def output_param_total(element_list, param_def):
@@ -114,8 +117,8 @@ def process_options(element_list):
                                            pdef.ParameterType))
 
         # find element type parameters
-        el_type = doc.GetElement(el.GetTypeId())
-        if el_type and el_type.Id != ElementId.InvalidElementId:
+        el_type = revit.doc.GetElement(el.GetTypeId())
+        if el_type and el_type.Id != DB.ElementId.InvalidElementId:
             for type_param in el_type.ParametersMap:
                 if is_calculable_param(type_param):
                     pdef = type_param.Definition
@@ -125,11 +128,13 @@ def process_options(element_list):
         param_sets.append(shared_params)
 
     # make a list of options from discovered parameters
-    all_shared_params = param_sets[0]
-    for param_set in param_sets[1:]:
-        all_shared_params = all_shared_params.intersection(param_set)
+    if param_sets:
+        all_shared_params = param_sets[0]
+        for param_set in param_sets[1:]:
+            all_shared_params = all_shared_params.intersection(param_set)
 
-    return {'{} <{}>'.format(x.name, x.type):x for x in all_shared_params}
+        return {'{} <{}>'.format(x.name, x.type): x
+                for x in all_shared_params}
 
 
 def process_sets(element_list):
@@ -140,27 +145,32 @@ def process_sets(element_list):
 
     # separate elements into sets based on their type
     for el in element_list:
-        if hasattr(el ,'LineStyle'):
+        if hasattr(el, 'LineStyle'):
             el_sets[el.LineStyle.Name].append(el)
         else:
-            tname = Element.Name.GetValue(doc.GetElement(el.GetTypeId()))
-            el_sets[tname].append(el)
+            eltype = revit.doc.GetElement(el.GetTypeId())
+            wrapped_eltype = revit.ElementWrapper(eltype)
+            el_sets[wrapped_eltype.name].append(el)
 
     return el_sets
 
-# main -------------------------------------------------------------------------
+
+# main -----------------------------------------------------------------------
 # ask user to select an option
 options = process_options(selection.elements)
-selected_switch = \
-    CommandSwitchWindow(sorted(options),
-                        'Sum values of parameter:').pick_cmd_switch()
 
-# Calculating totals for each set and printing results
-if selected_switch:
-    selected_option = options[selected_switch]
-    if selected_option:
-        for type_name, element_set in process_sets(selection.elements).items():
-            type_name = type_name.replace('<', '&lt;').replace('>', '&gt;')
-            out.print_md('### Totals for: {}'.format(type_name))
-            output_param_total(element_set, selected_option)
-            out.insert_divider()
+if options:
+    selected_switch = \
+        forms.CommandSwitchWindow.show(sorted(options),
+                                       message='Sum values of parameter:')
+
+    # Calculating totals for each set and printing results
+    if selected_switch:
+        selected_option = options[selected_switch]
+        if selected_option:
+            for type_name, element_set \
+                    in process_sets(selection.elements).items():
+                type_name = type_name.replace('<', '&lt;').replace('>', '&gt;')
+                output.print_md('### Totals for: {}'.format(type_name))
+                output_param_total(element_set, selected_option)
+                output.insert_divider()

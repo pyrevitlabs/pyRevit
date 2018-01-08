@@ -1,7 +1,9 @@
-from scriptutils import open_url
+"""Open RequestBin website that helps verifying http requests."""
+
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 
-open_url('http://requestb.in/')
+script.open_url('http://requestb.in/')
