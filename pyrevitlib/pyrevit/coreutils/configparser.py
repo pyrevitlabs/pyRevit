@@ -16,7 +16,7 @@ class PyRevitConfigSectionParser(object):
         self._section_name = section_name
 
     def __iter__(self):
-        return self._parser.options(self._section_name)
+        return iter(self._parser.options(self._section_name))
 
     def __str__(self):
         return self._section_name
@@ -90,7 +90,7 @@ class PyRevitConfigParser(object):
                 raise PyRevitException(read_err)
 
     def __iter__(self):
-        return [self.get_section(x) for x in self._parser.sections()]
+        return iter([self.get_section(x) for x in self._parser.sections()])
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
