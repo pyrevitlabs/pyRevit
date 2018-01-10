@@ -67,6 +67,7 @@ class _ButtonIcons:
         image_size = base_image.PixelWidth
         image_format = base_image.Format
         image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
+        palette = base_image.Palette
 
         stride = image_size * image_byte_per_pixel
         array_size = stride * image_size
@@ -79,7 +80,7 @@ class _ButtonIcons:
                                         adjusted_dpi * screen_scaling,
                                         adjusted_dpi * screen_scaling,
                                         image_format,
-                                        None,
+                                        palette,
                                         image_data,
                                         stride)
         return bitmap_source
