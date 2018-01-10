@@ -115,7 +115,7 @@ class FileWatcher(object):
 
     Example:
         >>> watcher = FileWatcher('/path/to/file.ext')
-        >>> watcher.has_changed()
+        >>> watcher.has_changed
         ... True
     """
 
