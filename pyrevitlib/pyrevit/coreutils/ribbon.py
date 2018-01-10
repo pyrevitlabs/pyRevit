@@ -62,7 +62,7 @@ class _ButtonIcons:
         base_image.StreamSource = self.filestream
         base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
         base_image.EndInit()
-        # self.filestream.Seek(0, IO.SeekOrigin.Begin)
+        self.filestream.Seek(0, IO.SeekOrigin.Begin)
 
         image_size = base_image.PixelWidth
         image_format = base_image.Format
