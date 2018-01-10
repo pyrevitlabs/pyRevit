@@ -297,7 +297,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
         >>> res = SelectFromCheckBoxes.show(ops, button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
-        ... [True, False, True]
+        [True, False, True]
     """
 
     xaml_source = 'SelectFromCheckboxes.xaml'
@@ -394,7 +394,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         >>> ops = ['option1', 'option2', 'option3', 'option4']
         >>> CommandSwitchWindow.show(ops, message='Select Option')
-        ... 'option2'
+        'option2'
 
         A more advanced example of combining command options, on/off switches,
         and option or switch configuration options:
@@ -407,9 +407,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         ...                                            message='Select Option',
         ...                                            config=cfgs)
         >>> rops
-        ... 'option2'
+        'option2'
         >>> rswitches
-        ... {'switch1': False, 'switch2': True}
+        {'switch1': False, 'switch2': True}
     """
 
     xaml_source = 'CommandSwitchWindow.xaml'

@@ -28,7 +28,7 @@ class Timer:
     Example:
         >>> timer = Timer()
         >>> timer.get_time()
-        ... 12
+        12
     """
 
     def __init__(self):
@@ -55,7 +55,7 @@ class ScriptFileParser:
         >>> finder.docstring()
         ... "Misc Helper functions for pyRevit."
         >>> finder.extract_param('SomeValue', [])
-        ... []
+        []
     """
 
     def __init__(self, file_address):
@@ -116,7 +116,7 @@ class FileWatcher(object):
     Example:
         >>> watcher = FileWatcher('/path/to/file.ext')
         >>> watcher.has_changed
-        ... True
+        True
     """
 
     def __init__(self, filepath):
@@ -150,7 +150,7 @@ class SafeDict(dict):
         >>> safedict = SafeDict({'target': 'Apple',
         ...                      'attr':   'Color'})
         >>> string.format(safedict)  # will not fail with missing 'color' key
-        ... 'Apple Color is {color}.'
+        'Apple Color is {color}.'
     """
 
     def __missing__(self, key):
@@ -272,7 +272,7 @@ def cleanup_string(input_str):
     Example:
         >>> src_str = 'TEST@Some*<value>'
         >>> cleanup_string(src_str)
-        ... "TESTATSomeSTARvalue"
+        "TESTATSomeSTARvalue"
     """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
@@ -434,7 +434,7 @@ def make_canonical_name(*args):
 
     Example:
         >>> make_canonical_name('somename', 'someid', 'txt')
-        ... "somename.someid.txt"
+        "somename.someid.txt"
     """
     return '.'.join(args)
 
@@ -475,7 +475,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
 
     Example:
         >>> calculate_dir_hash(source_path, '\.extension', '\.json')
-        ... "1a885a0cae99f53d6088b9f7cee3bf4d"
+        "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
     for root, dirs, files in os.walk(dir_path):
@@ -503,7 +503,7 @@ def prepare_html_str(input_string):
 
     Example:
         >>> prepare_html_str('<p>Some text</p>')
-        ... "&clt;p&cgt;Some text&clt;/p&cgt;"
+        "&clt;p&cgt;Some text&clt;/p&cgt;"
     """
     return input_string.replace('<', '&clt;').replace('>', '&cgt;')
 
@@ -523,7 +523,7 @@ def reverse_html(input_html):
 
     Example:
         >>> prepare_html_str('&clt;p&cgt;Some text&clt;/p&cgt;')
-        ... "<p>Some text</p>"
+        "<p>Some text</p>"
     """
     return input_html.replace('&clt;', '<').replace('&cgt;', '>')
 
@@ -690,7 +690,7 @@ def create_type(modulebuilder,
         ... coreutils.create_ext_command_attrs(),
         ... [scriptpath, atlscriptpath, searchpath, helpurl, name,
         ... bundle, extension, uniquename, False, False])
-        ... <type PyRevitSomeCommandUniqueName>
+        <type PyRevitSomeCommandUniqueName>
     """
     # create type builder
     type_builder = \
@@ -775,7 +775,7 @@ def cleanup_filename(file_name):
 
     Example:
         >>> cleanup_filename('Myfile-(3).txt')
-        ... "Myfile3.txt"
+        "Myfile3.txt"
     """
     return re.sub('[^\w_.)( -]', '', file_name)
 
@@ -792,7 +792,7 @@ def _inc_or_dec_string(str_id, shift):
 
     Example:
         >>> _inc_or_dec_string('A319z')
-        ... 'A320a'
+        'A320a'
     """
     next_str = ""
     index = len(str_id) - 1
@@ -853,7 +853,7 @@ def increment_str(input_str, step):
 
     Example:
         >>> increment_str('A319z')
-        ... 'A320a'
+        'A320a'
     """
     return _inc_or_dec_string(input_str, abs(step))
 
@@ -870,7 +870,7 @@ def decrement_str(input_str, step):
 
     Example:
         >>> decrement_str('A310a')
-        ... 'A309z'
+        'A309z'
     """
     return _inc_or_dec_string(input_str, -abs(step))
 
@@ -898,7 +898,7 @@ def reverse_dict(input_dict):
 
     Example:
         >>> reverse_dict({1: 2, 3: 4})
-        ... defaultdict(<type 'list'>, {2: [1], 4: [3]})
+        defaultdict(<type 'list'>, {2: [1], 4: [3]})
     """
     output_dict = defaultdict(list)
     for key, value in input_dict.items():
@@ -914,7 +914,7 @@ def timestamp():
 
     Example:
         >>> timestamp()
-        ... '01003075032506808'
+        '01003075032506808'
     """
     return datetime.datetime.now().strftime("%m%j%H%M%S%f")
 
@@ -929,7 +929,7 @@ def current_time():
 
     Example:
         >>> current_time()
-        ... '07:50:53'
+        '07:50:53'
     """
     return datetime.datetime.now().strftime("%H:%M:%S")
 
@@ -944,7 +944,7 @@ def current_date():
 
     Example:
         >>> current_date()
-        ... '2018-01-03'
+        '2018-01-03'
     """
     return datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -960,7 +960,7 @@ def is_blank(input_string):
 
     Example:
         >>> is_blank('   ')
-        ... True
+        True
     """
     if input_string and input_string.strip():
         return False
@@ -978,7 +978,7 @@ def is_url_valid(url_string):
 
     Example:
         >>> is_url_valid('https://www.google.com')
-        ... True
+        True
     """
     regex = re.compile(
             r'^(?:http|ftp)s?://'                   # http:// or https://
@@ -1010,7 +1010,7 @@ def reformat_string(orig_str, orig_format, new_format):
         >>> reformat_string('150 - FLOOR/CEILING - WD - 1 HR - FLOOR ASSEMBLY',
                             '{section} - {loc} - {mat} - {rating} - {name}',
                             '{section}:{mat}:{rating} - {name} ({loc})'))
-        ... '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
+        '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
     # find the tags
     tag_extractor = re.compile('{(.*?)}')
@@ -1057,7 +1057,7 @@ def dletter_to_unc(dletter_path):
     Example:
         >>> # assuming J: is mapped to //filestore/server/jdrive
         >>> dletter_to_unc('J:/somefile.txt')
-        ... '//filestore/server/jdrive/somefile.txt'
+        '//filestore/server/jdrive/somefile.txt'
     """
     drives = get_mapped_drives_dict()
     dletter = dletter_path[:2]
@@ -1078,7 +1078,7 @@ def unc_to_dletter(unc_path):
     Example:
         >>> # assuming J: is mapped to //filestore/server/jdrive
         >>> unc_to_dletter('//filestore/server/jdrive/somefile.txt')
-        ... 'J:/somefile.txt'
+        'J:/somefile.txt'
     """
     drives = get_mapped_drives_dict()
     for mapped_drive, server_path in drives.items():
@@ -1101,7 +1101,7 @@ def random_hex_color():
 
     Example:
         >>> random_hex_color()
-        ... '#FF0000'
+        '#FF0000'
     """
     return '#%02X%02X%02X' % (random_color(),
                               random_color(),
@@ -1113,7 +1113,7 @@ def random_rgb_color():
 
     Example:
         >>> random_rgb_color()
-        ... 'rgb(255, 0, 0)'
+        'rgb(255, 0, 0)'
     """
     return 'rgb(%d, %d, %d)' % (random_color(),
                                 random_color(),
@@ -1125,7 +1125,7 @@ def random_rgba_color():
 
     Example:
         >>> random_rgba_color()
-        ... 'rgba(255, 0, 0, 0.5)'
+        'rgba(255, 0, 0, 0.5)'
     """
     return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
                                        random_color(),

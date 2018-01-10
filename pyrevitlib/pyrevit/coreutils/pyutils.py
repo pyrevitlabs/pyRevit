@@ -12,7 +12,7 @@ def pairwise(iterable):
 
     Example:
         >>> pairwise([1, 2, 3, 4, 5])
-        ... [(1, 2), (3, 4)]    # 5 can not be paired
+        [(1, 2), (3, 4)]    # 5 can not be paired
     """
     # a, b = tee(iterable)
     # next(b, None)
@@ -34,7 +34,7 @@ def safe_cast(val, to_type, default=None):
 
     Example:
         >>> safe_cast('name', int, default=0)
-        ... 0
+        0
     """
     try:
         return to_type(val)
