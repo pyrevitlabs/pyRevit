@@ -170,7 +170,7 @@ class PyRevitOutputWindow(object):
     def set_title(self, new_title):
         """Set window title to the new title."""
         if self.window:
-            self.window.Text = new_title
+            self.window.Title = new_title
 
     def set_width(self, width):
         """Set window width to the new width."""
