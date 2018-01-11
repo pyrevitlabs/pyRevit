@@ -63,11 +63,12 @@ class _ButtonIcons:
         base_image.StreamSource = self.filestream
         base_image.DecodePixelHeight = adjusted_icon_size * screen_scaling
         base_image.EndInit()
-        # self.filestream.Seek(0, IO.SeekOrigin.Begin)
+        self.filestream.Seek(0, IO.SeekOrigin.Begin)
 
         image_size = base_image.PixelWidth
         image_format = base_image.Format
         image_byte_per_pixel = base_image.Format.BitsPerPixel / 8
+        palette = base_image.Palette
 
         stride = image_size * image_byte_per_pixel
         array_size = stride * image_size
@@ -80,7 +81,7 @@ class _ButtonIcons:
                                         adjusted_dpi * screen_scaling,
                                         adjusted_dpi * screen_scaling,
                                         image_format,
-                                        None,
+                                        palette,
                                         image_data,
                                         stride)
         return bitmap_source
@@ -386,8 +387,8 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Error in applying icon to button: {}'
-                                 .format(icon_err))
+            raise PyRevitUIError('Error in applying icon to button > {} : {}'
+                                 .format(icon_file, icon_err))
 
     def set_tooltip(self, tooltip):
         try:
@@ -527,8 +528,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Error in applying icon to button: {}'
-                                 .format(icon_err))
+            raise PyRevitUIError('Error in applying icon to button > {} : {}'
+                                 .format(icon_file, icon_err))
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',

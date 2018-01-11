@@ -18,7 +18,7 @@ linkedModelName = ''
 if len(selection) > 0:
     for el in selection:
         if isinstance(el, DB.RevitLinkInstance):
-            linkedModelName = el.Name.Split(':')[0]
+            linkedModelName = el.Name.split(':')[0]
         elif isinstance(el, DB.ImportInstance):
             linkedModelName = el.LookupParameter('Name').AsString()
         if linkedModelName:

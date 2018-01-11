@@ -9,6 +9,7 @@ __context__ = 'zerodoc'
 output = script.get_output()
 logger = script.get_logger()
 
+output.set_title('Output Tests')
 
 output.print_md('**Testing log levels:**')
 logger.critical('Test Log Level')
