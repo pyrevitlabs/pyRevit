@@ -386,8 +386,8 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Error in applying icon to button: {}'
-                                 .format(icon_err))
+            raise PyRevitUIError('Error in applying icon to button > {} : {}'
+                                 .format(icon_file, icon_err))
 
     def set_tooltip(self, tooltip):
         try:
@@ -527,8 +527,8 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 rvtapi_obj.LargeImage = button_icon.mediumBitmap
             self._dirty = True
         except Exception as icon_err:
-            raise PyRevitUIError('Error in applying icon to button: {}'
-                                 .format(icon_err))
+            raise PyRevitUIError('Error in applying icon to button > {} : {}'
+                                 .format(icon_file, icon_err))
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
