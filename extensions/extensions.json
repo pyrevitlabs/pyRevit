@@ -42,6 +42,20 @@
         "website": "http://eirannejad.github.io/pyRevit/",
         "image" : "",
         "dependencies": []
-        }
+        },
+        {
+        "builtin": "False",
+        "enable": "True",
+        "type": "extension",
+        "rocket_mode_compatible": "True",
+        "name": "PyRevitMEP",
+        "description": "MEP extension for PyRevit",
+        "author": "Cyril Waechter",
+        "author-url": "https://github.com/CyrilWaechter",
+        "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
+        "website": "http://pythoncvc.net/?page_id=123",
+        "image" : "",
+        "dependencies": []
+        }        
     ]
 }
