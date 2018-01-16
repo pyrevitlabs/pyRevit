@@ -120,16 +120,16 @@ def setup_usage_logfile(session_id=None):
         _disable_file_usage_logging()
     else:
         # if config exists, create new usage log file under the same address
-        if op.isdir(logfilepath):
-            # if directory is valid
-            logfile_fullpath = op.join(logfilepath, filelogging_filename)
-            _setup_default_logfile(logfile_fullpath)
-        else:
-            # if not, show error and disable usage logging
-            if usageloggingactive:
+        if usageloggingactive:
+            if op.isdir(logfilepath):
+                # if directory is valid
+                logfile_fullpath = op.join(logfilepath, filelogging_filename)
+                _setup_default_logfile(logfile_fullpath)
+            else:
+                # if not, show error and disable usage logging
                 logger.error('Provided usage log address does not exits or is '
                              'not a directory. Usage logging disabled.')
-            _disable_usage_logging()
+                _disable_usage_logging()
 
     # SERVER usage logging -----------------------------------------------------
     # read or setup default values for server usage logging
