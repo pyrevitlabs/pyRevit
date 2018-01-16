@@ -1036,7 +1036,7 @@ def reformat_string(orig_str, orig_format, new_format):
 
 
 def get_mapped_drives_dict():
-    """Return a dictionary of currently mapped network drive."""
+    """Return a dictionary of currently mapped network drives."""
     searcher = framework.ManagementObjectSearcher(
         "root\\CIMV2",
         "SELECT * FROM Win32_MappedLogicalDisk"
