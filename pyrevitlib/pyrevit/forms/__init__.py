@@ -948,12 +948,8 @@ def select_revisions(title='Select Revision',
                      button_name='Select',
                      width=300,
                      multiselect=True):
-    unsorted_revisions = \
-        DB.FilteredElementCollector(revit.doc)\
-          .OfCategory(DB.BuiltInCategory.OST_Revisions)\
-          .WhereElementIsNotElementType()
-
-    revisions = sorted(unsorted_revisions, key=lambda x: x.SequenceNumber)
+    revisions = sorted(revit.query.get_revisions(),
+                       key=lambda x: x.SequenceNumber)
     revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions

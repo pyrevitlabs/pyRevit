@@ -12,11 +12,15 @@ class ModelSharedParam:
         self.param_def = param_def
         self.param_binding = param_binding
 
+    @property
+    def name(self):
+        return self.param_def.Name
+
     def __eq__(self, other):
         if isinstance(self.param_def, DB.ExternalDefinition):
-            return self.param_def.GUID == other or self.param_def.Name == other
+            return self.param_def.GUID == other or self.name == other
         else:
-            return self.param_def.Name == other
+            return self.name == other
 
 
 class CurrentProjectInfo:
@@ -178,3 +182,15 @@ def get_defined_sharedparams():
 
 def get_project_info():
     return CurrentProjectInfo()
+
+
+def get_revisions(doc=None):
+    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+                  .OfCategory(DB.BuiltInCategory.OST_Revisions)
+                  .WhereElementIsNotElementType())
+
+
+def get_sheets(doc=None):
+    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+                  .OfCategory(DB.BuiltInCategory.OST_Sheets)
+                  .WhereElementIsNotElementType())
