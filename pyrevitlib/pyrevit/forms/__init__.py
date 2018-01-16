@@ -524,7 +524,8 @@ class TemplatePromptBar(WPFWindow):
     xaml_source = 'TemplatePromptBar.xaml'
 
     def __init__(self, height=32, **kwargs):
-        WPFWindow.__init__(self, self.layout, literal_string=True)
+        WPFWindow.__init__(self,
+                           op.join(op.dirname(__file__), self.xaml_source))
 
         self.user_height = height
         self.update_window()
