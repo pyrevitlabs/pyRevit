@@ -47,3 +47,17 @@ def new_project(template=None, imperial=True):
     else:
         units = DB.UnitSystem.Imperial if imperial else DB.UnitSystem.Metric
         return HOST_APP.app.NewProjectDocument(units)
+
+
+def create_revision(description=None, by=None, to=None, date=None,
+                    alphanum=False, nonum=False, doc=None):
+    new_rev = DB.Revision.Create(doc or HOST_APP.doc)
+    new_rev.Description = description
+    new_rev.IssuedBy = by
+    new_rev.IssuedTo = to
+    if alphanum:
+        new_rev.NumberType = DB.RevisionNumberType.Alphanumeric
+    if nonum:
+        new_rev.NumberType = DB.RevisionNumberType.None #noqa
+    new_rev.RevisionDate = date
+    return new_rev
