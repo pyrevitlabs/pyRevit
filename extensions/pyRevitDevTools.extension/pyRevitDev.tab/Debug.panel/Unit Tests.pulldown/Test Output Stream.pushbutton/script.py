@@ -45,3 +45,5 @@ output.print_table([[1, 2, 3],
 
 
 output.update_progress(50, 100)
+output.hide_progress()
+output.unhide_progress()

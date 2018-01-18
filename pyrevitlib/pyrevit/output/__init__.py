@@ -301,6 +301,16 @@ class PyRevitOutputWindow(object):
         if self.window:
             self.window.UpdateProgressBar(0, 1)
 
+    def hide_progress(self):
+        """Hide output window progress bar."""
+        if self.window:
+            self.window.SetProgressBarVisibility(False)
+
+    def unhide_progress(self):
+        """Unhide output window progress bar."""
+        if self.window:
+            self.window.SetProgressBarVisibility(True)
+
     @staticmethod
     def emojize(md_str):
         """Replace emoji codes with emoji images and print.
