@@ -38,3 +38,20 @@ def update_sheet_revisions(revisions, sheets, state=True, doc=None):
             updated_sheets.append(s)
 
     return updated_sheets
+
+
+def update_revision_alphanumeric(token_list, prefix='', postfix='', doc=None):
+    doc = doc or HOST_APP.doc
+    alphalist = List[str]()
+    for token in token_list:
+        alphalist.Add(str(token))
+    alpha_cfg = DB.AlphanumericRevisionSettings(alphalist, prefix, postfix)
+    rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
+    rev_cfg.SetAlphanumericRevisionSettings(alpha_cfg)
+
+
+def update_revision_numeric(starting_int, prefix='', postfix='', doc=None):
+    doc = doc or HOST_APP.doc
+    num_cfg = DB.NumericRevisionSettings(starting_int, prefix, postfix)
+    rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
+    rev_cfg.SetNumericRevisionSettings(num_cfg)
