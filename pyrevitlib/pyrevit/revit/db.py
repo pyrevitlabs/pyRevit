@@ -34,6 +34,10 @@ class ElementWrapper(object):
         return Element.Name.GetValue(self._wrapped_element)
 
     @property
+    def symbol_name(self):
+        return Element.Name.GetValue(self._wrapped_element.Symbol.Family)
+
+    @property
     def id(self):
         return self._wrapped_element.Id
 

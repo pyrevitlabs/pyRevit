@@ -159,7 +159,7 @@ def get_model_sharedparams(doc=None):
 
 
 def model_has_sharedparam(param_id_or_name, doc=None):
-    msp_list = get_model_sharedparams(doc)
+    msp_list = get_model_sharedparams(doc or HOST_APP.doc)
     for x in msp_list:
         if x == param_id_or_name:
             return True
