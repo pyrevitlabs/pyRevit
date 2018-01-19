@@ -1,5 +1,7 @@
 """Helper functions for python."""
 
+import re
+
 
 def pairwise(iterable):
     """Iterate through items in pairs.
@@ -40,3 +42,19 @@ def safe_cast(val, to_type, default=None):
         return to_type(val)
     except (ValueError, TypeError):
         return default
+
+
+def isnumber(token):
+    """Verify if given string token is int or float.
+
+    Args:
+        token (str): string value
+
+    Returns:
+        bool: True of token is int or float
+
+    Example:
+        >>> isnumber('12.3')
+        True
+    """
+    return re.match("^[0-9.]+?$", token) is not None
