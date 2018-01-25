@@ -11,8 +11,6 @@ from pyrevit import script
 
 
 logger = script.get_logger()
-results = script.get_results()
-output = script.get_output()
 
 
 __context__ = 'zerodoc'
@@ -113,9 +111,12 @@ if __name__ == '__main__':
             from pyrevit.loader.sessionmgr import execute_command
             execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
+            # now log the new session
+            results = script.get_results()
             results.newsession = sessioninfo.get_session_uuid()
 
         else:
+            output = script.get_output()
             output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
             logger.debug('Core updates. Skippin update and reload.')
     else:
