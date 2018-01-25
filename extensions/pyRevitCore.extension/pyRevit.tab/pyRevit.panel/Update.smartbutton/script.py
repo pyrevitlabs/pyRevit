@@ -53,7 +53,11 @@ def _check_for_updates():
 
         for repo in updater.get_all_extension_repos():
             if updater.has_pending_updates(repo):
+                logger.info('Updates are available for {}...'
+                            .format(repo.name))
                 return True
+            else:
+                logger.info('{} is up-to-date...'.format(repo.name))
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
