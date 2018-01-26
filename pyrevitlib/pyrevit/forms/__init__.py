@@ -269,6 +269,22 @@ class SelectFromList(TemplateUserInputWindow):
         self.list_lb.ItemsSource = self._context
 
 
+class BaseCheckBoxItem(object):
+    def __init__(self, orig_item):
+        self.item = orig_item
+        self.state = False
+
+    def __nonzero__(self):
+        return self.state
+
+    def __str__(self):
+        return self.name or str(self.item)
+
+    @property
+    def name(self):
+        return getattr(self.item, 'name', '')
+
+
 class SelectFromCheckBoxes(TemplateUserInputWindow):
     """Standard form to select from a list of check boxes.
 
@@ -304,14 +320,25 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
     def _setup(self, **kwargs):
         self.hide_element(self.clrsearch_b)
-        self.clear_search(None, None)
         self.search_tb.Focus()
 
+        self.checked_only = kwargs.get('checked_only', False)
         button_name = kwargs.get('button_name', None)
         if button_name:
             self.select_b.Content = button_name
 
+        self._verify_context()
         self._list_options()
+
+    def _verify_context(self):
+        new_context = []
+        for item in self._context:
+            if not hasattr(item, 'state'):
+                new_context.append(BaseCheckBoxItem(item))
+            else:
+                new_context.append(item)
+
+        self._context = new_context
 
     def _list_options(self, checkbox_filter=None):
         if checkbox_filter:
@@ -354,7 +381,10 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
     def button_select(self, sender, args):
         """Handle select button click."""
-        self.response = self._context
+        if self.checked_only:
+            self.response = [x.item for x in self._context if x.state]
+        else:
+            self.response = self._context
         self.Close()
 
     def search_txt_changed(self, sender, args):
