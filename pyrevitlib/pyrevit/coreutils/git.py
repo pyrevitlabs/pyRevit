@@ -201,10 +201,11 @@ def compare_branch_heads(repo_info):
     repo = repo_info.repo
     repo_branches = repo.Branches
 
-    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+    logger.debug('Repo branches: {}'
+                 .format([b.Name for b in repo_branches]))
 
     for branch in repo_branches:
-        if not branch.IsRemote:
+        if branch.Name == repo_info.branch and not branch.IsRemote:
             try:
                 if branch.TrackedBranch:
                     logger.debug('Comparing heads: {} of {}'
@@ -219,6 +220,10 @@ def compare_branch_heads(repo_info):
                 logger.error('Can not compare branch {} in repo: {} | {}'
                              .format(branch, repo,
                                      safe_strtype(compare_err).replace('\n', '')))
+        else:
+            logger.debug('Skipping remote branch: {}'
+                         .format(branch.CanonicalName))
+
 
 
 def get_all_new_commits(repo_info):
