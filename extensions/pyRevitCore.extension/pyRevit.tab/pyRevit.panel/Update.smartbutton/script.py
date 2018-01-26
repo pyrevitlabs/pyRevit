@@ -110,11 +110,6 @@ if __name__ == '__main__':
             # modules need to be re-imported again in a clean engine.
             from pyrevit.loader.sessionmgr import execute_command
             execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
-
-            # now log the new session
-            results = script.get_results()
-            results.newsession = sessioninfo.get_session_uuid()
-
         else:
             output = script.get_output()
             output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
