@@ -23,24 +23,64 @@ RESOLUTION_TYPES = [DB.FailureResolutionType.MoveElements,
                     DB.FailureResolutionType.SaveDocument]
 
 
+# see FailureProcessingResult docs
+# http://www.revitapidocs.com/2018.1/f147e6e6-4b2e-d61c-df9b-8b8e5ebe3fcb.htm
+# explains usage of FailureProcessingResult options
 class FailureSwallower(DB.IFailuresPreprocessor):
-    called_proceed = False
-
     def PreprocessFailures(self, failuresAccessor):
-        # delete all warnings
-        failuresAccessor.DeleteAllWarnings()
-        # go through failures and resolve
-        for failure in failuresAccessor.GetFailureMessages():
+        severity = failuresAccessor.GetSeverity()
+        # log some info
+        logger.debug('processing failure with severity: {}'.format(severity))
+
+        if severity == DB.FailureSeverity.None:     #noqa
+            logger.debug('clean document. returning with'
+                         'FailureProcessingResult.Continue')
+            return DB.FailureProcessingResult.Continue
+
+        # log the failure messages
+        failures = failuresAccessor.GetFailureMessages()
+        logger.debug('processing {} failure messages.'.format(len(failures)))
+        for failure in failures:
+            # log some info
+            logger.debug('processing failure msg: {}'
+                         .format(getattr(failure.GetFailureDefinitionId(),
+                                         'Guid',
+                                         '')))
+            logger.debug('\tseverity: {}'
+                         .format(failure.GetSeverity()))
+            logger.debug('\tdescription: {}'
+                         .format(failure.GetDescriptionText()))
+            logger.debug('\telements: {}'
+                         .format([x.IntegerValue
+                                  for x in failure.GetFailingElementIds()]))
+            logger.debug('\thas resolutions: {}'
+                         .format(failure.HasResolutions()))
+
+        # now go through failures and attempt resolution
+        action_taken = False
+        for failure in failures:
+            logger.debug('attempt resolving failure: {}'
+                         .format(getattr(failure.GetFailureDefinitionId(),
+                                         'Guid',
+                                         '')))
+            # iterate through resolution options, pick one and resolve
             for res_type in RESOLUTION_TYPES:
-                if failure.HasResolutionOfType(res_type):
-                    logger.debug('resolving failure with: {}'
+                found_resolution = False
+                if failure.GetSeverity() != DB.FailureSeverity.Warning \
+                        and failure.HasResolutionOfType(res_type):
+                    logger.debug('setting failure resolution to: {}'
                                  .format(res_type))
                     failure.SetCurrentResolutionType(res_type)
-            failuresAccessor.ResolveFailure(failure)
-        if not self.called_proceed:
+                    action_taken = found_resolution = True
+                    break
+
+            if found_resolution:
+                failuresAccessor.ResolveFailure(failure)
+
+        # report back
+        if action_taken:
             logger.debug('resolving failures with '
                          'FailureProcessingResult.ProceedWithCommit')
-            self.called_proceed = True
             return DB.FailureProcessingResult.ProceedWithCommit
         else:
             logger.debug('resolving failures with '
