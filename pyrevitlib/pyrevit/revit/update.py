@@ -3,18 +3,19 @@
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import List
-from pyrevit import revit, DB
+from pyrevit import DB
+from pyrevit.revit import query
 
 
 def update_sheet_revisions(revisions, sheets, state=True, doc=None):
     doc or HOST_APP.doc
 
     # get revisions if not set
-    revisions = revisions or revit.query.get_revisions()
+    revisions = revisions or query.get_revisions()
     if type(revisions) is not list:
         revisions = [revisions]
     # get sheets if not available
-    sheets = sheets or revit.query.get_sheets()
+    sheets = sheets or query.get_sheets()
 
     cloudedsheets = []
     updated_sheets = []
