@@ -106,11 +106,6 @@ namespace PyRevitBaseClasses
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
 
-            // taskbar progress object
-            var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
-            taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
-            this.TaskbarItemInfo = taskbarinfo;
-
             // Setup window styles
             this.Background = Brushes.White;
             this.Width = 900;
@@ -222,27 +217,48 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public void ShowProgressBar()
+        public void SetProgressBarVisibility(bool visibility)
         {
+            if (this.TaskbarItemInfo != null)
+                // taskbar progress object
+                this.TaskbarItemInfo.ProgressState = visibility ? System.Windows.Shell.TaskbarItemProgressState.Normal : System.Windows.Shell.TaskbarItemProgressState.None;
+
             WaitReadyBrowser();
             if (renderer.Document != null)
             {
-                var pbar = renderer.Document.CreateElement(ExternalConfig.progressindicator);
-                var pbargraph = renderer.Document.CreateElement(ExternalConfig.progressbar);
-                pbar.AppendChild(pbargraph);
-                renderer.Document.Body.AppendChild(pbar);
+                var cssdisplay = visibility ? "" : "display: none;";
+                var pbarcontainer = renderer.Document.GetElementById(ExternalConfig.progressindicatorid);
+                if (pbarcontainer.Style != null)
+                {
+                    if (pbarcontainer.Style.Contains("display:"))
+                        pbarcontainer.Style = Regex.Replace(pbarcontainer.Style, "display:.+?;",
+                                                            cssdisplay,
+                                                            RegexOptions.IgnoreCase);
+                    else
+                        pbarcontainer.Style += cssdisplay;
+                }
+                else
+                    pbarcontainer.Style = cssdisplay;
             }
         }
 
         public void UpdateProgressBar(float curValue, float maxValue)
         {
-            var progValue = (curValue / maxValue);
-            this.TaskbarItemInfo.ProgressValue = progValue;
-
             if (this.ClosedByUser)
             {
                 return;
             }
+
+            if (this.TaskbarItemInfo == null)
+            {
+                // taskbar progress object
+                var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
+                taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+                this.TaskbarItemInfo = taskbarinfo;
+            }
+
+            var progValue = (curValue / maxValue);
+            this.TaskbarItemInfo.ProgressValue = progValue;
 
             WaitReadyBrowser();
             if (renderer.Document != null)
@@ -263,9 +279,18 @@ namespace PyRevitBaseClasses
                 var pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
                 if (pbargraph == null)
                 {
-                    ShowProgressBar();
+                    if (renderer.Document != null)
+                    {
+                        var pbar = renderer.Document.CreateElement(ExternalConfig.progressindicator);
+                        var newpbargraph = renderer.Document.CreateElement(ExternalConfig.progressbar);
+                        pbar.AppendChild(newpbargraph);
+                        renderer.Document.Body.AppendChild(pbar);
+                    }
+
                     pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
                 }
+
+                SetProgressBarVisibility(true);
 
                 var newWidthStyleProperty = String.Format("width:{0}%;", progValue * 100);
                 if (pbargraph.Style == null)

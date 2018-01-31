@@ -39,17 +39,14 @@ def listdwgs(current_view_only=False):
     dwgInst = defaultdict(list)
     workset_table = revit.doc.GetWorksetTable()
 
-
     output.print_md("## LINKED AND IMPORTED DWG FILES:")
     output.print_md('By: [{}]({})'.format(__author__, __contact__))
-
 
     for dwg in dwgs:
         if dwg.IsLinked:
             dwgInst["LINKED DWGs:"].append(dwg)
         else:
             dwgInst["IMPORTED DWGs:"].append(dwg)
-
 
     for link_mode in dwgInst:
         output.print_md("####{}".format(link_mode))
@@ -65,13 +62,15 @@ def listdwgs(current_view_only=False):
                     and revit.activeview.Id != dwg.OwnerViewId:
                 continue
 
-            output.print_md("\n**DWG name:** {}\n"
-                            "DWG created by:{}\n"
-                            "DWG id: {}\n"
-                            "DWG workset: {}\n".format(dwg_name,
-                                                       dwg_instance_creator,
-                                                       output.linkify(dwg_id),
-                                                       dwg_workset))
+            print('\n\n')
+            output.print_md("**DWG name:** {}\n\n"
+                            "- DWG created by:{}\n\n"
+                            "- DWG id: {}\n\n"
+                            "- DWG workset: {}\n\n"
+                            .format(dwg_name,
+                                    dwg_instance_creator,
+                                    output.linkify(dwg_id),
+                                    dwg_workset))
 
 
 selected_option = \

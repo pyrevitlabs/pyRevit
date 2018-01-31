@@ -79,17 +79,20 @@ namespace PyRevitBaseClasses
             bool _altScriptMode = false;
             bool _forcedDebugMode = false;
 
+            bool ALT = Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt);
+            bool SHIFT = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
+            bool CTRL = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+            bool WIN = Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
+
+
             // If Ctrl+Alt+Shift clicking on the tool run in clean engine
-            if ((Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt)) &&
-                (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)) &&
-                (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+            if (CTRL && ALT && SHIFT)
             {
                 _refreshEngine = true;
             }
 
             // If Alt+Shift clicking on button, open the context menu with options.
-            else if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin) &&
-                     (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)))
+            else if (SHIFT && WIN)
             {
                 // start creating context menu
                 ContextMenu pyRevitCmdContextMenu = new ContextMenu();
@@ -155,8 +158,16 @@ namespace PyRevitBaseClasses
                 return Result.Succeeded;
             }
 
+            // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
+            else if (CTRL && (SHIFT || altScriptModeOverride))
+            {
+                _script = baked_alternateScriptSource;
+                _altScriptMode = true;
+                _forcedDebugMode = true;
+            }
+
             // If Alt clicking on button, open the script in explorer and return.
-            else if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
+            else if (ALT)
             {
                 // combine the arguments together
                 // it doesn't matter if there is a space after ','
@@ -167,14 +178,14 @@ namespace PyRevitBaseClasses
             }
 
             // If Shift clicking on button, run config script instead
-            else if (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) || altScriptModeOverride)
+            else if (SHIFT || altScriptModeOverride)
             {
                 _script = baked_alternateScriptSource;
                 _altScriptMode = true;
             }
 
             // If Ctrl clicking on button, set forced debug mode.
-            else if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            else if (CTRL)
             {
                 _forcedDebugMode = true;
             }

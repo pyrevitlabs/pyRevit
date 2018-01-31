@@ -1,6 +1,7 @@
 import re
 
 from pyrevit import coreutils
+from pyrevit.coreutils import pyutils
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit import script

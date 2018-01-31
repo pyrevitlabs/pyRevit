@@ -5,6 +5,7 @@ import os.path as op
 import itertools
 
 from pyrevit import EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -300,6 +301,16 @@ class PyRevitOutputWindow(object):
         if self.window:
             self.window.UpdateProgressBar(0, 1)
 
+    def hide_progress(self):
+        """Hide output window progress bar."""
+        if self.window:
+            self.window.SetProgressBarVisibility(False)
+
+    def unhide_progress(self):
+        """Unhide output window progress bar."""
+        if self.window:
+            self.window.SetProgressBarVisibility(True)
+
     @staticmethod
     def emojize(md_str):
         """Replace emoji codes with emoji images and print.
@@ -321,7 +332,8 @@ class PyRevitOutputWindow(object):
             >>> output = pyrevit.output.get_output()
             >>> output.print_html('<strong>Title</strong>')
         """
-        print(coreutils.prepare_html_str(emoji.emojize(html_str)), end="")
+        print(coreutils.prepare_html_str(emoji.emojize(html_str)),
+              end="")
 
     @staticmethod
     def print_code(code_str):

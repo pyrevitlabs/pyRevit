@@ -2,49 +2,64 @@
 
 from pyrevit import HOST_APP
 from pyrevit import revit, DB, UI
+from pyrevit.revit import query
 from pyrevit import forms
+from pyrevit import script
+
+
+logger = script.get_logger()
+
+
+need_tsaxn_dict = [DB.ExternalFileReferenceType.CADLink]
 
 
 def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
-    location = revit.doc.PathName
     try:
-        modelPath = \
-            DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
+        extrefs = query.get_links(linktype)
+        for ref in extrefs:
+            logger.debug(ref)
 
-        transData = DB.TransmissionData.ReadTransmissionData(modelPath)
-
-        externalReferences = transData.GetAllExternalFileReferenceIds()
-        for refId in externalReferences:
-            extRef = transData.GetLastSavedReferenceData(refId)
-            if extRef.ExternalFileReferenceType == \
-                    DB.ExternalFileReferenceType.RevitLink:
-                link = revit.doc.GetElement(refId)
-                path = \
-                    DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
-                        extRef.GetPath()
+        if extrefs:
+            refcount = len(extrefs)
+            if refcount > 1:
+                selected_extrefs = \
+                    forms.SelectFromCheckBoxes.show(
+                        extrefs,
+                        title='Select Links to Reload',
+                        width=500,
+                        button_name='Reload',
+                        checked_only=True
                         )
+                if not selected_extrefs:
+                    script.exit()
+            elif refcount == 1:
+                selected_extrefs = extrefs
 
-                if not path:
-                    path = '--NOT ASSIGNED--'
-
-                fref = str(extRef.ExternalFileReferenceType) + ':'
-                print("Reloading...\n{0}{1}".format(fref, path))
-                link.Reload()
-                print('Done\n')
-    except Exception:
+            for extref in selected_extrefs:
+                print("Reloading...\n\t{0}{1}"
+                      .format(str(extref.linktype) + ':', extref.path))
+                if linktype in need_tsaxn_dict:
+                    with revit.Transaction('Reload Links'):
+                        extref.reload()
+                else:
+                    extref.reload()
+    except Exception as load_err:
+        logger.debug('Load error: %s' % load_err)
         forms.alert('Model is not saved yet. Can not acquire location.')
 
 
-linktypes = {'Revit Links': DB.ExternalFileReferenceType.RevitLink,
-             'Keynote Table': DB.ExternalFileReferenceType.KeynoteTable,
-             'Images': DB.ExternalFileReferenceType.Decal}
+linktypes = {'Revit Links': DB.ExternalFileReferenceType.RevitLink}
 
 if HOST_APP.is_newer_than(2017):
     linktypes['CAD Links'] = DB.ExternalFileReferenceType.CADLink
+    linktypes['DWF Markup'] = DB.ExternalFileReferenceType.DWFMarkup
 
-selected_option = \
-    forms.CommandSwitchWindow.show(linktypes.keys(),
-                                   message='Select link type:')
+if len(linktypes) > 1:
+    selected_option = \
+        forms.CommandSwitchWindow.show(linktypes.keys(),
+                                       message='Select link type:')
+else:
+    selected_option = 'Revit Links'
 
 if selected_option:
     reload_links(linktypes[selected_option])
