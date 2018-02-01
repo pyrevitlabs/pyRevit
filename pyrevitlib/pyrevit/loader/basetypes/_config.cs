@@ -23,7 +23,8 @@ namespace PyRevitBaseClasses
         public static string errordiv = "<div class=\"errorentry\"></div>";
         public static string ipyerrtitle = "<strong>IronPython Traceback:</strong>";
         public static string dotneterrtitle = "<strong>Script Executor Traceback:</strong>";
-        public static string progressindicator = "<div class=\"progressindicator\"></div>";
+        public static string progressindicator = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";
+        public static string progressindicatorid = "pbarcontainer";
         public static string progressbar = "<div class=\"progressbar\" id=\"pbar\"></div>";
         public static string progressbarid = "pbar";
     }

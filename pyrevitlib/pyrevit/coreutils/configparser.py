@@ -2,6 +2,7 @@ import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
 from pyrevit import PyRevitException, PyRevitIOError
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils import get_str_hash
 
 
@@ -15,7 +16,7 @@ class PyRevitConfigSectionParser(object):
         self._section_name = section_name
 
     def __iter__(self):
-        return self._parser.options(self._section_name)
+        return iter(self._parser.options(self._section_name))
 
     def __str__(self):
         return self._section_name
@@ -53,7 +54,7 @@ class PyRevitConfigSectionParser(object):
         else:
             try:
                 return self._parser.set(self._section_name,
-                                        param_name, unicode(value))
+                                        param_name, safe_strtype(value))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))
@@ -89,7 +90,7 @@ class PyRevitConfigParser(object):
                 raise PyRevitException(read_err)
 
     def __iter__(self):
-        return [self.get_section(x) for x in self._parser.sections()]
+        return iter([self.get_section(x) for x in self._parser.sections()])
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):

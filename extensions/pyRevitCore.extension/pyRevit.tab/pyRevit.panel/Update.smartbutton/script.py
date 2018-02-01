@@ -11,8 +11,6 @@ from pyrevit import script
 
 
 logger = script.get_logger()
-results = script.get_results()
-output = script.get_output()
 
 
 __context__ = 'zerodoc'
@@ -53,7 +51,11 @@ def _check_for_updates():
 
         for repo in updater.get_all_extension_repos():
             if updater.has_pending_updates(repo):
+                logger.info('Updates are available for {}...'
+                            .format(repo.name))
                 return True
+            else:
+                logger.info('{} is up-to-date...'.format(repo.name))
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
@@ -108,10 +110,8 @@ if __name__ == '__main__':
             # modules need to be re-imported again in a clean engine.
             from pyrevit.loader.sessionmgr import execute_command
             execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
-
-            results.newsession = sessioninfo.get_session_uuid()
-
         else:
+            output = script.get_output()
             output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
             logger.debug('Core updates. Skippin update and reload.')
     else:

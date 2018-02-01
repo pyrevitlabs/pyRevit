@@ -3,6 +3,7 @@ import os.path
 import logging
 
 from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import envvars
@@ -75,7 +76,7 @@ class LoggerWrapper(logging.Logger):
         # any report other than logging.INFO level,
         # needs to cleanup < and > character to avoid html conflict
         if not isinstance(msg, str):
-            msg_str = unicode(msg)
+            msg_str = safe_strtype(msg)
         else:
             msg_str = msg
         # get rid of unicode characters

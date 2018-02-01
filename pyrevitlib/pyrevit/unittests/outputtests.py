@@ -3,6 +3,7 @@ from unittest import TestCase
 # noinspection PyUnresolvedReferences
 from Autodesk.Revit.UI import TaskDialog, TaskDialogCommonButtons
 
+from pyrevit.compat import safe_strtype
 from pyrevit.output import get_output
 
 
@@ -20,4 +21,4 @@ class TestOutputWindow(TestCase):
         res = TaskDialog.Show('pyrevit', 'Did you see the progress bar?',
                               TaskDialogCommonButtons.Yes |
                               TaskDialogCommonButtons.No)
-        self.assertEqual(str(res), 'Yes')
+        self.assertEqual(safe_strtype(res), 'Yes')

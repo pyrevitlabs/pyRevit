@@ -1,13 +1,31 @@
-Effective Output
-================
+Effective Output/Input
+======================
 
 Clickable Element Links
 -----------------------
+
+.. image:: _static/images/clickablelink.png
+
+work in progress
+
+Tables
+-----------------------
+
+.. image:: _static/images/tableoutput.png
+
+work in progress
+
+Code Output
+-----------------------
+
+.. image:: _static/images/codeoutput.png
 
 work in progress
 
 Progress bars
 -------------
+
+.. image:: _static/images/progressbaroutput.png
 
 work in progress
 
@@ -70,12 +88,45 @@ a simple line chart (showing 3 different data sets) and another for a radial cha
 (also showing 3 different data sets within the same chart).
 They're all very similar to each other though.
 
+.. code-block:: python
+
+    # setting the charts x line data labels
+    chart.data.labels = ['Monday', 'Tuesday',
+                         'Wednesday', 'Thursday',
+                         'Friday', 'Saturday', 'Sunday']
+
+    # Let's add the first dataset to the chart object
+    # we'll give it a name: set_a
+    set_a = chart.data.new_dataset('set_a')
+    # And let's add data to it.
+    # These are the data for the Y axis of the graph
+    # The data length should match the length of data for the X axis
+    set_a.data = [12, 19, 3, 17, 6, 3, 7]
+    # Set the color for this graph
+    set_a.set_color(0xFF, 0x8C, 0x8D, 0.8)
+
+
+**Step 3:** The last step is to ask the chart object to draw itself.
+
+.. code-block:: python
+
+    # Before drawing the chart you can randomize the colors
+    # if you have not added any color to the datasets.
+    chart.randomize_colors()
+
+    # Finally let's draw the chart
+    chart.draw()
+
+
 Line charts
 ^^^^^^^^^^^
 
 See the comments in the script for more info
 
 .. code-block:: python
+
+    # get line chart object
+    chart = output.make_line_chart()
 
     # this is a list of labels for the X axis of the line graph
     chart.data.labels = ['Monday', 'Tuesday',
@@ -109,7 +160,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/charts1.png
+.. image:: _static/images/linechart.png
 
 
 Pie charts
@@ -118,6 +169,9 @@ Pie charts
 See the comments in the script for more info
 
 .. code-block:: python
+
+    # get pie chart object
+    chart = output.make_pie_chart()
 
     # Set the labels for the circumference axis
     chart.data.labels = ['A', 'B', 'C']
@@ -137,29 +191,90 @@ See the comments in the script for more info
     set_c.backgroundColor = ["#DD5B82", "#E7E8F5", "#FFE084"]
 
 
-Other charts
-^^^^^^^^^^^^
+And here is the result:
 
-You can apply these data sets for radar, pie, polar, and doughnut (since they're all radial) charts and get different results:
-
-.. image:: _static/images/charts4.png
+.. image:: _static/images/piechart.png
 
 
-**Step 3:** The last step is to ask the chart object to draw itself.
+Bar charts
+^^^^^^^^^^
+
+See the comments in the script for more info
 
 .. code-block:: python
 
-    # Before drawing the chart you can randomize the colors
-    # if you have not added any color to the datasets.
-    chart.randomize_colors()
+    # get bar chart object
+    chart = output.make_bar_chart()
 
-    # Finally let's draw the chart
-    chart.draw()
+And here is the result:
+
+.. image:: _static/images/barchart.png
+
+
+Bubble charts
+^^^^^^^^^^^^^
+
+See the comments in the script for more info
+
+.. code-block:: python
+
+    # get bubble chart object
+    chart = output.make_bubble_chart()
+
+And here is the result:
+
+.. image:: _static/images/bubblechart.png
+
+
+Radar charts
+^^^^^^^^^^^^
+
+See the comments in the script for more info
+
+.. code-block:: python
+
+    # get radar chart object
+    chart = output.make_radar_chart()
+
+And here is the result:
+
+.. image:: _static/images/radarchart.png
+
+
+Polar Area charts
+^^^^^^^^^^^^^^^^^
+
+See the comments in the script for more info
+
+.. code-block:: python
+
+    # get polar chart object
+    chart = output.make_polar_chart()
+
+And here is the result:
+
+.. image:: _static/images/polarareachart.png
+
+
+Doghnut charts
+^^^^^^^^^^^^^^
+
+See the comments in the script for more info
+
+.. code-block:: python
+
+    # get doughnut chart object
+    chart = output.make_doughnut_chart()
+
+And here is the result:
+
+.. image:: _static/images/doghnutchart.png
+
 
 Charts engine
 ^^^^^^^^^^^^^
 
-Here is a little info on how the charts engine work:
+Here is a little info on how the charts engine works:
 the pyRevit charts module is ``pyrevit.coreutils.charts``.
 This is the module that the output window interacts with to create the charts.
 
@@ -172,9 +287,9 @@ element and assign a unique id to it:
     <canvas id="chart123456"></canvas>
 
 
-Then it parses the input data and create a JSON representation of the data.
+Then it parses the input data and creates a JSON representation of the data.
 The JSON string (`json_data`) will be inserted into a template javascript.
-This javascript is in turn, creating a Chart object from the ``Chart.js`` library:
+This javascript creates a Chart object from the ``Chart.js`` library:
 
 .. code-block:: javascript
 
@@ -182,7 +297,7 @@ This javascript is in turn, creating a Chart object from the ``Chart.js`` librar
     var chart = new Chart(ctx, json_data);
 
 and finally, the pyRevit chart object, injects this dynamically created
-javascript into the `<head>` of the output window WebBrowser component:
+javascript into the `<head>` of the output window ``WebBrowser`` component:
 
 .. code-block:: python
 

@@ -3,7 +3,13 @@
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit import DB
+from pyrevit.revit.db import BaseWrapper
+
+
+class ModelNotSaved(PyRevitException):
+    pass
 
 
 class ModelSharedParam:
@@ -11,11 +17,15 @@ class ModelSharedParam:
         self.param_def = param_def
         self.param_binding = param_binding
 
+    @property
+    def name(self):
+        return self.param_def.Name
+
     def __eq__(self, other):
         if isinstance(self.param_def, DB.ExternalDefinition):
-            return self.param_def.GUID == other or self.param_def.Name == other
+            return self.param_def.GUID == other or self.name == other
         else:
-            return self.param_def.Name == other
+            return self.name == other
 
 
 class CurrentProjectInfo:
@@ -33,6 +43,32 @@ class CurrentProjectInfo:
     @property
     def filename(self):
         return op.splitext(op.basename(self.location))[0]
+
+
+class ExternalRef(BaseWrapper):
+    def __init__(self, link, extref):
+        super(ExternalRef, self).__init__(link)
+        self._extref = extref
+
+    @property
+    def name(self):
+        return DB.Element.Name.__get__(self._wrapped)
+
+    @property
+    def link(self):
+        return self._wrapped
+
+    @property
+    def linktype(self):
+        return self._extref.ExternalFileReferenceType
+
+    @property
+    def path(self):
+        p = self._extref.GetPath()
+        return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(p)
+
+    def reload(self):
+        return self._wrapped.Reload()
 
 
 def get_all_elements(doc=None):
@@ -61,7 +97,7 @@ def get_value_range(param_name, doc=None):
         if targetparam:
             value = get_param_value(targetparam)
             if value is not None \
-                    and str(value).lower() != 'none':
+                    and safe_strtype(value).lower() != 'none':
                 if type(value) == str \
                         and not value.isspace():
                     values.add(value)
@@ -154,7 +190,7 @@ def get_model_sharedparams(doc=None):
 
 
 def model_has_sharedparam(param_id_or_name, doc=None):
-    msp_list = get_model_sharedparams(doc)
+    msp_list = get_model_sharedparams(doc or HOST_APP.doc)
     for x in msp_list:
         if x == param_id_or_name:
             return True
@@ -177,3 +213,38 @@ def get_defined_sharedparams():
 
 def get_project_info():
     return CurrentProjectInfo()
+
+
+def get_revisions(doc=None):
+    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+                  .OfCategory(DB.BuiltInCategory.OST_Revisions)
+                  .WhereElementIsNotElementType())
+
+
+def get_sheets(doc=None):
+    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+                  .OfCategory(DB.BuiltInCategory.OST_Sheets)
+                  .WhereElementIsNotElementType())
+
+
+def get_links(linktype=None, doc=None):
+    doc = doc or HOST_APP.doc
+
+    location = doc.PathName
+    if not location:
+        raise ModelNotSaved()
+
+    links = []
+    modelPath = \
+        DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
+    transData = DB.TransmissionData.ReadTransmissionData(modelPath)
+    externalReferences = transData.GetAllExternalFileReferenceIds()
+    for refId in externalReferences:
+        extRef = transData.GetLastSavedReferenceData(refId)
+        link = doc.GetElement(refId)
+        if linktype:
+            if extRef.ExternalFileReferenceType == linktype:
+                links.append(ExternalRef(link, extRef))
+        else:
+            links.append(ExternalRef(link, extRef))
+    return links

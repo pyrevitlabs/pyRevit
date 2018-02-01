@@ -64,7 +64,7 @@ to reload the modules.
 
 
 
-Shift-Win-Click: Show Script file in Explorer
----------------------------------------------
+Shift-Win-Click: pyRevit Button Context Menu
+--------------------------------------------
 
 Shows the context menu for the pyRevit command. See image below:
