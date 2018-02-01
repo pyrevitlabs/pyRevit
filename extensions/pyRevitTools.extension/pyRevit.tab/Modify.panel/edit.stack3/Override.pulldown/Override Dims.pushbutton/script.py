@@ -56,6 +56,17 @@ def set_to_vfrmfr():
                     el.Below = 'VERIFY W/ MFR'
 
 
+def set_to_question():
+    with revit.Transaction('(?) dimensions'):
+        for el in revit.get_selection():
+            if isinstance(el, DB.Dimension):
+                if len(list(el.Segments)) > 0:
+                    for seg in el.Segments:
+                        seg.Suffix = '(?)'
+                else:
+                    el.Suffix = '(?)'
+
+
 def set_to_vif():
     with revit.Transaction('VIF dimensions'):
         for el in revit.get_selection():
@@ -71,7 +82,8 @@ options = {'Add Plus/Minus': add_plusminus,
            'Bake Dimension Value': override_dim_value,
            'Set to EQ': set_to_eq,
            'Set to VIF MFR': set_to_vfrmfr,
-           'Set to VIF': set_to_vif}
+           'Set to VIF': set_to_vif,
+           'Set to (?)': set_to_question}
 
 selected_switch = \
     forms.CommandSwitchWindow.show(sorted(options.keys()),
