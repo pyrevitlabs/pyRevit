@@ -13,6 +13,11 @@ xcopy /Y/S "%current%\release\pyrevitgitservices\pyrevitgitservices\bin\Release"
 "%temp%\pyrevitgitservices\pyrevitgitservices.exe" update "%current%"
 REM cd back to script folder
 cd /D %current%\release
+
+REM Run the addin fixers
+cmd /c uninstall_addin.bat
+cmd /c install_addin.bat
+
 echo You can close this window now.
 pause
 exit
