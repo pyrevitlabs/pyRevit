@@ -23,6 +23,13 @@ from pyrevit import revit, UI, DB
 logger = get_logger(__name__)
 
 
+DEFAULT_CMDSWITCHWND_WIDTH = 600
+DEFAULT_SEARCHWND_WIDTH = 600
+DEFAULT_SEARCHWND_HEIGHT = 100
+DEFAULT_INPUTWINDOW_WIDTH = 500
+DEFAULT_INPUTWINDOW_HEIGHT = 400
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -184,7 +191,9 @@ class TemplateUserInputWindow(WPFWindow):
 
     @classmethod
     def show(cls, context,
-             title='User Input', width=300, height=400, **kwargs):
+             title='User Input',
+             width=DEFAULT_INPUTWINDOW_WIDTH,
+             height=DEFAULT_INPUTWINDOW_HEIGHT, **kwargs):
         """Show user input window.
 
         Args:
@@ -446,7 +455,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def _setup(self, **kwargs):
         self.selected_switch = ''
-        self.Width = 600
+        self.Width = DEFAULT_CMDSWITCHWND_WIDTH
         self.Title = 'Command Options'
 
         message = kwargs.get('message', None)
@@ -872,7 +881,8 @@ class SearchPrompt(WPFWindow):
 
     @classmethod
     def show(cls, search_db,
-             width=600, height=100, **kwargs):
+             width=DEFAULT_SEARCHWND_WIDTH,
+             height=DEFAULT_SEARCHWND_HEIGHT, **kwargs):
         dlg = cls(search_db, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
@@ -977,7 +987,7 @@ class SheetOption(object):
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
-                     width=300,
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
                      multiselect=True):
     revisions = sorted(revit.query.get_revisions(),
                        key=lambda x: x.SequenceNumber)
@@ -1001,7 +1011,7 @@ def select_revisions(title='Select Revision',
 
 
 def select_sheets(title='Select Sheets', button_name='Select',
-                  width=300, multiple=True):
+                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True):
     all_sheets = DB.FilteredElementCollector(revit.doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
@@ -1025,7 +1035,8 @@ def select_sheets(title='Select Sheets', button_name='Select',
                        key=lambda x: x.number),
                 title=title,
                 button_name=button_name,
-                width=width)
+                width=width,
+                multiselect=False)
         if return_option:
             return return_option[0].sheet_element
 
