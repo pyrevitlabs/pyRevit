@@ -1,5 +1,6 @@
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit import forms
 from pyrevit import script
 
 
@@ -15,10 +16,9 @@ selection = revit.get_selection()
 
 shift = 1
 
-selected_sheets = []
-for sheet in selection.elements:
-    if isinstance(sheet, DB.ViewSheet):
-        selected_sheets.append(sheet)
+selected_sheets = forms.select_sheets(title='Select Sheets')
+if not selected_sheets:
+    script.exit()
 
 sorted_sheet_list = sorted(selected_sheets, key=lambda x: x.SheetNumber)
 
