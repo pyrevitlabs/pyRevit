@@ -48,7 +48,7 @@ selSheets = forms.select_sheets(title='Select Target Sheets',
 
 # get a list of viewports to be copied, updated
 if selSheets and len(selSheets) > 0:
-    if int(__revit__.Application.VersionNumber) > 2014:
+    if int(__revit__.Application.VersionNumber) > 2014: #noqa
         cursheet = revit.uidoc.ActiveGraphicalView
         for v in selSheets:
             if cursheet.Id == v.Id:
@@ -58,18 +58,16 @@ if selSheets and len(selSheets) > 0:
         selSheets.remove(cursheet)
 
     revit.uidoc.ActiveView = cursheet
-    sel = revit.pick_elements()
-    for el in sel:
-        selViewports.append(el)
+    selected_vps = revit.pick_elements()
 
-    if len(selViewports) > 0:
+    if selected_vps:
         with revit.Transaction('Copy Viewports to Sheets'):
             for sht in selSheets:
                 existing_vps = [revit.doc.GetElement(x)
                                 for x in sht.GetAllViewports()]
                 existing_schedules = [x for x in allSheetedSchedules
                                       if x.OwnerViewId == sht.Id]
-                for vp in selViewports:
+                for vp in selected_vps:
                     if isinstance(vp, DB.Viewport):
                         src_view = revit.doc.GetElement(vp.ViewId)
                         # check if viewport already exists

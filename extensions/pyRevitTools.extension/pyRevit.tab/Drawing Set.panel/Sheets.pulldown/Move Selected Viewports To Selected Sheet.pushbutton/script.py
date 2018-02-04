@@ -5,9 +5,9 @@ from pyrevit import script
 
 
 __doc__ = 'Open the source sheet. Run this script and select destination '\
-          'sheets. Select Viewports and push Finish button on the '\
+          'sheet. Select Viewports and push Finish button on the '\
           'properties bar. The selected views will be MOVED to '\
-          'the destination sheets.'
+          'the destination sheet.'
 
 
 selViewports = []
