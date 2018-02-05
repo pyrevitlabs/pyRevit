@@ -52,9 +52,12 @@
 			<ListView x:Name="list_lb">
 				<ListView.ItemTemplate>
 					 <DataTemplate>
-					   <StackPanel>
-						 <CheckBox Content="{Binding name}"
-								   IsChecked="{Binding state}"/>
+					   <StackPanel Orientation="Horizontal">
+						 <CheckBox IsChecked="{Binding state}"
+								   Checked="check_selected"
+								   Unchecked="uncheck_selected" />
+						 <TextBlock Text="{Binding name}"
+							 		Margin="10,0,0,0"/>
 					   </StackPanel>
 					 </DataTemplate>
 			   </ListView.ItemTemplate>
