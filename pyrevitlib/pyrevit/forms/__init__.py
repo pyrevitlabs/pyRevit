@@ -336,6 +336,8 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         if button_name:
             self.select_b.Content = button_name
 
+        self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+
         self._verify_context()
         self._list_options()
 
@@ -364,8 +366,12 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
             self.toggleall_b.Content = 'Toggle All'
             self.list_lb.ItemsSource = self._context
 
-    def _set_states(self, state=True, flip=False):
-        current_list = self.list_lb.ItemsSource
+    def _set_states(self, state=True, flip=False, selected=False):
+        all_items = self.list_lb.ItemsSource
+        if selected:
+            current_list = self.list_lb.SelectedItems
+        else:
+            current_list = self.list_lb.ItemsSource
         for checkbox in current_list:
             if flip:
                 checkbox.state = not checkbox.state
@@ -374,7 +380,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
         # push list view to redraw
         self.list_lb.ItemsSource = None
-        self.list_lb.ItemsSource = current_list
+        self.list_lb.ItemsSource = all_items
 
     def toggle_all(self, sender, args):
         """Handle toggle all button to toggle state of all check boxes."""
@@ -387,6 +393,14 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
     def uncheck_all(self, sender, args):
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
+
+    def check_selected(self, sender, args):
+        """Mark selected checkboxes as checked."""
+        self._set_states(state=True, selected=True)
+
+    def uncheck_selected(self, sender, args):
+        """Mark selected checkboxes as unchecked."""
+        self._set_states(state=False, selected=True)
 
     def button_select(self, sender, args):
         """Handle select button click."""
