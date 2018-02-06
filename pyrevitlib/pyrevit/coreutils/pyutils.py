@@ -3,11 +3,12 @@
 import re
 
 
-def pairwise(iterable):
+def pairwise(iterable, step=2):
     """Iterate through items in pairs.
 
     Args:
         iterable (iterable): any iterable object
+        step (int): number of steps to move when making pairs
 
     Returns:
         iterable: list of pairs
@@ -15,12 +16,19 @@ def pairwise(iterable):
     Example:
         >>> pairwise([1, 2, 3, 4, 5])
         [(1, 2), (3, 4)]    # 5 can not be paired
+        >>> pairwise([1, 2, 3, 4, 5, 6])
+        [(1, 2), (3, 4), (5, 6)]
+        >>> pairwise([1, 2, 3, 4, 5, 6], step=1)
+        [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
     """
-    # a, b = tee(iterable)
-    # next(b, None)
-    # return izip(a, b)
-    a = iter(iterable)
-    return zip(a, a)
+    if step == 1:
+        from itertools import tee, izip
+        a, b = tee(iterable)
+        next(b, None)
+        return izip(a, b)
+    elif step == 2:
+        a = iter(iterable)
+        return zip(a, a)
 
 
 def safe_cast(val, to_type, default=None):
