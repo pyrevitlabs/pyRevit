@@ -225,13 +225,13 @@ class MakePatternWindow(forms.WPFWindow):
             geom_curve = det_line.GeometryCurve
             if type(geom_curve) in accpeted_curves:
                 tes_points = [tp for tp in geom_curve.Tessellate()]
-                for xyz1, xyz2 in pyutils.pairwise(tes_points):
+                for xyz1, xyz2 in pyutils.pairwise(tes_points, step=1):
                     line_tuples.append(self.make_pattern_line(xyz1, xyz2))
 
             elif isinstance(geom_curve, DB.Line):
                 line_tuples.append(
                     self.make_pattern_line(geom_curve.GetEndPoint(0),
-                                            geom_curve.GetEndPoint(1))
+                                           geom_curve.GetEndPoint(1))
                     )
 
         call_params = 'Name:{} Model:{} FilledRegion:{} Domain:{}\n' \
