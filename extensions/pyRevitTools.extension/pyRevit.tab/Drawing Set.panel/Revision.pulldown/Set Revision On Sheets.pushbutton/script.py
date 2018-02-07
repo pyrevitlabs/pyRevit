@@ -22,6 +22,6 @@ if revisions:
             print('SELECTED REVISION ADDED TO THESE SHEETS:')
             print('-' * 100)
             for s in updated_sheets:
-                snum = s.LookupParameter('Sheet Number').AsString().rjust(10)
-                sname = s.LookupParameter('Sheet Name').AsString().ljust(50)
+                snum = s.SheetNumber.rjust(10)
+                sname = s.Name.ljust(50)
                 print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
