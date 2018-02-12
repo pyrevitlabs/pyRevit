@@ -38,7 +38,7 @@ class RevitWrapper(types.ModuleType):
         attr = get_imported_symbol(attr_name)
         if not attr:
             raise AttributeError('\'module\' object has no attribute \'{}\''
-                                 .format(symbol_name))
+                                 .format(attr_name))
         return attr
 
     @property
