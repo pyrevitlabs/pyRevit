@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """List DWGs.
 
 Lists all linked and imported DWG instances with worksets and creator.
