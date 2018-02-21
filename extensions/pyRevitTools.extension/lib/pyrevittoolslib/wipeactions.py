@@ -1,4 +1,5 @@
 import types
+from collections import namedtuple
 
 from pyrevit import framework
 from pyrevit import coreutils
@@ -12,11 +13,13 @@ logger = coreutils.logger.get_logger(__name__)
 
 def dependent(func):
     func.is_dependent = True
+    func.is_wipe_action = True
     return func
 
 
 def notdependent(func):
     func.is_dependent = False
+    func.is_wipe_action = True
     return func
 
 
@@ -777,6 +780,11 @@ def template_workset_remover(workset_name=None):
                   workset_elements)
 
 
+WORKSET_FUNC_DOCSTRING_TEMPLATE = 'Remove All Elements on Workset "{}"'
+
+WorksetFuncData = namedtuple('WorksetFuncData', ['func', 'docstring', 'args'])
+
+
 def copy_func(f, workset_name):
     new_funcname = '{}_{}'.format(f.func_name, workset_name)
     new_func = \
@@ -787,26 +795,30 @@ def copy_func(f, workset_name):
                            f.func_closure)
 
     # set the docstring
-    new_func.__doc__ = 'Remove All Elements on Workset "{}"'\
-                       .format(workset_name)
+    new_func.__doc__ = WORKSET_FUNC_DOCSTRING_TEMPLATE.format(workset_name)
     new_func.is_dependent = False
     return new_func
 
 
 def get_worksetcleaners():
     workset_funcs = []
-
-    # copying functions is not implemented in IronPython 2.7.3
-    if compat.IRONPY273:
-        return workset_funcs
-
     # if model is workshared, get a list of current worksets
     if revit.doc.IsWorkshared:
         cl = DB.FilteredWorksetCollector(revit.doc)
         worksetlist = cl.OfKind(DB.WorksetKind.UserWorkset)
         # duplicate the workset element remover function for each workset
         for workset in worksetlist:
-            workset_funcs.append(copy_func(template_workset_remover,
-                                           workset.Name))
+            # copying functions is not implemented in IronPython 2.7.3
+            # this method initially used copy_func to create a func for
+            # each workset but now passes on the template func
+            # with appropriate arguments
+            docstr = WORKSET_FUNC_DOCSTRING_TEMPLATE.format(workset.Name)
+            workset_funcs.append(
+                WorksetFuncData(
+                    func=template_workset_remover,
+                    docstring=docstr,
+                    args=(workset.Name,)
+                    )
+                )
 
     return workset_funcs
