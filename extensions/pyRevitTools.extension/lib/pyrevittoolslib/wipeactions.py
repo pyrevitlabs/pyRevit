@@ -4,6 +4,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from pyrevit import compat
 
 
 logger = coreutils.logger.get_logger(__name__)
@@ -777,12 +778,11 @@ def template_workset_remover(workset_name=None):
 
 
 def copy_func(f, workset_name):
+    new_funcname = '{}_{}'.format(f.func_name, workset_name)
     new_func = \
         types.FunctionType(f.func_code,
                            f.func_globals,
-                           # function name
-                           '{}_{}'.format(f.func_name, workset_name),
-                           # function name
+                           new_funcname,
                            tuple([workset_name]),
                            f.func_closure)
 
@@ -794,14 +794,19 @@ def copy_func(f, workset_name):
 
 
 def get_worksetcleaners():
-    workse_funcs = []
+    workset_funcs = []
+
+    # copying functions is not implemented in IronPython 2.7.3
+    if compat.IRONPY273:
+        return workset_funcs
+
     # if model is workshared, get a list of current worksets
     if revit.doc.IsWorkshared:
         cl = DB.FilteredWorksetCollector(revit.doc)
         worksetlist = cl.OfKind(DB.WorksetKind.UserWorkset)
         # duplicate the workset element remover function for each workset
         for workset in worksetlist:
-            workse_funcs.append(copy_func(template_workset_remover,
-                                          workset.Name))
+            workset_funcs.append(copy_func(template_workset_remover,
+                                           workset.Name))
 
-    return workse_funcs
+    return workset_funcs
