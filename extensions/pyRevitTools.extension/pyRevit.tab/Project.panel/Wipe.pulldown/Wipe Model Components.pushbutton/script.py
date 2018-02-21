@@ -1,8 +1,11 @@
 import inspect
-import pyrevittoolslib.wipeactions
+import types
+import wipeactions
 
 from pyrevit import forms
 from pyrevit import script
+from pyrevit import revit, DB
+from pyrevit import compat
 
 
 __doc__ = 'This tools helps you to remove extra unnecessary information in '\
@@ -19,11 +22,13 @@ logger = script.get_logger()
 
 
 class WipeOption:
-    def __init__(self, name, default_state=False, wipe_action=None):
+    def __init__(self, name, default_state=False,
+                 wipe_action=None, wipe_args=None):
         self.name = name
         self.state = default_state
         self.wipe_action = wipe_action
-        self.is_dependent = self.wipe_action.is_dependent
+        self.wipe_args = wipe_args
+        self.is_dependent = getattr(self.wipe_action, 'is_dependent', False)
 
     def __repr__(self):
         return '<WipeOption Name:{} State:{} Action:{}>'\
@@ -37,21 +42,21 @@ class WipeOption:
 
 
 # generate wipe options based on functions in
-# pyrevittoolslib.wipeactions module
+# wipeactions module
 wipe_options = []
 
-for mem in inspect.getmembers(pyrevittoolslib.wipeactions):
+for mem in inspect.getmembers(wipeactions):
     moduleobject = mem[1]
-    if inspect.isfunction(moduleobject):
+    if inspect.isfunction(moduleobject) \
+            and hasattr(moduleobject, 'is_wipe_action'):
         if moduleobject.__doc__:
             wipe_options.append(WipeOption(moduleobject.__doc__,
                                            wipe_action=moduleobject))
 
-# generate wipe options based on model worksets
-for wscleaner_func in pyrevittoolslib.wipeactions.get_worksetcleaners():
-    if wscleaner_func.__doc__:
-        wipe_options.append(WipeOption(wscleaner_func.__doc__,
-                                       wipe_action=wscleaner_func))
+for wscleaner_func in wipeactions.get_worksetcleaners():
+    wipe_options.append(WipeOption(wscleaner_func.docstring,
+                                   wipe_action=wscleaner_func.func,
+                                   wipe_args=wscleaner_func.args))
 
 
 # ask user for wipe actions
@@ -76,4 +81,7 @@ if return_options:
         for wipe_act in actions:
             if wipe_act:
                 logger.debug('Calling: {}'.format(wipe_act))
-                wipe_act.wipe_action()
+                if wipe_act.wipe_args:
+                    wipe_act.wipe_action(*wipe_act.wipe_args)
+                else:
+                    wipe_act.wipe_action()
