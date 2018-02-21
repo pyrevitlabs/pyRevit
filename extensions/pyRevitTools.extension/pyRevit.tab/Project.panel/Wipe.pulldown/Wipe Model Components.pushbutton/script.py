@@ -1,6 +1,6 @@
 import inspect
 import types
-import pyrevittoolslib.wipeactions
+import wipeactions
 
 from pyrevit import forms
 from pyrevit import script
@@ -42,10 +42,10 @@ class WipeOption:
 
 
 # generate wipe options based on functions in
-# pyrevittoolslib.wipeactions module
+# wipeactions module
 wipe_options = []
 
-for mem in inspect.getmembers(pyrevittoolslib.wipeactions):
+for mem in inspect.getmembers(wipeactions):
     moduleobject = mem[1]
     if inspect.isfunction(moduleobject) \
             and hasattr(moduleobject, 'is_wipe_action'):
@@ -53,7 +53,7 @@ for mem in inspect.getmembers(pyrevittoolslib.wipeactions):
             wipe_options.append(WipeOption(moduleobject.__doc__,
                                            wipe_action=moduleobject))
 
-for wscleaner_func in pyrevittoolslib.wipeactions.get_worksetcleaners():
+for wscleaner_func in wipeactions.get_worksetcleaners():
     wipe_options.append(WipeOption(wscleaner_func.docstring,
                                    wipe_action=wscleaner_func.func,
                                    wipe_args=wscleaner_func.args))
