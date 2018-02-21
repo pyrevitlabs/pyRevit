@@ -2,6 +2,7 @@ from rpw import DB
 from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwCoerceError
 from rpw.db.transform import Transform
+from collections import OrderedDict
 
 class XYZ(BaseObjectWrapper):
     """
@@ -119,7 +120,7 @@ class XYZ(BaseObjectWrapper):
             (dict): dict with float of XYZ values
 
         """
-        return {'x': self.x, 'y': self.y, 'z': self.z}
+        return OrderedDict([('x', self.x), ('y', self.y), ('z', self.z)])
 
     def rotate(self, rotation, axis=None, radians=False):
         rotated_xyz = Transform.rotate_vector(self.unwrap(),
