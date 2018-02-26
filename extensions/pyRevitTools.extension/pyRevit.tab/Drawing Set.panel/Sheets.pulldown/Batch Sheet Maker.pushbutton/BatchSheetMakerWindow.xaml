@@ -7,7 +7,9 @@
         <DockPanel Margin="10">
             <TextBlock DockPanel.Dock="Top">
                 Enter list of sheet number and names in this format:<LineBreak />
-                %sheet-number  %tab  %sheet-name (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)
+                <Bold>sheet-number</Bold>  TAB  <Bold>sheet-name</Bold> (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)<LineBreak />
+                <Bold>sheet-number</Bold> could be a range (e.g. A103-A106 or A103:A106)<LineBreak />
+                or a list of individual sheet numbers (e.g. A104, A105)
             </TextBlock>
             <StackPanel DockPanel.Dock="Bottom">
                 <WrapPanel>
