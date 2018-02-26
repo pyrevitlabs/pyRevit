@@ -1131,3 +1131,46 @@ def random_rgba_color():
                                        random_color(),
                                        random_color(),
                                        random_alpha())
+
+
+def exract_range(formatted_str):
+    """Extract range from formatted string.
+
+    String must be formatted as below
+    A103            No range
+    A103-A106       A103 to A106
+    A103:A106       A103 to A106
+    A103,A105a      A103 and A105a
+    A103;A105a      A103 and A105a
+
+    Args:
+        formatted_str (str): string specifying range
+
+    Returns:
+        list: list of names in the specified range
+
+    Example:
+        >>> exract_range('A103:A106')
+        ['A103', 'A104', 'A105', 'A106']
+        >>> exract_range('S203-S206')
+        ['S203', 'S204', 'S205', 'S206']
+        >>> exract_range('M00A,M00B')
+        ['M00A', 'M00B']
+    """
+    for rchar, rchartype in {':': 'range', '-': 'range',
+                             ',': 'list', ';': 'list'}.items():
+        if rchar in formatted_str:
+            if rchartype == 'range' \
+                    and formatted_str.count(rchar) == 1:
+                items = []
+                start, end = formatted_str.split(rchar)
+                items.append(start)
+                item = increment_str(start, 1)
+                while item != end:
+                    items.append(item)
+                    item = increment_str(item, 1)
+                items.append(end)
+                return items
+            elif rchartype == 'list':
+                return [x.strip() for x in formatted_str.split(rchar)]
+    return [formatted_str]
