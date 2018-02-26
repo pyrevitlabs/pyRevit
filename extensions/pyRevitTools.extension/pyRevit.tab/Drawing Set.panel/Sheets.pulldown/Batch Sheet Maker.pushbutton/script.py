@@ -36,7 +36,12 @@ class BatchSheetMakerWindow(forms.WPFWindow):
             sheet_code = re.sub('\t+', '\t', sheet_code)
             sheet_code = sheet_code.replace('\n', '').replace('\r', '')
             num, name = sheet_code.split('\t')
-            self._sheet_dict[num] = name
+            try:
+                for range_num in coreutils.exract_range(num):
+                    self._sheet_dict[range_num] = name
+            except Exception as range_err:
+                logger.error(range_err)
+                return False
 
         return True
 
@@ -111,6 +116,8 @@ class BatchSheetMakerWindow(forms.WPFWindow):
                                                                 sheet_name))
                     create_func(sheet_num, sheet_name)
                 tg.Assimilate()
+        else:
+            logger.error('Aborted with errors.')
 
 
 BatchSheetMakerWindow('BatchSheetMakerWindow.xaml').ShowDialog()
