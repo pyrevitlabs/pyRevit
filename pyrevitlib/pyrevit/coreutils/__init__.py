@@ -1133,7 +1133,7 @@ def random_rgba_color():
                                        random_alpha())
 
 
-def exract_range(formatted_str):
+def exract_range(formatted_str, max_range=500):
     """Extract range from formatted string.
 
     String must be formatted as below
@@ -1164,11 +1164,16 @@ def exract_range(formatted_str):
                     and formatted_str.count(rchar) == 1:
                 items = []
                 start, end = formatted_str.split(rchar)
+                assert len(start) == len(end), \
+                    'Range start and end must have same length'
                 items.append(start)
                 item = increment_str(start, 1)
+                safe_counter = 0
                 while item != end:
                     items.append(item)
                     item = increment_str(item, 1)
+                    safe_counter += 1
+                    assert safe_counter < max_range, 'Max range reached.'
                 items.append(end)
                 return items
             elif rchartype == 'list':
