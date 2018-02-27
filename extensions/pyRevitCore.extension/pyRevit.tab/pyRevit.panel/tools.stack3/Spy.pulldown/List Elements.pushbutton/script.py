@@ -3,7 +3,10 @@ __doc__ = 'Lists specific elements from the model database.'
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
+from pyrevit import script
 
+
+output = script.get_output()
 
 switches = ['Graphic Styles',
             'Grids',
@@ -262,12 +265,14 @@ elif selected_switch == 'Revisions':
              .WhereElementIsNotElementType()
 
     for rev in revs:
-        print('{0}\t'
-              'REV#: {1}'
-              'DATE: {2}'
-              'TYPE:{3}'
-              'DESC: {4}'
-              .format(rev.SequenceNumber,
+        print('{}\t'
+              'SEQ#: {} '
+              'REV#: {} '
+              'DATE: {} '
+              'TYPE: {} '
+              'DESC: {} '
+              .format(output.linkify(rev.Id),
+                      rev.SequenceNumber,
                       str(rev.RevisionNumber).ljust(5),
                       str(rev.RevisionDate).ljust(10),
                       str(rev.NumberType.ToString()).ljust(15),
