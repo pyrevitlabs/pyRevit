@@ -34,6 +34,7 @@ class OptionSet:
         self.op_copy_vports = Option('Copy Viewports', True)
         self.op_copy_schedules = Option('Copy Schedules', True)
         self.op_copy_titleblock = Option('Copy Sheet Titleblock', True)
+        self.op_copy_revisions = Option('Copy and Set Sheet Revisions', False)
         self.op_update_exist_view_contents = \
             Option('Update Existing View Contents')
         # self.op_update_exist_vport_locations = \
@@ -111,13 +112,6 @@ def get_default_type(source_doc, type_group):
     return source_doc.GetDefaultElementTypeId(type_group)
 
 
-def find_first_legend(dest_doc):
-    for v in DB.FilteredElementCollector(dest_doc).OfClass(DB.View):
-        if v.ViewType == DB.ViewType.Legend:
-            return v
-    return None
-
-
 def find_matching_view(dest_doc, source_view):
     for v in DB.FilteredElementCollector(dest_doc).OfClass(DB.View):
         if v.ViewType == source_view.ViewType \
@@ -148,6 +142,26 @@ def get_view_contents(dest_doc, source_view):
         else:
             elements_ids.append(element.Id)
     return elements_ids
+
+
+def ensure_dest_revision(src_rev, all_dest_revs, dest_doc):
+    # check to see if revision exists
+    for rev in all_dest_revs:
+        if revit.query.compare_revisions(rev, src_rev):
+            return rev
+
+    # if no matching revisions found, create a new revision and return
+    logger.warning('Revision could not be found in destination model.\n'
+                   'Revision Date: {}\n'
+                   'Revision Description: {}\n'
+                   'Creating a new revision. Please review revisions '
+                   'after copying process is finished.'
+                   .format(src_rev.RevisionDate, src_rev.Description))
+    return revit.create.create_revision(description=src_rev.Description,
+                                        by=src_rev.IssuedBy,
+                                        to=src_rev.IssuedTo,
+                                        date=src_rev.RevisionDate,
+                                        doc=dest_doc)
 
 
 def clear_view_contents(dest_doc, dest_view):
@@ -192,13 +206,12 @@ def copy_view(activedoc, source_view, dest_doc):
     matching_view = find_matching_view(dest_doc, source_view)
     if matching_view:
         print('\t\t\tView/Sheet already exists in document.')
-        opt = OPTION_SET.op_update_exist_view_contents
-        if opt:
+        if OPTION_SET.op_update_exist_view_contents:
             if not copy_view_contents(activedoc,
                                       source_view,
                                       dest_doc,
                                       matching_view,
-                                      clear_contents=opt):
+                                      clear_contents=True):
                 logger.error('Could not copy view contents: {}'
                              .format(source_view.Name))
 
@@ -240,7 +253,7 @@ def copy_view(activedoc, source_view, dest_doc):
             logger.debug('Source view is a legend. '
                          'Creating destination legend view.')
 
-            first_legend = find_first_legend(dest_doc)
+            first_legend = revit.query.find_first_legend(dest_doc)
             if first_legend:
                 with revit.Transaction('Create Legend View', doc=dest_doc):
                     new_view = \
@@ -262,10 +275,6 @@ def copy_view(activedoc, source_view, dest_doc):
         copy_view_contents(activedoc, source_view, dest_doc, new_view)
 
     return new_view
-
-
-def copy_sheet_view(*args):
-    return copy_view(*args)
 
 
 def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
@@ -291,6 +300,24 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
                 print('\t\t\tView already exists on the sheet.')
 
 
+def copy_sheet_revisions(activedoc, source_sheet, dest_doc, dest_sheet):
+    all_src_revs = revit.query.get_revisions(doc=activedoc)
+    all_dest_revs = revit.query.get_revisions(doc=dest_doc)
+    revisions_to_set = []
+
+    with revit.Transaction('Copy and Set Revisions', doc=dest_doc):
+        for src_revid in source_sheet.GetAdditionalRevisionIds():
+            set_rev = ensure_dest_revision(activedoc.GetElement(src_revid),
+                                           all_dest_revs,
+                                           dest_doc)
+            revisions_to_set.append(set_rev)
+
+        revit.update.update_sheet_revisions(revisions_to_set,
+                                            [dest_sheet],
+                                            state=True,
+                                            doc=dest_doc)
+
+
 def copy_sheet(activedoc, source_sheet, dest_doc):
     logger.debug('Copying sheet {} to document {}'
                  .format(source_sheet.Name,
@@ -298,7 +325,7 @@ def copy_sheet(activedoc, source_sheet, dest_doc):
     print('\tCopying/updating Sheet: {}'.format(source_sheet.Name))
     with revit.TransactionGroup('Import Sheet', doc=dest_doc):
         logger.debug('Creating destination sheet...')
-        new_sheet = copy_sheet_view(activedoc, source_sheet, dest_doc)
+        new_sheet = copy_view(activedoc, source_sheet, dest_doc)
 
         if new_sheet:
             if OPTION_SET.op_copy_vports:
@@ -307,6 +334,14 @@ def copy_sheet(activedoc, source_sheet, dest_doc):
                                      dest_doc, new_sheet)
             else:
                 print('Skipping viewports...')
+
+            if OPTION_SET.op_copy_revisions:
+                logger.debug('Copying sheet revisions...')
+                copy_sheet_revisions(activedoc, source_sheet,
+                                     dest_doc, new_sheet)
+            else:
+                print('Skipping revisions...')
+
         else:
             logger.error('Failed copying sheet: {}'.format(source_sheet.Name))
 
