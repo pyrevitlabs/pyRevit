@@ -49,21 +49,6 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
         return DB.DuplicateTypeAction.UseDestinationTypes
 
 
-class DestDoc:
-    def __init__(self, doc):
-        self.state = False
-        self.dest_doc = doc
-        self.name = self.dest_doc.Title
-
-    def __nonzero__(self):
-        return self.state
-
-
-def error_and_close(msg):
-    forms.alert(msg)
-    sys.exit(0)
-
-
 def get_user_options():
     op_set = OptionSet()
     return_options = \
@@ -80,23 +65,11 @@ def get_user_options():
 
 def get_dest_docs():
     # find open documents other than the active doc
-    open_docs = [d for d in revit.docs if not d.IsLinked]
-    open_docs.remove(revit.doc)
-
-    if len(open_docs) < 1:
-        error_and_close('Only one active document is found. '
-                        'At least two documents must be open. '
-                        'Operation cancelled.')
-
-    return_options = \
-        forms.SelectFromCheckBoxes.show([DestDoc(x) for x in open_docs],
-                                        title='Select Destination Documents',
-                                        button_name='OK')
-
-    if return_options:
-        return [x.dest_doc for x in return_options if x]
-    else:
+    selected_dest_docs = forms.select_dest_docs()
+    if not selected_dest_docs:
         sys.exit(0)
+    else:
+        return selected_dest_docs
 
 
 def get_source_sheets():
