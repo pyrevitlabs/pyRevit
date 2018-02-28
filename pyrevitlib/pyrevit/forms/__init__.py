@@ -275,7 +275,7 @@ class SelectFromList(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
 
 
 class BaseCheckBoxItem(object):
@@ -426,7 +426,8 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
+
 
 
 class CommandSwitchWindow(TemplateUserInputWindow):
