@@ -925,8 +925,10 @@ class SheetOption(BaseCheckBoxItem):
 
     @property
     def name(self):
-        return '{} - {}'.format(self.item.SheetNumber,
-                                self.item.Name)
+        return '{} - {}{}' \
+            .format(self.item.SheetNumber,
+                    self.item.Name,
+                    ' (placeholder)' if self.item.IsPlaceholder else '')
 
     @property
     def number(self):
