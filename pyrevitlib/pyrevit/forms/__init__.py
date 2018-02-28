@@ -1007,6 +1007,7 @@ def select_dest_docs():
         alert('Only one active document is found. '
               'At least two documents must be open. '
               'Operation cancelled.')
+        return
 
     return_options = \
         SelectFromCheckBoxes.show([DestDocOption(x) for x in open_docs],
