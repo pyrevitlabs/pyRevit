@@ -155,10 +155,14 @@ def get_revisions(doc=None):
                   .WhereElementIsNotElementType())
 
 
-def get_sheets(doc=None):
-    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+def get_sheets(include_placeholders=True, doc=None):
+    sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
                   .WhereElementIsNotElementType())
+    if not include_placeholders:
+        return [x for x in sheets if not x.IsPlaceholder]
+
+    return sheets
 
 
 def get_links(linktype=None, doc=None):
