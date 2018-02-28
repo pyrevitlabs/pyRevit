@@ -285,10 +285,11 @@ def copy_sheet_revisions(activedoc, source_sheet, dest_doc, dest_sheet):
                                            dest_doc)
             revisions_to_set.append(set_rev)
 
-        revit.update.update_sheet_revisions(revisions_to_set,
-                                            [dest_sheet],
-                                            state=True,
-                                            doc=dest_doc)
+        if revisions_to_set:
+            revit.update.update_sheet_revisions(revisions_to_set,
+                                                [dest_sheet],
+                                                state=True,
+                                                doc=dest_doc)
 
 
 def copy_sheet(activedoc, source_sheet, dest_doc):
