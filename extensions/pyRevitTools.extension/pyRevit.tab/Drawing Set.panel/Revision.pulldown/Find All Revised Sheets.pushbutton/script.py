@@ -13,12 +13,7 @@ revs = DB.FilteredElementCollector(revit.doc)\
          .WhereElementIsNotElementType()
 
 for rev in revs:
-    print('{0}\tREV#: {1}\tDATE: {2}\tTYPE:{3}\tDESC: {4}'
-          .format(rev.SequenceNumber,
-                  str(rev.RevisionNumber).ljust(5),
-                  str(rev.RevisionDate).ljust(10),
-                  str(rev.NumberType.ToString()).ljust(15),
-                  rev.Description))
+    revit.report.print_revision(rev)
 
 output.print_md('*****\n\n\n###REVISED SHEETS:\n')
 
@@ -30,16 +25,11 @@ sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
 for sht in sheets:
-    revs = sht.GetAllRevisionIds()
-    if len(revs) > 0:
-        print('{}\t{}\t{}'
-              .format(output.linkify(sht.Id),
-                      sht.LookupParameter('Sheet Number').AsString(),
-                      sht.LookupParameter('Sheet Name').AsString()))
+    srevs = set(sht.GetAllRevisionIds())
+    srevs = srevs.union(set(sht.GetAdditionalRevisionIds()))
+    if len(srevs) > 0:
+        revit.report.print_sheet(sht)
 
-        for rev in revs:
+        for rev in srevs:
             rev = revit.doc.GetElement(rev)
-            print('\tREV#: {0}\t\tDATE: {1}\t\tDESC:{2}'
-                  .format(rev.RevisionNumber,
-                          rev.RevisionDate,
-                          rev.Description))
+            revit.report.print_revision(rev, prefix='\t\t', print_id=False)

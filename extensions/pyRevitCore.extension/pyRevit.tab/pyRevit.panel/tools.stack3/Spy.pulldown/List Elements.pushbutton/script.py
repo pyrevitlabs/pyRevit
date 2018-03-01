@@ -265,20 +265,7 @@ elif selected_switch == 'Revisions':
              .WhereElementIsNotElementType()
 
     for rev in revs:
-        print('{}\t'
-              'SEQ#: {} '
-              'REV#: {} '
-              'DATE: {} '
-              'TYPE: {} '
-              'DESC: {} '
-              .format(output.linkify(rev.Id),
-                      rev.SequenceNumber,
-                      str(rev.RevisionNumber).ljust(5),
-                      str(rev.RevisionDate).ljust(10),
-                      str(rev.NumberType.ToString()).ljust(15),
-                      str(rev.Description).replace('\n', '').replace('\r', '')
-                      )
-              )
+        revit.report.print_revision(rev)
 
 elif selected_switch == 'Sheets':
     cl_sheets = DB.FilteredElementCollector(revit.doc)
@@ -367,20 +354,28 @@ elif selected_switch == 'Revision Clouds':
 
     for rev in revs:
         parent = revit.doc.GetElement(rev.OwnerViewId)
-        revnum = revit.doc.GetElement(rev.RevisionId).RevisionNumber
+        rev = revit.doc.GetElement(rev.RevisionId)
+        wrev = revit.ElementWrapper(rev)
+        revnum = wrev.safe_get_param('RevisionNumber', None)
+
+        if revnum:
+            revnumstr = 'REV#: {0}'.format(revnum)
+        else:
+            revnumstr = 'SEQ#: {0}'.format(rev.SequenceNumber)
+
         if isinstance(parent, DB.ViewSheet):
-            print('REV#: {0}\t\t'
+            print('{0}\t\t'
                   'ID: {3}\t\t'
                   'ON SHEET: {1} {2}'
-                  .format(revnum,
+                  .format(revnumstr,
                           parent.SheetNumber,
                           parent.Name,
                           rev.Id))
         else:
-            print('REV#: {0}\t\t'
+            print('{0}\t\t'
                   'ID: {2}\t\t'
                   'ON VIEW: {1}'
-                  .format(revnum,
+                  .format(revnumstr,
                           parent.ViewName,
                           rev.Id))
 
