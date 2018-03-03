@@ -237,6 +237,9 @@ def get_all_views(doc=None, include_nongraphical=False):
                   .ToElements()
 
     if not include_nongraphical:
-        return [x for x in all_views if x.ViewType in GRAPHICAL_VIEWTYPES]
+        return [x for x in all_views
+                if x.ViewType in GRAPHICAL_VIEWTYPES
+                and not x.IsTemplate
+                and not x.ViewSpecific]
 
     return all_views
