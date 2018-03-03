@@ -17,21 +17,18 @@ def change_case(viewlist, upper=True, verbose=False):
                       "\t{1}\n\n".format(orig_name, el.ViewName))
 
 
+selected_views = forms.select_views()
 
-selected_views = revit.get_selection()
-if not selected_views:
-    selected_views = [revit.activeview]
+if selected_views:
+    selected_option, switches = \
+        forms.CommandSwitchWindow.show(
+            ['to UPPERCASE',
+             'to lowercase'],
+            switches=['Show Report'],
+            message='Select rename option:'
+            )
 
-
-selected_option, switches = \
-    forms.CommandSwitchWindow.show(
-        ['to UPPERCASE',
-         'to lowercase'],
-        switches=['Show Report'],
-        message='Select rename option:'
-        )
-
-if selected_option:
-    change_case(selected_views,
-                upper=True if selected_option == 'to UPPERCASE' else False,
-                verbose=switches['Show Report'])
+    if selected_option:
+        change_case(selected_views,
+                    upper=True if selected_option == 'to UPPERCASE' else False,
+                    verbose=switches['Show Report'])

@@ -16,7 +16,7 @@ def print_sheet(sht):
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiselect=False)
+                                   multiselect=True)
 
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision')

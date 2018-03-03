@@ -1,6 +1,10 @@
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit import query
+
+
+logger = get_logger(__name__)
 
 
 def create_category_set(category_list, doc=None):
@@ -61,3 +65,27 @@ def create_revision(description=None, by=None, to=None, date=None,
         new_rev.NumberType = DB.RevisionNumberType.None #noqa
     new_rev.RevisionDate = date or ''
     return new_rev
+
+
+def copy_revisions(src_doc, dest_doc, revisions=None):
+    if revisions is None:
+        all_src_revs = query.get_revisions(doc=src_doc)
+    else:
+        all_src_revs = revisions
+
+    for src_rev in all_src_revs:
+        # get an updated list of revisions
+        if any([query.compare_revisions(x, src_rev)
+                for x in query.get_revisions(doc=dest_doc)]):
+            logger.debug('Revision already exists: {} {}'
+                         .format(src_rev.RevisionDate,
+                                 src_rev.Description))
+        else:
+            logger.debug('Creating revision: {} {}'
+                         .format(src_rev.RevisionDate,
+                                 src_rev.Description))
+            create_revision(description=src_rev.Description,
+                            by=src_rev.IssuedBy,
+                            to=src_rev.IssuedTo,
+                            date=src_rev.RevisionDate,
+                            doc=dest_doc)

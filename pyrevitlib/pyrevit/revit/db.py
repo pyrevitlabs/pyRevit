@@ -1,13 +1,17 @@
-from pyrevit import PyRevitException
+import os.path as op
+
+from pyrevit import HOST_APP, PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from Autodesk.Revit.DB import Element
 
 
-__all__ = ('BaseWrapper', 'ElementWrapper', )
+__all__ = ('BaseWrapper', 'ElementWrapper', 'ExternalRef', 'ModelSharedParam',
+           'CurrentProjectInfo', )
 
 
 class BaseWrapper(object):
-    def __init__(self, obj):
+    def __init__(self, obj=None):
         self._wrapped = obj
 
     def __repr__(self, data=None):
@@ -22,11 +26,28 @@ class BaseWrapper(object):
                             for k, v in pdata.iteritems()])
         return '<pyrevit.revit.{class_name} % {wrapping}{datastr}>' \
                .format(class_name=self.__class__.__name__,
-                       wrapping=self._wrapped.ToString(),
+                       wrapping=safe_strtype(self._wrapped),
                        datastr=(' ' + datastr) if datastr else '')
 
     def unwrap(self):
         return self._wrapped
+
+    @staticmethod
+    def compare_attr(src, dest, attr_name, case_sensitive=False):
+        if case_sensitive:
+            return safe_strtype(getattr(src, attr_name, '')).lower() == \
+                   safe_strtype(getattr(dest, attr_name, '')).lower()
+        else:
+            return safe_strtype(getattr(src, attr_name)) == \
+                   safe_strtype(getattr(dest, attr_name))
+
+    @staticmethod
+    def compare_attrs(src, dest, attr_names, case_sensitive=False):
+        return [BaseWrapper.compare_attr(src,
+                                         dest,
+                                         x,
+                                         case_sensitive=case_sensitive)
+                for x in attr_names]
 
 
 class ElementWrapper(BaseWrapper):
@@ -85,3 +106,72 @@ class ElementWrapper(BaseWrapper):
 
     def get_param(self, param_name):
         return self._wrapped.LookupParameter(param_name)
+
+    def safe_get_param(self, param_name, default=None):
+        try:
+            return self._wrapped.LookupParameter(param_name)
+        except Exception:
+            return default
+
+
+class ExternalRef(BaseWrapper):
+    def __init__(self, link, extref):
+        super(ExternalRef, self).__init__(link)
+        self._extref = extref
+
+    @property
+    def name(self):
+        return DB.Element.Name.__get__(self._wrapped)
+
+    @property
+    def link(self):
+        return self._wrapped
+
+    @property
+    def linktype(self):
+        return self._extref.ExternalFileReferenceType
+
+    @property
+    def path(self):
+        p = self._extref.GetPath()
+        return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(p)
+
+    def reload(self):
+        return self._wrapped.Reload()
+
+
+class ModelSharedParam(BaseWrapper):
+    def __init__(self, param_def, param_binding=None):
+        super(ModelSharedParam, self).__init__()
+        self.param_def = param_def
+        self.param_binding = param_binding
+
+    @property
+    def name(self):
+        return self.param_def.Name
+
+    def __eq__(self, other):
+        if isinstance(self.param_def, DB.ExternalDefinition):
+            return self.param_def.GUID == other or self.name == other
+        else:
+            return self.name == other
+
+
+class CurrentProjectInfo(BaseWrapper):
+    def __init__(self):
+        super(CurrentProjectInfo, self).__init__()
+
+    @property
+    def name(self):
+        if not HOST_APP.doc.IsFamilyDocument:
+            return HOST_APP.doc.ProjectInformation.Name
+        else:
+            return ''
+
+    @property
+    def location(self):
+        return HOST_APP.doc.PathName
+
+    @property
+    def filename(self):
+        return op.splitext(op.basename(self.location))[0]

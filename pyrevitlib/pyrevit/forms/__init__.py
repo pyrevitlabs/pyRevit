@@ -275,7 +275,7 @@ class SelectFromList(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
 
 
 class BaseCheckBoxItem(object):
@@ -292,6 +292,9 @@ class BaseCheckBoxItem(object):
     @property
     def name(self):
         return getattr(self.item, 'name', '')
+
+    def unwrap(self):
+        return self.item
 
 
 class SelectFromCheckBoxes(TemplateUserInputWindow):
@@ -423,7 +426,8 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
+
 
 
 class CommandSwitchWindow(TemplateUserInputWindow):
@@ -902,6 +906,168 @@ class SearchPrompt(WPFWindow):
         return dlg.response
 
 
+class RevisionOption(BaseCheckBoxItem):
+    def __init__(self, revision_element):
+        super(RevisionOption, self).__init__(revision_element)
+
+    @property
+    def name(self):
+        revnum = self.item.SequenceNumber
+        if hasattr(self.item, 'RevisionNumber'):
+            revnum = self.item.RevisionNumber
+        return '{}-{}-{}'.format(revnum,
+                                 self.item.Description,
+                                 self.item.RevisionDate)
+
+
+class SheetOption(BaseCheckBoxItem):
+    def __init__(self, sheet_element):
+        super(SheetOption, self).__init__(sheet_element)
+
+    @property
+    def name(self):
+        return '{} - {}{}' \
+            .format(self.item.SheetNumber,
+                    self.item.Name,
+                    ' (placeholder)' if self.item.IsPlaceholder else '')
+
+    @property
+    def number(self):
+        return self.item.SheetNumber
+
+
+class ViewOption(BaseCheckBoxItem):
+    def __init__(self, view_element):
+        super(ViewOption, self).__init__(view_element)
+
+    @property
+    def name(self):
+        return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
+
+
+class DestDocOption(BaseCheckBoxItem):
+    def __init__(self, doc):
+        super(DestDocOption, self).__init__(doc)
+
+    @property
+    def name(self):
+        return getattr(self.item, 'Title', '')
+
+
+def select_revisions(title='Select Revision',
+                     button_name='Select',
+                     width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
+                     filterfunc=None, doc=None):
+    revisions = sorted(revit.query.get_revisions(doc=doc),
+                       key=lambda x: x.SequenceNumber)
+
+    if filterfunc:
+        revisions = filter(filterfunc, revisions)
+    revision_options = [RevisionOption(x) for x in revisions]
+
+    # ask user for revisions
+    return_options = \
+        SelectFromList.show(
+            revision_options,
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiselect
+            )
+
+    if return_options:
+        if not multiselect and len(return_options) == 1:
+            return return_options[0].unwrap()
+        else:
+            return [x.unwrap() for x in return_options]
+
+
+def select_sheets(title='Select Sheets', button_name='Select',
+                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                  filterfunc=None, doc=None):
+    doc = doc or HOST_APP.doc
+    all_sheets = DB.FilteredElementCollector(doc) \
+                   .OfClass(DB.ViewSheet) \
+                   .WhereElementIsNotElementType() \
+                   .ToElements()
+    if filterfunc:
+        all_sheets = filter(filterfunc, all_sheets)
+
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.unwrap() for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([SheetOption(x) for x in all_sheets],
+                       key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width,
+                multiselect=False)
+        if return_option:
+            return return_option[0].unwrap()
+
+
+def select_views(title='Select Views', button_name='Select',
+                 width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                 filterfunc=None, doc=None):
+    all_graphviews = revit.query.get_all_views(doc=doc)
+
+    if filterfunc:
+        all_graphviews = filter(filterfunc, all_graphviews)
+
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.unwrap() for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width,
+                multiselect=False)
+        if return_option:
+            return return_option[0].unwrap()
+
+
+def select_dest_docs():
+    # find open documents other than the active doc
+    open_docs = [d for d in revit.docs if not d.IsLinked]
+    open_docs.remove(revit.doc)
+
+    if len(open_docs) < 1:
+        alert('Only one active document is found. '
+              'At least two documents must be open. '
+              'Operation cancelled.')
+        return
+
+    return_options = \
+        SelectFromCheckBoxes.show([DestDocOption(x) for x in open_docs],
+                                  title='Select Destination Documents',
+                                  button_name='OK')
+    if return_options:
+        return [x.unwrap() for x in return_options if x]
+
+
 def alert(msg, title='pyRevit',
           cancel=False, yes=False, no=False, retry=False):
     buttons = UI.TaskDialogCommonButtons.Ok
@@ -969,90 +1135,6 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         if unc_paths:
             return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName
-
-
-class RevisionOption(object):
-    def __init__(self, revision_element):
-        self.revision_element = revision_element
-
-    def __str__(self):
-        revnum = self.revision_element.SequenceNumber
-        if hasattr(self.revision_element, 'RevisionNumber'):
-            revnum = self.revision_element.RevisionNumber
-        return '{}-{}-{}'.format(revnum,
-                                 self.revision_element.Description,
-                                 self.revision_element.RevisionDate)
-
-
-class SheetOption(object):
-    def __init__(self, sheet_element):
-        self.state = False
-        self.sheet_element = sheet_element
-        self.name = '{} - {}'.format(self.sheet_element.SheetNumber,
-                                     self.sheet_element.Name)
-        self.number = self.sheet_element.SheetNumber
-
-    def __nonzero__(self):
-        return self.state
-
-    def __str__(self):
-        return self.name
-
-
-def select_revisions(title='Select Revision',
-                     button_name='Select',
-                     width=DEFAULT_INPUTWINDOW_WIDTH,
-                     multiselect=True):
-    revisions = sorted(revit.query.get_revisions(),
-                       key=lambda x: x.SequenceNumber)
-    revision_options = [RevisionOption(x) for x in revisions]
-
-    # ask user for revisions
-    return_options = \
-        SelectFromList.show(
-            revision_options,
-            title=title,
-            button_name=button_name,
-            width=width,
-            multiselect=multiselect
-            )
-
-    if return_options:
-        if not multiselect and len(return_options) == 1:
-            return return_options[0].revision_element
-        else:
-            return [x.revision_element for x in return_options]
-
-
-def select_sheets(title='Select Sheets', button_name='Select',
-                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True):
-    all_sheets = DB.FilteredElementCollector(revit.doc) \
-                   .OfClass(DB.ViewSheet) \
-                   .WhereElementIsNotElementType() \
-                   .ToElements()
-
-    # ask user for multiple sheets
-    if multiple:
-        return_options = \
-            SelectFromCheckBoxes.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width)
-        if return_options:
-            return [x.sheet_element for x in return_options if x.state]
-    else:
-        return_option = \
-            SelectFromList.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width,
-                multiselect=False)
-        if return_option:
-            return return_option[0].sheet_element
 
 
 def check_workshared(doc):

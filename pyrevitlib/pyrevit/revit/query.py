@@ -1,74 +1,32 @@
 """Helper functions to query info and elements from Revit."""
 
-import os.path as op
-
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
-from pyrevit import DB
-from pyrevit.revit.db import BaseWrapper
+from pyrevit import revit, DB
 
 
-class ModelNotSaved(PyRevitException):
-    pass
-
-
-class ModelSharedParam:
-    def __init__(self, param_def, param_binding=None):
-        self.param_def = param_def
-        self.param_binding = param_binding
-
-    @property
-    def name(self):
-        return self.param_def.Name
-
-    def __eq__(self, other):
-        if isinstance(self.param_def, DB.ExternalDefinition):
-            return self.param_def.GUID == other or self.name == other
-        else:
-            return self.name == other
-
-
-class CurrentProjectInfo:
-    @property
-    def name(self):
-        if not HOST_APP.doc.IsFamilyDocument:
-            return HOST_APP.doc.ProjectInformation.Name
-        else:
-            return ''
-
-    @property
-    def location(self):
-        return HOST_APP.doc.PathName
-
-    @property
-    def filename(self):
-        return op.splitext(op.basename(self.location))[0]
-
-
-class ExternalRef(BaseWrapper):
-    def __init__(self, link, extref):
-        super(ExternalRef, self).__init__(link)
-        self._extref = extref
-
-    @property
-    def name(self):
-        return DB.Element.Name.__get__(self._wrapped)
-
-    @property
-    def link(self):
-        return self._wrapped
-
-    @property
-    def linktype(self):
-        return self._extref.ExternalFileReferenceType
-
-    @property
-    def path(self):
-        p = self._extref.GetPath()
-        return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(p)
-
-    def reload(self):
-        return self._wrapped.Reload()
+GRAPHICAL_VIEWTYPES = [
+    DB.ViewType.FloorPlan,
+    DB.ViewType.CeilingPlan,
+    DB.ViewType.Elevation,
+    DB.ViewType.ThreeD,
+    DB.ViewType.Schedule,
+    DB.ViewType.DrawingSheet,
+    DB.ViewType.Report,
+    DB.ViewType.DraftingView,
+    DB.ViewType.Legend,
+    DB.ViewType.EngineeringPlan,
+    DB.ViewType.AreaPlan,
+    DB.ViewType.Section,
+    DB.ViewType.Detail,
+    DB.ViewType.CostReport,
+    DB.ViewType.LoadsReport,
+    DB.ViewType.PresureLossReport,
+    DB.ViewType.ColumnSchedule,
+    DB.ViewType.PanelSchedule,
+    DB.ViewType.Walkthrough,
+    DB.ViewType.Rendering
+    ]
 
 
 def get_all_elements(doc=None):
@@ -182,8 +140,8 @@ def get_model_sharedparams(doc=None):
 
     msp_list = []
     while pb_iterator.MoveNext():
-        msp = ModelSharedParam(pb_iterator.Key,
-                               param_bindings[pb_iterator.Key])
+        msp = revit.ModelSharedParam(pb_iterator.Key,
+                                     param_bindings[pb_iterator.Key])
         msp_list.append(msp)
 
     return msp_list
@@ -212,7 +170,7 @@ def get_defined_sharedparams():
 
 
 def get_project_info():
-    return CurrentProjectInfo()
+    return revit.CurrentProjectInfo()
 
 
 def get_revisions(doc=None):
@@ -221,10 +179,14 @@ def get_revisions(doc=None):
                   .WhereElementIsNotElementType())
 
 
-def get_sheets(doc=None):
-    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+def get_sheets(include_placeholders=True, doc=None):
+    sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
                   .WhereElementIsNotElementType())
+    if not include_placeholders:
+        return [x for x in sheets if not x.IsPlaceholder]
+
+    return sheets
 
 
 def get_links(linktype=None, doc=None):
@@ -232,7 +194,7 @@ def get_links(linktype=None, doc=None):
 
     location = doc.PathName
     if not location:
-        raise ModelNotSaved()
+        raise PyRevitException('PathName is empty. Model is not saved.')
 
     links = []
     modelPath = \
@@ -244,7 +206,40 @@ def get_links(linktype=None, doc=None):
         link = doc.GetElement(refId)
         if linktype:
             if extRef.ExternalFileReferenceType == linktype:
-                links.append(ExternalRef(link, extRef))
+                links.append(revit.ExternalRef(link, extRef))
         else:
-            links.append(ExternalRef(link, extRef))
+            links.append(revit.ExternalRef(link, extRef))
     return links
+
+
+def find_first_legend(doc=None):
+    doc = doc or HOST_APP.doc
+    for v in DB.FilteredElementCollector(doc).OfClass(DB.View):
+        if v.ViewType == DB.ViewType.Legend:
+            return v
+    return None
+
+
+def compare_revisions(src_rev, dest_rev, case_sensitive=False):
+    return all(revit.BaseWrapper.compare_attrs(src_rev, dest_rev,
+                                               ['RevisionDate',
+                                                'Description',
+                                                'IssuedBy',
+                                                'IssuedTo'],
+                                               case_sensitive=case_sensitive))
+
+
+def get_all_views(doc=None, include_nongraphical=False):
+    doc = doc or HOST_APP.doc
+    all_views = DB.FilteredElementCollector(doc) \
+                  .OfClass(DB.View) \
+                  .WhereElementIsNotElementType() \
+                  .ToElements()
+
+    if not include_nongraphical:
+        return [x for x in all_views
+                if x.ViewType in GRAPHICAL_VIEWTYPES
+                and not x.IsTemplate
+                and not x.ViewSpecific]
+
+    return all_views
