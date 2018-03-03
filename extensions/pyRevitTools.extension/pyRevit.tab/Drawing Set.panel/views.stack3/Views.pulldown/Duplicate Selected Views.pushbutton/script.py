@@ -8,6 +8,10 @@ from pyrevit import script
 logger = script.get_logger()
 
 
+def duplicableview(view):
+    return view.CanViewBeDuplicated(DB.ViewDuplicateOption.Duplicate)
+
+
 def duplicate_views(viewlist, with_detailing=True):
     with revit.Transaction('Duplicate selected views'):
         for el in viewlist:
@@ -23,7 +27,7 @@ def duplicate_views(viewlist, with_detailing=True):
                              .format(el.ViewName, duplerr))
 
 
-selected_views = forms.select_views()
+selected_views = forms.select_views(filterfunc=duplicableview)
 
 if selected_views:
     selected_option = \
