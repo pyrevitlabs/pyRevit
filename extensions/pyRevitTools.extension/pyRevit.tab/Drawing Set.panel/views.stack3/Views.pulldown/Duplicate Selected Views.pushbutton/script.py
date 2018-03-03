@@ -23,7 +23,7 @@ def duplicate_views(viewlist, with_detailing=True):
             try:
                 el.Duplicate(dupop)
             except Exception as duplerr:
-                logger.error('Error duplicating view {} | {}'
+                logger.error('Error duplicating view "{}" | {}'
                              .format(el.ViewName, duplerr))
 
 
