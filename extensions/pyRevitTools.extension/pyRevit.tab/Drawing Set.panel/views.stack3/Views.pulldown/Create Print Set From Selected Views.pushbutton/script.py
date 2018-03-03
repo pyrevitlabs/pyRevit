@@ -13,29 +13,30 @@ printmanager.PrintRange = DB.PrintRange.Select
 viewsheetsetting = printmanager.ViewSheetSetting
 
 # Collect selected views
-myviewset = DB.ViewSet()
-for el in revit.get_selection():
-    if isinstance(el, DB.View):
+selected_views = forms.select_views()
+if selected_views:
+    myviewset = DB.ViewSet()
+    for el in selected_views:
         myviewset.Insert(el)
 
-if myviewset.IsEmpty:
-    forms.alert('At least one view must be selected.')
-else:
-    # Collect existing sheet sets
-    viewsheetsets = DB.FilteredElementCollector(revit.doc)\
-                      .OfClass(framework.get_type(DB.ViewSheetSet))\
-                      .WhereElementIsNotElementType()\
-                      .ToElements()
+    if myviewset.IsEmpty:
+        forms.alert('At least one view must be selected.')
+    else:
+        # Collect existing sheet sets
+        viewsheetsets = DB.FilteredElementCollector(revit.doc)\
+                          .OfClass(framework.get_type(DB.ViewSheetSet))\
+                          .WhereElementIsNotElementType()\
+                          .ToElements()
 
-    allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
+        allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
 
-    with revit.Transaction('Created Print Set'):
-        # Delete existing matching sheet set
-        if sheetsetname in allviewsheetsets.keys():
-            viewsheetsetting.CurrentViewSheetSet = \
-                allviewsheetsets[sheetsetname]
-            viewsheetsetting.Delete()
+        with revit.Transaction('Created Print Set'):
+            # Delete existing matching sheet set
+            if sheetsetname in allviewsheetsets.keys():
+                viewsheetsetting.CurrentViewSheetSet = \
+                    allviewsheetsets[sheetsetname]
+                viewsheetsetting.Delete()
 
-        # Create new sheet set
-        viewsheetsetting.CurrentViewSheetSet.Views = myviewset
-        viewsheetsetting.SaveAs(sheetsetname)
+            # Create new sheet set
+            viewsheetsetting.CurrentViewSheetSet.Views = myviewset
+            viewsheetsetting.SaveAs(sheetsetname)

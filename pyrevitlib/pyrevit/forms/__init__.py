@@ -936,6 +936,15 @@ class SheetOption(BaseCheckBoxItem):
         return self.item.SheetNumber
 
 
+class ViewOption(BaseCheckBoxItem):
+    def __init__(self, view_element):
+        super(ViewOption, self).__init__(view_element)
+
+    @property
+    def name(self):
+        return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
+
+
 class DestDocOption(BaseCheckBoxItem):
     def __init__(self, doc):
         super(DestDocOption, self).__init__(doc)
@@ -947,9 +956,9 @@ class DestDocOption(BaseCheckBoxItem):
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
-                     width=DEFAULT_INPUTWINDOW_WIDTH,
-                     multiselect=True):
-    revisions = sorted(revit.query.get_revisions(),
+                     width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
+                     doc=None):
+    revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
     revision_options = [RevisionOption(x) for x in revisions]
 
@@ -971,8 +980,10 @@ def select_revisions(title='Select Revision',
 
 
 def select_sheets(title='Select Sheets', button_name='Select',
-                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True):
-    all_sheets = DB.FilteredElementCollector(revit.doc) \
+                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                  doc=None):
+    doc = doc or HOST_APP.doc
+    all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
@@ -993,6 +1004,34 @@ def select_sheets(title='Select Sheets', button_name='Select',
             SelectFromList.show(
                 sorted([SheetOption(x) for x in all_sheets],
                        key=lambda x: x.number),
+                title=title,
+                button_name=button_name,
+                width=width,
+                multiselect=False)
+        if return_option:
+            return return_option[0].unwrap()
+
+
+def select_views(title='Select Views', button_name='Select',
+                 width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                 doc=None):
+    all_graphviews = revit.query.get_all_views(doc=doc)
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.unwrap() for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
                 title=title,
                 button_name=button_name,
                 width=width,
