@@ -957,9 +957,12 @@ class DestDocOption(BaseCheckBoxItem):
 def select_revisions(title='Select Revision',
                      button_name='Select',
                      width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
-                     doc=None):
+                     filterfunc=None, doc=None):
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
+
+    if filterfunc:
+        revisions = filter(filterfunc, revisions)
     revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
@@ -981,12 +984,14 @@ def select_revisions(title='Select Revision',
 
 def select_sheets(title='Select Sheets', button_name='Select',
                   width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                  doc=None):
+                  filterfunc=None, doc=None):
     doc = doc or HOST_APP.doc
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
+    if filterfunc:
+        all_sheets = filter(filterfunc, all_sheets)
 
     # ask user for multiple sheets
     if multiple:
@@ -1014,8 +1019,12 @@ def select_sheets(title='Select Sheets', button_name='Select',
 
 def select_views(title='Select Views', button_name='Select',
                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                 doc=None):
+                 filterfunc=None, doc=None):
     all_graphviews = revit.query.get_all_views(doc=doc)
+
+    if filterfunc:
+        all_graphviews = filter(filterfunc, all_graphviews)
+
     # ask user for multiple sheets
     if multiple:
         return_options = \
