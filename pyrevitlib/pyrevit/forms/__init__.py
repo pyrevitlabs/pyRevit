@@ -1,5 +1,6 @@
 """Reusable WPF forms for pyRevit."""
 
+import sys
 import os
 import os.path as op
 import string
@@ -1069,7 +1070,7 @@ def select_dest_docs():
 
 
 def alert(msg, title='pyRevit',
-          cancel=False, yes=False, no=False, retry=False):
+          cancel=False, yes=False, no=False, retry=False, exit=False):
     buttons = UI.TaskDialogCommonButtons.Ok
 
     if any([cancel, yes, no, retry]):
@@ -1086,12 +1087,15 @@ def alert(msg, title='pyRevit',
 
     res = UI.TaskDialog.Show(title, msg, buttons)
 
-    if res == UI.TaskDialogResult.Ok \
-            or res == UI.TaskDialogResult.Yes \
-            or res == UI.TaskDialogResult.Retry:
-        return True
-    else:
-        return False
+    if not exit:
+        if res == UI.TaskDialogResult.Ok \
+                or res == UI.TaskDialogResult.Yes \
+                or res == UI.TaskDialogResult.Retry:
+            return True
+        else:
+            return False
+
+    sys.exit()
 
 
 def pick_folder():
