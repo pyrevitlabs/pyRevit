@@ -107,6 +107,12 @@ class ElementWrapper(BaseWrapper):
     def get_param(self, param_name):
         return self._wrapped.LookupParameter(param_name)
 
+    def safe_get_param(self, param_name, default=None):
+        try:
+            return self._wrapped.LookupParameter(param_name)
+        except Exception:
+            return default
+
 
 class ExternalRef(BaseWrapper):
     def __init__(self, link, extref):

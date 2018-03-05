@@ -275,7 +275,7 @@ class SelectFromList(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
 
 
 class BaseCheckBoxItem(object):
@@ -426,7 +426,8 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
-        self.list_lb.ItemsSource = self._context
+        self.search_tb.Focus()
+
 
 
 class CommandSwitchWindow(TemplateUserInputWindow):
@@ -925,12 +926,23 @@ class SheetOption(BaseCheckBoxItem):
 
     @property
     def name(self):
-        return '{} - {}'.format(self.item.SheetNumber,
-                                self.item.Name)
+        return '{} - {}{}' \
+            .format(self.item.SheetNumber,
+                    self.item.Name,
+                    ' (placeholder)' if self.item.IsPlaceholder else '')
 
     @property
     def number(self):
         return self.item.SheetNumber
+
+
+class ViewOption(BaseCheckBoxItem):
+    def __init__(self, view_element):
+        super(ViewOption, self).__init__(view_element)
+
+    @property
+    def name(self):
+        return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
 
 
 class DestDocOption(BaseCheckBoxItem):
@@ -944,10 +956,13 @@ class DestDocOption(BaseCheckBoxItem):
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
-                     width=DEFAULT_INPUTWINDOW_WIDTH,
-                     multiselect=True):
-    revisions = sorted(revit.query.get_revisions(),
+                     width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
+                     filterfunc=None, doc=None):
+    revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
+
+    if filterfunc:
+        revisions = filter(filterfunc, revisions)
     revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
@@ -968,11 +983,15 @@ def select_revisions(title='Select Revision',
 
 
 def select_sheets(title='Select Sheets', button_name='Select',
-                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True):
-    all_sheets = DB.FilteredElementCollector(revit.doc) \
+                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                  filterfunc=None, doc=None):
+    doc = doc or HOST_APP.doc
+    all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
+    if filterfunc:
+        all_sheets = filter(filterfunc, all_sheets)
 
     # ask user for multiple sheets
     if multiple:
@@ -998,6 +1017,38 @@ def select_sheets(title='Select Sheets', button_name='Select',
             return return_option[0].unwrap()
 
 
+def select_views(title='Select Views', button_name='Select',
+                 width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
+                 filterfunc=None, doc=None):
+    all_graphviews = revit.query.get_all_views(doc=doc)
+
+    if filterfunc:
+        all_graphviews = filter(filterfunc, all_graphviews)
+
+    # ask user for multiple sheets
+    if multiple:
+        return_options = \
+            SelectFromCheckBoxes.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width)
+        if return_options:
+            return [x.unwrap() for x in return_options if x.state]
+    else:
+        return_option = \
+            SelectFromList.show(
+                sorted([ViewOption(x) for x in all_graphviews],
+                       key=lambda x: x.name),
+                title=title,
+                button_name=button_name,
+                width=width,
+                multiselect=False)
+        if return_option:
+            return return_option[0].unwrap()
+
+
 def select_dest_docs():
     # find open documents other than the active doc
     open_docs = [d for d in revit.docs if not d.IsLinked]
@@ -1007,6 +1058,7 @@ def select_dest_docs():
         alert('Only one active document is found. '
               'At least two documents must be open. '
               'Operation cancelled.')
+        return
 
     return_options = \
         SelectFromCheckBoxes.show([DestDocOption(x) for x in open_docs],

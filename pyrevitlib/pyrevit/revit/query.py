@@ -5,6 +5,30 @@ from pyrevit.compat import safe_strtype
 from pyrevit import revit, DB
 
 
+GRAPHICAL_VIEWTYPES = [
+    DB.ViewType.FloorPlan,
+    DB.ViewType.CeilingPlan,
+    DB.ViewType.Elevation,
+    DB.ViewType.ThreeD,
+    DB.ViewType.Schedule,
+    DB.ViewType.DrawingSheet,
+    DB.ViewType.Report,
+    DB.ViewType.DraftingView,
+    DB.ViewType.Legend,
+    DB.ViewType.EngineeringPlan,
+    DB.ViewType.AreaPlan,
+    DB.ViewType.Section,
+    DB.ViewType.Detail,
+    DB.ViewType.CostReport,
+    DB.ViewType.LoadsReport,
+    DB.ViewType.PresureLossReport,
+    DB.ViewType.ColumnSchedule,
+    DB.ViewType.PanelSchedule,
+    DB.ViewType.Walkthrough,
+    DB.ViewType.Rendering
+    ]
+
+
 def get_all_elements(doc=None):
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
              .WhereElementIsNotElementType()\
@@ -155,10 +179,14 @@ def get_revisions(doc=None):
                   .WhereElementIsNotElementType())
 
 
-def get_sheets(doc=None):
-    return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
+def get_sheets(include_placeholders=True, doc=None):
+    sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
                   .WhereElementIsNotElementType())
+    if not include_placeholders:
+        return [x for x in sheets if not x.IsPlaceholder]
+
+    return sheets
 
 
 def get_links(linktype=None, doc=None):
@@ -199,3 +227,19 @@ def compare_revisions(src_rev, dest_rev, case_sensitive=False):
                                                 'IssuedBy',
                                                 'IssuedTo'],
                                                case_sensitive=case_sensitive))
+
+
+def get_all_views(doc=None, include_nongraphical=False):
+    doc = doc or HOST_APP.doc
+    all_views = DB.FilteredElementCollector(doc) \
+                  .OfClass(DB.View) \
+                  .WhereElementIsNotElementType() \
+                  .ToElements()
+
+    if not include_nongraphical:
+        return [x for x in all_views
+                if x.ViewType in GRAPHICAL_VIEWTYPES
+                and not x.IsTemplate
+                and not x.ViewSpecific]
+
+    return all_views

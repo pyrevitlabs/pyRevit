@@ -2,6 +2,14 @@
 
 from pyrevit import revit, DB
 from pyrevit import forms
+from pyrevit import script
+
+
+logger = script.get_logger()
+
+
+def duplicableview(view):
+    return view.CanViewBeDuplicated(DB.ViewDuplicateOption.Duplicate)
 
 
 def duplicate_views(viewlist, with_detailing=True):
@@ -11,23 +19,26 @@ def duplicate_views(viewlist, with_detailing=True):
                 dupop = DB.ViewDuplicateOption.WithDetailing
             else:
                 dupop = DB.ViewDuplicateOption.Duplicate
-            el.Duplicate(dupop)
+
+            try:
+                el.Duplicate(dupop)
+            except Exception as duplerr:
+                logger.error('Error duplicating view "{}" | {}'
+                             .format(el.ViewName, duplerr))
 
 
-selected_views = revit.get_selection()
-if not selected_views:
-    selected_views = [revit.activeview]
+selected_views = forms.select_views(filterfunc=duplicableview)
 
+if selected_views:
+    selected_option = \
+        forms.CommandSwitchWindow.show(
+            ['WITH Detailing',
+             'WITHOUT Detailing'],
+            message='Select duplication option:'
+            )
 
-selected_option = \
-    forms.CommandSwitchWindow.show(
-        ['WITH Detailing',
-         'WITHOUT Detailing'],
-        message='Select duplication option:'
-        )
-
-
-if selected_option:
-    duplicate_views(selected_views,
-                    with_detailing=True if selected_option == 'WITH Detailing'
-                                        else False)
+    if selected_option:
+        duplicate_views(
+            selected_views,
+            with_detailing=True if selected_option == 'WITH Detailing'
+            else False)
