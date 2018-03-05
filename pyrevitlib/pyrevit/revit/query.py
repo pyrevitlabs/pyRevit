@@ -243,3 +243,10 @@ def get_all_views(doc=None, include_nongraphical=False):
                 and not x.ViewSpecific]
 
     return all_views
+
+
+def get_view_by_name(view_name, doc=None):
+    doc = doc or HOST_APP.doc
+    for view in get_all_views(doc=doc):
+        if view.ViewName == view_name:
+            return view

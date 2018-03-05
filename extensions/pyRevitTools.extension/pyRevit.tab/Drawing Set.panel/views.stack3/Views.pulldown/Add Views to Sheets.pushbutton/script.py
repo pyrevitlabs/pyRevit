@@ -1,65 +1,65 @@
-__author__ = 'Dan Mapes'
-__doc__ = 'Add Selected View Callout to Selected Sheet \n' \
-            'Works with section and plan view callouts! '\
-            'Adds the selected callout to the selected sheet. '\
-            'Will add view at 0,0,0 point on sheet.'
+"""Add selected view to selected sheets."""
 
-import Autodesk.Revit.DB as DB
-from Autodesk.Revit.DB import Transaction, View, XYZ
-from Autodesk.Revit.UI import TaskDialog
+from pyrevit import revit, DB
+from pyrevit import forms
 from pyrevit import script
-from rpw.ui.forms import SelectFromList
 
 
-doc = __revit__.ActiveUIDocument.Document
-uidoc = __revit__.ActiveUIDocument
+__author__ = 'Dan Mapes'
+__doc__ = 'Adds the selected views (callouts, sections, elevations) to the '\
+          'selected sheets. Model views will only be added to the first '\
+          'selected sheet since they can not exist on multiple sheets. ' \
+          'The command defaults to active view if no views are selected.' \
+          '\n\nShift+Click:\n' \
+          'Pick source views from list instead of selection or active view.'
 
-# selection
-selected_ids = uidoc.Selection.GetElementIds()
-if selected_ids.Count == 1:
-    for element_id in selected_ids:
-        element = doc.GetElement(element_id)
-        section_name = element.Name
-        # section_name = element.GetParameters('View Name')
+logger = script.get_logger()
+
+selected_views = []
+
+
+if __shiftclick__:    #noqa
+    selected_views = forms.select_views()
 else:
-    TaskDialog.Show('pyMapes', 'Select 1 Section. No more No less')
-    script.exit()
+    # get selection and verify a view is selected
+    selection = revit.get_selection()
+    if not selection.is_empty:
+        logger.debug('Getting views from selection.')
+        for el in selection:
+            if el.Category and el.Category.Name == 'Views':
+                logger.debug('Selected element referencing: {}'
+                             .format(el.Name))
+                target_view = revit.query.get_view_by_name(el.Name)
+                if target_view:
+                    logger.debug('Target view: {}'
+                                 .format(target_view.ViewName))
+                    selected_views.append(target_view)
+    else:
+        selected_view = revit.activeview
+        if not isinstance(selected_view, DB.View):
+            forms.alert('Active view must be placable on a sheet.', exit=True)
+        logger.debug('Selected view: {}'.format(selected_view))
+        selected_views = [selected_view]
 
-sheet_ids = []
-sheet_names = []
 
-# Find all views
-views = DB.FilteredElementCollector(doc)\
-          .OfCategory(DB.BuiltInCategory.OST_Views)\
-          .WhereElementIsNotElementType()\
-          .ToElementIds()
-# Find all sheets
-sheets = DB.FilteredElementCollector(doc)\
-          .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-          .WhereElementIsNotElementType()\
-          .ToElementIds()
+if selected_views:
+    logger.debug('Selected views: {}'.format(len(selected_views)))
+    # get the destination sheets from user
+    dest_sheets = forms.select_sheets()
 
-for sheet in sheets:
-    s_element = doc.GetElement(sheet)
-    sheet_id = s_element.Id
-    title = s_element.Name
-    sheet_names.append(title)
-    sheet_ids.append(sheet_id)
-
-sheet_names_and_ids = zip(sheet_names, sheet_ids)
-sheet_names_and_ids_dict = dict(sheet_names_and_ids)
-
-final_location = XYZ(0,0,0)
-
-selected_sheet_value = SelectFromList('Select view to add section view', sheet_names_and_ids_dict.keys())
-selected_sheet = sheet_names_and_ids_dict[selected_sheet_value]
-
-t = Transaction(doc, "Add Selected View Callout to Selected Sheet")
-t.Start()
-for view in views:
-    v_element = doc.GetElement(view)
-    if v_element.Name == section_name:
-        section_id = v_element.Id
-        DB.Viewport.Create(doc, selected_sheet, section_id, final_location)
-# print section_name, section_id
-t.Commit()
+    if dest_sheets:
+        logger.debug('Selected sheets: {}'.format(len(dest_sheets)))
+        with revit.Transaction("Add Views to Sheets"):
+            for selected_view in selected_views:
+                for sheet in dest_sheets:
+                    logger.debug('Adding: {}'.format(selected_view.ViewName))
+                    try:
+                        DB.Viewport.Create(revit.doc,
+                                           sheet.Id,
+                                           selected_view.Id,
+                                           DB.XYZ(0, 0, 0))
+                    except Exception as place_err:
+                        logger.debug('Error placing view on sheet: {} -> {}'
+                                     .format(selected_view.Id, sheet.Id))
+else:
+    forms.alert('No views selected.')
