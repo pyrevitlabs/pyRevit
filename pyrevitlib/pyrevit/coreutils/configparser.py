@@ -72,6 +72,9 @@ class PyRevitConfigSectionParser(object):
             else:
                 raise opt_get_err
 
+    def set_option(self, op_name, value):
+        self.__setattr__(op_name, value)
+
     def remove_option(self, option_name):
         return self._parser.remove_option(self._section_name, option_name)
 

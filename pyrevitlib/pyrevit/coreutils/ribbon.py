@@ -29,7 +29,7 @@ class PyRevitUIError(PyRevitException):
     pass
 
 
-class _ButtonIcons:
+class _ButtonIcons(object):
     def __init__(self, file_address):
         self.icon_file_path = file_address
         self.filestream = IO.FileStream(file_address,
@@ -100,7 +100,7 @@ class _ButtonIcons:
 
 
 # Superclass to all ui item classes --------------------------------------------
-class _GenericPyRevitUIContainer:
+class _GenericPyRevitUIContainer(object):
     def __init__(self):
         self.name = ''
         self._rvtapi_object = None
@@ -131,6 +131,42 @@ class _GenericPyRevitUIContainer:
         except KeyError:
             raise PyRevitUIError('Can not remove item {} from {}'
                                  .format(expired_cmp_name, self))
+
+    @property
+    def visible(self):
+        if hasattr(self._rvtapi_object, 'Visible'):
+            return self._rvtapi_object.Visible
+        elif hasattr(self._rvtapi_object, 'IsVisible'):
+            return self._rvtapi_object.IsVisible
+        else:
+            raise AttributeError()
+
+    @visible.setter
+    def visible(self, value):
+        if hasattr(self._rvtapi_object, 'Visible'):
+            self._rvtapi_object.Visible = value
+        elif hasattr(self._rvtapi_object, 'IsVisible'):
+            self._rvtapi_object.IsVisible = value
+        else:
+            raise AttributeError()
+
+    @property
+    def enabled(self):
+        if hasattr(self._rvtapi_object, 'Enabled'):
+            return self._rvtapi_object.Enabled
+        elif hasattr(self._rvtapi_object, 'IsEnabled'):
+            return self._rvtapi_object.IsEnabled
+        else:
+            raise AttributeError()
+
+    @enabled.setter
+    def enabled(self, value):
+        if hasattr(self._rvtapi_object, 'Enabled'):
+            self._rvtapi_object.Enabled = value
+        elif hasattr(self._rvtapi_object, 'IsEnabled'):
+            self._rvtapi_object.IsEnabled = value
+        else:
+            raise AttributeError()
 
     def get_rvtapi_object(self):
         return self._rvtapi_object
@@ -193,31 +229,19 @@ class _GenericPyRevitUIContainer:
         return None
 
     def activate(self):
-        if hasattr(self._rvtapi_object, 'Enabled') \
-                and hasattr(self._rvtapi_object, 'Visible'):
-            self._rvtapi_object.Enabled = True
-            self._rvtapi_object.Visible = True
+        try:
+            self.enabled = True
+            self.visible = True
             self._dirty = True
-        elif hasattr(self._rvtapi_object, 'IsEnabled') \
-                and hasattr(self._rvtapi_object, 'IsVisible'):
-            self._rvtapi_object.IsEnabled = True
-            self._rvtapi_object.IsVisible = True
-            self._dirty = True
-        else:
+        except Exception:
             raise PyRevitUIError('Can not activate: {}'.format(self))
 
     def deactivate(self):
-        if hasattr(self._rvtapi_object, 'Enabled') \
-                and hasattr(self._rvtapi_object, 'Visible'):
-            self._rvtapi_object.Enabled = False
-            self._rvtapi_object.Visible = False
+        try:
+            self.enabled = False
+            self.visible = False
             self._dirty = True
-        elif hasattr(self._rvtapi_object, 'IsEnabled') \
-                and hasattr(self._rvtapi_object, 'IsVisible'):
-            self._rvtapi_object.IsEnabled = False
-            self._rvtapi_object.IsVisible = False
-            self._dirty = True
-        else:
+        except Exception:
             raise PyRevitUIError('Can not deactivate: {}'.format(self))
 
     def get_updated_items(self):
