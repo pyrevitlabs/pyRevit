@@ -8,8 +8,12 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 from pyrevit.coreutils import ribbon
+from pyrevit.coreutils.ribbon import ICON_MEDIUM
+
 
 __title__ = 'Minify\nRevit UI'
+__context__ = 'zerodoc'
+
 
 config = script.get_config()
 logger = script.get_logger()
@@ -67,8 +71,15 @@ def toggle_minifyui():
     update_ui()
 
 
-if __shiftclick__: # noqa
-    config_minifyui()
-    update_ui()
-else:
-    toggle_minifyui()
+# FIXME: need to figure out a way to fix the icon sizing of toggle buttons
+def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    off_icon = script_cmp.get_bundle_file('off.png')
+    ui_button_cmp.set_icon(off_icon, icon_size=ICON_MEDIUM)
+
+
+if __name__ == '__main__':
+    if __shiftclick__: # noqa
+        config_minifyui()
+        update_ui()
+    else:
+        toggle_minifyui()
