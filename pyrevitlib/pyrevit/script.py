@@ -7,6 +7,7 @@ import os.path as op
 from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
+from pyrevit.coreutils import envvars
 from pyrevit import framework
 from pyrevit import revit
 from pyrevit import output
@@ -28,6 +29,51 @@ def get_info():
     """
     from pyrevit.extensions.extensionmgr import get_command_from_path
     return get_command_from_path(EXEC_PARAMS.command_path)
+
+
+def get_script_path():
+    """Return script path of the current pyRevit command.
+
+    Returns:
+        str: script path
+    """
+    return EXEC_PARAMS.command_path
+
+
+def get_alt_script_path():
+    """Return alternate script path of the current pyRevit command.
+
+    Returns:
+        str: alternate script path
+    """
+    return EXEC_PARAMS.command_alt_path
+
+
+def get_bundle_name():
+    """Return bundle name of the current pyRevit command.
+
+    Returns:
+        str: bundle name (e.g. MyButton.pushbutton)
+    """
+    return EXEC_PARAMS.command_bundle
+
+
+def get_extension_name():
+    """Return extension name of the current pyRevit command.
+
+    Returns:
+        str: extension name (e.g. MyExtension.extension)
+    """
+    return EXEC_PARAMS.command_extension
+
+
+def get_unique_id():
+    """Return unique id of the current pyRevit command.
+
+    Returns:
+        str: command unique id
+    """
+    return EXEC_PARAMS.command_uniqueid
 
 
 def get_results():
@@ -361,3 +407,44 @@ def load_index(index_file='index.html'):
     if not op.isfile(index_file):
         index_file = get_bundle_file(index_file)
     outputwindow.open_page(index_file)
+
+
+def get_envvar(envvar):
+    """Return value of give pyRevit environment variable.
+
+    The environment variable system is used to retain small values in memory
+    between script runs (e.g. active/inactive state for toggle tools). Do not
+    store large objects in memory using this method. List of currently set
+    environment variables could be sees in pyRevit settings window.
+
+    Args:
+        envvar (str): name of environment variable
+
+    Returns:
+        any: type of object stored in environment variable
+
+    Example:
+        >>> script.get_envvar('ToolActiveState')
+        True
+    """
+    return envvars.get_pyrevit_env_var(envvar)
+
+
+def set_envvar(envvar, value):
+    """Set value of give pyRevit environment variable.
+
+    The environment variable system is used to retain small values in memory
+    between script runs (e.g. active/inactive state for toggle tools). Do not
+    store large objects in memory using this method. List of currently set
+    environment variables could be sees in pyRevit settings window.
+
+    Args:
+        envvar (str): name of environment variable
+        value (any): value of environment variable
+
+    Example:
+        >>> script.set_envvar('ToolActiveState', False)
+        >>> script.get_envvar('ToolActiveState')
+        False
+    """
+    return envvars.set_pyrevit_env_var(envvar, value)
