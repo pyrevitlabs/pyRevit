@@ -6,7 +6,6 @@ import clr
 from pyrevit import framework
 from pyrevit import script
 from pyrevit import DB, UI
-import pyrevit.coreutils.envvars as envvars
 
 
 __doc__ = 'Keep views synchronized. This means that as you pan and zoom and '\
@@ -27,7 +26,7 @@ SYNC_VIEW_ENV_VAR = 'SYNCVIEWACTIVE'
 
 
 def copyzoomstate(sender, args):
-    if envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
+    if script.get_envvar(SYNC_VIEW_ENV_VAR):
         event_uidoc = sender.ActiveUIDocument
         event_doc = sender.ActiveUIDocument.Document
         active_ui_views = event_uidoc.GetOpenUIViews()
@@ -59,7 +58,7 @@ def copyzoomstate(sender, args):
 
 
 def applyzoomstate(sender, args):
-    if envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR):
+    if script.get_envvar(SYNC_VIEW_ENV_VAR):
         event_uidoc = sender.ActiveUIDocument
         event_doc = sender.ActiveUIDocument.Document
         active_ui_views = event_uidoc.GetOpenUIViews()
@@ -82,8 +81,8 @@ def applyzoomstate(sender, args):
 
 
 def togglestate():
-    new_state = not envvars.get_pyrevit_env_var(SYNC_VIEW_ENV_VAR)
-    envvars.set_pyrevit_env_var(SYNC_VIEW_ENV_VAR, new_state)
+    new_state = not script.get_envvar(SYNC_VIEW_ENV_VAR)
+    script.set_envvar(SYNC_VIEW_ENV_VAR, new_state)
     script.toggle_icon(new_state)
 
 

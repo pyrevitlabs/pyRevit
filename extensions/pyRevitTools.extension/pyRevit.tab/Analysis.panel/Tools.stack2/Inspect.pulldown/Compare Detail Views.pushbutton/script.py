@@ -1,6 +1,7 @@
 from pyrevit import revit, DB, UI
 from pyrevit import forms
-from pyrevittoolslib import diffutils
+
+import diffutils
 
 
 __doc__ = 'Compared two views by comparing the contents against each other.'\

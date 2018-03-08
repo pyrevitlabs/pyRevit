@@ -368,6 +368,24 @@ class _ExecutorParams(object):
             return self.pyrevit_command.OutputWindow
 
     @property   # read-only
+    def command_path(self):
+        """str: Return current command path."""
+        if '__commandpath__' in __builtins__ \
+                and __builtins__['__commandpath__']:
+            return __builtins__['__commandpath__']
+        elif self.pyrevit_command:
+            return op.dirname(self.pyrevit_command.ScriptSourceFile)
+
+    @property   # read-only
+    def command_alt_path(self):
+        """str: Return current command alternate script path."""
+        if '__alternatecommandpath__' in __builtins__ \
+                and __builtins__['__alternatecommandpath__']:
+            return __builtins__['__alternatecommandpath__']
+        elif self.pyrevit_command:
+            return op.dirname(self.pyrevit_command.AlternateScriptSourceFile)
+
+    @property   # read-only
     def command_name(self):
         """str: Return current command name."""
         if '__commandname__' in __builtins__ \
@@ -377,13 +395,31 @@ class _ExecutorParams(object):
             return self.pyrevit_command.CommandName
 
     @property   # read-only
-    def command_path(self):
-        """str: Return current command path."""
-        if '__commandpath__' in __builtins__ \
-                and __builtins__['__commandpath__']:
-            return __builtins__['__commandpath__']
+    def command_bundle(self):
+        """str: Return current command bundle name."""
+        if '__commandbundle__' in __builtins__ \
+                and __builtins__['__commandbundle__']:
+            return __builtins__['__commandbundle__']
         elif self.pyrevit_command:
-            return op.dirname(self.pyrevit_command.ScriptSourceFile)
+            return self.pyrevit_command.CommandBundle
+
+    @property   # read-only
+    def command_extension(self):
+        """str: Return current command extension name."""
+        if '__commandextension__' in __builtins__ \
+                and __builtins__['__commandextension__']:
+            return __builtins__['__commandextension__']
+        elif self.pyrevit_command:
+            return self.pyrevit_command.CommandExtension
+
+    @property   # read-only
+    def command_uniqueid(self):
+        """str: Return current command unique id."""
+        if '__commanduniqueid__' in __builtins__ \
+                and __builtins__['__commanduniqueid__']:
+            return __builtins__['__commanduniqueid__']
+        elif self.pyrevit_command:
+            return self.pyrevit_command.CommandUniqueId
 
     @property
     def command_data(self):

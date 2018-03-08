@@ -65,6 +65,12 @@ class ToggleButton(GenericUICommand):
     def __init__(self):
         GenericUICommand.__init__(self)
         self.icon_on_file = self.icon_off_file = None
+        if self.name:
+            logger.deprecate('{} | Toggle bundle is deprecated and will be '
+                             'removed soon. Please use SmartButton bundle, '
+                             'or any other bundle and use script.toggle_icon '
+                             'method to toggle the tool icon.'
+                             .format(self.name))
 
     def __init_from_dir__(self, cmd_dir):
         GenericUICommand.__init_from_dir__(self, cmd_dir)
@@ -76,6 +82,13 @@ class ToggleButton(GenericUICommand):
         full_file_path = op.join(self.directory, exts.DEFAULT_OFF_ICON_FILE)
         self.icon_off_file = \
             full_file_path if op.exists(full_file_path) else None
+
+        if self.name:
+            logger.deprecate('{} | Toggle bundle is deprecated and will be '
+                             'removed soon. Please use SmartButton bundle, '
+                             'or any other bundle and use script.toggle_icon '
+                             'method to toggle the tool icon.'
+                             .format(self.name))
 
 
 class SmartButton(GenericUICommand):

@@ -430,7 +430,6 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.search_tb.Focus()
 
 
-
 class CommandSwitchWindow(TemplateUserInputWindow):
     """Standard form to select from a list of command options.
 
