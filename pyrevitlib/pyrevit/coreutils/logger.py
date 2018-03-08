@@ -144,6 +144,9 @@ class LoggerWrapper(logging.Logger):
     def get_level(self):
         return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
+    def deprecate(self, message):
+        self.warning(message)
+
 
 # setting up handlers and formatters -------------------------------------------
 stdout_hndlr = logging.StreamHandler(sys.stdout)
