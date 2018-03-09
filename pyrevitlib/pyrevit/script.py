@@ -150,9 +150,9 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{file_id}.{file_ext}``
 
     Example:
-        >>> script.get_document_data_file('mydata', 'data')
+        >>> script.get_universal_data_file('mydata', 'data')
         '.../pyRevit_mydata.data'
-        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        >>> script.get_universal_data_file('mydata', 'data', add_cmd_name=True)
         '.../pyRevit_Command Name_mydata.data'
 
     Universal data files are not cleaned up at pyRevit startup.
@@ -181,9 +181,9 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{file_id}.{file_ext}``
 
     Example:
-        >>> script.get_document_data_file('mydata', 'data')
+        >>> script.get_data_file('mydata', 'data')
         '.../pyRevit_2018_mydata.data'
-        >>> script.get_document_data_file('mydata', 'data', add_cmd_name=True)
+        >>> script.get_data_file('mydata', 'data', add_cmd_name=True)
         '.../pyRevit_2018_Command Name_mydata.data'
 
     Data files are not cleaned up at pyRevit startup.
@@ -212,9 +212,9 @@ def get_instance_data_file(file_id, add_cmd_name=False):
     ``pyRevit_{Revit Version}_{Process Id}_{file_id}.{file_ext}``
 
     Example:
-        >>> script.get_document_data_file('mydata')
+        >>> script.get_instance_data_file('mydata')
         '.../pyRevit_2018_6684_mydata.tmp'
-        >>> script.get_document_data_file('mydata', add_cmd_name=True)
+        >>> script.get_instance_data_file('mydata', add_cmd_name=True)
         '.../pyRevit_2018_6684_Command Name_mydata.tmp'
 
     Instance data files are cleaned up at pyRevit startup.
