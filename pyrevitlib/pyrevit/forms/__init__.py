@@ -39,11 +39,12 @@ class WPFWindow(framework.Windows.Window):
         literal_string (bool): xaml_source contains xaml content, not filepath
 
     Example:
+        >>> from pyrevit import forms
         >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
-        >>> w = WPFWindow(layout, literal_string=True)
+        >>> w = forms.WPFWindow(layout, literal_string=True)
         >>> w.show()
     """
 
@@ -221,8 +222,9 @@ class SelectFromList(TemplateUserInputWindow):
         multiselect (bool): allow multi-selection
 
     Example:
+        >>> from pyrevit import forms
         >>> items = ['item1', 'item2', 'item3']
-        >>> SelectFromList.show(items, button_name='Select Item')
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
         >>> ['item1']
     """
 
@@ -280,7 +282,15 @@ class SelectFromList(TemplateUserInputWindow):
 
 
 class BaseCheckBoxItem(object):
+    """Base class for checkbox option wrapping another object."""
+
     def __init__(self, orig_item):
+        """Initialize the checkbox option and wrap given obj.
+
+        Args:
+            orig_item (any): object to wrap (must have name property
+                             or be convertable to string with str()
+        """
         self.item = orig_item
         self.state = False
 
@@ -292,9 +302,11 @@ class BaseCheckBoxItem(object):
 
     @property
     def name(self):
+        """Name property."""
         return getattr(self.item, 'name', '')
 
     def unwrap(self):
+        """Unwrap and return wrapped object."""
         return self.item
 
 
@@ -313,6 +325,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         button_name (str): name of select button
 
     Example:
+        >>> from pyrevit import forms
         >>> class MyOption(object):
         ...     def __init__(self, name, state=False):
         ...         self.state = state
@@ -324,7 +337,25 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         ...     def __str__(self):
         ...         return self.name
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = SelectFromCheckBoxes.show(ops, button_name='Select Item')
+        >>> res = forms.SelectFromCheckBoxes.show(ops,
+        ...                                       button_name='Select Item')
+        >>> [bool(x) for x in res]  # or [x.state for x in res]
+        [True, False, True]
+
+        This module also provides a wrapper base class :obj:`BaseCheckBoxItem`
+        for when the checkbox option is wrapping another element,
+        e.g. a Revit ViewSheet. Derive from this base class and define the
+        name property to customize how the checkbox is named on the dialog.
+
+        >>> from pyrevit import forms
+        >>> class MyOption(forms.BaseCheckBoxItem)
+        ...    @property
+        ...    def name(self):
+        ...        return '{} - {}{}'.format(self.item.SheetNumber,
+        ...                                  self.item.SheetNumber)
+        >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
+        >>> res = forms.SelectFromCheckBoxes.show(ops,
+        ...                                       button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
     """
@@ -449,20 +480,24 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     Example:
         This is an example with series of command options:
 
+        >>> from pyrevit import forms
         >>> ops = ['option1', 'option2', 'option3', 'option4']
-        >>> CommandSwitchWindow.show(ops, message='Select Option')
+        >>> forms.CommandSwitchWindow.show(ops, message='Select Option')
         'option2'
 
         A more advanced example of combining command options, on/off switches,
         and option or switch configuration options:
 
+        >>> from pyrevit import forms
         >>> ops = ['option1', 'option2', 'option3', 'option4']
         >>> switches = ['switch1', 'switch2']
         >>> cfgs = {'option1': { 'background': '0xFF55FF'}}
-        >>> rops, rswitches = CommandSwitchWindow.show(ops,
-        ...                                            switches=switches
-        ...                                            message='Select Option',
-        ...                                            config=cfgs)
+        >>> rops, rswitches = forms.CommandSwitchWindow.show(
+        ...     ops,
+        ...     switches=switches
+        ...     message='Select Option',
+        ...     config=cfgs
+        ...     )
         >>> rops
         'option2'
         >>> rswitches
