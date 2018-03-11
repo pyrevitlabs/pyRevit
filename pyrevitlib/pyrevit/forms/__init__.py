@@ -613,9 +613,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
 
 class TemplatePromptBar(WPFWindow):
+    """Template context-manager class for creating prompt bars.
+
+    Prompt bars are show at the top of the active Revit window and are
+    designed for better prompt visibility.
+
+    Args:
+        height (int): window height
+        **kwargs: other arguments to be passed to :func:`_setup`
+    """
+
     xaml_source = 'TemplatePromptBar.xaml'
 
     def __init__(self, height=32, **kwargs):
+        """Initialize user prompt window."""
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), self.xaml_source))
 
@@ -625,6 +636,7 @@ class TemplatePromptBar(WPFWindow):
         self._setup(**kwargs)
 
     def update_window(self):
+        """Update the prompt bar to match Revit window."""
         screen_area = HOST_APP.proc_screen_workarea
         scale_factor = 1.0 / HOST_APP.proc_screen_scalefactor
         top = left = width = height = 0
@@ -661,6 +673,7 @@ class TemplatePromptBar(WPFWindow):
         self.Height = height
 
     def _setup(self, **kwargs):
+        """Private method to be overriden by subclasses for prompt setup."""
         pass
 
     def __enter__(self):
@@ -672,6 +685,16 @@ class TemplatePromptBar(WPFWindow):
 
 
 class WarningBar(TemplatePromptBar):
+    """Show warning bar at the top of Revit window.
+
+    Args:
+        title (string): warning bar text
+
+    Example:
+        >>> with WarningBar(title='my warning'):
+        ...    # do stuff
+    """
+
     xaml_source = 'WarningBar.xaml'
 
     def _setup(self, **kwargs):
@@ -679,6 +702,53 @@ class WarningBar(TemplatePromptBar):
 
 
 class ProgressBar(TemplatePromptBar):
+    """Show progress bar at the top of Revit window.
+
+    Args:
+        title (string): progress bar text, defaults to 0/100 progress format
+        indeterminate (bool): create indeterminate progress bar
+        cancellable (bool): add cancel button to progress bar
+        step (int): update progress intervals
+
+    Example:
+        >>> count = 1
+        >>> with ProgressBar(title='my command progress message') as pb:
+        ...    # do stuff
+        ...    pb.update_progress(count, 100)
+        ...    count += 1
+
+        Progress bar title could also be customized to show the current and
+        total progress values. In example below, the progress bar message
+        will be in format "My Progress 0 of 100"
+
+        >>> with ProgressBar(title='My Progress {value} of {max_value}') as pb:
+
+        By default progress bar updates the progress every time the
+        .update_progress method is called. For operations with a large number
+        of max steps, the gui update process time will have a significate
+        effect on the overall execution time of the command. In these cases,
+        set the value of step argument to something larger than 1. In example
+        below, the progress bar updates once per every 10 units of progress.
+
+        >>> with ProgressBar(title='message', steps=10):
+
+        Progress bar could also be set to indeterminate for operations of
+        unknown length. In this case, the progress bar will show an infinitely
+        running ribbon:
+
+        >>> with ProgressBar(title='message', indeterminate=True):
+
+        if cancellable is set on the object, a cancel button will show on the
+        progress bar and .cancelled attribute will be set on the ProgressBar
+        instance if users clicks on cancel button:
+
+        >>> with ProgressBar(title='message',
+        ...                  cancellable=True) as pb:
+        ...    # do stuff
+        ...    if pb.cancelled:
+        ...        # wrap up and cancel operation
+    """
+
     xaml_source = 'ProgressBar.xaml'
 
     def _setup(self, **kwargs):
@@ -711,11 +781,13 @@ class ProgressBar(TemplatePromptBar):
         self.pbar_text.Text = title_text
 
     def _dispatch_updater(self):
+        # ask WPF dispatcher for gui update
         self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
                                     Threading.DispatcherPriority.Background)
 
     @staticmethod
     def _make_return_getter(f, ret):
+        # WIP
         @wraps(f)
         def wrapped_f(*args, **kwargs):
             ret.append(f(*args, **kwargs))
@@ -723,6 +795,7 @@ class ProgressBar(TemplatePromptBar):
 
     @property
     def title(self):
+        """Progress bar title."""
         return self._title
 
     @title.setter
@@ -732,6 +805,7 @@ class ProgressBar(TemplatePromptBar):
 
     @property
     def indeterminate(self):
+        """Progress bar indeterminate state."""
         return self.pbar.IsIndeterminate
 
     @indeterminate.setter
@@ -739,10 +813,12 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.IsIndeterminate = value
 
     def clicked_cancel(self, sender, args):
+        """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True
 
     def wait_async(self, func, args=()):
+        """Call a method asynchronosely and show progress."""
         returns = []
         self.indeterminate = True
         rgfunc = self._make_return_getter(func, returns)
@@ -754,9 +830,16 @@ class ProgressBar(TemplatePromptBar):
         return returns[0] if returns else None
 
     def reset(self):
+        """Reset progress value to 0."""
         self.update_progress(0, 1)
 
     def update_progress(self, new_value, max_value=1):
+        """Update progress bar state with given min, max values.
+
+        Args:
+            new_value (float): current progress value
+            max_value (float): total progress value
+        """
         self.max_value = max_value
         self.new_value = new_value
         if self.new_value == 0:
