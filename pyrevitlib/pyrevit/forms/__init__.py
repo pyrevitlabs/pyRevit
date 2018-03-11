@@ -39,11 +39,12 @@ class WPFWindow(framework.Windows.Window):
         literal_string (bool): xaml_source contains xaml content, not filepath
 
     Example:
+        >>> from pyrevit import forms
         >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
-        >>> w = WPFWindow(layout, literal_string=True)
+        >>> w = forms.WPFWindow(layout, literal_string=True)
         >>> w.show()
     """
 
@@ -221,8 +222,9 @@ class SelectFromList(TemplateUserInputWindow):
         multiselect (bool): allow multi-selection
 
     Example:
+        >>> from pyrevit import forms
         >>> items = ['item1', 'item2', 'item3']
-        >>> SelectFromList.show(items, button_name='Select Item')
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
         >>> ['item1']
     """
 
@@ -280,7 +282,15 @@ class SelectFromList(TemplateUserInputWindow):
 
 
 class BaseCheckBoxItem(object):
+    """Base class for checkbox option wrapping another object."""
+
     def __init__(self, orig_item):
+        """Initialize the checkbox option and wrap given obj.
+
+        Args:
+            orig_item (any): object to wrap (must have name property
+                             or be convertable to string with str()
+        """
         self.item = orig_item
         self.state = False
 
@@ -292,9 +302,11 @@ class BaseCheckBoxItem(object):
 
     @property
     def name(self):
+        """Name property."""
         return getattr(self.item, 'name', '')
 
     def unwrap(self):
+        """Unwrap and return wrapped object."""
         return self.item
 
 
@@ -313,6 +325,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         button_name (str): name of select button
 
     Example:
+        >>> from pyrevit import forms
         >>> class MyOption(object):
         ...     def __init__(self, name, state=False):
         ...         self.state = state
@@ -324,7 +337,25 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         ...     def __str__(self):
         ...         return self.name
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = SelectFromCheckBoxes.show(ops, button_name='Select Item')
+        >>> res = forms.SelectFromCheckBoxes.show(ops,
+        ...                                       button_name='Select Item')
+        >>> [bool(x) for x in res]  # or [x.state for x in res]
+        [True, False, True]
+
+        This module also provides a wrapper base class :obj:`BaseCheckBoxItem`
+        for when the checkbox option is wrapping another element,
+        e.g. a Revit ViewSheet. Derive from this base class and define the
+        name property to customize how the checkbox is named on the dialog.
+
+        >>> from pyrevit import forms
+        >>> class MyOption(forms.BaseCheckBoxItem)
+        ...    @property
+        ...    def name(self):
+        ...        return '{} - {}{}'.format(self.item.SheetNumber,
+        ...                                  self.item.SheetNumber)
+        >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
+        >>> res = forms.SelectFromCheckBoxes.show(ops,
+        ...                                       button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
     """
@@ -449,20 +480,24 @@ class CommandSwitchWindow(TemplateUserInputWindow):
     Example:
         This is an example with series of command options:
 
+        >>> from pyrevit import forms
         >>> ops = ['option1', 'option2', 'option3', 'option4']
-        >>> CommandSwitchWindow.show(ops, message='Select Option')
+        >>> forms.CommandSwitchWindow.show(ops, message='Select Option')
         'option2'
 
         A more advanced example of combining command options, on/off switches,
         and option or switch configuration options:
 
+        >>> from pyrevit import forms
         >>> ops = ['option1', 'option2', 'option3', 'option4']
         >>> switches = ['switch1', 'switch2']
         >>> cfgs = {'option1': { 'background': '0xFF55FF'}}
-        >>> rops, rswitches = CommandSwitchWindow.show(ops,
-        ...                                            switches=switches
-        ...                                            message='Select Option',
-        ...                                            config=cfgs)
+        >>> rops, rswitches = forms.CommandSwitchWindow.show(
+        ...     ops,
+        ...     switches=switches
+        ...     message='Select Option',
+        ...     config=cfgs
+        ...     )
         >>> rops
         'option2'
         >>> rswitches
@@ -578,9 +613,20 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
 
 class TemplatePromptBar(WPFWindow):
+    """Template context-manager class for creating prompt bars.
+
+    Prompt bars are show at the top of the active Revit window and are
+    designed for better prompt visibility.
+
+    Args:
+        height (int): window height
+        **kwargs: other arguments to be passed to :func:`_setup`
+    """
+
     xaml_source = 'TemplatePromptBar.xaml'
 
     def __init__(self, height=32, **kwargs):
+        """Initialize user prompt window."""
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), self.xaml_source))
 
@@ -590,6 +636,7 @@ class TemplatePromptBar(WPFWindow):
         self._setup(**kwargs)
 
     def update_window(self):
+        """Update the prompt bar to match Revit window."""
         screen_area = HOST_APP.proc_screen_workarea
         scale_factor = 1.0 / HOST_APP.proc_screen_scalefactor
         top = left = width = height = 0
@@ -626,6 +673,7 @@ class TemplatePromptBar(WPFWindow):
         self.Height = height
 
     def _setup(self, **kwargs):
+        """Private method to be overriden by subclasses for prompt setup."""
         pass
 
     def __enter__(self):
@@ -637,6 +685,16 @@ class TemplatePromptBar(WPFWindow):
 
 
 class WarningBar(TemplatePromptBar):
+    """Show warning bar at the top of Revit window.
+
+    Args:
+        title (string): warning bar text
+
+    Example:
+        >>> with WarningBar(title='my warning'):
+        ...    # do stuff
+    """
+
     xaml_source = 'WarningBar.xaml'
 
     def _setup(self, **kwargs):
@@ -644,6 +702,54 @@ class WarningBar(TemplatePromptBar):
 
 
 class ProgressBar(TemplatePromptBar):
+    """Show progress bar at the top of Revit window.
+
+    Args:
+        title (string): progress bar text, defaults to 0/100 progress format
+        indeterminate (bool): create indeterminate progress bar
+        cancellable (bool): add cancel button to progress bar
+        step (int): update progress intervals
+
+    Example:
+        >>> from pyrevit import forms
+        >>> count = 1
+        >>> with forms.ProgressBar(title='my command progress message') as pb:
+        ...    # do stuff
+        ...    pb.update_progress(count, 100)
+        ...    count += 1
+
+        Progress bar title could also be customized to show the current and
+        total progress values. In example below, the progress bar message
+        will be in format "0 of 100"
+
+        >>> with forms.ProgressBar(title='{value} of {max_value}') as pb:
+
+        By default progress bar updates the progress every time the
+        .update_progress method is called. For operations with a large number
+        of max steps, the gui update process time will have a significate
+        effect on the overall execution time of the command. In these cases,
+        set the value of step argument to something larger than 1. In example
+        below, the progress bar updates once per every 10 units of progress.
+
+        >>> with forms.ProgressBar(title='message', steps=10):
+
+        Progress bar could also be set to indeterminate for operations of
+        unknown length. In this case, the progress bar will show an infinitely
+        running ribbon:
+
+        >>> with forms.ProgressBar(title='message', indeterminate=True):
+
+        if cancellable is set on the object, a cancel button will show on the
+        progress bar and .cancelled attribute will be set on the ProgressBar
+        instance if users clicks on cancel button:
+
+        >>> with forms.ProgressBar(title='message',
+        ...                        cancellable=True) as pb:
+        ...    # do stuff
+        ...    if pb.cancelled:
+        ...        # wrap up and cancel operation
+    """
+
     xaml_source = 'ProgressBar.xaml'
 
     def _setup(self, **kwargs):
@@ -676,11 +782,13 @@ class ProgressBar(TemplatePromptBar):
         self.pbar_text.Text = title_text
 
     def _dispatch_updater(self):
+        # ask WPF dispatcher for gui update
         self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
                                     Threading.DispatcherPriority.Background)
 
     @staticmethod
     def _make_return_getter(f, ret):
+        # WIP
         @wraps(f)
         def wrapped_f(*args, **kwargs):
             ret.append(f(*args, **kwargs))
@@ -688,6 +796,7 @@ class ProgressBar(TemplatePromptBar):
 
     @property
     def title(self):
+        """Progress bar title."""
         return self._title
 
     @title.setter
@@ -697,6 +806,7 @@ class ProgressBar(TemplatePromptBar):
 
     @property
     def indeterminate(self):
+        """Progress bar indeterminate state."""
         return self.pbar.IsIndeterminate
 
     @indeterminate.setter
@@ -704,10 +814,12 @@ class ProgressBar(TemplatePromptBar):
         self.pbar.IsIndeterminate = value
 
     def clicked_cancel(self, sender, args):
+        """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
         self.cancelled = True
 
     def wait_async(self, func, args=()):
+        """Call a method asynchronosely and show progress."""
         returns = []
         self.indeterminate = True
         rgfunc = self._make_return_getter(func, returns)
@@ -719,9 +831,16 @@ class ProgressBar(TemplatePromptBar):
         return returns[0] if returns else None
 
     def reset(self):
+        """Reset progress value to 0."""
         self.update_progress(0, 1)
 
     def update_progress(self, new_value, max_value=1):
+        """Update progress bar state with given min, max values.
+
+        Args:
+            new_value (float): current progress value
+            max_value (float): total progress value
+        """
         self.max_value = max_value
         self.new_value = new_value
         if self.new_value == 0:
@@ -734,7 +853,34 @@ class ProgressBar(TemplatePromptBar):
 
 
 class SearchPrompt(WPFWindow):
+    """Standard prompt for pyRevit search.
+
+    Args:
+        search_db (list): list of possible search targets
+        search_tip (str): text to show in grayscale when search box is empty
+        switches (str): list of switches
+        width (int): width of search prompt window
+        height (int): height of search prompt window
+
+    Returns:
+        str, dict: matched strings, and dict of switches if provided
+        str: matched string if switches are not provided.
+
+    Example:
+        >>> from pyrevit import forms
+        >>> # assume search input of '/switch1 target1'
+        >>> matched_str, switches = forms.SearchPrompt.show(
+        ...     search_db=['target1', 'target2', 'target3', 'target4'],
+        ...     switches=['/switch1', '/switch2'],
+        ...     search_tip='pyRevit Search'
+        ...     )
+        ... matched_str
+        'target1'
+        ... switches
+        {'/switch1': True, '/switch2': False}
+    """
     def __init__(self, search_db, width, height, **kwargs):
+        """Initialize search prompt window."""
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), 'SearchPrompt.xaml'))
         self.Width = width
@@ -764,6 +910,7 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_input(self):
+        """Current search input."""
         return self.search_tb.Text
 
     @search_input.setter
@@ -772,10 +919,12 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_term(self):
+        """Current cleaned up search term."""
         return self.search_input.lower().strip()
 
     @property
     def search_term_noswitch(self):
+        """Current cleaned up search term without the listed switches."""
         term = self.search_term
         for switch in self._switches:
             term = term.replace(switch.lower() + ' ', '')
@@ -783,11 +932,13 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_matches(self):
+        """List of matches for the given search term."""
         # remove duplicates while keeping order
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
     def update_results_display(self, input_term=None):
+        """Update search prompt results based on current input text."""
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
 
@@ -838,6 +989,7 @@ class SearchPrompt(WPFWindow):
         return False
 
     def set_search_results(self, *args):
+        """Set search results for returning."""
         self._result_index = 0
         self._search_results = []
 
@@ -848,6 +1000,7 @@ class SearchPrompt(WPFWindow):
         logger.debug('results: {}'.format(self._search_results))
 
     def find_switch_match(self):
+        """Find matching switches in search term."""
         results = []
         cur_txt = self.search_term
         for switch in self._switches:
@@ -856,6 +1009,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def find_direct_match(self, input_text):
+        """Find direct text matches in search term."""
         results = []
         if input_text:
             for cmd_name in self._search_db:
@@ -865,6 +1019,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def find_word_match(self, input_text):
+        """Find direct word matches in search term."""
         results = []
         if input_text:
             cur_words = input_text.split(' ')
@@ -875,6 +1030,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def search_txt_changed(self, sender, args):
+        """Handle text changed event."""
         input_term = self.search_term_noswitch
         dmresults = self.find_direct_match(input_term)
         wordresults = self.find_word_match(input_term)
@@ -882,6 +1038,7 @@ class SearchPrompt(WPFWindow):
         self.update_results_display(input_term)
 
     def handle_kb_key(self, sender, args):
+        """Handle keyboard input event."""
         if args.Key == framework.Windows.Input.Key.Escape:
             self._setup_response()
             self.Close()
@@ -901,6 +1058,7 @@ class SearchPrompt(WPFWindow):
     def show(cls, search_db,
              width=DEFAULT_SEARCHWND_WIDTH,
              height=DEFAULT_SEARCHWND_HEIGHT, **kwargs):
+        """Show search prompt."""
         dlg = cls(search_db, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response

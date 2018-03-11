@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow"
         Foreground="#000"
-        Height="285" Width="650" Margin="0"
+        Height="325" Width="690" Margin="0"
         ShowInTaskbar="False"
         BorderThickness="0"
         Background="{x:Null}"
@@ -171,10 +171,13 @@
     </Window.Resources>
     <Border BorderThickness="1"
             CornerRadius="15"
-            BorderBrush="#ddd">
+            Margin="20,20,20,20">
         <Border.Background>
             <SolidColorBrush Color="#fff"/>
         </Border.Background>
+        <Border.Effect>
+            <DropShadowEffect Color="#FF2C3E50" BlurRadius="15" Opacity="0.25"/>
+        </Border.Effect>
         <Grid Margin="20,20,20,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220"/>
@@ -206,7 +209,7 @@
                            VerticalAlignment="Top"
                            FontSize="14"
                            LineHeight="20"
-                           Text="python tools for Autodesk Revit®"/>
+                           Text="python tools for Autodesk Revitï¿½"/>
                 <WrapPanel HorizontalAlignment="Center">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <ContentControl Content="{StaticResource commitIcon}" Width="24" Height="24" Margin="0,-5,5,0">
@@ -305,7 +308,7 @@
                            Margin="0,5,0,0"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"
-                           Text="2014-2018 copyright message" 
+                           Text="2014-2018 copyright message"
                            MouseDown="openkeybaseprofile"/>
             </StackPanel>
         </Grid>

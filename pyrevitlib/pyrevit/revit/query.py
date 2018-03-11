@@ -2,7 +2,8 @@
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
-from pyrevit import revit, DB
+from pyrevit import DB
+from pyrevit.revit import db
 
 
 GRAPHICAL_VIEWTYPES = [
@@ -140,8 +141,8 @@ def get_model_sharedparams(doc=None):
 
     msp_list = []
     while pb_iterator.MoveNext():
-        msp = revit.ModelSharedParam(pb_iterator.Key,
-                                     param_bindings[pb_iterator.Key])
+        msp = db.ModelSharedParam(pb_iterator.Key,
+                                  param_bindings[pb_iterator.Key])
         msp_list.append(msp)
 
     return msp_list
@@ -170,7 +171,7 @@ def get_defined_sharedparams():
 
 
 def get_project_info():
-    return revit.CurrentProjectInfo()
+    return db.CurrentProjectInfo()
 
 
 def get_revisions(doc=None):
@@ -206,9 +207,9 @@ def get_links(linktype=None, doc=None):
         link = doc.GetElement(refId)
         if linktype:
             if extRef.ExternalFileReferenceType == linktype:
-                links.append(revit.ExternalRef(link, extRef))
+                links.append(db.ExternalRef(link, extRef))
         else:
-            links.append(revit.ExternalRef(link, extRef))
+            links.append(db.ExternalRef(link, extRef))
     return links
 
 
@@ -221,12 +222,12 @@ def find_first_legend(doc=None):
 
 
 def compare_revisions(src_rev, dest_rev, case_sensitive=False):
-    return all(revit.BaseWrapper.compare_attrs(src_rev, dest_rev,
-                                               ['RevisionDate',
-                                                'Description',
-                                                'IssuedBy',
-                                                'IssuedTo'],
-                                               case_sensitive=case_sensitive))
+    return all(db.BaseWrapper.compare_attrs(src_rev, dest_rev,
+                                            ['RevisionDate',
+                                             'Description',
+                                             'IssuedBy',
+                                             'IssuedTo'],
+                                            case_sensitive=case_sensitive))
 
 
 def get_all_views(doc=None, include_nongraphical=False):

@@ -1,11 +1,11 @@
 """"Utility methods for reporting Revit data uniformly."""
 
 from pyrevit.output import PyRevitOutputWindow
-from pyrevit import revit, DB
+from pyrevit.revit import db
 
 
 def print_revision(rev, prefix='', print_id=True):
-    wrev = revit.ElementWrapper(rev)
+    wrev = db.ElementWrapper(rev)
     outstr = 'SEQ#: {} REV#: {} DATE: {} TYPE: {} DESC: {} ' \
              .format(rev.SequenceNumber,
                      str(wrev.safe_get_param('RevisionNumber', '')).ljust(5),

@@ -30,11 +30,151 @@ Progress bars
 work in progress
 
 
-Standard Forms
---------------
+Standard Prompts
+----------------
 
-work in progress
+Alerts
+^^^^^^
 
+.. image:: _static/images/forms-alert.png
+
+.. autofunction:: pyrevit.forms.alert
+    :noindex:
+
+.. image:: _static/images/forms-check_workshared.png
+
+.. autofunction:: pyrevit.forms.check_workshared
+    :noindex:
+
+.. image:: _static/images/forms-WarningBar.png
+
+.. autoclass:: pyrevit.forms.WarningBar
+    :noindex:
+
+
+Command Options
+^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-CommandSwitchWindow.png
+
+.. autoclass:: pyrevit.forms.CommandSwitchWindow
+    :noindex:
+
+
+Showing Progress
+^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-ProgressBar.png
+
+.. autoclass:: pyrevit.forms.ProgressBar
+    :noindex:
+
+
+Standard Dialogs
+----------------
+
+
+Pick File
+^^^^^^^^^
+
+.. image:: _static/images/forms-pick_file.png
+
+.. autofunction:: pyrevit.forms.pick_file
+    :noindex:
+
+.. autofunction:: pyrevit.forms.save_file
+    :noindex:
+
+
+Pick Folder
+^^^^^^^^^^^
+
+.. image:: _static/images/forms-pick_folder.png
+
+.. autofunction:: pyrevit.forms.pick_folder
+    :noindex:
+
+
+Select Views
+^^^^^^^^^^^^
+
+.. image:: _static/images/forms-select_views.png
+
+.. autofunction:: pyrevit.forms.select_views
+    :noindex:
+
+
+Select Sheets
+^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-select_sheets.png
+
+.. autofunction:: pyrevit.forms.select_sheets
+    :noindex:
+
+
+Select Revisions
+^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-select_revisions.png
+
+.. autofunction:: pyrevit.forms.select_revisions
+    :noindex:
+
+
+Select From Open Documents
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-select_dest_docs.png
+
+.. autofunction:: pyrevit.forms.select_dest_docs
+    :noindex:
+
+
+Select From List
+^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-SelectFromList.png
+
+.. autoclass:: pyrevit.forms.SelectFromList
+    :noindex:
+
+
+Select From Checkbox List
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-SelectFromCheckBoxes.png
+
+.. autoclass:: pyrevit.forms.SelectFromCheckBoxes
+    :noindex:
+
+.. autoclass:: pyrevit.forms.BaseCheckBoxItem
+    :noindex:
+
+
+Base Forms
+----------
+
+Input Dialog for pyRevit Search
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/images/forms-SearchPrompt.png
+
+.. autofunction:: pyrevit.forms.SearchPrompt
+    :noindex:
+
+
+Generic Forms
+^^^^^^^^^^^^^
+
+.. autoclass:: pyrevit.forms.TemplatePromptBar
+    :noindex:
+
+.. autoclass:: pyrevit.forms.TemplateUserInputWindow
+    :noindex:
+
+.. autoclass:: pyrevit.forms.WPFWindow
+    :noindex:
 
 Graphs
 ------
