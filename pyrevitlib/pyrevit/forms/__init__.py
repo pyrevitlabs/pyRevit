@@ -711,17 +711,18 @@ class ProgressBar(TemplatePromptBar):
         step (int): update progress intervals
 
     Example:
+        >>> from pyrevit import forms
         >>> count = 1
-        >>> with ProgressBar(title='my command progress message') as pb:
+        >>> with forms.ProgressBar(title='my command progress message') as pb:
         ...    # do stuff
         ...    pb.update_progress(count, 100)
         ...    count += 1
 
         Progress bar title could also be customized to show the current and
         total progress values. In example below, the progress bar message
-        will be in format "My Progress 0 of 100"
+        will be in format "0 of 100"
 
-        >>> with ProgressBar(title='My Progress {value} of {max_value}') as pb:
+        >>> with forms.ProgressBar(title='{value} of {max_value}') as pb:
 
         By default progress bar updates the progress every time the
         .update_progress method is called. For operations with a large number
@@ -730,20 +731,20 @@ class ProgressBar(TemplatePromptBar):
         set the value of step argument to something larger than 1. In example
         below, the progress bar updates once per every 10 units of progress.
 
-        >>> with ProgressBar(title='message', steps=10):
+        >>> with forms.ProgressBar(title='message', steps=10):
 
         Progress bar could also be set to indeterminate for operations of
         unknown length. In this case, the progress bar will show an infinitely
         running ribbon:
 
-        >>> with ProgressBar(title='message', indeterminate=True):
+        >>> with forms.ProgressBar(title='message', indeterminate=True):
 
         if cancellable is set on the object, a cancel button will show on the
         progress bar and .cancelled attribute will be set on the ProgressBar
         instance if users clicks on cancel button:
 
-        >>> with ProgressBar(title='message',
-        ...                  cancellable=True) as pb:
+        >>> with forms.ProgressBar(title='message',
+        ...                        cancellable=True) as pb:
         ...    # do stuff
         ...    if pb.cancelled:
         ...        # wrap up and cancel operation
@@ -852,7 +853,34 @@ class ProgressBar(TemplatePromptBar):
 
 
 class SearchPrompt(WPFWindow):
+    """Standard prompt for pyRevit search.
+
+    Args:
+        search_db (list): list of possible search targets
+        search_tip (str): text to show in grayscale when search box is empty
+        switches (str): list of switches
+        width (int): width of search prompt window
+        height (int): height of search prompt window
+
+    Returns:
+        str, dict: matched strings, and dict of switches if provided
+        str: matched string if switches are not provided.
+
+    Example:
+        >>> from pyrevit import forms
+        >>> # assume search input of '/switch1 target1'
+        >>> matched_str, switches = forms.SearchPrompt.show(
+        ...     search_db=['target1', 'target2', 'target3', 'target4'],
+        ...     switches=['/switch1', '/switch2'],
+        ...     search_tip='pyRevit Search'
+        ...     )
+        ... matched_str
+        'target1'
+        ... switches
+        {'/switch1': True, '/switch2': False}
+    """
     def __init__(self, search_db, width, height, **kwargs):
+        """Initialize search prompt window."""
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), 'SearchPrompt.xaml'))
         self.Width = width
@@ -882,6 +910,7 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_input(self):
+        """Current search input."""
         return self.search_tb.Text
 
     @search_input.setter
@@ -890,10 +919,12 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_term(self):
+        """Current cleaned up search term."""
         return self.search_input.lower().strip()
 
     @property
     def search_term_noswitch(self):
+        """Current cleaned up search term without the listed switches."""
         term = self.search_term
         for switch in self._switches:
             term = term.replace(switch.lower() + ' ', '')
@@ -901,11 +932,13 @@ class SearchPrompt(WPFWindow):
 
     @property
     def search_matches(self):
+        """List of matches for the given search term."""
         # remove duplicates while keeping order
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
     def update_results_display(self, input_term=None):
+        """Update search prompt results based on current input text."""
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
 
@@ -956,6 +989,7 @@ class SearchPrompt(WPFWindow):
         return False
 
     def set_search_results(self, *args):
+        """Set search results for returning."""
         self._result_index = 0
         self._search_results = []
 
@@ -966,6 +1000,7 @@ class SearchPrompt(WPFWindow):
         logger.debug('results: {}'.format(self._search_results))
 
     def find_switch_match(self):
+        """Find matching switches in search term."""
         results = []
         cur_txt = self.search_term
         for switch in self._switches:
@@ -974,6 +1009,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def find_direct_match(self, input_text):
+        """Find direct text matches in search term."""
         results = []
         if input_text:
             for cmd_name in self._search_db:
@@ -983,6 +1019,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def find_word_match(self, input_text):
+        """Find direct word matches in search term."""
         results = []
         if input_text:
             cur_words = input_text.split(' ')
@@ -993,6 +1030,7 @@ class SearchPrompt(WPFWindow):
         return results
 
     def search_txt_changed(self, sender, args):
+        """Handle text changed event."""
         input_term = self.search_term_noswitch
         dmresults = self.find_direct_match(input_term)
         wordresults = self.find_word_match(input_term)
@@ -1000,6 +1038,7 @@ class SearchPrompt(WPFWindow):
         self.update_results_display(input_term)
 
     def handle_kb_key(self, sender, args):
+        """Handle keyboard input event."""
         if args.Key == framework.Windows.Input.Key.Escape:
             self._setup_response()
             self.Close()
@@ -1019,6 +1058,7 @@ class SearchPrompt(WPFWindow):
     def show(cls, search_db,
              width=DEFAULT_SEARCHWND_WIDTH,
              height=DEFAULT_SEARCHWND_HEIGHT, **kwargs):
+        """Show search prompt."""
         dlg = cls(search_db, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
