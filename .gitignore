@@ -53,3 +53,6 @@ __py*
 
 # ignore sphinx files
 *.pyc
+
+# ignore local config file
+pyRevit_config.ini
