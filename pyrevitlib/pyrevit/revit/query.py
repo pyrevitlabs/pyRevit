@@ -251,3 +251,21 @@ def get_view_by_name(view_name, doc=None):
     for view in get_all_views(doc=doc):
         if view.ViewName == view_name:
             return view
+
+
+def get_schedules_on_sheet(viewsheet, doc=None):
+    doc = doc or HOST_APP.doc
+    all_sheeted_scheds = DB.FilteredElementCollector(doc)\
+                           .OfClass(DB.ScheduleSheetInstance)\
+                           .ToElements()
+    return [x for x in all_sheeted_scheds
+            if x.OwnerViewId == viewsheet.Id
+            and not doc.GetElement(x.ScheduleId).IsTitleblockRevisionSchedule]
+
+
+def is_sheet_empty(viewsheet):
+    sheet_views = viewsheet.GetAllViewports()
+    sheet_scheds = get_schedules_on_sheet(viewsheet, doc=viewsheet.Document)
+    if sheet_views or sheet_scheds:
+        return False
+    return True
