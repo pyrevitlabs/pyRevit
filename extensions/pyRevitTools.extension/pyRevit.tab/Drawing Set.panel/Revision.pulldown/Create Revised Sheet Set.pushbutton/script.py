@@ -34,23 +34,35 @@ def createsheetset(revision_element):
     sheetsetname = 'Rev {0}: {1}'.format(revnum,
                                          revision_element.Description)
 
+    # find revised sheets
+    myviewset = DB.ViewSet()
+    empty_sheets = []
+    for sheet in sheets:
+        revs = sheet.GetAllRevisionIds()
+        sheet_revids = [x.IntegerValue for x in revs]
+        if revision_element.Id.IntegerValue in sheet_revids:
+            if revit.query.is_sheet_empty(sheet):
+                empty_sheets.append(sheet)
+            myviewset.Insert(sheet)
+
+    if empty_sheets:
+        print('These sheets do not have any contents and seem to be '
+              'placeholders for other content:')
+        for esheet in empty_sheets:
+            revit.report.print_sheet(sheet)
+
     with revit.Transaction('Create Revision Sheet Set'):
         if sheetsetname in allviewsheetsets.keys():
             viewsheetsetting.CurrentViewSheetSet = \
                 allviewsheetsets[sheetsetname]
             viewsheetsetting.Delete()
 
-        # find revised sheets
-        myviewset = DB.ViewSet()
-        for sheet in sheets:
-            revs = sheet.GetAllRevisionIds()
-            revids = [x.IntegerValue for x in revs]
-            if revision_element.Id.IntegerValue in revids:
-                myviewset.Insert(sheet)
-
         # create new sheet set
-        viewsheetsetting.CurrentViewSheetSet.Views = myviewset
-        viewsheetsetting.SaveAs(sheetsetname)
+        try:
+            viewsheetsetting.CurrentViewSheetSet.Views = myviewset
+            viewsheetsetting.SaveAs(sheetsetname)
+        except Exception:
+            pass
 
 
 revision = forms.select_revisions(button_name='Create Sheet Set',
