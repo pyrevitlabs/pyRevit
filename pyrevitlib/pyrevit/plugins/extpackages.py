@@ -5,6 +5,7 @@ import json
 from collections import defaultdict
 
 from pyrevit import PyRevitException, HOST_APP
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import git, fully_remove_dir
 from pyrevit.userconfig import user_config
@@ -57,55 +58,84 @@ class ExtensionPackage:
 
     def __init__(self, info_dict, def_file_path=None):
         """
-        Initialized the extension class based on provide information (info_dict)
+        Initialized the extension class based on provide information
 
         Required info (Dictionary keys):
-            type, name, description , url
+            type, name, description, url
 
         Optional info:
-            website, image, author, author-url
+            website, image, author, author-url, authusers
 
         Args:
             info_dict (dict): A dictionary containing the required information
                               for initializing the extension.
             def_file_path (str): The file path of the extension definition file
         """
+        self.type = ExtensionTypes.UI_EXTENSION
+        self.builtin = False
+        self.enable_default = True
+        self.name = None
+        self.description = None
+        self.url = None
+        self.def_file_path = set()
+        self.authusers = set()
+        self.rocket_mode = False
+        self.website = None
+        self.image = None
+        self.author = None
+        self.author_profile = None
+        self.dependencies = set()
 
-        # Setting required attributes
-        try:
-            ext_type = info_dict['type']
-            if ext_type == ExtensionTypes.UI_EXTENSION.ID:
-                self.type = ExtensionTypes.UI_EXTENSION
-            elif ext_type == ExtensionTypes.LIB_EXTENSION.ID:
-                self.type = ExtensionTypes.LIB_EXTENSION
+        self.update_info(info_dict, def_file_path=def_file_path)
 
-            self.builtin = info_dict['builtin'].lower() == 'true'
-            self.enable_default = info_dict['enable'].lower() == 'true'
+    def update_info(self, info_dict, def_file_path=None):
+        ext_type = info_dict.get('type', None)
+        if ext_type == ExtensionTypes.LIB_EXTENSION.ID:
+            self.type = ExtensionTypes.LIB_EXTENSION
 
-            self.name = info_dict['name']
-            self.description = info_dict['description']
-            self.url = info_dict['url']
+        self.builtin = \
+            safe_strtype(info_dict.get('builtin',
+                                       self.builtin)).lower() == 'true'
+        self.enable_default = \
+            safe_strtype(info_dict.get('enable',
+                                       self.enable_default)).lower() == 'true'
 
-            self.def_file_path = def_file_path
-        except KeyError as ext_info_err:
-            raise PyRevitException('Required plugin ext info not available. '
-                                   '| {}'.format(ext_info_err))
+        self.name = info_dict.get('name', self.name)
+        self.description = info_dict.get('description', self.description)
+        self.url = info_dict.get('url', self.url)
 
-        # Setup access
-        self.authusers = info_dict.get('authusers', None)
-        # Setup rocket mode compatibility
+        if def_file_path:
+            self.def_file_path.add(def_file_path)
+
+        # update list of authorized users
+        authusers = info_dict.get('authusers', [])
+        if authusers:
+            self.authusers.update(authusers)
+
+        # rocket mode compatibility
         self.rocket_mode = \
-            info_dict.get('rocket_mode_compatible', 'false').lower() == 'true'
-        # Setting extended attributes
-        self.website = info_dict.get('website', self.url.replace('.git', ''))
-        self.image = info_dict.get('image', None)
-        self.author = info_dict.get('author', None)
-        self.author_profile = info_dict.get('author-url', None)
-        self.dependencies = info_dict.get('dependencies', [])
+            safe_strtype(info_dict.get('rocket_mode_compatible',
+                                       self.rocket_mode)).lower() == 'true'
+
+        # extended attributes
+        self.website = info_dict.get(
+            'website',
+            self.url.replace('.git', '') if self.url else self.website
+            )
+        self.image = info_dict.get('image', self.image)
+        self.author = info_dict.get('author', self.author)
+        self.author_profile = info_dict.get('author-url', self.author_profile)
+        # update list dependencies
+        depends = info_dict.get('dependencies', [])
+        if depends:
+            self.dependencies.update(depends)
+
+    def is_valid(self):
+        return self.name is not None and self.url is not None
 
     def __repr__(self):
-        return '<ExtensionPackage object. name \'{}\' url \'{}\'>'\
-            .format(self.name, self.url)
+        return '<ExtensionPackage object. name:\'{}\' url:\'{}\' auth:{}>'\
+            .format(self.name, self.url, self.authusers)
 
     @property
     def ext_dirname(self):
@@ -235,37 +265,26 @@ class ExtensionPackage:
         user_config.save_changes()
 
 
-class _ExtensionPackageDefinitionFile:
-    def __init__(self, file_path):
-        self.file_path = file_path
+def _update_ext_pkgs(ext_def_file, loaded_pkgs):
+    with codecs.open(ext_def_file, 'r', 'utf-8') as ext_pkg_def_file:
+        try:
+            defined_exts_pkg = json.load(ext_pkg_def_file)['extensions']
+        except Exception as def_file_err:
+            print('Can not parse plugin ext definition file: {} '
+                         '| {}'.format(ext_def_file, def_file_err))
+            return
 
-    @property
-    def defined_ext_packages(self):
-        """
-        Contains a list of extensions that are defined in this file
-        (ExtensionPackage)
-
-        Returns:
-            list: List of ExtensionPackage objects that are defined in this file
-        """
-
-        ext_pkgs = []
-        with codecs.open(self.file_path, 'r', 'utf-8') as ext_pkg_def_file:
-            try:
-                defined_exts_pkg = json.load(ext_pkg_def_file)['extensions']
-                for ext_pkg_dict in defined_exts_pkg:
-                    try:
-                        ext_pkgs.append(ExtensionPackage(ext_pkg_dict,
-                                                         self.file_path))
-                    except Exception as ext_pkg_err:
-                        logger.debug('Error creating ExtensionPackage class. '
-                                     '| {}'.format(ext_pkg_err))
-
-            except Exception as def_file_err:
-                logger.debug('Can not parse plugin ext definition file: {} '
-                             '| {}'.format(self.file_path, def_file_err))
-
-        return ext_pkgs
+    for ext_pkg_dict in defined_exts_pkg:
+        ext_pkg = ExtensionPackage(ext_pkg_dict, ext_def_file)
+        matched_pkg = None
+        for loaded_pkg in loaded_pkgs:
+            if loaded_pkg.name == ext_pkg.name:
+                matched_pkg = loaded_pkg
+                break
+        if matched_pkg:
+            matched_pkg.update_info(ext_pkg_dict)
+        elif ext_pkg.is_valid():
+            loaded_pkgs.append(ext_pkg)
 
 
 def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
@@ -325,7 +344,8 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
 def get_ext_packages(authorized_only=True):
     """
     Reads the list of registered plug-in extensions and returns a list of
-    ExtensionPackage classes which contain information on the plug-in extension.
+    ExtensionPackage classes which contain information on the
+    plug-in extension.
 
     Returns:
         list: list of registered plugin extensions (ExtensionPackage)
@@ -334,14 +354,10 @@ def get_ext_packages(authorized_only=True):
     for ext_dir in user_config.get_ext_root_dirs():
         ext_pkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
         if op.exists(ext_pkg_deffile):
-            ext_def_file = _ExtensionPackageDefinitionFile(ext_pkg_deffile)
-            if authorized_only:
-                auth_pkgs = [x for x in ext_def_file.defined_ext_packages
-                             if x.user_has_access]
-            else:
-                auth_pkgs = ext_def_file.defined_ext_packages
+            _update_ext_pkgs(ext_pkg_deffile, ext_pkgs)
 
-            ext_pkgs.extend(auth_pkgs)
+    if authorized_only:
+        return [x for x in ext_pkgs if x.user_has_access]
 
     return ext_pkgs
 
