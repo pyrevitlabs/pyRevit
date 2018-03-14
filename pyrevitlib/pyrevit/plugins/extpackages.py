@@ -73,13 +73,13 @@ class ExtensionPackage:
         """
         self.type = ExtensionTypes.UI_EXTENSION
         self.builtin = False
-        self.enable_default = True
+        self.default_enabled = True
         self.name = None
         self.description = None
         self.url = None
         self.def_file_path = set()
         self.authusers = set()
-        self.rocket_mode = False
+        self.rocket_mode_compatible = False
         self.website = None
         self.image = None
         self.author = None
@@ -96,9 +96,20 @@ class ExtensionPackage:
         self.builtin = \
             safe_strtype(info_dict.get('builtin',
                                        self.builtin)).lower() == 'true'
-        self.enable_default = \
-            safe_strtype(info_dict.get('enable',
-                                       self.enable_default)).lower() == 'true'
+
+        # show deprecation warning on author-url
+        if 'enable' in info_dict:
+            self.default_enabled = safe_strtype(
+                info_dict.get('enable', self.default_enabled)
+                ).lower() == 'true'
+            logger.deprecate(
+                "Naming of \"enable\" property in extension.json files "
+                "has changed. Please revise your extension.json files to "
+                "use \"default_enabled\" (with underscore) instead.")
+        else:
+            self.default_enabled = safe_strtype(
+                info_dict.get('default_enabled', self.default_enabled)
+                ).lower() == 'true'
 
         self.name = info_dict.get('name', self.name)
         self.description = info_dict.get('description', self.description)
@@ -113,9 +124,11 @@ class ExtensionPackage:
             self.authusers.update(authusers)
 
         # rocket mode compatibility
-        self.rocket_mode = \
-            safe_strtype(info_dict.get('rocket_mode_compatible',
-                                       self.rocket_mode)).lower() == 'true'
+        self.rocket_mode_compatible = \
+            safe_strtype(
+                info_dict.get('rocket_mode_compatible',
+                              self.rocket_mode_compatible)
+                ).lower() == 'true'
 
         # extended attributes
         self.website = info_dict.get(
@@ -124,7 +137,18 @@ class ExtensionPackage:
             )
         self.image = info_dict.get('image', self.image)
         self.author = info_dict.get('author', self.author)
-        self.author_profile = info_dict.get('author-url', self.author_profile)
+
+        # show deprecation warning on author-url
+        if 'author-url' in info_dict:
+            self.author_profile = info_dict.get('author-url',
+                                                self.author_profile)
+            logger.deprecate(
+                "Naming of \"author-url\" property in extension.json files "
+                "has changed. Please revise your extension.json files to "
+                "use \"author_profile\" (with underscore) instead.")
+        else:
+            self.author_profile = info_dict.get('author_profile',
+                                                self.author_profile)
         # update list dependencies
         depends = info_dict.get('dependencies', [])
         if depends:
@@ -211,7 +235,7 @@ class ExtensionPackage:
             return user_config.get_section(self.ext_dirname)
         except:
             cfg_section = user_config.add_section(self.ext_dirname)
-            self.config.disabled = not self.enable_default
+            self.config.disabled = not self.default_enabled
             self.config.private_repo = self.builtin
             self.config.username = self.config.password = ''
             user_config.save_changes()
