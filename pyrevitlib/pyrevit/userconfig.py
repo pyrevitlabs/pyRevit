@@ -7,7 +7,7 @@ import os
 import os.path as op
 import shutil
 
-from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
+from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, HOME_DIR
 from pyrevit.framework import IOException
 
 from pyrevit.coreutils import touch
@@ -25,12 +25,17 @@ INIT_SETTINGS_SECTION = 'core'
 
 # location for default pyRevit config files
 if not EXEC_PARAMS.doc_mode:
+    LOCAL_CONFIG_FILE = op.join(HOME_DIR, 'pyRevit_config.ini')
     ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
 
-    # setup config file name and path
-    CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
-                                                       file_ext='ini')
-    logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
+    if op.exists(LOCAL_CONFIG_FILE):
+        logger.debug('Using local config file: {}'.format(LOCAL_CONFIG_FILE))
+        CONFIG_FILE_PATH = LOCAL_CONFIG_FILE
+    else:
+        # setup config file name and path
+        CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
+                                                           file_ext='ini')
+        logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 else:
     ADMIN_CONFIG_DIR = CONFIG_FILE_PATH = None
 
