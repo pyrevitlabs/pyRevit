@@ -100,6 +100,7 @@ def report_env():
                                                        HOST_APP.build,
                                                        HOST_APP.proc_id))
     logger.info('Running on: {}'.format(sys.version))
+    logger.info('User is: {}'.format(HOST_APP.username))
     logger.info('Home Directory is: {}'.format(HOME_DIR))
     logger.info('Session uuid is: {}'.format(get_session_uuid()))
     logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
