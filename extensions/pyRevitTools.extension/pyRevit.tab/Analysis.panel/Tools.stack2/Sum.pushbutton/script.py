@@ -11,7 +11,7 @@ __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
           'This tool studies the selected elements and their associated '   \
           'types and presents the user with a list of parameters that are ' \
           'shared between the selected elements. Only parameters with '     \
-          'Double or Interger values are included.'
+          'Double or Integer values are included.'
 
 __title__ = 'Sum Total'
 
