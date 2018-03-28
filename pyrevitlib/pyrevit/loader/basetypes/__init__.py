@@ -51,6 +51,10 @@ CMD_AVAIL_TYPE_NAME_CATEGORY = \
 CMD_AVAIL_TYPE_NAME_SELECTION = \
     make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
+# template dynamobim command class
+DYNOCMD_EXECUTOR_TYPE_NAME = '{}.{}'\
+    .format(LOADER_BASE_NAMESPACE, 'PyRevitCommandDynamoBIM')
+
 source_file_filter = '(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
@@ -129,7 +133,7 @@ def _get_reference_file(ref_name):
 
 def _get_references():
     ref_list = ['pyRevitLoader',
-                'RevitAPI', 'RevitAPIUI',
+                'RevitAPI', 'RevitAPIUI', 'DynamoRevitDS',
                 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
@@ -187,6 +191,9 @@ if not EXEC_PARAMS.doc_mode:
                                                 CMD_AVAIL_TYPE_NAME_CATEGORY)
     CMD_AVAIL_TYPE_SELECTION = find_type_by_name(BASE_TYPES_ASM,
                                                  CMD_AVAIL_TYPE_NAME_SELECTION)
+    DYNOCMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM,
+                                              DYNOCMD_EXECUTOR_TYPE_NAME)
 else:
     BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = CMD_AVAIL_TYPE = None
     CMD_AVAIL_TYPE_CATEGORY = CMD_AVAIL_TYPE_SELECTION = None
+    DYNOCMD_EXECUTOR_TYPE = None
