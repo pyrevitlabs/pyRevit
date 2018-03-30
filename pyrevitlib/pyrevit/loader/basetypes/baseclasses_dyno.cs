@@ -18,11 +18,9 @@ namespace PyRevitBaseClasses {
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommandDynamoBIM : IExternalCommand {
         public string baked_scriptSource = null;
-        public bool baked_showui = false;
 
-        public PyRevitCommandDynamoBIM(string scriptSource, int showui) {
+        public PyRevitCommandDynamoBIM(string scriptSource) {
             baked_scriptSource = scriptSource;
-            baked_showui = Convert.ToBoolean(showui);
         }
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements) {
