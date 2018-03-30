@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Xml;
 
 using Dynamo.Applications;
 
@@ -50,7 +51,7 @@ namespace PyRevitBaseClasses {
             #region Execute and return results
             var journalData = new Dictionary<string, string>() {
                 { "dynPath", baked_scriptSource },
-                { "dynShowUI", baked_showui.ToString() },
+                { "dynShowUI", CTRL.ToString() },
                 { "dynAutomation",  "True" },
                 { "dynPathExecute",  "True" },
                 { "dynModelShutDown",  "False" }
@@ -62,5 +63,24 @@ namespace PyRevitBaseClasses {
             });
             #endregion
         }
+
+        //private bool DetermineShowDyn() {
+        //    bool res = false;
+        //    var xdoc = new XmlDocument();
+        //    try {
+        //        xdoc.Load(baked_scriptSource);
+        //        XmlNodeList boolnode_list = xdoc.GetElementsByTagName("CoreNodeModels.Input.BoolSelector");
+        //        foreach (XmlElement boolnode in boolnode_list) {
+        //            string nnattr = boolnode.GetAttribute("nickname");
+        //            if ("ShowDynamo" == nnattr) {
+        //                Boolean.TryParse(boolnode.FirstChild.FirstChild.Value, out res);
+        //                return res;
+        //            }
+        //        }
+        //    }
+        //    catch {
+        //    }
+        //    return res;
+        //}
     }
 }

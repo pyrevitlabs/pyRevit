@@ -137,7 +137,7 @@ def _get_references():
                 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
-                'System.Xaml', 'System.Web',
+                'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration']
