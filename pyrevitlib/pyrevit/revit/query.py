@@ -274,3 +274,10 @@ def is_sheet_empty(viewsheet):
     if sheet_views or sheet_scheds:
         return False
     return True
+
+
+def get_category(cat_name, doc=None):
+    doc = doc or HOST_APP.doc
+    for cat in doc.Settings.Categories:
+        if cat.Name == cat_name:
+            return cat
