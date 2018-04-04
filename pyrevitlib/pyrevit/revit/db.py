@@ -90,19 +90,20 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def location(self):
-        return (self.x, self.y, self.z)
+        locp = self._wrapped.Location.Point
+        return (locp.X, locp.Y, locp.Z)
 
     @property
     def x(self):
-        return self._wrapped.Location.Point.X
+        return self.location[0]
 
     @property
     def y(self):
-        return self._wrapped.Location.Point.Y
+        return self.location[1]
 
     @property
     def z(self):
-        return self._wrapped.Location.Point.Z
+        return self.location[2]
 
     def get_param(self, param_name):
         return self._wrapped.LookupParameter(param_name)

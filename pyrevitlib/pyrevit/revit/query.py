@@ -281,3 +281,13 @@ def get_category(cat_name, doc=None):
     for cat in doc.Settings.Categories:
         if cat.Name == cat_name:
             return cat
+
+
+def get_view_cutplane_offset(view):
+    viewrange = view.GetViewRange()
+    return viewrange.GetOffset(DB.PlanViewPlane.CutPlane)
+
+
+def get_project_location_transform(doc=None):
+    doc = doc or HOST_APP.doc
+    return doc.ActiveProjectLocation.GetTransform()
