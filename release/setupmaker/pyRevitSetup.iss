@@ -26,26 +26,35 @@ DisableWelcomePage=no
 WizardImageFile={#MyAppName}1.bmp
 WizardSmallImageFile={#MyAppName}2.bmp
 LicenseFile=..\..\LICENSE.TXT
+; http://www.jrsoftware.org/ishelp/index.php?topic=setup_changesenvironment
+ChangesEnvironment=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\bin\pyrevit.exe"; DestDir: "{tmp}\"
+Source: "..\..\bin\*"; DestDir: "{tmp}\pyRevit"; Flags: recursesubdirs createallsubdirs
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\pyRevit"
 
 [Run]
-Filename: "{tmp}\pyrevit.exe"; Parameters:"clone master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
-Filename: "{tmp}\pyrevit.exe"; Parameters:"detach --all"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
-Filename: "{tmp}\pyrevit.exe"; Parameters:"attach --all {code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"install {#MyAppGit} --branch master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
+;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"detach --all"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
+;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"attach --all {code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
+Filename: "{app}\pyRevit\release\install_addin.bat"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+
+[Registry]
+; https://stackoverflow.com/questions/3304463/how-do-i-modify-the-path-environment-variable-when-running-an-inno-setup-install
+;Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{DefaultDirName}\bin"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [UninstallRun]
-Filename: "{tmp}\pyrevit.exe"; Parameters:"detach --all"; Flags: runhidden
+;Filename: "{tmp}\pyrevit.exe"; Parameters:"detach --all"; Flags: runhidden
+Filename: "{app}\pyRevit\release\uninstall_addin.bat";
 
 [Code]
 var
