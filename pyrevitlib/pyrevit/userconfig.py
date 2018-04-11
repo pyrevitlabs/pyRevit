@@ -125,7 +125,8 @@ class PyRevitConfig(PyRevitConfigParser):
         dir_list = list()
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([p for p in self.core.userextensions])
+            dir_list.extend([op.expandvars(p)
+                             for p in self.core.userextensions])
         except Exception as read_err:
             logger.error('Error reading list of user extension folders. | {}'
                          .format(read_err))
