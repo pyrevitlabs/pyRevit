@@ -214,10 +214,11 @@ def load_session():
     _cleanup_output()
 
 
-def reload_pyrevit():
-    logger.info('Reloading....')
-    load_session()
-    # execute_script(RELOAD_SCRIPT_PATH)
+def reload_pyrevit(during_update=False):
+    if not during_update:
+        logger.info('Reloading....')
+        load_session()
+        # execute_script(RELOAD_SCRIPT_PATH)
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing

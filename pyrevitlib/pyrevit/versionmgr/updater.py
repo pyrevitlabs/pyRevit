@@ -231,16 +231,16 @@ def update_pyrevit():
                                 upped_pyrevit_repo_info.name,
                                 upped_pyrevit_repo_info.last_commit_hash[:7])
                             )
-            except Exception:
-                logger.info('Can not update repo: {}  '
-                            '(Run in debug to see why)'.format(repo_info.name))
+            except Exception as e:
+                logger.info('Can not update pyrevit repo '
+                            '(Run in debug to see why) | {}'.format(e))
             # perform upgrade tasks
             logger.info('Upgrading settings...')
             upgrade.upgrade_existing_pyrevit()
 
             # now reload pyrevit
             from pyrevit.loader import sessionmgr
-            sessionmgr.reload_pyrevit()
+            sessionmgr.reload_pyrevit(during_update=True)
         else:
             from pyrevit import script
             output = script.get_output()
