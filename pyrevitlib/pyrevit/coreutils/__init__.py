@@ -550,6 +550,28 @@ def reverse_html(input_html):
     #         return False
 
 
+def can_access_url(url_to_open, timeout=1000):
+    """Check if url is accessible within timeout.
+
+    Args:
+        url_to_open (str): url to check access for
+        timeout (int): timeout in milliseconds
+
+    Returns:
+        bool: true if accessible
+    """
+    try:
+        client = framework.WebRequest.Create(url_to_open)
+        client.Method = "HEAD"
+        client.Timeout = timeout
+        client.Proxy = framework.WebProxy.GetDefaultProxy()
+        response = client.GetResponse()
+        response.GetResponseStream()
+        return True
+    except Exception:
+            return False
+
+
 def check_internet_connection(timeout=1000):
     """Check if internet connection is available.
 
@@ -559,27 +581,22 @@ def check_internet_connection(timeout=1000):
         timeout (int): timeout in milliseconds
 
     Returns:
-        bool: True if internet connection is present.
+        url if internet connection is present, None if no internet.
     """
-    def can_access(url_to_open):
-        try:
-            client = framework.WebRequest.Create(url_to_open)
-            client.Method = "HEAD"
-            client.Timeout = timeout
-            client.Proxy = framework.WebProxy.GetDefaultProxy()
-            response = client.GetResponse()
-            response.GetResponseStream()
-            return True
-        except Exception:
-                return False
-
-    for url in ["http://google.com/",
-                "http://github.com/",
-                "http://bitbucket.com/"]:
-        if can_access(url):
+    solid_urls = ["http://google.com/",
+                  "http://github.com/",
+                  "http://bitbucket.com/",
+                  "http://airtable.com/",
+                  "http://todoist.com/",
+                  "http://stackoverflow.com/",
+                  "http://twitter.com/",
+                  "http://youtube.com/"]
+    random.shuffle(solid_urls)
+    for url in solid_urls:
+        if can_access_url(url, timeout):
             return url
 
-    return False
+    return None
 
 
 def touch(fname, times=None):
