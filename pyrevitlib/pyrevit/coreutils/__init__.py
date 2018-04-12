@@ -583,15 +583,16 @@ def check_internet_connection(timeout=1000):
     Returns:
         url if internet connection is present, None if no internet.
     """
-    for url in random.shuffle(["http://google.com/",
-                               "http://github.com/",
-                               "http://bitbucket.com/",
-                               "http://airtable.com/",
-                               "http://todoist.com/",
-                               "http://stackoverflow.com/",
-                               "http://twitter.com/",
-                               "http://youtube.com/",
-                               ]):
+    solid_urls = ["http://google.com/",
+                  "http://github.com/",
+                  "http://bitbucket.com/",
+                  "http://airtable.com/",
+                  "http://todoist.com/",
+                  "http://stackoverflow.com/",
+                  "http://twitter.com/",
+                  "http://youtube.com/"]
+    random.shuffle(solid_urls)
+    for url in solid_urls:
         if can_access_url(url, timeout):
             return url
 
