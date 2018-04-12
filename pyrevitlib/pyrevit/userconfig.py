@@ -155,6 +155,7 @@ def _set_hardcoded_config_values(parser):
     # hard-coded values
     parser.add_section('core')
     parser.core.checkupdates = False
+    parser.core.autoupdate = False
     parser.core.verbose = True
     parser.core.debug = False
     parser.core.filelogging = True
