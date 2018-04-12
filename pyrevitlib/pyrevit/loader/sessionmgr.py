@@ -85,6 +85,7 @@ def _perform_onsessionload_ops():
 
     # check for updates
     if user_config.core.get_option('autoupdate', default_value=False):
+        logger.info('Auto-update is active. Attempting update...')
         updater.update_pyrevit()
 
     # once pre-load is complete, report environment conditions
