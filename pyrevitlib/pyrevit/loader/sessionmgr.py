@@ -80,21 +80,30 @@ def _cleanup_output():
 # -----------------------------------------------------------------------------
 # Functions related to creating/loading a new pyRevit session
 # -----------------------------------------------------------------------------
+def _check_autoupdate_inprogress():
+    return envvars.get_pyrevit_env_var(
+        loadertypes.EnvDictionaryKeys.autoupdating
+        )
+
+
+def _set_autoupdate_inprogress(state):
+    envvars.set_pyrevit_env_var(
+        loadertypes.EnvDictionaryKeys.autoupdating, state
+        )
+
+
 def _perform_onsessionload_ops():
     # clear the cached engines
     if not _clear_running_engines():
         logger.debug('No Engine Manager exists...')
 
     # check for updates
-    already_autoupdating = \
-        envvars.get_pyrevit_env_var(loadertypes.EnvDictionaryKeys.autoupdating)
     if user_config.core.get_option('autoupdate', default_value=False) \
-            and not already_autoupdating:
+            and not _check_autoupdate_inprogress():
         logger.info('Auto-update is active. Attempting update...')
-        envvars.set_pyrevit_env_var(
-            loadertypes.EnvDictionaryKeys.autoupdating, True
-            )
+        _set_autoupdate_inprogress(True)
         updater.update_pyrevit()
+        _set_autoupdate_inprogress(False)
 
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
