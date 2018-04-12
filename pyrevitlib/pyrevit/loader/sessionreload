@@ -1,5 +1,0 @@
-"""Reload pyRevit in a new engine."""
-
-from pyrevit.loader import sessionmgr
-
-sessionmgr.load_session()

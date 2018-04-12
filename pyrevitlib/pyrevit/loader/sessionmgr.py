@@ -23,7 +23,6 @@ from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
                                      loggers_have_errors
 # import the basetypes first to get all the c-sharp code to compile
 from pyrevit.loader import sessioninfo
-from pyrevit.loader import RELOAD_SCRIPT_PATH
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
@@ -218,7 +217,6 @@ def reload_pyrevit(during_update=False):
     if not during_update:
         logger.info('Reloading....')
         load_session()
-        # execute_script(RELOAD_SCRIPT_PATH)
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
