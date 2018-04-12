@@ -223,9 +223,8 @@ def load_session():
 
 
 def reload_pyrevit():
-    if not auto_update:
-        logger.info('Reloading....')
-        load_session()
+    logger.info('Reloading....')
+    load_session()
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
