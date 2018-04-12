@@ -19,7 +19,9 @@ __doc__ = 'Downloads updates from the remote git repositories ' \
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
-        if user_config.core.checkupdates and updater.check_for_updates():
+        if user_config.core.get_option('checkupdates', False) \
+                and not user_config.core.get_option('autoupdate', False) \
+                and updater.check_for_updates():
             ui_button_cmp.set_icon(has_update_icon,
                                    icon_size=ribbon.ICON_LARGE)
         return True
