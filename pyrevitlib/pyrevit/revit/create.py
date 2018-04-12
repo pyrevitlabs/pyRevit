@@ -89,3 +89,12 @@ def copy_revisions(src_doc, dest_doc, revisions=None):
                             to=src_rev.IssuedTo,
                             date=src_rev.RevisionDate,
                             doc=dest_doc)
+
+
+def create_sheet(sheet_num, sheet_name,
+                 titleblock_id=DB.ElementId.InvalidElementId, doc=None):
+    doc = doc or HOST_APP.doc
+    newsheet = DB.ViewSheet.Create(doc, titleblock_id)
+    newsheet.Name = sheet_name
+    newsheet.SheetNumber = sheet_num
+    return newsheet
