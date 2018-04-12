@@ -23,10 +23,10 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
             ui_button_cmp.set_icon(has_update_icon,
                                    icon_size=ribbon.ICON_LARGE)
         return True
-    except Exception:
+    except Exception as e:
+        logger.error('Error in checking updates: {}'.format(e))
         return False
 
 
 if __name__ == '__main__':
-    from pyrevit.loader import sessionmgr
-    sessionmgr.reload_pyrevit()
+    updater.update_pyrevit()
