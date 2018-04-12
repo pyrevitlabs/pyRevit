@@ -1226,6 +1226,35 @@ def select_dest_docs():
         return [x.unwrap() for x in return_options if x]
 
 
+def select_titleblocks(title='Select Titleblock', button_name='Select',
+                       width=DEFAULT_INPUTWINDOW_WIDTH, multiple=False,
+                       filterfunc=None, doc=None):
+    no_tb_option = 'No Title Block'
+    titleblocks = DB.FilteredElementCollector(doc)\
+                    .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
+                    .WhereElementIsElementType()\
+                    .ToElements()
+
+    if filterfunc:
+        titleblocks = filter(filterfunc, titleblocks)
+
+    tblock_dict = {'{}: {}'.format(tb.FamilyName,
+                                   revit.ElementWrapper(tb).name): tb
+                   for tb in titleblocks}
+    options = [no_tb_option]
+    options.extend(tblock_dict.keys())
+    selected_titleblocks = SelectFromList.show(options,
+                                               title=title,
+                                               button_name=button_name,
+                                               width=width,
+                                               multiselect=multiple)
+    if selected_titleblocks:
+        if no_tb_option not in selected_titleblocks:
+            return tblock_dict[selected_titleblocks[0]]
+        else:
+            return DB.ElementId.InvalidElementId
+
+
 def alert(msg, title='pyRevit',
           cancel=False, yes=False, no=False, retry=False, exit=False):
     buttons = UI.TaskDialogCommonButtons.Ok
