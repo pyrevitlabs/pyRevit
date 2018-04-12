@@ -1,3 +1,5 @@
+"""Handle updating pyRevit repository and its extensions."""
+
 import pyrevit.coreutils.git as git
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
@@ -19,7 +21,7 @@ def _get_extension_credentials(repo_info):
         if repo_config.private_repo:
             return repo_config.username, repo_config.password
         return None, None
-    except:
+    except Exception:
         return None, None
 
 
@@ -35,7 +37,7 @@ def _fetch_remote(remote, repo_info):
 
 
 def get_thirdparty_ext_repos():
-    # get a list of all directories that could include extensions
+    """Return a list of repos for installed third-party extensions."""
     extensions = []
     logger.debug('Finding installed repos...')
     ext_info_list = get_installed_extension_data()
@@ -57,6 +59,7 @@ def get_thirdparty_ext_repos():
 
 
 def get_all_extension_repos():
+    """Return a list of repos for all installed extensions."""
     logger.debug('Finding all extension repos.')
     # pyrevit main repo
     repo_info_list = [get_pyrevit_repo()]
@@ -67,6 +70,7 @@ def get_all_extension_repos():
 
 
 def update_pyrevit(repo_info):
+    """Update repository."""
     repo = repo_info.repo
     logger.debug('Updating repo: {}'.format(repo_info.directory))
     head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
@@ -95,6 +99,7 @@ def update_pyrevit(repo_info):
 
 
 def get_updates(repo_info):
+    """Fetch updates on repository."""
     repo = repo_info.repo
     at_least_one_fetch_was_successful = False
 
@@ -110,7 +115,7 @@ def get_updates(repo_info):
                          .format(repo_info))
             continue
 
-        except:
+        except Exception:
             logger.debug('Failed fetching updates: {}'.format(repo_info))
             continue
 
@@ -121,6 +126,7 @@ def get_updates(repo_info):
 
 
 def has_pending_updates(repo_info):
+    """Check for updates on repository."""
     if get_updates(repo_info):
         hist_div = git.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
@@ -128,6 +134,11 @@ def has_pending_updates(repo_info):
 
 
 def has_core_updates():
+    """Check whether pyRevit repo has core updates.
+
+    This would require host application to be closed to release the file lock
+    of core DLLs so they can be updated separately.
+    """
     pyrevit_repo = get_pyrevit_repo()
     if get_updates(pyrevit_repo):
         new_commits = git.get_all_new_commits(pyrevit_repo)
