@@ -5,11 +5,11 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import HOME_DIR
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.versionmgr import get_pyrevit_repo
+from pyrevit import versionmgr
 from pyrevit.versionmgr import upgrade
 
 from pyrevit.userconfig import user_config
-from pyrevit.extensions.extensionmgr import get_installed_extension_data
+from pyrevit.extensions import extensionmgr
 
 
 logger = get_logger(__name__)
@@ -65,31 +65,33 @@ def _fetch_remote(remote, repo_info):
 
 def get_thirdparty_ext_repos():
     """Return a list of repos for installed third-party extensions."""
-    extensions = []
+    processed_paths = set()
+    valid_exts = []
+    ext_repos = []
     logger.debug('Finding installed repos...')
-    ext_info_list = get_installed_extension_data()
+    ext_info_list = extensionmgr.get_thirdparty_extension_data()
 
     for ext_info in ext_info_list:
-        if ext_info and git.libgit.Repository.IsValid(ext_info.directory):
-            extensions.append(ext_info)
+        repo_path = git.libgit.Repository.Discover(ext_info.directory)
+        if repo_path:
+            repo_info = git.get_repo(repo_path)
+            if repo_info:
+                valid_exts.append(ext_info)
+                if repo_info.directory not in processed_paths:
+                    processed_paths.add(repo_info.directory)
+                    ext_repos.append(repo_info)
 
     logger.debug('Valid third-party extensions for update: {}'
-                 .format(extensions))
+                 .format(valid_exts))
 
-    repos = []
-    for ext in extensions:
-        repo_info = git.get_repo(ext.directory)
-        if repo_info:
-            repos.append(repo_info)
-
-    return repos
+    return ext_repos
 
 
 def get_all_extension_repos():
     """Return a list of repos for all installed extensions."""
     logger.debug('Finding all extension repos.')
     # pyrevit main repo
-    repo_info_list = [get_pyrevit_repo()]
+    repo_info_list = [versionmgr.get_pyrevit_repo()]
     # add all thirdparty extension repos
     repo_info_list.extend(get_thirdparty_ext_repos())
     logger.debug('Repos are: {}'.format(repo_info_list))
@@ -184,7 +186,7 @@ def has_core_updates():
     This would require host application to be closed to release the file lock
     of core DLLs so they can be updated separately.
     """
-    pyrevit_repo = get_pyrevit_repo()
+    pyrevit_repo = versionmgr.get_pyrevit_repo()
     if get_updates(pyrevit_repo):
         new_commits = git.get_all_new_commits(pyrevit_repo)
 
@@ -202,7 +204,7 @@ def has_core_updates():
 def update_pyrevit():
     """Update pyrevit and its extension repositories."""
     if _check_connection():
-        pyrevit_repo = get_pyrevit_repo()
+        pyrevit_repo = versionmgr.get_pyrevit_repo()
         thirdparty_repos = get_thirdparty_ext_repos()
 
         logger.debug('List of thirdparty repos to be updated: {}'
