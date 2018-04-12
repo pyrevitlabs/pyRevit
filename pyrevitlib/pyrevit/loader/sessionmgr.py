@@ -18,6 +18,7 @@ from pyrevit import coreutils
 from pyrevit.framework import FormatterServices
 from pyrevit.framework import Array
 from pyrevit.coreutils import Timer
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
                                      loggers_have_errors
@@ -26,6 +27,7 @@ from pyrevit.loader import sessioninfo
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
+from pyrevit.coreutils import loadertypes
 from pyrevit.output import get_output
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
@@ -84,8 +86,14 @@ def _perform_onsessionload_ops():
         logger.debug('No Engine Manager exists...')
 
     # check for updates
-    if user_config.core.get_option('autoupdate', default_value=False):
+    already_autoupdating = \
+        envvars.get_pyrevit_env_var(loadertypes.EnvDictionaryKeys.autoupdating)
+    if user_config.core.get_option('autoupdate', default_value=False) \
+            and not already_autoupdating:
         logger.info('Auto-update is active. Attempting update...')
+        envvars.set_pyrevit_env_var(
+            loadertypes.EnvDictionaryKeys.autoupdating, True
+            )
         updater.update_pyrevit()
 
     # once pre-load is complete, report environment conditions
@@ -214,8 +222,8 @@ def load_session():
     _cleanup_output()
 
 
-def reload_pyrevit(during_update=False):
-    if not during_update:
+def reload_pyrevit():
+    if not auto_update:
         logger.info('Reloading....')
         load_session()
 

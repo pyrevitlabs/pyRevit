@@ -242,7 +242,7 @@ def update_pyrevit():
 
             # now reload pyrevit
             from pyrevit.loader import sessionmgr
-            sessionmgr.reload_pyrevit(during_update=True)
+            sessionmgr.reload_pyrevit()
         else:
             from pyrevit import script
             output = script.get_output()

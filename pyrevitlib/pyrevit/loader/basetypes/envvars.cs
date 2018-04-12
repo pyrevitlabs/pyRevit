@@ -22,6 +22,8 @@ namespace PyRevitBaseClasses
 
         public static string loadedAssm = String.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string loadedAssmCount = String.Format("{0}_ASSMCOUNT", keyPrefix);
+
+        public static string autoupdating = String.Format("{0}_AUTOUPDATING", keyPrefix);
     }
 
     public class EnvDictionary
@@ -37,7 +39,7 @@ namespace PyRevitBaseClasses
 
         public EnvDictionary()
         {
-            // get the dictionary from appdomain 
+            // get the dictionary from appdomain
             var _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitEnvVarsDictKey);
 
             if (_envData.Contains(EnvDictionaryKeys.pyRevitVersion))
