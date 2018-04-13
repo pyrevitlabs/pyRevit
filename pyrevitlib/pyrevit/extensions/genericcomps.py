@@ -282,7 +282,8 @@ class GenericUICommand(GenericUIComponent):
         self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
                                                    exts.CSHARP_SCRIPT_POSTFIX,
                                                    exts.VB_SCRIPT_POSTFIX,
-                                                   exts.RUBY_SCRIPT_POSTFIX])
+                                                   exts.RUBY_SCRIPT_POSTFIX,
+                                                   exts.DYNAMO_SCRIPT_POSTFIX])
 
         if self.script_file is None:
             logger.error('Command {}: Does not have script file.'.format(self))
@@ -406,6 +407,8 @@ class GenericUICommand(GenericUIComponent):
                 return exts.CSHARP_LANG
             elif self.script_file.endswith(exts.VB_SCRIPT_FILE_FORMAT):
                 return exts.VB_LANG
+            elif self.script_file.endswith(exts.DYNAMO_SCRIPT_FILE_FORMAT):
+                return exts.DYNAMO_LANG
         else:
             return None
 
