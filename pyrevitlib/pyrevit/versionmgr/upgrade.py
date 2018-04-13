@@ -82,12 +82,18 @@ def _rocketmode_config_upgrade(user_config):
         user_config.core.rocketmode = False
         user_config.save_changes()
 
+def _autoupdate_config_upgrade(user_config):
+    if not user_config.core.has_option('autoupdate'):
+        user_config.core.autoupdate = False
+        user_config.save_changes()
+
 
 def upgrade_user_config(user_config):
     _filelogging_config_upgrade(user_config)
     _loadbeta_config_upgrade(user_config)
     _startuplogtimeout_config_upgrade(user_config)
     _rocketmode_config_upgrade(user_config)
+    _autoupdate_config_upgrade(user_config)
 
 
 def upgrade_existing_pyrevit():

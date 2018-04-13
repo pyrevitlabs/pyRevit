@@ -115,7 +115,7 @@ def find_workset(workset_name_or_list, doc=None, partial=True):
                     return workset
 
 
-def model_has_family(family_name, doc=None):
+def find_family(family_name, doc=None):
     bip_id = DB.ElementId(DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM)
     param_value_provider = DB.ParameterValueProvider(bip_id)
     value_rule = DB.FilterStringRule(param_value_provider,
@@ -125,7 +125,11 @@ def model_has_family(family_name, doc=None):
     symbol_name_filter = DB.ElementParameterFilter(value_rule)
     collector = DB.FilteredElementCollector(doc or HOST_APP.doc)\
                   .WherePasses(symbol_name_filter)
+    return collector
 
+
+def model_has_family(family_name, doc=None):
+    collector = find_family(family_name, doc=doc)
     return hasattr(collector, 'Count') and collector.Count > 0
 
 
@@ -166,7 +170,8 @@ def get_sharedparam_definition_file():
 def get_defined_sharedparams():
     msp_list = []
     for def_group in get_sharedparam_definition_file().Groups:
-        msp_list.extend([ModelSharedParam(x) for x in def_group.Definitions])
+        msp_list.extend([db.ModelSharedParam(x)
+                         for x in def_group.Definitions])
     return msp_list
 
 
@@ -269,3 +274,20 @@ def is_sheet_empty(viewsheet):
     if sheet_views or sheet_scheds:
         return False
     return True
+
+
+def get_category(cat_name, doc=None):
+    doc = doc or HOST_APP.doc
+    for cat in doc.Settings.Categories:
+        if cat.Name == cat_name:
+            return cat
+
+
+def get_view_cutplane_offset(view):
+    viewrange = view.GetViewRange()
+    return viewrange.GetOffset(DB.PlanViewPlane.CutPlane)
+
+
+def get_project_location_transform(doc=None):
+    doc = doc or HOST_APP.doc
+    return doc.ActiveProjectLocation.GetTransform()

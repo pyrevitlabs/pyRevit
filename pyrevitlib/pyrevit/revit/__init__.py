@@ -19,6 +19,7 @@ from pyrevit.revit import update
 from pyrevit.revit import report
 from pyrevit.revit import files
 from pyrevit.revit import serverutils
+from pyrevit.revit import geom
 
 
 logger = get_logger(__name__)

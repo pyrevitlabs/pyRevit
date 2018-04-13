@@ -15,24 +15,28 @@ import sys
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import coreutils
+from pyrevit.framework import FormatterServices
+from pyrevit.framework import Array
 from pyrevit.coreutils import Timer
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.appdata import cleanup_appdata_folder
 from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
                                      loggers_have_errors
 # import the basetypes first to get all the c-sharp code to compile
+from pyrevit.loader import sessioninfo
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
+from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
+from pyrevit.coreutils import loadertypes
 from pyrevit.output import get_output
 from pyrevit.userconfig import user_config
+from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
 from pyrevit.usagelog import setup_usage_logfile
-from pyrevit.versionmgr.upgrade import upgrade_existing_pyrevit
-from pyrevit.loader import sessioninfo
-from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
-from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
-from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
+from pyrevit.versionmgr import updater
+from pyrevit.versionmgr import upgrade
+
 from pyrevit import DB, UI, revit
-from pyrevit.framework import FormatterServices
-from pyrevit.framework import Array
 
 
 logger = get_logger(__name__)
@@ -76,10 +80,30 @@ def _cleanup_output():
 # -----------------------------------------------------------------------------
 # Functions related to creating/loading a new pyRevit session
 # -----------------------------------------------------------------------------
+def _check_autoupdate_inprogress():
+    return envvars.get_pyrevit_env_var(
+        loadertypes.EnvDictionaryKeys.autoupdating
+        )
+
+
+def _set_autoupdate_inprogress(state):
+    envvars.set_pyrevit_env_var(
+        loadertypes.EnvDictionaryKeys.autoupdating, state
+        )
+
+
 def _perform_onsessionload_ops():
     # clear the cached engines
     if not _clear_running_engines():
         logger.debug('No Engine Manager exists...')
+
+    # check for updates
+    if user_config.core.get_option('autoupdate', default_value=False) \
+            and not _check_autoupdate_inprogress():
+        logger.info('Auto-update is active. Attempting update...')
+        _set_autoupdate_inprogress(True)
+        updater.update_pyrevit()
+        _set_autoupdate_inprogress(False)
 
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
@@ -93,7 +117,7 @@ def _perform_onsessionload_ops():
     setup_usage_logfile(uuid_str)
 
     # apply Upgrades
-    upgrade_existing_pyrevit()
+    upgrade.upgrade_existing_pyrevit()
 
 
 def _perform_onsessionloadcomplete_ops():
@@ -206,6 +230,10 @@ def load_session():
 
     _cleanup_output()
 
+
+def reload_pyrevit():
+    logger.info('Reloading....')
+    load_session()
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing

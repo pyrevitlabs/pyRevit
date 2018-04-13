@@ -46,22 +46,10 @@ class BatchSheetMakerWindow(forms.WPFWindow):
         return True
 
     def _ask_for_titleblock(self):
-        no_tb_option = 'No Title Block'
-        titleblocks = DB.FilteredElementCollector(revit.doc)\
-                        .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
-                        .WhereElementIsElementType()\
-                        .ToElements()
-
-        tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                       revit.ElementWrapper(tb).name): tb
-                       for tb in titleblocks}
-        options = [no_tb_option]
-        options.extend(tblock_dict.keys())
-        selected_titleblocks = forms.SelectFromList.show(options,
-                                                         multiselect=False)
-        if selected_titleblocks:
-            if no_tb_option not in selected_titleblocks:
-                self._titleblock_id = tblock_dict[selected_titleblocks[0]].Id
+        tblock = forms.select_titleblocks(doc=revit.doc)
+        if tblock is not None:
+            if not isinstance(tblock, DB.ElementId):
+                self._titleblock_id = tblock.Id
             else:
                 self._titleblock_id = DB.ElementId.InvalidElementId
             return True
