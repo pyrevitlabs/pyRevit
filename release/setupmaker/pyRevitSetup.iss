@@ -1,5 +1,5 @@
 #define MyAppName "pyRevit"
-#define MyAppVersion "-v45"
+#define MyAppVersion "v45"
 #define MyAppPublisher "Ehsan Iran-Nejad"
 #define MyAppURL "http://eirannejad.github.io/pyRevit/"
 #define MyAppGit "https://github.com/eirannejad/pyRevit.git"
@@ -8,17 +8,18 @@
 AppId={{A31B9631-12A5-476E-BFDA-239E283F5D43}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName}-{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={userappdata}\{#MyAppName}\{#MyAppName}{#MyAppVersion}
+DefaultDirName={userappdata}\{#MyAppName}\{#MyAppName}-{#MyAppVersion}
 DisableProgramGroupPage=yes
-OutputBaseFilename={#MyAppName}Setup{#MyAppVersion}
+OutputBaseFilename={#MyAppName}Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 SetupIconFile={#MyAppName}.ico
-UninstallDisplayIcon={#MyAppName}.ico
+;UninstallDisplayIcon={#MyAppName}.ico
 AppCopyright=Copyright (c) 2014-2018 {#MyAppPublisher}
 ;Allow install by any user class. See pyRevit PR #262
 ;PrivilegesRequired=lowest
@@ -38,16 +39,16 @@ Source: "..\..\bin\*"; DestDir: "{tmp}\pyRevit"; Flags: recursesubdirs createall
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\pyRevit"
 
+[Icons]
+Name: "{group}\Update pyRevit"; Filename: "{app}\pyRevit\bin\pyrevit.exe"; Parameters: "update --all"
+
 [Run]
 Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"install {#MyAppGit} --branch master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
 ;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"detach --all"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
 ;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"attach --all {code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
-Filename: "{app}\pyRevit\release\install_addin.bat"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{app}\pyRevit\release\install_addin.bat";  Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
 
-[Registry]
-; https://stackoverflow.com/questions/3304463/how-do-i-modify-the-path-environment-variable-when-running-an-inno-setup-install
-;Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{DefaultDirName}\bin"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
