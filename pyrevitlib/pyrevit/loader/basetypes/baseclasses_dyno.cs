@@ -6,11 +6,8 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Controls;
-using System.Windows.Media.Imaging;
-using System.Xml;
-
-using Dynamo.Applications;
+using System.Runtime.Remoting;
+using System.Reflection;
 
 
 namespace PyRevitBaseClasses {
@@ -55,30 +52,46 @@ namespace PyRevitBaseClasses {
                 { "dynModelShutDown",  "False" }
                 };
 
-            return new DynamoRevit().ExecuteCommand(new DynamoRevitCommandData() {
-                JournalData = journalData,
-                Application = commandData.Application
-            });
+            //return new DynamoRevit().ExecuteCommand(new DynamoRevitCommandData() {
+            //    JournalData = journalData,
+            //    Application = commandData.Application
+            //});
+
+            try {
+                // find the DynamoRevitApp from DynamoRevitDS.dll
+                // this should be already loaded since Dynamo loads before pyRevit
+                ObjectHandle dynRevitAppObjHandle = Activator.CreateInstance("DynamoRevitDS", "Dynamo.Applications.DynamoRevitApp");
+                object dynRevitApp = dynRevitAppObjHandle.Unwrap();
+                MethodInfo execDynamo = dynRevitApp.GetType().GetMethod("ExecuteDynamoCommand");
+
+                // run the script
+                return (Result)execDynamo.Invoke(dynRevitApp, new object[] { journalData, commandData.Application });
+            }
+            catch (FileNotFoundException) {
+                // if failed in finding DynamoRevitDS.dll, assume no dynamo
+                TaskDialog.Show("pyRevit", "Can not find dynamo installation.");
+                return Result.Failed;
+            }
             #endregion
         }
 
-        //private bool DetermineShowDyn() {
-        //    bool res = false;
-        //    var xdoc = new XmlDocument();
-        //    try {
-        //        xdoc.Load(baked_scriptSource);
-        //        XmlNodeList boolnode_list = xdoc.GetElementsByTagName("CoreNodeModels.Input.BoolSelector");
-        //        foreach (XmlElement boolnode in boolnode_list) {
-        //            string nnattr = boolnode.GetAttribute("nickname");
-        //            if ("ShowDynamo" == nnattr) {
-        //                Boolean.TryParse(boolnode.FirstChild.FirstChild.Value, out res);
-        //                return res;
-        //            }
-        //        }
-        //    }
-        //    catch {
-        //    }
-        //    return res;
-        //}
+            //private bool DetermineShowDyn() {
+            //    bool res = false;
+            //    var xdoc = new XmlDocument();
+            //    try {
+            //        xdoc.Load(baked_scriptSource);
+            //        XmlNodeList boolnode_list = xdoc.GetElementsByTagName("CoreNodeModels.Input.BoolSelector");
+            //        foreach (XmlElement boolnode in boolnode_list) {
+            //            string nnattr = boolnode.GetAttribute("nickname");
+            //            if ("ShowDynamo" == nnattr) {
+            //                Boolean.TryParse(boolnode.FirstChild.FirstChild.Value, out res);
+            //                return res;
+            //            }
+            //        }
+            //    }
+            //    catch {
+            //    }
+            //    return res;
+            //}
+        }
     }
-}

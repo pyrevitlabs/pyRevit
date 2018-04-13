@@ -133,7 +133,7 @@ def _get_reference_file(ref_name):
 
 def _get_references():
     ref_list = ['pyRevitLoader',
-                'RevitAPI', 'RevitAPIUI', 'DynamoRevitDS',
+                'RevitAPI', 'RevitAPIUI',
                 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
