@@ -1,5 +1,5 @@
 #define MyAppName "pyRevit"
-#define MyAppVersion "-v45"
+#define MyAppVersion "v45"
 #define MyAppPublisher "Ehsan Iran-Nejad"
 #define MyAppURL "http://eirannejad.github.io/pyRevit/"
 #define MyAppGit "https://github.com/eirannejad/pyRevit.git"
@@ -8,50 +8,59 @@
 AppId={{A31B9631-12A5-476E-BFDA-239E283F5D43}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName}-{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={userappdata}\{#MyAppName}\{#MyAppName}{#MyAppVersion}
+DefaultDirName={userappdata}\{#MyAppName}\{#MyAppName}-{#MyAppVersion}
 DisableProgramGroupPage=yes
-OutputBaseFilename={#MyAppName}Setup{#MyAppVersion}
+OutputBaseFilename={#MyAppName}Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
-SetupIconFile={#MyAppName}Setup.ico
-UninstallDisplayIcon={#MyAppName}Setup.ico
-AppCopyright=Copyright (c) 2014-2017 Ehsan Iran-Nejad
+SetupIconFile={#MyAppName}.ico
+;UninstallDisplayIcon={#MyAppName}.ico
+AppCopyright=Copyright (c) 2014-2018 {#MyAppPublisher}
 ;Allow install by any user class. See pyRevit PR #262
 ;PrivilegesRequired=lowest
 DisableWelcomePage=no
-WizardImageFile=installerimage.bmp
-LicenseFile=LICENSE
+WizardImageFile={#MyAppName}1.bmp
+WizardSmallImageFile={#MyAppName}2.bmp
+LicenseFile=..\..\LICENSE.TXT
+; http://www.jrsoftware.org/ishelp/index.php?topic=setup_changesenvironment
+ChangesEnvironment=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\release\pyrevitgitservices\pyrevitgitservices\bin\Release\*"; DestDir: "{tmp}\"; Flags: recursesubdirs createallsubdirs
+Source: "..\..\bin\*"; DestDir: "{tmp}\pyRevit"; Flags: recursesubdirs createallsubdirs
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\pyRevit"
 
+[Icons]
+Name: "{group}\Update pyRevit"; Filename: "{app}\pyRevit\bin\pyrevit.exe"; Parameters: "update --all"
+
 [Run]
-Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"clone master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
-Filename: "{tmp}\pyrevitgitservices.exe"; Parameters:"setversion {app}\pyRevit {code:GetVersionHash}"; StatusMsg: "Setting repository version..."; Flags: runhidden
+Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"install {#MyAppGit} --branch master {app}\pyRevit"; StatusMsg: "Cloning pyRevit repository from Github...This might take a while..."; Flags: runhidden
+;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"detach --all"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
+;Filename: "{tmp}\pyRevit\pyrevit.exe"; Parameters:"attach --all {code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat"; StatusMsg: "Cleaning up older versions..."; Flags: runhidden
-Filename: "{app}\pyRevit\release\install_addin.bat"; Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+Filename: "{app}\pyRevit\release\install_addin.bat";  Parameters:"{code:GetAllUsersState}"; StatusMsg: "Creating Addin files for currently installed Revit versions..."; Flags: runhidden
+
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [UninstallRun]
+;Filename: "{tmp}\pyrevit.exe"; Parameters:"detach --all"; Flags: runhidden
 Filename: "{app}\pyRevit\release\uninstall_addin.bat";
 
 [Code]
 var
   UsagePage: TInputOptionWizardPage;
   VersionPage: TInputOptionWizardPage;
-  CommitHashPage: TInputQueryWizardPage;
 
 procedure InitializeWizard;
 begin
@@ -63,24 +72,6 @@ begin
   UsagePage.Add('All Users (pyRevit will load for all users)');
   UsagePage.Values[0] := True;
   UsagePage.Values[0] := False;
-
-  { Create the user mode page }
-  VersionPage := CreateInputOptionPage(wpSelectDir,
-    'Select Installation Version', 'Do you want the latest pyRevit or a specific version?',
-    'Please specify which version of pyRevit you want, then click Next.', True, False);
-  VersionPage.Add('Install most recent pyRevit version (suggested)');
-  VersionPage.Add('Install specific pyRevit version');
-  VersionPage.Values[0] := True;
-  VersionPage.Values[1] := False;
-
-  { Create the version page }
-  CommitHashPage := CreateInputQueryPage(VersionPage.ID,
-    'Select pyRevit Version', '',
-    'Please paste the full commit hash of the pyRevit version you like to install'
-    + #13#10 + 'e.g: 2cae1da22b2f9eb1ac1f052d07e6be2961a9c591'
-    + #13#10 + 'or just: 2cae1da');
-  CommitHashPage.Add('Git Commit Hash Value', False);
-  CommitHashPage.Values[0] := '';
 end;
 
 function GetAllUsersState(Param: string): String;
@@ -88,21 +79,6 @@ begin
   { Return the selected user level }
   if UsagePage.Values[1] = True then
       Result := '--allusers';
-end;
-
-function GetVersionHash(Param: string): String;
-begin
-  { Return the selected commit hash to be installed }
-  Result := CommitHashPage.Values[0];
-end;
-
-function ShouldSkipPage(PageID: Integer): Boolean;
-begin
-  { initialize result to not skip any page (not necessary, but safer) }
-  Result := False;
-  { if the page that is asked to be skipped is your custom page, then... }
-  if (PageID = CommitHashPage.ID) AND (VersionPage.Values[0] = True) then
-    Result := True;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
