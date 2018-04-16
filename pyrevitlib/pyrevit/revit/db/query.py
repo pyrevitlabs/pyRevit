@@ -282,11 +282,25 @@ def is_sheet_empty(viewsheet):
     return True
 
 
-def get_category(cat_name, doc=None):
+def get_category(cat_name_or_builtin, doc=None):
     doc = doc or HOST_APP.doc
-    for cat in doc.Settings.Categories:
-        if cat.Name == cat_name:
-            return cat
+    cats = doc.Settings.Categories
+    if isinstance(cat_name_or_builtin, str):
+        for cat in cats:
+            if cat.Name == cat_name_or_builtin:
+                return cat
+    elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
+        for cat in cats:
+            if cat.Id.IntegerValue == int(cat_name_or_builtin):
+                return cat
+
+
+def get_builtincategory(cat_name, doc=None):
+    doc = doc or HOST_APP.doc
+    cat = get_category(cat_name)
+    for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+        if int(bicat) == cat.Id.IntegerValue:
+            return bicat
 
 
 def get_view_cutplane_offset(view):
