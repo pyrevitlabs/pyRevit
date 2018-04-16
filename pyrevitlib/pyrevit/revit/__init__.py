@@ -8,14 +8,15 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB, UI
 
 from pyrevit.revit.db import *
+from pyrevit.revit.db import query
+from pyrevit.revit.db.query import get_project_info
+from pyrevit.revit.db import create
+from pyrevit.revit.db import delete
+from pyrevit.revit.db import update
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit.transaction import *
 from pyrevit.revit.ui import *
-from pyrevit.revit import query
-from pyrevit.revit.query import get_project_info
-from pyrevit.revit import create
-from pyrevit.revit import update
 from pyrevit.revit import report
 from pyrevit.revit import files
 from pyrevit.revit import serverutils
