@@ -1,6 +1,9 @@
 """Helper functions to query info and elements from Revit."""
 
+from collections import namedtuple
+
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.framework import clr
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
@@ -28,6 +31,9 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering
     ]
+
+
+GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
 
 def get_all_elements(doc=None):
@@ -291,3 +297,61 @@ def get_view_cutplane_offset(view):
 def get_project_location_transform(doc=None):
     doc = doc or HOST_APP.doc
     return doc.ActiveProjectLocation.GetTransform()
+
+
+def get_all_linkedmodels(doc=None):
+    doc = doc or HOST_APP.doc
+    return DB.FilteredElementCollector(doc)\
+             .OfClass(DB.RevitLinkType)\
+             .ToElements()
+
+
+def get_all_linkeddocs(doc=None):
+    doc = doc or HOST_APP.doc
+    linkinstances = DB.FilteredElementCollector(doc)\
+                      .OfClass(DB.RevitLinkInstance)\
+                      .ToElements()
+    return {x.GetLinkDocument() for x in linkinstances}
+
+
+def get_all_grids(group_by_direction=False,
+                  include_linked_models=False, doc=None):
+    doc = doc or HOST_APP.doc
+    target_docs = [doc]
+    if include_linked_models:
+        target_docs.extend(get_all_linkeddocs())
+
+    all_grids = []
+    for tdoc in target_docs:
+        all_grids.extend(list(
+            DB.FilteredElementCollector(tdoc)
+              .OfCategory(DB.BuiltInCategory.OST_Grids)
+              .WhereElementIsNotElementType()
+              .ToElements()
+              ))
+
+    if group_by_direction:
+        direcs = {db.XYZPoint(x.Curve.Direction) for x in all_grids}
+        grouped_grids = dict()
+        for direc in direcs:
+            grouped_grids[direc] = [x for x in all_grids
+                                    if direc == x.Curve.Direction]
+        return grouped_grids
+    return all_grids
+
+
+def get_gridpoints(grids=None, include_linked_models=False, doc=None):
+    doc = doc or HOST_APP.doc
+    source_grids = grids or get_all_grids(
+        doc=doc,
+        include_linked_models=include_linked_models
+        )
+    gints = dict()
+    for grid1 in source_grids:
+        for grid2 in source_grids:
+            results = clr.Reference[DB.IntersectionResultArray]()
+            intres = grid1.Curve.Intersect(grid2.Curve, results)
+            if intres == DB.SetComparisonResult.Overlap:
+                gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = \
+                    [grid1, grid2]
+    return [GridPoint(point=k, grids=v) for k, v in gints.items()]

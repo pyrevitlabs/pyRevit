@@ -6,8 +6,7 @@ from pyrevit import DB
 from Autodesk.Revit.DB import Element
 
 
-__all__ = ('BaseWrapper', 'ElementWrapper', 'ExternalRef', 'ModelSharedParam',
-           'CurrentProjectInfo', )
+__all__ = ('BaseWrapper', 'ElementWrapper', )
 
 
 class BaseWrapper(object):
@@ -24,7 +23,7 @@ class BaseWrapper(object):
 
         datastr = ' '.join(['{0}:{1}'.format(k, v)
                             for k, v in pdata.iteritems()])
-        return '<pyrevit.revit.{class_name} % {wrapping}{datastr}>' \
+        return '<pyrevit.revit.db.{class_name} % {wrapping}{datastr}>' \
                .format(class_name=self.__class__.__name__,
                        wrapping=safe_strtype(self._wrapped),
                        datastr=(' ' + datastr) if datastr else '')
@@ -176,3 +175,36 @@ class CurrentProjectInfo(BaseWrapper):
     @property
     def filename(self):
         return op.splitext(op.basename(self.location))[0]
+
+
+class XYZPoint(BaseWrapper):
+    @property
+    def x(self):
+        return round(self._wrapped.X)
+
+    @property
+    def y(self):
+        return round(self._wrapped.Y)
+
+    @property
+    def z(self):
+        return round(self._wrapped.Z)
+
+    def __repr__(self):
+        return super(XYZPoint, self).__repr__({'X': self.x,
+                                               'Y': self.y,
+                                               'Z': self.z})
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
+    def __eq__(self, other):
+        if isinstance(other, DB.XYZ):
+            return self._wrapped.X == other.X \
+                    and self._wrapped.Y == other.Y \
+                    and self._wrapped.Z == other.Z
+        elif isinstance(other, XYZPoint):
+            return self.x == other.x \
+                    and self.y == other.y \
+                    and self.z == other.z
+        return False
