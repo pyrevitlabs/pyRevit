@@ -9,7 +9,6 @@ from pyrevit import DB, UI
 
 from pyrevit.revit.db import *
 from pyrevit.revit.db import query
-from pyrevit.revit.db.query import get_project_info
 from pyrevit.revit.db import create
 from pyrevit.revit.db import delete
 from pyrevit.revit.db import update
@@ -64,6 +63,10 @@ class RevitWrapper(types.ModuleType):
     @property
     def servers(self):
         return HOST_APP.available_servers
+
+    @staticmethod
+    def get_project_info():
+        return query.get_project_info()
 
 
 if not EXEC_PARAMS.doc_mode:
