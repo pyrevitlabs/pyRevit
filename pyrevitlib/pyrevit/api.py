@@ -18,9 +18,13 @@ import Autodesk.Windows as AdWindows
 import UIFramework
 import UIFrameworkServices
 
-import Newtonsoft.Json as NSJson
-
 import Autodesk.Revit.Attributes as Attributes
 
 import Autodesk.Revit.DB as DB
 import Autodesk.Revit.UI as UI
+
+# try loading some utility modules shipped with revit
+try:
+    import Newtonsoft.Json as NSJson
+except Exception as loaderr:
+    pass
