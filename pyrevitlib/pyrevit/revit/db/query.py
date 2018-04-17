@@ -337,12 +337,13 @@ def get_all_grids(group_by_direction=False,
 
     all_grids = []
     for tdoc in target_docs:
-        all_grids.extend(list(
-            DB.FilteredElementCollector(tdoc)
-              .OfCategory(DB.BuiltInCategory.OST_Grids)
-              .WhereElementIsNotElementType()
-              .ToElements()
-              ))
+        if tdoc is not None:
+            all_grids.extend(list(
+                DB.FilteredElementCollector(tdoc)
+                  .OfCategory(DB.BuiltInCategory.OST_Grids)
+                  .WhereElementIsNotElementType()
+                  .ToElements()
+                  ))
 
     if group_by_direction:
         direcs = {db.XYZPoint(x.Curve.Direction) for x in all_grids}
