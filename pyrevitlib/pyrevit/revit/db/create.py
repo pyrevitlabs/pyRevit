@@ -16,10 +16,22 @@ def create_category_set(category_list, doc=None):
     return cat_set
 
 
+def create_all_category_set(bindable=True, doc=None):
+    doc = doc or HOST_APP.doc
+    cat_set = HOST_APP.app.Create.NewCategorySet()
+    for cat in doc.Settings.Categories:
+        if bindable:
+            if cat.AllowsBoundParameters:
+                cat_set.Insert(cat)
+        else:
+            cat_set.Insert(cat)
+    return cat_set
+
+
 def create_shared_param(param_id_or_name, category_list, builtin_param_group,
                         type_param=False, doc=None):
     doc = doc or HOST_APP.doc
-    msp_list = query.get_sharedparam_definition_file()
+    msp_list = query.get_defined_sharedparams()
     for msp in msp_list:
         if msp == param_id_or_name:
             param_def = msp.param_def
@@ -27,7 +39,10 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
     if not param_def:
         raise PyRevitException('Can not find shared parameter.')
 
-    category_set = create_category_set(category_list, doc=doc)
+    if category_list:
+        category_set = create_category_set(category_list, doc=doc)
+    else:
+        category_set = create_all_category_set(doc=doc)
 
     if not category_set:
         raise PyRevitException('Can not create category set.')
