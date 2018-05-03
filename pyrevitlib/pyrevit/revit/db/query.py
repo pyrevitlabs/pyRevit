@@ -370,3 +370,24 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
                 gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = \
                     [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]
+
+
+def get_category_set(category_list, doc=None):
+    doc = doc or HOST_APP.doc
+    cat_set = HOST_APP.app.Create.NewCategorySet()
+    for builtin_cat in category_list:
+        cat = doc.Settings.Categories.get_Item(builtin_cat)
+        cat_set.Insert(cat)
+    return cat_set
+
+
+def get_all_category_set(bindable=True, doc=None):
+    doc = doc or HOST_APP.doc
+    cat_set = HOST_APP.app.Create.NewCategorySet()
+    for cat in doc.Settings.Categories:
+        if bindable:
+            if cat.AllowsBoundParameters:
+                cat_set.Insert(cat)
+        else:
+            cat_set.Insert(cat)
+    return cat_set

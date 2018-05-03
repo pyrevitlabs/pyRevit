@@ -7,27 +7,6 @@ from pyrevit.revit import query
 logger = get_logger(__name__)
 
 
-def create_category_set(category_list, doc=None):
-    doc = doc or HOST_APP.doc
-    cat_set = HOST_APP.app.Create.NewCategorySet()
-    for builtin_cat in category_list:
-        cat = doc.Settings.Categories.get_Item(builtin_cat)
-        cat_set.Insert(cat)
-    return cat_set
-
-
-def create_all_category_set(bindable=True, doc=None):
-    doc = doc or HOST_APP.doc
-    cat_set = HOST_APP.app.Create.NewCategorySet()
-    for cat in doc.Settings.Categories:
-        if bindable:
-            if cat.AllowsBoundParameters:
-                cat_set.Insert(cat)
-        else:
-            cat_set.Insert(cat)
-    return cat_set
-
-
 def create_shared_param(param_id_or_name, category_list, builtin_param_group,
                         type_param=False, doc=None):
     doc = doc or HOST_APP.doc
@@ -40,9 +19,9 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
         raise PyRevitException('Can not find shared parameter.')
 
     if category_list:
-        category_set = create_category_set(category_list, doc=doc)
+        category_set = query.get_category_set(category_list, doc=doc)
     else:
-        category_set = create_all_category_set(doc=doc)
+        category_set = query.get_all_category_set(doc=doc)
 
     if not category_set:
         raise PyRevitException('Can not create category set.')
