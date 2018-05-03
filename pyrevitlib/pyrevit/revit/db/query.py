@@ -391,3 +391,12 @@ def get_all_category_set(bindable=True, doc=None):
         else:
             cat_set.Insert(cat)
     return cat_set
+
+
+def get_rule_filters(doc=None):
+    doc = doc or HOST_APP.doc
+    rfcl = DB.FilteredElementCollector(doc)\
+             .OfClass(DB.ParameterFilterElement)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+    return list(rfcl)
