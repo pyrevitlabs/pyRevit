@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Create shared parameters" MaxHeight="1000 px" MaxWidth="1800" ShowInTaskbar="True" Topmost="False"
+        Title="Manage shared parameters" MaxHeight="1000 px" MaxWidth="1800" ShowInTaskbar="True" Topmost="False"
         WindowStartupLocation="Manual" Top="25" Left="100" SizeToContent="WidthAndHeight" HorizontalContentAlignment="Center">
     <Window.Resources>
         <ControlTemplate x:Key="buttonTemplate" TargetType="{x:Type Button}">

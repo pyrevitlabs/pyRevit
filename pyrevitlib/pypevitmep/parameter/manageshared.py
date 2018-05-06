@@ -1,44 +1,42 @@
 # coding: utf8
 
+import os
 import locale
 from functools import cmp_to_key
 
 from Autodesk.Revit.DB import DefinitionFile
 
-import rpw
 from pyrevit.script import get_logger
 from pyrevit.forms import WPFWindow, SelectFromList, alert
+
 from pypevitmep.parameter import SharedParameter
 
 from System.Collections.ObjectModel import ObservableCollection
 
-__doc__ = """Interface to manage shared parameters
-Features : create, modify, duplicate, save to definition file, delete multiple parameters, 
-open multiple parameter groups in the same datagrid, create a new definition file, create from csv, 
-return selected parameter for another use (e.g. create project parameters, family parameters)"""
-__title__ = "SharedParameters"
-__author__ = "Cyril Waechter"
-
-doc = rpw.revit.doc
-uidoc = rpw.uidoc
 logger = get_logger()
 
 
-class Gui(WPFWindow):
-    def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+class ManageSharedParameter(WPFWindow):
+    def __init__(self):
+        file_dir = os.path.dirname(__file__)
+        xaml_source = os.path.join(file_dir, "manageshared.xaml")
+        WPFWindow.__init__(self, xaml_source)
         self.data_grid_content = ObservableCollection[object]()
         self.datagrid.ItemsSource = self.data_grid_content
-        self.set_image_source("plus_img", "icons8-plus-32.png")
-        self.set_image_source("minus_img", "icons8-minus-32.png")
-        self.set_image_source("import_csv_img", "icons8-csv-32.png")
-        self.set_image_source("import_revit_img", "icons8-import-32.png")
-        self.set_image_source("ok_img", "icons8-checkmark-32.png")
-        self.set_image_source("save_img", "icons8-save-32.png")
-        self.set_image_source("delete_img", "icons8-trash-32.png")
-        self.set_image_source("new_file_img", "icons8-file-32.png")
-        self.set_image_source("open_file_img", "icons8-open-32.png")
-        self.set_image_source("duplicate_img", "icons8-copy-32.png")
+
+        image_dict = {"plus_img": "icons8-plus-32.png",
+                      "minus_img": "icons8-minus-32.png",
+                      "import_csv_img": "icons8-csv-32.png",
+                      "import_revit_img": "icons8-import-32.png",
+                      "ok_img": "icons8-checkmark-32.png",
+                      "save_img": "icons8-save-32.png",
+                      "delete_img": "icons8-trash-32.png",
+                      "new_file_img": "icons8-file-32.png",
+                      "open_file_img": "icons8-open-32.png",
+                      "duplicate_img": "icons8-copy-32.png"}
+        for k, v in image_dict.items():
+            self.set_image_source(k, os.path.join(file_dir, v))
+
         self.headerdict = {"name": "Name",
                            "type": "Type",
                            "group": "Group",
@@ -82,8 +80,8 @@ class Gui(WPFWindow):
     # noinspection PyUnusedLocal
     def ok_click(self, sender, e):
         """Return listed definitions"""
+        self.save_click(sender, e)
         self.Close()
-        return self.data_grid_content
 
     # noinspection PyUnusedLocal
     def save_click(self, sender, e):
@@ -150,7 +148,7 @@ class Gui(WPFWindow):
 
     # noinspection PyUnusedLocal
     def duplicate(self, sender, e):
-        for item in list(self.datagrid.SelectedItems): # type: SharedParameter
+        for item in list(self.datagrid.SelectedItems):  # type: SharedParameter
             args = ("{}1".format(item.name), item.type, item.group, None,
                     item.description, item.modifiable, item.visible, True)
             self.data_grid_content.Add(SharedParameter(*args))
@@ -162,24 +160,21 @@ class Gui(WPFWindow):
     # noinspection PyUnusedLocal
     def new_definition_file_click(self, sender, e):
         self.definition_file = SharedParameter.create_definition_file()
-        for parameter in self.data_grid_content: # type: SharedParameter
+        for parameter in self.data_grid_content:  # type: SharedParameter
             parameter.new = True
 
     # noinspection PyUnusedLocal
     def open_definition_file_click(self, sender, e):
         self.definition_file = SharedParameter.change_definition_file()
-        for parameter in self.data_grid_content: # type: SharedParameter
+        for parameter in self.data_grid_content:  # type: SharedParameter
             parameter.new = True
-
 
     @classmethod
     def show_dialog(cls):
-        gui = Gui("WPFWindow.xaml")
+        gui = cls()
         gui.ShowDialog()
-        return gui.data_grid_content
+        return [shared_parameter.get_definition() for shared_parameter in gui.data_grid_content]
 
 
 if __name__ == '__main__':
-    definitions = Gui.show_dialog()
-    for d in definitions:
-        logger.debug(d)
+    definitions = ManageSharedParameter.show_dialog()
