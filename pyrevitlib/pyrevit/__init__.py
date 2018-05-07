@@ -92,14 +92,20 @@ class PyRevitException(Exception):
     Parameters args and message are derived from Exception class.
     """
 
+    @property
+    def msg(self):
+        if self.args:
+            return self.args[0]
+        else:
+            return ''
+
     def __str__(self):
         """Process stack trace and prepare report for output window."""
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
         try:
             tb_report = traceback.format_tb(sys.exc_traceback)[0]
-            if self.args:
-                message = self.args[0]
-                return '{}\n\n{}\n{}'.format(message,
+            if self.msg:
+                return '{}\n\n{}\n{}'.format(self.msg,
                                              TRACEBACK_TITLE,
                                              tb_report)
             else:
