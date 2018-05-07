@@ -102,6 +102,15 @@
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit runs under IronPython 2.7.3 for compatibility with Dynamo.</TextBlock>
                             </StackPanel>
                         </GroupBox>
+                        <GroupBox Header="Development" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
                         <GroupBox Header="Reporting Level" Margin="0,10,0,0">
                             <StackPanel>
                                 <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">No Reporting (logging.WARNING and above)</RadioButton>
@@ -150,18 +159,6 @@
                                 <Button Content="Reset Caching to default" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Revit Versions" Margin="0,10,0,0">
-                            <StackPanel>
-                                <TextBlock x:Name="revitversions_tb"
-                                           TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can disable or enable pyRevit for installed
-                                                                                               Revit versions from here. This effectively removes the
-                                                                                               pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.</TextBlock>
-                                <CheckBox x:Name="revit2015_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
-                                <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
-                                <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
-                                <CheckBox x:Name="revit2018_cb" Margin="10,5,0,10" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
-                            </StackPanel>
-                        </GroupBox>
                         <GroupBox Header="Runtime Checks" Margin="0,10,0,0">
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the required host build number.
@@ -195,15 +192,6 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Development" Margin="0,10,0,0">
-                            <StackPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
-                                <WrapPanel Margin="10,10,0,10">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
-                                </WrapPanel>
-                            </StackPanel>
-                        </GroupBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
@@ -213,7 +201,7 @@
                                                                                       are available to scripts. They're used as global flags for setting
                                                                                       reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
                                                                                       These variables are accessible by scripts through scriptutils module.</TextBlock>
-                        <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="150">
+                        <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="300">
                             <ListView.Resources>
                                 <ContextMenu x:Key="ItemContextMenu">
                                     <MenuItem x:Name="menuItem_CopyValue"
@@ -233,8 +221,14 @@
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Variable Name" Width="180" DisplayMemberBinding="{Binding Id}"/>
-                                    <GridViewColumn Header="Value" DisplayMemberBinding="{Binding Value}"/>
+                                    <GridViewColumn Header="Variable Name" Width="170" DisplayMemberBinding="{Binding Id}"/>
+                                    <GridViewColumn Header="Value" Width="445">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                 </GridView>
                             </ListView.View>
                         </ListView>
@@ -281,7 +275,22 @@
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Output Window Settings" IsExpanded="True" Margin="10px">
+                <Expander Header="Supported Revit Versions" IsExpanded="False" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <TextBlock x:Name="revitversions_tb"
+                                   TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can disable or enable pyRevit for installed
+                                                                                       Revit versions from here. This effectively removes the
+                                                                                       pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
+                        </TextBlock>
+                        <CheckBox x:Name="revit2019_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2019</CheckBox>
+                        <CheckBox x:Name="revit2018_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
+                        <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
+                        <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
+                        <CheckBox x:Name="revit2015_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
+                    </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Output Window Settings" IsExpanded="False" Margin="10px">
                     <DockPanel Margin="10,10,10,0">
                         <TextBlock DockPanel.Dock="Left">Current CSS Style Sheet:</TextBlock>
                         <WrapPanel DockPanel.Dock="Right">
