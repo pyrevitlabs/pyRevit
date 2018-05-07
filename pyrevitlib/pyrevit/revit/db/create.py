@@ -11,6 +11,7 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
                         type_param=False, doc=None):
     doc = doc or HOST_APP.doc
     msp_list = query.get_defined_sharedparams()
+    param_def = None
     for msp in msp_list:
         if msp == param_id_or_name:
             param_def = msp.param_def
