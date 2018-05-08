@@ -37,6 +37,7 @@ class WPFWindow(framework.Windows.Window):
     Args:
         xaml_source (str): xaml source filepath or xaml content
         literal_string (bool): xaml_source contains xaml content, not filepath
+        handle_esc (bool): handle Escape button and close the window
 
     Example:
         >>> from pyrevit import forms
@@ -48,7 +49,7 @@ class WPFWindow(framework.Windows.Window):
         >>> w.show()
     """
 
-    def __init__(self, xaml_source, literal_string=False):
+    def __init__(self, xaml_source, literal_string=False, handle_esc=True):
         """Initialize WPF window and resources."""
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
@@ -64,6 +65,9 @@ class WPFWindow(framework.Windows.Window):
                 wpf.LoadComponent(self, xaml_source)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
+
+        if handle_esc:
+            self.PreviewKeyDown += self.handle_input_key
 
         #2c3e50 #noqa
         self.Resources['pyRevitDarkColor'] = \
@@ -91,6 +95,11 @@ class WPFWindow(framework.Windows.Window):
 
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
+
+    def handle_input_key(self, sender, args):
+        """Handle keyboard input and close the window on Escape."""
+        if args.Key == framework.Windows.Input.Key.Escape:
+            self.Close()
 
     def show(self, modal=False):
         """Show window."""
@@ -171,25 +180,20 @@ class TemplateUserInputWindow(WPFWindow):
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source))
+                           op.join(op.dirname(__file__), self.xaml_source),
+                           handle_esc=True)
         self.Title = title
         self.Width = width
         self.Height = height
 
         self._context = context
         self.response = None
-        self.PreviewKeyDown += self.handle_input_key
 
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
         """Private method to be overriden by subclasses for window setup."""
         pass
-
-    def handle_input_key(self, sender, args):
-        """Handle keyboard input."""
-        if args.Key == framework.Windows.Input.Key.Escape:
-            self.Close()
 
     @classmethod
     def show(cls, context,
