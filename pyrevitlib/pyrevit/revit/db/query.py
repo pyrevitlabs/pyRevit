@@ -168,9 +168,13 @@ def model_has_sharedparam(param_id_or_name, doc=None):
 
 def get_sharedparam_definition_file():
     if HOST_APP.app.SharedParametersFilename:
-        return HOST_APP.app.OpenSharedParameterFile()
+        sparamf = HOST_APP.app.OpenSharedParameterFile()
+        if sparamf:
+            return sparamf
+        else:
+            raise PyRevitException('Failed opening Shared Parameters file.')
     else:
-        raise PyRevitException('No Shared Parameter file defined.')
+        raise PyRevitException('No Shared Parameters file defined.')
 
 
 def get_defined_sharedparams():
