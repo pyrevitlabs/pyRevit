@@ -1243,7 +1243,7 @@ def select_titleblocks(title='Select Titleblock', button_name='Select',
         titleblocks = filter(filterfunc, titleblocks)
 
     tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                   revit.ElementWrapper(tb).name): tb
+                                   revit.ElementWrapper(tb).name): tb.Id
                    for tb in titleblocks}
     options = [no_tb_option]
     options.extend(tblock_dict.keys())

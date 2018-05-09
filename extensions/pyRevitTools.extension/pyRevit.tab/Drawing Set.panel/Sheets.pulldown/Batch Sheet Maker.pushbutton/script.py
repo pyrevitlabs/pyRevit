@@ -48,10 +48,7 @@ class BatchSheetMakerWindow(forms.WPFWindow):
     def _ask_for_titleblock(self):
         tblock = forms.select_titleblocks(doc=revit.doc)
         if tblock is not None:
-            if not isinstance(tblock, DB.ElementId):
-                self._titleblock_id = tblock.Id
-            else:
-                self._titleblock_id = DB.ElementId.InvalidElementId
+            self._titleblock_id = tblock
             return True
 
         return False
