@@ -195,21 +195,21 @@ class GenericUIContainer(GenericUIComponent):
             return self._sub_components
 
     def contains(self, item_name):
-        for component in self._sub_components:
+        for component in self.get_components():
             if item_name == component.name:
                 return True
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
             logger.debug('Appending syspath: {} to {}'.format(path, self))
-            for component in self._sub_components:
+            for component in self.get_components():
                 component.add_syspath(path)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
             logger.debug('Removing syspath: {} from {}'.format(path, self))
-            for component in self._sub_components:
+            for component in self.get_components():
                 component.remove_syspath(path)
             return self.syspath_search_paths.remove(path)
         else:
@@ -218,14 +218,14 @@ class GenericUIContainer(GenericUIComponent):
     def add_component(self, comp):
         for path in self.syspath_search_paths:
             comp.add_syspath(path)
-        self._sub_components.append(comp)
+        self.get_components().append(comp)
 
     def get_components(self):
         return self._sub_components
 
     def get_components_of_type(self, cmp_type):
         sub_comp_list = []
-        for sub_comp in self._sub_components:
+        for sub_comp in self.get_components():
             if isinstance(sub_comp, cmp_type):
                 sub_comp_list.append(sub_comp)
             elif sub_comp.is_container:
@@ -258,6 +258,8 @@ class GenericUICommand(GenericUIComponent):
         self.beta_cmd = False
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
+        self.configurable_params = ['ui_title', 'doc_string', 'author',
+                                    'cmd_help_url']
 
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
@@ -292,7 +294,7 @@ class GenericUICommand(GenericUIComponent):
             self._analyse_python_script()
 
         self.config_script_file = \
-            self._find_script_file([exts.DEFAULT_CONFIG_SCRIPT_FILE])
+            self._find_script_file([exts.CONFIG_SCRIPT_POSTFIX])
 
         if self.config_script_file is None:
             logger.debug('Command {}: Does not have independent config script.'
@@ -386,6 +388,16 @@ class GenericUICommand(GenericUIComponent):
             logger.debug(dependency_err)
             raise dependency_err
 
+    def _update_configurable_params(self, config_dict):
+        for pname in self.configurable_params:
+            pval = getattr(self, pname)
+            if pval:
+                for k, v in config_dict.items():
+                    liquidtag = '{{' + k + '}}'
+                    if liquidtag in pval:
+                        pval = pval.replace(liquidtag, v)
+                        setattr(self, pname, pval)
+
     def _check_dependencies(self):
         if self.min_revit_ver:
             # If host is older than the minimum host version, raise exception
@@ -432,3 +444,8 @@ class GenericUICommand(GenericUIComponent):
         if path and not self.has_syspath(path):
             logger.debug('Appending syspath: {} to {}'.format(path, self))
             self.syspath_search_paths.append(path)
+
+    def configure(self, config_dict):
+        templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)
+        if templates:
+            self._update_configurable_params(templates)
