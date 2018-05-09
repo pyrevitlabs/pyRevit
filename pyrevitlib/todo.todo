@@ -1,5 +1,10 @@
 tool improv:
 ☐ switches for Pick tool so users can select favorite categories
+☐ remove plugins and incorporate into extensions
+☐ move extensions.json into name.extension/extension.json
+☐ use yaml for config??
+☐ add rsparam
+☐ move loader binaries into bin
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
