@@ -99,6 +99,25 @@ def get_elements_by_parameter(param_name, param_value,
     return found_els
 
 
+def get_elements_by_category(element_categories, elements=None, doc=None):
+    # if source elements is provided
+    if elements:
+        return [x for x in elements
+                if get_builtincategory(x.Category.Name)
+                in element_categories]
+
+    # otherwise collect from model
+    cat_elements = []
+    for elcat in element_categories:
+        cat_elements.extend(list(
+            DB.FilteredElementCollector(doc or HOST_APP.doc)
+              .OfCategory(elcat)
+              .WhereElementIsNotElementType()
+              .ToElements()
+              ))
+    return cat_elements
+
+
 def find_workset(workset_name_or_list, doc=None, partial=True):
     workset_clctr = \
         DB.FilteredWorksetCollector(doc or HOST_APP.doc).ToWorksets()
@@ -374,6 +393,16 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
                 gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = \
                     [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]
+
+
+def get_closest_gridpoint(element, gridpoints):
+    dist = (gridpoints[0].point.unwrap().DistanceTo(element.Location.Point),
+            gridpoints[0])
+    for gp in gridpoints:
+        d = gp.point.unwrap().DistanceTo(element.Location.Point)
+        if d < dist[0]:
+            dist = (d, gp)
+    return dist[1]
 
 
 def get_category_set(category_list, doc=None):
