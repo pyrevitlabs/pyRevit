@@ -258,8 +258,6 @@ class GenericUICommand(GenericUIComponent):
         self.beta_cmd = False
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
-        self.configurable_params = ['ui_title', 'doc_string', 'author',
-                                    'cmd_help_url']
 
     def __init_from_dir__(self, cmd_dir):
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
@@ -409,6 +407,10 @@ class GenericUICommand(GenericUIComponent):
             if int(HOST_APP.version) > int(self.max_revit_ver):
                 raise PyRevitException('Script requires max host version: {}'
                                        .format(self.max_revit_ver))
+
+    @property
+    def configurable_params(self):
+        return ['ui_title', 'doc_string', 'author', 'cmd_help_url']
 
     @property
     def script_language(self):
