@@ -65,4 +65,7 @@ def isnumber(token):
         >>> isnumber('12.3')
         True
     """
-    return re.match("^[0-9.]+?$", token) is not None
+    if token:
+        return re.match("^[0-9.]+?$", token) is not None
+    else:
+        return False
