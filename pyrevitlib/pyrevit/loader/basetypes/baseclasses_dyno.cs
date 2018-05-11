@@ -69,7 +69,7 @@ namespace PyRevitBaseClasses {
             }
             catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
-                TaskDialog.Show("pyRevit", "Can not find dynamo installation.");
+                TaskDialog.Show("pyRevit", "Can not find dynamo installation or determine which Dynamo version to Run.\n\nRun Dynamo once to select the active version.");
                 return Result.Failed;
             }
             #endregion
