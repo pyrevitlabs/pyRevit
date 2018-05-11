@@ -96,7 +96,14 @@ def report_env():
                 'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
     if user_config.core.get_option('rocketmode', False):
         logger.info('pyRevit Rocket Mode enabled. :rocket:')
-    logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
+
+    if HOST_APP.is_newer_than(2017):
+        full_host_name = \
+            HOST_APP.version_name.replace(HOST_APP.version,
+                                          HOST_APP.subversion)
+    else:
+        full_host_name = HOST_APP.version_name
+    logger.info('Host is {} (build: {} id: {})'.format(full_host_name,
                                                        HOST_APP.build,
                                                        HOST_APP.proc_id))
     logger.info('Running on: {}'.format(sys.version))

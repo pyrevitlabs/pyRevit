@@ -196,6 +196,11 @@ class _HostApplication:
         return self.app.VersionNumber
 
     @property
+    def subversion(self):
+        """str: Return subversion number (e.g. '2018.3')."""
+        return self.app.SubVersionNumber
+
+    @property
     def version_name(self):
         """str: Return version name (e.g. 'Autodesk Revit 2018')."""
         return self.app.VersionName
