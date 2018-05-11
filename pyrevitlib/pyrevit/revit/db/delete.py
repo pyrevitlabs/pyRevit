@@ -7,3 +7,8 @@ from pyrevit.revit import query
 
 def clear_sheet_revisions(sheet):
     sheet.SetAdditionalRevisionIds(List[DB.ElementId]([]))
+
+
+def delete_revision(rvt_rev, doc=None):
+    doc = doc or HOST_APP.doc
+    return doc.Delete(rvt_rev.Id)

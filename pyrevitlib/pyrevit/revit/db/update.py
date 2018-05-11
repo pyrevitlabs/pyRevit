@@ -50,3 +50,11 @@ def update_revision_numeric(starting_int, prefix='', postfix='', doc=None):
     num_cfg = DB.NumericRevisionSettings(starting_int, prefix, postfix)
     rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
     rev_cfg.SetNumericRevisionSettings(num_cfg)
+
+
+def update_revision_numbering(per_sheet=False, doc=None):
+    doc = doc or HOST_APP.doc
+    rev_cfg = DB.RevisionSettings.GetRevisionSettings(doc)
+    rev_cfg.RevisionNumbering = \
+        DB.RevisionNumbering.PerSheet if per_sheet else \
+        DB.RevisionNumbering.PerProject

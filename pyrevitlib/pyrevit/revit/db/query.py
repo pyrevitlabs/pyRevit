@@ -214,6 +214,11 @@ def get_revisions(doc=None):
                   .WhereElementIsNotElementType())
 
 
+def get_sheet_revisions(sheet, doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x) for x in sheet.GetAdditionalRevisionIds()]
+
+
 def get_sheets(include_placeholders=True, doc=None):
     sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
