@@ -7,14 +7,14 @@ from System.ComponentModel import ListSortDirection, SortDescription
 from System.Collections.ObjectModel import ObservableCollection
 
 from Autodesk.Revit.ApplicationServices import Application
-from Autodesk.Revit.DB import Document, BindingMap, ElementBinding, CategorySet, LabelUtils
+from Autodesk.Revit.DB import Document, BindingMap, ElementBinding, CategorySet
 from Autodesk.Revit import Exceptions
 
 import rpw
 from pyrevit import script
 from pyrevit.forms import WPFWindow
 
-from pypevitmep.parameter import SharedParameter, ProjectParameter, BoundAllowedCategory
+from pypevitmep.parameter import ProjectParameter, BoundAllowedCategory, BipGroup
 from pypevitmep.parameter.manageshared import ManageSharedParameter
 
 app = rpw.revit.app  # type: Application
@@ -45,7 +45,7 @@ class ManageProjectParameter(WPFWindow):
         self.headerdict = {"name": "Name",
                            "pt_name": "ParameterType",
                            "ut_name": "UnitType",
-                           "pg_name": "ParameterGroup",
+                           "bip_group": "ParameterGroup",
                            "is_instance": "Instance?"}
 
         self.binding_headerdict = {"name": "Name",
@@ -76,11 +76,11 @@ class ManageProjectParameter(WPFWindow):
         # Generate only desired columns
         headername = e.Column.Header.ToString()
         if headername in self.headerdict.keys():
-            if headername == "pg_name":
+            if headername == "bip_group":
                 cb = DataGridComboBoxColumn()
-                cb.ItemsSource = sorted([pp for pp in ProjectParameter.bip_group_name_generator()])
+                cb.ItemsSource = sorted([BipGroup(pp) for pp in BipGroup.bip_group_generator()])
                 cb.SelectedItemBinding = Binding(headername)
-                cb.SelectedValuePath = "pg_name"
+                cb.SelectedValuePath = "bip_group"
                 e.Column = cb
             else:
                 e.Column.IsReadOnly = True
@@ -133,20 +133,9 @@ class ManageProjectParameter(WPFWindow):
             for projectparam in self.project_parameters_datagrid_content:  # type: ProjectParameter
                 bindingmap = doc.ParameterBindings # type: BindingMap
                 try:
-                    if bindingmap[projectparam.definition]:
-                        bindingmap.ReInsert(projectparam.definition, projectparam.binding)
-                    else:
-                        bindingmap.Insert(projectparam.definition, projectparam.binding)
+                    projectparam.save_to_revit_doc()
                 except Exceptions.ArgumentException:
                     logger.info("Saving {} failed. At least 1 category must be selected.".format(projectparam))
-        for projectparam in self.project_parameters_datagrid_content:  # type:
-            bip_group = ProjectParameter.bip_group_by_name(projectparam.pg_name)
-            if projectparam.definition.ParameterGroup != bip_group:
-                iter = doc.ParameterBindings.ForwardIterator()
-                for binding in iter:
-                    if iter.Key.Name == projectparam.name:
-                        iter.Key.ParameterGroup = bip_group
-
 
     # noinspection PyUnusedLocal
     def delete_click(self, sender, e):
@@ -209,7 +198,6 @@ class ManageProjectParameter(WPFWindow):
                 parameter.binding.Categories.Insert(cat.category)
             cat.is_bound = True
         self.category_datagrid.Items.Refresh()
-
 
     # noinspection PyUnusedLocal
     def uncheck_binding_click(self, sender, e):

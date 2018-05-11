@@ -95,6 +95,13 @@ class SharedParameter:
     def get_definition(self):
         return self.get_definitiongroup().Definitions[self.name]
 
+    @classmethod
+    def get_definition_by_name(cls, name):
+        for group in cls.get_definition_file().Groups:  # type: DefinitionGroup
+            for definition in group.Definitions:  # type: Definition
+                if definition.Name == name:
+                    return definition
+
     def initial_values_update(self):
         self.initial_values = {"name": self.name, "type": self.type, "group": self.group,
                                "guid": self.guid, "description": self.description, "modifiable": self.modifiable,
@@ -249,7 +256,7 @@ class ProjectParameter:
         self.definition = definition
         self.binding = binding
         self.category_set = binding.Categories
-        self.pg_name = LabelUtils.GetLabelFor(definition.ParameterGroup)
+        self.bip_group =  BipGroup(definition.ParameterGroup)
         self.pt_name = LabelUtils.GetLabelFor(definition.ParameterType)
         self.ut_name = LabelUtils.GetLabelFor(definition.UnitType)
         if isinstance(binding, InstanceBinding):
@@ -272,23 +279,6 @@ class ProjectParameter:
     def unit_type(self):
         return self.definition.UnitType
 
-    @staticmethod
-    def bip_group_generator():
-        for builtinparametergroup in BuiltInParameterGroup.GetValues(BuiltInParameterGroup):
-            yield builtinparametergroup  # type: BuiltInParameterGroup
-
-    @classmethod
-    def bip_group_name_generator(cls):
-        for builtinparametergroup in cls.bip_group_generator():
-            yield LabelUtils.GetLabelFor(builtinparametergroup)
-
-    @classmethod
-    def bip_group_by_name(cls, name):
-        # type: (str) -> BuiltInParameterGroup
-        for bip_group in cls.bip_group_generator():
-            if LabelUtils.GetLabelFor(bip_group) == name:
-                return bip_group
-
     @classmethod
     def read_from_revit_doc(cls, doc=revit.doc):
         # type: (Document) -> iter
@@ -297,6 +287,15 @@ class ProjectParameter:
         for binding in iterator:  # type: ElementBinding
             definition = iterator.Key
             yield cls(definition, binding)
+
+    def save_to_revit_doc(self, doc=revit.doc):
+        """Save current project parameter to Revit doc.
+        Need to be used in an open Transaction. """
+        bindingmap = doc.ParameterBindings # type: BindingMap
+        if bindingmap[self.definition]:
+            bindingmap.ReInsert(self.definition, self.binding, self.bip_group.bip_group)
+        else:
+            bindingmap.Insert(self.definition, self.binding, self.bip_group.bip_group)
 
     # @classmethod
     # def new_from_shared_parameters(cls, instance=True, app=revit.app):
@@ -337,3 +336,45 @@ class BoundAllowedCategory:
     @property
     def category_type(self):
         return self.category.CategoryType
+
+class BipGroup:
+    def __init__(self, bip_group):
+        # type: (BuiltInParameterGroup) -> None
+        """BuiltInParameterGroup wrapper"""
+        self.bip_group = bip_group
+
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, other):
+        try:
+            return self.bip_group == other.bip_group
+        except AttributeError:
+            return False
+
+    def __gt__(self, other):
+        return self.name > other.name
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    @property
+    def name(self):
+        return LabelUtils.GetLabelFor(self.bip_group)
+
+    @staticmethod
+    def bip_group_generator():
+        for builtinparametergroup in BuiltInParameterGroup.GetValues(BuiltInParameterGroup):
+            yield builtinparametergroup  # type: BuiltInParameterGroup
+
+    @classmethod
+    def bip_group_name_generator(cls):
+        for builtinparametergroup in cls.bip_group_generator():
+            yield LabelUtils.GetLabelFor(builtinparametergroup)
+
+    @classmethod
+    def bip_group_by_name(cls, name):
+        # type: (str) -> BuiltInParameterGroup
+        for bip_group in cls.bip_group_generator():
+            if LabelUtils.GetLabelFor(bip_group) == name:
+                return bip_group
