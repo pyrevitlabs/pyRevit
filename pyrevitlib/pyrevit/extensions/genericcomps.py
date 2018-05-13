@@ -2,13 +2,12 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.coreutils import ScriptFileParser, cleanup_string
-from pyrevit.coreutils.logger import get_logger
+from pyrevit import coreutils
 import pyrevit.extensions as exts
 from pyrevit.userconfig import user_config
 
 
-logger = get_logger(__name__)
+logger = coreutils.logger.get_logger(__name__)
 
 
 class GenericComponent(object):
@@ -78,7 +77,7 @@ class GenericUIComponent(GenericComponent):
                 uname += name
             else:
                 continue
-        return cleanup_string(uname)
+        return coreutils.cleanup_string(uname)
 
     @property
     def bundle_name(self):
@@ -110,7 +109,7 @@ class GenericUIComponent(GenericComponent):
         return file_addr if op.exists(file_addr) else None
 
 
-# superclass for all UI group items (tab, panel, button groups, stacks) --------
+# superclass for all UI group items (tab, panel, button groups, stacks)
 class GenericUIContainer(GenericUIComponent):
     allowed_sub_cmps = []
 
@@ -317,10 +316,26 @@ class GenericUICommand(GenericUIComponent):
                     return op.join(self.directory, bundle_file)
         return None
 
+    def _handle_parse_err(self, filename, parse_err):
+        err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
+                  '<strong>Error type:</strong> {type}\n' \
+                  '<strong>Error Message:</strong> {errmsg}\n' \
+                  '<strong>Line/Column:</strong> {lineno}/{colno}\n' \
+                  '<strong>Line Text:</strong> {linetext}' \
+                  .format(file=filename,
+                          type=parse_err.__class__.__name__,
+                          errmsg=parse_err.msg,
+                          lineno=parse_err.lineno,
+                          colno=parse_err.offset,
+                          linetext=parse_err.text)
+        logger.error(coreutils.prepare_html_str(err_msg))
+
     def _analyse_python_script(self):
         try:
             # reading script file content to extract parameters
-            script_content = ScriptFileParser(self.get_full_script_address())
+            script_content = \
+                coreutils.ScriptFileParser(self.get_full_script_address())
+
             # extracting min requried Revit and pyRevit versions
             extracted_ui_title = \
                 script_content.extract_param(exts.UI_TITLE_PARAM)  # type: str
@@ -361,12 +376,8 @@ class GenericUICommand(GenericUIComponent):
             self.requires_fullframe_engine = script_content.extract_param(
                 exts.FULLFRAME_ENGINE_PARAM, False)  # type: bool
 
-        except PyRevitException as script_parse_err:
-            logger.error('Error parsing script file: {} | {}'
-                         .format(self.script_file, script_parse_err))
-        except Exception as generic_parse_err:
-            logger.error('Error reading script file: {} | {}'
-                         .format(self.script_file, generic_parse_err))
+        except Exception as parse_err:
+            self._handle_parse_err(self.script_file, parse_err)
 
         # fixme: logger reports module as 'ast' after a
         # successfull param retrieval. Must be ast.literal_eval()
