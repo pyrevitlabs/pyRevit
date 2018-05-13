@@ -65,12 +65,8 @@ class ScriptFileParser:
             file_address (str): python script file path
         """
         self.file_addr = file_address
-        try:
-            with open(file_address, 'r') as f:
-                self.ast_tree = ast.parse(f.read())
-        except Exception as err:
-            raise PyRevitException('Error parsing script file: {} | {}'
-                                   .format(self.file_addr, err))
+        with open(file_address, 'r') as f:
+            self.ast_tree = ast.parse(f.read())
 
     def get_docstring(self):
         """Get global docstring."""
