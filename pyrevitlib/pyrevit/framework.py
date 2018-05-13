@@ -30,6 +30,7 @@ from System import DateTime, DateTimeOffset
 
 from System import Diagnostics
 from System.Diagnostics import Process
+from System.Diagnostics import Stopwatch
 
 from System import Reflection
 from System.Reflection import Assembly, AssemblyName
