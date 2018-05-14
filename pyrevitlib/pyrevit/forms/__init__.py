@@ -1333,10 +1333,10 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
 
 def pick_excel_file(save=False):
     if save:
-        return forms.save_file(file_ext='xlsx')
-    return forms.pick_file(files_filter='All Files (*.*)|*.*|'
-                           'Excel Workbook (*.xlsx)|*.xlsx|'
-                           'Excel 97-2003 Workbook|*.xls')
+        return save_file(file_ext='xlsx')
+    return pick_file(files_filter='All Files (*.*)|*.*|'
+                     'Excel Workbook (*.xlsx)|*.xlsx|'
+                     'Excel 97-2003 Workbook|*.xls')
 
 
 def save_excel_file():
