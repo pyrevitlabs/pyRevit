@@ -326,9 +326,10 @@ def get_category(cat_name_or_builtin, doc=None):
 def get_builtincategory(cat_name, doc=None):
     doc = doc or HOST_APP.doc
     cat = get_category(cat_name)
-    for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-        if int(bicat) == cat.Id.IntegerValue:
-            return bicat
+    if cat:
+        for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+            if int(bicat) == cat.Id.IntegerValue:
+                return bicat
 
 
 def get_view_cutplane_offset(view):
