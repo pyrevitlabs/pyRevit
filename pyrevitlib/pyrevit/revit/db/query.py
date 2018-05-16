@@ -99,6 +99,21 @@ def get_elements_by_parameter(param_name, param_value,
     return found_els
 
 
+def get_elements_by_shared_parameter(param_name, param_value, doc=None):
+    doc = doc or HOST_APP.doc
+    param_id = get_sharedparam_id(param_name)
+    if param_id:
+        pp = DB.ParameterValueProvider(param_id)
+        pe = DB.FilterStringEquals()
+        vrule = DB.FilterStringRule(pp, pe, param_value, True)
+        param_filter = DB.ElementParameterFilter(vrule)
+        elements = list(DB.FilteredElementCollector(doc)
+                          .WherePasses(param_filter)
+                          .ToElements())
+        if elements:
+            return elements[0]
+
+
 def get_elements_by_category(element_categories, elements=None, doc=None):
     # if source elements is provided
     if elements:
@@ -202,6 +217,12 @@ def get_defined_sharedparams():
         msp_list.extend([db.ModelSharedParam(x)
                          for x in def_group.Definitions])
     return msp_list
+
+
+def get_sharedparam_id(param_name):
+    for sp in get_model_sharedparams():
+        if sp.name == param_name:
+            return sp.param_def.Id
 
 
 def get_project_info():
