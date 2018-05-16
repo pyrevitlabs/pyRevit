@@ -35,6 +35,7 @@ switches = ['Graphic Styles',
             'System Postable Commands',
             'Worksets',
             'Fill Grids',
+            'Connected Circuits'
             ]
 
 selected_switch = \
@@ -438,3 +439,11 @@ elif selected_switch == 'Fill Grids':
                 print('\tShift: {}'.format(fg.Shift))
                 for seg in fg.GetSegments():
                     print('\tSegment: {}'.format(seg))
+
+elif selected_switch == 'Connected Circuits':
+    selection = revit.get_selection()
+    for el in selection:
+        mepmodel = el.MEPModel
+        if mepmodel:
+            for es in mepmodel.ElectricalSystems:
+                print(es.Name)
