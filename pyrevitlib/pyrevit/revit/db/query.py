@@ -460,3 +460,15 @@ def get_rule_filters(doc=None):
              .WhereElementIsNotElementType()\
              .ToElements()
     return list(rfcl)
+
+
+def get_connected_circuits(element, spare=False, space=False):
+    circuit_types = [DB.Electrical.CircuitType.Circuit]
+    if spare:
+        circuit_types.append(DB.Electrical.CircuitType.Spare)
+    if space:
+        circuit_types.append(DB.Electrical.CircuitType.Space)
+
+    if element.MEPModel:
+        return [x for x in element.MEPModel.ElectricalSystems
+                if x.CircuitType in circuit_types]

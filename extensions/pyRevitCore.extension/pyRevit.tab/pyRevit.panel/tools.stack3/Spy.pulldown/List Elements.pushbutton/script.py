@@ -443,7 +443,6 @@ elif selected_switch == 'Fill Grids':
 elif selected_switch == 'Connected Circuits':
     selection = revit.get_selection()
     for el in selection:
-        mepmodel = el.MEPModel
-        if mepmodel:
-            for es in mepmodel.ElectricalSystems:
-                print(es.Name)
+        esystems = revit.query.get_connected_circuits(el)
+        for esys in esystems:
+            print(esys.Name)
