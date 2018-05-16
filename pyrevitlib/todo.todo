@@ -5,6 +5,7 @@ tool improv:
 ☐ use yaml for config??
 ☐ add rsparam
 ☐ move loader binaries into bin
+☐ mvoe collectors in List tool to db.query
 
 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
 Archive:
