@@ -114,3 +114,11 @@ def isnumber(token):
         return re.match("^[0-9.]+?$", token) is not None
     else:
         return False
+
+
+def compare_lists(x, y):
+    """Compare two lists.
+
+    See: https://stackoverflow.com/a/10872313/2350244
+    """
+    return len(frozenset(x).difference(y)) == 0
