@@ -206,7 +206,7 @@ elif selected_switch == 'Scope Boxes':
                  .WhereElementIsNotElementType().ToElements()
 
     for el in scopeboxes:
-        print('SCOPEBOX: {0}'.format(el.Name))
+        print('{} SCOPEBOX: {}'.format(output.linkify(el.Id), el.Name))
 
 elif selected_switch == 'Areas':
     cl = DB.FilteredElementCollector(revit.doc)
