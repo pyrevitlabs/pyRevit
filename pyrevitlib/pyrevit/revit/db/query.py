@@ -306,6 +306,15 @@ def get_all_views(doc=None, include_nongraphical=False):
     return all_views
 
 
+def get_all_schedules(doc=None):
+    doc = doc or HOST_APP.doc
+    all_scheds = DB.FilteredElementCollector(doc) \
+                   .OfClass(DB.ViewSchedule) \
+                   .WhereElementIsNotElementType() \
+                   .ToElements()
+    return all_scheds
+
+
 def get_view_by_name(view_name, doc=None):
     doc = doc or HOST_APP.doc
     for view in get_all_views(doc=doc):
@@ -342,6 +351,8 @@ def get_category(cat_name_or_builtin, doc=None):
         for cat in cats:
             if cat.Id.IntegerValue == int(cat_name_or_builtin):
                 return cat
+    elif isinstance(cat_name_or_builtin, DB.Category):
+        return cat_name_or_builtin
 
 
 def get_builtincategory(cat_name, doc=None):
@@ -469,6 +480,39 @@ def get_connected_circuits(element, spare=False, space=False):
     if space:
         circuit_types.append(DB.Electrical.CircuitType.Space)
 
-    if element.MEPModel:
+    if element.MEPModel and element.MEPModel.ElectricalSystems:
         return [x for x in element.MEPModel.ElectricalSystems
                 if x.CircuitType in circuit_types]
+
+
+def get_element_categories(elements):
+    catsdict = {x.Category.Name: x.Category for x in elements}
+    uniquenames = set(catsdict.keys())
+    return [catsdict[x] for x in uniquenames]
+
+
+def get_category_schedules(category_or_catname, doc=None):
+    doc = doc or HOST_APP.doc
+    cat = get_category(category_or_catname)
+    scheds = get_all_schedules(doc=doc)
+    return [x for x in scheds if x.Definition.CategoryId == cat.Id]
+
+
+def get_schedule_field(schedule, field_name):
+    for field_idx in schedule.Definition.GetFieldOrder():
+        field = schedule.Definition.GetField(field_idx)
+        if field.GetName() == field_name:
+            return field
+
+
+def get_schedule_filters(schedule, field_name, return_index=False):
+    matching_filters = []
+    field = get_schedule_field(schedule, field_name)
+    if field:
+        for idx, sfilter in enumerate(schedule.Definition.GetFilters()):
+            if sfilter.FieldId == field.FieldId:
+                if return_index:
+                    matching_filters.append(idx)
+                else:
+                    matching_filters.append(sfilter)
+    return matching_filters
