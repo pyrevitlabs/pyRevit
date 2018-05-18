@@ -19,6 +19,7 @@ from pyrevit.framework import Interop
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
+from pyrevit.forms import utils
 
 
 logger = get_logger(__name__)
@@ -122,10 +123,15 @@ class WPFWindow(framework.Windows.Window):
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
             wpfel.Source = \
-                framework.Imaging.BitmapImage(
-                    framework.Uri(os.path.join(EXEC_PARAMS.command_path,
-                                               image_file))
+                utils.bitmap_from_file(
+                    os.path.join(EXEC_PARAMS.command_path,
+                                 image_file)
                     )
+            # wpfel.Source = \
+            #     framework.Imaging.BitmapImage(
+            #         framework.Uri(os.path.join(EXEC_PARAMS.command_path,
+            #                                    image_file))
+            #         )
         else:
             wpfel.Source = \
                 framework.Imaging.BitmapImage(framework.Uri(image_file))
