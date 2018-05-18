@@ -241,34 +241,41 @@ class SelectFromList(TemplateUserInputWindow):
     xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
-        self.hide_element(self.clrsearch_b)
-        self.clear_search(None, None)
-        self.search_tb.Focus()
-
         if 'multiselect' in kwargs and not kwargs['multiselect']:
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
         else:
             self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+
+        self._nameattr = kwargs.get('name_attr', None)
 
         button_name = kwargs.get('button_name', None)
         if button_name:
             self.select_b.Content = button_name
 
         self._list_options()
+        self.hide_element(self.clrsearch_b)
+        self.clear_search(None, None)
+        self.search_tb.Focus()
+
+    def _get_option_name(self, option):
+        if self._nameattr:
+            return str(getattr(option, self._nameattr))
+        else:
+            safe_strtype(option)
 
     def _list_options(self, option_filter=None):
         if option_filter:
             option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context
-                 if option_filter in safe_strtype(option).lower()]
+                [self._get_option_name(x) for x in self._context
+                 if option_filter in self._get_option_name(x).lower()]
         else:
             self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context]
+                [self._get_option_name(x) for x in self._context]
 
     def _get_options(self):
-        return [option for option in self._context
-                if safe_strtype(option) in self.list_lb.SelectedItems]
+        return [x for x in self._context
+                if self._get_option_name(x) in self.list_lb.SelectedItems]
 
     def button_select(self, sender, args):
         """Handle select button click."""
