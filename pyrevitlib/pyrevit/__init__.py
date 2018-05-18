@@ -136,7 +136,7 @@ Attributes:
 """
 
 
-class _HostApplication:
+class _HostApplication(object):
     """Private Wrapper for Current Instance of Revit.
 
     Provides version info and comparison functionality, alongside providing
@@ -179,6 +179,11 @@ class _HostApplication:
     def activeview(self):
         """Return view that is active (UIDocument.ActiveView)."""
         return getattr(self.uidoc, 'ActiveView', None)
+
+    @activeview.setter
+    def activeview(self, value):
+        """Set the active view in user interface."""
+        setattr(self.uidoc, 'ActiveView', value)
 
     @property
     def docs(self):
