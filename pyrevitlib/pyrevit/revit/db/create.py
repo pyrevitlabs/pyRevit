@@ -93,3 +93,25 @@ def create_sheet(sheet_num, sheet_name,
     newsheet.Name = sheet_name
     newsheet.SheetNumber = sheet_num
     return newsheet
+
+
+def create_3d_view(view_name, isometric=True, doc=None):
+    doc = doc or HOST_APP.doc
+    nview = query.get_view_by_name(view_name)
+    if not nview:
+        default_3dview_type = \
+            doc.GetDefaultElementTypeId(DB.ElementTypeGroup.ViewType3D)
+        if isometric:
+            nview = DB.View3D.CreateIsometric(doc, default_3dview_type)
+        else:
+            nview = DB.View3D.CreatePerspective(doc, default_3dview_type)
+    nview.ViewName = view_name
+    nview.CropBoxActive = False
+    nview.CropBoxVisible = False
+    if nview.CanToggleBetweenPerspectiveAndIsometric():
+        print('CanToggleBetweenPerspectiveAndIsometric')
+        if isometric:
+            nview.ToggleToIsometric()
+        else:
+            nview.ToggleToPerspective()
+    return nview
