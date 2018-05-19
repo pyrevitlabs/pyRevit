@@ -255,13 +255,12 @@ class SelectFromList(TemplateUserInputWindow):
         self._list_options()
         self.hide_element(self.clrsearch_b)
         self.clear_search(None, None)
-        self.search_tb.Focus()
 
     def _get_option_name(self, option):
         if self._nameattr:
             return str(getattr(option, self._nameattr))
         else:
-            safe_strtype(option)
+            return safe_strtype(option)
 
     def _list_options(self, option_filter=None):
         if option_filter:
