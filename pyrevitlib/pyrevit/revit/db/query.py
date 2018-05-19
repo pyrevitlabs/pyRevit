@@ -525,3 +525,12 @@ def get_sheet_tblocks(src_sheet):
                       .WhereElementIsNotElementType()\
                       .ToElements()
     return list(sheet_tblocks)
+
+
+def get_sheet_sets(doc=None):
+    doc = doc or HOST_APP.doc
+    viewsheetsets = DB.FilteredElementCollector(doc)\
+                      .OfClass(DB.ViewSheetSet)\
+                      .WhereElementIsNotElementType()\
+                      .ToElements()
+    return list(viewsheetsets)

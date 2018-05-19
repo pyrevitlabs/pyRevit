@@ -22,10 +22,7 @@ def createsheetset(revision_element):
                         .ToElements()
 
     sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
-    viewsheetsets = DB.FilteredElementCollector(revit.doc)\
-                      .OfClass(framework.get_type(DB.ViewSheetSet))\
-                      .WhereElementIsNotElementType()\
-                      .ToElements()
+    viewsheetsets = revit.query.get_sheet_sets(doc=revit.doc)
 
     allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
     revnum = revision_element.SequenceNumber
