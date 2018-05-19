@@ -516,3 +516,12 @@ def get_schedule_filters(schedule, field_name, return_index=False):
                 else:
                     matching_filters.append(sfilter)
     return matching_filters
+
+
+def get_sheet_tblocks(src_sheet):
+    sheet_tblocks = DB.FilteredElementCollector(src_sheet.Document,
+                                                src_sheet.Id)\
+                      .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
+                      .WhereElementIsNotElementType()\
+                      .ToElements()
+    return list(sheet_tblocks)
