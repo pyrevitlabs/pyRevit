@@ -52,6 +52,9 @@ PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 # loader directory
 LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
 
+# locales directory
+LOCALES_DIR = op.join(PYREVIT_MODULE_DIR, 'locales')
+
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 

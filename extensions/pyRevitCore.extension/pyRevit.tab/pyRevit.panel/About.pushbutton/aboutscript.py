@@ -5,15 +5,16 @@ from pyrevit import coreutils
 from pyrevit import versionmgr
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
+from pyrevit.locales import _
 from pyrevit import forms
 from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
-__doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
-          'detailed information on how pyrevit works, updates about the ' \
-          'new tools and changes, and a lot of other information there.'
+__doc__ = _('About pyrevit. Opens the pyrevit blog website. You can find '
+            'detailed information on how pyrevit works, updates about the '
+            'new tools and changes, and a lot of other information there.')
 
 
 class AboutWindow(forms.WPFWindow):
@@ -37,19 +38,20 @@ class AboutWindow(forms.WPFWindow):
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.pyrevit_version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
-        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
-                                   .format(sys.version_info.major,
-                                           sys.version_info.minor,
-                                           sys.version_info.micro)
+        self.pyrevit_engine.Text = \
+            _('Running on IronPython {}.{}.{}')\
+            .format(sys.version_info.major,
+                    sys.version_info.minor,
+                    sys.version_info.micro)
 
         rocketmodetext = \
-            'Rocket-mode {}' \
-            .format('enabled' if __cachedengine__ else 'disabled')
+            _('Rocket-mode {}') \
+            .format(_('enabled') if __cachedengine__ else _('disabled')) #noqa
         self.pyrevit_rmode.Text = rocketmodetext
-        if not __cachedengine__:
+        if not __cachedengine__:  #noqa
             self.hide_element(self.rmode_icon)
 
-        self.madein_tb.Text = 'in {}'.format(pyrvtabout.madein)
+        self.madein_tb.Text = _('in {}').format(pyrvtabout.madein)
         self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
