@@ -303,6 +303,8 @@ class SelectFromList(TemplateUserInputWindow):
             This options works in multiselect mode only. defaults to False
         filterfunc (function):
             filter function to be applied to context items. defaults to None
+        group_selector_title (str):
+            title for list group selector. defaults to 'List Group'
 
 
     Example:
@@ -376,6 +378,11 @@ class SelectFromList(TemplateUserInputWindow):
         # filter function?
         self.filter_func = kwargs.get('filterfunc', None)
 
+        # context group title?
+        self.ctx_groups_title = \
+            kwargs.get('group_selector_title', 'List Group')
+        self.ctx_groups_title_tb.Text = self.ctx_groups_title
+
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
         self._list_options()
@@ -384,25 +391,49 @@ class SelectFromList(TemplateUserInputWindow):
         self.hide_element(self.clrsearch_b)
         self.clear_search(None, None)
 
-    def _prepare_context(self):
-        new_context = []
-        orig_context = self._context
+    def _prepare_context_items(self, ctx_items):
+        new_ctx = []
         # filter context if necessary
         if self.filter_func:
-            orig_context = filter(self.filter_func, orig_context)
+            ctx_items = filter(self.filter_func, ctx_items)
 
-        for item in orig_context:
+        for item in ctx_items:
             if TemplateListItem.is_checkbox(item):
                 item.checkable = self.multiselect
-                new_context.append(item)
+                new_ctx.append(item)
             else:
-                new_context.append(
+                new_ctx.append(
                     TemplateListItem(item,
                                      checkable=self.multiselect,
                                      name_attr=self._nameattr)
                     )
 
-        self._context = new_context
+        return new_ctx
+
+    def _prepare_context(self):
+        if isinstance(self._context, dict) and self._context.keys():
+            self._update_ctx_groups(self._context.keys())
+            new_ctx = dict()
+            for ctx_grp, ctx_items in self._context.items():
+                new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
+        else:
+            new_ctx = self._prepare_context_items(self._context)
+
+        self._context = new_ctx
+
+    def _update_ctx_groups(self, ctx_group_names):
+        self.show_element(self.ctx_groups_dock)
+        self.ctx_groups_selector_cb.ItemsSource = ctx_group_names
+        self.ctx_groups_selector_cb.SelectedIndex = 0
+
+    def _get_active_ctx_group(self):
+        return self.ctx_groups_selector_cb.SelectedItem
+
+    def _get_active_ctx(self):
+        if isinstance(self._context, dict):
+            return self._context[self._get_active_ctx_group()]
+        else:
+            return self._context
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -411,12 +442,12 @@ class SelectFromList(TemplateUserInputWindow):
             self.toggleall_b.Content = 'Toggle'
             option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [x for x in self._context if x.matches(option_filter)]
+                [x for x in self._get_active_ctx() if x.matches(option_filter)]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
             self.toggleall_b.Content = 'Toggle All'
-            self.list_lb.ItemsSource = [x for x in self._context]
+            self.list_lb.ItemsSource = [x for x in self._get_active_ctx()]
 
     @staticmethod
     def _unwrap_options(options):
@@ -431,10 +462,12 @@ class SelectFromList(TemplateUserInputWindow):
     def _get_options(self):
         if self.multiselect:
             if self.return_all:
-                return self._unwrap_options([x for x in self._context])
+                return self._unwrap_options(
+                    [x for x in self._get_active_ctx()]
+                    )
             else:
                 return self._unwrap_options(
-                    [x for x in self._context
+                    [x for x in self._get_active_ctx()
                      if x.state or x in self.list_lb.SelectedItems]
                     )
         else:
@@ -1172,6 +1205,7 @@ def select_sheets(title='Select Sheets',
                   filterfunc=None,
                   doc=None):
     doc = doc or HOST_APP.doc
+    all_ops = dict()
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
@@ -1180,10 +1214,22 @@ def select_sheets(title='Select Sheets',
     if filterfunc:
         all_sheets = filter(filterfunc, all_sheets)
 
+    all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
+                            key=lambda x: x.number)
+    all_ops['All Sheets'] = all_sheets_ops
+
+    sheetsets = revit.query.get_sheet_sets(doc)
+    for sheetset in sheetsets:
+        sheetset_sheets = sheetset.Views
+        if filterfunc:
+            sheetset_sheets = filter(filterfunc, sheetset_sheets)
+        sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
+                              key=lambda x: x.number)
+        all_ops[sheetset.Name] = sheetset_ops
+
     # ask user for multiple sheets
     selected_sheets = SelectFromList.show(
-        sorted([SheetOption(x) for x in all_sheets],
-               key=lambda x: x.number),
+        all_ops,
         title=title,
         button_name=button_name,
         width=width,
