@@ -20,6 +20,7 @@ lib/*
 
 # ignore visual studio files
 .vs\*
+.suo
 obj\*
 pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
 pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
