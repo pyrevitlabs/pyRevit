@@ -70,11 +70,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\SelectFromCheckboxes.xaml">
-      <Link>SelectFromCheckboxes.xaml</Link>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="..\..\SelectFromList.xaml">
       <Link>SelectFromList.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
