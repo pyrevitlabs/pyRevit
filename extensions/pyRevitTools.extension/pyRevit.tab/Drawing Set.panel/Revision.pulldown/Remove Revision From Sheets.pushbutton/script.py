@@ -2,21 +2,20 @@
 
 from pyrevit import revit, DB
 from pyrevit import forms
+from pyrevit import script
 
 
 __doc__ = 'Select a revision from the list of revisions\n'\
           'and this script will remove that revision ' \
           'from all sheets if it has not been "clouded" on the sheet.'
 
-
-def print_sheet(sht):
-    snum = sht.LookupParameter('Sheet Number').AsString().rjust(10)
-    sname = sht.LookupParameter('Sheet Name').AsString().ljust(50)
-    print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
+logger = script.get_logger()
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiselect=True)
+                                   multiple=False)
+
+logger.debug(revisions)
 
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision')
@@ -31,7 +30,7 @@ if revisions:
             cloudedsheets = []
             for s in sheets:
                 if s in updated_sheets:
-                    print_sheet(s)
+                    revit.report.print_sheet(s)
                 else:
                     cloudedsheets.append(s)
         else:
@@ -43,4 +42,4 @@ if revisions:
             print('-' * 100)
 
             for s in cloudedsheets:
-                print_sheet(s)
+                revit.report.print_sheet(s)

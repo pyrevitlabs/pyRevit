@@ -20,7 +20,7 @@ output = script.get_output()
 selection = revit.get_selection()
 
 
-class Option:
+class Option(forms.TemplateListItem):
     def __init__(self, op_name, default_state=False):
         self.state = default_state
         self.name = op_name
@@ -52,10 +52,12 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
 def get_user_options():
     op_set = OptionSet()
     return_options = \
-        forms.SelectFromCheckBoxes.show(
+        forms.SelectFromList.show(
             [getattr(op_set, x) for x in dir(op_set) if x.startswith('op_')],
             title='Select Copy Options',
-            button_name='Copy Now')
+            button_name='Copy Now',
+            multiselect=True
+            )
 
     if not return_options:
         sys.exit(0)
@@ -65,7 +67,8 @@ def get_user_options():
 
 def get_dest_docs():
     # find open documents other than the active doc
-    selected_dest_docs = forms.select_dest_docs()
+    selected_dest_docs = \
+        forms.select_open_docs(title='Select Destination Documents')
     if not selected_dest_docs:
         sys.exit(0)
     else:

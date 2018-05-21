@@ -51,11 +51,12 @@ if not unusedFilters:
 
 # ask user for wipe actions
 return_options = \
-    forms.SelectFromCheckBoxes.show(
+    forms.SelectFromList.show(
         [ViewFilterToPurge(x) for x in unusedFilters],
         title='Select Filters to Purge',
         width=500,
-        button_name='Purge Filters'
+        button_name='Purge Filters',
+        multiselect=True
         )
 
 # print('{} Filters have not been used and will be purged.'

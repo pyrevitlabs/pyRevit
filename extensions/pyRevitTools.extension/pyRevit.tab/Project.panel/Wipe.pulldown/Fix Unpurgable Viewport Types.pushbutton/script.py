@@ -60,7 +60,8 @@ logger.debug('Viewport types: {}'.format(all_viewport_types))
 # Ask user for viewport types to be purged
 purge_vp_types = \
     forms.SelectFromList.show(sorted(all_viewport_types),
-                              title='Select Types to be Converted')
+                              title='Select Types to be Converted',
+                              multiselect=True)
 
 if not purge_vp_types:
     sys.exit()
@@ -72,7 +73,8 @@ for purged_vp_type in purge_vp_types:
 dest_vp_types = \
     forms.SelectFromList.show(
         sorted([x for x in all_viewport_types if x not in purge_vp_types]),
-        multiselect=False,  title='Select Replacement Type'
+        title='Select Replacement Type',
+        multiselect=False
         )
 
 if len(dest_vp_types) >= 1:

@@ -115,3 +115,50 @@ def create_3d_view(view_name, isometric=True, doc=None):
         else:
             nview.ToggleToPerspective()
     return nview
+
+
+def create_revision_sheetset(revisions,
+                             name_format='Revision {}',
+                             doc=None):
+    doc = doc or HOST_APP.doc
+    # get printed printmanager
+    printmanager = doc.PrintManager
+    printmanager.PrintRange = DB.PrintRange.Select
+    viewsheetsetting = printmanager.ViewSheetSetting
+
+    # collect data
+    sheetsnotsorted = DB.FilteredElementCollector(doc)\
+                        .OfCategory(DB.BuiltInCategory.OST_Sheets)\
+                        .WhereElementIsNotElementType()\
+                        .ToElements()
+
+    sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
+    viewsheetsets = DB.FilteredElementCollector(doc)\
+                      .OfClass(DB.ViewSheetSet)\
+                      .WhereElementIsNotElementType()\
+                      .ToElements()
+
+    allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
+    revnums = [query.get_rev_number(x) for x in revisions]
+    sheetsetname = name_format.format(', '.join(revnums))
+
+    # find revised sheets
+    myviewset = DB.ViewSet()
+    for sheet in sheets:
+        revs = sheet.GetAllRevisionIds()
+        sheet_revids = [x.IntegerValue for x in revs]
+        if all([x.Id.IntegerValue in sheet_revids
+                for x in revisions]):
+            myviewset.Insert(sheet)
+
+    # needs transaction
+    # delete existing sheet set if any
+    # create new sheet set
+    if sheetsetname in allviewsheetsets.keys():
+        viewsheetsetting.CurrentViewSheetSet = \
+            allviewsheetsets[sheetsetname]
+        viewsheetsetting.Delete()
+
+    viewsheetsetting.CurrentViewSheetSet.Views = myviewset
+    viewsheetsetting.SaveAs(sheetsetname)
+    return myviewset

@@ -220,87 +220,10 @@ class TemplateUserInputWindow(WPFWindow):
         return dlg.response
 
 
-class SelectFromList(TemplateUserInputWindow):
-    """Standard form to select from a list of items.
-
-    Args:
-        context (list[str]): list of items to be selected from
-        title (str): window title
-        width (int): window width
-        height (int): window height
-        button_name (str): name of select button
-        multiselect (bool): allow multi-selection
-
-    Example:
-        >>> from pyrevit import forms
-        >>> items = ['item1', 'item2', 'item3']
-        >>> forms.SelectFromList.show(items, button_name='Select Item')
-        >>> ['item1']
-    """
-
-    xaml_source = 'SelectFromList.xaml'
-
-    def _setup(self, **kwargs):
-        if 'multiselect' in kwargs and not kwargs['multiselect']:
-            self.list_lb.SelectionMode = Controls.SelectionMode.Single
-        else:
-            self.list_lb.SelectionMode = Controls.SelectionMode.Extended
-
-        self._nameattr = kwargs.get('name_attr', None)
-
-        button_name = kwargs.get('button_name', None)
-        if button_name:
-            self.select_b.Content = button_name
-
-        self._list_options()
-        self.hide_element(self.clrsearch_b)
-        self.clear_search(None, None)
-
-    def _get_option_name(self, option):
-        if self._nameattr:
-            return str(getattr(option, self._nameattr))
-        else:
-            return safe_strtype(option)
-
-    def _list_options(self, option_filter=None):
-        if option_filter:
-            option_filter = option_filter.lower()
-            self.list_lb.ItemsSource = \
-                [self._get_option_name(x) for x in self._context
-                 if option_filter in self._get_option_name(x).lower()]
-        else:
-            self.list_lb.ItemsSource = \
-                [self._get_option_name(x) for x in self._context]
-
-    def _get_options(self):
-        return [x for x in self._context
-                if self._get_option_name(x) in self.list_lb.SelectedItems]
-
-    def button_select(self, sender, args):
-        """Handle select button click."""
-        self.response = self._get_options()
-        self.Close()
-
-    def search_txt_changed(self, sender, args):
-        """Handle text change in search box."""
-        if self.search_tb.Text == '':
-            self.hide_element(self.clrsearch_b)
-        else:
-            self.show_element(self.clrsearch_b)
-
-        self._list_options(option_filter=self.search_tb.Text)
-
-    def clear_search(self, sender, args):
-        """Clear search box."""
-        self.search_tb.Text = ' '
-        self.search_tb.Clear()
-        self.search_tb.Focus()
-
-
-class BaseCheckBoxItem(object):
+class TemplateListItem(object):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item):
+    def __init__(self, orig_item, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
@@ -309,6 +232,8 @@ class BaseCheckBoxItem(object):
         """
         self.item = orig_item
         self.state = False
+        self._nameattr = name_attr
+        self._checkable = checkable
 
     def __nonzero__(self):
         return self.state
@@ -316,31 +241,76 @@ class BaseCheckBoxItem(object):
     def __str__(self):
         return self.name or str(self.item)
 
+    def __contains__(self, value):
+        return value in self.name
+
     @property
     def name(self):
         """Name property."""
-        return getattr(self.item, 'name', '')
+        # get custom attr, or name or just str repr
+        if self._nameattr:
+            return str(getattr(self.item, self._nameattr))
+        elif hasattr(self.item, 'name'):
+            return getattr(self.item, 'name', '')
+        else:
+            return safe_strtype(self.item)
 
     def unwrap(self):
         """Unwrap and return wrapped object."""
         return self.item
 
+    def matches(self, filter_str):
+        """Check if instance matches the filter string."""
+        return filter_str in self.name.lower()
 
-class SelectFromCheckBoxes(TemplateUserInputWindow):
-    """Standard form to select from a list of check boxes.
+    @property
+    def checkable(self):
+        """List Item CheckBox Visibility."""
+        return framework.Windows.Visibility.Visible if self._checkable \
+            else framework.Windows.Visibility.Collapsed
+
+    @checkable.setter
+    def checkable(self, value):
+        self._checkable = value
+
+    @classmethod
+    def is_checkbox(cls, item):
+        """Check if the object has all necessary attribs for a checkbox."""
+        return isinstance(item, TemplateListItem)
+
+
+class SelectFromList(TemplateUserInputWindow):
+    """Standard form to select from a list of items.
 
     Check box items passed in context to this standard form, must implement
     ``name`` and ``state`` parameter and ``__nonzero__`` method for truth
     value testing.
 
     Args:
-        context (list[object]): list of items to be selected from
-        title (str): window title
-        width (int): window width
-        height (int): window height
-        button_name (str): name of select button
+        context (list[str]): list of items to be selected from
+        title (str, optional): window title. see super class for defaults.
+        width (int, optional): window width. see super class for defaults.
+        height (int, optional): window height. see super class for defaults.
+        button_name (str, optional):
+            name of select button. defaults to 'Select'
+        name_attr (str, optional):
+            attribute that should be read as item name. defaults to None
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to False
+        return_all (bool, optional):
+            return all items. This is handly when some input items have states
+            and the script needs to check the state changes on all items.
+            This options works in multiselect mode only. defaults to False
+        filterfunc (function):
+            filter function to be applied to context items. defaults to None
+
 
     Example:
+        >>> from pyrevit import forms
+        >>> items = ['item1', 'item2', 'item3']
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
+
         >>> from pyrevit import forms
         >>> class MyOption(object):
         ...     def __init__(self, name, state=False):
@@ -353,8 +323,9 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         ...     def __str__(self):
         ...         return self.name
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = forms.SelectFromCheckBoxes.show(ops,
-        ...                                       button_name='Select Item')
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=True,
+        ...                                 button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
 
@@ -370,52 +341,104 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         ...        return '{} - {}{}'.format(self.item.SheetNumber,
         ...                                  self.item.SheetNumber)
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = forms.SelectFromCheckBoxes.show(ops,
-        ...                                       button_name='Select Item')
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=True,
+        ...                                 button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
+
     """
 
-    xaml_source = 'SelectFromCheckboxes.xaml'
+    xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
-        self.hide_element(self.clrsearch_b)
-        self.search_tb.Focus()
-
-        self.checked_only = kwargs.get('checked_only', False)
-        button_name = kwargs.get('button_name', None)
+        # custom button name?
+        button_name = kwargs.get('button_name', 'Select')
         if button_name:
             self.select_b.Content = button_name
 
-        self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+        # attribute to use as name?
+        self._nameattr = kwargs.get('name_attr', None)
 
-        self._verify_context()
+        # multiselect?
+        if kwargs.get('multiselect', False):
+            self.multiselect = True
+            self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+            self.show_element(self.checkboxbuttons_g)
+        else:
+            self.multiselect = False
+            self.list_lb.SelectionMode = Controls.SelectionMode.Single
+            self.hide_element(self.checkboxbuttons_g)
+
+        # return checked items only?
+        self.return_all = kwargs.get('return_all', False)
+
+        # filter function?
+        self.filter_func = kwargs.get('filterfunc', None)
+
+        # nicely wrap and prepare context for presentation, then present
+        self._prepare_context()
         self._list_options()
 
-    def _verify_context(self):
+        # setup search and filter fields
+        self.hide_element(self.clrsearch_b)
+        self.clear_search(None, None)
+
+    def _prepare_context(self):
         new_context = []
-        for item in self._context:
-            if not hasattr(item, 'state'):
-                new_context.append(BaseCheckBoxItem(item))
-            else:
+        orig_context = self._context
+        # filter context if necessary
+        if self.filter_func:
+            orig_context = filter(self.filter_func, orig_context)
+
+        for item in orig_context:
+            if TemplateListItem.is_checkbox(item):
+                item.checkable = self.multiselect
                 new_context.append(item)
+            else:
+                new_context.append(
+                    TemplateListItem(item,
+                                     checkable=self.multiselect,
+                                     name_attr=self._nameattr)
+                    )
 
         self._context = new_context
 
-    def _list_options(self, checkbox_filter=None):
-        if checkbox_filter:
+    def _list_options(self, option_filter=None):
+        if option_filter:
             self.checkall_b.Content = 'Check'
             self.uncheckall_b.Content = 'Uncheck'
             self.toggleall_b.Content = 'Toggle'
-            checkbox_filter = checkbox_filter.lower()
+            option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [checkbox for checkbox in self._context
-                 if checkbox_filter in checkbox.name.lower()]
+                [x for x in self._context if x.matches(option_filter)]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
             self.toggleall_b.Content = 'Toggle All'
-            self.list_lb.ItemsSource = self._context
+            self.list_lb.ItemsSource = [x for x in self._context]
+
+    @staticmethod
+    def _unwrap_options(options):
+        unwrapped = []
+        for op in options:
+            if type(op) is TemplateListItem:
+                unwrapped.append(op.unwrap())
+            else:
+                unwrapped.append(op)
+        return unwrapped
+
+    def _get_options(self):
+        if self.multiselect:
+            if self.return_all:
+                return self._unwrap_options([x for x in self._context])
+            else:
+                return self._unwrap_options(
+                    [x for x in self._context
+                     if x.state or x in self.list_lb.SelectedItems]
+                    )
+        else:
+            return self._unwrap_options([self.list_lb.SelectedItem])[0]
 
     def _set_states(self, state=True, flip=False, selected=False):
         all_items = self.list_lb.ItemsSource
@@ -455,10 +478,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
 
     def button_select(self, sender, args):
         """Handle select button click."""
-        if self.checked_only:
-            self.response = [x.item for x in self._context if x.state]
-        else:
-            self.response = self._context
+        self.response = self._get_options()
         self.Close()
 
     def search_txt_changed(self, sender, args):
@@ -468,7 +488,7 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         else:
             self.show_element(self.clrsearch_b)
 
-        self._list_options(checkbox_filter=self.search_tb.Text)
+        self._list_options(option_filter=self.search_tb.Text)
 
     def clear_search(self, sender, args):
         """Clear search box."""
@@ -1080,7 +1100,7 @@ class SearchPrompt(WPFWindow):
         return dlg.response
 
 
-class RevisionOption(BaseCheckBoxItem):
+class RevisionOption(TemplateListItem):
     def __init__(self, revision_element):
         super(RevisionOption, self).__init__(revision_element)
 
@@ -1094,7 +1114,7 @@ class RevisionOption(BaseCheckBoxItem):
                                  self.item.RevisionDate)
 
 
-class SheetOption(BaseCheckBoxItem):
+class SheetOption(TemplateListItem):
     def __init__(self, sheet_element):
         super(SheetOption, self).__init__(sheet_element)
 
@@ -1110,7 +1130,7 @@ class SheetOption(BaseCheckBoxItem):
         return self.item.SheetNumber
 
 
-class ViewOption(BaseCheckBoxItem):
+class ViewOption(TemplateListItem):
     def __init__(self, view_element):
         super(ViewOption, self).__init__(view_element)
 
@@ -1119,111 +1139,92 @@ class ViewOption(BaseCheckBoxItem):
         return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
 
 
-class DestDocOption(BaseCheckBoxItem):
-    def __init__(self, doc):
-        super(DestDocOption, self).__init__(doc)
-
-    @property
-    def name(self):
-        return getattr(self.item, 'Title', '')
-
-
 def select_revisions(title='Select Revision',
                      button_name='Select',
-                     width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
-                     filterfunc=None, doc=None):
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     multiple=True,
+                     filterfunc=None,
+                     doc=None):
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
 
     if filterfunc:
         revisions = filter(filterfunc, revisions)
-    revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
-    return_options = \
-        SelectFromList.show(
-            revision_options,
-            title=title,
-            button_name=button_name,
-            width=width,
-            multiselect=multiselect
-            )
+    selected_revs = SelectFromList.show(
+        [RevisionOption(x) for x in revisions],
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
 
-    if return_options:
-        if not multiselect and len(return_options) == 1:
-            return return_options[0].unwrap()
-        else:
-            return [x.unwrap() for x in return_options]
+    if selected_revs:
+        return [x.unwrap() for x in selected_revs]
 
 
-def select_sheets(title='Select Sheets', button_name='Select',
-                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                  filterfunc=None, doc=None):
+def select_sheets(title='Select Sheets',
+                  button_name='Select',
+                  width=DEFAULT_INPUTWINDOW_WIDTH,
+                  multiple=True,
+                  filterfunc=None,
+                  doc=None):
     doc = doc or HOST_APP.doc
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
+
     if filterfunc:
         all_sheets = filter(filterfunc, all_sheets)
 
     # ask user for multiple sheets
-    if multiple:
-        return_options = \
-            SelectFromCheckBoxes.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width)
-        if return_options:
-            return [x.unwrap() for x in return_options if x.state]
-    else:
-        return_option = \
-            SelectFromList.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width,
-                multiselect=False)
-        if return_option:
-            return return_option[0].unwrap()
+    selected_sheets = SelectFromList.show(
+        sorted([SheetOption(x) for x in all_sheets],
+               key=lambda x: x.number),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
+
+    if selected_sheets:
+        return [x.unwrap() for x in selected_sheets]
 
 
-def select_views(title='Select Views', button_name='Select',
-                 width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                 filterfunc=None, doc=None):
+def select_views(title='Select Views',
+                 button_name='Select',
+                 width=DEFAULT_INPUTWINDOW_WIDTH,
+                 multiple=True,
+                 filterfunc=None,
+                 doc=None):
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
-    # ask user for multiple sheets
-    if multiple:
-        return_options = \
-            SelectFromCheckBoxes.show(
-                sorted([ViewOption(x) for x in all_graphviews],
-                       key=lambda x: x.name),
-                title=title,
-                button_name=button_name,
-                width=width)
-        if return_options:
-            return [x.unwrap() for x in return_options if x.state]
-    else:
-        return_option = \
-            SelectFromList.show(
-                sorted([ViewOption(x) for x in all_graphviews],
-                       key=lambda x: x.name),
-                title=title,
-                button_name=button_name,
-                width=width,
-                multiselect=False)
-        if return_option:
-            return return_option[0].unwrap()
+    selected_views = SelectFromList.show(
+        sorted([ViewOption(x) for x in all_graphviews],
+               key=lambda x: x.name),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
+
+    if selected_views:
+        return [x.unwrap() for x in selected_views]
 
 
-def select_dest_docs():
+def select_open_docs(title='Select Open Documents',
+                     button_name='OK',
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     multiple=True,
+                     filterfunc=None):
     # find open documents other than the active doc
     open_docs = [d for d in revit.docs if not d.IsLinked]
     open_docs.remove(revit.doc)
@@ -1234,41 +1235,44 @@ def select_dest_docs():
               'Operation cancelled.')
         return
 
-    return_options = \
-        SelectFromCheckBoxes.show([DestDocOption(x) for x in open_docs],
-                                  title='Select Destination Documents',
-                                  button_name='OK')
-    if return_options:
-        return [x.unwrap() for x in return_options if x]
+    return SelectFromList.show(
+        open_docs,
+        name_attr='Title',
+        multiselect=multiple,
+        title=title,
+        button_name=button_name,
+        filterfunc=filterfunc
+        )
 
 
-def select_titleblocks(title='Select Titleblock', button_name='Select',
-                       width=DEFAULT_INPUTWINDOW_WIDTH, multiple=False,
-                       filterfunc=None, doc=None):
-    no_tb_option = 'No Title Block'
+def select_titleblocks(title='Select Titleblock',
+                       button_name='Select',
+                       no_tb_option='No Title Block',
+                       width=DEFAULT_INPUTWINDOW_WIDTH,
+                       multiple=False,
+                       filterfunc=None,
+                       doc=None):
+    doc = doc or HOST_APP.doc
     titleblocks = DB.FilteredElementCollector(doc)\
                     .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
                     .WhereElementIsElementType()\
                     .ToElements()
 
-    if filterfunc:
-        titleblocks = filter(filterfunc, titleblocks)
-
     tblock_dict = {'{}: {}'.format(tb.FamilyName,
                                    revit.ElementWrapper(tb).name): tb.Id
                    for tb in titleblocks}
-    options = [no_tb_option]
-    options.extend(tblock_dict.keys())
-    selected_titleblocks = SelectFromList.show(options,
+    tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
+    selected_titleblocks = SelectFromList.show(tblock_dict.keys(),
                                                title=title,
                                                button_name=button_name,
                                                width=width,
-                                               multiselect=multiple)
+                                               multiselect=multiple,
+                                               filterfunc=filterfunc)
     if selected_titleblocks:
-        if no_tb_option not in selected_titleblocks:
-            return tblock_dict[selected_titleblocks[0]]
+        if multiple:
+            return [tblock_dict[x] for x in selected_titleblocks]
         else:
-            return DB.ElementId.InvalidElementId
+            return tblock_dict[selected_titleblocks]
 
 
 def alert(msg, title='pyRevit',

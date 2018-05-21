@@ -17,12 +17,11 @@ class DataSchemaItem(object):
 
 schemas = DB.ExtensibleStorage.Schema.ListSchemas()
 
-selected_schemas = \
+sschema = \
     forms.SelectFromList.show([DataSchemaItem(x) for x in schemas],
                               multiselect=False)
 
-if selected_schemas:
-    sschema = selected_schemas[0]
+if sschema:
     with revit.Transaction("Remove Schema"):
         DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
             sschema.unwrap(),

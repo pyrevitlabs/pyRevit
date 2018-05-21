@@ -122,7 +122,7 @@ with revit.DryTransaction('Fake load'):
 # ask user for required symbol and load into current document
 options = sorted(symbol_list - loaded_symbols)
 if options:
-    selected_symbols = forms.SelectFromList.show(options)
+    selected_symbols = forms.SelectFromList.show(options, multiselect=True)
     logger.debug('Selected symbols are: {}'.format(selected_symbols))
     if selected_symbols:
         with revit.Transaction('Loaded family type'):

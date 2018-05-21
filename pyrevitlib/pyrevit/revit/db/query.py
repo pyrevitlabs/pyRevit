@@ -534,3 +534,10 @@ def get_sheet_sets(doc=None):
                       .WhereElementIsNotElementType()\
                       .ToElements()
     return list(viewsheetsets)
+
+
+def get_rev_number(revision):
+    revnum = revision.SequenceNumber
+    if hasattr(revision, 'RevisionNumber'):
+        revnum = revision.RevisionNumber
+    return revnum

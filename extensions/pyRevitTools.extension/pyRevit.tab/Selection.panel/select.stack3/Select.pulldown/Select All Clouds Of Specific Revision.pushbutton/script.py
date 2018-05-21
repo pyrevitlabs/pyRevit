@@ -15,13 +15,13 @@ def select_clouds(revision_element):
     clouds = []
 
     for revcloud in revclouds:
-        if revcloud.RevisionId.IntegerValue == revision_element.Id.IntegerValue:
+        if revcloud.RevisionId == revision_element.Id:
             clouds.append(revcloud.Id)
 
     revit.get_selection().set_to(clouds)
 
 
 revision = forms.select_revisions(button_name='Select Revision Clouds',
-                                  multiselect=False)
+                                  multiple=False)
 if revision:
     select_clouds(revision)

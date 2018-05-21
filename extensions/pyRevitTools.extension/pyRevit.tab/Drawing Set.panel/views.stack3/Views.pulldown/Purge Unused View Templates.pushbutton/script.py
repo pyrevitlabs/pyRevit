@@ -39,11 +39,12 @@ unusedvtemp = vtemp - usedvtemp
 if unusedvtemp:
     # ask user for wipe actions
     return_options = \
-        forms.SelectFromCheckBoxes.show(
+        forms.SelectFromList.show(
             [ViewTemplateToPurge(x) for x in unusedvtemp],
             title='Select View Templates to Purge',
             width=500,
-            button_name='Purge View Templates'
+            button_name='Purge View Templates',
+            multiselect=True
             )
 
     if return_options:
