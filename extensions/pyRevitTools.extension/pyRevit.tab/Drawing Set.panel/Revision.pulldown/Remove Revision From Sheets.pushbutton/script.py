@@ -13,7 +13,7 @@ logger = script.get_logger()
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiple=False)
+                                   multiple=True)
 
 logger.debug(revisions)
 
