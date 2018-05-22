@@ -1,4 +1,0 @@
-Autodesk.Windows.RibbonButton
-ri.Cookie
-ri.Id
-'CustomCtrl_%CustomCtrl_%Tesla%General%Tesla'
