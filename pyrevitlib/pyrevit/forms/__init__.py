@@ -1406,8 +1406,16 @@ def save_excel_file():
     return pick_excel_file(save=True)
 
 
-def check_workshared(doc):
+def check_workshared(doc=None):
+    doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
         alert('Model is not workshared.')
+        return False
+    return True
+
+
+def check_selection():
+    if revit.get_selection().is_empty:
+        alert('At least one element must be selected.')
         return False
     return True
