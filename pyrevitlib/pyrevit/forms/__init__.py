@@ -1231,6 +1231,7 @@ def select_sheets(title='Select Sheets',
     selected_sheets = SelectFromList.show(
         all_ops,
         title=title,
+        group_selector_title='Sheet Sets:',
         button_name=button_name,
         width=width,
         multiselect=multiple,
