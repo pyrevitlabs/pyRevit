@@ -16,6 +16,7 @@ from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
 from pyrevit.framework import Interop
+from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
@@ -99,7 +100,7 @@ class WPFWindow(framework.Windows.Window):
 
     def handle_input_key(self, sender, args):
         """Handle keyboard input and close the window on Escape."""
-        if args.Key == framework.Windows.Input.Key.Escape:
+        if args.Key == Input.Key.Escape:
             self.Close()
 
     def show(self, modal=False):
@@ -657,17 +658,17 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
     def handle_input_key(self, sender, args):
         """Handle keyboard inputs."""
-        if args.Key == framework.Windows.Input.Key.Escape:
+        if args.Key == Input.Key.Escape:
             if self.search_tb.Text:
                 self.search_tb.Text = ''
             else:
                 self.Close()
-        elif args.Key == framework.Windows.Input.Key.Enter:
+        elif args.Key == Input.Key.Enter:
             self.process_option(self._get_active_button(), None)
-        elif args.Key != framework.Windows.Input.Key.Tab \
-                and args.Key != framework.Windows.Input.Key.Space\
-                and args.Key != framework.Windows.Input.Key.LeftShift\
-                and args.Key != framework.Windows.Input.Key.RightShift:
+        elif args.Key != Input.Key.Tab \
+                and args.Key != Input.Key.Space\
+                and args.Key != Input.Key.LeftShift\
+                and args.Key != Input.Key.RightShift:
             self.search_tb.Focus()
 
     def search_txt_changed(self, sender, args):
@@ -1139,22 +1140,32 @@ class SearchPrompt(WPFWindow):
 
     def handle_kb_key(self, sender, args):
         """Handle keyboard input event."""
-        if args.Key == framework.Windows.Input.Key.Escape:
+        shiftdown = Input.Keyboard.IsKeyDown(Input.Key.LeftShift) \
+            or Input.Keyboard.IsKeyDown(Input.Key.RightShift)
+        # Escape: set response to none and close
+        if args.Key == Input.Key.Escape:
             self._setup_response()
             self.Close()
-        elif args.Key == framework.Windows.Input.Key.Enter:
+        # Enter: close, returns matched response automatically
+        elif args.Key == Input.Key.Enter:
             self.Close()
-        elif args.Key == framework.Windows.Input.Key.Tab:
-            self._result_index += 1
-            self.update_results_display()
-        elif args.Key == framework.Windows.Input.Key.Down:
-            self._result_index += 1
-            self.update_results_display()
-        elif args.Key == framework.Windows.Input.Key.Up:
+        # Shift+Tab, Tab: Cycle through matches
+        elif args.Key == Input.Key.Tab and shiftdown:
             self._result_index -= 1
             self.update_results_display()
-        elif args.Key in [framework.Windows.Input.Key.Right,
-                          framework.Windows.Input.Key.End]:
+        elif args.Key == Input.Key.Tab:
+            self._result_index += 1
+            self.update_results_display()
+        # Up, Down: Cycle through matches
+        elif args.Key == Input.Key.Up:
+            self._result_index -= 1
+            self.update_results_display()
+        elif args.Key == Input.Key.Down:
+            self._result_index += 1
+            self.update_results_display()
+        # Right, End: Autocomplete with displayed match
+        elif args.Key in [Input.Key.Right,
+                          Input.Key.End]:
             self.update_results_display(fill_match=True)
 
     @classmethod
