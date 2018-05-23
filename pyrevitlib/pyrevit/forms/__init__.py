@@ -992,20 +992,20 @@ class SearchPrompt(WPFWindow):
         self.search_tb.CaretIndex = len(value)
 
     @property
+    def search_input_parts(self):
+        """Current cleaned up search term."""
+        return self.search_input.strip().split()
+
+    @property
     def search_term(self):
         """Current cleaned up search term."""
         return self.search_input.lower().strip()
 
     @property
-    def search_term_parts(self):
-        """Current cleaned up search term."""
-        return self.search_input.lower().strip().split()
-
-    @property
     def search_term_switches(self):
         """Find matching switches in search term."""
         switches = set()
-        for stpart in self.search_term_parts:
+        for stpart in self.search_input_parts:
             if stpart.lower() in self._switches:
                 switches.add(stpart)
         return switches
@@ -1015,8 +1015,8 @@ class SearchPrompt(WPFWindow):
         """Find arguments in search term."""
         args = []
         switches = self.search_term_switches
-        for spart in self.search_term_parts:
-            if spart not in switches:
+        for spart in self.search_input_parts:
+            if spart.lower() not in switches:
                 args.append(spart)
         return args
 
@@ -1097,7 +1097,7 @@ class SearchPrompt(WPFWindow):
         logger.debug('search input: {}'.format(self.search_input))
         logger.debug('search term: {}'.format(self.search_term))
         logger.debug('search term (main): {}'.format(self.search_term_main))
-        logger.debug('search term (parts): {}'.format(self.search_term_parts))
+        logger.debug('search term (parts): {}'.format(self.search_input_parts))
         logger.debug('search term (args): {}'.format(self.search_term_args))
         logger.debug('search term (switches): {}'
                      .format(self.search_term_switches))
