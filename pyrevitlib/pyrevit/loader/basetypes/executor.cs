@@ -29,7 +29,7 @@ namespace PyRevitBaseClasses
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Create the script from source file
-            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, System.Text.Encoding.UTF8, SourceCodeKind.Statements);
+            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, System.Text.Encoding.UTF8, SourceCodeKind.AutoDetect);
 
             // 4: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script

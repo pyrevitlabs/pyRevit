@@ -1,4 +1,4 @@
-__doc__ = """Test docopt argument processing.
+"""Test docopt argument processing.
 
 Usage:
     testdocopt (-h | --help)
@@ -13,7 +13,6 @@ Options:
 
 import sys
 
-from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
