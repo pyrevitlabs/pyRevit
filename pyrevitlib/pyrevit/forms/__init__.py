@@ -938,13 +938,15 @@ class SearchPrompt(WPFWindow):
     Example:
         >>> from pyrevit import forms
         >>> # assume search input of '/switch1 target1'
-        >>> matched_str, switches = forms.SearchPrompt.show(
+        >>> matched_str, args, switches = forms.SearchPrompt.show(
         ...     search_db=['target1', 'target2', 'target3', 'target4'],
         ...     switches=['/switch1', '/switch2'],
         ...     search_tip='pyRevit Search'
         ...     )
         ... matched_str
         'target1'
+        ... args
+        ['--help', '--branch', 'branchname']
         ... switches
         {'/switch1': True, '/switch2': False}
     """
@@ -969,13 +971,15 @@ class SearchPrompt(WPFWindow):
         self.set_search_results()
 
     def _setup_response(self, response=None):
-        if self._switches:
-            switch_dict = dict.fromkeys(self._switches)
-            for mswitch in self.find_switch_match():
-                switch_dict[mswitch] = True
-            self.response = response, switch_dict
-        else:
-            self.response = response
+        switch_dict = dict.fromkeys(self._switches)
+        for switch in self.search_term_switches:
+            switch_dict[switch] = True
+        arguments = self.search_term_args
+        # remove first arg which is command name
+        if len(arguments) >= 1:
+            arguments = arguments[1:]
+
+        self.response = response, arguments, switch_dict
 
     @property
     def search_input(self):
@@ -985,6 +989,7 @@ class SearchPrompt(WPFWindow):
     @search_input.setter
     def search_input(self, value):
         self.search_tb.Text = value
+        self.search_tb.CaretIndex = len(value)
 
     @property
     def search_term(self):
@@ -992,12 +997,36 @@ class SearchPrompt(WPFWindow):
         return self.search_input.lower().strip()
 
     @property
-    def search_term_noswitch(self):
+    def search_term_parts(self):
+        """Current cleaned up search term."""
+        return self.search_input.lower().strip().split()
+
+    @property
+    def search_term_switches(self):
+        """Find matching switches in search term."""
+        switches = set()
+        for stpart in self.search_term_parts:
+            if stpart.lower() in self._switches:
+                switches.add(stpart)
+        return switches
+
+    @property
+    def search_term_args(self):
+        """Find arguments in search term."""
+        args = []
+        switches = self.search_term_switches
+        for spart in self.search_term_parts:
+            if spart not in switches:
+                args.append(spart)
+        return args
+
+    @property
+    def search_term_main(self):
         """Current cleaned up search term without the listed switches."""
-        term = self.search_term
-        for switch in self._switches:
-            term = term.replace(switch.lower() + ' ', '')
-        return term.strip()
+        if len(self.search_term_args) >= 1:
+            return self.search_term_args[0]
+        else:
+            return ''
 
     @property
     def search_matches(self):
@@ -1006,7 +1035,7 @@ class SearchPrompt(WPFWindow):
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
-    def update_results_display(self, input_term=None):
+    def update_results_display(self, fill_match=False):
         """Update search prompt results based on current input text."""
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
@@ -1033,25 +1062,28 @@ class SearchPrompt(WPFWindow):
         if self._result_index < 0:
             self._result_index = res_cout - 1
 
-        if not input_term:
-            input_term = self.search_term_noswitch
-
         if not self.search_input:
             self.directmatch_tb.Text = self.search_tip
             return
 
         if results:
+            input_term = self.search_term
             cur_res = results[self._result_index]
             logger.debug('current result: {}'.format(cur_res))
-            if cur_res.lower().startswith(input_term):
-                logger.debug('directmatch_tb.Text: {}'.format(cur_res))
-                self.directmatch_tb.Text = \
-                    self.search_input + cur_res[len(input_term):]
+            if fill_match:
+                self.search_input = cur_res
             else:
-                logger.debug('wordsmatch_tb.Text: {}'.format(cur_res))
-                self.wordsmatch_tb.Text = '- {}'.format(cur_res)
+                if cur_res.lower().startswith(input_term):
+                    self.directmatch_tb.Text = \
+                        self.search_input + cur_res[len(input_term):]
+                    logger.debug('directmatch_tb.Text: {}'
+                                 .format(self.directmatch_tb.Text))
+                else:
+                    self.wordsmatch_tb.Text = '- {}'.format(cur_res)
+                    logger.debug('wordsmatch_tb.Text: {}'
+                                 .format(self.wordsmatch_tb.Text))
 
-            self._setup_response(cur_res)
+            self._setup_response(response=cur_res)
             return True
 
         self._setup_response()
@@ -1062,20 +1094,19 @@ class SearchPrompt(WPFWindow):
         self._result_index = 0
         self._search_results = []
 
+        logger.debug('search input: {}'.format(self.search_input))
+        logger.debug('search term: {}'.format(self.search_term))
+        logger.debug('search term (main): {}'.format(self.search_term_main))
+        logger.debug('search term (parts): {}'.format(self.search_term_parts))
+        logger.debug('search term (args): {}'.format(self.search_term_args))
+        logger.debug('search term (switches): {}'
+                     .format(self.search_term_switches))
+
         for resultset in args:
             logger.debug('result set: {}'.format(resultset))
             self._search_results.extend(sorted(resultset))
 
         logger.debug('results: {}'.format(self._search_results))
-
-    def find_switch_match(self):
-        """Find matching switches in search term."""
-        results = []
-        cur_txt = self.search_term
-        for switch in self._switches:
-            if switch.lower() in cur_txt:
-                results.append(switch)
-        return results
 
     def find_direct_match(self, input_text):
         """Find direct text matches in search term."""
@@ -1100,11 +1131,11 @@ class SearchPrompt(WPFWindow):
 
     def search_txt_changed(self, sender, args):
         """Handle text changed event."""
-        input_term = self.search_term_noswitch
+        input_term = self.search_term_main
         dmresults = self.find_direct_match(input_term)
         wordresults = self.find_word_match(input_term)
         self.set_search_results(dmresults, wordresults)
-        self.update_results_display(input_term)
+        self.update_results_display()
 
     def handle_kb_key(self, sender, args):
         """Handle keyboard input event."""
@@ -1122,6 +1153,9 @@ class SearchPrompt(WPFWindow):
         elif args.Key == framework.Windows.Input.Key.Up:
             self._result_index -= 1
             self.update_results_display()
+        elif args.Key in [framework.Windows.Input.Key.Right,
+                          framework.Windows.Input.Key.End]:
+            self.update_results_display(fill_match=True)
 
     @classmethod
     def show(cls, search_db,
