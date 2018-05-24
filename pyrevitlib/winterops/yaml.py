@@ -17,7 +17,7 @@ def _convert_yamldotnet_to_dict(ynode, level=0):
             if hasattr(child, 'Key') and hasattr(child, 'Value'):
                 d[child.Key.Value] = \
                     _convert_yamldotnet_to_dict(child.Value, level=level+1)
-            else:
+            elif hasattr(child, 'Value'):
                 value_childs.append(child.Value)
         return value_childs or d
     else:
