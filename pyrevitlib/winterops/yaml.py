@@ -1,5 +1,6 @@
 """Wrapper for YamlDotNet."""
 # pylama:ignore=E402,W0611
+from collections import OrderedDict
 from winterops import clr, System
 
 clr.AddReferenceByName('YamlDotNet')
@@ -10,7 +11,7 @@ import YamlDotNet as libyaml
 def _convert_yamldotnet_to_dict(ynode, level=0):
     # logger.debug('{}* Processing: {}'.format(' '*level, type(ynode)))
     if hasattr(ynode, 'Children'):
-        d = dict()
+        d = OrderedDict()
         value_childs = []
         for child in ynode.Children:
             # logger.debug('{}+ Child: {}'.format(' '*level, child))
@@ -18,7 +19,10 @@ def _convert_yamldotnet_to_dict(ynode, level=0):
                 d[child.Key.Value] = \
                     _convert_yamldotnet_to_dict(child.Value, level=level+1)
             elif hasattr(child, 'Value'):
-                value_childs.append(child.Value)
+                val = child.Value
+                if val and isinstance(val, str):
+                    val = val.decode('utf-8')
+                value_childs.append(val)
         return value_childs or d
     else:
         # logger.debug('{}- Child: {}'.format(' '*level, ynode.Value))
