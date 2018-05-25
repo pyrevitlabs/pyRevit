@@ -306,6 +306,7 @@ class SelectFromList(TemplateUserInputWindow):
             filter function to be applied to context items. defaults to None
         group_selector_title (str):
             title for list group selector. defaults to 'List Group'
+        default_group (str): name of defautl group to be selected
 
 
     Example:
@@ -384,6 +385,8 @@ class SelectFromList(TemplateUserInputWindow):
             kwargs.get('group_selector_title', 'List Group')
         self.ctx_groups_title_tb.Text = self.ctx_groups_title
 
+        self.ctx_groups_active = kwargs.get('default_group', None)
+
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
         self._list_options()
@@ -425,7 +428,11 @@ class SelectFromList(TemplateUserInputWindow):
     def _update_ctx_groups(self, ctx_group_names):
         self.show_element(self.ctx_groups_dock)
         self.ctx_groups_selector_cb.ItemsSource = ctx_group_names
-        self.ctx_groups_selector_cb.SelectedIndex = 0
+        if self.ctx_groups_active in ctx_group_names:
+            self.ctx_groups_selector_cb.SelectedIndex = \
+                ctx_group_names.index(self.ctx_groups_active)
+        else:
+            self.ctx_groups_selector_cb.SelectedIndex = 0
 
     def _get_active_ctx_group(self):
         return self.ctx_groups_selector_cb.SelectedItem
