@@ -68,6 +68,10 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def symbol_name(self):
+        return Element.Name.GetValue(self._wrapped.Symbol)
+
+    @property
+    def family_name(self):
         return Element.Name.GetValue(self._wrapped.Symbol.Family)
 
     @property
@@ -114,7 +118,7 @@ class ElementWrapper(BaseWrapper):
             return default
 
 
-class ExternalRef(BaseWrapper):
+class ExternalRef(ElementWrapper):
     def __init__(self, link, extref):
         super(ExternalRef, self).__init__(link)
         self._extref = extref

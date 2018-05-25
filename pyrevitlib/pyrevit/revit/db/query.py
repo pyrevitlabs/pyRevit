@@ -3,7 +3,7 @@
 from collections import namedtuple
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.framework import clr
+from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
@@ -34,6 +34,25 @@ GRAPHICAL_VIEWTYPES = [
 
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
+
+
+def get_biparam_stringequals_filter(bip_paramvalue_dict):
+    filters = []
+    for bip, fvalue in bip_paramvalue_dict.items():
+        bip_id = DB.ElementId(bip)
+        bip_valueprovider = DB.ParameterValueProvider(bip_id)
+        bip_valuerule = DB.FilterStringRule(bip_valueprovider,
+                                            DB.FilterStringEquals(),
+                                            fvalue,
+                                            True)
+        filters.append(bip_valuerule)
+
+    if filters:
+        return DB.ElementParameterFilter(
+            framework.List[DB.FilterRule](filters)
+            )
+    else:
+        raise PyRevitException('Error creating filters.')
 
 
 def get_all_elements(doc=None):
@@ -133,6 +152,32 @@ def get_elements_by_category(element_categories, elements=None, doc=None):
     return cat_elements
 
 
+def get_elements_by_family(family_name, doc=None):
+    famsyms = \
+        DB.FilteredElementCollector(doc or HOST_APP.doc)\
+          .WherePasses(
+              get_biparam_stringequals_filter(
+                  {DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name}
+                  )
+              )\
+          .ToElements()
+    return famsyms
+
+
+def get_elements_by_familytype(family_name, symbol_name, doc=None):
+    syms = \
+        DB.FilteredElementCollector(doc or HOST_APP.doc)\
+          .WherePasses(
+              get_biparam_stringequals_filter(
+                  {DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name,
+                   DB.BuiltInParameter.SYMBOL_NAME_PARAM: symbol_name
+                   }
+                  )
+              )\
+          .ToElements()
+    return syms
+
+
 def find_workset(workset_name_or_list, doc=None, partial=True):
     workset_clctr = \
         DB.FilteredWorksetCollector(doc or HOST_APP.doc).ToWorksets()
@@ -153,19 +198,6 @@ def find_workset(workset_name_or_list, doc=None, partial=True):
             for workset in workset_clctr:
                 if workset_name == workset.Name:
                     return workset
-
-
-def find_family(family_name, doc=None):
-    bip_id = DB.ElementId(DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM)
-    param_value_provider = DB.ParameterValueProvider(bip_id)
-    value_rule = DB.FilterStringRule(param_value_provider,
-                                     DB.FilterStringEquals(),
-                                     family_name,
-                                     True)
-    symbol_name_filter = DB.ElementParameterFilter(value_rule)
-    collector = DB.FilteredElementCollector(doc or HOST_APP.doc)\
-                  .WherePasses(symbol_name_filter)
-    return collector
 
 
 def model_has_family(family_name, doc=None):
@@ -260,17 +292,47 @@ def get_links(linktype=None, doc=None):
     links = []
     modelPath = \
         DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
-    transData = DB.TransmissionData.ReadTransmissionData(modelPath)
-    externalReferences = transData.GetAllExternalFileReferenceIds()
-    for refId in externalReferences:
-        extRef = transData.GetLastSavedReferenceData(refId)
-        link = doc.GetElement(refId)
-        if linktype:
-            if extRef.ExternalFileReferenceType == linktype:
+    if not modelPath:
+        raise PyRevitException('Model is not saved. Can not read links.')
+    try:
+        transData = DB.TransmissionData.ReadTransmissionData(modelPath)
+        externalReferences = transData.GetAllExternalFileReferenceIds()
+        for refId in externalReferences:
+            extRef = transData.GetLastSavedReferenceData(refId)
+            link = doc.GetElement(refId)
+            if linktype:
+                if extRef.ExternalFileReferenceType == linktype:
+                    links.append(db.ExternalRef(link, extRef))
+            else:
                 links.append(db.ExternalRef(link, extRef))
-        else:
-            links.append(db.ExternalRef(link, extRef))
-    return links
+        return links
+    except Exception as e:
+        raise PyRevitException('Error reading links from model path: {} | {}'
+                               .format(modelPath, e))
+
+
+def get_linked_models(doc=None, loaded_only=False):
+    doc = doc or HOST_APP.doc
+    linkedmodels = get_links(linktype=DB.ExternalFileReferenceType.RevitLink,
+                             doc=doc)
+    if loaded_only:
+        return [x for x in linkedmodels
+                if DB.RevitLinkType.IsLoaded(doc, x.id)]
+
+    return linkedmodels
+
+
+def get_linked_model_doc(linked_model):
+    lmodel = None
+    if isinstance(linked_model, DB.RevitLinkType):
+        lmodel = db.ExternalRef(linked_model)
+    elif isinstance(linked_model, db.ExternalRef):
+        lmodel = linked_model
+
+    if lmodel:
+        for open_doc in HOST_APP.docs:
+            if open_doc.Title == lmodel.name:
+                return open_doc
 
 
 def find_first_legend(doc=None):
@@ -425,7 +487,7 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     gints = dict()
     for grid1 in source_grids:
         for grid2 in source_grids:
-            results = clr.Reference[DB.IntersectionResultArray]()
+            results = framework.clr.Reference[DB.IntersectionResultArray]()
             intres = grid1.Curve.Intersect(grid2.Curve, results)
             if intres == DB.SetComparisonResult.Overlap:
                 gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = \
