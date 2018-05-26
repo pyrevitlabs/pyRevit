@@ -139,7 +139,7 @@ def create_revision_sheetset(revisions,
                       .ToElements()
 
     allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
-    revnums = [query.get_rev_number(x) for x in revisions]
+    revnums = [str(query.get_rev_number(x)) for x in revisions]
     sheetsetname = name_format.format(', '.join(revnums))
 
     # find revised sheets
