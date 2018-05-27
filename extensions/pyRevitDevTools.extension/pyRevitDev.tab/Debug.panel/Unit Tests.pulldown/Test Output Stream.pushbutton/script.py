@@ -47,3 +47,12 @@ output.print_table([[1, 2, 3],
 output.update_progress(50, 100)
 output.hide_progress()
 output.unhide_progress()
+
+
+output.print_md('**Testing output freeze:**')
+output.freeze()
+
+for i in range(5000):
+    print(i)
+
+output.unfreeze()

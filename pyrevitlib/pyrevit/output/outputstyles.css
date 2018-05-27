@@ -74,6 +74,15 @@ tr:nth-child(odd) {
 	color: white;
 }
 
+.inlinewait {
+	color: #f39c12;
+	margin-bottom: 3px;
+	margin-top: 3px;
+	padding-left: 6px;
+	padding-right: 6px;
+	word-wrap: break-word;
+}
+
 .emoji {
 	/*filter: gray;*/
 	/*filter: alpha(opacity=50);*/

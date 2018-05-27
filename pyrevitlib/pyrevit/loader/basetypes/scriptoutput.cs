@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -14,6 +13,9 @@ namespace PyRevitBaseClasses
     {
         private bool _contentLoaded;
         private bool _debugMode;
+        private bool _frozen = false;
+        private DispatcherTimer _animationTimer;
+        private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
 
         // OutputUniqueId is set in constructor
@@ -125,6 +127,13 @@ namespace PyRevitBaseClasses
             this._contentLoaded = true;
         }
 
+        public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
+
+        private string GetStyleSheetFile() {
+            var envDict = new EnvDictionary();
+            return envDict.activeStyleSheet;
+        }
+
         private void SetupDefaultPage(string styleSheetFilePath = null)
         {
             string cssFilePath;
@@ -138,14 +147,8 @@ namespace PyRevitBaseClasses
             // create default html
             renderer.DocumentText = String.Format("{0}<html><body></body></html>", dochead);
 
-            while (renderer.Document.Body == null)
+            while (ActiveDocument.Body == null)
                 System.Windows.Forms.Application.DoEvents();
-        }
-
-        private string GetStyleSheetFile()
-        {
-            var envDict = new EnvDictionary();
-            return envDict.activeStyleSheet;
         }
 
         public void WaitReadyBrowser()
@@ -163,11 +166,27 @@ namespace PyRevitBaseClasses
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
+        public void Freeze() {
+            WaitReadyBrowser();
+            _lastDocumentBody = ActiveDocument.CreateElement("<body>");
+            _lastDocumentBody.InnerHtml = ActiveDocument.Body.InnerHtml;
+            _frozen = true;
+            UpdateInlineWaitAnimation();
+        }
+
+        public void Unfreeze() {
+            WaitReadyBrowser();
+            ActiveDocument.Body.InnerHtml = _lastDocumentBody.InnerHtml;
+            _frozen = false;
+            _lastDocumentBody = null;
+            UpdateInlineWaitAnimation(false);
+        }
+
         public void ScrollToBottom()
         {
-            if (renderer.Document != null)
+            if (ActiveDocument != null)
             {
-                renderer.Document.Window.ScrollTo(0, renderer.Document.Body.ScrollRectangle.Height);
+                ActiveDocument.Window.ScrollTo(0, ActiveDocument.Body.ScrollRectangle.Height);
             }
         }
 
@@ -179,16 +198,26 @@ namespace PyRevitBaseClasses
         public System.Windows.Forms.HtmlElement ComposeEntry(String OutputText, String HtmlElementType)
         {
             WaitReadyBrowser();
-            var div = renderer.Document.CreateElement(HtmlElementType);
+            var div = ActiveDocument.CreateElement(HtmlElementType);
             div.InnerHtml = OutputText;
             return div;
         }
 
         public void AppendText(String OutputText, String HtmlElementType)
         {
-            WaitReadyBrowser();
-            renderer.Document.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
-            ScrollToBottom();
+            if(!_frozen) {
+                WaitReadyBrowser();
+                ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
+                ScrollToBottom();
+            }
+            else if (_lastDocumentBody != null) {
+                _lastDocumentBody.AppendChild(ComposeEntry(OutputText, HtmlElementType));
+            }
+        }
+
+        public void AppendError(String OutputText, String HtmlElementType) {
+            Unfreeze();
+            AppendText(OutputText, HtmlElementType);
         }
 
         private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e)
@@ -217,6 +246,22 @@ namespace PyRevitBaseClasses
             }
         }
 
+        public void SetElementVisibility(bool visibility, string elementId) {
+            WaitReadyBrowser();
+            if (ActiveDocument != null) {
+                var cssdisplay = visibility ? "" : "display: none;";
+                var element = ActiveDocument.GetElementById(elementId);
+                if (element.Style != null) {
+                    if (element.Style.Contains("display:"))
+                        element.Style = Regex.Replace(element.Style, "display:.+?;", cssdisplay, RegexOptions.IgnoreCase);
+                    else
+                        element.Style += cssdisplay;
+                }
+                else
+                    element.Style = cssdisplay;
+            }
+        }
+
         public void SetProgressBarVisibility(bool visibility)
         {
             if (this.TaskbarItemInfo != null)
@@ -224,10 +269,10 @@ namespace PyRevitBaseClasses
                 this.TaskbarItemInfo.ProgressState = visibility ? System.Windows.Shell.TaskbarItemProgressState.Normal : System.Windows.Shell.TaskbarItemProgressState.None;
 
             WaitReadyBrowser();
-            if (renderer.Document != null)
+            if (ActiveDocument != null)
             {
                 var cssdisplay = visibility ? "" : "display: none;";
-                var pbarcontainer = renderer.Document.GetElementById(ExternalConfig.progressindicatorid);
+                var pbarcontainer = ActiveDocument.GetElementById(ExternalConfig.progressindicatorid);
                 if (pbarcontainer.Style != null)
                 {
                     if (pbarcontainer.Style.Contains("display:"))
@@ -261,7 +306,7 @@ namespace PyRevitBaseClasses
             this.TaskbarItemInfo.ProgressValue = progValue;
 
             WaitReadyBrowser();
-            if (renderer.Document != null)
+            if (ActiveDocument != null)
             {
                 if (!this.IsVisible)
                 {
@@ -276,18 +321,18 @@ namespace PyRevitBaseClasses
                     }
                 }
 
-                var pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
+                var pbargraph = ActiveDocument.GetElementById(ExternalConfig.progressbarid);
                 if (pbargraph == null)
                 {
-                    if (renderer.Document != null)
+                    if (ActiveDocument != null)
                     {
-                        var pbar = renderer.Document.CreateElement(ExternalConfig.progressindicator);
-                        var newpbargraph = renderer.Document.CreateElement(ExternalConfig.progressbar);
+                        var pbar = ActiveDocument.CreateElement(ExternalConfig.progressindicator);
+                        var newpbargraph = ActiveDocument.CreateElement(ExternalConfig.progressbar);
                         pbar.AppendChild(newpbargraph);
-                        renderer.Document.Body.AppendChild(pbar);
+                        ActiveDocument.Body.AppendChild(pbar);
                     }
 
-                    pbargraph = renderer.Document.GetElementById(ExternalConfig.progressbarid);
+                    pbargraph = ActiveDocument.GetElementById(ExternalConfig.progressbarid);
                 }
 
                 SetProgressBarVisibility(true);
@@ -297,6 +342,58 @@ namespace PyRevitBaseClasses
                     pbargraph.Style = newWidthStyleProperty;
                 else
                     pbargraph.Style = Regex.Replace(pbargraph.Style, "width:.+?;", newWidthStyleProperty, RegexOptions.IgnoreCase);
+            }
+        }
+
+        public void UpdateInlineWaitAnimation(bool state=true) {
+            if (state) {
+                _animationTimer = new DispatcherTimer();
+                _animationTimer.Tick += (sender, e) => {
+                    UpdateInlineWait();
+                };
+                _animationTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+                _animationTimer.Start();
+            }
+            else if (_animationTimer != null) {
+                _animationTimer.Stop();
+                _animationTimer = null;
+            }
+        }
+
+        public void UpdateInlineWait() {
+            if (this.ClosedByUser) {
+                return;
+            }
+
+            WaitReadyBrowser();
+            if (ActiveDocument != null) {
+                if (!this.IsVisible) {
+                    try {
+                        this.Show();
+                        this.Focus();
+                    }
+                    catch {
+                        return;
+                    }
+                }
+
+                var inlinewait = ActiveDocument.GetElementById(ExternalConfig.inlinewaitid);
+                if (inlinewait == null) {
+                    if (ActiveDocument != null) {
+                        inlinewait = ActiveDocument.CreateElement(ExternalConfig.inlinewait);
+                        ActiveDocument.Body.AppendChild(inlinewait);
+                    }
+
+                    inlinewait = ActiveDocument.GetElementById(ExternalConfig.inlinewaitid);
+                }
+
+                SetElementVisibility(true, ExternalConfig.inlinewaitid);
+
+                int idx = ExternalConfig.inlinewaitsequence.IndexOf(inlinewait.InnerText);
+                if (idx + 1 > ExternalConfig.inlinewaitsequence.Count - 1)
+                    idx = 0;
+                inlinewait.InnerText = ExternalConfig.inlinewaitsequence[idx + 1];
+                ScrollToBottom();
             }
         }
 

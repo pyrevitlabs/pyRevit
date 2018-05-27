@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PyRevitBaseClasses
 {
@@ -27,6 +28,18 @@ namespace PyRevitBaseClasses
         public static string progressindicatorid = "pbarcontainer";
         public static string progressbar = "<div class=\"progressbar\" id=\"pbar\"></div>";
         public static string progressbarid = "pbar";
+        public static string inlinewait = "<div class=\"inlinewait\" id=\"inlnwait\">\u280b Preparing results...</div>";
+        public static string inlinewaitid = "inlnwait";
+        public static List<string> inlinewaitsequence = new List<string> (){
+            "\u280b Preparing results...",
+            "\u2819 Preparing results...",
+            "\u2838 Preparing results...",
+            "\u28B0 Preparing results...",
+            "\u28e0 Preparing results...",
+            "\u28c4 Preparing results...",
+            "\u2846 Preparing results...",
+            "\u2807 Preparing results..."
+        };
     }
 
     public static class ExecutionErrorCodes

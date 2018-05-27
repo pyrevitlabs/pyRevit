@@ -5,7 +5,6 @@ import os.path as op
 import itertools
 
 from pyrevit import EXEC_PARAMS
-from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -248,6 +247,21 @@ class PyRevitOutputWindow(object):
         """Lock window size."""
         if self.window:
             self.window.LockSize()
+
+    def unlock_size(self):
+        """Unock window size."""
+        if self.window:
+            self.window.UnlockSize()
+
+    def freeze(self):
+        """Freeze output contetn update."""
+        if self.window:
+            self.window.Freeze()
+
+    def unfreeze(self):
+        """Unfreeze output contetn update."""
+        if self.window:
+            self.window.Unfreeze()
 
     def save_contents(self, dest_file):
         """Save html code of the window.
