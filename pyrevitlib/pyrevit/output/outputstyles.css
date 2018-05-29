@@ -75,11 +75,12 @@ tr:nth-child(odd) {
 }
 
 .inlinewait {
-	color: #f39c12;
-	margin-bottom: 3px;
-	margin-top: 3px;
-	padding-left: 6px;
-	padding-right: 6px;
+	border-radius: 3px;
+	border: 1px solid #2c3e50;
+	color: #2c3e50;
+	margin: 6px;
+	padding: 6px;
+	padding-bottom: 8px;
 	word-wrap: break-word;
 }
 
