@@ -1403,6 +1403,11 @@ def alert(msg, title='pyRevit',
     sys.exit()
 
 
+def alert_ifnot(condition, msg, *args, **kwargs):
+    if not condition:
+        return alert(msg, *args, **kwargs)
+
+
 def pick_folder():
     fb_dlg = Forms.FolderBrowserDialog()
     if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
@@ -1466,8 +1471,8 @@ def check_workshared(doc=None):
     return True
 
 
-def check_selection():
+def check_selection(exit=False):
     if revit.get_selection().is_empty:
-        alert('At least one element must be selected.')
+        alert('At least one element must be selected.', exit=exit)
         return False
     return True
