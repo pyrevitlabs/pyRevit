@@ -22,7 +22,9 @@ def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
 
 
 def ensure_sharedparam_file(spfilepath):
-    if HOST_APP.app.SharedParametersFilename \
+    if spfilepath and not HOST_APP.app.SharedParametersFilename:
+        HOST_APP.app.SharedParametersFilename = spfilepath
+    elif HOST_APP.app.SharedParametersFilename \
             and not op.normpath(
                 HOST_APP.app.SharedParametersFilename
                 ) == op.normpath(spfilepath):
