@@ -175,11 +175,13 @@ namespace PyRevitBaseClasses
         }
 
         public void Unfreeze() {
-            WaitReadyBrowser();
-            ActiveDocument.Body.InnerHtml = _lastDocumentBody.InnerHtml;
-            _frozen = false;
-            _lastDocumentBody = null;
-            UpdateInlineWaitAnimation(false);
+            if (_frozen) {
+                WaitReadyBrowser();
+                ActiveDocument.Body.InnerHtml = _lastDocumentBody.InnerHtml;
+                _frozen = false;
+                _lastDocumentBody = null;
+                UpdateInlineWaitAnimation(false);
+            }
         }
 
         public void ScrollToBottom()
