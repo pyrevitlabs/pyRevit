@@ -109,7 +109,6 @@ def create_3d_view(view_name, isometric=True, doc=None):
     nview.CropBoxActive = False
     nview.CropBoxVisible = False
     if nview.CanToggleBetweenPerspectiveAndIsometric():
-        print('CanToggleBetweenPerspectiveAndIsometric')
         if isometric:
             nview.ToggleToIsometric()
         else:
