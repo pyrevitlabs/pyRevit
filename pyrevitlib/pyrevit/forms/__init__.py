@@ -1476,3 +1476,19 @@ def check_selection(exit=False):
         alert('At least one element must be selected.', exit=exit)
         return False
     return True
+
+
+def check_familydoc(doc=None, family_cat=None, exit=False):
+    doc = doc or HOST_APP.doc
+    family_cat = revit.query.get_category(family_cat)
+    if doc.IsFamilyDocument and family_cat:
+        if doc.OwnerFamily.FamilyCategory.Id == family_cat.Id:
+            return True
+    elif doc.IsFamilyDocument and not family_cat:
+        return True
+
+    family_type_msg = ' of type {}'\
+                      .format(family_cat.Name) if family_cat else''
+    alert('Active document must be a Family document{}.'
+          .format(family_type_msg), exit=exit)
+    return False
