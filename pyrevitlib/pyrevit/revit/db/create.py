@@ -40,7 +40,7 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
     return True
 
 
-def new_project(template=None, imperial=True):
+def create_new_project(template=None, imperial=True):
     if template:
         return HOST_APP.app.NewProjectDocument(template)
     else:
