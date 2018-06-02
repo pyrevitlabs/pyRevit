@@ -32,7 +32,7 @@ def select_file(extensions='All Files (*.*)|*.*',
     https://msdn.microsoft.com/en-us/library/system.windows.forms.filedialog.filter
 
     >>> from rpw.ui.forms import select_file
-    >>> filepath = select_file('Revit File ('*.rvt)|*.rvt')
+    >>> filepath = select_file('Revit Model (*.rvt)|*.rvt')
     'C:\\folder\\file.rvt'
 
     Args:
