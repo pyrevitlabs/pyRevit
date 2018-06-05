@@ -332,6 +332,27 @@ def get_button():
     return None
 
 
+def get_all_buttons():
+    """Find and return all ui buttons matching current script command name.
+
+    Sometimes tools are duplicated across extensions for user access control
+    so this would help smart buttons to find all the loaded buttons and make
+    icon adjustments.
+
+    Returns:
+        :obj:`list(pyrevit.coreutils.ribbon._PyRevitRibbonButton)`:
+            list of ui button objects
+    """
+    from pyrevit.coreutils.ribbon import get_current_ui
+    pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
+    buttons = []
+    for tab in pyrvt_tabs:
+        button = tab.find_child(EXEC_PARAMS.command_name)
+        if button:
+            buttons.append(button)
+    return buttons
+
+
 def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
     """Set the state of button icon (on or off).
 
@@ -346,8 +367,8 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
                                        default='off.png'
     """
     # find the ui button
-    uibutton = get_button()
-    if not uibutton:
+    uibuttons = get_all_buttons()
+    if not uibuttons:
         mlogger.debug('Can not find ui button.')
         return
 
@@ -368,7 +389,9 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None):
     icon_path = on_icon_path if new_state else off_icon_path
     mlogger.debug('Setting icon state to: {} ({})'
                   .format(new_state, icon_path))
-    uibutton.set_icon(icon_path)
+
+    for uibutton in uibuttons:
+        uibutton.set_icon(icon_path)
 
 
 def exit():

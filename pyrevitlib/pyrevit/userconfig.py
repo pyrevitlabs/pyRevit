@@ -7,7 +7,7 @@ import os
 import os.path as op
 import shutil
 
-from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR
+from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, HOME_DIR
 from pyrevit.framework import IOException
 
 from pyrevit.coreutils import touch
@@ -25,12 +25,17 @@ INIT_SETTINGS_SECTION = 'core'
 
 # location for default pyRevit config files
 if not EXEC_PARAMS.doc_mode:
+    LOCAL_CONFIG_FILE = op.join(HOME_DIR, 'pyRevit_config.ini')
     ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
 
-    # setup config file name and path
-    CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
-                                                       file_ext='ini')
-    logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
+    if op.exists(LOCAL_CONFIG_FILE):
+        logger.debug('Using local config file: {}'.format(LOCAL_CONFIG_FILE))
+        CONFIG_FILE_PATH = LOCAL_CONFIG_FILE
+    else:
+        # setup config file name and path
+        CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
+                                                           file_ext='ini')
+        logger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
 else:
     ADMIN_CONFIG_DIR = CONFIG_FILE_PATH = None
 
@@ -112,15 +117,26 @@ class PyRevitConfig(PyRevitConfigParser):
         return self.get_config_file_hash()
 
     def get_ext_root_dirs(self):
+        """Return a list of all extension directories.
+
+        Returns:
+            :obj:`list`: list of strings. user extension directories.
+        """
+        dir_list = list()
+        dir_list.append(EXTENSIONS_DEFAULT_DIR)
+        dir_list.extend(self.get_thirdparty_ext_root_dirs())
+        return dir_list
+
+    def get_thirdparty_ext_root_dirs(self):
         """Return a list of external extension directories set by the user.
 
         Returns:
             :obj:`list`: list of strings. External user extension directories.
         """
         dir_list = list()
-        dir_list.append(EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([p for p in self.core.userextensions])
+            dir_list.extend([op.expandvars(p)
+                             for p in self.core.userextensions])
         except Exception as read_err:
             logger.error('Error reading list of user extension folders. | {}'
                          .format(read_err))
@@ -149,6 +165,7 @@ def _set_hardcoded_config_values(parser):
     # hard-coded values
     parser.add_section('core')
     parser.core.checkupdates = False
+    parser.core.autoupdate = False
     parser.core.verbose = True
     parser.core.debug = False
     parser.core.filelogging = True

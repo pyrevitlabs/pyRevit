@@ -19,6 +19,7 @@ from pyrevit.framework import Interop
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
+from pyrevit.forms import utils
 
 
 logger = get_logger(__name__)
@@ -37,6 +38,7 @@ class WPFWindow(framework.Windows.Window):
     Args:
         xaml_source (str): xaml source filepath or xaml content
         literal_string (bool): xaml_source contains xaml content, not filepath
+        handle_esc (bool): handle Escape button and close the window
 
     Example:
         >>> from pyrevit import forms
@@ -48,7 +50,7 @@ class WPFWindow(framework.Windows.Window):
         >>> w.show()
     """
 
-    def __init__(self, xaml_source, literal_string=False):
+    def __init__(self, xaml_source, literal_string=False, handle_esc=True):
         """Initialize WPF window and resources."""
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
@@ -64,6 +66,9 @@ class WPFWindow(framework.Windows.Window):
                 wpf.LoadComponent(self, xaml_source)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
+
+        if handle_esc:
+            self.PreviewKeyDown += self.handle_input_key
 
         #2c3e50 #noqa
         self.Resources['pyRevitDarkColor'] = \
@@ -92,6 +97,11 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
+    def handle_input_key(self, sender, args):
+        """Handle keyboard input and close the window on Escape."""
+        if args.Key == framework.Windows.Input.Key.Escape:
+            self.Close()
+
     def show(self, modal=False):
         """Show window."""
         if modal:
@@ -113,10 +123,15 @@ class WPFWindow(framework.Windows.Window):
         if not op.exists(image_file):
             # noinspection PyUnresolvedReferences
             wpfel.Source = \
-                framework.Imaging.BitmapImage(
-                    framework.Uri(os.path.join(EXEC_PARAMS.command_path,
-                                               image_file))
+                utils.bitmap_from_file(
+                    os.path.join(EXEC_PARAMS.command_path,
+                                 image_file)
                     )
+            # wpfel.Source = \
+            #     framework.Imaging.BitmapImage(
+            #         framework.Uri(os.path.join(EXEC_PARAMS.command_path,
+            #                                    image_file))
+            #         )
         else:
             wpfel.Source = \
                 framework.Imaging.BitmapImage(framework.Uri(image_file))
@@ -171,25 +186,20 @@ class TemplateUserInputWindow(WPFWindow):
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source))
+                           op.join(op.dirname(__file__), self.xaml_source),
+                           handle_esc=True)
         self.Title = title
         self.Width = width
         self.Height = height
 
         self._context = context
         self.response = None
-        self.PreviewKeyDown += self.handle_input_key
 
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
         """Private method to be overriden by subclasses for window setup."""
         pass
-
-    def handle_input_key(self, sender, args):
-        """Handle keyboard input."""
-        if args.Key == framework.Windows.Input.Key.Escape:
-            self.Close()
 
     @classmethod
     def show(cls, context,
@@ -231,34 +241,40 @@ class SelectFromList(TemplateUserInputWindow):
     xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
-        self.hide_element(self.clrsearch_b)
-        self.clear_search(None, None)
-        self.search_tb.Focus()
-
         if 'multiselect' in kwargs and not kwargs['multiselect']:
             self.list_lb.SelectionMode = Controls.SelectionMode.Single
         else:
             self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+
+        self._nameattr = kwargs.get('name_attr', None)
 
         button_name = kwargs.get('button_name', None)
         if button_name:
             self.select_b.Content = button_name
 
         self._list_options()
+        self.hide_element(self.clrsearch_b)
+        self.clear_search(None, None)
+
+    def _get_option_name(self, option):
+        if self._nameattr:
+            return str(getattr(option, self._nameattr))
+        else:
+            return safe_strtype(option)
 
     def _list_options(self, option_filter=None):
         if option_filter:
             option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context
-                 if option_filter in safe_strtype(option).lower()]
+                [self._get_option_name(x) for x in self._context
+                 if option_filter in self._get_option_name(x).lower()]
         else:
             self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context]
+                [self._get_option_name(x) for x in self._context]
 
     def _get_options(self):
-        return [option for option in self._context
-                if safe_strtype(option) in self.list_lb.SelectedItems]
+        return [x for x in self._context
+                if self._get_option_name(x) in self.list_lb.SelectedItems]
 
     def button_select(self, sender, args):
         """Handle select button click."""
@@ -1226,6 +1242,35 @@ def select_dest_docs():
         return [x.unwrap() for x in return_options if x]
 
 
+def select_titleblocks(title='Select Titleblock', button_name='Select',
+                       width=DEFAULT_INPUTWINDOW_WIDTH, multiple=False,
+                       filterfunc=None, doc=None):
+    no_tb_option = 'No Title Block'
+    titleblocks = DB.FilteredElementCollector(doc)\
+                    .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
+                    .WhereElementIsElementType()\
+                    .ToElements()
+
+    if filterfunc:
+        titleblocks = filter(filterfunc, titleblocks)
+
+    tblock_dict = {'{}: {}'.format(tb.FamilyName,
+                                   revit.ElementWrapper(tb).name): tb.Id
+                   for tb in titleblocks}
+    options = [no_tb_option]
+    options.extend(tblock_dict.keys())
+    selected_titleblocks = SelectFromList.show(options,
+                                               title=title,
+                                               button_name=button_name,
+                                               width=width,
+                                               multiselect=multiple)
+    if selected_titleblocks:
+        if no_tb_option not in selected_titleblocks:
+            return tblock_dict[selected_titleblocks[0]]
+        else:
+            return DB.ElementId.InvalidElementId
+
+
 def alert(msg, title='pyRevit',
           cancel=False, yes=False, no=False, retry=False, exit=False):
     buttons = UI.TaskDialogCommonButtons.Ok
@@ -1296,6 +1341,18 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         if unc_paths:
             return coreutils.dletter_to_unc(sf_dlg.FileName)
         return sf_dlg.FileName
+
+
+def pick_excel_file(save=False):
+    if save:
+        return save_file(file_ext='xlsx')
+    return pick_file(files_filter='All Files (*.*)|*.*|'
+                     'Excel Workbook (*.xlsx)|*.xlsx|'
+                     'Excel 97-2003 Workbook|*.xls')
+
+
+def save_excel_file():
+    return pick_excel_file(save=True)
 
 
 def check_workshared(doc):

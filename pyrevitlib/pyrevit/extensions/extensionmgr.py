@@ -127,7 +127,7 @@ def get_command_from_path(comp_path):
     return None
 
 
-def get_installed_extension_data():
+def get_thirdparty_extension_data():
     """
     Returns a list of all UI and Library extensions (not parsed) that
     are installed and active.
@@ -139,7 +139,7 @@ def get_installed_extension_data():
     # extension data for both lib and ui
     ext_data_list = []
 
-    for root_dir in user_config.get_ext_root_dirs():
+    for root_dir in user_config.get_thirdparty_ext_root_dirs():
         ext_data_list.extend(
             [ui_ext for ui_ext in parse_dir_for_ext_type(root_dir,
                                                          Extension)])
@@ -217,6 +217,7 @@ def get_installed_ui_extensions():
     # over paths added by this method (they're the first paths added to the
     # search paths list, and these paths will follow)
     for ui_extension in ui_ext_list:
+        ui_extension.configure()
         _update_extension_syspaths(ui_extension,
                                    lib_ext_list,
                                    [MAIN_LIB_DIR,

@@ -1,15 +1,18 @@
 import os
 import os.path as op
+import json
+import codecs
 
 from pyrevit import PyRevitException
 from pyrevit.compat import safe_strtype
-from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
 from pyrevit.extensions.genericcomps import GenericComponent
 from pyrevit.extensions.genericcomps import GenericUIContainer
 from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.versionmgr import get_pyrevit_version
+
 
 logger = get_logger(__name__)
 
@@ -35,7 +38,8 @@ class LinkButton(GenericUICommand):
         self.assembly = self.command_class = None
         try:
             # reading script file content to extract parameters
-            script_content = ScriptFileParser(self.get_full_script_address())
+            script_content = \
+                coreutils.ScriptFileParser(self.get_full_script_address())
 
             self.assembly = script_content.extract_param(
                 exts.LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
@@ -214,7 +218,7 @@ class Extension(GenericUIContainer):
 
     @property
     def ext_hash_value(self):
-        return get_str_hash(safe_strtype(self.get_cache_data()))
+        return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
 
     # def _write_dir_hash(self, hash_value):
     #     if os.access(self.hash_cache, os.W_OK):
@@ -257,18 +261,35 @@ class Extension(GenericUIContainer):
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
-        return calculate_dir_hash(self.directory, pat, patfile)
+        return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
     def get_all_commands(self):
         return self.get_components_of_type(GenericUICommand)
 
+    def get_manifest_file(self):
+        return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
+
+    def get_manifest(self):
+        manifest_file = self.get_manifest_file()
+        if manifest_file:
+            with codecs.open(manifest_file, 'r', 'utf-8') as mfile:
+                try:
+                    manifest_cfg = json.load(mfile)[exts.EXT_MANIFEST_NAME]
+                    return manifest_cfg
+                except Exception as manfload_err:
+                    print('Can not parse ext manifest file: {} '
+                          '| {}'.format(manifest_file, manfload_err))
+                    return
+
+    def configure(self):
+        cfg_dict = self.get_manifest()
+        if cfg_dict:
+            for cmd in self.get_all_commands():
+                cmd.configure(cfg_dict)
+
     @property
     def startup_script(self):
-        for ext_file in os.listdir(self.directory):
-            if ext_file.endswith('startup.py'):
-                return op.join(self.directory, ext_file)
-
-        return None
+        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
 
 
 # library extension class

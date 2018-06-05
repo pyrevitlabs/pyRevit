@@ -65,8 +65,8 @@ if return_options:
     with revit.Transaction('Purge Unused Filters'):
         for vf in return_options:
             if vf.state:
-                print('Purging Filter: {0}\t{1}'
-                      .format(vf.filter_el.Id, vf.name))
+                logger.debug('Purging Filter: {0}\t{1}'
+                             .format(vf.filter_el.Id, vf.name))
                 try:
                     revit.doc.Delete(vf.filter_el.Id)
                 except Exception as del_err:

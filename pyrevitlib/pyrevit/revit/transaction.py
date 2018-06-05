@@ -106,7 +106,8 @@ class Transaction():
                  doc=None,
                  clear_after_rollback=False,
                  show_error_dialog=False,
-                 swallow_errors=False):
+                 swallow_errors=False,
+                 log_errors=True):
         self._rvtxn = \
             DB.Transaction(doc or HOST_APP.doc,
                            name if name else DEFAULT_TRANSACTION_NAME)
@@ -119,6 +120,7 @@ class Transaction():
             self._fhndlr_ops = \
                 self._fhndlr_ops.SetFailuresPreprocessor(FailureSwallower())
         self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
+        self._logerror = log_errors
 
     def __enter__(self):
         self._rvtxn.Start()
@@ -127,9 +129,10 @@ class Transaction():
     def __exit__(self, exception, exception_value, traceback):
         if exception:
             self._rvtxn.RollBack()
-            logger.error('Error in Transaction Context. '
-                         'Rolling back changes. | {}:{}'
-                         .format(exception, exception_value))
+            if self._logerror:
+                logger.error('Error in Transaction Context. '
+                             'Rolling back changes. | {}:{}'
+                             .format(exception, exception_value))
         else:
             try:
                 self._rvtxn.Commit()

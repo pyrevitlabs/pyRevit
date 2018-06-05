@@ -25,7 +25,7 @@ def _is_rocketmode_compat(ext_name):
     try:
         ext_pkg = extpkgs.get_ext_package_by_name(ext_name)
         if ext_pkg:
-            return ext_pkg.rocket_mode
+            return ext_pkg.rocket_mode_compatible
         else:
             logger.debug('Extension package is not defined: {}'
                          .format(ext_name))

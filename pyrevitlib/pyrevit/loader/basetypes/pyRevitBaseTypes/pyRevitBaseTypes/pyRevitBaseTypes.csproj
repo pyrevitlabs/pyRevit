@@ -93,10 +93,10 @@
       <HintPath>..\..\..\addin\277\pyRevitLoader.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPI">
-      <HintPath>..\..\..\addin\RevitAPI.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPIUI">
-      <HintPath>..\..\..\addin\RevitAPIUI.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2018\RevitAPIUI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -117,6 +117,9 @@
   <ItemGroup>
     <Compile Include="..\..\baseclasses.cs">
       <Link>baseclasses.cs</Link>
+    </Compile>
+    <Compile Include="..\..\baseclasses_dyno.cs">
+      <Link>baseclasses_dyno.cs</Link>
     </Compile>
     <Compile Include="..\..\enginermgr.cs">
       <Link>enginermgr.cs</Link>

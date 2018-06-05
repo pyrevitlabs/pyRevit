@@ -1,0 +1,46 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-05-19 18:57-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=cp1252\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:15
+msgid "About pyrevit. Opens the pyrevit blog website. You can find detailed information on how pyrevit works, updates about the new tools and changes, and a lot of other information there."
+msgstr ""
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:42
+msgid "Running on IronPython {}.{}.{}"
+msgstr "IronPython {}.{}.{} در حال اجرا روی"
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:48
+msgid "Rocket-mode {}"
+msgstr ""
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:49
+msgid "disabled"
+msgstr ""
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:49
+msgid "enabled"
+msgstr ""
+
+#:
+#: C:/Users/eirannejad/Desktop/gits/pyRevitDev/extensions/pyRevitCore.extension/pyRevit.tab/pyRevit.panel/About.pushbutton/aboutscript.py:54
+msgid "in {}"
+msgstr ""
