@@ -107,19 +107,26 @@ class Transaction():
                  clear_after_rollback=False,
                  show_error_dialog=False,
                  swallow_errors=False,
-                 log_errors=True):
-        self._rvtxn = \
-            DB.Transaction(doc or HOST_APP.doc,
-                           name if name else DEFAULT_TRANSACTION_NAME)
-        self._fhndlr_ops = self._rvtxn.GetFailureHandlingOptions()
-        self._fhndlr_ops = \
-            self._fhndlr_ops.SetClearAfterRollback(clear_after_rollback)
-        self._fhndlr_ops = \
-            self._fhndlr_ops.SetForcedModalHandling(show_error_dialog)
-        if swallow_errors:
+                 log_errors=True,
+                 nested=False):
+        if nested:
+            self._rvtxn = \
+                DB.SubTransaction(doc or HOST_APP.doc)
+        else:
+            self._rvtxn = \
+                DB.Transaction(doc or HOST_APP.doc,
+                               name if name else DEFAULT_TRANSACTION_NAME)
+            self._fhndlr_ops = self._rvtxn.GetFailureHandlingOptions()
             self._fhndlr_ops = \
-                self._fhndlr_ops.SetFailuresPreprocessor(FailureSwallower())
-        self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
+                self._fhndlr_ops.SetClearAfterRollback(clear_after_rollback)
+            self._fhndlr_ops = \
+                self._fhndlr_ops.SetForcedModalHandling(show_error_dialog)
+            if swallow_errors:
+                self._fhndlr_ops = \
+                    self._fhndlr_ops.SetFailuresPreprocessor(
+                        FailureSwallower()
+                        )
+            self._rvtxn.SetFailureHandlingOptions(self._fhndlr_ops)
         self._logerror = log_errors
 
     def __enter__(self):
@@ -143,11 +150,13 @@ class Transaction():
 
     @property
     def name(self):
-        return self._rvtxn.GetName()
+        if hasattr(self._rvtxn, 'GetName'):
+            return self._rvtxn.GetName()
 
     @name.setter
     def name(self, new_name):
-        return self._rvtxn.SetName(new_name)
+        if hasattr(self._rvtxn, 'SetName'):
+            return self._rvtxn.SetName(new_name)
 
     @property
     def status(self):
@@ -166,11 +175,12 @@ class DryTransaction(Transaction):
 
 
 class TransactionGroup():
-    def __init__(self, name=None, doc=None, assimilate=True):
+    def __init__(self, name=None, doc=None, assimilate=True, log_errors=True):
         self._rvtxn_grp = \
             DB.TransactionGroup(doc or HOST_APP.doc,
                                 name if name else DEFAULT_TRANSACTION_NAME)
         self.assimilate = assimilate
+        self._logerror = log_errors
 
     def __enter__(self):
         self._rvtxn_grp.Start()
@@ -179,8 +189,10 @@ class TransactionGroup():
     def __exit__(self, exception, exception_value, traceback):
         if exception:
             self._rvtxn_grp.RollBack()
-            logger.error('Error in TransactionGroup Context: has rolled back.')
-            logger.error('{}:{}'.format(exception, exception_value))
+            if self._logerror:
+                logger.error('Error in TransactionGroup Context. '
+                             'Rolling back changes. | {}:{}'
+                             .format(exception, exception_value))
         else:
             try:
                 if self.assimilate:
