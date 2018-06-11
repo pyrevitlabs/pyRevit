@@ -109,13 +109,14 @@ class Transaction():
                  swallow_errors=False,
                  log_errors=True,
                  nested=False):
-        if nested:
+        doc = doc or HOST_APP.doc
+        # create nested transaction if one is already open
+        if doc.IsModifiable or nested:
             self._rvtxn = \
-                DB.SubTransaction(doc or HOST_APP.doc)
+                DB.SubTransaction(doc)
         else:
             self._rvtxn = \
-                DB.Transaction(doc or HOST_APP.doc,
-                               name if name else DEFAULT_TRANSACTION_NAME)
+                DB.Transaction(doc, name if name else DEFAULT_TRANSACTION_NAME)
             self._fhndlr_ops = self._rvtxn.GetFailureHandlingOptions()
             self._fhndlr_ops = \
                 self._fhndlr_ops.SetClearAfterRollback(clear_after_rollback)
