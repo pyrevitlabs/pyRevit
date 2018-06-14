@@ -4,9 +4,12 @@
 from pyrevit.framework import List
 from pyrevit import forms
 from pyrevit import revit, DB
+from pyrevit import script
 
 
 __beta__ = True
+
+logger = script.get_logger()
 
 
 # make sure active document is a family
@@ -24,14 +27,16 @@ family_cat = revit.doc.OwnerFamily.FamilyCategory
 geo_elem = cad_import.get_Geometry(DB.Options())
 geo_elements = []
 for geo in geo_elem:
+    logger.debug(geo)
     if isinstance(geo, DB.GeometryInstance):
         geo_elements.extend([x for x in geo.GetSymbolGeometry()])
 
 solids = []
 for gel in geo_elements:
+    logger.debug(gel)
     if isinstance(gel, DB.Solid):
-        if gel.Volume > 0.0:
-            solids.append(gel)
+        # if hasattr(gel, 'Volume') and gel.Volume > 0.0:
+        solids.append(gel)
     elif isinstance(gel, DB.Mesh):
         builder = DB.TessellatedShapeBuilder()
         builder.OpenConnectedFaceSet(False)
