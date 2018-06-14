@@ -12,13 +12,16 @@ __all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
 logger = get_logger(__name__)
 
 
-class CurrentElementSelection:
-    def __init__(self):
-        if HOST_APP.uidoc:
-            self._refs = \
-                [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
+class ElementSelection:
+    def __init__(self, element_list=None):
+        if element_list is None:
+            if HOST_APP.uidoc:
+                self._refs = \
+                    [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
+            else:
+                self._refs = []
         else:
-            self._refs = []
+            self._refs = ElementSelection.get_element_ids(element_list)
 
     def __len__(self):
         return len(self._refs)
@@ -27,8 +30,8 @@ class CurrentElementSelection:
         for elref in self._refs:
             yield HOST_APP.doc.GetElement(elref)
 
-    def __getitem__(self, key):
-        return self.elements[key]
+    def __getitem__(self, index):
+        return self.elements[index]
 
     def __contains__(self, item):
         if isinstance(item, DB.Element):
@@ -39,8 +42,8 @@ class CurrentElementSelection:
             elref = DB.ElementId.InvalidElementId
         return elref in self._refs
 
-    @staticmethod
-    def _get_element_ids(mixed_list):
+    @classmethod
+    def get_element_ids(cls, mixed_list):
         element_id_list = []
 
         if not isinstance(mixed_list, list):
@@ -79,15 +82,33 @@ class CurrentElementSelection:
             return HOST_APP.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
-        self._refs = self._get_element_ids(element_list)
+        self._refs = ElementSelection.get_element_ids(element_list)
         HOST_APP.uidoc.Selection.SetElementIds(
             framework.List[DB.ElementId](self._refs)
             )
         HOST_APP.uidoc.RefreshActiveView()
 
     def append(self, element_list):
-        self._refs.extend(self._get_element_ids(element_list))
+        self._refs.extend(ElementSelection.get_element_ids(element_list))
         self.set_to(self._refs)
+
+    def include(self, element_type):
+        refs = [x for x in self._refs
+                if isinstance(HOST_APP.doc.GetElement(x),
+                              element_type)]
+        return ElementSelection(refs)
+
+    def exclude(self, element_type):
+        refs = [x for x in self._refs
+                if not isinstance(HOST_APP.doc.GetElement(x),
+                                  element_type)]
+        return ElementSelection(refs)
+
+    def no_views(self):
+        return self.exclude(DB.View)
+
+    def only_views(self):
+        return self.include(DB.View)
 
 
 def _pick_obj(obj_type, pick_message, multiple=False, world=False):
@@ -217,7 +238,7 @@ def pick_rectangle(pick_message='', pick_filter=None):
 
 
 def get_selection_category_set():
-    selection = CurrentElementSelection()
+    selection = ElementSelection()
     cset = DB.CategorySet()
     for element in selection:
         cset.Insert(element.Category)
@@ -225,4 +246,4 @@ def get_selection_category_set():
 
 
 def get_selection():
-    return CurrentElementSelection()
+    return ElementSelection()
