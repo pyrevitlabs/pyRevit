@@ -152,6 +152,19 @@ def get_elements_by_category(element_categories, elements=None, doc=None):
     return cat_elements
 
 
+def get_family(family_name, doc=None):
+    famsyms = \
+        DB.FilteredElementCollector(doc or HOST_APP.doc)\
+          .WherePasses(
+              get_biparam_stringequals_filter(
+                  {DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name}
+                  )
+              )\
+          .WhereElementIsElementType()\
+          .ToElements()
+    return famsyms
+
+
 def get_elements_by_family(family_name, doc=None):
     famsyms = \
         DB.FilteredElementCollector(doc or HOST_APP.doc)\
@@ -160,6 +173,7 @@ def get_elements_by_family(family_name, doc=None):
                   {DB.BuiltInParameter.SYMBOL_FAMILY_NAME_PARAM: family_name}
                   )
               )\
+          .WhereElementIsNotElementType()\
           .ToElements()
     return famsyms
 
@@ -174,6 +188,7 @@ def get_elements_by_familytype(family_name, symbol_name, doc=None):
                    }
                   )
               )\
+          .WhereElementIsNotElementType()\
           .ToElements()
     return syms
 
@@ -201,7 +216,7 @@ def find_workset(workset_name_or_list, doc=None, partial=True):
 
 
 def model_has_family(family_name, doc=None):
-    collector = find_family(family_name, doc=doc)
+    collector = get_family(family_name, doc=doc)
     return hasattr(collector, 'Count') and collector.Count > 0
 
 

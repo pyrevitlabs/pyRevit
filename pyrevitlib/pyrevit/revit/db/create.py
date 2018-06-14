@@ -1,10 +1,27 @@
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit.framework import clr
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit import query
 
 
 logger = get_logger(__name__)
+
+
+# http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
+class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
+    def OnFamilyFound(self, familyInUse, overwriteParameterValues):
+        """A method called when the family was found in the target document."""
+        return True
+
+    def OnSharedFamilyFound(self,
+                            sharedFamily,
+                            familyInUse,
+                            source,
+                            overwriteParameterValues):
+        source = DB.FamilySource.Family
+        overwriteParameterValues = True
+        return True
 
 
 def create_shared_param(param_id_or_name, category_list, builtin_param_group,
@@ -161,3 +178,10 @@ def create_revision_sheetset(revisions,
     viewsheetsetting.CurrentViewSheetSet.Views = myviewset
     viewsheetsetting.SaveAs(sheetsetname)
     return myviewset
+
+
+def load_family(family_file, doc=None):
+    doc = doc or HOST_APP.doc
+    logger.debug('Loading family from: {}'.format(family_file))
+    ret_ref = clr.Reference[DB.Family]()
+    return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)

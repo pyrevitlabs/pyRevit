@@ -2,7 +2,7 @@ import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils.logger import get_logger
-from pyrevit import DB
+from pyrevit import revit, DB
 from pyrevit.revit import query
 from pyrevit.revit import create
 
@@ -12,12 +12,14 @@ logger = get_logger(__name__)
 
 def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
                        load_param=True, doc=None):
-    if query.model_has_sharedparam(sparam_name):
+    doc = doc or HOST_APP.doc
+    if query.model_has_sharedparam(sparam_name, doc=doc):
         return True
     elif load_param:
         create.create_shared_param(sparam_name,
                                    sparam_categories,
-                                   sparam_group)
+                                   sparam_group,
+                                   doc=doc)
         return True
 
 
@@ -31,3 +33,17 @@ def ensure_sharedparam_file(spfilepath):
         HOST_APP.app.SharedParametersFilename = spfilepath
 
     return HOST_APP.app.OpenSharedParameterFile()
+
+
+def ensure_family(family_name, family_file, doc=None):
+    doc = doc or HOST_APP.doc
+    famsym = query.get_family(family_name, doc=doc)
+    if not famsym:
+        with revit.Transaction('Load Family', doc=doc):
+            logger.debug('Family \"{}\" did not exist.'.format(family_name))
+            if create.load_family(family_file, doc=doc):
+                return query.get_family(family_name, doc=doc)
+            else:
+                raise PyRevitException('Error loading family from: {}'
+                                       .format(family_file))
+    return famsym
