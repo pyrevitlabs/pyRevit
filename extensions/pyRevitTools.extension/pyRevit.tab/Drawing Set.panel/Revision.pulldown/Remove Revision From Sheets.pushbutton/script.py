@@ -10,8 +10,8 @@ __doc__ = 'Select a revision from the list of revisions\n'\
 
 
 def print_sheet(sht):
-    snum = sht.LookupParameter('Sheet Number').AsString().rjust(10)
-    sname = sht.LookupParameter('Sheet Name').AsString().ljust(50)
+    snum = sht.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10)
+    sname = sht.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)
     print('NUMBER: {0}   NAME:{1}'.format(snum, sname))
 
 
