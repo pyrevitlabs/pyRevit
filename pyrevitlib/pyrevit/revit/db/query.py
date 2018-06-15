@@ -118,38 +118,37 @@ def get_elements_by_parameter(param_name, param_value,
     return found_els
 
 
-def get_elements_by_shared_parameter(param_name, param_value, doc=None):
+def get_elements_by_shared_parameter(param_name, param_value,
+                                     inverse=False, doc=None):
     doc = doc or HOST_APP.doc
     param_id = get_sharedparam_id(param_name)
     if param_id:
         pp = DB.ParameterValueProvider(param_id)
         pe = DB.FilterStringEquals()
         vrule = DB.FilterStringRule(pp, pe, param_value, True)
+        if inverse:
+            vrule = DB.FilterInverseRule(vrule)
         param_filter = DB.ElementParameterFilter(vrule)
-        elements = list(DB.FilteredElementCollector(doc)
-                          .WherePasses(param_filter)
-                          .ToElements())
-        if elements:
-            return elements[0]
+        return DB.FilteredElementCollector(doc)\
+                 .WherePasses(param_filter)\
+                 .ToElements()
 
 
-def get_elements_by_category(element_categories, elements=None, doc=None):
+def get_elements_by_category(element_bicats, elements=None, doc=None):
     # if source elements is provided
     if elements:
         return [x for x in elements
                 if get_builtincategory(x.Category.Name)
-                in element_categories]
+                in element_bicats]
 
     # otherwise collect from model
-    cat_elements = []
-    for elcat in element_categories:
-        cat_elements.extend(list(
-            DB.FilteredElementCollector(doc or HOST_APP.doc)
-              .OfCategory(elcat)
-              .WhereElementIsNotElementType()
-              .ToElements()
-              ))
-    return cat_elements
+    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats]
+    elcats_filter = \
+        DB.LogicalOrFilter(framework.List[DB.ElementFilter](cat_filters))
+    return DB.FilteredElementCollector(doc or HOST_APP.doc)\
+             .WherePasses(elcats_filter)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
 
 
 def get_family(family_name, doc=None):
