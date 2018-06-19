@@ -416,27 +416,43 @@ def is_sheet_empty(viewsheet):
     return True
 
 
+def get_doc_categories(doc=None):
+    doc = doc or HOST_APP.doc
+    all_cats = []
+    cats = doc.Settings.Categories
+    all_cats.extend(cats)
+    for cat in cats:
+        all_cats.extend([x for x in cat.SubCategories])
+    return all_cats
+
+
 def get_category(cat_name_or_builtin, doc=None):
     doc = doc or HOST_APP.doc
-    cats = doc.Settings.Categories
+    all_cats = get_doc_categories()
     if isinstance(cat_name_or_builtin, str):
-        for cat in cats:
+        for cat in all_cats:
             if cat.Name == cat_name_or_builtin:
                 return cat
     elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
-        for cat in cats:
+        for cat in all_cats:
             if cat.Id.IntegerValue == int(cat_name_or_builtin):
                 return cat
     elif isinstance(cat_name_or_builtin, DB.Category):
         return cat_name_or_builtin
 
 
-def get_builtincategory(cat_name, doc=None):
+def get_builtincategory(cat_name_or_id, doc=None):
     doc = doc or HOST_APP.doc
-    cat = get_category(cat_name)
-    if cat:
+    cat_id = None
+    if isinstance(cat_name_or_id, str):
+        cat = get_category(cat_name_or_id)
+        if cat:
+            cat_id = cat.Id.IntegerValue
+    elif isinstance(cat_name_or_id, DB.ElementId):
+        cat_id = cat_name_or_id.IntegerValue
+    if cat_id:
         for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if int(bicat) == cat.Id.IntegerValue:
+            if int(bicat) == cat_id:
                 return bicat
 
 
