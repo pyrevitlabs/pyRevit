@@ -47,3 +47,20 @@ def ensure_family(family_name, family_file, doc=None):
                 raise PyRevitException('Error loading family from: {}'
                                        .format(family_file))
     return famsym
+
+
+def ensure_element_ids(mixed_list):
+    element_id_list = []
+
+    if not isinstance(mixed_list, list):
+        mixed_list = [mixed_list]
+
+    for item in mixed_list:
+        if isinstance(item, DB.ElementId):
+            element_id_list.append(item)
+        elif isinstance(item, DB.Element):
+            element_id_list.append(item.Id)
+        elif type(item) == int:
+            element_id_list.append(DB.ElementId(item))
+
+    return element_id_list

@@ -2,6 +2,8 @@ from pyrevit import HOST_APP
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
 
+from pyrevit.revit import ensure
+
 
 __all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
            'pick_linked', 'pick_elements', 'pick_elementpoints', 'pick_edges',
@@ -44,20 +46,7 @@ class ElementSelection:
 
     @classmethod
     def get_element_ids(cls, mixed_list):
-        element_id_list = []
-
-        if not isinstance(mixed_list, list):
-            mixed_list = [mixed_list]
-
-        for item in mixed_list:
-            if isinstance(item, DB.ElementId):
-                element_id_list.append(item)
-            elif isinstance(item, DB.Element):
-                element_id_list.append(item.Id)
-            elif type(item) == int:
-                element_id_list.append(DB.ElementId(item))
-
-        return element_id_list
+        return ensure.ensure_element_ids(mixed_list)
 
     @property
     def is_empty(self):

@@ -10,9 +10,9 @@ from pyrevit import DB, UI
 from pyrevit.revit.db import *
 from pyrevit.revit.db import query
 from pyrevit.revit.db import create
-from pyrevit.revit.db import delete
 from pyrevit.revit.db import update
 from pyrevit.revit.db import ensure
+from pyrevit.revit.db import delete
 from pyrevit.revit.journals import *
 from pyrevit.revit.selection import *
 from pyrevit.revit.transaction import *
