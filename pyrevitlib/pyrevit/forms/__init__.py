@@ -1374,21 +1374,19 @@ def select_titleblocks(title='Select Titleblock',
             return tblock_dict[selected_titleblocks]
 
 
-def alert(msg, title='pyRevit',
+def alert(msg, title='pyRevit', ok=True,
           cancel=False, yes=False, no=False, retry=False, exit=False):
-    buttons = UI.TaskDialogCommonButtons.Ok
-
-    if any([cancel, yes, no, retry]):
-        buttons = UI.TaskDialogCommonButtons.None   # noqa
-
-        if cancel:
-            buttons |= UI.TaskDialogCommonButtons.Cancel
-        if yes:
-            buttons |= UI.TaskDialogCommonButtons.Yes
-        if no:
-            buttons |= UI.TaskDialogCommonButtons.No
-        if retry:
-            buttons |= UI.TaskDialogCommonButtons.Retry
+    buttons = UI.TaskDialogCommonButtons.None   # noqa
+    if ok:
+        buttons |= UI.TaskDialogCommonButtons.Ok
+    if cancel:
+        buttons |= UI.TaskDialogCommonButtons.Cancel
+    if yes:
+        buttons |= UI.TaskDialogCommonButtons.Yes
+    if no:
+        buttons |= UI.TaskDialogCommonButtons.No
+    if retry:
+        buttons |= UI.TaskDialogCommonButtons.Retry
 
     res = UI.TaskDialog.Show(title, msg, buttons)
 
