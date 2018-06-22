@@ -503,7 +503,7 @@ def get_all_grids(group_by_direction=False,
         grouped_grids = dict()
         for direc in direcs:
             grouped_grids[direc] = [x for x in all_grids
-                                    if direc == x.Curve.Direction]
+                                    if direc == db.XYZPoint(x.Curve.Direction)]
         return grouped_grids
     return all_grids
 
