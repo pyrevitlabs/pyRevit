@@ -23,7 +23,7 @@ def dump(outputfile, points):
         for coord, intensity, color in points:
             x, y, z = coord
             r, g, b = color
-            ptsfile.write('{:.02f} {:.02f} {:.02f} '
+            ptsfile.write('{:.10f} {:.10f} {:.10f} '
                           '{} '
                           '{:03} {:03} {:03}\n'.format(x, y, z,
                                                        intensity,
