@@ -27,8 +27,17 @@ a:visited {
     display:none;
 }
 
-.s1, .sd {
-    color: #f39c12;
+.highlight {
+    background: white;
+}
+
+.s1, .highlight .sd {
+    color: #408090;
+}
+
+.highlight .c1 {
+    color: #c4c4c4;
+    font-style: italic;
 }
 
 .admonition.note {
