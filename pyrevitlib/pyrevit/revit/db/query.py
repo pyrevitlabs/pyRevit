@@ -223,29 +223,6 @@ def model_has_workset(workset_name, doc=None):
     return find_workset(workset_name, doc=doc)
 
 
-def get_model_sharedparams(doc=None):
-    doc = doc or HOST_APP.doc
-    param_bindings = doc.ParameterBindings
-    pb_iterator = param_bindings.ForwardIterator()
-    pb_iterator.Reset()
-
-    msp_list = []
-    while pb_iterator.MoveNext():
-        msp = db.ModelSharedParam(pb_iterator.Key,
-                                  param_bindings[pb_iterator.Key])
-        msp_list.append(msp)
-
-    return msp_list
-
-
-def model_has_sharedparam(param_id_or_name, doc=None):
-    msp_list = get_model_sharedparams(doc or HOST_APP.doc)
-    for x in msp_list:
-        if x == param_id_or_name:
-            return True
-    return False
-
-
 def get_sharedparam_definition_file():
     if HOST_APP.app.SharedParametersFilename:
         sparamf = HOST_APP.app.OpenSharedParameterFile()
@@ -265,10 +242,36 @@ def get_defined_sharedparams():
     return msp_list
 
 
+def get_model_sharedparams(doc=None):
+    doc = doc or HOST_APP.doc
+    param_bindings = doc.ParameterBindings
+    pb_iterator = param_bindings.ForwardIterator()
+    pb_iterator.Reset()
+
+    msp_list = []
+    while pb_iterator.MoveNext():
+        msp = db.ModelSharedParam(pb_iterator.Key,
+                                  param_bindings[pb_iterator.Key])
+        msp_list.append(msp)
+
+    return msp_list
+
+
 def get_sharedparam_id(param_name):
     for sp in get_model_sharedparams():
         if sp.name == param_name:
             return sp.param_def.Id
+
+
+def get_model_sharedparam(param_id_or_name, doc=None):
+    msp_list = get_model_sharedparams(doc or HOST_APP.doc)
+    for x in msp_list:
+        if x == param_id_or_name:
+            return x
+
+
+def model_has_sharedparam(param_id_or_name, doc=None):
+    return get_model_sharedparam(param_id_or_name, doc=doc)
 
 
 def get_project_info():

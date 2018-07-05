@@ -25,7 +25,8 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
 
 
 def create_shared_param(param_id_or_name, category_list, builtin_param_group,
-                        type_param=False, doc=None):
+                        type_param=False, allow_vary_betwen_groups=False,
+                        doc=None):
     doc = doc or HOST_APP.doc
     msp_list = query.get_defined_sharedparams()
     param_def = None

@@ -11,15 +11,24 @@ logger = get_logger(__name__)
 
 
 def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
-                       load_param=True, doc=None):
+                       load_param=True, allow_vary_betwen_groups=False,
+                       doc=None):
     doc = doc or HOST_APP.doc
     if query.model_has_sharedparam(sparam_name, doc=doc):
+        if allow_vary_betwen_groups:
+            param = query.get_model_sharedparam(sparam_name, doc=doc)
+            if isinstance(param.param_def, DB.InternalDefinition) \
+                    and not param.param_def.VariesAcrossGroups:
+                param.param_def.SetAllowVaryBetweenGroups(doc, True)
         return True
     elif load_param:
-        create.create_shared_param(sparam_name,
-                                   sparam_categories,
-                                   sparam_group,
-                                   doc=doc)
+        create.create_shared_param(
+            sparam_name,
+            sparam_categories,
+            sparam_group,
+            doc=doc,
+            allow_vary_betwen_groups=allow_vary_betwen_groups
+            )
         return True
 
 
