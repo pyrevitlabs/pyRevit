@@ -1406,8 +1406,10 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
-def pick_folder():
+def pick_folder(title=None):
     fb_dlg = Forms.FolderBrowserDialog()
+    if title:
+        fb_dlg.Description = title
     if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
         return fb_dlg.SelectedPath
 
