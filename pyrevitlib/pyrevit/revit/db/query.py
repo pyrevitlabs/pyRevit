@@ -636,3 +636,9 @@ def get_rev_number(revision):
     if hasattr(revision, 'RevisionNumber'):
         revnum = revision.RevisionNumber
     return revnum
+
+
+def get_pointclouds(doc=None):
+    doc = doc or HOST_APP.doc
+    return get_elements_by_category([DB.BuiltInCategory.OST_PointClouds],
+                                    doc=doc)

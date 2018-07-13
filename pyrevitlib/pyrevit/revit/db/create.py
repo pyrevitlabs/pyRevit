@@ -186,3 +186,13 @@ def load_family(family_file, doc=None):
     logger.debug('Loading family from: {}'.format(family_file))
     ret_ref = clr.Reference[DB.Family]()
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+
+
+def create_workset(workset_name, enable_worksharing=True, doc=None):
+    doc = doc or HOST_APP.doc
+    if not doc.IsWorkshared \
+            and doc.CanEnableWorksharing \
+            and enable_worksharing:
+        doc.EnableWorksharing('Shared Levels and Grids', 'Workset1')
+
+    return DB.Workset.Create(doc, workset_name)

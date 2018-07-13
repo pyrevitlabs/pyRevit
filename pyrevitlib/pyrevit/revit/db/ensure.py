@@ -73,3 +73,12 @@ def ensure_element_ids(mixed_list):
             element_id_list.append(DB.ElementId(item))
 
     return element_id_list
+
+
+def ensure_workset(workset_name, doc=None):
+    doc = doc or HOST_APP.doc
+    workset = query.model_has_workset(workset_name, doc=doc)
+    if workset:
+        return workset
+    else:
+        return create.create_workset(workset_name, doc=doc)
