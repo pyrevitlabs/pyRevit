@@ -333,13 +333,13 @@ class SelectFromList(TemplateUserInputWindow):
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
 
-        This module also provides a wrapper base class :obj:`BaseCheckBoxItem`
+        This module also provides a wrapper base class :obj:`TemplateListItem`
         for when the checkbox option is wrapping another element,
         e.g. a Revit ViewSheet. Derive from this base class and define the
         name property to customize how the checkbox is named on the dialog.
 
         >>> from pyrevit import forms
-        >>> class MyOption(forms.BaseCheckBoxItem)
+        >>> class MyOption(forms.TemplateListItem)
         ...    @property
         ...    def name(self):
         ...        return '{} - {}{}'.format(self.item.SheetNumber,

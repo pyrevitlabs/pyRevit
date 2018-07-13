@@ -2,7 +2,7 @@ from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import List
 from pyrevit import DB
-from pyrevit.revit import ensure
+from pyrevit.revit.db import ensure
 
 
 def clear_sheet_revisions(sheet):

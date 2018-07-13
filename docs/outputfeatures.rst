@@ -127,28 +127,21 @@ Select From Open Documents
 
 .. image:: _static/images/forms-select_dest_docs.png
 
-.. autofunction:: pyrevit.forms.select_dest_docs
+.. autofunction:: pyrevit.forms.select_open_docs
     :noindex:
 
 
-Select From List
-^^^^^^^^^^^^^^^^
+Select From List (Single, Multiple)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: _static/images/forms-SelectFromList.png
+
+.. image:: _static/images/forms-SelectFromCheckBoxes.png
 
 .. autoclass:: pyrevit.forms.SelectFromList
     :noindex:
 
-
-Select From Checkbox List
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. image:: _static/images/forms-SelectFromCheckBoxes.png
-
-.. autoclass:: pyrevit.forms.SelectFromCheckBoxes
-    :noindex:
-
-.. autoclass:: pyrevit.forms.BaseCheckBoxItem
+.. autoclass:: pyrevit.forms.TemplateListItem
     :noindex:
 
 

@@ -4,7 +4,7 @@ from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import List
 from pyrevit import DB
-from pyrevit.revit import query
+from pyrevit.revit.db import query
 
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):

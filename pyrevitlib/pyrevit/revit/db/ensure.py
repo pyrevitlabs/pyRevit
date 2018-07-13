@@ -2,9 +2,10 @@ import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils.logger import get_logger
-from pyrevit import revit, DB
-from pyrevit.revit import query
-from pyrevit.revit import create
+from pyrevit import DB
+from pyrevit.revit.db import query
+from pyrevit.revit.db import create
+from pyrevit.revit.db import transaction
 
 
 logger = get_logger(__name__)
@@ -48,7 +49,7 @@ def ensure_family(family_name, family_file, doc=None):
     doc = doc or HOST_APP.doc
     famsym = query.get_family(family_name, doc=doc)
     if not famsym:
-        with revit.Transaction('Load Family', doc=doc):
+        with transaction.Transaction('Load Family', doc=doc):
             logger.debug('Family \"{}\" did not exist.'.format(family_name))
             if create.load_family(family_file, doc=doc):
                 return query.get_family(family_name, doc=doc)

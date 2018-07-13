@@ -2,7 +2,7 @@ from pyrevit import HOST_APP, PyRevitException
 from pyrevit.framework import clr
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
-from pyrevit.revit import query
+from pyrevit.revit.db import query
 
 
 logger = get_logger(__name__)
