@@ -35,7 +35,8 @@ switches = ['Graphic Styles',
             'System Postable Commands',
             'Worksets',
             'Fill Grids',
-            'Connected Circuits'
+            'Connected Circuits',
+            'Point Cloud Instances'
             ]
 
 selected_switch = \
@@ -446,3 +447,10 @@ elif selected_switch == 'Connected Circuits':
         esystems = revit.query.get_connected_circuits(el)
         for esys in esystems:
             print(esys.Name)
+
+elif selected_switch == 'Point Cloud Instances':
+    for pc in revit.query.get_pointclouds(doc=revit.doc):
+        print('Name: {}\tWorkset:{}'.format(
+            pc.Name,
+            pc.LookupParameter('Workset').AsValueString())
+              )
