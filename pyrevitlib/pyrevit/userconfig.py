@@ -8,7 +8,6 @@ import os.path as op
 import shutil
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, HOME_DIR
-from pyrevit.framework import IOException
 
 from pyrevit.coreutils import touch
 import pyrevit.coreutils.appdata as appdata
@@ -121,6 +120,7 @@ class PyRevitConfig(PyRevitConfigParser):
 
         Returns:
             :obj:`list`: list of strings. user extension directories.
+
         """
         dir_list = list()
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
@@ -210,7 +210,7 @@ def _get_default_config_parser(config_file_path):
 
 
 def _setup_admin_config():
-    """Setup the default config file with hardcoded values."""
+    """Set up the default config file with hardcoded values."""
     if not op.exists(CONFIG_FILE_PATH) \
             and op.isdir(ADMIN_CONFIG_DIR):
         for entry in os.listdir(ADMIN_CONFIG_DIR):
@@ -221,8 +221,8 @@ def _setup_admin_config():
                     logger.debug('Configured from admin file: {}'
                                  .format(sourcecfg))
                 except Exception as copy_err:
-                    logger.debug('Error copying admin config file: {}'
-                                 .format(sourcecfg))
+                    logger.debug('Error copying admin config file: {} | {}'
+                                 .format(sourcecfg, copy_err))
                 return True
 
 

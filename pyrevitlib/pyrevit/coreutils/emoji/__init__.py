@@ -1,3 +1,5 @@
+"""Provides emoji support for the html-based output window."""
+
 import os.path as op
 import re
 
@@ -8,6 +10,18 @@ HTML_EMOJI_SPAN = prepare_html_str('<span><img src="{}" class="emoji"></span>')
 
 
 def emojize(text):
+    """Replace all emoji shorthands with unicode image html tags.
+
+    Args:
+        text (str): string containing emoji shorthands
+
+    Returns:
+        str: string with shorthands replaces with html tags
+
+    Example:
+        >>> emojize('Job completed :thumbs_up:')
+        ... 'Job completed <span><img src="./1F44D.png" class="emoji"></span>'
+    """
     pattern = re.compile(':([a-z0-9+-_]+):')
 
     def emojifier(match):

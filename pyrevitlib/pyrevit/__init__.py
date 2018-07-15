@@ -10,7 +10,7 @@ import traceback
 
 try:
     clr.AddReference('PyRevitLoader')
-except Exception as e:
+except Exception:
     # probably older IronPython engine not being able to
     # resolve to an already loaded assembly.
     # PyRevitLoader is executing this script so it should be referabe.
@@ -94,6 +94,7 @@ class PyRevitException(Exception):
 
     @property
     def msg(self):
+        """Return exception message."""
         if self.args:
             return self.args[0]
         else:

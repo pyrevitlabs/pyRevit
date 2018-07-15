@@ -26,5 +26,5 @@ import Autodesk.Revit.UI as UI
 # try loading some utility modules shipped with revit
 try:
     import Newtonsoft.Json as NSJson
-except Exception as loaderr:
+except Exception:
     pass
