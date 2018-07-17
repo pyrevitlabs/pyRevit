@@ -115,22 +115,25 @@ def get_output():
     return output.get_output()
 
 
-def get_config():
+def get_config(section=None):
     """Create and return config section parser object for current script.
+
+    Args:
+        section (str, optional): config section name
 
     Returns:
         :obj:`pyrevit.coreutils.configparser.PyRevitConfigSectionParser`:
             Config section parser object
     """
     from pyrevit.userconfig import user_config
-    script_cfg_postfix = 'config'
+    if not section:
+        script_cfg_postfix = 'config'
+        section = EXEC_PARAMS.command_name + script_cfg_postfix
 
     try:
-        return user_config.get_section(EXEC_PARAMS.command_name +
-                                       script_cfg_postfix)
+        return user_config.get_section(section)
     except Exception:
-        return user_config.add_section(EXEC_PARAMS.command_name +
-                                       script_cfg_postfix)
+        return user_config.add_section(section)
 
 
 def save_config():
