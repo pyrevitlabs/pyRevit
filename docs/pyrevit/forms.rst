@@ -6,7 +6,7 @@ Usage
 
 .. code-block:: python
 
-    from pyrevit.form import WPFWindow
+    from pyrevit.forms import WPFWindow
 
 
 Documentation

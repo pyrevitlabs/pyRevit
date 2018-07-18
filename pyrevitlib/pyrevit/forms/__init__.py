@@ -142,7 +142,7 @@ class WPFWindow(framework.Windows.Window):
         """Collapse elements.
 
         Args:
-            *wpf_elements (str): element names to be collaped
+            *wpf_elements: WPF framework elements to be collaped
         """
         for wpfel in wpf_elements:
             wpfel.Visibility = framework.Windows.Visibility.Collapsed
@@ -152,7 +152,7 @@ class WPFWindow(framework.Windows.Window):
         """Show collapsed elements.
 
         Args:
-            *wpf_elements (str): element names to be set to visible.
+            *wpf_elements: WPF framework elements to be set to visible.
         """
         for wpfel in wpf_elements:
             wpfel.Visibility = framework.Windows.Visibility.Visible
@@ -162,7 +162,7 @@ class WPFWindow(framework.Windows.Window):
         """Toggle visibility of elements.
 
         Args:
-            *wpf_elements (str): element names to be toggled.
+            *wpf_elements: WPF framework elements to be toggled.
         """
         for wpfel in wpf_elements:
             if wpfel.Visibility == framework.Windows.Visibility.Visible:
@@ -211,10 +211,10 @@ class TemplateUserInputWindow(WPFWindow):
 
         Args:
             context (any): window context element(s)
-            title (type): window title
-            width (type): window width
-            height (type): window height
-            **kwargs (type): other arguments to be passed to window
+            title (str): window title
+            width (str): window width
+            height (str): window height
+            **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
         dlg.ShowDialog()
@@ -228,8 +228,10 @@ class TemplateListItem(object):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
-            orig_item (any): object to wrap (must have name property
+            orig_item (any): Object to wrap (must have name property
                              or be convertable to string with str()
+            checkable (bool): Use checkbox for items
+            name_attr (str): Get this attribute of wrapped object as name
         """
         self.item = orig_item
         self.state = False
@@ -283,19 +285,26 @@ class TemplateListItem(object):
 class SelectFromList(TemplateUserInputWindow):
     """Standard form to select from a list of items.
 
-    Check box items passed in context to this standard form, must implement
-    ``name`` and ``state`` parameter and ``__nonzero__`` method for truth
-    value testing.
+    Any object can be passed in a list to the ``context`` argument. This class
+    wraps the objects passed to context, in :obj:`TemplateListItem`.
+    This class provides the necessary mechanism to make this form work both
+    for selecting items from a list, and from a list of checkboxes. See the
+    list of arguments below for additional options and features.
 
     Args:
-        context (list[str]): list of items to be selected from
+        context (list[str] or dict[list[str]]):
+            list of items to be selected from
+            OR
+            dict of list of items to be selected from.
+            use dict when input items need to be grouped
+            e.g. List of sheets grouped by sheet set.
         title (str, optional): window title. see super class for defaults.
         width (int, optional): window width. see super class for defaults.
         height (int, optional): window height. see super class for defaults.
         button_name (str, optional):
             name of select button. defaults to 'Select'
         name_attr (str, optional):
-            attribute that should be read as item name. defaults to None
+            object attribute that should be read as item name.
         multiselect (bool, optional):
             allow multi-selection (uses check boxes). defaults to False
         return_all (bool, optional):
@@ -303,7 +312,7 @@ class SelectFromList(TemplateUserInputWindow):
             and the script needs to check the state changes on all items.
             This options works in multiselect mode only. defaults to False
         filterfunc (function):
-            filter function to be applied to context items. defaults to None
+            filter function to be applied to context items.
         group_selector_title (str):
             title for list group selector. defaults to 'List Group'
         default_group (str): name of defautl group to be selected
@@ -316,22 +325,20 @@ class SelectFromList(TemplateUserInputWindow):
         >>> ['item1']
 
         >>> from pyrevit import forms
-        >>> class MyOption(object):
-        ...     def __init__(self, name, state=False):
-        ...         self.state = state
-        ...         self.name = name
-        ...
-        ...     def __nonzero__(self):
-        ...         return self.state
-        ...
-        ...     def __str__(self):
-        ...         return self.name
-        >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
+        >>> ops = [viewsheet1, viewsheet2, viewsheet3]
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=False,
+        ...                                 name_attr='Name',
+        ...                                 button_name='Select Sheet')
+
+        >>> from pyrevit import forms
+        >>> ops = {'Sheet Set A': [viewsheet1, viewsheet2, viewsheet3],
+        ...        'Sheet Set B': [viewsheet4, viewsheet5, viewsheet6]}
         >>> res = forms.SelectFromList.show(ops,
         ...                                 multiselect=True,
-        ...                                 button_name='Select Item')
-        >>> [bool(x) for x in res]  # or [x.state for x in res]
-        [True, False, True]
+        ...                                 name_attr='Name',
+        ...                                 group_selector_title='Sheet Sets',
+        ...                                 button_name='Select Sheets')
 
         This module also provides a wrapper base class :obj:`TemplateListItem`
         for when the checkbox option is wrapping another element,
@@ -1186,11 +1193,13 @@ class SearchPrompt(WPFWindow):
 
 
 class RevisionOption(TemplateListItem):
+    """Revision wrapper for :func:`select_revisions`."""
     def __init__(self, revision_element):
         super(RevisionOption, self).__init__(revision_element)
 
     @property
     def name(self):
+        """Revision name (description)."""
         revnum = self.item.SequenceNumber
         if hasattr(self.item, 'RevisionNumber'):
             revnum = self.item.RevisionNumber
@@ -1200,11 +1209,13 @@ class RevisionOption(TemplateListItem):
 
 
 class SheetOption(TemplateListItem):
+    """Sheet wrapper for :func:`select_sheets`."""
     def __init__(self, sheet_element):
         super(SheetOption, self).__init__(sheet_element)
 
     @property
     def name(self):
+        """Sheet name."""
         return '{} - {}{}' \
             .format(self.item.SheetNumber,
                     self.item.Name,
@@ -1212,15 +1223,18 @@ class SheetOption(TemplateListItem):
 
     @property
     def number(self):
+        """Sheet number."""
         return self.item.SheetNumber
 
 
 class ViewOption(TemplateListItem):
+    """View wrapper for :func:`select_views`."""
     def __init__(self, view_element):
         super(ViewOption, self).__init__(view_element)
 
     @property
     def name(self):
+        """View name."""
         return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
 
 
@@ -1230,6 +1244,28 @@ def select_revisions(title='Select Revision',
                      multiple=True,
                      filterfunc=None,
                      doc=None):
+    """Standard form for selecting revisions.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for revisions; defaults to active document
+
+    Returns:
+        list[DB.Revision]: list of selected revisions
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_revisions()
+        ... [<Autodesk.Revit.DB.Revision object>,
+        ...  <Autodesk.Revit.DB.Revision object>]
+    """
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
 
@@ -1256,6 +1292,31 @@ def select_sheets(title='Select Sheets',
                   multiple=True,
                   filterfunc=None,
                   doc=None):
+    """Standard form for selecting sheets.
+
+    Sheets are grouped into sheet sets and sheet set can be selected from
+    a drop down box at the top of window.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for sheets; defaults to active document
+
+    Returns:
+        list[DB.ViewSheet]: list of selected sheets
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_sheets()
+        ... [<Autodesk.Revit.DB.ViewSheet object>,
+        ...  <Autodesk.Revit.DB.ViewSheet object>]
+    """
     doc = doc or HOST_APP.doc
     all_ops = dict()
     all_sheets = DB.FilteredElementCollector(doc) \
@@ -1300,6 +1361,28 @@ def select_views(title='Select Views',
                  multiple=True,
                  filterfunc=None,
                  doc=None):
+    """Standard form for selecting views.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+
+    Returns:
+        list[DB.View]: list of selected views
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_views()
+        ... [<Autodesk.Revit.DB.View object>,
+        ...  <Autodesk.Revit.DB.View object>]
+    """
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1324,6 +1407,26 @@ def select_open_docs(title='Select Open Documents',
                      width=DEFAULT_INPUTWINDOW_WIDTH,
                      multiple=True,
                      filterfunc=None):
+    """Standard form for selecting open documents.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+
+    Returns:
+        list[DB.Document]: list of selected documents
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_open_docs()
+        ... [<Autodesk.Revit.DB.Document object>,
+        ...  <Autodesk.Revit.DB.Document object>]
+    """
     # find open documents other than the active doc
     open_docs = [d for d in revit.docs if not d.IsLinked]
     open_docs.remove(revit.doc)
@@ -1351,6 +1454,28 @@ def select_titleblocks(title='Select Titleblock',
                        multiple=False,
                        filterfunc=None,
                        doc=None):
+    """Standard form for selecting a titleblock.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        no_tb_option (str, optional): name of option for no title block
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for titleblocks; defaults to active document
+
+    Returns:
+        DB.ElementId: selected titleblock id.
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_titleblocks()
+        ... <Autodesk.Revit.DB.ElementId object>
+    """
     doc = doc or HOST_APP.doc
     titleblocks = DB.FilteredElementCollector(doc)\
                     .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
@@ -1376,6 +1501,26 @@ def select_titleblocks(title='Select Titleblock',
 
 def alert(msg, title='pyRevit', ok=True,
           cancel=False, yes=False, no=False, retry=False, exit=False):
+    """Show a task dialog with given message.
+
+    Args:
+        msg (str): message to be displayed
+        title (str, optional): task dialog title
+        ok (bool, optional): show OK button, defaults to True
+        cancel (bool, optional): show Cancel button, defaults to False
+        yes (bool, optional): show Yes button, defaults to False
+        no (bool, optional): show NO button, defaults to False
+        retry (bool, optional): show Retry button, defaults to False
+        exit (bool, optional): exit command if cancel or no, defaults to False
+
+    Returns:
+        bool: True if okay, yes, or retry, otherwise False
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.alert('Are you sure?',
+        ...              ok=False, yes=True, no=True, exit=True)
+    """
     buttons = UI.TaskDialogCommonButtons.None   # noqa
     if ok:
         buttons |= UI.TaskDialogCommonButtons.Ok
@@ -1402,11 +1547,41 @@ def alert(msg, title='pyRevit', ok=True,
 
 
 def alert_ifnot(condition, msg, *args, **kwargs):
+    """Show a task dialog with given message if condition is NOT met.
+
+    Args:
+        condition (bool): condition to test
+        msg (str): message to be displayed
+        title (str, optional): task dialog title
+        ok (bool, optional): show OK button, defaults to True
+        cancel (bool, optional): show Cancel button, defaults to False
+        yes (bool, optional): show Yes button, defaults to False
+        no (bool, optional): show NO button, defaults to False
+        retry (bool, optional): show Retry button, defaults to False
+        exit (bool, optional): exit command if cancel or no, defaults to False
+
+    Returns:
+        bool: True if okay, yes, or retry, otherwise False
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.alert_ifnot(value > 12,
+        ...                   'Are you sure?',
+        ...                    ok=False, yes=True, no=True, exit=True)
+    """
     if not condition:
         return alert(msg, *args, **kwargs)
 
 
 def pick_folder(title=None):
+    """Show standard windows pick folder dialog.
+
+    Args:
+        title (str, optional): title for the window
+
+    Returns:
+        str: folder path
+    """
     fb_dlg = Forms.FolderBrowserDialog()
     if title:
         fb_dlg.Description = title
@@ -1416,6 +1591,27 @@ def pick_folder(title=None):
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
+    """Pick file dialog to select a destination file.
+
+    Args:
+        file_ext (str): file extension
+        files_filter (str): file filter
+        init_dir (str): initial directory
+        restore_dir (bool): restore last directory
+        multi_file (bool): allow select multiple files
+        unc_paths (bool): return unc paths
+
+    Returns:
+        str or list[str]: file path or list of file paths if multi_file=True
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.pick_file(file_ext='csv')
+        ... r'C:\output\somefile.csv'
+
+        >>> forms.pick_file(file_ext='csv', multi_file=True)
+        ... [r'C:\output\somefile1.csv', r'C:\output\somefile2.csv']
+    """
     of_dlg = Forms.OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
@@ -1426,13 +1622,36 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     if init_dir:
         of_dlg.InitialDirectory = init_dir
     if of_dlg.ShowDialog() == Forms.DialogResult.OK:
-        if unc_paths:
-            return coreutils.dletter_to_unc(of_dlg.FileName)
-        return of_dlg.FileName
+        if multi_file:
+            if unc_paths:
+                return [coreutils.dletter_to_unc(x) for x in of_dlg.FileNames]
+            return [x for x in of_dlg.FileNames]
+        else:
+            if unc_paths:
+                return coreutils.dletter_to_unc(of_dlg.FileName)
+            return of_dlg.FileName
 
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
+    """Save file dialog to select a destination file for data.
+
+    Args:
+        file_ext (str): file extension
+        files_filter (str): file filter
+        init_dir (str): initial directory
+        default_name (str): default file name
+        restore_dir (bool): restore last directory
+        unc_paths (bool): return unc paths
+
+    Returns:
+        str: file path
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.save_file(file_ext='csv')
+        ... r'C:\output\somefile.csv'
+    """
     sf_dlg = Forms.SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
@@ -1452,6 +1671,14 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
 
 
 def pick_excel_file(save=False):
+    """File pick/save dialog for an excel file.
+
+    Args:
+        save (bool): show file save dialog, instead of file pick dialog
+
+    Returns:
+        str: file path
+    """
     if save:
         return save_file(file_ext='xlsx')
     return pick_file(files_filter='All Files (*.*)|*.*|'
@@ -1460,25 +1687,64 @@ def pick_excel_file(save=False):
 
 
 def save_excel_file():
+    """File save dialog for an excel file.
+
+    Returns:
+        str: file path
+    """
     return pick_excel_file(save=True)
 
 
-def check_workshared(doc=None):
+def check_workshared(doc=None, message='Model is not workshared.'):
+    """Verify if model is workshared and notify user if not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        message (str): prompt message if returning False
+
+    Returns:
+        bool: True if doc is workshared
+    """
     doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert('Model is not workshared.')
+        alert(message)
         return False
     return True
 
 
-def check_selection(exit=False):
+def check_selection(exit=False,
+                    message='At least one element must be selected.'):
+    """Verify if selection is not empty notify user if it is.
+
+    Args:
+        exit (bool): exit script if returning False
+        message (str): prompt message if returning False
+
+    Returns:
+        bool: True if selection has at least one item
+    """
     if revit.get_selection().is_empty:
-        alert('At least one element must be selected.', exit=exit)
+        alert(message, exit=exit)
         return False
     return True
 
 
 def check_familydoc(doc=None, family_cat=None, exit=False):
+    """Verify document is a Family and notify user of not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        family_cat (str): family category name
+        exit (bool): exit script if returning False
+
+    Returns:
+        bool: True if doc is a Family and of provided category
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_familydoc(doc=revit.doc, family_cat='Data Devices')
+        ... True
+    """
     doc = doc or HOST_APP.doc
     family_cat = revit.query.get_category(family_cat)
     if doc.IsFamilyDocument and family_cat:
