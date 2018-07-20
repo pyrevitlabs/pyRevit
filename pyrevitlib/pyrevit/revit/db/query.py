@@ -219,8 +219,8 @@ def model_has_family(family_name, doc=None):
     return hasattr(collector, 'Count') and collector.Count > 0
 
 
-def model_has_workset(workset_name, doc=None):
-    return find_workset(workset_name, doc=doc)
+def model_has_workset(workset_name, partial=False, doc=None):
+    return find_workset(workset_name, partial=partial, doc=doc)
 
 
 def get_sharedparam_definition_file():

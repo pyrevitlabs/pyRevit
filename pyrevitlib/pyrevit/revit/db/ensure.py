@@ -76,9 +76,9 @@ def ensure_element_ids(mixed_list):
     return element_id_list
 
 
-def ensure_workset(workset_name, doc=None):
+def ensure_workset(workset_name, partial=False, doc=None):
     doc = doc or HOST_APP.doc
-    workset = query.model_has_workset(workset_name, doc=doc)
+    workset = query.model_has_workset(workset_name, partial=partial, doc=doc)
     if workset:
         return workset
     else:
