@@ -1,4 +1,9 @@
-"""Provide access to Revit API."""
+"""Provide access to Revit API.
+
+Example:
+    >>> from pyrevit.api import AdWindows
+    >>> from pyrevit.api import NSJson
+"""
 
 from pyrevit.framework import clr
 

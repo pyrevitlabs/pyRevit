@@ -9,6 +9,8 @@ Misc Helper functions for pyRevit.
 
    coreutils/init.rst
    coreutils/emoji.rst
+   coreutils/envvars.rst
    coreutils/appdata.rst
    coreutils/pyutils.rst
    coreutils/mathnet.rst
+   coreutils/moduleutils.rst

@@ -1,4 +1,8 @@
-"""Reusable WPF forms for pyRevit."""
+"""Reusable WPF forms for pyRevit.
+
+Example:
+    >>> from pyrevit.forms import WPFWindow
+"""
 
 import sys
 import os

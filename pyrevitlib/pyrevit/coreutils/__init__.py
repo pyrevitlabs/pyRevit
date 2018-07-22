@@ -1,4 +1,9 @@
-"""Misc Helper functions for pyRevit."""
+"""Misc Helper functions for pyRevit.
+
+Example:
+    >>> from pyrevit import coreutils
+    >>> coreutils.cleanup_string('some string')
+"""
 
 import os
 import os.path as op

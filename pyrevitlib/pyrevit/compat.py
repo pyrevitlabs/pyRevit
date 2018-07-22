@@ -1,4 +1,9 @@
-"""python engine compatibility module."""
+"""python engine compatibility module.
+
+Example:
+    >>> from pyrevit.compat import IRONPY277
+    >>> from pyrevit.compat import safe_strtype
+"""
 
 import sys
 

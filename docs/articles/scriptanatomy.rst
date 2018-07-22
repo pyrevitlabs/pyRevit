@@ -159,7 +159,7 @@ Script Config
 
 Each script can save and load configuration pyRevit's user configuration file:
 
-See :doc:`output/init` for more examples.
+See :doc:`../pyrevit/output/init` for more examples.
 
 See :func:`pyrevit.script.get_config` and :func:`pyrevit.script.save_config` for the individual functions used here.
 

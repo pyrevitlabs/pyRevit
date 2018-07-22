@@ -1,12 +1,35 @@
-"""Helper functions for python."""
+"""Helper functions for python.
+
+Example:
+    >>> from pyrevit.coreutils import pyutils
+    >>> pyutils.safe_cast('string', int, 0)
+"""
 
 import re
 from collections import OrderedDict, Callable
 
 
 class DefaultOrderedDict(OrderedDict):
+    """Ordered dictionary with default type.
+
+    This is similar to defaultdict and maintains the order of items added
+    to it so in that regards it functions similar to OrderedDict.
+
+    Example:
+        >>> from pyrevit.coreutils import pyutils
+        >>> od = pyutils.DefaultOrderedDict(list)
+        >>> od['A'] = [1, 2, 3]
+        >>> od['B'] = [4, 5, 6]
+        >>> od['C'].extend([7, 8, 9])
+        >>> for k, v in od.items():
+        ...     print(k, v)
+        ('A', [1, 2, 3])
+        ('B', [4, 5, 6])
+        ('C', [7, 8, 9])
+    """
+
     # Source: http://stackoverflow.com/a/6190500/562769
-    def __init__(self, default_factory=None, *a, **kw):
+    def __init__(self, default_factory=None, *a, **kw): #noqa
         if (default_factory is not None and
            not isinstance(default_factory, Callable)):
             raise TypeError('first argument must be callable')
@@ -33,6 +56,7 @@ class DefaultOrderedDict(OrderedDict):
         return type(self), args, None, None, self.items()
 
     def copy(self):
+        """Copy the dictionary."""
         return self.__copy__()
 
     def __copy__(self):
@@ -120,5 +144,9 @@ def compare_lists(x, y):
     """Compare two lists.
 
     See: https://stackoverflow.com/a/10872313/2350244
+
+    Args:
+        x (list): first list
+        y (list): second list
     """
     return len(frozenset(x).difference(y)) == 0

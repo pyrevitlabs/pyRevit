@@ -4,28 +4,28 @@ Effective Output/Input
 Clickable Element Links
 -----------------------
 
-.. image:: _static/images/clickablelink.png
+.. image:: ../_static/images/clickablelink.png
 
 work in progress
 
 Tables
 -----------------------
 
-.. image:: _static/images/tableoutput.png
+.. image:: ../_static/images/tableoutput.png
 
 work in progress
 
 Code Output
 -----------------------
 
-.. image:: _static/images/codeoutput.png
+.. image:: ../_static/images/codeoutput.png
 
 work in progress
 
 Progress bars
 -------------
 
-.. image:: _static/images/progressbaroutput.png
+.. image:: ../_static/images/progressbaroutput.png
 
 work in progress
 
@@ -36,17 +36,17 @@ Standard Prompts
 Alerts
 ^^^^^^
 
-.. image:: _static/images/forms-alert.png
+.. image:: ../_static/images/forms-alert.png
 
 .. autofunction:: pyrevit.forms.alert
     :noindex:
 
-.. image:: _static/images/forms-check_workshared.png
+.. image:: ../_static/images/forms-check_workshared.png
 
 .. autofunction:: pyrevit.forms.check_workshared
     :noindex:
 
-.. image:: _static/images/forms-WarningBar.png
+.. image:: ../_static/images/forms-WarningBar.png
 
 .. autoclass:: pyrevit.forms.WarningBar
     :noindex:
@@ -55,7 +55,7 @@ Alerts
 Command Options
 ^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-CommandSwitchWindow.png
+.. image:: ../_static/images/forms-CommandSwitchWindow.png
 
 .. autoclass:: pyrevit.forms.CommandSwitchWindow
     :noindex:
@@ -64,7 +64,7 @@ Command Options
 Showing Progress
 ^^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-ProgressBar.png
+.. image:: ../_static/images/forms-ProgressBar.png
 
 .. autoclass:: pyrevit.forms.ProgressBar
     :noindex:
@@ -77,7 +77,7 @@ Standard Dialogs
 Pick File
 ^^^^^^^^^
 
-.. image:: _static/images/forms-pick_file.png
+.. image:: ../_static/images/forms-pick_file.png
 
 .. autofunction:: pyrevit.forms.pick_file
     :noindex:
@@ -89,7 +89,7 @@ Pick File
 Pick Folder
 ^^^^^^^^^^^
 
-.. image:: _static/images/forms-pick_folder.png
+.. image:: ../_static/images/forms-pick_folder.png
 
 .. autofunction:: pyrevit.forms.pick_folder
     :noindex:
@@ -98,7 +98,7 @@ Pick Folder
 Select Views
 ^^^^^^^^^^^^
 
-.. image:: _static/images/forms-select_views.png
+.. image:: ../_static/images/forms-select_views.png
 
 .. autofunction:: pyrevit.forms.select_views
     :noindex:
@@ -107,7 +107,7 @@ Select Views
 Select Sheets
 ^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-select_sheets.png
+.. image:: ../_static/images/forms-select_sheets.png
 
 .. autofunction:: pyrevit.forms.select_sheets
     :noindex:
@@ -116,7 +116,7 @@ Select Sheets
 Select Revisions
 ^^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-select_revisions.png
+.. image:: ../_static/images/forms-select_revisions.png
 
 .. autofunction:: pyrevit.forms.select_revisions
     :noindex:
@@ -125,7 +125,7 @@ Select Revisions
 Select From Open Documents
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-select_dest_docs.png
+.. image:: ../_static/images/forms-select_dest_docs.png
 
 .. autofunction:: pyrevit.forms.select_open_docs
     :noindex:
@@ -134,9 +134,9 @@ Select From Open Documents
 Select From List (Single, Multiple)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-SelectFromList.png
+.. image:: ../_static/images/forms-SelectFromList.png
 
-.. image:: _static/images/forms-SelectFromCheckBoxes.png
+.. image:: ../_static/images/forms-SelectFromCheckBoxes.png
 
 .. autoclass:: pyrevit.forms.SelectFromList
     :noindex:
@@ -151,7 +151,7 @@ Base Forms
 Input Dialog for pyRevit Search
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. image:: _static/images/forms-SearchPrompt.png
+.. image:: ../_static/images/forms-SearchPrompt.png
 
 .. autofunction:: pyrevit.forms.SearchPrompt
     :noindex:
@@ -293,7 +293,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/linechart.png
+.. image:: ../_static/images/linechart.png
 
 
 Pie charts
@@ -326,7 +326,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/piechart.png
+.. image:: ../_static/images/piechart.png
 
 
 Bar charts
@@ -341,7 +341,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/barchart.png
+.. image:: ../_static/images/barchart.png
 
 
 Bubble charts
@@ -356,7 +356,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/bubblechart.png
+.. image:: ../_static/images/bubblechart.png
 
 
 Radar charts
@@ -371,7 +371,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/radarchart.png
+.. image:: ../_static/images/radarchart.png
 
 
 Polar Area charts
@@ -386,7 +386,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/polarareachart.png
+.. image:: ../_static/images/polarareachart.png
 
 
 Doghnut charts
@@ -401,7 +401,7 @@ See the comments in the script for more info
 
 And here is the result:
 
-.. image:: _static/images/doghnutchart.png
+.. image:: ../_static/images/doghnutchart.png
 
 
 Charts engine

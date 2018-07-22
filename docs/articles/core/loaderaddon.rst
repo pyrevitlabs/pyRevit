@@ -30,7 +30,7 @@ pyRevit loader script
 
 Here is the full source of ``pyRevitLoader.py``. The docstring explains how it works.
 
-.. literalinclude:: ../pyrevitlib/pyrevit/loader/addin/pyRevitLoader.py
+.. literalinclude:: ../../../pyrevitlib/pyrevit/loader/addin/pyRevitLoader.py
 
 
 pyRevitLoader Addin Source

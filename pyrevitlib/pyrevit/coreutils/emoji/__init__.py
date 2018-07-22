@@ -1,4 +1,10 @@
-"""Provides emoji support for the html-based output window."""
+"""Provides emoji support for the html-based output window.
+
+Example:
+    >>> from pyrevit.coreutils import emoji
+    >>> emoji.emojize('Job completed :thumbs_up:')
+    'Job completed <span><img src="./1F44D.png" class="emoji"></span>'
+"""
 
 import os.path as op
 import re
@@ -20,7 +26,7 @@ def emojize(text):
 
     Example:
         >>> emojize('Job completed :thumbs_up:')
-        ... 'Job completed <span><img src="./1F44D.png" class="emoji"></span>'
+        'Job completed <span><img src="./1F44D.png" class="emoji"></span>'
     """
     pattern = re.compile(':([a-z0-9+-_]+):')
 

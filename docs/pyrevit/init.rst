@@ -1,23 +1,8 @@
 :mod:`pyrevit`
 ==============
 
-Usage
-*****
-
-.. code-block:: python
-
-    from pyrevit import DB, UI
-    from pyrevit import PyRevitException, PyRevitIOError
-
-    # pyrevit module has global instance of the
-    # _HostAppPostableCommand and _ExecutorParams classes already created
-    # import and use them like below
-    from pyrevit import HOST_APP
-    from pyrevit import EXEC_PARAMS
-
-
-Documentation
-*************
+.. automodule:: pyrevit
+    :synopsis:
 
 .. autoclass:: pyrevit.PyRevitException
 

@@ -1,4 +1,8 @@
-"""Provide access to DotNet Framework."""
+"""Provide access to DotNet Framework.
+
+Example:
+    >>> from pyrevit.framework import Assembly, Windows
+"""
 
 import clr
 

@@ -32,7 +32,7 @@ Extensions are organized in a folder bundle with ``.extension`` postfix.
 
 Like this one:
 
-.. image:: _static/images/extension.png
+.. image:: ../_static/images/extension.png
 
 There are two steps that you need to follow to create your own extensions:
 
@@ -43,7 +43,7 @@ There are two steps that you need to follow to create your own extensions:
     under the Custom Extension folders section. This way your precious extensions
     will stay out of the pyRevit installation and are safe.
 
-    .. image:: _static/images/customextfolder.png
+    .. image:: ../_static/images/customextfolder.png
 
 * Create custom extension bundle:
 
@@ -58,7 +58,7 @@ A bundle is a folder named in the format ``bundle_name.bundle_type``.
 
 Like these:
 
-.. image:: _static/images/bundle.png
+.. image:: ../_static/images/bundle.png
 
 The most basic bundle is a command bundle. There are more than one type of
 command bundles but a ``.pushbutton`` bundle explained here covers 90% of the use cases.
@@ -101,11 +101,11 @@ Each command bundle needs to include a script either in python or C#:
 
 This is how a command bundle looks like:
 
-.. image:: _static/images/commandbundle.png
+.. image:: ../_static/images/commandbundle.png
 
 And this is a more advanced command bundle with a configuration script and configuration window definition file:
 
-.. image:: _static/images/advancedcommandbundle.png
+.. image:: ../_static/images/advancedcommandbundle.png
 
 
 Group Bundles
@@ -144,7 +144,7 @@ Oh, and also:
 
 And this is how a typical Group Bundle looks like:
 
-.. image:: _static/images/groupbundle1.png
+.. image:: ../_static/images/groupbundle1.png
 
 
 Now let's talk about the different Group Bundles:

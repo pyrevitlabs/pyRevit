@@ -1,4 +1,11 @@
-"""Provide basic utilities for pyRevit scripts."""
+"""Provide basic utilities for pyRevit scripts.
+
+Example:
+    >>> from pyrevit import script
+    >>> script.clipboard_copy('some text')
+    >>> data = script.journal_read('data-key')
+    >>> script.exit()
+"""
 
 import sys
 import os
