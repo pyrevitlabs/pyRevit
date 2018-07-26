@@ -11,7 +11,7 @@ import sys
 import os
 import os.path as op
 
-from pyrevit import EXEC_PARAMS
+from pyrevit import EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import envvars
@@ -153,17 +153,29 @@ def save_config():
     user_config.save_changes()
 
 
-def reset_config():
+def reset_config(section=None):
     """Reset pyRevit config.
 
-    Script should call this to reset any saved configuration by removing section related to current script
-    """
-    from pyrevit.userconfig import user_config
-    script_cfg_postfix = 'config'
+    Script should call this to reset any save configuration by removing
+    section related to current script.
 
-    user_config.remove_section(EXEC_PARAMS.command_name +
-                                   script_cfg_postfix)
-    user_config.save_changes()
+    Args:
+        section (str, optional): config section name
+    """
+    from pyrevit.userconfig import INIT_SETTINGS_SECTION, user_config
+    if not section:
+        script_cfg_postfix = 'config'
+        section = EXEC_PARAMS.command_name + script_cfg_postfix
+    elif section in [INIT_SETTINGS_SECTION]:
+        raise PyRevitException('Can not remove internal config section: {}'
+                               .format(section))
+
+    try:
+        user_config.remove_section(section)
+        user_config.save_changes()
+    except Exception:
+        mlogger.debug('Failed resetting config for {} ({})'
+                      .format(EXEC_PARAMS.command_name, section))
 
 
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
