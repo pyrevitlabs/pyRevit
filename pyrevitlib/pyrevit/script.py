@@ -143,6 +143,19 @@ def save_config():
     user_config.save_changes()
 
 
+def reset_config():
+    """Reset pyRevit config.
+
+    Script should call this to reset any saved configuration by removing section related to current script
+    """
+    from pyrevit.userconfig import user_config
+    script_cfg_postfix = 'config'
+
+    user_config.remove_section(EXEC_PARAMS.command_name +
+                                   script_cfg_postfix)
+    user_config.save_changes()
+
+
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
     """Return filename to be used by a user script to store data.
 
