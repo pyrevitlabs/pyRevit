@@ -115,7 +115,8 @@ def _produce_ui_separator(ui_maker_params):
     if not ext_asm_info.reloading:
         logger.debug('Adding separator to: {}'.format(parent_ui_item))
         try:
-            parent_ui_item.add_separator()
+            if hasattr(parent_ui_item, 'add_separator'):    # re issue #361
+                parent_ui_item.add_separator()
         except PyRevitException as err:
             logger.error('UI error: {}'.format(err.message))
 
