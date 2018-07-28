@@ -26,7 +26,7 @@ if EXEC_PARAMS.executed_from_ui:
                       '      (e.g. __title__, __doc__, ...) have changed.\n'
                       '    - Cached engines need to be cleared.\n\n'
                       'Are you sure you want to reload?',
-                      yes=True, no=True)
+                      ok=False, yes=True, no=True)
 
 if res:
     logger = script.get_logger()
