@@ -44,6 +44,17 @@ output.print_table([[1, 2, 3],
                    title='Test Table')
 
 
+data = [['结构', '结构', '结构结构', 80],
+        ['结构', '结构', '结构', 45],
+        ['row3', 'data', 'data', 45],
+        ['结构结构', 'data', '结构', 45]]
+
+output.print_table(table_data=data,
+                   title="Example Table",
+                   columns=["Row Name", "Column 1", "Column 2", "Percentage"],
+                   formats=['', '', '', '{}%'],
+                   last_line_style='color:red;')
+
 output.update_progress(50, 100)
 output.hide_progress()
 output.unhide_progress()
