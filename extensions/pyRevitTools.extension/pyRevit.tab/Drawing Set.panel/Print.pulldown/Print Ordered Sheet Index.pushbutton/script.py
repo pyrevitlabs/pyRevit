@@ -115,9 +115,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         for sheet in sheet_list:
             for line_no, data_line in enumerate(sched_data):
                 try:
-                    if sheet.SheetNumber in data_line:
-                        ordered_sheets_dict[line_no] = sheet
-                        break
+                    if sheet.CanBePrinted:
+                        if sheet.SheetNumber in data_line:
+                            ordered_sheets_dict[line_no] = sheet
+                            break
+                    else:
+                        logger.warning('Sheet {} is not printable.'
+                                       .format(sheet.SheetNumber))
                 except Exception:
                     continue
 
@@ -178,7 +182,19 @@ class PrintSheetsWindow(forms.WPFWindow):
                     all_viewsheetsets[sheetsetname]
                 viewsheet_settings.Delete()
 
-            viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
+            try:
+                viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
+            except Exception as viewset_err:
+                sheet_report = ''
+                for sheet in sheet_set:
+                    sheet_report += '{} {}\n'.format(
+                        sheet.SheetNumber if isinstance(sheet, DB.ViewSheet)
+                        else '---',
+                        type(sheet)
+                        )
+                logger.critical('Error setting sheet set on print mechanism. '
+                                'These items are included in the viewset '
+                                'object:\n{}'.format(sheet_report))
             viewsheet_settings.SaveAs(sheetsetname)
 
         print_mgr.PrintOrderReverse = self.reverse_print
@@ -195,7 +211,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         # now fix the sheet names
         with revit.Transaction('Restore Sheet Numbers') as t:
             for sheet, sheetnum in zip(self.sheets_lb.ItemsSource,
-                                      original_sheetnums):
+                                       original_sheetnums):
                 sht = sheet.revit_sheet
                 sht.SheetNumber = sheetnum
 
@@ -214,6 +230,9 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
             if sheet.printable:
                 print_mgr.SubmitPrint(sheet.revit_sheet)
+            else:
+                logger.warning('Sheet {} is not printable. Skipping print.'
+                               .format(sheet.SheetNumber))
 
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):
