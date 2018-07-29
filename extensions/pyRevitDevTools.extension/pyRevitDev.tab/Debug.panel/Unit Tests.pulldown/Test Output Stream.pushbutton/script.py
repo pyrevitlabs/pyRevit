@@ -67,3 +67,7 @@ for i in range(5000):
     print(i)
 
 output.unfreeze()
+
+output.debug_mode = True
+
+raise Exception('Testing long error reports...')
