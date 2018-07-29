@@ -99,6 +99,19 @@ class PyRevitOutputWindow(object):
         if self.window:
             return self.window.OutputUniqueId
 
+    @property
+    def debug_mode(self):
+        """Set debug mode on output window and stream.
+
+        This will cause the output window to print information about the
+        buffer stream and other aspects of the output window mechanism.
+        """
+        return EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo
+
+    @debug_mode.setter
+    def debug_mode(self, value):
+        EXEC_PARAMS.pyrevit_command.OutputStream.PrintDebugInfo = value
+
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
 
