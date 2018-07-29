@@ -110,7 +110,7 @@ namespace PyRevitBaseClasses
                     // append output to the buffer
                     _outputBuffer += text;
 
-                    if (count % 1024 != 0)
+                    if (count < 1024)
                     {
                         // Cleanup output for html
                         if (_outputBuffer.EndsWith("\n"))
