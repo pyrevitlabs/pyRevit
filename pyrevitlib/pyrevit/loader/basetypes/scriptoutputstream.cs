@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 
@@ -13,6 +15,8 @@ namespace PyRevitBaseClasses
         private WeakReference<PyRevitCommandRuntime> _pyrvtCmd;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
+
+        public bool PrintDebugInfo = false;
 
 
         public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
@@ -46,6 +50,20 @@ namespace PyRevitBaseClasses
             return null;
         }
 
+        // helper method to split the buffer string into chunks for writing
+        static IEnumerable<string> Split(string str, int chunkSize) {
+            if (string.IsNullOrEmpty(str) || chunkSize < 1)
+                throw new ArgumentException("String can not be null or empty and chunk size should be greater than zero.");
+            var chunkCount = str.Length / chunkSize + (str.Length % chunkSize != 0 ? 1 : 0);
+            for (var i = 0; i < chunkCount; i++) {
+                var startIndex = i * chunkSize;
+                if (startIndex + chunkSize >= str.Length)
+                    yield return str.Substring(startIndex);
+                else
+                    yield return str.Substring(startIndex, chunkSize);
+            }
+        }
+
 
         // this is for python stream compatibility
         public void write(string s)
@@ -69,7 +87,9 @@ namespace PyRevitBaseClasses
                 var err_div = output.ComposeEntry(error_msg.Replace("\n", "<br/>"), ExternalConfig.errordiv);
 
                 var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
-                Write(Encoding.ASCII.GetBytes(output_err_message), 0, output_err_message.Length);
+                foreach(string message_part in Split(output_err_message, 1024)) {
+                    Write(Encoding.ASCII.GetBytes(message_part), 0, message_part.Length);
+                }
             }
         }
 
@@ -108,6 +128,10 @@ namespace PyRevitBaseClasses
 
                     // append output to the buffer
                     _outputBuffer += text;
+
+                    if(PrintDebugInfo) {
+                        output.AppendError(String.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
+                    }
 
                     if (count < 1024)
                     {
