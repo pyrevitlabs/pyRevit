@@ -131,7 +131,7 @@ namespace PyRevitBaseClasses
                     _outputBuffer += text;
 
                     if(PrintDebugInfo) {
-                        output.AppendError(String.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
+                        output.AppendText(String.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
                     }
 
                     if (count < 1024)
