@@ -642,3 +642,20 @@ def get_pointclouds(doc=None):
     doc = doc or HOST_APP.doc
     return get_elements_by_category([DB.BuiltInCategory.OST_PointClouds],
                                     doc=doc)
+
+
+def get_mep_connections(element):
+    connmgr = None
+    if isinstance(element, DB.FamilyInstance):
+        connmgr = element.MEPModel.ConnectorManager
+    elif isinstance(element, DB.Plumbing.Pipe):
+        connmgr = element.ConnectorManager
+
+    if connmgr:
+        connelements = [y.Owner
+                        for x in connmgr.Connectors
+                        for y in x.AllRefs
+                        if x.IsConnected
+                        and y.Owner.Id != element.Id
+                        and y.ConnectorType != DB.ConnectorType.Logical]
+        return connelements
