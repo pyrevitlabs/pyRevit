@@ -67,16 +67,6 @@ def set_to_question():
                       suffix='(?)')
 
 
-def set_to_pd():
-    set_dim_overrides(grab_dims(), txn_name='PD Dims',
-                      suffix='P.D.')
-
-
-def set_to_ro():
-    set_dim_overrides(grab_dims(), txn_name='RO Dims',
-                      suffix='R.O.')
-
-
 def set_to_zero():
     set_dim_overrides(grab_dims(), txn_name='Zero Dims',
                       value='0"', above='', below='', prefix='', suffix='')
@@ -166,6 +156,26 @@ def set_to_uno_suffix():
                       suffix='UNO')
 
 
+def set_to_pd():
+    set_dim_overrides(grab_dims(), txn_name='PD Dims',
+                      suffix='P.D.')
+
+
+def set_to_pd_beow():
+    set_dim_overrides(grab_dims(), txn_name='PD Dims',
+                      below='P.D.')
+
+
+def set_to_ro():
+    set_dim_overrides(grab_dims(), txn_name='RO Dims',
+                      suffix='R.O.')
+
+
+def set_to_ro_below():
+    set_dim_overrides(grab_dims(), txn_name='RO Dims',
+                      below='R.O.')
+
+
 options = OrderedDict()
 options['Reset Dimension Overrides'] = clear_overrides
 options['Bake Dimension Value'] = bake_dim_value
@@ -180,7 +190,9 @@ options['Suffix: VIF'] = set_to_vif_suffix
 options['Below: VIF'] = set_to_vif_below
 options['Suffix: (?)'] = set_to_question
 options['Suffix: P.D.'] = set_to_pd
+options['Below: P.D.'] = set_to_pd_beow
 options['Suffix: R.O.'] = set_to_ro
+options['Below: R.O.'] = set_to_ro_below
 options['Below: TYP'] = set_to_typ_below
 options['Suffix: TYP'] = set_to_typ_suffix
 options['Below: MIN'] = set_to_min_below
