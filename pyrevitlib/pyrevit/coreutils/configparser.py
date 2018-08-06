@@ -83,7 +83,7 @@ class PyRevitConfigParser(object):
     def __init__(self, cfg_file_path=None):
         self._cfg_file_path = cfg_file_path
         self._parser = ConfigParser.ConfigParser()
-        if self._cfg_file_path is not None:
+        if self._cfg_file_path:
             try:
                 with open(self._cfg_file_path, 'r') as cfg_file:
                     self._parser.readfp(cfg_file)
@@ -124,16 +124,16 @@ class PyRevitConfigParser(object):
         self._parser.remove_section(section_name)
         return PyRevitConfigSectionParser(self._parser, section_name)
 
-    def reload(self, cfg_file_path):
+    def reload(self, cfg_file_path=None):
         try:
-            with open(cfg_file_path, 'r') as cfg_file:
+            with open(cfg_file_path or self._cfg_file_path, 'r') as cfg_file:
                 self._parser.readfp(cfg_file)
         except (OSError, IOError):
             raise PyRevitIOError()
 
-    def save(self, cfg_file_path):
+    def save(self, cfg_file_path=None):
         try:
-            with open(cfg_file_path, 'w') as cfg_file:
+            with open(cfg_file_path or self._cfg_file_path, 'w') as cfg_file:
                 self._parser.write(cfg_file)
         except (OSError, IOError):
             raise PyRevitIOError()
