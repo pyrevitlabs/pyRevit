@@ -163,7 +163,6 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _print_combined_sheets_in_order(self):
         print_mgr = revit.doc.PrintManager
         print_mgr.PrintRange = DB.PrintRange.Select
-        viewsheet_settings = print_mgr.ViewSheetSetting
 
         sheet_set = DB.ViewSet()
 
@@ -190,12 +189,12 @@ class PrintSheetsWindow(forms.WPFWindow):
             with revit.Transaction('Update Ordered Print Set') as t:
                 # Delete existing matching sheet set
                 if sheetsetname in all_viewsheetsets:
-                    viewsheet_settings.CurrentViewSheetSet = \
+                    print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
                         all_viewsheetsets[sheetsetname]
-                    viewsheet_settings.Delete()
+                    print_mgr.ViewSheetSetting.Delete()
 
                 try:
-                    viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
+                    print_mgr.ViewSheetSetting.CurrentViewSheetSet.Views = sheet_set
                 except Exception as viewset_err:
                     sheet_report = ''
                     for sheet in sheet_set:
@@ -211,7 +210,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                         'object:\n{}'.format(sheet_report)
                         )
                     raise viewset_err
-                viewsheet_settings.SaveAs(sheetsetname)
+                print_mgr.ViewSheetSetting.SaveAs(sheetsetname)
 
             print_mgr.PrintOrderReverse = self.reverse_print
             try:
