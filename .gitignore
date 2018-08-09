@@ -7,30 +7,10 @@ extensions/*
 !extensions/extensions.json
 !extensions/README.md
 
-# ignore third-party lib folder
-lib/*
-!lib/README.md
-!lib/enum
-!lib/customcollections
-!lib/requests
-!lib/urllib3
-
-# ignore pyCharm workspace settings
-.idea/workspace.xml
-
 # ignore visual studio files
 .vs\*
 .suo
 obj\*
-pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/addin/273/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/273/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/273/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/\.vs/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/bin/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
 
 # ignore sphinx build files
 docs/_*
@@ -43,9 +23,6 @@ release/setupmaker/output/*
 # ignore uninstaller files that will be copied to this folder at installation
 unins*.dat
 unins*.exe
-
-# ignore Goodsync cache folder
-_gsdata_/
 
 # ignore standard python and os temp files
 __py*
