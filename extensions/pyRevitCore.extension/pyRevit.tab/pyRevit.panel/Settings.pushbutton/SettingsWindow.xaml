@@ -287,6 +287,8 @@
                         <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
                         <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
                         <CheckBox x:Name="revit2015_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
+                        <CheckBox x:Name="revit2014_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2014</CheckBox>
+                        <CheckBox x:Name="revit2013_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2013</CheckBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
