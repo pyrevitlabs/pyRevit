@@ -1,15 +1,11 @@
 ﻿using System;
-using System.IO;
-using System.Reflection;
 using System.Linq;
 using System.Text;
-using Autodesk.Revit;
 using IronPython.Runtime.Exceptions;
 using IronPython.Compiler;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
 using System.Collections.Generic;
 
 namespace PyRevitLoader
@@ -115,7 +111,7 @@ namespace PyRevitLoader
             // use embedded python lib
             var asm = this.GetType().Assembly;
             var resQuery = from name in asm.GetManifestResourceNames()
-                           where name.ToLowerInvariant().EndsWith("python_27_lib.zip")
+                           where name.ToLowerInvariant().EndsWith(String.Format("python_{0}_lib.zip", EngineVersion))
                            select name;
             var resName = resQuery.Single();
             var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resName);

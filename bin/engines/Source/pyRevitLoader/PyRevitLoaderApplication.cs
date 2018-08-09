@@ -1,19 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Xml.Linq;
-using Autodesk.Revit;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Configuration;
-using System.Collections.Specialized;
 
 namespace PyRevitLoader
 {
