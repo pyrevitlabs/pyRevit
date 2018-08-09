@@ -14,7 +14,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.loader.addin import get_addin_dll_file
+from pyrevit.loader import addin
 
 
 logger = get_logger(__name__)
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 GIT_LIB = 'LibGit2Sharp'
 
 if not EXEC_PARAMS.doc_mode:
-    libgit_dll = get_addin_dll_file(GIT_LIB)
+    libgit_dll = addin.get_addin_dll_file(GIT_LIB)
     logger.debug('Loading dll: {}'.format(libgit_dll))
 
     try:
@@ -48,10 +48,10 @@ class RepoInfo:
     def __init__(self, repo):
         self.directory = repo.Info.WorkingDirectory
         self.name = op.basename(op.normpath(self.directory))
-        self.head_name = repo.Head.Name
+        self.head_name = repo.Head.FriendlyName
         self.last_commit_hash = repo.Head.Tip.Id.Sha
         self.repo = repo
-        self.branch = repo.Head.Name
+        self.branch = repo.Head.FriendlyName
         self.username = self.password = None
 
     def __repr__(self):
@@ -202,10 +202,10 @@ def compare_branch_heads(repo_info):
     repo_branches = repo.Branches
 
     logger.debug('Repo branches: {}'
-                 .format([b.Name for b in repo_branches]))
+                 .format([b.FriendlyName for b in repo_branches]))
 
     for branch in repo_branches:
-        if branch.Name == repo_info.branch and not branch.IsRemote:
+        if branch.FriendlyName == repo_info.branch and not branch.IsRemote:
             try:
                 if branch.TrackedBranch:
                     logger.debug('Comparing heads: {} of {}'

@@ -1,5 +1,5 @@
 import os.path as op
-from pyrevit import EXEC_PARAMS, LOADER_DIR, ADDIN_DIR, PYREVITLOADER_DIR
+from pyrevit import EXEC_PARAMS, LOADER_DIR, ADDIN_DIR, BIN_DIR
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import loader
@@ -15,7 +15,7 @@ DYNAMOCOMPAT_PYREVITLOADER = '273'
 def _get_pyrevitloader_dll(addin_filename):
     # finding dlls in specific PyRevitLoader directory
     addin_file = \
-        op.join(PYREVITLOADER_DIR,
+        op.join(BIN_DIR,
                 coreutils.make_canonical_name(addin_filename,
                                               loader.ASSEMBLY_FILE_TYPE))
     logger.debug('Dll requested: {}'.format(addin_file))

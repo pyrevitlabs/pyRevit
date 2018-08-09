@@ -22,7 +22,8 @@ import sys
 import os.path as op
 
 # add the library location to the system search paths
-sys.path.append(op.dirname(op.dirname(op.dirname(op.dirname(__file__)))))
+repo_path = op.dirname(op.dirname(op.dirname(__file__)))
+sys.path.append(op.join(repo_path, 'pyrevitlib'))
 
 # now pyrevit can be imported
 from pyrevit.loader import sessionmgr
