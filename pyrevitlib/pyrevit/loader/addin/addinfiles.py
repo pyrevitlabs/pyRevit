@@ -2,7 +2,7 @@ import os
 import os.path as op
 
 from pyrevit import PYREVIT_ADDON_NAME, HOST_APP
-from pyrevit import ADDIN_DIR, PYREVITLOADER_DIR
+from pyrevit import ADDIN_DIR, ENGINES_DIR
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader import LOADER_ADDON_NAMESPACE
 from pyrevit.loader import addin
@@ -101,7 +101,7 @@ def _set_addin_state_for(revit_version, addin_state, program_data=False):
                     f.writelines(
                         addinfile_contents.format(
                             addinname=LOADER_ADDON_NAMESPACE,
-                            addinfolder=PYREVITLOADER_DIR,
+                            addinfolder=ENGINES_DIR,
                             addinguid=ADDIN_GUID,
                             addinvendorid=ADDIN_VENDORID,
                             addinclassname=ADDIN_CLASSNAME

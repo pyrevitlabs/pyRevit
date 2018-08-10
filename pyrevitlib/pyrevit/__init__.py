@@ -50,6 +50,9 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
+# BIN directory
+BIN_DIR = op.join(HOME_DIR, 'BIN')
+
 # default extensions directory
 EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
 
@@ -58,28 +61,28 @@ MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
 MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
 
 # path to pyrevit module
-PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
+MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 
 # loader directory
-LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
+LOADER_DIR = op.join(MODULE_DIR, 'loader')
 
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
 # if loader module is available means pyRevit is being executed by Revit.
 if PyRevitLoader:
-    PYREVITLOADER_DIR = \
-        op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
-    ADDIN_RESOURCE_DIR = op.join(PYREVITLOADER_DIR,
+    ENGINES_DIR = \
+        op.join(BIN_DIR, 'engines', PyRevitLoader.ScriptExecutor.EngineVersion)
+    ADDIN_RESOURCE_DIR = op.join(BIN_DIR, 'engines',
                                  'Source', 'pyRevitLoader', 'Resources')
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:
-    PYREVITLOADER_DIR = ADDIN_RESOURCE_DIR = None
+    ENGINES_DIR = ADDIN_RESOURCE_DIR = None
 
 # add the framework dll path to the search paths
 sys.path.append(ADDIN_DIR)
-sys.path.append(PYREVITLOADER_DIR)
+sys.path.append(ENGINES_DIR)
 
 
 # pylama:ignore=E402
