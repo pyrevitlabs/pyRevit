@@ -111,4 +111,4 @@ COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
 COMP_LIBRARY_DIR_NAME = 'lib'
 
 CTX_SELETION = 'selection'
-CTX_ZERODOC = 'zerodoc'
+CTX_ZERODOC = ['zero-doc', 'zerodoc']

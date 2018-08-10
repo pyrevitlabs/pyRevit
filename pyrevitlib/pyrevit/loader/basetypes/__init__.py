@@ -45,8 +45,8 @@ CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
 CMD_AVAIL_TYPE_NAME = \
     make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
 
-CMD_AVAIL_TYPE_NAME_CATEGORY = \
-    make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandCategoryAvail')
+CMD_AVAIL_TYPE_NAME_EXTENDED = \
+    make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandExtendedAvail')
 
 CMD_AVAIL_TYPE_NAME_SELECTION = \
     make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
@@ -187,13 +187,13 @@ if not EXEC_PARAMS.doc_mode:
                                           CMD_EXECUTOR_TYPE_NAME)
     CMD_AVAIL_TYPE = find_type_by_name(BASE_TYPES_ASM,
                                        CMD_AVAIL_TYPE_NAME)
-    CMD_AVAIL_TYPE_CATEGORY = find_type_by_name(BASE_TYPES_ASM,
-                                                CMD_AVAIL_TYPE_NAME_CATEGORY)
+    CMD_AVAIL_TYPE_EXTENDED = find_type_by_name(BASE_TYPES_ASM,
+                                                CMD_AVAIL_TYPE_NAME_EXTENDED)
     CMD_AVAIL_TYPE_SELECTION = find_type_by_name(BASE_TYPES_ASM,
                                                  CMD_AVAIL_TYPE_NAME_SELECTION)
     DYNOCMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM,
                                               DYNOCMD_EXECUTOR_TYPE_NAME)
 else:
     BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = CMD_AVAIL_TYPE = None
-    CMD_AVAIL_TYPE_CATEGORY = CMD_AVAIL_TYPE_SELECTION = None
+    CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None
     DYNOCMD_EXECUTOR_TYPE = None

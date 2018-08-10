@@ -10,12 +10,17 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
 
-namespace PyRevitBaseClasses
-{
+namespace PyRevitBaseClasses {
+    public enum ExtendedAvailabilityTypes {
+        ZeroDocuments,
+        ActiveView,
+        Selection,
+    }
+
+
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    public abstract class PyRevitCommand : IExternalCommand
-    {
+    public abstract class PyRevitCommand : IExternalCommand {
         public string baked_scriptSource = null;
         public string baked_alternateScriptSource = null;
         public string baked_syspaths = null;
@@ -52,8 +57,7 @@ namespace PyRevitBaseClasses
                               string cmdExtension,
                               string cmdUniqueName,
                               int needsCleanEngine,
-                              int needsFullFrameEngine)
-        {
+                              int needsFullFrameEngine) {
             baked_scriptSource = scriptSource;
             baked_alternateScriptSource = alternateScriptSource;
             baked_syspaths = syspaths;
@@ -67,8 +71,7 @@ namespace PyRevitBaseClasses
         }
 
 
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements) {
             // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Processing modifier keys
             // Processing modifier keys
@@ -86,20 +89,17 @@ namespace PyRevitBaseClasses
 
 
             // If Ctrl+Alt+Shift clicking on the tool run in clean engine
-            if (CTRL && ALT && SHIFT)
-            {
+            if (CTRL && ALT && SHIFT) {
                 _refreshEngine = true;
             }
 
             // If Alt+Shift clicking on button, open the context menu with options.
-            else if (SHIFT && WIN)
-            {
+            else if (SHIFT && WIN) {
                 // start creating context menu
                 ContextMenu pyRevitCmdContextMenu = new ContextMenu();
 
                 // menu item to open help url if exists
-                if (baked_helpSource != null && baked_helpSource != "")
-                {
+                if (baked_helpSource != null && baked_helpSource != "") {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
                     openHelpSource.Click += delegate { System.Diagnostics.Process.Start(baked_helpSource); };
@@ -125,8 +125,7 @@ namespace PyRevitBaseClasses
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
                 // menu item to copy alternate script path to clipboard, if exists
-                if (baked_alternateScriptSource != null && baked_alternateScriptSource != "")
-                {
+                if (baked_alternateScriptSource != null && baked_alternateScriptSource != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
                     copyAltScriptPath.Header = "Copy Alternate Script Path";
                     copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_alternateScriptSource); };
@@ -159,16 +158,14 @@ namespace PyRevitBaseClasses
             }
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
-            else if (CTRL && (SHIFT || altScriptModeOverride))
-            {
+            else if (CTRL && (SHIFT || altScriptModeOverride)) {
                 _script = baked_alternateScriptSource;
                 _altScriptMode = true;
                 _forcedDebugMode = true;
             }
 
             // If Alt clicking on button, open the script in explorer and return.
-            else if (ALT)
-            {
+            else if (ALT) {
                 // combine the arguments together
                 // it doesn't matter if there is a space after ','
                 string argument = "/select, \"" + _script + "\"";
@@ -178,15 +175,13 @@ namespace PyRevitBaseClasses
             }
 
             // If Shift clicking on button, run config script instead
-            else if (SHIFT || altScriptModeOverride)
-            {
+            else if (SHIFT || altScriptModeOverride) {
                 _script = baked_alternateScriptSource;
                 _altScriptMode = true;
             }
 
             // If Ctrl clicking on button, set forced debug mode.
-            else if (CTRL)
-            {
+            else if (CTRL) {
                 _forcedDebugMode = true;
             }
             #endregion
@@ -238,41 +233,119 @@ namespace PyRevitBaseClasses
     }
 
 
-    public abstract class PyRevitCommandCategoryAvail : IExternalCommandAvailability
-    {
-        private string _contextCatNameCompareString;
+    public abstract class PyRevitCommandExtendedAvail : IExternalCommandAvailability {
+        private string originalContextString;
+        private bool selectionRequired = false;                                 // is any selection required?
+        private HashSet<ViewType> activeViewTypes = new HashSet<ViewType>();    // list of acceptable view types
+        private string _contextCatNameCompareString = null;                     // category comparison string (e.g. wallsdoors)
 
-        public PyRevitCommandCategoryAvail(string contextString)
-        {
-            List<string> contextCategoryNames = new List<string>();
+        public PyRevitCommandExtendedAvail(string contextString) {
+            // keep a backup
+            originalContextString = contextString;
+
+            // get the tokens out of the string (it could only have one token)
+            List<string> contextTokens = new List<string>();
             foreach (string catName in contextString.Split(';'))
-                contextCategoryNames.Add(catName.ToLower());
+                contextTokens.Add(catName.ToLower());
 
-            contextCategoryNames.Sort();
-            _contextCatNameCompareString = String.Join("", contextCategoryNames);
+            // go thru the tokens and extract the custom (non-element-category) tokens
+            List<string> contextTokensCopy = new List<string>(contextTokens);
+            foreach (string token in contextTokensCopy) {
+                switch (token.ToLower()) {
+                    case "selection":
+                        selectionRequired = true;
+                        contextTokens.Remove(token); break;
+                    case "active-drafting-view":
+                        activeViewTypes.Add(ViewType.DraftingView);
+                        contextTokens.Remove(token); break;
+                    case "active-detail-view":
+                        activeViewTypes.Add(ViewType.Detail);
+                        contextTokens.Remove(token); break;
+                    case "active-plan-view":
+                        activeViewTypes.Add(ViewType.FloorPlan);
+                        activeViewTypes.Add(ViewType.CeilingPlan);
+                        activeViewTypes.Add(ViewType.AreaPlan);
+                        activeViewTypes.Add(ViewType.EngineeringPlan);
+                        contextTokens.Remove(token); break;
+                    case "active-floor-plan":
+                        activeViewTypes.Add(ViewType.FloorPlan);
+                        contextTokens.Remove(token); break;
+                    case "active-rcp-plan":
+                        activeViewTypes.Add(ViewType.CeilingPlan);
+                        contextTokens.Remove(token); break;
+                    case "active-structural-plan":
+                        activeViewTypes.Add(ViewType.EngineeringPlan);
+                        contextTokens.Remove(token); break;
+                    case "active-area-plan":
+                        activeViewTypes.Add(ViewType.AreaPlan);
+                        contextTokens.Remove(token); break;
+                    case "active-elevation-view":
+                        activeViewTypes.Add(ViewType.Elevation);
+                        contextTokens.Remove(token); break;
+                    case "active-section-view":
+                        activeViewTypes.Add(ViewType.Section);
+                        contextTokens.Remove(token); break;
+                    case "active-3d-view":
+                        activeViewTypes.Add(ViewType.ThreeD);
+                        contextTokens.Remove(token); break;
+                    case "active-sheet":
+                        activeViewTypes.Add(ViewType.DrawingSheet);
+                        contextTokens.Remove(token); break;
+                    case "active-legend":
+                        activeViewTypes.Add(ViewType.Legend);
+                        contextTokens.Remove(token); break;
+                    case "active-schedule":
+                        activeViewTypes.Add(ViewType.PanelSchedule);
+                        activeViewTypes.Add(ViewType.ColumnSchedule);
+                        activeViewTypes.Add(ViewType.Schedule);
+                        contextTokens.Remove(token); break;
+                    case "active-panel-schedule":
+                        activeViewTypes.Add(ViewType.PanelSchedule);
+                        contextTokens.Remove(token); break;
+                    case "active-column-schedule":
+                        activeViewTypes.Add(ViewType.ColumnSchedule);
+                        contextTokens.Remove(token); break;
+                }
+            }
+
+            // assume that the remaining tokens are category names and create a comparison string
+            if(contextTokens.Count > 0) {
+                contextTokens.Sort();
+                _contextCatNameCompareString = String.Join("", contextTokens);
+            }
         }
 
-        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
-        {
-            // Categories allCats = uiApp.ActiveUIDocument.Document.Settings.Categories;
-            if (selectedCategories.IsEmpty)
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
+            // check selection
+            if (selectionRequired && selectedCategories.IsEmpty)
                 return false;
 
-            try
-            {
-                var selectedCategoryNames = new List<string>();
-                foreach (Category rvt_cat in selectedCategories)
-                    selectedCategoryNames.Add(rvt_cat.Name.ToLower());
-
-                selectedCategoryNames.Sort();
-                string selectedCatNameCompareString = String.Join("", selectedCategoryNames);
-
-                if (selectedCatNameCompareString != _contextCatNameCompareString)
-                        return false;
+            // check active views
+            if (activeViewTypes.Count > 0) {
+                if (uiApp != null && uiApp.ActiveUIDocument != null
+                    && !activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
+                    return false;
             }
-            catch (Exception)
-            {
-                return false;
+
+            // check element categories
+            if (_contextCatNameCompareString != null) {
+                if (selectedCategories.IsEmpty)
+                    return false;
+
+                try {
+                    var selectedCategoryNames = new List<string>();
+                    foreach (Category rvt_cat in selectedCategories)
+                        selectedCategoryNames.Add(rvt_cat.Name.ToLower());
+
+                    selectedCategoryNames.Sort();
+                    string selectedCatNameCompareString = String.Join("", selectedCategoryNames);
+
+                    if (selectedCatNameCompareString != _contextCatNameCompareString)
+                        return false;
+                }
+                catch (Exception) {
+                    return false;
+                }
             }
 
             return true;
@@ -280,17 +353,14 @@ namespace PyRevitBaseClasses
     }
 
 
-    public abstract class PyRevitCommandSelectionAvail : IExternalCommandAvailability
-    {
+    public abstract class PyRevitCommandSelectionAvail : IExternalCommandAvailability {
         private string _categoryName = "";
 
-        public PyRevitCommandSelectionAvail(string contextString)
-        {
+        public PyRevitCommandSelectionAvail(string contextString) {
             _categoryName = contextString;
         }
 
-        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
-        {
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
             if (selectedCategories.IsEmpty)
                 return false;
 
@@ -299,16 +369,14 @@ namespace PyRevitBaseClasses
     }
 
 
-    public abstract class PyRevitCommandDefaultAvail : IExternalCommandAvailability
-    {
-        public PyRevitCommandDefaultAvail()
-        {
+    public abstract class PyRevitCommandDefaultAvail : IExternalCommandAvailability {
+        public PyRevitCommandDefaultAvail() {
         }
 
-        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
-        {
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
             return true;
         }
     }
 
 }
+

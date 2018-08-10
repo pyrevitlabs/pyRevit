@@ -4,7 +4,7 @@ from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
-    CMD_AVAIL_TYPE_CATEGORY
+    CMD_AVAIL_TYPE_EXTENDED
 
 from pyrevit.userconfig import user_config
 
@@ -55,12 +55,12 @@ def _make_python_avail_type(module_builder, cmd_component):
                     cmd_component.unique_avail_name, [],
                     cmd_component.cmd_context)
 
-    elif context_str == exts.CTX_ZERODOC:
+    elif context_str in exts.CTX_ZERODOC:
         create_type(module_builder, CMD_AVAIL_TYPE,
                     cmd_component.unique_avail_name, [])
 
     else:
-        create_type(module_builder, CMD_AVAIL_TYPE_CATEGORY,
+        create_type(module_builder, CMD_AVAIL_TYPE_EXTENDED,
                     cmd_component.unique_avail_name, [],
                     cmd_component.cmd_context)
 

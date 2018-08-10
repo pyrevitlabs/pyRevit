@@ -364,7 +364,7 @@ class GenericUICommand(GenericUIComponent):
                 if type(self.cmd_context) is list:
                     self.cmd_context = ';'.join(self.cmd_context)
             else:
-                self.cmd_context = exts.CTX_ZERODOC
+                self.cmd_context = exts.CTX_ZERODOC[0]
 
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
