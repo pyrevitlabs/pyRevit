@@ -19,17 +19,9 @@ lib/*
 .idea/workspace.xml
 
 # ignore visual studio files
-.vs\*
-obj\*
-pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/addin/272/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/\.vs/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/bin/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
+**/.vs
+**/bin
+**/obj
 
 # ignore sphinx build files
 docs/_*
