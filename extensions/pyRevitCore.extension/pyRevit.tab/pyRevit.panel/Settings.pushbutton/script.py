@@ -46,7 +46,9 @@ class SettingsWindow(forms.WPFWindow):
         # check boxes for each version of Revit
         # this could be automated but it pushes me to verify and test
         # before actually adding a new Revit version to the list
-        self._addinfiles_cboxes = {'2015': self.revit2015_cb,
+        self._addinfiles_cboxes = {'2013': self.revit2013_cb,
+                                   '2014': self.revit2014_cb,
+                                   '2015': self.revit2015_cb,
                                    '2016': self.revit2016_cb,
                                    '2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
@@ -356,7 +358,7 @@ class SettingsWindow(forms.WPFWindow):
 # windows explorer
 # otherwise, will show the Settings user interface
 
-if __shiftclick__:
+if __shiftclick__:  #noqa
     script.show_file_in_explorer(user_config.config_file)
 else:
     SettingsWindow('SettingsWindow.xaml').show_dialog()

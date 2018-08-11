@@ -12,7 +12,6 @@ clr.AddReference('RevitAPIUI')
 clr.AddReference('AdWindows')
 clr.AddReference('UIFramework')
 clr.AddReference('UIFrameworkServices')
-clr.AddReference('Newtonsoft.Json')
 
 # pylama:ignore=E402,W0611
 # pylama ignore imports not on top and not used
@@ -30,6 +29,7 @@ import Autodesk.Revit.UI as UI
 
 # try loading some utility modules shipped with revit
 try:
+    clr.AddReference('Newtonsoft.Json')
     import Newtonsoft.Json as NSJson
 except Exception:
     pass
