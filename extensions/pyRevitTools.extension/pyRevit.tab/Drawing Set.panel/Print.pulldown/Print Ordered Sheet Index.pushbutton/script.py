@@ -160,22 +160,28 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
-    def _print_combined_sheets_in_order(self):
+    def _get_printmanager(self):
         try:
-            print_mgr = revit.doc.PrintManager
+            return revit.doc.PrintManager
         except Exception as printerr:
             logger.critical('Error getting printer manager from document. '
                             'Most probably there is not a printer defined '
                             'on your system. | {}'.format(printerr))
+            return None
+
+    def _print_combined_sheets_in_order(self):
+        # make sure we can access the print config
+        print_mgr = self._get_printmanager()
+        if not print_mgr:
             return
         print_mgr.PrintRange = DB.PrintRange.Select
+        viewsheet_settings = print_mgr.ViewSheetSetting
 
-        sheet_set = DB.ViewSet()
-
-        # add non-printable char in front of sheet Numbers
-        # to push revit to sort them per user
-        original_sheetnums = []
         with revit.TransactionGroup('Print Sheets in Order') as tg:
+            # add non-printable char in front of sheet Numbers
+            # to push revit to sort them per user
+            sheet_set = DB.ViewSet()
+            original_sheetnums = []
             with revit.Transaction('Fix Sheet Numbers') as t:
                 for idx, sheet in enumerate(self.sheets_lb.ItemsSource):
                     sht = sheet.revit_sheet
@@ -192,16 +198,19 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             sheetsetname = 'OrderedPrintSet'
 
-            with revit.Transaction('Update Ordered Print Set') as t:
+            with revit.Transaction('Remove Previous Print Set') as t:
                 # Delete existing matching sheet set
                 if sheetsetname in all_viewsheetsets:
-                    print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
+                    viewsheet_settings.CurrentViewSheetSet = \
                         all_viewsheetsets[sheetsetname]
-                    print_mgr.ViewSheetSetting.Delete()
+                    viewsheet_settings.Delete()
 
+            with revit.Transaction('Update Ordered Print Set') as t:
                 try:
-                    print_mgr.ViewSheetSetting.CurrentViewSheetSet.Views = \
+                    viewsheet_settings = print_mgr.ViewSheetSetting
+                    viewsheet_settings.CurrentViewSheetSet.Views = \
                         sheet_set
+                    viewsheet_settings.SaveAs(sheetsetname)
                 except Exception as viewset_err:
                     sheet_report = ''
                     for sheet in sheet_set:
@@ -217,14 +226,14 @@ class PrintSheetsWindow(forms.WPFWindow):
                         'object:\n{}'.format(sheet_report)
                         )
                     raise viewset_err
-                print_mgr.ViewSheetSetting.SaveAs(sheetsetname)
 
+            # set print job configurations
             print_mgr.PrintOrderReverse = self.reverse_print
             try:
                 print_mgr.CombinedFile = True
             except Exception as e:
-                forms.alert(str(e)
-                            + '\nSet printer correctly in Print settings.')
+                forms.alert(str(e) +
+                            '\nSet printer correctly in Print settings.')
                 script.exit()
             print_mgr.PrintToFile = True
             print_mgr.PrintToFileName = op.join(r'C:', 'Ordered Sheet Set.pdf')
@@ -239,7 +248,10 @@ class PrintSheetsWindow(forms.WPFWindow):
                     sht.SheetNumber = sheetnum
 
     def _print_sheets_in_order(self):
-        print_mgr = revit.doc.PrintManager
+        # make sure we can access the print config
+        print_mgr = self._get_printmanager()
+        if not print_mgr:
+            return
         print_mgr.PrintToFile = True
         # print_mgr.CombinedFile = False
         print_mgr.PrintRange = DB.PrintRange.Current
@@ -343,7 +355,7 @@ def cleanup_sheetnumbers():
             sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
 
 
-if __shiftclick__:  #noqa
+if __shiftclick__:  # noqa
     cleanup_sheetnumbers()
 else:
     PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()
