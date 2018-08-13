@@ -101,7 +101,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
         vseop = DB.ViewScheduleExportOptions()
-        vseop.TextQualifier = DB.ExportTextQualifier.None
+        vseop.TextQualifier = DB.ExportTextQualifier.None   #noqa
         schedule_view.Export(op.dirname(schedule_data_file),
                              op.basename(schedule_data_file),
                              vseop)
@@ -161,7 +161,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
     def _print_combined_sheets_in_order(self):
-        print_mgr = revit.doc.PrintManager
+        try:
+            print_mgr = revit.doc.PrintManager
+        except Exception as printerr:
+            logger.critical('Error getting printer manager from document. '
+                            'Most probably there is not a printer defined '
+                            'on your system. | {}'.format(printerr))
+            return
         print_mgr.PrintRange = DB.PrintRange.Select
 
         sheet_set = DB.ViewSet()
@@ -194,7 +200,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     print_mgr.ViewSheetSetting.Delete()
 
                 try:
-                    print_mgr.ViewSheetSetting.CurrentViewSheetSet.Views = sheet_set
+                    print_mgr.ViewSheetSetting.CurrentViewSheetSet.Views = \
+                        sheet_set
                 except Exception as viewset_err:
                     sheet_report = ''
                     for sheet in sheet_set:
