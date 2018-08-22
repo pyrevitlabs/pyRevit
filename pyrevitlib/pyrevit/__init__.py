@@ -489,6 +489,9 @@ EXEC_PARAMS = _ExecutorParams()
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+# verify directory per issue #369
+if not USER_DESKTOP or not op.exists(USER_DESKTOP):
+    USER_DESKTOP = USER_SYS_TEMP
 
 # create paths for pyrevit files
 if EXEC_PARAMS.doc_mode:

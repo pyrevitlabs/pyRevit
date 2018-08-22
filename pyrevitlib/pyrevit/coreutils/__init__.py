@@ -28,6 +28,19 @@ from pyrevit import api
 DEFAULT_SEPARATOR = ';'
 
 
+# extracted from https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
+UNICODE_NONPRINTABLE_CHARS = [
+    u'\u2000', u'\u2001', u'\u2002', u'\u2003', u'\u2004', u'\u2005', u'\u2006',
+    u'\u2007', u'\u2008', u'\u2009', u'\u200A', u'\u200B', u'\u200C', u'\u200D',
+    u'\u200E', u'\u200F',
+    u'\u2028', u'\u2029', u'\u202A', u'\u202B', u'\u202C', u'\u202D', u'\u202E',
+    u'\u202F',
+    u'\u205F', u'\u2060',
+    u'\u2066', u'\u2067', u'\u2068', u'\u2069', u'\u206A', u'\u206B', u'\u206C'
+    u'\u206D', u'\u206E', u'\u206F'
+    ]
+
+
 class Timer:
     """Timer class using python native time module.
 
@@ -1210,3 +1223,15 @@ def correct_revittxt_encoding(filename):
         fcontent = oldf.readlines()
     with codecs.open(filename, 'w', 'utf-8') as newf:
         newf.writelines(fcontent)
+
+
+def has_nonprintable(input_str):
+    """Check input string for non-printable characters.
+    
+    Args:
+        input_str (str): input string
+    
+    Returns:
+        bool: True if contains non-printable characters
+    """
+    return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])

@@ -1,6 +1,7 @@
 __doc__ = 'Lists specific elements from the model database.'
 
 from pyrevit.framework import List
+from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
@@ -31,6 +32,7 @@ switches = ['Graphic Styles',
             'Revisions',
             'Revision Clouds',
             'Sheets',
+            'Sheets with Hidden Characters',
             'System Categories',
             'System Postable Commands',
             'Worksets',
@@ -454,3 +456,14 @@ elif selected_switch == 'Point Cloud Instances':
             pc.Name,
             pc.LookupParameter('Workset').AsValueString())
               )
+
+elif selected_switch == 'Sheets with Hidden Characters':
+    for sheet in revit.query.get_sheets(doc=revit.doc):
+        sheetnum = sheet.SheetNumber
+        sheetnum_repr = repr(str(sheet.SheetNumber).encode("utf-8"))
+        if coreutils.has_nonprintable(sheetnum):
+            output.print_md('**{}**: Unicode: {}  Bytes: {}'
+                            .format(sheet.SheetNumber,
+                                    repr(sheetnum),
+                                    sheetnum_repr))
+
