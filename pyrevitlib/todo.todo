@@ -1,4 +1,5 @@
 tool improv:
+☐ check userconfig and make sure if ini file already exists (by pyrevit.exe) the defaults are correctly set and not overriden
 ☐ switches for Pick tool so users can select favorite categories
 ☐ remove plugins and incorporate into extensions
 ☐ move extensions.json into name.extension/extension.json
