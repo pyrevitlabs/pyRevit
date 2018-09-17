@@ -1271,9 +1271,15 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     if init_dir:
         of_dlg.InitialDirectory = init_dir
     if of_dlg.ShowDialog() == Forms.DialogResult.OK:
-        if unc_paths:
-            return coreutils.dletter_to_unc(of_dlg.FileName)
-        return of_dlg.FileName
+        if multi_file:
+            if unc_paths:
+                return [coreutils.dletter_to_unc(x)
+                        for x in of_dlg.FileNames]
+            return of_dlg.FileNames
+        else:
+            if unc_paths:
+                return coreutils.dletter_to_unc(of_dlg.FileName)
+            return of_dlg.FileName
 
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
