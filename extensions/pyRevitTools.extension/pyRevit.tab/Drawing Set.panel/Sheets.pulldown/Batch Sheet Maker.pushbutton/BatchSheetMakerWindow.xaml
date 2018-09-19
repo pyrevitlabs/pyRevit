@@ -9,7 +9,7 @@
                 Enter list of sheet number and names in this format:<LineBreak />
                 <Bold>sheet-number</Bold>  TAB  <Bold>sheet-name</Bold> (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)<LineBreak />
                 Multiple sheet with indentical names could be listed with sheet number ranges:<LineBreak />
-                <Bold>Range of Sheet Numbers:</Bold>   e.g. A103-A106 or A103:A106<LineBreak />
+                <Bold>Range of Sheet Numbers:</Bold>   e.g. A103--A106 or A103::A106<LineBreak />
                 <Bold>List of Sheet Numbers:</Bold>   e.g. A104,A105 or A104;A105
             </TextBlock>
             <StackPanel DockPanel.Dock="Bottom">

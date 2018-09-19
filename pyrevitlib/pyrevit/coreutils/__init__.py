@@ -1165,7 +1165,7 @@ def random_rgba_color():
                                        random_alpha())
 
 
-def exract_range(formatted_str, max_range=500):
+def extract_range(formatted_str, max_range=500):
     """Extract range from formatted string.
 
     String must be formatted as below
@@ -1189,7 +1189,7 @@ def exract_range(formatted_str, max_range=500):
         >>> exract_range('M00A,M00B')
         ['M00A', 'M00B']
     """
-    for rchar, rchartype in {':': 'range', '-': 'range',
+    for rchar, rchartype in {'::': 'range', '--': 'range',
                              ',': 'list', ';': 'list'}.items():
         if rchar in formatted_str:
             if rchartype == 'range' \
