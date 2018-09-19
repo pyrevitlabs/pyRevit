@@ -37,7 +37,7 @@ class BatchSheetMakerWindow(forms.WPFWindow):
             sheet_code = sheet_code.replace('\n', '').replace('\r', '')
             num, name = sheet_code.split('\t')
             try:
-                for range_num in coreutils.exract_range(num):
+                for range_num in coreutils.extract_range(num):
                     self._sheet_dict[range_num] = name
             except Exception as range_err:
                 logger.error(range_err)
