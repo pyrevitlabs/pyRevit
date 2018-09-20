@@ -1628,8 +1628,9 @@ def pick_file(file_ext='', files_filter='', init_dir='',
     if of_dlg.ShowDialog() == Forms.DialogResult.OK:
         if multi_file:
             if unc_paths:
-                return [coreutils.dletter_to_unc(x) for x in of_dlg.FileNames]
-            return [x for x in of_dlg.FileNames]
+                return [coreutils.dletter_to_unc(x)
+                        for x in of_dlg.FileNames]
+            return of_dlg.FileNames
         else:
             if unc_paths:
                 return coreutils.dletter_to_unc(of_dlg.FileName)
