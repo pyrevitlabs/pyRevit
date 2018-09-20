@@ -30,7 +30,8 @@ def find_sheeted_unrefed_views(view_list):
                     and refviewport \
                     and refsheet.AsString() != '' \
                     and refviewport.AsString() != '' \
-                    or (view_ref_prefixes[v.ViewType] + v.ViewName) \
+                    or (v.ViewType in view_ref_prefixes
+                        and (view_ref_prefixes[v.ViewType] + v.ViewName))\
                     in view_refs_names:
                 continue
             else:
