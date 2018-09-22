@@ -1,0 +1,6 @@
+[engines]
+path = 'bin\engines'
+
+[deployments]
+core = ['bin', 'pyrevitlib', 'site-packages']
+base = ['bin', 'extensions', 'pyrevitlib', 'site-packages']
