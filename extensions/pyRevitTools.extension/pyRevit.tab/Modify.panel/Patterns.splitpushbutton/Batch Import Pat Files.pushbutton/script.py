@@ -14,8 +14,11 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+DEFAULT_UNIT = 'MM'
+DEFAULT_TYPE = 'DRAFTING'
 MM_SCALE = 0.00328084
 INCH_SCALE = 1/12.0
+
 
 # namedtuple for patter contents
 PatDef = namedtuple('PatDef', ['name', 'comments',
@@ -25,45 +28,73 @@ PatDef = namedtuple('PatDef', ['name', 'comments',
 
 def extract_patdefs(patfile):
     patdefs = []
+
+    # globals are for any settings that come before pattern name
+    # they're typically set one time per file before pattern defs
+    global_version = ''
+    global_units = ''
+    global_type = ''
+
+    # these are for the pattern that's been detected and
+    # being currently extracted
     active_name = ''
     active_comments= ''
     active_version = ''
-    active_units = 'MM'
-    active_type = 'DRAFTING'
+    active_units = ''
+    active_type = ''
     active_grids = []
     print('Extracting patterns from {}'.format(patfile))
     with open(patfile, 'r') as patf:
         for patline in patf.readlines():
+            logger.debug('processing line: {}'.format(patline))
             # skip if patline is a comment line
             if patline.startswith(';'):
                 cleanedpatline = patline.replace('\n', '')
+
+                # if there is a pattern being processed,
+                # assing to the patten, otherwise global
                 if '%VERSION' in cleanedpatline:
-                    active_version = cleanedpatline.split('=')[1]
+                    detected_version = cleanedpatline.split('=')[1]
+                    if active_name:
+                        active_version = detected_version
+                    else:
+                        global_version = detected_version
                 elif '%UNITS' in cleanedpatline:
-                    active_units = cleanedpatline.split('=')[1].upper()
+                    detected_units = cleanedpatline.split('=')[1].upper()
+                    if active_name:
+                        active_units = detected_units
+                    else:
+                        global_units = detected_units
                 elif '%TYPE' in cleanedpatline:
-                    active_type = cleanedpatline.split('=')[1].upper()
+                    detected_type = cleanedpatline.split('=')[1].upper()
+                    if active_name:
+                        active_type = detected_type
+                    else:
+                        global_type = detected_type
                 else:
                     continue
 
             # start a new patstring if starts with *
             elif patline.startswith('*'):
+                # save the active pattern and start a new
                 if active_grids:
                     patdefs.append(
-                        PatDef(name=active_name,
-                               comments=active_comments,
-                               version=active_version,
-                               units=active_units,
-                               type=active_type,
-                               grids=active_grids)
+                        PatDef(
+                            name=active_name,
+                            comments=active_comments,
+                            version=active_version or global_version,
+                            units=active_units or global_units or DEFAULT_UNIT,
+                            type=active_type or global_type or DEFAULT_TYPE,
+                            grids=active_grids
+                            )
                     )
                 # grab name and comments of new pattern
                 # effectively starting a new capture
                 active_name, active_comments = \
                     patline.replace('\n', '')[1:].split(',')
                 active_version = ''
-                active_units = 'MM'
-                active_type = 'DRAFTING'
+                active_units = ''
+                active_type = ''
                 active_grids = []
                 
             # treat as pattern grid if split by , has 5 or more elements
@@ -72,12 +103,16 @@ def extract_patdefs(patfile):
 
     # make sure last pattern is also added
     if active_grids:
-        patdefs.append(PatDef(name=active_name,
-                              comments=active_comments,
-                              version=active_version,
-                              units=active_units,
-                              type=active_type,
-                              grids=active_grids))
+        patdefs.append(
+            PatDef(
+                name=active_name,
+                comments=active_comments,
+                version=active_version or global_version,
+                units=active_units or global_units or DEFAULT_UNIT,
+                type=active_type or global_type or DEFAULT_TYPE,
+                grids=active_grids
+                )
+        )
 
     return patdefs
 
@@ -117,15 +152,16 @@ def make_pattern(patdef):
     # make the grids
     fill_grids = []
     for pgrid in patdef.grids:
-        fgrid = make_fillgrid(pgrid,
-                              scale=MM_SCALE if patdef.units=='MM'
-                                    else INCH_SCALE)
+        pscale = MM_SCALE if patdef.units=='MM' else INCH_SCALE
+        logger.debug('scale is set to: {}'.format(pscale))
+        fgrid = make_fillgrid(pgrid, scale=pscale)
         if fgrid:
             fill_grids.append(fgrid)
     # determine pattern type
     fp_target = \
         DB.FillPatternTarget.Model if patdef.type=='MODEL' \
         else DB.FillPatternTarget.Drafting
+    logger.debug('type is set to: {}'.format(fp_target))
 
     # check if fillpattern element exists
     existing_fpelement = get_existing_fillpatternelement(patdef.name, fp_target)
