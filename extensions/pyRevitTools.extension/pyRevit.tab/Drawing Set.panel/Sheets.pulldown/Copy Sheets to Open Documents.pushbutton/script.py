@@ -35,6 +35,7 @@ class OptionSet:
         self.op_copy_schedules = Option('Copy Schedules', True)
         self.op_copy_titleblock = Option('Copy Sheet Titleblock', True)
         self.op_copy_revisions = Option('Copy and Set Sheet Revisions', False)
+        self.op_copy_guides = Option('Copy Guide Grids', True)
         self.op_update_exist_view_contents = \
             Option('Update Existing View Contents')
         # self.op_update_exist_vport_locations = \
@@ -96,6 +97,20 @@ def find_matching_view(dest_doc, source_view):
                 return v
 
 
+def find_guide(guide_name, source_doc):
+    # collect guides in dest_doc
+    guide_elements = \
+        DB.FilteredElementCollector(source_doc)\
+            .OfCategory(DB.BuiltInCategory.OST_GuideGrid)\
+            .WhereElementIsNotElementType()\
+            .ToElements()
+    
+    # find guide with same name
+    for guide in guide_elements:
+        if str(guide.Name).lower() == guide_name.lower():
+            return guide
+
+
 def get_view_contents(dest_doc, source_view):
     view_elements = DB.FilteredElementCollector(dest_doc, source_view.Id)\
                       .WhereElementIsNotElementType()\
@@ -110,7 +125,15 @@ def get_view_contents(dest_doc, source_view):
                 and not OPTION_SET.op_copy_schedules:
             continue
         elif isinstance(element, DB.Viewport) \
-                or 'ExtentElem' in element.Name:
+                or 'extentelem' in str(element.Name).lower():
+            continue
+        elif isinstance(element, DB.Element) \
+                and element.Category \
+                and 'guide' in str(element.Category.Name).lower():
+            continue
+        elif isinstance(element, DB.Element) \
+                and element.Category \
+                and 'views' == str(element.Category.Name).lower():
             continue
         else:
             elements_ids.append(element.Id)
@@ -153,7 +176,8 @@ def clear_view_contents(dest_doc, dest_view):
 
 def copy_view_contents(activedoc, source_view, dest_doc, dest_view,
                        clear_contents=False):
-    logger.debug('Copying view contents: {}'.format(source_view.Name))
+    logger.debug('Copying view contents: {} : {}'
+                 .format(source_view.Name, source_view.ViewType))
 
     elements_ids = get_view_contents(activedoc, source_view)
 
@@ -292,6 +316,38 @@ def copy_sheet_revisions(activedoc, source_sheet, dest_doc, dest_sheet):
                                                 doc=dest_doc)
 
 
+def copy_sheet_guides(activedoc, source_sheet, dest_doc, dest_sheet):
+    # sheet guide
+    source_sheet_guide_param = \
+        source_sheet.Parameter[DB.BuiltInParameter.SHEET_GUIDE_GRID]
+    source_sheet_guide_element = \
+        activedoc.GetElement(source_sheet_guide_param.AsElementId())
+    
+    if source_sheet_guide_element:
+        if not find_guide(source_sheet_guide_element.Name, dest_doc):
+            # copy guides to dest_doc
+            cp_options = DB.CopyPasteOptions()
+            cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+
+            with revit.Transaction('Copy Sheet Guide', doc=dest_doc):
+                DB.ElementTransformUtils.CopyElements(
+                    activedoc,
+                    List[DB.ElementId]([source_sheet_guide_element.Id]),
+                    dest_doc, None, cp_options
+                    )
+
+        dest_guide = find_guide(source_sheet_guide_element.Name, dest_doc)
+        if dest_guide:
+            # set the guide
+            with revit.Transaction('Set Sheet Guide', doc=dest_doc):
+                dest_sheet_guide_param = \
+                    dest_sheet.Parameter[DB.BuiltInParameter.SHEET_GUIDE_GRID]
+                dest_sheet_guide_param.Set(dest_guide.Id)
+        else:
+            logger.error('Error copying and setting sheet guide for sheet {}'
+                         .format(source_sheet.Name))
+
+
 def copy_sheet(activedoc, source_sheet, dest_doc):
     logger.debug('Copying sheet {} to document {}'
                  .format(source_sheet.Name,
@@ -308,6 +364,13 @@ def copy_sheet(activedoc, source_sheet, dest_doc):
                                      dest_doc, new_sheet)
             else:
                 print('Skipping viewports...')
+
+            if OPTION_SET.op_copy_guides:
+                logger.debug('Copying sheet guide grids...')
+                copy_sheet_guides(activedoc, source_sheet,
+                                  dest_doc, new_sheet)
+            else:
+                print('Skipping sheet guides...')
 
             if OPTION_SET.op_copy_revisions:
                 logger.debug('Copying sheet revisions...')
