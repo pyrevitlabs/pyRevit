@@ -51,7 +51,7 @@ except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
 # BIN directory
-BIN_DIR = op.join(HOME_DIR, 'BIN')
+BIN_DIR = op.join(HOME_DIR, 'bin')
 
 # default extensions directory
 EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
@@ -81,6 +81,7 @@ else:
     ENGINES_DIR = ADDIN_RESOURCE_DIR = None
 
 # add the framework dll path to the search paths
+sys.path.append(BIN_DIR)
 sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 

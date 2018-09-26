@@ -103,19 +103,22 @@ class LoggerWrapper(logging.Logger):
     def isEnabledFor(self, level):
         # update current logging level and file logging state
         self._filelogstate = envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
-        self._curlevel = envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
-
-        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
-        # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.forced_debug_mode:
-            self._curlevel = logging.DEBUG
-
         # if file logging is disabled, return the current logging level
         # but if it's enabled, return the file logging level so the record
         # is generated and logged by file-handler. The stream-handler still
         # outputs the record based on the current logging level
         if self._filelogstate:
             return level >= logging.DEBUG
+
+        return self.is_enabled_for(level)
+
+    def is_enabled_for(self, level):
+        self._curlevel = envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+
+        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # user Ctrl-clicks on the button at script runtime.
+        if EXEC_PARAMS.forced_debug_mode:
+            self._curlevel = logging.DEBUG
 
         return level >= self._curlevel
 
