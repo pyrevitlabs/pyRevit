@@ -46,10 +46,10 @@ if not EXEC_PARAMS.doc_mode:
     User32 = base_module.User32
     GDI32 = base_module.GDI32
 else:
-        DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
-            EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
-            PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
-            PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
-            ScriptExecutor = ScriptOutput = ScriptOutputManager = \
-            ScriptOutputStream = ScriptUsageLogger = \
-            RECT = User32 = GDI32 = None
+    DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
+        EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
+        PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
+        PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
+        ScriptExecutor = ScriptOutput = ScriptOutputManager = \
+        ScriptOutputStream = ScriptUsageLogger = \
+        RECT = User32 = GDI32 = None

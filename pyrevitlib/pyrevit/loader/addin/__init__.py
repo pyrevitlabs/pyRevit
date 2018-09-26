@@ -12,7 +12,7 @@ LATEST_PYREVITLOADER = '277'
 DYNAMOCOMPAT_PYREVITLOADER = '273'
 
 
-def _get_pyrevitloader_dll(addin_filename):
+def _get_binary_dll(addin_filename):
     # finding dlls in specific PyRevitLoader directory
     addin_file = \
         op.join(BIN_DIR,
@@ -37,6 +37,6 @@ def _get_addin_dll(addin_filename):
 def get_addin_dll_file(addin_filename):
     addin_file = _get_addin_dll(addin_filename)
     if not addin_file:
-        addin_file = _get_pyrevitloader_dll(addin_filename)
+        addin_file = _get_binary_dll(addin_filename)
 
     return addin_file

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-
+using System.Windows;
 
 namespace PyRevitBaseClasses
 {
@@ -36,7 +36,7 @@ namespace PyRevitBaseClasses
         }
 
 
-        private ScriptOutput GetOutput()
+        public ScriptOutput GetOutput()
         {
             PyRevitCommandRuntime pyrvtCmd;
             var re = _pyrvtCmd.TryGetTarget(out pyrvtCmd);

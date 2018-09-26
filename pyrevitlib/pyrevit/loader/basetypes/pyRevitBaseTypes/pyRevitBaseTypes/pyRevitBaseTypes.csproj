@@ -51,17 +51,29 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ControlzEx">
+      <HintPath>..\..\..\..\..\..\bin\ControlzEx.dll</HintPath>
+    </Reference>
     <Reference Include="DocoptNet">
       <HintPath>..\..\..\..\..\..\bin\DocoptNet.dll</HintPath>
     </Reference>
     <Reference Include="LibGit2Sharp">
       <HintPath>..\..\..\..\..\..\bin\LibGit2Sharp.dll</HintPath>
     </Reference>
+    <Reference Include="MahApps.Metro">
+      <HintPath>..\..\..\..\..\..\bin\MahApps.Metro.dll</HintPath>
+    </Reference>
     <Reference Include="MathNet.Numerics">
       <HintPath>..\..\..\..\..\..\bin\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="pyRevitLabs.Common">
+      <HintPath>..\..\..\..\..\..\bin\pyRevitLabs.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="pyRevitLabs.CommonWPF">
+      <HintPath>..\..\..\..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
+    </Reference>
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
     </Reference>
@@ -74,6 +86,9 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Interactivity">
+      <HintPath>..\..\..\..\..\..\bin\System.Windows.Interactivity.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />

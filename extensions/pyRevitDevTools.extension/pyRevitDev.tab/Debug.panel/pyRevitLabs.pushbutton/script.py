@@ -16,6 +16,7 @@ nlogger.Debug('sdfsdfdsf')
 nlogger.Warn('sdfsdfdsf')
 nlogger.Fatal('sdfsdfdsf')
 
+logger.info('sfdfsdf')
 logger.debug('sfdfsdf')
 
 
@@ -25,4 +26,5 @@ print(engines.get_engine(273))
 
 print(engines.get_latest_engine())
 
-print(engines.get_engines())
+for eng in engines.get_engines():
+    print(eng)

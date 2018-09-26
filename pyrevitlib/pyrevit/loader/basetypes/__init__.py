@@ -12,7 +12,7 @@ from pyrevit.coreutils.dotnetcompiler import compile_csharp
 import pyrevit.coreutils.appdata as appdata
 
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
-from pyrevit.loader.addin import get_addin_dll_file
+from pyrevit.loader import addin
 
 
 logger = get_logger(__name__)
@@ -55,12 +55,12 @@ CMD_AVAIL_TYPE_NAME_SELECTION = \
 DYNOCMD_EXECUTOR_TYPE_NAME = '{}.{}'\
     .format(LOADER_BASE_NAMESPACE, 'PyRevitCommandDynamoBIM')
 
-source_file_filter = '(\.cs)'
+SOURCE_FILE_FILTER = r'(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
     BASE_TYPES_DIR_HASH = \
         get_str_hash(
-            calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)
+            calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
             + EXEC_PARAMS.engine_ver
             )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
@@ -110,7 +110,7 @@ def _get_framework_module(fw_module):
 
 def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
-    addin_file = get_addin_dll_file(ref_name)
+    addin_file = addin.get_addin_dll_file(ref_name)
     if addin_file:
         load_asm_file(addin_file)
         return addin_file
@@ -140,7 +140,9 @@ def _get_references():
                 'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
                 'PresentationCore', 'PresentationFramework',
-                'WindowsBase', 'WindowsFormsIntegration']
+                'WindowsBase', 'WindowsFormsIntegration',
+                'pyRevitLabs.Common',
+                'pyRevitLabs.CommonWPF', 'MahApps.Metro']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 

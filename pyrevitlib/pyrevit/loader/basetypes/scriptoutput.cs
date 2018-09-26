@@ -6,10 +6,17 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
+
+using MahApps.Metro;
+using MahApps.Metro.Controls;
+
+using pyRevitLabs.CommonWPF;
+using pyRevitLabs.Common.Extensions;
 
 namespace PyRevitBaseClasses
 {
-    public partial class ScriptOutput : Window, IComponentConnector, IDisposable
+    public partial class ScriptOutput : pyRevitLabs.CommonWPF.Windows.AppWindow, IComponentConnector, IDisposable
     {
         private bool _contentLoaded;
         private bool _debugMode;
@@ -41,6 +48,9 @@ namespace PyRevitBaseClasses
 
             // setup unique id for this output window
             OutputUniqueId = Guid.NewGuid().ToString();
+
+            //// setup window styles
+            SetupWindowStyleResources();
 
             InitializeComponent();
         }
@@ -108,6 +118,21 @@ namespace PyRevitBaseClasses
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
 
+            // setup header buttons
+            // setting up user name and app version buttons
+            var envDict = new EnvDictionary();
+            // TODO: add report button, get email from envvars
+            var reportButton = new Button() { Content = "Copy Contents" };
+            reportButton.Click += Contents_Button_Clicked;
+            var winButtons = new WindowCommands() {
+                Items = {
+                    reportButton,
+                    new Button() { Content = CurrentUser },
+                    new Button() { Content = envDict.pyRevitVersion },
+                }
+            };
+            RightWindowCommands = winButtons;
+
             // Setup window styles
             this.Background = Brushes.White;
             this.Width = 900;
@@ -128,6 +153,27 @@ namespace PyRevitBaseClasses
         }
 
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
+
+        private void SetupWindowStyleResources() {
+            var controlsResDict = new ResourceDictionary();
+            controlsResDict.Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml");
+
+            var fontsResDict = new ResourceDictionary();
+            fontsResDict.Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml");
+
+            var colorsResDict = new ResourceDictionary();
+            colorsResDict.Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml");
+
+            var accentResDict = new ResourceDictionary();
+            accentResDict.Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml");
+
+            Resources.MergedDictionaries.Add(controlsResDict);
+            Resources.MergedDictionaries.Add(fontsResDict);
+            Resources.MergedDictionaries.Add(colorsResDict);
+            Resources.MergedDictionaries.Add(accentResDict);
+
+            WindowTransitionsEnabled = false;
+        }
 
         private string GetStyleSheetFile() {
             var envDict = new EnvDictionary();
@@ -442,6 +488,11 @@ namespace PyRevitBaseClasses
             outputWindow.Content = null;
 
             outputWindow.ClosedByUser = true;
+        }
+
+        private void Contents_Button_Clicked(object sender, RoutedEventArgs e) {
+            // TODO: Fix html
+            Clipboard.SetText(ActiveDocument.Body.InnerText, TextDataFormat.UnicodeText);
         }
 
         public void Dispose()
