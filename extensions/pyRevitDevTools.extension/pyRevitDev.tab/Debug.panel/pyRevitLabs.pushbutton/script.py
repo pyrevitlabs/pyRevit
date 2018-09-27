@@ -12,25 +12,30 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+print('Testing NLog logger from pyRevitLabs modules')
 nlogger = NLog.LogManager.GetLogger(__name__ + 'NLOG')
-nlogger.Info('sdfsdfdsf')
-nlogger.Debug('sdfsdfdsf')
-nlogger.Warn('sdfsdfdsf')
-nlogger.Fatal('sdfsdfdsf')
+nlogger.Info('Info Message')
+nlogger.Warn('Warning Message')
+nlogger.Error('Error Message')
+nlogger.Fatal('Fatal|Critical Message')
+nlogger.Debug('Debug Message')
 
-logger.info('sfdfsdf')
-logger.debug('sfdfsdf')
+print('Testing pyrevit logger compatibility with NLog')
+logger.info('info Message')
+logger.warning('Warning Message')
+logger.error('error Message')
+logger.critical('critical Message')
+logger.debug('debug Message')
 
 
-print(engines.get_engine(277))
-
-print(engines.get_engine(273))
-
-print(engines.get_latest_engine())
-
+print('Testing pyRevitLabs engines interface...')
+print('277 -> %s' % engines.get_engine(277))
+print('dynamosafe -> %s' % engines.get_engine(273))
+print('latest -> %s' % engines.get_latest_engine())
 for eng in engines.get_engines():
-    print(eng)
+    print('Available Engine: %s' % eng)
 
 
+print('Testing pyRevitLabs CommonWPF ActivityBar interface...')
 output.log_error('sdfdsfsdffds')
 

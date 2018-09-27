@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
+using System.Net.Cache;
 
 using MahApps.Metro.Controls;
 using pyRevitLabs.CommonWPF.Controls;
@@ -138,10 +139,16 @@ namespace PyRevitBaseClasses {
             var userNameButton = new Button() { Content = CurrentUser };
             userNameButton.Click += Copy_Button_Title;
 
-            var versionButton = new Button() { Content = GetCurrentPyRevitVersion() };
-            versionButton.Click += Copy_Button_Title;
+            var winButtons = new WindowCommands() { Items = { saveButton, userNameButton } };
 
-            var winButtons = new WindowCommands() { Items = { saveButton, userNameButton, versionButton } };
+            // add version button if can get version
+            var pyrevitVer = GetCurrentPyRevitVersion();
+            if (pyrevitVer != null && pyrevitVer != string.Empty) {
+                var versionButton = new Button() { Content = GetCurrentPyRevitVersion() };
+                versionButton.Click += Copy_Button_Title;
+                winButtons.Items.Add(versionButton);
+            }
+
             RightWindowCommands = winButtons;
 
             // Setup window styles
@@ -156,6 +163,12 @@ namespace PyRevitBaseClasses {
             this.ResizeBorderThickness = new Thickness(10, 10, 10, 10);
             this.WindowStartupLocation = WindowStartupLocation.Manual;
             this.WindowTransitionsEnabled = false;
+            this.ShowIconOnTitleBar = true;
+            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
+            this.Icon = LoadIcon(new Uri(iconPath));
+            this.IconBitmapScalingMode = BitmapScalingMode.Fant;
+            this.IconEdgeMode = EdgeMode.Aliased;
+            this.IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
             this.Title = "pyRevit";
         }
 
@@ -169,18 +182,15 @@ namespace PyRevitBaseClasses {
             this._contentLoaded = true;
         }
 
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool PrintWindow(IntPtr hwnd, IntPtr hDC, uint nFlags);
-
-        public BitmapSource GetRendererAsImage() {
-            System.Drawing.Bitmap bm = new System.Drawing.Bitmap(renderer.ClientRectangle.Width, renderer.ClientRectangle.Height);
-            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bm);
-            PrintWindow(renderer.Handle, g.GetHdc(), 0); g.ReleaseHdc(); g.Flush();
-            BitmapSource src = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(bm.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            src.Freeze();
-            bm.Dispose();
-            bm = null;
-            return src;
+        public ImageSource LoadIcon(Uri path) {
+            BitmapImage bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = path;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
         }
 
         public string GetCurrentPyRevitVersion() {
