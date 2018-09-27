@@ -6,12 +6,12 @@ body {
 	margin: 0 0 15px 0;
 	padding: 0;
 	padding-top: 3px;
-	scrollbar-arrow-color: #666;
-	scrollbar-base-color: #EEE;
+	scrollbar-arrow-color: #233749;
+	scrollbar-base-color: #ffffff;
 	scrollbar-face-color: #DDD;
-	scrollbar-highlight-color: #EEE;
-	scrollbar-shadow-color: #EEE;
-	scrollbar-track-color: #EEE;
+	scrollbar-highlight-color: white;
+	scrollbar-shadow-color: white;
+	scrollbar-track-color: white;
 }
 
 table {
@@ -95,9 +95,9 @@ tr:nth-child(odd) {
 .progressindicator {
 	background: #2c3e50;
 	border: 0;
-	bottom: 0;
+	top: 0;
 	font-size: 1pt;
-	height: 8px;
+	height: 4px;
 	position: fixed;
 	width: 100%;
 }

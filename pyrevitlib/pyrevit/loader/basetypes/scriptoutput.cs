@@ -1,20 +1,16 @@
 using System;
 using System.Windows;
+using System.IO;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
 
-using MahApps.Metro;
 using MahApps.Metro.Controls;
 
-using pyRevitLabs.CommonWPF;
-using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.Common.Extensions;
-using System.IO;
+using pyRevitLabs.CommonWPF.Controls;
 
 namespace PyRevitBaseClasses {
     public partial class ScriptOutput : pyRevitLabs.CommonWPF.Windows.AppWindow, IComponentConnector, IDisposable {
@@ -40,6 +36,7 @@ namespace PyRevitBaseClasses {
         public System.Windows.Forms.Integration.WindowsFormsHost host;
         public System.Windows.Forms.WebBrowser renderer;
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
+        public ActivityBar activityBar;
 
         public ScriptOutput(bool debugMode = false, UIApplication uiApp = null) {
             _debugMode = debugMode;
@@ -67,6 +64,7 @@ namespace PyRevitBaseClasses {
             this.Closed += Window_Closed;
 
             host = new System.Windows.Forms.Integration.WindowsFormsHost();
+            host.SnapsToDevicePixels = true;
 
             // Create the WebBrowser control.
             renderer = new System.Windows.Forms.WebBrowser();
@@ -80,20 +78,29 @@ namespace PyRevitBaseClasses {
             // Assign the WebBrowser control as the host control's child.
             host.Child = renderer;
 
+            // activiy bar
+            activityBar = new ActivityBar();
+            activityBar.Visibility = Visibility.Collapsed;
+
             // Add the interop host control to the Grid
             // control's collection of child controls.
             Grid baseGrid = new Grid();
-            //baseGrid.Margin = new Thickness(0, 0, 0, 15);
+            baseGrid.Margin = new Thickness(0, 0, 0, 15);
+
+            var activityBarRow = new RowDefinition();
+            activityBarRow.Height = GridLength.Auto; 
+            baseGrid.RowDefinitions.Add(activityBarRow);
+
+            var rendererRow = new RowDefinition();
+            baseGrid.RowDefinitions.Add(rendererRow);
 
             if (_debugMode) {
-                var rendererRow = new RowDefinition();
                 var splitterRow = new RowDefinition();
                 var replRow = new RowDefinition();
 
                 splitterRow.Height = new GridLength(6);
                 replRow.Height = new GridLength(100);
 
-                baseGrid.RowDefinitions.Add(rendererRow);
                 baseGrid.RowDefinitions.Add(splitterRow);
                 baseGrid.RowDefinitions.Add(replRow);
 
@@ -104,14 +111,18 @@ namespace PyRevitBaseClasses {
 
                 var repl = new REPLControl();
 
-                Grid.SetRow(host, 0);
-                Grid.SetRow(splitter, 1);
-                Grid.SetRow(repl, 2);
+                Grid.SetRow(splitter, 2);
+                Grid.SetRow(repl, 3);
 
                 baseGrid.Children.Add(splitter);
                 baseGrid.Children.Add(repl);
             }
+            
+            // set activity bar and host
+            Grid.SetRow(activityBar, 0);
+            Grid.SetRow(host, 1);
 
+            baseGrid.Children.Add(activityBar);
             baseGrid.Children.Add(host);
             this.Content = baseGrid;
 
@@ -135,6 +146,8 @@ namespace PyRevitBaseClasses {
             this.Width = 900;
             this.Height = 600;
             this.WindowStartupLocation = WindowStartupLocation.Manual;
+            this.WindowTransitionsEnabled = false;
+            this.ResizeMode = ResizeMode.CanResizeWithGrip;
             this.Title = "pyRevit";
         }
 
@@ -171,13 +184,21 @@ namespace PyRevitBaseClasses {
             var accentResDict = new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml")
             };
-            var accentOverride = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
-            accentResDict["AccentColorBrush"] = accentOverride;
-            accentResDict["WindowTitleColorBrush"] = accentOverride;
-            Resources.MergedDictionaries.Add(accentResDict);
 
-            WindowTransitionsEnabled = false;
-            ResizeMode = ResizeMode.CanResizeWithGrip;
+            var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
+            var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
+            var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
+            accentResDict["AccentColorBrush"] = pyrevitBackground;
+            accentResDict["WindowTitleColorBrush"] = pyrevitBackground;
+
+            var progressBarOverlay = Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF);
+            accentResDict["ProgressBrush"] = pyrevitHighlight;
+            accentResDict["ProgressIndeterminateColor1"] = progressBarOverlay;
+            accentResDict["ProgressIndeterminateColor2"] = progressBarOverlay;
+            accentResDict["ProgressIndeterminateColor3"] = pyrevitHighlightColor;
+            accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
+
+            Resources.MergedDictionaries.Add(accentResDict);
         }
 
         private string GetStyleSheetFile() {

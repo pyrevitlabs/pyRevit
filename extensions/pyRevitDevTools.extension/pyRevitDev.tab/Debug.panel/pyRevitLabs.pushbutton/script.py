@@ -30,3 +30,7 @@ print(engines.get_latest_engine())
 
 for eng in engines.get_engines():
     print(eng)
+
+
+output.window.activityBar.ConsoleLogInfo('sdfsdfd')
+output.window.activityBar.IsActive = True
