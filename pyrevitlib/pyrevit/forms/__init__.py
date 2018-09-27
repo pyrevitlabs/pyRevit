@@ -12,7 +12,7 @@ from collections import OrderedDict
 import threading
 from functools import wraps
 
-from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
@@ -75,6 +75,8 @@ class WPFWindow(framework.Windows.Window):
         if handle_esc:
             self.PreviewKeyDown += self.handle_input_key
 
+        self.setup_icon()
+
         #2c3e50 #noqa
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
@@ -106,6 +108,10 @@ class WPFWindow(framework.Windows.Window):
         """Handle keyboard input and close the window on Escape."""
         if args.Key == Input.Key.Escape:
             self.Close()
+
+    def setup_icon(self):
+        iconpath = op.join(BIN_DIR, 'window_icon.png')
+        self.Icon = utils.bitmap_from_file(iconpath)
 
     def show(self, modal=False):
         """Show window."""

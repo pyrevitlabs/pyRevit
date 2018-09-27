@@ -16,7 +16,92 @@ using pyRevitLabs.CommonWPF.Controls;
 
 
 namespace PyRevitBaseClasses {
-    public partial class ScriptOutput : pyRevitLabs.CommonWPF.Windows.AppWindow, IComponentConnector, IDisposable {
+    public partial class PyRevitTemplateWindow : pyRevitLabs.CommonWPF.Windows.AppWindow {
+        public PyRevitTemplateWindow() {
+            // setup window styles
+            SetupDynamicResources();
+            EnablePyRevitTemplateWindowStyle();
+        }
+
+        public void EnablePyRevitTemplateWindowStyle() {
+            SizeChanged += ScriptOutput_SizeChanged;
+
+            // setup template styles
+            Background = Brushes.White;
+            var glowColor = Color.FromArgb(0x66, 0x2c, 0x3e, 0x50);
+            GlowBrush = new SolidColorBrush() { Color = glowColor };
+            NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
+
+            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
+            Icon = LoadIcon(new Uri(iconPath));
+            IconBitmapScalingMode = BitmapScalingMode.Fant;
+            IconEdgeMode = EdgeMode.Aliased;
+            IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
+            ShowIconOnTitleBar = true;
+
+            ResizeBorderThickness = new Thickness(10, 10, 10, 10);
+            BorderThickness = new Thickness();
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            WindowTransitionsEnabled = false;
+            SaveWindowPosition = false;
+        }
+
+        private void SetupDynamicResources() {
+            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml")
+            });
+
+            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml")
+            });
+
+            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml")
+            });
+
+            var accentResDict = new ResourceDictionary() {
+                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml")
+            };
+
+            // TODO: read the colors from css? all colors and styles should be in the same place
+            var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
+            var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
+            var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
+            accentResDict["AccentColorBrush"] = pyrevitBackground;
+            accentResDict["WindowTitleColorBrush"] = pyrevitBackground;
+
+            // overriding colors on the progressbar control
+            var progressBarOverlay = Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF);
+            accentResDict["ProgressBrush"] = pyrevitHighlight;
+            accentResDict["ProgressIndeterminateColor1"] = progressBarOverlay;
+            accentResDict["ProgressIndeterminateColor2"] = progressBarOverlay;
+            accentResDict["ProgressIndeterminateColor3"] = pyrevitHighlightColor;
+            accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
+
+            Resources.MergedDictionaries.Add(accentResDict);
+        }
+
+        public string GetCurrentPyRevitVersion() {
+            var envDict = new EnvDictionary();
+            return envDict.pyRevitVersion;
+        }
+
+        private void ScriptOutput_SizeChanged(object sender, SizeChangedEventArgs e) {
+            Visibility isVisible = Visibility.Visible;
+            if (ActualWidth < 400)
+                isVisible = Visibility.Collapsed;
+            foreach (Button item in RightWindowCommands.Items)
+                item.Visibility = isVisible;
+
+            this.TitleForeground = isVisible == Visibility.Visible ? Brushes.White : new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
+        }
+
+        // app version
+        public override string AppVersion { get { return GetCurrentPyRevitVersion(); } }
+
+    }
+
+    public partial class ScriptOutput : PyRevitTemplateWindow, IComponentConnector, IDisposable {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
@@ -41,15 +126,12 @@ namespace PyRevitBaseClasses {
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
         public ActivityBar activityBar;
 
-        public ScriptOutput(bool debugMode = false, UIApplication uiApp = null) {
+        public ScriptOutput(bool debugMode = false, UIApplication uiApp = null) : base() {
             _debugMode = debugMode;
             _uiApp = uiApp;
 
             // setup unique id for this output window
             OutputUniqueId = Guid.NewGuid().ToString();
-
-            //// setup window styles
-            SetupDynamicResources();
 
             InitializeComponent();
         }
@@ -131,44 +213,14 @@ namespace PyRevitBaseClasses {
             this.Content = baseGrid;
 
             // TODO: add report button, get email from envvars
-            // setup header buttons
-            // TODO: add report button, get email from envvars
             var saveButton = new Button() { Content = "Save Contents" };
             saveButton.Click += Save_Contents_Button_Clicked;
+            RightWindowCommands.Items.Insert(0, saveButton);
 
-            var userNameButton = new Button() { Content = CurrentUser };
-            userNameButton.Click += Copy_Button_Title;
-
-            var winButtons = new WindowCommands() { Items = { saveButton, userNameButton } };
-
-            // add version button if can get version
-            var pyrevitVer = GetCurrentPyRevitVersion();
-            if (pyrevitVer != null && pyrevitVer != string.Empty) {
-                var versionButton = new Button() { Content = GetCurrentPyRevitVersion() };
-                versionButton.Click += Copy_Button_Title;
-                winButtons.Items.Add(versionButton);
-            }
-
-            RightWindowCommands = winButtons;
-
-            // Setup window styles
-            this.Background = Brushes.White;
-            this.Width = 900; this.MinWidth = 400;
-            this.Height = 600; this.MinHeight = 300;
-            this.BorderThickness = new Thickness();
-            var glowColor = Color.FromArgb(0x66, 0x2c, 0x3e, 0x50);
-            this.GlowBrush = new SolidColorBrush() { Color = glowColor };
-            this.NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
+            this.Width = 900; this.MinWidth = 50;
+            this.Height = 600; this.MinHeight = 100;
             this.ResizeMode = ResizeMode.CanResize;
-            this.ResizeBorderThickness = new Thickness(10, 10, 10, 10);
-            this.WindowStartupLocation = WindowStartupLocation.Manual;
-            this.WindowTransitionsEnabled = false;
-            this.ShowIconOnTitleBar = true;
-            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
-            this.Icon = LoadIcon(new Uri(iconPath));
-            this.IconBitmapScalingMode = BitmapScalingMode.Fant;
-            this.IconEdgeMode = EdgeMode.Aliased;
-            this.IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
+
             this.Title = "pyRevit";
         }
 
@@ -182,58 +234,7 @@ namespace PyRevitBaseClasses {
             this._contentLoaded = true;
         }
 
-        public ImageSource LoadIcon(Uri path) {
-            BitmapImage bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = path;
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        }
-
-        public string GetCurrentPyRevitVersion() {
-            var envDict = new EnvDictionary();
-            return envDict.pyRevitVersion;
-        }
-
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
-
-        private void SetupDynamicResources() {
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml")
-            });
-
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml")
-            });
-
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml")
-            });
-
-            var accentResDict = new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml")
-            };
-
-            // TODO: read the colors from css? all colors and styles should be in the same place
-            var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
-            var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
-            var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
-            accentResDict["AccentColorBrush"] = pyrevitBackground;
-            accentResDict["WindowTitleColorBrush"] = pyrevitBackground;
-
-            // overriding colors on the progressbar control
-            var progressBarOverlay = Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF);
-            accentResDict["ProgressBrush"] = pyrevitHighlight;
-            accentResDict["ProgressIndeterminateColor1"] = progressBarOverlay;
-            accentResDict["ProgressIndeterminateColor2"] = progressBarOverlay;
-            accentResDict["ProgressIndeterminateColor3"] = pyrevitHighlightColor;
-            accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
-
-            Resources.MergedDictionaries.Add(accentResDict);
-        }
 
         private string GetStyleSheetFile() {
             var envDict = new EnvDictionary();
@@ -558,14 +559,6 @@ namespace PyRevitBaseClasses {
             outputWindow.Content = null;
 
             outputWindow.ClosedByUser = true;
-        }
-
-        private void Copy_Button_Title(object sender, RoutedEventArgs e) {
-            var button = e.Source as Button;
-            Clipboard.SetText(button.Content.ToString());
-            var notif = new ToolTip() { Content = "Copied to Clipboard" } ;
-            notif.StaysOpen = false;
-            notif.IsOpen = true;
         }
 
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
