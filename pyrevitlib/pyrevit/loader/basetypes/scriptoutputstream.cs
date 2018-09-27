@@ -22,7 +22,7 @@ namespace PyRevitBaseClasses
 
         public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
         {
-            _outputBuffer = String.Empty;
+            _outputBuffer = string.Empty;
             _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(pyrvtCmd);
             _gui = new WeakReference<ScriptOutput>(null);
         }
@@ -30,7 +30,7 @@ namespace PyRevitBaseClasses
 
         public ScriptOutputStream(ScriptOutput gui)
         {
-            _outputBuffer = String.Empty;
+            _outputBuffer = string.Empty;
             _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
@@ -81,7 +81,7 @@ namespace PyRevitBaseClasses
                 if (output.ClosedByUser)
                 {
                     _gui = null;
-                    _outputBuffer = String.Empty;
+                    _outputBuffer = string.Empty;
                     return;
                 }
 
@@ -103,7 +103,7 @@ namespace PyRevitBaseClasses
                 if(output.ClosedByUser)
                 {
                     _gui = null;
-                    _outputBuffer = String.Empty;
+                    _outputBuffer = string.Empty;
                     return;
                 }
 
@@ -131,7 +131,7 @@ namespace PyRevitBaseClasses
                     _outputBuffer += text;
 
                     if(PrintDebugInfo) {
-                        output.AppendText(String.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
+                        output.AppendText(string.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
                     }
 
                     if (count < 1024)
@@ -151,7 +151,7 @@ namespace PyRevitBaseClasses
                             output.AppendError(_outputBuffer, ExternalConfig.defaultelement);
 
                         // reset buffer and flush state for next time
-                        _outputBuffer = String.Empty;
+                        _outputBuffer = string.Empty;
                     }
                 }
             }

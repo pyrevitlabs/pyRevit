@@ -123,10 +123,10 @@ namespace PyRevitBaseClasses
 
             if (envDict.usageLogState)
             {
-                if (envDict.usageLogState && envDict.usageLogServerUrl != null && !String.IsNullOrEmpty(envDict.usageLogServerUrl))
+                if (envDict.usageLogState && envDict.usageLogServerUrl != null && !string.IsNullOrEmpty(envDict.usageLogServerUrl))
                     new Task(() => PostUsageLogToServer(envDict.usageLogServerUrl, logEntry)).Start();
 
-                if (envDict.usageLogState && envDict.usageLogFilePath != null && !String.IsNullOrEmpty(envDict.usageLogFilePath))
+                if (envDict.usageLogState && envDict.usageLogFilePath != null && !string.IsNullOrEmpty(envDict.usageLogFilePath))
                     new Task(() => WriteUsageLogToFile(envDict.usageLogFilePath, logEntry)).Start();
             }
         }

@@ -8,22 +8,22 @@ namespace PyRevitBaseClasses
     {
         public static string keyPrefix = "PYREVIT";
 
-        public static string sessionUUID = String.Format("{0}_UUID", keyPrefix);
-        public static string pyRevitVersion = String.Format("{0}_VERSION", keyPrefix);
+        public static string sessionUUID = string.Format("{0}_UUID", keyPrefix);
+        public static string pyRevitVersion = string.Format("{0}_VERSION", keyPrefix);
 
-        public static string loggingLevel = String.Format("{0}_LOGGINGLEVEL", keyPrefix);
-        public static string fileLogging = String.Format("{0}_FILELOGGING", keyPrefix);
+        public static string loggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
+        public static string fileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
 
-        public static string outputStyleSheet = String.Format("{0}_STYLESHEET", keyPrefix);
+        public static string outputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
 
-        public static string usageLogState = String.Format("{0}_USAGELOGSTATE", keyPrefix);
-        public static string usageLogFilePath = String.Format("{0}_USAGELOGFILE", keyPrefix);
-        public static string usageLogServerUrl = String.Format("{0}_USAGELOGSERVER", keyPrefix);
+        public static string usageLogState = string.Format("{0}_USAGELOGSTATE", keyPrefix);
+        public static string usageLogFilePath = string.Format("{0}_USAGELOGFILE", keyPrefix);
+        public static string usageLogServerUrl = string.Format("{0}_USAGELOGSERVER", keyPrefix);
 
-        public static string loadedAssm = String.Format("{0}_LOADEDASSMS", keyPrefix);
-        public static string loadedAssmCount = String.Format("{0}_ASSMCOUNT", keyPrefix);
+        public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
+        public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);
 
-        public static string autoupdating = String.Format("{0}_AUTOUPDATING", keyPrefix);
+        public static string autoupdating = string.Format("{0}_AUTOUPDATING", keyPrefix);
     }
 
     public class EnvDictionary

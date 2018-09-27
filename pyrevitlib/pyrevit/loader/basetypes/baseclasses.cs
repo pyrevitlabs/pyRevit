@@ -108,13 +108,13 @@ namespace PyRevitBaseClasses {
 
                 // use a disabled menu item to show if the command requires clean engine
                 MenuItem cleanEngineStatus = new MenuItem();
-                cleanEngineStatus.Header = String.Format("Requests Clean Engine: {0}", baked_needsCleanEngine ? "Yes" : "No");
+                cleanEngineStatus.Header = string.Format("Requests Clean Engine: {0}", baked_needsCleanEngine ? "Yes" : "No");
                 cleanEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(cleanEngineStatus);
 
                 // use a disabled menu item to show if the command requires full frame engine
                 MenuItem fullFrameEngineStatus = new MenuItem();
-                fullFrameEngineStatus.Header = String.Format("Requests FullFrame Engine: {0}", baked_needsFullFrameEngine ? "Yes" : "No");
+                fullFrameEngineStatus.Header = string.Format("Requests FullFrame Engine: {0}", baked_needsFullFrameEngine ? "Yes" : "No");
                 fullFrameEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
 
@@ -140,7 +140,7 @@ namespace PyRevitBaseClasses {
 
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
                 MenuItem copyUniqueName = new MenuItem();
-                copyUniqueName.Header = String.Format("Copy Unique Id ({0})", baked_cmdUniqueName);
+                copyUniqueName.Header = string.Format("Copy Unique Id ({0})", baked_cmdUniqueName);
                 copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_cmdUniqueName); };
                 pyRevitCmdContextMenu.Items.Add(copyUniqueName);
 
@@ -311,7 +311,7 @@ namespace PyRevitBaseClasses {
             // assume that the remaining tokens are category names and create a comparison string
             if(contextTokens.Count > 0) {
                 contextTokens.Sort();
-                _contextCatNameCompareString = String.Join("", contextTokens);
+                _contextCatNameCompareString = string.Join("", contextTokens);
             }
         }
 
@@ -338,7 +338,7 @@ namespace PyRevitBaseClasses {
                         selectedCategoryNames.Add(rvt_cat.Name.ToLower());
 
                     selectedCategoryNames.Sort();
-                    string selectedCatNameCompareString = String.Join("", selectedCategoryNames);
+                    string selectedCatNameCompareString = string.Join("", selectedCategoryNames);
 
                     if (selectedCatNameCompareString != _contextCatNameCompareString)
                         return false;

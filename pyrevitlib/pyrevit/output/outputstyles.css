@@ -5,6 +5,7 @@ body {
 	height: 100%;
 	margin: 0 0 15px 0;
 	padding: 0;
+	padding-top: 3px;
 	scrollbar-arrow-color: #666;
 	scrollbar-base-color: #EEE;
 	scrollbar-face-color: #DDD;
