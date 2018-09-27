@@ -338,7 +338,7 @@ class PyRevitOutputWindow(object):
             >>>     output.update_progress(i, 100)
         """
         if self.window:
-            self.window.UpdateProUpdateActivityBargressBar(cur_value, max_value)
+            self.window.UpdateActivityBar(cur_value, max_value)
 
     def reset_progress(self):
         """Reset output window progress bar to zero."""
