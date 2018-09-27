@@ -18,7 +18,8 @@ namespace PyRevitBaseClasses
         public static string dochead = "<head>" +
                                        "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=9\" />" +
                                        "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />" +
-                                       "<link rel=\"stylesheet\" href=\"file:///{0}\">" +
+                                       "<meta name=\"pyrevit-version\" content=\"{0}\" />" +
+                                       "<link rel=\"stylesheet\" href=\"file:///{1}\">" +
                                        "</head>";
 
         public static string defaultelement = "<div class=\"entry\"></div>";

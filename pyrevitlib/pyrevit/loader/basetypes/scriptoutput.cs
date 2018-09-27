@@ -37,7 +37,7 @@ namespace PyRevitBaseClasses {
         public bool ClosedByUser = false;
 
         // Html renderer and its Winforms host, and navigate handler method
-        System.Windows.Forms.Integration.WindowsFormsHost host;
+        public System.Windows.Forms.Integration.WindowsFormsHost host;
         public System.Windows.Forms.WebBrowser renderer;
         public System.Windows.Forms.WebBrowserNavigatingEventHandler _navigateHandler;
 
@@ -49,7 +49,7 @@ namespace PyRevitBaseClasses {
             OutputUniqueId = Guid.NewGuid().ToString();
 
             //// setup window styles
-            SetupWindowStyleResources();
+            SetupWindowStyling();
 
             InitializeComponent();
         }
@@ -83,6 +83,7 @@ namespace PyRevitBaseClasses {
             // Add the interop host control to the Grid
             // control's collection of child controls.
             Grid baseGrid = new Grid();
+            //baseGrid.Margin = new Thickness(0, 0, 0, 15);
 
             if (_debugMode) {
                 var rendererRow = new RowDefinition();
@@ -116,8 +117,6 @@ namespace PyRevitBaseClasses {
 
             // TODO: add report button, get email from envvars
             // setup header buttons
-            // setting up user name and app version buttons
-            var envDict = new EnvDictionary();
             // TODO: add report button, get email from envvars
             var saveButton = new Button() { Content = "Save Contents" };
             saveButton.Click += Save_Contents_Button_Clicked;
@@ -125,7 +124,7 @@ namespace PyRevitBaseClasses {
             var userNameButton = new Button() { Content = CurrentUser };
             userNameButton.Click += Copy_Button_Title;
 
-            var versionButton = new Button() { Content = envDict.pyRevitVersion };
+            var versionButton = new Button() { Content = GetCurrentPyRevitVersion() };
             versionButton.Click += Copy_Button_Title;
 
             var winButtons = new WindowCommands() { Items = { saveButton, userNameButton, versionButton } };
@@ -149,9 +148,14 @@ namespace PyRevitBaseClasses {
             this._contentLoaded = true;
         }
 
+        public string GetCurrentPyRevitVersion() {
+            var envDict = new EnvDictionary();
+            return envDict.pyRevitVersion;
+        }
+
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
 
-        private void SetupWindowStyleResources() {
+        private void SetupWindowStyling() {
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml")
             });
@@ -173,6 +177,7 @@ namespace PyRevitBaseClasses {
             Resources.MergedDictionaries.Add(accentResDict);
 
             WindowTransitionsEnabled = false;
+            ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
         private string GetStyleSheetFile() {
@@ -188,7 +193,11 @@ namespace PyRevitBaseClasses {
                 cssFilePath = GetStyleSheetFile();
 
             // create the head with default styling
-            var dochead = string.Format(ExternalConfig.doctype + ExternalConfig.dochead, cssFilePath);
+            var dochead = string.Format(
+                ExternalConfig.doctype + ExternalConfig.dochead,
+                GetCurrentPyRevitVersion(),
+                cssFilePath
+                );
             // create default html
             renderer.DocumentText = string.Format("{0}<html><body></body></html>", dochead);
 
@@ -236,14 +245,14 @@ namespace PyRevitBaseClasses {
             renderer.Focus();
         }
 
-        public System.Windows.Forms.HtmlElement ComposeEntry(String OutputText, String HtmlElementType) {
+        public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
             WaitReadyBrowser();
-            var div = ActiveDocument.CreateElement(HtmlElementType);
-            div.InnerHtml = OutputText;
-            return div;
+            var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
+            htmlElement.InnerHtml = contents;
+            return htmlElement;
         }
 
-        public void AppendText(String OutputText, String HtmlElementType) {
+        public void AppendText(string OutputText, string HtmlElementType) {
             if (!_frozen) {
                 WaitReadyBrowser();
                 ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
@@ -254,7 +263,7 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public void AppendError(String OutputText, String HtmlElementType) {
+        public void AppendError(string OutputText, string HtmlElementType) {
             Unfreeze();
             AppendText(OutputText, HtmlElementType);
         }
@@ -463,11 +472,14 @@ namespace PyRevitBaseClasses {
         private void Copy_Button_Title(object sender, RoutedEventArgs e) {
             var button = e.Source as Button;
             Clipboard.SetText(button.Content.ToString());
+            var notif = new ToolTip() { Content = "Copied to Clipboard" } ;
+            notif.StaysOpen = false;
+            notif.IsOpen = true;
         }
 
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
-            var head = ActiveDocument.GetElementsByTagName("head")[0].OuterHtml;
-            var fullHtml = ExternalConfig.doctype + head + ActiveDocument.Body.OuterHtml;
+            var head = ActiveDocument.GetElementsByTagName("head")[0];
+            var fullHtml = ExternalConfig.doctype + head.OuterHtml + ActiveDocument.Body.OuterHtml;
             var saveDlg = new System.Windows.Forms.SaveFileDialog() {
                 Title = "Save Output to:",
                 Filter = "HTML|*.html"

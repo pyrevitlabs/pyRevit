@@ -24,7 +24,7 @@ namespace PyRevitBaseClasses
         public string commandextension { get; set; }
         public string commanduniquename { get; set; }
         public int resultcode { get; set; }
-        public Dictionary<String, String> commandresults { get; set; }
+        public Dictionary<string, string> commandresults { get; set; }
         public string scriptpath { get; set; }
 
         public LogEntry()
@@ -36,7 +36,7 @@ namespace PyRevitBaseClasses
                         string pyRevitVersion,
                         bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName, string pyRevitCommandPath,
-                        int executorResultCode, Dictionary<String, String> resultDict)
+                        int executorResultCode, Dictionary<string, string> resultDict)
         {
             username = revitUsername;
             revit = revitVersion;

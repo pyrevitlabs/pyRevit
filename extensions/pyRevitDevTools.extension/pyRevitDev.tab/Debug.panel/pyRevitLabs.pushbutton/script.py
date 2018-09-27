@@ -2,6 +2,7 @@ import clr
 from pyrevit.loader.addin import engines
 from pyrevit.labs import NLog
 
+from pyrevit import framework
 from pyrevit import revit, DB
 from pyrevit import forms  
 from pyrevit import script
@@ -29,9 +30,3 @@ print(engines.get_latest_engine())
 
 for eng in engines.get_engines():
     print(eng)
-
-
-clr.AddReference('MahApps.Metro')
-import MahApps.Metro;
-clr.ImportExtensions(MahApps.Metro.Controls.Dialogs)
-output.window.ShowProgressAsync("This is the title", "Some message")

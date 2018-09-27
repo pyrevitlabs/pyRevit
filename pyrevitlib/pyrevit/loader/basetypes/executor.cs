@@ -106,7 +106,7 @@ namespace PyRevitBaseClasses
 
     public class ErrorReporter : ErrorListener
     {
-        public List<String> Errors = new List<string>();
+        public List<string> Errors = new List<string>();
 
         public override void ErrorReported(ScriptSource source, string message,
                                            SourceSpan span, int errorCode, Severity severity)

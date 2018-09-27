@@ -75,7 +75,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public static List<Object> GetAllActiveOutputWindows(String outputWindowId = null)
+        public static List<Object> GetAllActiveOutputWindows(string outputWindowId = null)
         {
             if (outputWindowId != null)
             {
