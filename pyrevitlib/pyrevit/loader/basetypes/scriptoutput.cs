@@ -185,12 +185,14 @@ namespace PyRevitBaseClasses {
                 Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml")
             };
 
+            // TODO: read the colors from css? all colors and styles should be in the same place
             var pyrevitHighlightColor = Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12);
             var pyrevitBackground = new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
             var pyrevitHighlight = new SolidColorBrush() { Color = pyrevitHighlightColor };
             accentResDict["AccentColorBrush"] = pyrevitBackground;
             accentResDict["WindowTitleColorBrush"] = pyrevitBackground;
 
+            // overriding colors on the progressbar control
             var progressBarOverlay = Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF);
             accentResDict["ProgressBrush"] = pyrevitHighlight;
             accentResDict["ProgressIndeterminateColor1"] = progressBarOverlay;
@@ -199,6 +201,8 @@ namespace PyRevitBaseClasses {
             accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
 
             Resources.MergedDictionaries.Add(accentResDict);
+
+            // TODO: read the css? and set the background so new background match the bottom?
         }
 
         private string GetStyleSheetFile() {
