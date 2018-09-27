@@ -32,5 +32,5 @@ for eng in engines.get_engines():
     print(eng)
 
 
-output.window.activityBar.ConsoleLogInfo('sdfsdfd')
-output.window.activityBar.IsActive = True
+output.log_error('sdfdsfsdffds')
+

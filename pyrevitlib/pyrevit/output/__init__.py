@@ -338,22 +338,62 @@ class PyRevitOutputWindow(object):
             >>>     output.update_progress(i, 100)
         """
         if self.window:
-            self.window.UpdateProgressBar(cur_value, max_value)
+            self.window.UpdateProUpdateActivityBargressBar(cur_value, max_value)
 
     def reset_progress(self):
         """Reset output window progress bar to zero."""
         if self.window:
-            self.window.UpdateProgressBar(0, 1)
+            self.window.UpdateActivityBar(0, 1)
 
     def hide_progress(self):
         """Hide output window progress bar."""
         if self.window:
-            self.window.SetProgressBarVisibility(False)
+            self.window.SetActivityBarVisibility(False)
 
     def unhide_progress(self):
         """Unhide output window progress bar."""
         if self.window:
-            self.window.SetProgressBarVisibility(True)
+            self.window.SetActivityBarVisibility(True)
+
+    def indeterminate_progress(self, state):
+        """Show or hide indeterminate progress bar. """
+        if self.window:
+            self.window.UpdateActivityBar(state)
+
+    def show_logpanel(self):
+        """Show output window logging panel."""
+        if self.window:
+            self.window.SetActivityBarVisibility(True)
+
+    def hide_logpanel(self):
+        """Hide output window logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.SetActivityBarVisibility(False)
+
+    def log_ok(self, message):
+        """Report OK message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogOK(message)
+
+    def log_info(self, message):
+        """Report INFO message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogInfo(message)
+
+    def log_warning(self, message):
+        """Report WARNING message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogWarning(message)
+
+    def log_error(self, message):
+        """Report ERROR message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogError(message)
 
     @staticmethod
     def emojize(md_str):

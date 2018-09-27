@@ -4,13 +4,15 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 
 using MahApps.Metro.Controls;
-
 using pyRevitLabs.CommonWPF.Controls;
+
 
 namespace PyRevitBaseClasses {
     public partial class ScriptOutput : pyRevitLabs.CommonWPF.Windows.AppWindow, IComponentConnector, IDisposable {
@@ -46,7 +48,7 @@ namespace PyRevitBaseClasses {
             OutputUniqueId = Guid.NewGuid().ToString();
 
             //// setup window styles
-            SetupWindowStyling();
+            SetupDynamicResources();
 
             InitializeComponent();
         }
@@ -80,12 +82,13 @@ namespace PyRevitBaseClasses {
 
             // activiy bar
             activityBar = new ActivityBar();
+            activityBar.Foreground = Brushes.White;
             activityBar.Visibility = Visibility.Collapsed;
 
             // Add the interop host control to the Grid
             // control's collection of child controls.
             Grid baseGrid = new Grid();
-            baseGrid.Margin = new Thickness(0, 0, 0, 15);
+            baseGrid.Margin = new Thickness(0, 0, 0, 0);
 
             var activityBarRow = new RowDefinition();
             activityBarRow.Height = GridLength.Auto; 
@@ -143,11 +146,16 @@ namespace PyRevitBaseClasses {
 
             // Setup window styles
             this.Background = Brushes.White;
-            this.Width = 900;
-            this.Height = 600;
+            this.Width = 900; this.MinWidth = 400;
+            this.Height = 600; this.MinHeight = 300;
+            this.BorderThickness = new Thickness();
+            var glowColor = Color.FromArgb(0x66, 0x2c, 0x3e, 0x50);
+            this.GlowBrush = new SolidColorBrush() { Color = glowColor };
+            this.NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
+            this.ResizeMode = ResizeMode.CanResize;
+            this.ResizeBorderThickness = new Thickness(10, 10, 10, 10);
             this.WindowStartupLocation = WindowStartupLocation.Manual;
             this.WindowTransitionsEnabled = false;
-            this.ResizeMode = ResizeMode.CanResizeWithGrip;
             this.Title = "pyRevit";
         }
 
@@ -161,6 +169,20 @@ namespace PyRevitBaseClasses {
             this._contentLoaded = true;
         }
 
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool PrintWindow(IntPtr hwnd, IntPtr hDC, uint nFlags);
+
+        public BitmapSource GetRendererAsImage() {
+            System.Drawing.Bitmap bm = new System.Drawing.Bitmap(renderer.ClientRectangle.Width, renderer.ClientRectangle.Height);
+            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bm);
+            PrintWindow(renderer.Handle, g.GetHdc(), 0); g.ReleaseHdc(); g.Flush();
+            BitmapSource src = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(bm.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            src.Freeze();
+            bm.Dispose();
+            bm = null;
+            return src;
+        }
+
         public string GetCurrentPyRevitVersion() {
             var envDict = new EnvDictionary();
             return envDict.pyRevitVersion;
@@ -168,7 +190,7 @@ namespace PyRevitBaseClasses {
 
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
 
-        private void SetupWindowStyling() {
+        private void SetupDynamicResources() {
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml")
             });
@@ -201,8 +223,6 @@ namespace PyRevitBaseClasses {
             accentResDict["ProgressIndeterminateColor4"] = pyrevitHighlightColor;
 
             Resources.MergedDictionaries.Add(accentResDict);
-
-            // TODO: read the css? and set the background so new background match the bottom?
         }
 
         private string GetStyleSheetFile() {
@@ -352,11 +372,11 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public void UpdateProgressBar(float curValue, float maxValue) {
-            if (this.ClosedByUser) {
-                return;
-            }
+        public void SetActivityBarVisibility(bool visibility) {
+            activityBar.Visibility = visibility ? Visibility.Visible : Visibility.Collapsed;
+        }
 
+        public void UpdateTaskBarProgress(float curValue, float maxValue) {
             if (this.TaskbarItemInfo == null) {
                 // taskbar progress object
                 var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
@@ -364,8 +384,44 @@ namespace PyRevitBaseClasses {
                 this.TaskbarItemInfo = taskbarinfo;
             }
 
-            var progValue = (curValue / maxValue);
-            this.TaskbarItemInfo.ProgressValue = progValue;
+            this.TaskbarItemInfo.ProgressValue = curValue / maxValue;
+        }
+
+        public void UpdateTaskBarProgress(bool indeterminate) {
+            if (this.TaskbarItemInfo == null) {
+                // taskbar progress object
+                var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
+                taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Indeterminate;
+                this.TaskbarItemInfo = taskbarinfo;
+            }
+        }
+
+        public void UpdateActivityBar(float curValue, float maxValue) {
+            if (this.ClosedByUser) {
+                return;
+            }
+
+            UpdateTaskBarProgress(curValue, maxValue);
+            activityBar.UpdateProgressBar(curValue, maxValue);
+            SetActivityBarVisibility(true);
+        }
+
+        public void UpdateActivityBar(bool indeterminate) {
+            if (this.ClosedByUser) {
+                return;
+            }
+
+            UpdateTaskBarProgress(indeterminate);
+            activityBar.IsActive = indeterminate;
+            SetActivityBarVisibility(indeterminate);
+        }
+
+        public void UpdateProgressBar(float curValue, float maxValue) {
+            if (this.ClosedByUser) {
+                return;
+            }
+
+            UpdateTaskBarProgress(curValue, maxValue);
 
             WaitReadyBrowser();
             if (ActiveDocument != null) {
@@ -393,7 +449,7 @@ namespace PyRevitBaseClasses {
 
                 SetProgressBarVisibility(true);
 
-                var newWidthStyleProperty = string.Format("width:{0}%;", progValue * 100);
+                var newWidthStyleProperty = string.Format("width:{0}%;", (curValue / maxValue) * 100);
                 if (pbargraph.Style == null)
                     pbargraph.Style = newWidthStyleProperty;
                 else

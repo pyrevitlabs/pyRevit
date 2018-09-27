@@ -141,8 +141,8 @@ def _get_references():
                 'System.Windows.Forms', 'System.Web.Extensions',
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
-                'pyRevitLabs.Common',
-                'pyRevitLabs.CommonWPF', 'MahApps.Metro']
+                'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
+                'MahApps.Metro', 'AirspaceFixer']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 

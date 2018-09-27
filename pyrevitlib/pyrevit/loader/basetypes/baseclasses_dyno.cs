@@ -4,7 +4,6 @@ using System.IO;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
-using System.Windows;
 using System.Windows.Input;
 using System.Runtime.Remoting;
 using System.Reflection;

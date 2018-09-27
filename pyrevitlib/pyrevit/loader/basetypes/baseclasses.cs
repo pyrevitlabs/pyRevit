@@ -4,10 +4,8 @@ using System.IO;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.Attributes;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
 
 
 namespace PyRevitBaseClasses {
