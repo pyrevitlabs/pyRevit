@@ -10,10 +10,10 @@ using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using System.Net.Cache;
+using System.Diagnostics;
 
 using MahApps.Metro.Controls;
 using pyRevitLabs.CommonWPF.Controls;
-
 
 namespace PyRevitBaseClasses {
     public partial class PyRevitTemplateWindow : pyRevitLabs.CommonWPF.Windows.AppWindow {
@@ -220,9 +220,13 @@ namespace PyRevitBaseClasses {
             this.Content = baseGrid;
 
             // TODO: add report button, get email from envvars
-            var saveButton = new Button() { Content = "Save Contents" };
+            var saveButton = new Button() { Content = "SC", ToolTip = "Save Contents", Focusable = false };
             saveButton.Click += Save_Contents_Button_Clicked;
             RightWindowCommands.Items.Insert(0, saveButton);
+
+            var openButton = new Button() { Content = "OB", ToolTip = "Open in Browser", Focusable = false };
+            openButton.Click += OpenButton_Click; ;
+            RightWindowCommands.Items.Insert(0, openButton);
 
             this.Width = 900; this.MinWidth = 50;
             this.Height = 600; this.MinHeight = 100;
@@ -246,6 +250,11 @@ namespace PyRevitBaseClasses {
         private string GetStyleSheetFile() {
             var envDict = new EnvDictionary();
             return envDict.activeStyleSheet;
+        }
+
+        public string GetFullHtml() {
+            var head = ActiveDocument.GetElementsByTagName("head")[0];
+            return ExternalConfig.doctype + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
 
         private void SetupDefaultPage(string styleSheetFilePath = null) {
@@ -569,16 +578,22 @@ namespace PyRevitBaseClasses {
         }
 
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
-            var head = ActiveDocument.GetElementsByTagName("head")[0];
-            var fullHtml = ExternalConfig.doctype + head.OuterHtml + ActiveDocument.Body.OuterHtml;
             var saveDlg = new System.Windows.Forms.SaveFileDialog() {
                 Title = "Save Output to:",
                 Filter = "HTML|*.html"
             };
             saveDlg.ShowDialog();
             var f = File.CreateText(saveDlg.FileName);
-            f.Write(fullHtml);
+            f.Write(GetFullHtml());
             f.Close();
+        }
+
+        private void OpenButton_Click(object sender, RoutedEventArgs e) {
+            string tempHtml = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), string.Format("{0}.html", Title));
+            var f = File.CreateText(tempHtml);
+            f.Write(GetFullHtml());
+            f.Close();
+            Process.Start(string.Format("file:///{0}", tempHtml));
         }
 
         public void Dispose() {
