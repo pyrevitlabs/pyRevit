@@ -147,7 +147,8 @@ def get_repo(repo_dir):
 def git_pull(repo_info):
     repo = repo_info.repo
     try:
-        libgit.Commands.Pull(_make_pull_signature(),
+        libgit.Commands.Pull(repo,
+                             _make_pull_signature(),
                              _make_pull_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
@@ -166,7 +167,8 @@ def git_pull(repo_info):
 def git_fetch(repo_info):
     repo = repo_info.repo
     try:
-        libgit.Commands.Fetch(repo.Head.TrackedBranch.Remote,
+        libgit.Commands.Fetch(repo,
+                              repo.Head.TrackedBranch.Remote,
                               _make_fetch_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
