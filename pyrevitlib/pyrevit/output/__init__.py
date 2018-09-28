@@ -395,6 +395,16 @@ class PyRevitOutputWindow(object):
             self.show_logpanel()
             self.window.activityBar.ConsoleLogError(message)
 
+    def set_icon(self, iconpath):
+        """Sets icon on the output window."""
+        if self.window:
+            self.window.SetIcon(iconpath)
+
+    def reset_icon(self):
+        """Sets icon on the output window."""
+        if self.window:
+            self.window.ResetIcon()
+
     @staticmethod
     def emojize(md_str):
         """Replace emoji codes with emoji images and print.

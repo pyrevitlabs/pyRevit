@@ -32,12 +32,7 @@ namespace PyRevitBaseClasses {
             GlowBrush = new SolidColorBrush() { Color = glowColor };
             NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
 
-            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
-            Icon = LoadIcon(new Uri(iconPath));
-            IconBitmapScalingMode = BitmapScalingMode.Fant;
-            IconEdgeMode = EdgeMode.Aliased;
-            IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
-            ShowIconOnTitleBar = true;
+            ResetIcon();
 
             ResizeBorderThickness = new Thickness(10, 10, 10, 10);
             BorderThickness = new Thickness();
@@ -99,6 +94,18 @@ namespace PyRevitBaseClasses {
         // app version
         public override string AppVersion { get { return GetCurrentPyRevitVersion(); } }
 
+        public void SetIcon(string iconPath) {
+            Icon = LoadIcon(new Uri(iconPath));
+            IconBitmapScalingMode = BitmapScalingMode.HighQuality;
+            IconEdgeMode = EdgeMode.Aliased;
+            IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
+            ShowIconOnTitleBar = true;
+        }
+
+        public void ResetIcon() {
+            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
+            SetIcon(iconPath);
+        }
     }
 
     public partial class ScriptOutput : PyRevitTemplateWindow, IComponentConnector, IDisposable {
