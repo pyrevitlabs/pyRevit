@@ -244,8 +244,8 @@ def get_all_new_commits(repo_info):
 
     # ...and create a filter that will retrieve all the commits...
     commit_filter = libgit.CommitFilter()
-    commit_filter.Since = refs
-    commit_filter.Until = ref_commit
+    commit_filter.IncludeReachableFrom = refs
+    commit_filter.ExcludeReachableFrom = ref_commit
     commit_filter.SortBy = libgit.CommitSortStrategies.Time
 
     commits = repo.Commits.QueryBy(commit_filter)
