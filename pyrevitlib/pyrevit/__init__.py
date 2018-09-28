@@ -497,7 +497,7 @@ if not USER_DESKTOP or not op.exists(USER_DESKTOP):
 
 # create paths for pyrevit files
 if EXEC_PARAMS.doc_mode:
-    PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
+    PYREVIT_ALLUSER_APP_DIR = PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
 else:
     # pyrevit file directory
     PYREVIT_ALLUSER_APP_DIR = op.join(ALLUSER_PROGRAMDATA, PYREVIT_ADDON_NAME)

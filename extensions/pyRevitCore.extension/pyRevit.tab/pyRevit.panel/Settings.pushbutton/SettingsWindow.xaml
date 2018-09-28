@@ -95,16 +95,20 @@
                                 </WrapPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit will check updates for all installed extensions
                                                                                                at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
-                                <WrapPanel Margin="10,10,0,10">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="dynamocompatmode_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Dynamo 1.3 Compatibility Mode (Must Reload Revit)</TextBlock>
-                                </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit runs under IronPython 2.7.3 for compatibility with Dynamo.</TextBlock>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Engine" Margin="0,10,0,0">
+                            <StackPanel>
+                                <DockPanel Margin="10,10,0,10" >
+                                    <TextBlock Margin="0,4,20,0">Active Engine:</TextBlock>
+                                    <ComboBox x:Name="availableEngines" Margin="0,0,10,0" DisplayMemberPath="name"/>
+                                </DockPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">Save settings after changing the engine and then restart Revit.</TextBlock>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="Development" Margin="0,10,0,0">
                             <StackPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development</TextBlock>
                                 <WrapPanel Margin="10,10,0,10">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
                                     <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
@@ -282,13 +286,13 @@
                                                                                        Revit versions from here. This effectively removes the
                                                                                        pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
                         </TextBlock>
-                        <CheckBox x:Name="revit2019_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2019</CheckBox>
-                        <CheckBox x:Name="revit2018_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
-                        <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
-                        <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
-                        <CheckBox x:Name="revit2015_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
-                        <CheckBox x:Name="revit2014_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2014</CheckBox>
-                        <CheckBox x:Name="revit2013_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2013</CheckBox>
+                        <CheckBox x:Name="revit2019_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2019</CheckBox>
+                        <CheckBox x:Name="revit2018_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2018</CheckBox>
+                        <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2017</CheckBox>
+                        <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2016</CheckBox>
+                        <CheckBox x:Name="revit2015_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2015</CheckBox>
+                        <CheckBox x:Name="revit2014_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2014</CheckBox>
+                        <CheckBox x:Name="revit2013_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Autodesk Revit 2013</CheckBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>

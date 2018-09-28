@@ -3,17 +3,22 @@ import logging
 from pyrevit import HOME_DIR
 from pyrevit.framework import clr
 
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
 clr.AddReference('Nlog')
+clr.AddReference('MadMilkman.Ini')
+clr.AddReference('OpenMcdf')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 import Nett
 import NLog
+import MadMilkman.Ini
+import OpenMcdf
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import Language

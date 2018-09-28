@@ -50,6 +50,11 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="..\..\..\..\..\extensions\pyRevitCore.extension\pyRevit.tab\pyRevit.panel\Settings.pushbutton\SettingsWindow.xaml">
+      <Link>SettingsWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\BaseWindow.xaml">
       <Link>BaseWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>

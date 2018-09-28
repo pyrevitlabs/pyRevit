@@ -8,10 +8,6 @@ from pyrevit import loader
 logger = get_logger(__name__)
 
 
-LATEST_PYREVITLOADER = '277'
-DYNAMOCOMPAT_PYREVITLOADER = '273'
-
-
 def _get_binary_dll(addin_filename):
     # finding dlls in specific PyRevitLoader directory
     addin_file = \

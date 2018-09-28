@@ -1,15 +1,15 @@
 import os
 import os.path as op
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
 from pyrevit import forms
 from pyrevit import output
+from pyrevit.labs import TargetApps
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-from pyrevit.loader.addin import addinfiles
 
 
 __context__ = 'zerodoc'
@@ -20,9 +20,21 @@ __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
 
 
 logger = script.get_logger()
+Revit = TargetApps.Revit
 
 
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
+
+
+class PyRevitEngineConfig(object):
+    def __init__(self, engine):
+        self.engine = engine
+    
+    @property
+    def name(self):
+        return '{} ({}): {}'.format(self.engine.KernelName,
+                                    self.engine.Version,
+                                    self.engine.Description)
 
 
 class SettingsWindow(forms.WPFWindow):
@@ -40,6 +52,7 @@ class SettingsWindow(forms.WPFWindow):
             logger.error('Error setting up a parameter. Please update '
                          'pyRevit again. | {}'.format(setup_params_err))
 
+        self._setup_engines()
         self._setup_user_extensions_list()
         self._setup_env_vars_list()
 
@@ -94,7 +107,19 @@ class SettingsWindow(forms.WPFWindow):
 
         self.rocketmode_cb.IsChecked = user_config.core.rocketmode
 
-        self.dynamocompatmode_cb.IsChecked = addinfiles.get_dynamocompat()
+    def _setup_engines(self):
+        attachment = self.get_current_attachment()
+        engineCfgs = \
+            [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
+        engineCfgs = \
+            sorted(engineCfgs, key=lambda x: x.engine.Version, reverse=True)
+        self.availableEngines.ItemsSource = engineCfgs
+        
+        # now select the current engine
+        for engineCfg in self.availableEngines.ItemsSource:
+            if engineCfg.engine.Version == int(EXEC_PARAMS.engine_ver):
+                self.availableEngines.SelectedItem = engineCfg
+                break
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list
@@ -150,33 +175,60 @@ class SettingsWindow(forms.WPFWindow):
             usagelog.get_current_usage_serverurl()
         self.cur_usageserverurl_tb.IsReadOnly = True
 
-    def _setup_addinfiles(self):
-        """Reads the state of pyRevit addin files for different Revit versions
-        and updates the ui.
-        """
+    def _make_product_name(self, product, note):
+        return '_{} | {}({}) {}'.format(
+            product.ProductName,
+            product.BuildNumber,
+            product.BuildTarget,
+            note
+            )
 
-        self.is_pyrevit_allusers = addinfiles.is_pyrevit_for_allusers()
-        if self.is_pyrevit_allusers:
-            addinfiles_states = addinfiles.get_addinfiles_state(allusers=True)
-            self.revitversions_tb.Text = \
-                str(self.revitversions_tb.Text).replace('%appdata%',
-                                                        '%programdata%')
-        else:
-            addinfiles_states = addinfiles.get_addinfiles_state()
+    def _setup_addinfiles(self):
+        """Gets the installed Revit versions and sets up the ui"""
+        installed_revits = \
+            {str(x.ProductYear):x
+             for x in Revit.RevitController.ListInstalledRevits()}
+        attachments = \
+            {str(x.Product.ProductYear):x
+             for x in Revit.PyRevit.GetAttachments()}
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
-            if rvt_ver in addinfiles_states.keys():
+            if rvt_ver in attachments:
                 if rvt_ver != HOST_APP.version:
+                    checkbox.Content = \
+                        self._make_product_name(
+                            attachments[rvt_ver].Product,
+                            ''
+                            )
                     checkbox.IsEnabled = True
-                    checkbox.IsChecked = addinfiles_states[rvt_ver]
+                    checkbox.IsChecked = True
                 else:
-                    checkbox.Content = 'Revit {} (Current version. ' \
-                                       'Can not disable.)'.format(rvt_ver)
+                    checkbox.Content = \
+                        self._make_product_name(
+                            attachments[rvt_ver].Product,
+                            '<Current version>'
+                            )
                     checkbox.IsEnabled = False
                     checkbox.IsChecked = True
             else:
-                checkbox.Content = 'Revit {} (Not installed)'.format(rvt_ver)
-                checkbox.IsChecked = checkbox.IsEnabled = False
+                if rvt_ver in installed_revits:
+                    checkbox.Content = \
+                        self._make_product_name(
+                            installed_revits[rvt_ver],
+                            '<Not attached>'
+                            )
+                    checkbox.IsEnabled = True
+                    checkbox.IsChecked = False
+                else:
+                    checkbox.Content = \
+                        'Revit {} <Not installed>'.format(rvt_ver)
+                    checkbox.IsEnabled = False
+                    checkbox.IsChecked = False
+
+    @staticmethod
+    def get_current_attachment():
+        hostver = int(HOST_APP.version)
+        return TargetApps.Revit.PyRevit.GetAttached(hostver)
 
     @staticmethod
     def update_usagelogging():
@@ -188,11 +240,7 @@ class SettingsWindow(forms.WPFWindow):
     def update_addinfiles(self):
         """Enables/Disables the adding files for different Revit versions.
         """
-        new_states = {rvt_ver: checkbox.IsChecked
-                      for rvt_ver, checkbox in self._addinfiles_cboxes.items()}
-        new_states.pop(HOST_APP.version)
-        addinfiles.set_addinfiles_state(new_states,
-                                        allusers=self.is_pyrevit_allusers)
+        pass
 
     def resetreportinglevel(self, sender, args):
         """Callback method for resetting reporting (logging) levels to defaults
@@ -337,8 +385,16 @@ class SettingsWindow(forms.WPFWindow):
         # save all new values into config file
         user_config.save_changes()
 
-        # set dynamo compatibility mode
-        addinfiles.set_dynamocompat(self.dynamocompatmode_cb.IsChecked)
+        # update active engine
+        attachment = self.get_current_attachment()
+        all_users = attachment.AttachmentType == \
+            Revit.PyRevitAttachmentType.AllUsers
+        Revit.PyRevit.Attach(
+            int(HOST_APP.version),
+            attachment.Clone,
+            self.availableEngines.SelectedItem.engine.Version,
+            all_users
+            )
         # update usage logging and addin files
         self.update_usagelogging()
         self.update_addinfiles()

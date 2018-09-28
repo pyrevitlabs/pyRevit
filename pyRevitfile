@@ -1,5 +1,28 @@
+[core]
+enginename = 'pyRevitLoader.dll'
+
 [engines]
-path = 'bin\engines'
+
+[engines.IPY273]
+kernel = 'IronPython'
+version = 273
+path = 'bin\engines\273'
+compatproducts = ['dynamo']
+description = 'Provided for backward-compatibility with Dynamo3D 1.3'
+
+[engines.IPY277]
+kernel = 'IronPython'
+version = 277
+path = 'bin\engines\277'
+compatproducts = []
+description = 'Provided for backward-compatibility'
+
+[engines.IPY278]
+kernel = 'IronPython'
+version = 278
+path = 'bin\engines\278'
+compatproducts = []
+description = 'Latest IronPython Engine'
 
 [deployments]
 core = ['bin', 'pyrevitlib', 'site-packages']
