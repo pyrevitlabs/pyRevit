@@ -168,8 +168,10 @@ def git_fetch(repo_info):
     repo = repo_info.repo
     try:
         libgit.Commands.Fetch(repo,
-                              repo.Head.TrackedBranch.Remote,
-                              _make_fetch_options(repo_info))
+                              repo.Head.TrackedBranch.RemoteName,
+                              [],
+                              _make_fetch_options(repo_info),
+                              'fetching pyrevit updates')
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
         head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
