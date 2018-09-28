@@ -9,7 +9,7 @@ from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
 from pyrevit.userconfig import user_config
 
 import pyrevit.extensions as exts
-import pyrevit.plugins.extpackages as extpkgs
+import pyrevit.extensions.extpackages as extpkgs
 
 
 logger = get_logger(__name__)

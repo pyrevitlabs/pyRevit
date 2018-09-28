@@ -10,7 +10,7 @@ the shared libraries.
 
 To do its job correctly, this module needs to communicate with
 pyrevit.userconfig to get a list of user extension folder and also
-pyrevit.plugins.extpackages to check whether an extension is active or not.
+pyrevit.extensions.extpackages to check whether an extension is active or not.
 """
 
 from pyrevit import EXEC_PARAMS
@@ -38,7 +38,7 @@ from pyrevit.extensions.parser import parse_dir_for_ext_type,\
 from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.extensions.components import Extension, LibraryExtension
 
-import pyrevit.plugins.extpackages as extpkgs
+import pyrevit.extensions.extpackages as extpkgs
 
 
 logger = get_logger(__name__)

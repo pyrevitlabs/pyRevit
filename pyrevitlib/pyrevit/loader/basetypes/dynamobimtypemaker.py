@@ -4,7 +4,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.basetypes import DYNOCMD_EXECUTOR_TYPE
 
 import pyrevit.extensions as exts
-import pyrevit.plugins.extpackages as extpkgs
+import pyrevit.extensions.extpackages as extpkgs
 
 
 logger = get_logger(__name__)

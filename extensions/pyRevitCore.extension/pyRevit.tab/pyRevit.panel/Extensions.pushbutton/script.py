@@ -2,9 +2,9 @@
 
 from pyrevit import framework
 from pyrevit import coreutils
-from pyrevit import plugins
 from pyrevit import script
 from pyrevit import forms
+import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit.userconfig import user_config
 
@@ -34,7 +34,7 @@ class ExtensionPackageListItem:
         """Initializing the Extension package list item.
 
         Args:
-            extension_package (plugins.extpackages.ExtensionPackage):
+            extension_package (pyrevit.extensions.extpackages.ExtensionPackage):
         """
 
         # ref to the pkg object received
@@ -42,10 +42,10 @@ class ExtensionPackageListItem:
         # setting up pretty type name that shows up on the list
         self.Type = 'Unknown'
         if self.ext_pkg.type == \
-                plugins.extpackages.ExtensionTypes.LIB_EXTENSION:
+                extpkgs.ExtensionTypes.LIB_EXTENSION:
             self.Type = 'IronPython Library'
         elif self.ext_pkg.type == \
-                plugins.extpackages.ExtensionTypes.UI_EXTENSION:
+                extpkgs.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
         # setting up other list data
@@ -97,8 +97,8 @@ class ExtensionsWindow(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
-        self._setup_ext_dirs_ui(user_config.get_ext_root_dirs())
-        self._setup_ext_pkg_ui(plugins.extpackages.get_ext_packages())
+        self._setup_ext_dirs_ui(user_config.get_thirdparty_ext_root_dirs())
+        self._setup_ext_pkg_ui(extpkgs.get_ext_packages())
 
     @property
     def selected_pkg(self):
@@ -330,7 +330,7 @@ class ExtensionsWindow(forms.WPFWindow):
         """
 
         try:
-            plugins.extpackages.install(self.selected_pkg.ext_pkg,
+            extpkgs.install(self.selected_pkg.ext_pkg,
                                         sender.install_path)
             self.Close()
             call_reload()
@@ -352,7 +352,7 @@ class ExtensionsWindow(forms.WPFWindow):
         """
 
         try:
-            plugins.extpackages.remove(self.selected_pkg.ext_pkg)
+            extpkgs.remove(self.selected_pkg.ext_pkg)
             self.Close()
             call_reload()
         except Exception as pkg_remove_err:

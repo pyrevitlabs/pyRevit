@@ -11,13 +11,26 @@ from pyrevit.coreutils import git, fully_remove_dir
 from pyrevit.userconfig import user_config
 
 from pyrevit.extensions import ExtensionTypes
-from pyrevit.plugins import PLUGIN_EXT_DEF_FILE
-from pyrevit.plugins import PyRevitPluginAlreadyInstalledException,\
-                            PyRevitPluginNoInstallLinkException, \
-                            PyRevitPluginRemoveException
 
 
 logger = get_logger(__name__)
+
+
+class PyRevitPluginAlreadyInstalledException(PyRevitException):
+    def __init__(self, ext_pkg):
+        self.ext_pkg = ext_pkg
+        PyRevitException(self)
+
+
+class PyRevitPluginNoInstallLinkException(PyRevitException):
+    pass
+
+
+class PyRevitPluginRemoveException(PyRevitException):
+    pass
+
+
+PLUGIN_EXT_DEF_FILE = 'extensions.json'
 
 
 class DependencyGraph:
