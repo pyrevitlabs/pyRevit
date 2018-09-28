@@ -1,80 +1,30 @@
 tool improv:
 ☐ check userconfig and make sure if ini file already exists (by pyrevit.exe) the defaults are correctly set and not overriden
-☐ switches for Pick tool so users can select favorite categories
-☐ remove plugins and incorporate into extensions
 ☐ move extensions.json into name.extension/extension.json
-✔ use yaml for config?? no. I'd rather not have dependency for this  @done(2018-06-11 11:14)
-✔ add rsparam @done(2018-06-11 11:15)
-✔ move loader binaries into bin @done (2018-8-14 16:07:47)
-☐ mvoe collectors in List tool to db.query
-☐ addd email to developer button on errored output window?
+☐ slowly phase out the plugins module
 
-＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿
-Archive:
-    ✘ revise the availability class creation so there is one set of classes that all commands are tied to. this helps with reloading since the new commands would be still tied to the same availability classes. @cancelled(2017-12-11 15:27)
-    ✔ add actual "Detail View" to wipe tool (referenced and unreferenced) @done(2017-12-09 17:37)
-    ✔ test accessing github and bitbucket using access tokens: https://github.com/libgit2/libgit2sharp/issues/1256 @done(2017-11-30 12:28)
-    ✔ add filter to extension window @done(2017-11-30 10:51)
-    ✔ combine find view tools @done(2017-11-30 10:30)
-    ✔ combine list and reload link tools @done(2017-11-30 10:30)
-    ✘ focus on last fitlered button in command options prompt @cancelled(2017-11-29 21:11)
-    ✔ create cache for Search command @done(2017-11-28 22:23)
-    ✔ ignore context for .panelbuttons @done(2017-11-29 21:19)
-    ✔ add switch to commandoptions form @done(2017-11-29 21:11)
-    ✔ print sheet tool to combine prints @done(2017-11-29 17:59)
-    ✔ combine flip tools @done(2017-11-26 20:33)
-    ✘ add date to log file names @cancelled(2017-11-25 17:45)
-    ✔ review the extension hash system @done(2017-11-25 17:47) Doesn't exist
-    ✘ investigate adding animated icons @cancelled(2017-11-25 17:45)
-    ✔ move to forms "Select All Clouds Of Specific Revision" @done(2017-11-25 17:41)
-    ✔ unify the Revision selection windows @done(2017-11-25 17:41)
-    ✔ fix all selections through api and use revit.selection @done(2017-11-24 18:10)
-    ✔ Test dynamo compat mode in %programdata% @done(2017-11-24 17:18)
-    ✔ upgrade about window looks @done(2017-11-24 16:27)
-    ✔ add css styling option to Options @done(2017-11-23 15:21)
-    ✔ add open view or owner view to the clickable id handler @done(2017-11-23 14:21)
-    ✔ add default css styling for links a:visited @done(2017-11-23 13:14)
-    ✔ add select element to csharp code to avoid linking window to python code (scriptoutputhelpers.cs) @done(2017-11-22 20:55)
-    ✘ add outside click to option selector window and about @cancelled(2017-11-22 19:56)
-    ✔ fix reload when core csharp has changed and the window manager crashes on ScriptOutput versions @done(2017-11-22 18:52)
-    ✔ investigate contextual help: http://www.revitapidocs.com/2018.1/c4294178-9b46-3590-98b1-970af89e3c10.htm @done(2017-11-21 10:33)
-    ✔ investigate adding panel options @done(2017-11-20 23:49)
-    ✔ add helper type C# classes (one is for buttonicon speed up) @done(2017-11-20 21:13)
-    ✔ find a better name for revit flask app @done(2017-11-13 17:25)
-    ✔ fix charts reach into output and output.utils @done(2017-11-11 20:58)
-    ✔ remove any reference to ScriptOutput internal components (e.g. renderer) @done(2017-11-11 20:58)
-    ✔ revise the callback system to a restful api @done(2017-11-11 20:57)
-    ✔ fix pyRevitTools @done(2017-11-04 19:17)
-    ✔ test tools for beta @done(2017-11-05 12:57)
-    ✔ Create custom beta installer @done(2017-11-07 23:46)
-    ✔ Publish video for developers on changes @done(2017-11-11 20:57)
-    ✔ the warning bar shows up incorrectly when system has scaling @done(2017-11-03 15:33)
-    ✘ log files don't have command names. Bring that back @cancelled(2017-10-22 19:47)
-    ✔ Fix occasional output window blackout @done(2017-10-22 16:14)
-    ✔ Fix wpf import on 2.7.3 @done(2017-10-21 16:15)
-    ✔ Fix pyRevitDevTools @done(2017-10-16 20:05)
-    ✔ Fix IronPython.Wpf import @done(2017-10-15 22:23)
-    ✔ Fix imports in pyrevit.forms module @done(2017-10-15 22:23)
-    ✔ Start testing tools and Fix Module level variables and other issues @done(2017-10-15 17:43)
-    ✔ Fix File logging @done(2017-09-17 12:45)
-    ✔ Consolidate the env var dictionary access @done(2017-09-17 10:02)
-    ✘ userconfig returns a global config. Test config access between cached engines @cancelled(2017-09-17 09:31)
-    ✔ Fix PyRevitException reporting when compile error occurs @done(2017-09-17 09:30)
-    ✔ Fix loading of smartbuttons @done(2017-09-17 09:12)
-    ✔ Fix Charts @done(2017-09-16 22:38)
-    ✔ Rocket mode should be extension dependent @done(2017-09-16 22:30)
-    ✔ pyrevit and its tools must be rocket-mode-compatible @done(2017-09-16 22:30)
-    ✔ Add rocket_mode_compatible to ext def file @done(2017-09-16 16:38)
-    ✔ Add __fullframeengine__ to triggers @done(2017-09-16 16:35)
-    ✔ Fix globals in user config @done(2017-09-16 15:49)
-    ✔ Reload and Settings buttons will now change after reload. @done(2017-09-16 15:49)
-    ✔ Fix globals in assembly maker / should regenrate based on perf mode @done(2017-09-16 15:23)
-    ✔ Fix globals in plugins @done(2017-09-16 12:31)
-    ✔ Fix globals in unittest @done(2017-09-16 12:42)
-    ✔ Fix globals in usagelog @done(2017-09-16 12:49)
-    ✔ Fix globals in versionmgr @done(2017-09-16 12:50)
-    ✔ Fix globals in extensions @done(2017-09-16 12:29)
-    ✔ Add __cleanengine__ to triggers @done(2017-09-16 15:50)
-    ✔ Modify engine manager to create engines per extension @done(2017-09-16 15:50)
-    ✔ Add clean engine override shortcut @done(2017-09-16 15:50)
-    ✔ Add option to set pyRevit to performance single engine mode @done(2017-09-16 15:50)
+☐ move collectors in List tool to db.query
+☐ switches for Pick tool so users can select favorite categories
+
+
+pyRevitLabs:
+    pyrevit will slowly use the labs functionality for intensive tasks
+    e.g. git-related tasks
+
+pyRevit installer:
+    3 ways to get pyrevit:
+        install using the installer and get the non-git version
+        no git clone issues
+        smaller install
+        ☐ one installer build per master version
+            add bin path to env
+            register clone with cli
+            create pyrevit update shortcut
+        ☐ pyrevit update should be able to update this installed non-git version
+            from start menu shortcut
+            ask to close revits
+            replace all files
+        OR
+        ✔ install using cli and get git or non-git
+        OR
+        ✔ clone manually and attach using the pyrevit tool in bin
