@@ -92,7 +92,7 @@ def report_env():
     system_diag()
 
     logger.info('pyRevit version: {} - '
-                '</> with :heart_suit: '
+                '</> with :growing_heart: '
                 'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
     if user_config.core.get_option('rocketmode', False):
         logger.info('pyRevit Rocket Mode enabled. :rocket:')
