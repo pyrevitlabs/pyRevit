@@ -34,6 +34,8 @@ if not EXEC_PARAMS.doc_mode:
     # scriptoutput.cs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
     ScriptOutput = base_module.ScriptOutput
+    # scriptoutputemojis.cs
+    ScriptOutputEmojis = base_module.ScriptOutputEmojis
     # scriptoutputmgr.cs
     ScriptOutputManager = base_module.ScriptOutputManager
     # scriptoutputstream.cs

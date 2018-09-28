@@ -7,7 +7,6 @@ from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils.emoji import emojize
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
@@ -82,9 +81,6 @@ class LoggerWrapper(logging.Logger):
         # get rid of unicode characters
         msg_str = msg_str.encode('ascii', 'ignore')
         msg_str = msg_str.replace(os.path.sep, '/')
-        msg_str = emojize(msg_str)
-        if level == logging.INFO:
-            msg_str = prepare_html_str(msg_str)
 
         logging.Logger._log(self, level, msg_str, args,
                             exc_info=exc_info, extra=extra)

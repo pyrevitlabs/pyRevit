@@ -311,7 +311,7 @@ namespace PyRevitBaseClasses {
         public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
             WaitReadyBrowser();
             var htmlElement = ActiveDocument.CreateElement(HtmlElementType);
-            htmlElement.InnerHtml = contents;
+            htmlElement.InnerHtml = ScriptOutputEmojis.Emojize(contents);
             return htmlElement;
         }
 

@@ -26,7 +26,6 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
-from pyrevit.coreutils import emoji
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 from pyrevit.coreutils.loadertypes import ScriptOutputManager
@@ -406,19 +405,6 @@ class PyRevitOutputWindow(object):
             self.window.ResetIcon()
 
     @staticmethod
-    def emojize(md_str):
-        """Replace emoji codes with emoji images and print.
-
-        Args:
-            md_str (str): string containing emoji code
-
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.emojize('Process completed. :thumbs_up:')
-        """
-        print(emoji.emojize(md_str), end="")
-
-    @staticmethod
     def print_html(html_str):
         """Add the html code to the output window.
 
@@ -426,7 +412,7 @@ class PyRevitOutputWindow(object):
             >>> output = pyrevit.output.get_output()
             >>> output.print_html('<strong>Title</strong>')
         """
-        print(coreutils.prepare_html_str(emoji.emojize(html_str)),
+        print(coreutils.prepare_html_str(html_str),
               end="")
 
     @staticmethod
@@ -453,7 +439,7 @@ class PyRevitOutputWindow(object):
         tables_ext = 'pyrevit.coreutils.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
-        html_code = emoji.emojize(coreutils.prepare_html_str(markdown_html))
+        html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
 
     def print_table(self, table_data, columns=[], formats=[],

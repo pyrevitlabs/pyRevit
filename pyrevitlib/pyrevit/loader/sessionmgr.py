@@ -211,7 +211,7 @@ def load_session():
 
     # log load time and thumbs-up :)
     endtime = timer.get_time()
-    success_emoji = ':ok_hand_sign:' if endtime < 3.00 else ':thumbs_up:'
+    success_emoji = ':OK_hand:' if endtime < 3.00 else ':thumbs_up:'
     logger.info('Load time: {} seconds {}'.format(endtime, success_emoji))
 
     # if everything went well, self destruct

@@ -161,6 +161,9 @@
     <Compile Include="..\..\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
     </Compile>
+    <Compile Include="..\..\scriptoutputemojis.cs">
+      <Link>scriptoutputemojis.cs</Link>
+    </Compile>
     <Compile Include="..\..\scriptoutputhelpers.cs">
       <Link>scriptoutputhelpers.cs</Link>
     </Compile>

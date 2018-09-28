@@ -88,6 +88,7 @@ tr:nth-child(odd) {
 .emoji {
 	/*filter: gray;*/
 	/*filter: alpha(opacity=50);*/
+	height: 14pt;
 	margin: -4px 0 0 0;
 	vertical-align: middle;
 }

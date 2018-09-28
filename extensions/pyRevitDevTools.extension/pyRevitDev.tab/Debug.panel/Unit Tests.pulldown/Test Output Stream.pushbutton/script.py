@@ -2,6 +2,7 @@
 from pyrevit import DB
 from pyrevit import script
 
+from pyrevit.coreutils.loadertypes import ScriptOutputEmojis
 
 __context__ = 'zerodoc'
 
@@ -23,6 +24,13 @@ output.print_html('<div style="background:green">{}</div>'.format('Test '*256))
 output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'
       .format(output.linkify(DB.ElementId(1557))))
+
+output.print_md('**Testing emojify:**')
+emoji_str = ''
+for e in ScriptOutputEmojis.emojiDict.Keys:
+    emoji_str += ' :{}:'.format(e)
+
+print(emoji_str)
 
 output.print_md('**Testing code block:**')
 output.print_code("""
