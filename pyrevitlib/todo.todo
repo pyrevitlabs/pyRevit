@@ -1,5 +1,5 @@
 tool improv:
-☐ check userconfig and make sure if ini file already exists (by pyrevit.exe) the defaults are correctly set and not overriden
+✔ check userconfig and make sure if ini file already exists (by pyrevit.exe) the defaults are correctly set and not overriden
 ☐ move extensions.json into name.extension/extension.json
 ☐ slowly phase out the plugins module
 

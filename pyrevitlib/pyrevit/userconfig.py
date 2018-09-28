@@ -31,12 +31,14 @@ Example:
     >>> cfg.get('property', default_value)
     >>> script.save_config()
 """
-
+#pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
-import shutil
 
 from pyrevit import EXEC_PARAMS, EXTENSIONS_DEFAULT_DIR, HOME_DIR
+from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
+
+from pyrevit.labs import TargetApps
 
 from pyrevit.coreutils import touch
 from pyrevit.coreutils import appdata
@@ -48,51 +50,30 @@ from pyrevit.versionmgr import upgrade
 mlogger = logger.get_logger(__name__)
 
 
-INIT_SETTINGS_SECTION = 'core'
-
-
-# location for default pyRevit config files
-if not EXEC_PARAMS.doc_mode:
-    LOCAL_CONFIG_FILE = op.join(HOME_DIR, 'pyRevit_config.ini')
-    ADMIN_CONFIG_DIR = op.join(os.getenv('programdata'), 'pyRevit')
-
-    if op.exists(LOCAL_CONFIG_FILE):
-        mlogger.debug('Using local config file: {}'.format(LOCAL_CONFIG_FILE))
-        CONFIG_FILE_PATH = LOCAL_CONFIG_FILE
-    else:
-        # setup config file name and path
-        CONFIG_FILE_PATH = appdata.get_universal_data_file(file_id='config',
-                                                           file_ext='ini')
-        mlogger.debug('User config file: {}'.format(CONFIG_FILE_PATH))
-else:
-    ADMIN_CONFIG_DIR = CONFIG_FILE_PATH = None
-
-
 # =============================================================================
 # fix obsolete config file naming
 # config file (and all appdata files) used to include username in the filename
 # this fixes the existing config file with obsolete naming, to new format
-# pylama:ignore=E402
-from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_UNIVERSAL_USER
+# from pyrevit import PYREVIT_APP_DIR, PYREVIT_FILE_PREFIX_UNIVERSAL_USER
 
-OBSOLETE_CONFIG_FILENAME = '{}_{}'.format(PYREVIT_FILE_PREFIX_UNIVERSAL_USER,
-                                          'config.ini')
-OBSOLETE_CONFIG_FILEPATH = op.join(PYREVIT_APP_DIR, OBSOLETE_CONFIG_FILENAME)
+# OBSOLETE_CONFIG_FILENAME = '{}_{}'.format(PYREVIT_FILE_PREFIX_UNIVERSAL_USER,
+#                                           'config.ini')
+# OBSOLETE_CONFIG_FILEPATH = op.join(PYREVIT_APP_DIR, OBSOLETE_CONFIG_FILENAME)
 
-if op.exists(OBSOLETE_CONFIG_FILEPATH):
-    try:
-        os.rename(OBSOLETE_CONFIG_FILEPATH, CONFIG_FILE_PATH)
-    except Exception as rename_err:
-        mlogger.error('Failed to update the config file name to new format. '
-                      'A new configuration file has been created for you '
-                      'under \n{}'
-                      '\nYour previous pyRevit configuration file still '
-                      'existing under the same folder. Please close Revit, '
-                      'open both configuration files and copy and paste '
-                      'settings from the old config file to new config file. '
-                      'Then you can remove the old config file as pyRevit '
-                      'will not be using that anymore. | {}'
-                      .format(CONFIG_FILE_PATH, rename_err))
+# if op.exists(OBSOLETE_CONFIG_FILEPATH):
+#     try:
+#         os.rename(OBSOLETE_CONFIG_FILEPATH, CONFIG_FILE)
+#     except Exception as rename_err:
+#         mlogger.error('Failed to update the config file name to new format. '
+#                       'A new configuration file has been created for you '
+#                       'under \n{}'
+#                       '\nYour previous pyRevit configuration file still '
+#                       'existing under the same folder. Please close Revit, '
+#                       'open both configuration files and copy and paste '
+#                       'settings from the old config file to new config file. '
+#                       'Then you can remove the old config file as pyRevit '
+#                       'will not be using that anymore. | {}'
+#                       .format(CONFIG_FILE, rename_err))
 # end fix obsolete config file naming
 # =============================================================================
 
@@ -102,6 +83,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     Args:
         cfg_file_path (str): full path to config file to be used.
+        config_type (str): type of config file
 
     Example:
         >>> cfg = PyRevitConfig(cfg_file_path)
@@ -111,7 +93,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         >>> cfg.save_changes()
     """
 
-    def __init__(self, cfg_file_path=None):
+    def __init__(self, cfg_file_path=None, config_type='Unknown'):
         """Load settings from provided config file and setup parser."""
         # try opening and reading config file in order.
         super(PyRevitConfig, self).__init__(cfg_file_path=cfg_file_path)
@@ -119,6 +101,8 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         # set log mode on the logger module based on
         # user settings (overriding the defaults)
         self._update_env()
+        self._admin = config_type == 'Admin'
+        self.config_type = config_type
 
     def _update_env(self):
         # update the debug level based on user config
@@ -135,11 +119,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
             logger.set_file_logging(self.core.filelogging)
         except Exception as env_update_err:
-            mlogger.debug('Error updating env variable per user config. | {}'
-                          .format(env_update_err))
+            mlogger.debug('Error updating env variable per user config. | %s',
+                          env_update_err)
 
     @property
     def config_file(self):
+        """Current config file path."""
         return self._cfg_file_path
 
     def get_config_version(self):
@@ -169,107 +154,148 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             dir_list.extend([op.expandvars(p)
                              for p in self.core.userextensions])
         except Exception as read_err:
-            mlogger.error('Error reading list of user extension folders. | {}'
-                          .format(read_err))
+            mlogger.error('Error reading list of user extension folders. | %s',
+                          read_err)
 
         return dir_list
 
     def save_changes(self):
         """Save user config into associated config file."""
-        try:
-            super(PyRevitConfig, self).save()
-        except Exception as save_err:
-            mlogger.error('Can not save user config to: {} | {}'
-                          .format(self.config_file, save_err))
+        if not self._admin:
+            try:
+                super(PyRevitConfig, self).save()
+            except Exception as save_err:
+                mlogger.error('Can not save user config to: %s | %s',
+                              self.config_file, save_err)
 
-        # adjust environment per user configurations
-        self._update_env()
-
-
-def _set_hardcoded_config_values(parser):
-    """Set default config values for user configuration.
-
-    Args:
-        parser (:obj:`pyrevit.userconfig.PyRevitConfig`):
-            parser to accept the default values
-    """
-    # hard-coded values
-    parser.add_section('core')
-    parser.core.checkupdates = False
-    parser.core.autoupdate = False
-    parser.core.verbose = True
-    parser.core.debug = False
-    parser.core.filelogging = True
-    parser.core.startuplogtimeout = 10
-    parser.core.userextensions = []
-    parser.core.compilecsharp = True
-    parser.core.compilevb = True
-    parser.core.loadbeta = False
-    parser.core.rocketmode = False
+            # adjust environment per user configurations
+            self._update_env()
+        else:
+            mlogger.debug('Config is in admin mode. Skipping save.')
 
 
-def _get_default_config_parser(config_file_path):
+def find_config_file(target_path):
+    """Find config file in target path."""
+    return TargetApps.Revit.PyRevit.FindConfigFileInDirectory(target_path)
+
+
+def verify_configs(config_file_path=None):
     """Create a user settings file.
 
+    if config_file_path is not provided, configs will be in memory only
+
     Args:
-        config_file_path (str): config file full name and path
+        config_file_path (str, optional): config file full name and path
 
     Returns:
         :obj:`pyrevit.userconfig.PyRevitConfig`: pyRevit config file handler
     """
-    mlogger.debug('Creating default config file at: {} '
-                  .format(CONFIG_FILE_PATH))
-    touch(config_file_path)
+    if config_file_path:
+        mlogger.debug('Creating default config file at: %s', config_file_path)
+        touch(config_file_path)
 
     try:
         parser = PyRevitConfig(cfg_file_path=config_file_path)
     except Exception as read_err:
         # can not create default user config file under appdata folder
-        mlogger.warning('Can not create config file under: {} | {}'
-                        .format(config_file_path, read_err))
+        mlogger.warning('Can not create config file under: %s | %s',
+                        config_file_path, read_err)
         parser = PyRevitConfig()
 
     # set hard-coded values
-    _set_hardcoded_config_values(parser)
+    consts = TargetApps.Revit.PyRevitConsts
+    # core section
+    if not parser.has_section(consts.ConfigsCoreSection):
+        parser.add_section(consts.ConfigsCoreSection)
+    # checkupates
+    if not parser.core.has_option(consts.ConfigsCheckUpdatesKey):
+        parser.core.set_option(consts.ConfigsCheckUpdatesKey, False)
+    # autoupdate
+    if not parser.core.has_option(consts.ConfigsAutoUpdateKey):
+        parser.core.set_option(consts.ConfigsAutoUpdateKey, False)
+    # verbose
+    if not parser.core.has_option(consts.ConfigsVerboseKey):
+        parser.core.set_option(consts.ConfigsVerboseKey, True)
+    # debug
+    if not parser.core.has_option(consts.ConfigsDebugKey):
+        parser.core.set_option(consts.ConfigsDebugKey, False)
+    # filelogging
+    if not parser.core.has_option(consts.ConfigsFileLoggingKey):
+        parser.core.set_option(consts.ConfigsFileLoggingKey, False)
+    # startuplogtimeout
+    if not parser.core.has_option(consts.ConfigsStartupLogTimeoutKey):
+        parser.core.set_option(consts.ConfigsStartupLogTimeoutKey, 10)
+    # userextensions
+    if not parser.core.has_option(consts.ConfigsUserExtensionsKey):
+        parser.core.set_option(consts.ConfigsUserExtensionsKey, [])
+    # compilecsharp
+    if not parser.core.has_option(consts.ConfigsCompileCSharpKey):
+        parser.core.set_option(consts.ConfigsCompileCSharpKey, True)
+    # compilevb
+    if not parser.core.has_option(consts.ConfigsCompileVBKey):
+        parser.core.set_option(consts.ConfigsCompileVBKey, True)
+    # loadbeta
+    if not parser.core.has_option(consts.ConfigsLoadBetaKey):
+        parser.core.set_option(consts.ConfigsLoadBetaKey, False)
+    # rocketmode
+    if not parser.core.has_option(consts.ConfigsRocketModeKey):
+        parser.core.set_option(consts.ConfigsRocketModeKey, True)
 
     # save config into config file
-    parser.save_changes()
-    mlogger.debug('Default config saved to: {}'
-                  .format(config_file_path))
+    if config_file_path:
+        parser.save_changes()
+        mlogger.debug('Default config saved to: %s', config_file_path)
 
     return parser
 
 
-def _setup_admin_config():
-    """Set up the default config file with hardcoded values."""
-    if not op.exists(CONFIG_FILE_PATH) \
-            and op.isdir(ADMIN_CONFIG_DIR):
-        for entry in os.listdir(ADMIN_CONFIG_DIR):
-            if entry.endswith('.ini'):
-                sourcecfg = op.join(ADMIN_CONFIG_DIR, entry)
-                try:
-                    shutil.copyfile(sourcecfg, CONFIG_FILE_PATH)
-                    mlogger.debug('Configured from admin file: {}'
-                                  .format(sourcecfg))
-                except Exception as copy_err:
-                    mlogger.debug('Error copying admin config file: {} | {}'
-                                  .format(sourcecfg, copy_err))
-                return True
+LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
+user_config = None
 
-
+# location for default pyRevit config files
 if not EXEC_PARAMS.doc_mode:
-    # check to see if there is any config file provided by admin
-    # if yes, copy that and use as default
-    _setup_admin_config()
+    LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
+    ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
+    USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
 
-    # read user config, or setup default config file if not available
+    # decide which config file to use
+    # check if a config file is inside the repo. for developers config override
+    if LOCAL_CONFIG_FILE:
+        CONFIG_TYPE = 'Local'
+        CONFIG_FILE = LOCAL_CONFIG_FILE
+    # check to see if there is any config file provided by admin
+    elif ADMIN_CONFIG_FILE:
+        # if yes, copy that and use as default
+        if os.access(ADMIN_CONFIG_FILE, os.W_OK):
+            CONFIG_TYPE = 'Seed'
+            TargetApps.Revit.PyRevit.SeedConfig(False, ADMIN_CONFIG_FILE)
+            CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+        # unless it's locked. then read that config file and set admin-mode
+        else:
+            CONFIG_TYPE = 'Admin'
+            CONFIG_FILE = ADMIN_CONFIG_FILE
+    # if a config file is available for user use that
+    elif USER_CONFIG_FILE:
+        CONFIG_TYPE = 'User'
+        CONFIG_FILE = USER_CONFIG_FILE
+    # if nothing can be found, make one
+    else:
+        CONFIG_TYPE = 'New'
+        # setup config file name and path
+        CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
+                                                      file_ext='ini')
+
+    mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
+
+    # read config, or setup default config file if not available
     # this pushes reading settings at first import of this module.
     try:
-        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE_PATH)
+        verify_configs(CONFIG_FILE)
+        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
+                                    config_type=CONFIG_TYPE)
         upgrade.upgrade_user_config(user_config)
     except Exception as cfg_err:
-        mlogger.debug('Can not read existing confing file at: {} | {}'
-                      .format(CONFIG_FILE_PATH, cfg_err))
-        user_config = _get_default_config_parser(CONFIG_FILE_PATH)
-else:
-    user_config = None
+        mlogger.debug('Can not read confing file at: %s | %s',
+                      CONFIG_FILE, cfg_err)
+        mlogger.debug('Using configs in memory...')
+        user_config = verify_configs()

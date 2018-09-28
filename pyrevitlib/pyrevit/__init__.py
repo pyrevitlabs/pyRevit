@@ -487,6 +487,7 @@ EXEC_PARAMS = _ExecutorParams()
 # config user environment paths
 # -----------------------------------------------------------------------------
 # user env paths
+ALLUSER_PROGRAMDATA = os.getenv('programdata')
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
@@ -499,6 +500,7 @@ if EXEC_PARAMS.doc_mode:
     PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
 else:
     # pyrevit file directory
+    PYREVIT_ALLUSER_APP_DIR = op.join(ALLUSER_PROGRAMDATA, PYREVIT_ADDON_NAME)
     PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
     PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
 

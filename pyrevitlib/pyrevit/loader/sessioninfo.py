@@ -1,7 +1,7 @@
 import sys
 import uuid
 
-from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
+from pyrevit import HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
 from pyrevit.compat import safe_strtype
@@ -14,7 +14,7 @@ from pyrevit.userconfig import user_config
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
 
-
+#pylint: disable=C0103
 logger = get_logger(__name__)
 
 
@@ -91,9 +91,8 @@ def report_env():
 
     system_diag()
 
-    logger.info('pyRevit version: {} - '
-                '</> with :growing_heart: '
-                'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
+    logger.info('pyRevit version: %s - </> with :growing_heart: in %s',
+                pyrvt_ver, about.get_pyrevit_about().madein)
     if user_config.core.get_option('rocketmode', False):
         logger.info('pyRevit Rocket Mode enabled. :rocket:')
 
@@ -103,12 +102,12 @@ def report_env():
                                           HOST_APP.subversion)
     else:
         full_host_name = HOST_APP.version_name
-    logger.info('Host is {} (build: {} id: {})'.format(full_host_name,
-                                                       HOST_APP.build,
-                                                       HOST_APP.proc_id))
-    logger.info('Running on: {}'.format(sys.version))
-    logger.info('User is: {}'.format(HOST_APP.username))
-    logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Session uuid is: {}'.format(get_session_uuid()))
-    logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
-    logger.info('Config file is: {}'.format(user_config.config_file))
+    logger.info('Host is %s (build: %s id: %s)',
+                full_host_name, HOST_APP.build, HOST_APP.proc_id)
+    logger.info('Running on: %s', sys.version)
+    logger.info('User is: %s', HOST_APP.username)
+    logger.info('Home Directory is: %s', HOME_DIR)
+    logger.info('Session uuid is: %s', get_session_uuid())
+    logger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
+    logger.info('Config file is (%s): %s',
+                user_config.config_type, user_config.config_file)
