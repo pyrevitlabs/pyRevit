@@ -9,8 +9,8 @@ tool improv:
 ☐ fix pyrevit to update from it's own location
 ✔ check update --all in pyrevit.exe
 ☐ remove Update and Settings tool in pyrevit depending on conditions
-☐ revise cli icon
-☐ remove update shortcut from cli
+✔ revise cli icon
+✔ remove update shortcut from cli
 ☐ uninstaller should remove update icon in start
 
 ☐ move collectors in List tool to db.query

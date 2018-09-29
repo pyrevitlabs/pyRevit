@@ -18,7 +18,7 @@
     <ROW Property="ARPCONTACT" Value="Ehsan Iran-Nejad"/>
     <ROW Property="ARPNOMODIFY" MultiBuildValue="DefaultBuild:1"/>
     <ROW Property="ARPNOREPAIR" Value="1" MultiBuildValue="DefaultBuild:1"/>
-    <ROW Property="ARPPRODUCTICON" Value="pyrevit_1.exe" Type="8"/>
+    <ROW Property="ARPPRODUCTICON" Value="pyRevit.exe" Type="8"/>
     <ROW Property="ARPSYSTEMCOMPONENT" Value="1"/>
     <ROW Property="AiPreventAutoPin" Value="System.AppUserModel.ExcludeFromShowInNewInstall"/>
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyRevit2.bmp" Type="1" MsiKey="BannerBitmap"/>
@@ -5772,7 +5772,7 @@
     <ROW Environment="PATH" Name="=-*Path" Value="[~];[APPDIR]\bin" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
-    <ROW Name="pyrevit_1.exe" SourcePath="pyRevit.ico" Index="0"/>
+    <ROW Name="pyRevit.exe" SourcePath="..\bin\pyRevit.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
     <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1502"/>
@@ -5855,7 +5855,7 @@
     <ROW Registry="VersionMinor" Root="-1" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductName] [ProductVersion]" Name="VersionMinor" Value="#1" Component_="AI_CustomARPName"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
-    <ROW Shortcut="UpdatepyRevitClones" Directory_="SHORTCUTDIR" Name="UPDATE~2|Update pyRevit" Component_="ProductInformation" Target="[APPDIR]\bin\pyrevit.exe" Arguments="clones update master" Description="Updates all clones of pyRevit on this machine" Hotkey="0" Icon_="pyrevit_1.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="UpdatepyRevitClones" Directory_="SHORTCUTDIR" Name="UPDATE~2|Update pyRevit" Component_="ProductInformation" Target="[APPDIR]\bin\pyrevit.exe" Arguments="clones update master" Description="Updates all clones of pyRevit on this machine" Hotkey="0" Icon_="pyRevit.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>
