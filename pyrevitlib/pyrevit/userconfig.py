@@ -240,6 +240,9 @@ def verify_configs(config_file_path=None):
     # rocketmode
     if not parser.core.has_option(consts.ConfigsRocketModeKey):
         parser.core.set_option(consts.ConfigsRocketModeKey, True)
+    # bincache
+    if not parser.core.has_option(consts.ConfigsBinaryCacheKey):
+        parser.core.set_option(consts.ConfigsBinaryCacheKey, True)
 
     # save config into config file
     if config_file_path:

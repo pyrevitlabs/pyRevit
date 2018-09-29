@@ -6,7 +6,7 @@ using pyRevitLabs.Common;
 
 namespace PyRevitBaseClasses {
     public static class ScriptOutputEmojis {
-        public const string emojiImageTag = "<span><img src=\"{0}\" class=\"emoji\" title=\"{1}\"></span>";
+        public const string emojiImageTag = "<span><img src=\"file:///{0}\" class=\"emoji\" title=\"{1}\"></span>";
 
         public static Dictionary<string, string> emojiDict = new Dictionary<string, string>() {
             { "1st_place_medal", "1F947" },
