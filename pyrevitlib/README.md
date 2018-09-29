@@ -61,7 +61,7 @@ The heart of pyrevit really lives in this sub-module. It has 3 critical componen
 
 - The `pyrevit.loader.sessionmgr` module receives the extension list from `pyrevit.extensions` and will create assemblies for them.
 It uses `.asmmaker` and `.uimaker` to create assemblies and user interface for each extension.
-- The `pyrevit.loader.addins` which includes all the Revit addin dlls and also the `PyRevitLoader.dll` that is responsible
+- The `bin` and `bin\engines` directory which includes all the Revit addin dlls and also the `PyRevitLoader.dll` that is responsible
  for loading pyRevit.
 - and the `pyrevit.loader.basetypes`. This is a complex module. Its job is to compile the command executor csharp files
  into an assembly at runtime so other commands can inherit these base types.

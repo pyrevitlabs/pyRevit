@@ -3,6 +3,7 @@ import os.path as op
 import sys
 
 from pyrevit import PyRevitException, EXEC_PARAMS
+from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
@@ -12,7 +13,6 @@ from pyrevit.coreutils.dotnetcompiler import compile_csharp
 import pyrevit.coreutils.appdata as appdata
 
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
-from pyrevit.loader import addin
 
 
 logger = get_logger(__name__)
@@ -110,7 +110,7 @@ def _get_framework_module(fw_module):
 
 def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
-    addin_file = addin.get_addin_dll_file(ref_name)
+    addin_file = framework.get_dll_file(ref_name)
     if addin_file:
         load_asm_file(addin_file)
         return addin_file

@@ -11,10 +11,10 @@ import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
 from pyrevit.compat import safe_strtype
+from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.loader import addin
 
 
 logger = get_logger(__name__)
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 GIT_LIB = 'LibGit2Sharp'
 
 if not EXEC_PARAMS.doc_mode:
-    libgit_dll = addin.get_addin_dll_file(GIT_LIB)
+    libgit_dll = framework.get_dll_file(GIT_LIB)
     logger.debug('Loading dll: {}'.format(libgit_dll))
 
     try:

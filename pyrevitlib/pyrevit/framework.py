@@ -5,6 +5,7 @@ Example:
 """
 
 import clr
+import os.path as op
 
 import System
 
@@ -74,6 +75,9 @@ clr.AddReference('IronPython.Wpf')
 import wpf
 
 
+from pyrevit import BIN_DIR
+
+
 def get_type(fw_object):
     """Return CLR type of an object.
 
@@ -81,3 +85,10 @@ def get_type(fw_object):
         fw_object: Dotnet Framework Object Instance
     """
     return clr.GetClrType(fw_object)
+
+
+def get_dll_file(assembly_name):
+    """Return path to given assembly name."""
+    addin_file = op.join(BIN_DIR, assembly_name + '.dll')
+    if op.exists(addin_file):
+        return addin_file
