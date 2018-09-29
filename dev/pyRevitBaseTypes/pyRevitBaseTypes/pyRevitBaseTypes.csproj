@@ -52,61 +52,61 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ControlzEx">
-      <HintPath>..\..\..\..\..\..\bin\ControlzEx.dll</HintPath>
+      <HintPath>..\..\..\bin\ControlzEx.dll</HintPath>
     </Reference>
     <Reference Include="DocoptNet">
-      <HintPath>..\..\..\..\..\..\bin\DocoptNet.dll</HintPath>
+      <HintPath>..\..\..\bin\DocoptNet.dll</HintPath>
     </Reference>
     <Reference Include="IKVM.Reflection">
-      <HintPath>..\..\..\..\..\..\bin\engines\278\IKVM.Reflection.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\IKVM.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="IronPython, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\IronPython.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\IronPython.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Modules, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\IronPython.Modules.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.SQLite, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\IronPython.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Wpf, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\IronPython.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="LibGit2Sharp">
-      <HintPath>..\..\..\..\..\..\bin\LibGit2Sharp.dll</HintPath>
+      <HintPath>..\..\..\bin\LibGit2Sharp.dll</HintPath>
     </Reference>
     <Reference Include="MahApps.Metro">
-      <HintPath>..\..\..\..\..\..\bin\MahApps.Metro.dll</HintPath>
+      <HintPath>..\..\..\bin\MahApps.Metro.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Numerics">
-      <HintPath>..\..\..\..\..\..\bin\MathNet.Numerics.dll</HintPath>
+      <HintPath>..\..\..\bin\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Dynamic, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\Microsoft.Dynamic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Metadata, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\bin\engines\278\Microsoft.Scripting.Metadata.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\Microsoft.Scripting.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="pyRevitLabs.Common">
-      <HintPath>..\..\..\..\..\..\bin\pyRevitLabs.Common.dll</HintPath>
+      <HintPath>..\..\..\bin\pyRevitLabs.Common.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLabs.CommonWPF">
-      <HintPath>..\..\..\..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
+      <HintPath>..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
     </Reference>
     <Reference Include="pyRevitLoader">
-      <HintPath>..\..\..\..\..\..\bin\engines\278\pyRevitLoader.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\278\pyRevitLoader.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
@@ -121,7 +121,7 @@
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity">
-      <HintPath>..\..\..\..\..\..\bin\System.Windows.Interactivity.dll</HintPath>
+      <HintPath>..\..\..\bin\System.Windows.Interactivity.dll</HintPath>
     </Reference>
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
@@ -134,52 +134,52 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\baseclasses.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
-    <Compile Include="..\..\baseclasses_dyno.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses_dyno.cs">
       <Link>baseclasses_dyno.cs</Link>
     </Compile>
-    <Compile Include="..\..\enginermgr.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\enginermgr.cs">
       <Link>enginermgr.cs</Link>
     </Compile>
-    <Compile Include="..\..\envvars.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\envvars.cs">
       <Link>envvars.cs</Link>
     </Compile>
-    <Compile Include="..\..\executor.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\executor.cs">
       <Link>executor.cs</Link>
     </Compile>
-    <Compile Include="..\..\helpers.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\helpers.cs">
       <Link>helpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\pyrevitcmdruntime.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
-    <Compile Include="..\..\replctrl.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\replctrl.cs">
       <Link>replctrl.cs</Link>
     </Compile>
-    <Compile Include="..\..\scriptoutput.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
     </Compile>
-    <Compile Include="..\..\scriptoutputemojis.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputemojis.cs">
       <Link>scriptoutputemojis.cs</Link>
     </Compile>
-    <Compile Include="..\..\scriptoutputhelpers.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputhelpers.cs">
       <Link>scriptoutputhelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\scriptoutputmgr.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputmgr.cs">
       <Link>scriptoutputmgr.cs</Link>
     </Compile>
-    <Compile Include="..\..\scriptoutputstream.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
     </Compile>
-    <Compile Include="..\..\unmanaged.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\unmanaged.cs">
       <Link>unmanaged.cs</Link>
     </Compile>
-    <Compile Include="..\..\usagelogger.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\usagelogger.cs">
       <Link>usagelogger.cs</Link>
     </Compile>
-    <Compile Include="..\..\_config.cs">
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
       <Link>_config.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
