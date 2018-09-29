@@ -18,7 +18,7 @@ except Exception as cerr:
 
 # import test
 sys.path.append(USER_SYS_TEMP)
-clr.AddReference("compiledipytest")
+clr.AddReferenceToFileAndPath(dest)
 
 import ipycompiletest
 

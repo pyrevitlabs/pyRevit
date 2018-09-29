@@ -1,6 +1,6 @@
 import logging
 
-from pyrevit import HOME_DIR
+from pyrevit import HOST_APP, HOME_DIR
 from pyrevit.framework import clr
 
 from pyrevit import coreutils
@@ -56,6 +56,11 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
             return logging.WARNING
 
 
+# activate binding resolver
+if HOST_APP.is_older_than(2019):
+    TargetApps.Revit.PyRevitBindings.ActivateResolver()
+
+# configure NLog
 config = NLog.Config.LoggingConfiguration()
 target = PyRevitOutputTarget()
 target.Name = __name__

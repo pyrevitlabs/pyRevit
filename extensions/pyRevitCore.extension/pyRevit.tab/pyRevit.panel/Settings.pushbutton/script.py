@@ -238,9 +238,32 @@ class SettingsWindow(forms.WPFWindow):
         usagelog.setup_usage_logfile()
 
     def update_addinfiles(self):
-        """Enables/Disables the adding files for different Revit versions.
-        """
-        pass
+        """Enables/Disables the adding files for different Revit versions."""
+        # update active engine
+        attachment = self.get_current_attachment()
+        all_users = attachment.AttachmentType == \
+            Revit.PyRevitAttachmentType.AllUsers
+
+        # configure the engine on this version
+        Revit.PyRevit.Attach(
+            int(HOST_APP.version),
+            attachment.Clone,
+            self.availableEngines.SelectedItem.engine.Version,
+            all_users
+            )
+
+        # now setup the attachments for other versions
+        for rvt_ver, checkbox in self._addinfiles_cboxes.items():
+            if checkbox.IsEnabled:
+                if checkbox.IsChecked:
+                    Revit.PyRevit.Attach(
+                        int(rvt_ver),
+                        attachment.Clone,
+                        self.availableEngines.SelectedItem.engine.Version,
+                        all_users
+                        )
+                else:
+                    Revit.PyRevit.Detach(int(rvt_ver))
 
     def resetreportinglevel(self, sender, args):
         """Callback method for resetting reporting (logging) levels to defaults
@@ -385,16 +408,6 @@ class SettingsWindow(forms.WPFWindow):
         # save all new values into config file
         user_config.save_changes()
 
-        # update active engine
-        attachment = self.get_current_attachment()
-        all_users = attachment.AttachmentType == \
-            Revit.PyRevitAttachmentType.AllUsers
-        Revit.PyRevit.Attach(
-            int(HOST_APP.version),
-            attachment.Clone,
-            self.availableEngines.SelectedItem.engine.Version,
-            all_users
-            )
         # update usage logging and addin files
         self.update_usagelogging()
         self.update_addinfiles()

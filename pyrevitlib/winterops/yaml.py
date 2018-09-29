@@ -1,9 +1,10 @@
 """Wrapper for YamlDotNet."""
 # pylama:ignore=E402,W0611
+import os.path as op
 from collections import OrderedDict
-from winterops import clr, System
+from winterops import clr, System, binary_path
 
-clr.AddReferenceByName('YamlDotNet')
+clr.AddReferenceToFileAndPath(op.join(binary_path, 'YamlDotNet'))
 
 import YamlDotNet as libyaml
 

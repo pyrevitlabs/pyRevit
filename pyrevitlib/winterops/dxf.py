@@ -1,6 +1,7 @@
 # pylama:ignore=E402,W0611
-from winterops import clr, System
+import os.path as op
+from winterops import clr, System, binary_path
 
-clr.AddReference('IxMilia.Dxf')
+clr.AddReferenceToFileAndPath(op.join(binary_path, 'IxMilia.Dxf'))
 
 from IxMilia import Dxf
