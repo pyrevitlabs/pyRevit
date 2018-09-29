@@ -4,6 +4,15 @@ tool improv:
 ☐ slowly phase out the extpackages module and user PyRevitLabs
 ✔ enginer selector
 
+☐ pyrevit should load from --nogit with no errors (figure out version)
+☐ move misc vstudio files to a develop folder
+☐ fix pyrevit to update from it's own location
+☐ check update --all in pyrevit.exe
+☐ remove Update and Settings tool in pyrevit depending on conditions
+☐ revise cli icon
+☐ remove update shortcut from cli
+
+
 ☐ move collectors in List tool to db.query
 ☐ switches for Pick tool so users can select favorite categories
 
@@ -19,7 +28,7 @@ pyRevit installer:
         smaller install
         ☐ one installer build per master version
             add bin path to env
-            register clone with cli
+            register clone (base deployment) with cli
             create pyrevit update shortcut
         ☐ pyrevit update should be able to update this installed non-git version
             from start menu shortcut
