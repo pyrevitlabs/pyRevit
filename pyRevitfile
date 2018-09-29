@@ -25,5 +25,5 @@ compatproducts = []
 description = 'Latest IronPython Engine'
 
 [deployments]
-core = ['bin', 'pyrevitlib', 'site-packages']
-base = ['bin', 'extensions', 'pyrevitlib', 'site-packages']
+core = ['bin', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+base = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
