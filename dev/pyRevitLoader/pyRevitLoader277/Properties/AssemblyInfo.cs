@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("PyRevitLoader")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("pyRevit Loader DLL for Autodesk Revit")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("pyRevit")]
 [assembly: AssemblyProduct("PyRevitLoader")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyCopyright("Copyright © 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2018.0.0.0")]
-[assembly: AssemblyFileVersion("2018.0.0.0")]
+[assembly: AssemblyVersion("2018.2.7.7")]
+[assembly: AssemblyFileVersion("2018.2.7.7")]

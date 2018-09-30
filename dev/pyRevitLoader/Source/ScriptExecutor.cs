@@ -7,14 +7,13 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using Autodesk.Revit.UI;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace PyRevitLoader
 {
     // Executes a script
     public class ScriptExecutor
     {
-        public const string EngineVersion = "278";
-
         private string _message = null;
         private readonly UIApplication _revit = null;
 
@@ -32,6 +31,13 @@ namespace PyRevitLoader
             get
             {
                 return _message;
+            }
+        }
+
+        public static string EngineVersion {
+            get {
+                var assmVersion = Assembly.GetAssembly(typeof(PyRevitLoader.ScriptExecutor)).GetName().Version;
+                return string.Format("{0}{1}{2}", assmVersion.Minor, assmVersion.Build, assmVersion.Revision);
             }
         }
 
@@ -111,7 +117,7 @@ namespace PyRevitLoader
             // use embedded python lib
             var asm = this.GetType().Assembly;
             var resQuery = from name in asm.GetManifestResourceNames()
-                           where name.ToLowerInvariant().EndsWith(String.Format("python_{0}_lib.zip", EngineVersion))
+                           where name.ToLowerInvariant().EndsWith(string.Format("python_{0}_lib.zip", EngineVersion))
                            select name;
             var resName = resQuery.Single();
             var importer = new IronPython.Modules.ResourceMetaPathImporter(asm, resName);
