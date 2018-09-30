@@ -18,14 +18,6 @@ extensions/*
 docs/_*
 !docs/_static
 
-# ignore release files
-release/*.exe
-release/setupmaker/output/*
-
-# ignore uninstaller files that will be copied to this folder at installation
-unins*.dat
-unins*.exe
-
 # ignore standard python and os temp files
 __py*
 *.db
@@ -35,4 +27,4 @@ __py*
 *.pyc
 
 # ignore local config file
-pyRevit_config.ini
+*.ini
