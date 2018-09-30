@@ -220,11 +220,20 @@ namespace PyRevitBaseClasses {
             this.Content = baseGrid;
 
             // TODO: add report button, get email from envvars
-            var saveButton = new Button() { Content = "SC", ToolTip = "Save Contents", Focusable = false };
+            var pinButton = new Button() { ToolTip = "Keep On Top", Focusable = false };
+            pinButton.Content = GetPinIcon(Topmost);
+            pinButton.Click += SearchButton_Click; ;
+            RightWindowCommands.Items.Insert(0, pinButton);
+
+            var saveButton = new Button() { ToolTip = "Save Contents", Focusable = false };
+            saveButton.Content =
+                MakeButtonPath("M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z");
             saveButton.Click += Save_Contents_Button_Clicked;
             RightWindowCommands.Items.Insert(0, saveButton);
 
-            var openButton = new Button() { Content = "OB", ToolTip = "Open in Browser", Focusable = false };
+            var openButton = new Button() { ToolTip = "Open in Browser", Focusable = false };
+            openButton.Content =
+                MakeButtonPath("M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z");
             openButton.Click += OpenButton_Click; ;
             RightWindowCommands.Items.Insert(0, openButton);
 
@@ -577,6 +586,22 @@ namespace PyRevitBaseClasses {
             outputWindow.ClosedByUser = true;
         }
 
+        private System.Windows.Shapes.Path MakeButtonPath(string geom) {
+            var path = new System.Windows.Shapes.Path();
+            path.Stretch = Stretch.Uniform;
+            path.Height = 12;
+            path.Fill = Brushes.White;
+            path.Data = Geometry.Parse(geom);
+            return path;
+        }
+
+        private System.Windows.Shapes.Path GetPinIcon(bool pinned) {
+            if (pinned)
+                return MakeButtonPath("M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z");
+            else
+                return MakeButtonPath("M2,5.27L3.28,4L20,20.72L18.73,22L12.8,16.07V22H11.2V16H6V14L8,12V11.27L2,5.27M16,12L18,14V16H17.82L8,6.18V4H7V2H17V4H16V12Z");
+        }
+
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
             var saveDlg = new System.Windows.Forms.SaveFileDialog() {
                 Title = "Save Output to:",
@@ -588,12 +613,22 @@ namespace PyRevitBaseClasses {
             f.Close();
         }
 
-        private void OpenButton_Click(object sender, RoutedEventArgs e) {
+        private void SearchButton_Click(object sender, RoutedEventArgs e) {
+            var button = e.Source as Button;
+            Topmost = !Topmost;
+            button.Content = GetPinIcon(Topmost);
+        }
+
+        private string SaveContentsToTemp() {
             string tempHtml = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), string.Format("{0}.html", Title));
             var f = File.CreateText(tempHtml);
             f.Write(GetFullHtml());
             f.Close();
-            Process.Start(string.Format("file:///{0}", tempHtml));
+            return tempHtml;
+        }
+
+        private void OpenButton_Click(object sender, RoutedEventArgs e) {
+            Process.Start(string.Format("file:///{0}", SaveContentsToTemp()));
         }
 
         public void Dispose() {
