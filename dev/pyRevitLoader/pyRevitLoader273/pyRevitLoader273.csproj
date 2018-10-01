@@ -88,9 +88,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Resources\python_273_lib.zip">
+    <EmbeddedResource Include="..\Resources\python_273_lib.zip">
       <Link>Resources\python_273_lib.zip</Link>
-    </None>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
