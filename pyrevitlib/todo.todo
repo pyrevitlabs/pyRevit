@@ -1,21 +1,20 @@
 tool improv:
 ✔ check userconfig and make sure if ini file already exists (by pyrevit.exe) the defaults are correctly set and not overriden
-☐ move extensions.json into name.extension/extension.json
-☐ slowly phase out the extpackages module and user PyRevitLabs
 ✔ enginer selector
-
-☐ pyrevit should load from --nogit with no errors (figure out version)
+✔ pyrevit should load from --nogit with no errors (figure out version)
 ✔ move misc vstudio files to a develop folder
-☐ fix pyrevit to update from it's own location
 ✔ check update --all in pyrevit.exe
-☐ remove Update and Settings tool in pyrevit depending on conditions
 ✔ revise cli icon
 ✔ remove update shortcut from cli
+✔ hide nranch info from about
+☐ fix pyrevit.exe to update from it's own location
+☐ remove Update and Settings tool in pyrevit depending on conditions
 ☐ uninstaller should remove update icon in start
 
 ☐ move collectors in List tool to db.query
 ☐ switches for Pick tool so users can select favorite categories
-
+☐ move extensions.json into name.extension/extension.json
+☐ slowly phase out the extpackages module and user PyRevitLabs
 
 pyRevitLabs:
     pyrevit will slowly use the labs functionality for intensive tasks
