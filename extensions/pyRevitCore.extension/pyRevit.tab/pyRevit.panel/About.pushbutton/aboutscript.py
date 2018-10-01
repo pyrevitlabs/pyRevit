@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
 
+from pyrevit import HOST_APP
 from pyrevit import coreutils
 from pyrevit import versionmgr
+from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
@@ -15,6 +17,8 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
           'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
+Revit = TargetApps.Revit
+
 
 class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
@@ -22,21 +26,32 @@ class AboutWindow(forms.WPFWindow):
 
         pyrvtabout = about.get_pyrevit_about()
 
+        pyrvt_ver = versionmgr.get_pyrevit_version()
+        nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
+        short_version = \
+            ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
+
+        self.branch_name = self.deployname = None
+        # check to see if git repo is valid
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
-            pyrvt_ver = versionmgr.get_pyrevit_version()
-            nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
-            short_version = \
-                ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
             self.branch_name = pyrvt_repo.branch
+            self.show_element(self.git_branch)
         except Exception:
-            nice_version = short_version = ''
-            self.branch_name = None
+            # other wise try to get deployment name
+            attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
+            if attachment:
+                try:
+                    self.deployname = attachment.Clone.GetDeployment().Name
+                    self.show_element(self.repo_deploy)
+                except Exception as e:
+                    pass
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.pyrevit_version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
+        self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
         self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
                                    .format(sys.version_info.major,
                                            sys.version_info.minor,

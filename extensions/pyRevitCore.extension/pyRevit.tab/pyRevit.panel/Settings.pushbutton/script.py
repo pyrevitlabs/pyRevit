@@ -228,7 +228,7 @@ class SettingsWindow(forms.WPFWindow):
     @staticmethod
     def get_current_attachment():
         hostver = int(HOST_APP.version)
-        return TargetApps.Revit.PyRevit.GetAttached(hostver)
+        return Revit.PyRevit.GetAttached(hostver)
 
     @staticmethod
     def update_usagelogging():

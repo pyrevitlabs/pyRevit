@@ -42,14 +42,15 @@ class PyRevitVersion(object):
                                          PyRevitVersion.minor,
                                          PyRevitVersion.metadata)
 
-        return formatted_ver if nopatch else formatted_ver + ':' + self.patch
+        return formatted_ver if (nopatch or not self.patch) \
+                             else formatted_ver + ':' + self.patch
 
 
 def get_pyrevit_repo():
     try:
         return git.get_repo(HOME_DIR)
     except Exception as repo_err:
-        logger.error('Can not create repo from directory: {} | {}'
+        logger.debug('Can not create repo from directory: {} | {}'
                      .format(HOME_DIR, repo_err))
 
 
@@ -57,8 +58,8 @@ def get_pyrevit_version():
     try:
         pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
-        logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
-        pyrvt_ver = PyRevitVersion('?')
+        logger.debug('Can not get pyRevit patch number. | {}'.format(ver_err))
+        pyrvt_ver = PyRevitVersion('')
 
     envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
                                 pyrvt_ver.get_formatted())
