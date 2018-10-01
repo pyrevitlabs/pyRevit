@@ -43,9 +43,10 @@ namespace PyRevitBaseClasses {
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Execute and return results
+            bool showDynamoGUI = CTRL || DetermineShowDynamoGUI();
             var journalData = new Dictionary<string, string>() {
                 { "dynPath", baked_scriptSource },
-                { "dynShowUI", CTRL.ToString() },
+                { "dynShowUI", showDynamoGUI.ToString() },
                 { "dynAutomation",  "True" },
                 { "dynPathExecute",  "True" },
                 { "dynModelShutDown",  "False" }
@@ -74,7 +75,9 @@ namespace PyRevitBaseClasses {
             #endregion
         }
 
-            //private bool DetermineShowDyn() {
+        // NOTE: Dyanmo uses XML in older file versions and JSON in newer versions. This needs to support both if ever implemented
+        private bool DetermineShowDynamoGUI() {
+            return false;
             //    bool res = false;
             //    var xdoc = new XmlDocument();
             //    try {
@@ -91,6 +94,6 @@ namespace PyRevitBaseClasses {
             //    catch {
             //    }
             //    return res;
-            //}
         }
     }
+}
