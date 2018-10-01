@@ -221,17 +221,20 @@ namespace PyRevitBaseClasses {
 
             // TODO: add report button, get email from envvars
             var pinButton = new Button() { ToolTip = "Keep On Top", Focusable = false };
+            pinButton.Width = 32;
             pinButton.Content = GetPinIcon(Topmost);
             pinButton.Click += SearchButton_Click; ;
             RightWindowCommands.Items.Insert(0, pinButton);
 
             var saveButton = new Button() { ToolTip = "Save Contents", Focusable = false };
+            saveButton.Width = 32;
             saveButton.Content =
                 MakeButtonPath("M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z");
             saveButton.Click += Save_Contents_Button_Clicked;
             RightWindowCommands.Items.Insert(0, saveButton);
 
             var openButton = new Button() { ToolTip = "Open in Browser", Focusable = false };
+            openButton.Width = 32;
             openButton.Content =
                 MakeButtonPath("M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z");
             openButton.Click += OpenButton_Click; ;
