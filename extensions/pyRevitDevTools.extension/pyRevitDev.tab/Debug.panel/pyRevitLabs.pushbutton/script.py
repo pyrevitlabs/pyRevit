@@ -1,5 +1,4 @@
 import clr
-from pyrevit.loader.addin import engines
 from pyrevit.labs import NLog
 
 from pyrevit import framework
@@ -26,15 +25,6 @@ logger.warning('Warning Message')
 logger.error('error Message')
 logger.critical('critical Message')
 logger.debug('debug Message')
-
-
-print('Testing pyRevitLabs engines interface...')
-print('277 -> %s' % engines.get_engine(277))
-print('dynamosafe -> %s' % engines.get_engine(273))
-print('latest -> %s' % engines.get_latest_engine())
-for eng in engines.get_engines():
-    print('Available Engine: %s' % eng)
-
 
 print('Testing pyRevitLabs CommonWPF ActivityBar interface...')
 output.log_error('sdfdsfsdffds')
