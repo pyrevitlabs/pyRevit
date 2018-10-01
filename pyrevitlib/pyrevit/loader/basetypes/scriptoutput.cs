@@ -226,6 +226,13 @@ namespace PyRevitBaseClasses {
             pinButton.Click += SearchButton_Click; ;
             RightWindowCommands.Items.Insert(0, pinButton);
 
+            var copyButton = new Button() { ToolTip = "Copy All Text", Focusable = false };
+            copyButton.Width = 32;
+            copyButton.Content =
+                MakeButtonPath("M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z");
+            copyButton.Click += CopyButton_Click; ;
+            RightWindowCommands.Items.Insert(0, copyButton);
+
             var saveButton = new Button() { ToolTip = "Save Contents", Focusable = false };
             saveButton.Width = 32;
             saveButton.Content =
@@ -643,6 +650,10 @@ namespace PyRevitBaseClasses {
 
         private void PrintButton_Click(object sender, RoutedEventArgs e) {
             renderer.ShowPrintPreviewDialog();
+        }
+
+        private void CopyButton_Click(object sender, RoutedEventArgs e) {
+            Clipboard.SetText(ActiveDocument.Body.InnerText);
         }
 
         public void Dispose() {
