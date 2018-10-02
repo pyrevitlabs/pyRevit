@@ -237,6 +237,9 @@ class SettingsWindow(forms.WPFWindow):
         """
         usagelog.setup_usage_logfile()
 
+    def is_same_version_as_running(self, version):
+        return str(version) == EXEC_PARAMS.engine_ver
+
     def update_addinfiles(self):
         """Enables/Disables the adding files for different Revit versions."""
         # update active engine
@@ -244,11 +247,16 @@ class SettingsWindow(forms.WPFWindow):
         all_users = attachment.AttachmentType == \
             Revit.PyRevitAttachmentType.AllUsers
 
+        # notify use to restart if engine has changed
+        new_engine = self.availableEngines.SelectedItem.engine.Version
+        if not self.is_same_version_as_running(new_engine):
+            forms.alert("Active engine has changed. Restart Revit for this "
+                        "change to take effect.")
         # configure the engine on this version
         Revit.PyRevit.Attach(
             int(HOST_APP.version),
             attachment.Clone,
-            self.availableEngines.SelectedItem.engine.Version,
+            new_engine,
             all_users
             )
 
