@@ -223,7 +223,7 @@ namespace PyRevitBaseClasses {
             var pinButton = new Button() { ToolTip = "Keep On Top", Focusable = false };
             pinButton.Width = 32;
             pinButton.Content = GetPinIcon(Topmost);
-            pinButton.Click += SearchButton_Click; ;
+            pinButton.Click += PinButton_Click; ;
             RightWindowCommands.Items.Insert(0, pinButton);
 
             var copyButton = new Button() { ToolTip = "Copy All Text", Focusable = false };
@@ -606,7 +606,7 @@ namespace PyRevitBaseClasses {
         private System.Windows.Shapes.Path MakeButtonPath(string geom) {
             var path = new System.Windows.Shapes.Path();
             path.Stretch = Stretch.Uniform;
-            path.Height = 12;
+            path.Height = 14;
             path.Fill = Brushes.White;
             path.Data = Geometry.Parse(geom);
             return path;
@@ -630,10 +630,11 @@ namespace PyRevitBaseClasses {
             f.Close();
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e) {
+        private void PinButton_Click(object sender, RoutedEventArgs e) {
             var button = e.Source as Button;
             Topmost = !Topmost;
             button.Content = GetPinIcon(Topmost);
+            button.ToolTip = Topmost ? "Release" : "Keep On Top";
         }
 
         private string SaveContentsToTemp() {
@@ -654,6 +655,9 @@ namespace PyRevitBaseClasses {
 
         private void CopyButton_Click(object sender, RoutedEventArgs e) {
             Clipboard.SetText(ActiveDocument.Body.InnerText);
+            var notif = new ToolTip() { Content = "Copied to Clipboard" };
+            notif.StaysOpen = false;
+            notif.IsOpen = true;
         }
 
         public void Dispose() {
