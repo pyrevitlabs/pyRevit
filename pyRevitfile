@@ -15,7 +15,7 @@ kernel = 'IronPython'
 version = 277
 path = 'bin\engines\277'
 compatproducts = []
-description = 'Provided for backward-compatibility'
+description = 'Compatible with RevitPythonShell'
 
 [engines.IPY278]
 kernel = 'IronPython'
