@@ -52,10 +52,8 @@ class AboutWindow(forms.WPFWindow):
         self.pyrevit_version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
         self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
-        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
-                                   .format(sys.version_info.major,
-                                           sys.version_info.minor,
-                                           sys.version_info.micro)
+        self.pyrevit_engine.Text = 'Running on IronPython {}'\
+                                   .format(sys.version.split('(')[0].strip())
 
         rocketmodetext = \
             'Rocket-mode {}' \
