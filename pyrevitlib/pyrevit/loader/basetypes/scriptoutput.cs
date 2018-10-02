@@ -126,6 +126,13 @@ namespace PyRevitBaseClasses {
 
         // to track if user manually closed the window
         public bool ClosedByUser = false;
+        // is window collapsed?
+        private double prevHeight = 0;
+        public bool IsCollapsed {
+            get {
+                return this.Height == this.TitlebarHeight && this.ResizeMode == ResizeMode.NoResize;
+            }
+        }
 
         // Html renderer and its Winforms host, and navigate handler method
         public System.Windows.Forms.Integration.WindowsFormsHost host;
@@ -223,14 +230,20 @@ namespace PyRevitBaseClasses {
             var pinButton = new Button() { ToolTip = "Keep On Top", Focusable = false };
             pinButton.Width = 32;
             pinButton.Content = GetPinIcon(Topmost);
-            pinButton.Click += PinButton_Click; ;
+            pinButton.Click += PinButton_Click;
             RightWindowCommands.Items.Insert(0, pinButton);
+
+            var collapseButton = new Button() { ToolTip = "Auto Collapse", Focusable = false };
+            collapseButton.Width = 32;
+            collapseButton.Content = GetAutoCollapseIcon(Topmost);
+            collapseButton.Click += CollapseButton_Click;
+            RightWindowCommands.Items.Insert(0, collapseButton);
 
             var copyButton = new Button() { ToolTip = "Copy All Text", Focusable = false };
             copyButton.Width = 32;
             copyButton.Content =
                 MakeButtonPath("M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z");
-            copyButton.Click += CopyButton_Click; ;
+            copyButton.Click += CopyButton_Click;
             RightWindowCommands.Items.Insert(0, copyButton);
 
             var saveButton = new Button() { ToolTip = "Save Contents", Focusable = false };
@@ -251,11 +264,11 @@ namespace PyRevitBaseClasses {
             openButton.Width = 32;
             openButton.Content =
                 MakeButtonPath("M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z");
-            openButton.Click += OpenButton_Click; ;
+            openButton.Click += OpenButton_Click;
             RightWindowCommands.Items.Insert(0, openButton);
 
             this.Width = 900; this.MinWidth = 50;
-            this.Height = 600; this.MinHeight = 100;
+            this.Height = 600; this.MinHeight = this.TitlebarHeight;
             this.ResizeMode = ResizeMode.CanResize;
 
             this.Title = "pyRevit";
@@ -619,6 +632,13 @@ namespace PyRevitBaseClasses {
                 return MakeButtonPath("M2,5.27L3.28,4L20,20.72L18.73,22L12.8,16.07V22H11.2V16H6V14L8,12V11.27L2,5.27M16,12L18,14V16H17.82L8,6.18V4H7V2H17V4H16V12Z");
         }
 
+        private System.Windows.Shapes.Path GetAutoCollapseIcon(bool collapsed) {
+            if (collapsed)
+                return MakeButtonPath("M19.92,12.08L12,20L4.08,12.08L5.5,10.67L11,16.17V2H13V16.17L18.5,10.66L19.92,12.08M12,20H2V22H22V20H12Z");
+            else
+                return MakeButtonPath("M4.08,11.92L12,4L19.92,11.92L18.5,13.33L13,7.83V22H11V7.83L5.5,13.33L4.08,11.92M12,4H22V2H2V4H12Z");
+        }
+
         private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
             var saveDlg = new System.Windows.Forms.SaveFileDialog() {
                 Title = "Save Output to:",
@@ -631,10 +651,12 @@ namespace PyRevitBaseClasses {
         }
 
         private void PinButton_Click(object sender, RoutedEventArgs e) {
-            var button = e.Source as Button;
-            Topmost = !Topmost;
-            button.Content = GetPinIcon(Topmost);
-            button.ToolTip = Topmost ? "Release" : "Keep On Top";
+            if (!IsCollapsed) {
+                var button = e.Source as Button;
+                Topmost = !Topmost;
+                button.Content = GetPinIcon(Topmost);
+                button.ToolTip = Topmost ? "Release" : "Keep On Top";
+            }
         }
 
         private string SaveContentsToTemp() {
@@ -658,6 +680,25 @@ namespace PyRevitBaseClasses {
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;
             notif.IsOpen = true;
+        }
+
+        private void CollapseButton_Click(object sender, RoutedEventArgs e) {
+            var button = e.Source as Button;
+            if (!IsCollapsed) {
+                prevHeight = this.Height;
+                this.Topmost = true;
+                this.Height = this.TitlebarHeight;
+                this.ResizeMode = ResizeMode.NoResize;
+                this.ShowMinButton = true;
+                this.ShowMaxRestoreButton = true;
+                button.Content = GetAutoCollapseIcon(true);
+            }
+            else {
+                this.Topmost = false;
+                this.Height = prevHeight;
+                this.ResizeMode = ResizeMode.CanResize;
+                button.Content = GetAutoCollapseIcon(false);
+            }
         }
 
         public void Dispose() {
