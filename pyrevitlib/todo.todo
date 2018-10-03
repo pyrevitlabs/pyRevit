@@ -13,7 +13,7 @@ pyrevit cli:
 ✔ cli show which engine is connected
 ✔ cli show deployment on clone when listing
 ☐ pyrevit update commands should have options to ask for revit closure nicely
-☐ remove Update and Settings tool in pyrevit depending on conditions
+✔ remove Update and Settings tool in pyrevit depending on conditions
 ✔ update should skip updating nogits
 
 installer:
