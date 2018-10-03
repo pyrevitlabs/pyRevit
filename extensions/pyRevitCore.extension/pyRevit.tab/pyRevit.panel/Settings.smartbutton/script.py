@@ -442,7 +442,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # otherwise, will show the Settings user interface
 
 if __name__ == '__main__':
-    if __shiftclick__:  #noqa
+    if __shiftclick__:
         script.show_file_in_explorer(user_config.config_file)
     else:
         SettingsWindow('SettingsWindow.xaml').show_dialog()

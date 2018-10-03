@@ -14,7 +14,6 @@ from pyrevit.userconfig import user_config
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
 
-#pylint: disable=C0103
 logger = get_logger(__name__)
 
 

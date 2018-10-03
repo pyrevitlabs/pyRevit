@@ -75,7 +75,7 @@ def create_revision(description=None, by=None, to=None, date=None,
     if alphanum:
         new_rev.NumberType = DB.RevisionNumberType.Alphanumeric
     if nonum:
-        new_rev.NumberType = DB.RevisionNumberType.None #noqa
+        new_rev.NumberType = DB.RevisionNumberType.None
     new_rev.RevisionDate = date or ''
     return new_rev
 

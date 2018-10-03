@@ -18,7 +18,7 @@ logger = script.get_logger()
 selected_views = []
 
 
-if __shiftclick__:    #noqa
+if __shiftclick__:
     selected_views = forms.select_views()
 else:
     # get selection and verify a view is selected

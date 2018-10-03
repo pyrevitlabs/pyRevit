@@ -22,7 +22,7 @@ if not EXEC_PARAMS.doc_mode:
     logger.debug('Loading dll: {}'.format(mathnet_dll))
     try:
         clr.AddReferenceToFileAndPath(mathnet_dll)
-        import MathNet  #noqa
+        import MathNet
     except Exception as load_err:
         logger.error('Can not load {} module. | {}'
                      .format(MATHNET_LIB, load_err))

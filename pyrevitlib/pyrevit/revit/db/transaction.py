@@ -33,7 +33,7 @@ class FailureSwallower(DB.IFailuresPreprocessor):
         # log some info
         logger.debug('processing failure with severity: {}'.format(severity))
 
-        if severity == DB.FailureSeverity.None:     #noqa
+        if severity == DB.FailureSeverity.None:
             logger.debug('clean document. returning with'
                          'FailureProcessingResult.Continue')
             return DB.FailureProcessingResult.Continue

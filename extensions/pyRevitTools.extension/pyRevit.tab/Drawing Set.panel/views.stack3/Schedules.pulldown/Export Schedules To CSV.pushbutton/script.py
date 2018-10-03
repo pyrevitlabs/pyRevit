@@ -39,7 +39,7 @@ schedules_to_export = forms.select_views(title='Select Schedules',
 
 if schedules_to_export:
     vseop = DB.ViewScheduleExportOptions()
-    vseop.ColumnHeaders = DB.ExportColumnHeaders.None   #noqa
+    vseop.ColumnHeaders = DB.ExportColumnHeaders.None
     vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
     vseop.FieldDelimiter = ','
     vseop.Title = False

@@ -48,7 +48,7 @@ selected_sheets = forms.select_sheets(title='Select Target Sheets',
 
 # get a list of viewports to be copied, updated
 if selected_sheets and len(selected_sheets) > 0:
-    if int(__revit__.Application.VersionNumber) > 2014: #noqa
+    if int(__revit__.Application.VersionNumber) > 2014:
         cursheet = revit.uidoc.ActiveGraphicalView
         for v in selected_sheets:
             if cursheet.Id == v.Id:

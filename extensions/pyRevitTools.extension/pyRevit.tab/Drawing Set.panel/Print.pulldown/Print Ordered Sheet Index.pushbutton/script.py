@@ -101,7 +101,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
         vseop = DB.ViewScheduleExportOptions()
-        vseop.TextQualifier = DB.ExportTextQualifier.None   #noqa
+        vseop.TextQualifier = DB.ExportTextQualifier.None
         schedule_view.Export(op.dirname(schedule_data_file),
                              op.basename(schedule_data_file),
                              vseop)

@@ -31,7 +31,6 @@ Example:
     >>> cfg.get('property', default_value)
     >>> script.save_config()
 """
-#pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
 

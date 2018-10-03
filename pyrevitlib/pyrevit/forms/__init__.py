@@ -77,19 +77,19 @@ class WPFWindow(framework.Windows.Window):
 
         self.setup_icon()
 
-        #2c3e50 #noqa
+        #2c3e50
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
 
-        #23303d #noqa
+        #23303d
         self.Resources['pyRevitDarkerDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
 
-        #ffffff #noqa
+        #ffffff
         self.Resources['pyRevitButtonColor'] = \
             Media.Color.FromArgb(0xFF, 0xff, 0xff, 0xff)
 
-        #f39c12 #noqa
+        #f39c12
         self.Resources['pyRevitAccentColor'] = \
             Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)
 

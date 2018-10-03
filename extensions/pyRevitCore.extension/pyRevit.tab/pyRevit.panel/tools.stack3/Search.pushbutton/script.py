@@ -178,7 +178,7 @@ if matched_cmdname:
         if any(switches.values()):
             forms.alert('This is a native Revit command.')
         else:
-            __revit__.PostCommand(postable_cmds[matched_cmdname].rvtobj) #noqa
+            __revit__.PostCommand(postable_cmds[matched_cmdname].rvtobj)
     # if pyrevit command
     else:
         selected_cmd = pyrevit_cmds[matched_cmdname]
