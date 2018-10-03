@@ -7,9 +7,18 @@ tool improv:
 ✔ revise cli icon
 ✔ remove update shortcut from cli
 ✔ hide nranch info from about
-☐ fix pyrevit.exe to update from it's own location
+✔ fix pyrevit.exe to update from it's own location
 ☐ remove Update and Settings tool in pyrevit depending on conditions
+☐ deyployment to control extensions/. folders as well
+☐ change pyrevit clone --nogit to pyrevit deploy
+☐ cli show which engine is connected
+☐ cli show deployment on clone when listing
 ☐ uninstaller should remove update icon in start
+☐ installer should wait for revits to close
+☐ pyrevit update commands should have options to ask for revit closure nicely
+☐ add authgroups to extension.json
+☐ clean extensions config after uninstall
+☐ don't create extensions config sections for default vars
 
 ☐ move collectors in List tool to db.query
 ☐ switches for Pick tool so users can select favorite categories
