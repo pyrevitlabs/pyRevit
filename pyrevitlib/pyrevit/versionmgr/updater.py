@@ -91,7 +91,10 @@ def get_all_extension_repos():
     """Return a list of repos for all installed extensions."""
     logger.debug('Finding all extension repos.')
     # pyrevit main repo
-    repo_info_list = [versionmgr.get_pyrevit_repo()]
+    repo_info_list = []
+    pyrevit_repo = versionmgr.get_pyrevit_repo()
+    if pyrevit_repo:
+        repo_info_list.append(pyrevit_repo)
     # add all thirdparty extension repos
     repo_info_list.extend(get_thirdparty_ext_repos())
     logger.debug('Repos are: {}'.format(repo_info_list))
@@ -187,7 +190,7 @@ def has_core_updates():
     of core DLLs so they can be updated separately.
     """
     pyrevit_repo = versionmgr.get_pyrevit_repo()
-    if get_updates(pyrevit_repo):
+    if pyrevit_repo and get_updates(pyrevit_repo):
         new_commits = git.get_all_new_commits(pyrevit_repo)
 
         logger.debug('Checking new commits on pyrevit repo.')
@@ -204,7 +207,9 @@ def has_core_updates():
 def update_pyrevit():
     """Update pyrevit and its extension repositories."""
     if _check_connection():
-        pyrevit_repo = versionmgr.get_pyrevit_repo()
+        third_party_updated = False
+        pyrevit_updated = False
+        pyrevit_has_coreupdates = has_core_updates()
         thirdparty_repos = get_thirdparty_ext_repos()
 
         logger.debug('List of thirdparty repos to be updated: {}'
@@ -218,31 +223,38 @@ def update_pyrevit():
                 logger.info(':inbox_tray: Successfully updated: {} to {}'
                             .format(upped_repo_info.name,
                                     upped_repo_info.last_commit_hash[:7]))
+                third_party_updated = True
             except Exception:
                 logger.info('Can not update repo: {}  '
                             '(Run in debug to see why)'.format(repo_info.name))
 
         # now update pyrevit repo and reload
-        if not has_core_updates():
-            logger.debug('Updating pyrevit repo: {}'
-                         .format(pyrevit_repo.directory))
-            try:
-                upped_pyrevit_repo_info = update_repo(pyrevit_repo)
-                logger.info(':inbox_tray: Successfully updated: {} to {}'
-                            .format(
-                                upped_pyrevit_repo_info.name,
-                                upped_pyrevit_repo_info.last_commit_hash[:7])
-                            )
-            except Exception as e:
-                logger.info('Can not update pyrevit repo '
-                            '(Run in debug to see why) | {}'.format(e))
-            # perform upgrade tasks
-            logger.info('Upgrading settings...')
-            upgrade.upgrade_existing_pyrevit()
-
-            # now reload pyrevit
-            from pyrevit.loader import sessionmgr
-            sessionmgr.reload_pyrevit()
+        pyrevit_repo = versionmgr.get_pyrevit_repo()
+        if pyrevit_repo:
+            if not pyrevit_has_coreupdates:
+                logger.debug('Updating pyrevit repo: {}'
+                            .format(pyrevit_repo.directory))
+                try:
+                    upped_pyrevit_repo_info = update_repo(pyrevit_repo)
+                    logger.info(':inbox_tray: Successfully updated: {} to {}'
+                                .format(
+                                    upped_pyrevit_repo_info.name,
+                                    upped_pyrevit_repo_info.last_commit_hash[:7])
+                                )
+                    pyrevit_updated = True
+                except Exception as e:
+                    logger.info('Can not update pyrevit repo '
+                                '(Run in debug to see why) | {}'.format(e))
+                # perform upgrade tasks
+                logger.info('Upgrading settings...')
+                upgrade.upgrade_existing_pyrevit()
+        if not pyrevit_has_coreupdates:
+            if third_party_updated or pyrevit_updated:
+                # now reload pyrevit
+                from pyrevit.loader import sessionmgr
+                sessionmgr.reload_pyrevit()
+            else:
+                logger.info('pyRevit and extensions seem to be up-to-date.')
         else:
             from pyrevit import script
             output = script.get_output()
