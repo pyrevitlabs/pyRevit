@@ -430,12 +430,19 @@ class SettingsWindow(forms.WPFWindow):
         execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
+# decide if the settings should load or not
+def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    # do not load the tool if user should not config
+    if not user_config.core.get_option('usercanconfig', True):
+        return False
+
 # handles tool click in Revit interface:
 # if Shift-Click on the tool, opens the pyRevit config file in
 # windows explorer
 # otherwise, will show the Settings user interface
 
-if __shiftclick__:  #noqa
-    script.show_file_in_explorer(user_config.config_file)
-else:
-    SettingsWindow('SettingsWindow.xaml').show_dialog()
+if __name__ == '__main__':
+    if __shiftclick__:  #noqa
+        script.show_file_in_explorer(user_config.config_file)
+    else:
+        SettingsWindow('SettingsWindow.xaml').show_dialog()

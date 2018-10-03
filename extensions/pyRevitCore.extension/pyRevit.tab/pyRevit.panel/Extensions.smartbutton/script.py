@@ -379,11 +379,18 @@ def call_reload():
     execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
+# decide if the settings should load or not
+def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    # do not load the tool if user should not config
+    if not user_config.core.get_option('usercanextend', True):
+        return False
+
 # handles tool click in Revit interface:
 # if Shift-Click on the tool, opens the extension package destinations in
 # windows explorer
 # otherwise, will show the Extension manager user interface
-if __shiftclick__:
-    open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
-else:
-    ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()
+if __name__ == '__main__':
+    if __shiftclick__:
+        open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
+    else:
+        ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()

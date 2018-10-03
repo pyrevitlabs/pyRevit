@@ -17,6 +17,10 @@ __doc__ = 'Downloads updates from the remote git repositories ' \
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
+    # do not load the tool if user should not update
+    if not user_config.core.get_option('usercanupdate', True):
+        return False
+    # otherwise set icon depending on if updates are available
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.core.get_option('checkupdates', False) \
