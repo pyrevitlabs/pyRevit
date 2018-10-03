@@ -243,6 +243,15 @@ def verify_configs(config_file_path=None):
     # bincache
     if not parser.core.has_option(consts.ConfigsBinaryCacheKey):
         parser.core.set_option(consts.ConfigsBinaryCacheKey, True)
+    # usercanupdate
+    if not parser.core.has_option(consts.ConfigsUserCanUpdateKey):
+        parser.core.set_option(consts.ConfigsUserCanUpdateKey, True)
+    # usercanextend
+    if not parser.core.has_option(consts.ConfigsUserCanExtendKey):
+        parser.core.set_option(consts.ConfigsUserCanExtendKey, True)
+    # usercanconfig
+    if not parser.core.has_option(consts.ConfigsUserCanConfigKey):
+        parser.core.set_option(consts.ConfigsUserCanConfigKey, True)
 
     # save config into config file
     if config_file_path:

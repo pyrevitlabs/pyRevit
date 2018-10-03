@@ -179,17 +179,18 @@ def _produce_ui_smartbutton(ui_maker_params):
     try:
         # replacing EXEC_PARAMS.command_name value with button name so the
         # init script can log under its own name
-        prev_commandname = __builtins__['__commandname__']
-        prev_commandpath = __builtins__['__commandpath__']
-        if '__shiftclick__' in __builtins__:
-            prev_shiftclick = __builtins__['__shiftclick__']
-        else:
-            prev_shiftclick = False
-
-        if '__forceddebugmode__' in __builtins__:
-            prev_debugmode = __builtins__['__forceddebugmode__']
-        else:
-            prev_debugmode = False
+        prev_commandname = \
+            __builtins__['__commandname__'] \
+            if '__commandname__' in __builtins__ else None
+        prev_commandpath = \
+            __builtins__['__commandpath__'] \
+            if '__commandpath__' in __builtins__ else None
+        prev_shiftclick = \
+            __builtins__['__shiftclick__'] \
+            if '__shiftclick__' in __builtins__ else False
+        prev_debugmode = \
+            __builtins__['__forceddebugmode__'] \
+            if '__forceddebugmode__' in __builtins__ else False
 
         __builtins__['__commandname__'] = smartbutton.name
         __builtins__['__commandpath__'] = smartbutton.get_full_script_address()
