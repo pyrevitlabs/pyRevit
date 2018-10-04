@@ -16,12 +16,13 @@ pyrevit cli:
 ✔ update should skip updating nogits
 ☐ pyrevit update commands should have options to ask for revit closure nicely
 
-installer:
+installer:  
 ☐ uninstaller should remove update icon in start
 ☐ installer should wait for revits to close
 ☐ add authgroups to extension.json
 
 pyrevit:
+☐ cleanup code and logger string formatting
 ☐ clean extensions config after uninstall
 ☐ don't create extensions config sections for default vars
 
