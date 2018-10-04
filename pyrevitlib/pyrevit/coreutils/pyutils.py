@@ -29,7 +29,8 @@ class DefaultOrderedDict(OrderedDict):
     """
 
     # Source: http://stackoverflow.com/a/6190500/562769
-    def __init__(self, *a, default_factory=None, **kw):
+    def __init__(self, default_factory=None, *a, **kw): #pylint: disable=W1113
+
         if (default_factory is not None \
                 and not isinstance(default_factory, Callable)):
             raise TypeError('first argument must be callable')
