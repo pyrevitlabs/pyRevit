@@ -187,7 +187,7 @@ def get_all_subclasses(parent_classes):
     for parent_class in parent_classes:
         try:
             derived_classes = parent_class.__subclasses__()
-            if derived_classes:
+            if not derived_classes:
                 sub_classes.append(parent_class)
             else:
                 sub_classes.extend(derived_classes)
