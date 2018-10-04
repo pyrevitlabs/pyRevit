@@ -22,8 +22,6 @@ clr.AddReferenceByPartialName('WindowsBase')
 # add linq extensions?
 clr.ImportExtensions(System.Linq)
 
-# pylama:ignore=E402,W0611
-# pylama ignore imports not on top and not used
 from System import AppDomain, Version
 from System import Type
 from System import Uri, Guid

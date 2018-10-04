@@ -13,8 +13,6 @@ clr.AddReference('AdWindows')
 clr.AddReference('UIFramework')
 clr.AddReference('UIFrameworkServices')
 
-# pylama:ignore=E402,W0611
-# pylama ignore imports not on top and not used
 import Autodesk.Internal as AdInternal
 import Autodesk.Private as AdPrivate
 import Autodesk.Windows as AdWindows

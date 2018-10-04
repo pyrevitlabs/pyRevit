@@ -86,13 +86,12 @@ sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 
 
-# pylama:ignore=E402
 # now we can start importing stuff
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI  # noqa pylama ignore DB not being used here
+from pyrevit.api import DB, UI
 
 # -----------------------------------------------------------------------------
 # Base Exceptions

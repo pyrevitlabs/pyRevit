@@ -6,7 +6,6 @@ import os
 binary_path = os.path.join(os.path.dirname(__file__), 'bin')
 sys.path.append(binary_path)
 
-# pylama:ignore=E402,W0611
 import clr
 clr.AddReference('System')
 
