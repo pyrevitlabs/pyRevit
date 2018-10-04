@@ -19,8 +19,8 @@ from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL,\
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
 
-
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302
+mlogger = get_logger(__name__)  #pylint: disable=C0103
 
 
 TEMP_FILE_EXT = 'tmp'
@@ -30,8 +30,7 @@ def _remove_app_file(file_path):
     try:
         os.remove(file_path)
     except Exception as osremove_err:
-        logger.error('Error file cleanup on: {} | {}'
-                     .format(file_path, osremove_err))
+        mlogger.error('Error file cleanup on: %s | %s', file_path, osremove_err)
 
 
 def _list_app_files(prefix, file_ext, universal=False):

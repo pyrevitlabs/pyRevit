@@ -23,12 +23,12 @@ from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import api
 
-
-# pylama:ignore=D105
+#pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
 
 
-# extracted from https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
+# extracted from
+# https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
 UNICODE_NONPRINTABLE_CHARS = [
     u'\u2000', u'\u2001', u'\u2002', u'\u2003', u'\u2004', u'\u2005', u'\u2006',
     u'\u2007', u'\u2008', u'\u2009', u'\u200A', u'\u200B', u'\u200C', u'\u200D',
@@ -84,8 +84,8 @@ class ScriptFileParser:
             file_address (str): python script file path
         """
         self.file_addr = file_address
-        with open(file_address, 'r') as f:
-            self.ast_tree = ast.parse(f.read())
+        with open(file_address, 'r') as source_file:
+            self.ast_tree = ast.parse(source_file.read())
 
     def get_docstring(self):
         """Get global docstring."""
@@ -187,7 +187,7 @@ def get_all_subclasses(parent_classes):
     for parent_class in parent_classes:
         try:
             derived_classes = parent_class.__subclasses__()
-            if len(derived_classes) == 0:
+            if derived_classes:
                 sub_classes.append(parent_class)
             else:
                 sub_classes.extend(derived_classes)
@@ -206,9 +206,9 @@ def get_sub_folders(search_folder):
         list: list of subfolder names
     """
     sub_folders = []
-    for f in os.listdir(search_folder):
-        if op.isdir(op.join(search_folder, f)):
-            sub_folders.append(f)
+    for sub_folder in os.listdir(search_folder):
+        if op.isdir(op.join(search_folder, sub_folder)):
+            sub_folders.append(sub_folder)
     return sub_folders
 
 
@@ -261,7 +261,7 @@ SPECIAL_CHARS = {' ': '',
                  '*': 'STAR',
                  '+': 'PLUS',
                  ';': '', ':': '', ',': '', '\"': '',
-                 '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
+                 '{': '', '}': '', '[': '', ']': '', r'\(': '', r'\)': '',
                  '-': 'MINUS',
                  '=': 'EQUALS',
                  '<': '', '>': '',
@@ -269,7 +269,7 @@ SPECIAL_CHARS = {' ': '',
                  '.': 'DOT',
                  '_': 'UNDERS',
                  '|': 'VERT',
-                 '\/': '', '\\': ''}
+                 r'\/': '', '\\': ''}
 
 
 def cleanup_string(input_str):
@@ -493,7 +493,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
-    for root, dirs, files in os.walk(dir_path):
+    for root, dirs, files in os.walk(dir_path): #pylint: disable=W0612
         if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
             mtime_sum += op.getmtime(root)
             for filename in files:
@@ -583,7 +583,7 @@ def can_access_url(url_to_open, timeout=1000):
         response.GetResponseStream()
         return True
     except Exception:
-            return False
+        return False
 
 
 def check_internet_connection(timeout=1000):
@@ -658,27 +658,25 @@ def create_ext_command_attrs():
     regen_const_info = \
         framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
         .GetConstructor(
-               framework.Array[framework.Type](
-                   (api.Attributes.RegenerationOption,)
-                   )
-               )
+            framework.Array[framework.Type](
+                (api.Attributes.RegenerationOption,)
+                ))
 
     regen_attr_builder = \
         framework.CustomAttributeBuilder(
             regen_const_info,
             framework.Array[object](
                 (api.Attributes.RegenerationOption.Manual,)
-                )
-            )
+                ))
 
     # add TransactionAttribute to framework.Type
     trans_constructor_info = \
         framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
         .GetConstructor(
-               framework.Array[framework.Type](
-                   (api.Attributes.TransactionMode,)
-                   )
-               )
+            framework.Array[framework.Type](
+                (api.Attributes.TransactionMode,)
+                )
+            )
 
     trans_attrib_builder = \
         framework.CustomAttributeBuilder(
@@ -739,13 +737,14 @@ def create_type(modulebuilder,
     type_list = []
     param_list = []
     for param in args:
-        if type(param) == str \
-                or type(param) == int:
+        if isinstance(param, str) \
+                or isinstance(param, int):
             type_list.append(type(param))
             param_list.append(param)
 
     # call base constructor
-    ci = type_class.GetConstructor(framework.Array[framework.Type](type_list))
+    constructor = \
+        type_class.GetConstructor(framework.Array[framework.Type](type_list))
     # create class constructor builder
     const_builder = \
         type_builder.DefineConstructor(framework.MethodAttributes.Public,
@@ -763,7 +762,7 @@ def create_type(modulebuilder,
             gen.Emit(framework.OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
-    gen.Emit(framework.OpCodes.Call, ci)
+    gen.Emit(framework.OpCodes.Call, constructor)
     # Fill some space - this is how it is generated for equivalent C# code
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Nop)
@@ -789,7 +788,7 @@ def fully_remove_dir(dir_path):
     Args:
         dir_path (str): directory path
     """
-    def del_rw(action, name, exc):
+    def del_rw(action, name, exc):   #pylint: disable=W0613
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
 
@@ -809,7 +808,7 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Myfile-(3).txt')
         "Myfile3.txt"
     """
-    return re.sub('[^\w_.)( -]', '', file_name)
+    return re.sub(r'[^\w_.)( -]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
@@ -1013,13 +1012,13 @@ def is_url_valid(url_string):
         True
     """
     regex = re.compile(
-            r'^(?:http|ftp)s?://'                   # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
-            r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-            r'localhost|'                           # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'                            # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'^(?:http|ftp)s?://'                   # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
+        r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'                           # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'                            # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     return regex.match(url_string)
 
@@ -1055,13 +1054,13 @@ def reformat_string(orig_str, orig_format, new_format):
     # find all values
     value_extractor = re.compile(value_extractor_pattern)
     values = value_extractor.findall(orig_str)
-    if len(values) > 0:
+    if values:
         values = values[0]
 
     # create a dictionary of tags and values
     reformat_dict = {}
-    for k, v in zip(tags, values):
-        reformat_dict[k] = v
+    for key, value in zip(tags, values):
+        reformat_dict[key] = value
 
     # use dictionary to reformat the string into new
     return new_format.format(**reformat_dict)
@@ -1227,10 +1226,10 @@ def correct_revittxt_encoding(filename):
 
 def has_nonprintable(input_str):
     """Check input string for non-printable characters.
-    
+
     Args:
         input_str (str): input string
-    
+
     Returns:
         bool: True if contains non-printable characters
     """
