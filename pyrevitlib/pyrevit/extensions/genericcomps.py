@@ -94,12 +94,12 @@ class GenericUIComponent(GenericComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            logger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: {} from {}'.format(path, self))
+            logger.debug('Removing syspath: %s from %s', path, self)
             return self.syspath_search_paths.remove(path)
         else:
             return None
@@ -137,7 +137,7 @@ class GenericUIContainer(GenericUIComponent):
             self.syspath_search_paths.append(self.library_path)
 
         self.layout_list = self._read_layout_file()
-        logger.debug('Layout is: {}'.format(self.layout_list))
+        logger.debug('Layout is: %s', self.layout_list)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
@@ -200,14 +200,14 @@ class GenericUIContainer(GenericUIComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            logger.debug('Appending syspath: %s to %s', path, self)
             for component in self.get_components():
                 component.add_syspath(path)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: {} from {}'.format(path, self))
+            logger.debug('Removing syspath: %s from %s', path, self)
             for component in self.get_components():
                 component.remove_syspath(path)
             return self.syspath_search_paths.remove(path)
@@ -285,7 +285,7 @@ class GenericUICommand(GenericUIComponent):
                                                    exts.DYNAMO_SCRIPT_POSTFIX])
 
         if self.script_file is None:
-            logger.error('Command {}: Does not have script file.'.format(self))
+            logger.error('Command %s: Does not have script file.', self)
             raise PyRevitException()
         if self.script_language == exts.PYTHON_LANG:
             self._analyse_python_script()
@@ -381,11 +381,11 @@ class GenericUICommand(GenericUIComponent):
 
         # fixme: logger reports module as 'ast' after a
         # successfull param retrieval. Must be ast.literal_eval()
-        logger.debug('Maximum host version: {}'.format(self.max_revit_ver))
-        logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
-        logger.debug('command tooltip: {}'.format(self.doc_string))
-        logger.debug('Command author: {}'.format(self.author))
-        logger.debug('Command help url: {}'.format(self.cmd_help_url))
+        logger.debug('Maximum host version: %s', self.max_revit_ver)
+        logger.debug('Minimum host version: %s', self.min_revit_ver)
+        logger.debug('command tooltip: %s', self.doc_string)
+        logger.debug('Command author: %s', self.author)
+        logger.debug('Command help url: %s', self.cmd_help_url)
 
         if self.beta_cmd:
             logger.debug('Command is in beta.')
@@ -455,7 +455,7 @@ class GenericUICommand(GenericUIComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            logger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
 
     def configure(self, config_dict):

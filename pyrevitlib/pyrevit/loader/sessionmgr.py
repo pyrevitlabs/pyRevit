@@ -148,7 +148,7 @@ def _new_session():
                             .format(ui_ext))
             continue
 
-        logger.info('Extension assembly created: {}'.format(ui_ext.name))
+        logger.info('Extension assembly created: %s', ui_ext.name)
 
         # add name of the created assembly to the session info
         loaded_assm_list.append(ext_asm_info.name)
@@ -167,7 +167,7 @@ def _new_session():
                           ext_asm_info,
                           user_config.core.get_option('loadbeta',
                                                       default_value=False))
-        logger.info('UI created for extension: {}'.format(ui_ext.name))
+        logger.info('UI created for extension: %s', ui_ext.name)
 
     # add names of the created assemblies to the session info
     sessioninfo.set_loaded_pyrevit_assemblies(loaded_assm_list)
@@ -212,7 +212,7 @@ def load_session():
     # log load time and thumbs-up :)
     endtime = timer.get_time()
     success_emoji = ':OK_hand:' if endtime < 3.00 else ':thumbs_up:'
-    logger.info('Load time: {} seconds {}'.format(endtime, success_emoji))
+    logger.info('Load time: %s seconds %s', endtime, success_emoji)
 
     # if everything went well, self destruct
     try:
@@ -391,19 +391,19 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     logger.debug('Searching for pyrevit command: {}'
                  .format(pyrevitcmd_unique_id))
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        logger.debug('Expecting assm: {}'.format(loaded_assm_name))
+        logger.debug('Expecting assm: %s', loaded_assm_name)
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
-            logger.debug('Found assm: {}'.format(loaded_assm_name))
+            logger.debug('Found assm: %s', loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
-                logger.debug('Found Type: {}'.format(pyrvt_type))
+                logger.debug('Found Type: %s', pyrvt_type)
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
                     logger.debug('Found pyRevit command in {}'
                                  .format(loaded_assm_name))
                     return pyrvt_type
             logger.debug('Could not find pyRevit command.')
         else:
-            logger.debug('Can not find assm: {}'.format(loaded_assm_name))
+            logger.debug('Can not find assm: %s', loaded_assm_name)
 
     return None
 

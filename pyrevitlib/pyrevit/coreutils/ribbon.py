@@ -580,7 +580,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                                                    asm_update_err))
 
                 if not icon_path:
-                    logger.debug('Icon not set for {}'.format(button_name))
+                    logger.debug('Icon not set for %s', button_name)
                 else:
                     try:
                         # if button group shows the active button icon,
@@ -627,7 +627,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 new_button.set_title(ui_title)
 
             if not icon_path:
-                logger.debug('Icon not set for {}'.format(button_name))
+                logger.debug('Icon not set for %s', button_name)
             else:
                 logger.debug('Creating icon for push button {} from file: {}'
                              .format(button_name, icon_path))
@@ -787,7 +787,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         button_adwnd_obj = dlg_button.get_adwindows_object()
         panel_adwnd_obj.Source.Items.Remove(button_adwnd_obj)
         panel_adwnd_obj.Source.DialogLauncher = button_adwnd_obj
-        logger.debug('Added panel dialog button'.format(dlg_button.name))
+        logger.debug('Added panel dialog button', dlg_button.name)
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
@@ -822,7 +822,7 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
                     existing_item.set_title(ui_title)
 
                 if not icon_path:
-                    logger.debug('Icon not set for {}'.format(button_name))
+                    logger.debug('Icon not set for %s', button_name)
                 else:
                     try:
                         existing_item.set_icon(icon_path, icon_size=ICON_LARGE)

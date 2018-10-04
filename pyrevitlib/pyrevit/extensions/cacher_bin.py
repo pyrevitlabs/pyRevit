@@ -18,9 +18,9 @@ def _get_cache_file(cached_ext):
 
 def update_cache(parsed_ext):
     try:
-        logger.debug('Writing cache for: {}'.format(parsed_ext))
+        logger.debug('Writing cache for: %s', parsed_ext)
         cache_file = _get_cache_file(parsed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        logger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'wb') as bin_cache_file:
             pickle.dump(parsed_ext, bin_cache_file, pickle.HIGHEST_PROTOCOL)
     except Exception as err:
@@ -34,9 +34,9 @@ def get_cached_extension(installed_ext):
             return loaded_ext
 
     try:
-        logger.debug('Reading cache for: {}'.format(installed_ext))
+        logger.debug('Reading cache for: %s', installed_ext)
         cache_file = _get_cache_file(installed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        logger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'rb') as bin_cache_file:
             unpickled_pkg = pickle.load(bin_cache_file)
     except Exception as err:

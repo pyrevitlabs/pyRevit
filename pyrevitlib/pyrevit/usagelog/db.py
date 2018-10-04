@@ -44,7 +44,7 @@ def _logobj_decoder(logobj):
 def _collect_records_from_file(usagelog_file):
     # collect all usage log records from the provided file
     try:
-        logger.debug('Reading usage log for: {}'.format(usagelog_file))
+        logger.debug('Reading usage log for: %s', usagelog_file)
         with open(usagelog_file, 'r') as ulogf:
             record_list = json.load(ulogf, object_hook=_logobj_decoder)
             for record in record_list:

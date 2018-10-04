@@ -31,7 +31,7 @@ class FailureSwallower(DB.IFailuresPreprocessor):
     def PreprocessFailures(self, failuresAccessor):
         severity = failuresAccessor.GetSeverity()
         # log some info
-        logger.debug('processing failure with severity: {}'.format(severity))
+        logger.debug('processing failure with severity: %s', severity)
 
         if severity == DB.FailureSeverity.None:
             logger.debug('clean document. returning with'
@@ -203,7 +203,7 @@ class TransactionGroup():
             except Exception as errmsg:
                 self._rvtxn_grp.RollBack()
                 logger.error('Error in TransactionGroup Commit: rolled back.')
-                logger.error('Error: {}'.format(errmsg))
+                logger.error('Error: %s', errmsg)
 
     @property
     def name(self):

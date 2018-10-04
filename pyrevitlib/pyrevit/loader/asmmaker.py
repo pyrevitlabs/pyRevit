@@ -77,7 +77,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     is_reloading_pkg = _is_any_ext_asm_loaded(extension)
 
     # create assembly
-    logger.debug('Building assembly for package: {}'.format(extension))
+    logger.debug('Building assembly for package: %s', extension)
     pyrvt_ver_int_tuple = get_pyrevit_version().as_int_tuple()
     win_asm_name = AssemblyName(Name=ext_asm_file_name,
                                 Version=Version(pyrvt_ver_int_tuple[0],
@@ -110,7 +110,7 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     # create command classes
     for cmd_component in extension.get_all_commands():
         # create command executor class for this command
-        logger.debug('Creating types for command: {}'.format(cmd_component))
+        logger.debug('Creating types for command: %s', cmd_component)
         make_cmd_types(extension, cmd_component, module_builder)
 
     # save final assembly
@@ -179,11 +179,11 @@ def create_assembly(extension):
     Returns:
 
     """
-    logger.debug('Creating assembly for extension: {}'.format(extension.name))
+    logger.debug('Creating assembly for extension: %s', extension.name)
     # create assembly file and return assembly path to be used in UI creation
     # try:
     ext_asm_info = _produce_asm_file(extension)
-    logger.debug('Assembly created: {}'.format(ext_asm_info))
+    logger.debug('Assembly created: %s', ext_asm_info)
     return ext_asm_info
     # except Exception as asm_err:
     #     logger.critical('Can not create assembly for: {}' \

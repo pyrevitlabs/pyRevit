@@ -27,7 +27,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
     # make command interface type for the given command
     try:
         if cmd_component.script_language == exts.PYTHON_LANG:
-            logger.debug('Command is python: {}'.format(cmd_component))
+            logger.debug('Command is python: %s', cmd_component)
             try:
                 create_python_types(extension, cmd_component, module_builder)
             except Exception as cmd_exec_err:
@@ -35,14 +35,14 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
                              .format(cmd_component, cmd_exec_err))
 
         elif cmd_component.script_language == exts.CSHARP_LANG:
-            logger.debug('Command is C#: {}'.format(cmd_component))
+            logger.debug('Command is C#: %s', cmd_component)
             try:
                 create_csharp_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 logger.error('Error compiling C# types for: {} | {}'
                              .format(cmd_component, cmd_compile_err))
         elif cmd_component.script_language == exts.DYNAMO_LANG:
-            logger.debug('Command is DynamoBIM: {}'.format(cmd_component))
+            logger.debug('Command is DynamoBIM: %s', cmd_component)
             try:
                 create_dyno_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:

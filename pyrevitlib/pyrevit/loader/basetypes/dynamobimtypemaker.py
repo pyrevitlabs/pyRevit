@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 def _make_dyno_types(extension, module_builder, cmd_component):
-    logger.debug('Creating executor type for: {}'.format(cmd_component))
+    logger.debug('Creating executor type for: %s', cmd_component)
 
     create_type(module_builder, DYNOCMD_EXECUTOR_TYPE,
                 cmd_component.unique_name,

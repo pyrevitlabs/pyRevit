@@ -30,10 +30,10 @@ def _make_cache_from_cmp(obj):
 
 
 def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
-    logger.debug('Processing cache for: {}'.format(parent_cmp))
+    logger.debug('Processing cache for: %s', parent_cmp)
     # get allowed classes under this component
     allowed_sub_cmps = get_all_subclasses(parent_cmp.allowed_sub_cmps)
-    logger.debug('Allowed sub components are: {}'.format(allowed_sub_cmps))
+    logger.debug('Allowed sub components are: %s', allowed_sub_cmps)
     # iterate through list of cached sub components
     for cached_cmp in cached_sub_cmps:  # type: dict
         for sub_class in allowed_sub_cmps:
@@ -64,9 +64,9 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
 
 def _read_cache_for(cached_ext):
     try:
-        logger.debug('Reading cache for: {}'.format(cached_ext))
+        logger.debug('Reading cache for: %s', cached_ext)
         cache_file = _get_cache_file(cached_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        logger.debug('Cache file is: %s', cache_file)
         with open(_get_cache_file(cached_ext), 'r') as cache_file:
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
@@ -77,9 +77,9 @@ def _read_cache_for(cached_ext):
 
 def _write_cache_for(parsed_ext):
     try:
-        logger.debug('Writing cache for: {}'.format(parsed_ext))
+        logger.debug('Writing cache for: %s', parsed_ext)
         cache_file = _get_cache_file(parsed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        logger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'w') as cache_file:
             cache_file.write(_make_cache_from_cmp(parsed_ext))
     except Exception as err:
@@ -88,9 +88,9 @@ def _write_cache_for(parsed_ext):
 
 
 def update_cache(parsed_ext):
-    logger.debug('Updating cache for tab: {} ...'.format(parsed_ext.name))
+    logger.debug('Updating cache for tab: %s ...', parsed_ext.name)
     _write_cache_for(parsed_ext)
-    logger.debug('Cache updated for tab: {}'.format(parsed_ext.name))
+    logger.debug('Cache updated for tab: %s', parsed_ext.name)
 
 
 def get_cached_extension(installed_ext):

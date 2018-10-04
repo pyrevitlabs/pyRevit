@@ -1,6 +1,6 @@
 """Handle updating pyRevit repository and its extensions."""
 
-import pyrevit.coreutils.git as git
+import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import HOME_DIR
@@ -11,7 +11,7 @@ from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
-
+#pylint: disable=C0103,W0703
 logger = get_logger(__name__)
 
 
@@ -36,7 +36,7 @@ def _check_connection():
     logger.info('Checking internet connection...')
     successful_url = coreutils.check_internet_connection()
     if successful_url:
-        logger.debug('Url access successful: {}'.format(successful_url))
+        logger.debug('Url access successful: %s', successful_url)
         return True
     else:
         return False
@@ -53,14 +53,13 @@ def _get_extension_credentials(repo_info):
 
 
 def _fetch_remote(remote, repo_info):
-    logger.debug('Fetching remote: {} of {}'
-                 .format(remote.Name, repo_info.directory))
+    logger.debug('Fetching remote: %s of %s', remote.Name, repo_info.directory)
     username, password = _get_extension_credentials(repo_info)
     if username and password:
         repo_info.username = username
         repo_info.password = password
 
-    git.git_fetch(repo_info)
+    libgit.git_fetch(repo_info)
 
 
 def get_thirdparty_ext_repos():
@@ -72,17 +71,16 @@ def get_thirdparty_ext_repos():
     ext_info_list = extensionmgr.get_thirdparty_extension_data()
 
     for ext_info in ext_info_list:
-        repo_path = git.libgit.Repository.Discover(ext_info.directory)
+        repo_path = libgit.libgit.Repository.Discover(ext_info.directory)
         if repo_path:
-            repo_info = git.get_repo(repo_path)
+            repo_info = libgit.get_repo(repo_path)
             if repo_info:
                 valid_exts.append(ext_info)
                 if repo_info.directory not in processed_paths:
                     processed_paths.add(repo_info.directory)
                     ext_repos.append(repo_info)
 
-    logger.debug('Valid third-party extensions for update: {}'
-                 .format(valid_exts))
+    logger.debug('Valid third-party extensions for update: %s', valid_exts)
 
     return ext_repos
 
@@ -97,36 +95,34 @@ def get_all_extension_repos():
         repo_info_list.append(pyrevit_repo)
     # add all thirdparty extension repos
     repo_info_list.extend(get_thirdparty_ext_repos())
-    logger.debug('Repos are: {}'.format(repo_info_list))
+    logger.debug('Repos are: %s', repo_info_list)
     return repo_info_list
 
 
 def update_repo(repo_info):
     """Update repository."""
     repo = repo_info.repo
-    logger.debug('Updating repo: {}'.format(repo_info.directory))
+    logger.debug('Updating repo: %s', repo_info.directory)
     head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
-    logger.debug('Current head is: {} > {}'
-                 .format(repo.Head.Tip.Id.Sha, head_msg))
+    logger.debug('Current head is: %s > %s', repo.Head.Tip.Id.Sha, head_msg)
     username, password = _get_extension_credentials(repo_info)
     if username and password:
         repo_info.username = username
         repo_info.password = password
 
     try:
-        updated_repo_info = git.git_pull(repo_info)
-        logger.debug('Successfully updated repo: {}'
-                     .format(updated_repo_info.directory))
+        updated_repo_info = libgit.git_pull(repo_info)
+        logger.debug('Successfully updated repo: %s',
+                     updated_repo_info.directory)
         return updated_repo_info
 
-    except git.PyRevitGitAuthenticationError as auth_err:
-        logger.debug('Can not login to git repository to get updates: {} | {}'
-                     .format(repo_info, auth_err))
+    except libgit.PyRevitGitAuthenticationError as auth_err:
+        logger.debug('Can not login to git repository to get updates: %s | %s',
+                     repo_info, auth_err)
         raise auth_err
 
     except Exception as update_err:
-        logger.debug('Failed updating repo: {} | {}'
-                     .format(repo_info, update_err))
+        logger.debug('Failed updating repo: %s | %s', repo_info, update_err)
         raise update_err
 
 
@@ -135,24 +131,23 @@ def get_updates(repo_info):
     repo = repo_info.repo
     at_least_one_fetch_was_successful = False
 
-    logger.debug('Fetching updates for: {}'.format(repo_info.directory))
+    logger.debug('Fetching updates for: %s', repo_info.directory)
     for remote in repo.Network.Remotes:
         try:
             _fetch_remote(remote, repo_info)
             at_least_one_fetch_was_successful = True
 
-        except git.PyRevitGitAuthenticationError:
+        except libgit.PyRevitGitAuthenticationError:
             logger.debug('Failed fetching updates. '
-                         'Can not login to repo to get updates: {}'
-                         .format(repo_info))
+                         'Can not login to repo to get updates: %s', repo_info)
             continue
 
         except Exception:
-            logger.debug('Failed fetching updates: {}'.format(repo_info))
+            logger.debug('Failed fetching updates: %s', repo_info)
             continue
 
     if at_least_one_fetch_was_successful:
-            return True
+        return True
 
     return False
 
@@ -160,7 +155,7 @@ def get_updates(repo_info):
 def has_pending_updates(repo_info):
     """Check for updates on repository."""
     if get_updates(repo_info):
-        hist_div = git.compare_branch_heads(repo_info)
+        hist_div = libgit.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
             return True
 
@@ -172,11 +167,10 @@ def check_for_updates():
 
         for repo in get_all_extension_repos():
             if has_pending_updates(repo):
-                logger.info('Updates are available for {}...'
-                            .format(repo.name))
+                logger.info('Updates are available for %s...', repo.name)
                 return True
             else:
-                logger.info('{} is up-to-date...'.format(repo.name))
+                logger.info('%s is up-to-date...', repo.name)
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
@@ -191,14 +185,14 @@ def has_core_updates():
     """
     pyrevit_repo = versionmgr.get_pyrevit_repo()
     if pyrevit_repo and get_updates(pyrevit_repo):
-        new_commits = git.get_all_new_commits(pyrevit_repo)
+        new_commits = libgit.get_all_new_commits(pyrevit_repo)
 
         logger.debug('Checking new commits on pyrevit repo.')
         for cmt_sha, cmt_msg in new_commits.items():
-            logger.debug('{}: {}'.format(cmt_sha, cmt_msg))
+            logger.debug('%s: %s', cmt_sha, cmt_msg)
             if COREUPDATE_TRIGGER in cmt_msg:
-                logger.debug('pyrevit repo has core update at {}: {}'
-                             .format(cmt_sha, cmt_msg))
+                logger.debug('pyrevit repo has core update at %s: %s',
+                             cmt_sha, cmt_msg)
                 return True
 
     return False
@@ -212,39 +206,37 @@ def update_pyrevit():
         pyrevit_has_coreupdates = has_core_updates()
         thirdparty_repos = get_thirdparty_ext_repos()
 
-        logger.debug('List of thirdparty repos to be updated: {}'
-                     .format(thirdparty_repos))
+        logger.debug('List of thirdparty repos to be updated: %s',
+                     thirdparty_repos)
 
         # update third-party extensions first, one by one
         for repo_info in thirdparty_repos:
-            logger.debug('Updating repo: {}'.format(repo_info.directory))
+            logger.debug('Updating repo: %s', repo_info.directory)
             try:
                 upped_repo_info = update_repo(repo_info)
-                logger.info(':inbox_tray: Successfully updated: {} to {}'
-                            .format(upped_repo_info.name,
-                                    upped_repo_info.last_commit_hash[:7]))
+                logger.info(':inbox_tray: Successfully updated: %s to %s',
+                            upped_repo_info.name,
+                            upped_repo_info.last_commit_hash[:7])
                 third_party_updated = True
             except Exception:
-                logger.info('Can not update repo: {}  '
-                            '(Run in debug to see why)'.format(repo_info.name))
+                logger.info('Can not update repo: %s (Run in debug to see why)',
+                            repo_info.name)
 
         # now update pyrevit repo and reload
         pyrevit_repo = versionmgr.get_pyrevit_repo()
         if pyrevit_repo:
             if not pyrevit_has_coreupdates:
-                logger.debug('Updating pyrevit repo: {}'
-                            .format(pyrevit_repo.directory))
+                logger.debug('Updating pyrevit repo: %s',
+                             pyrevit_repo.directory)
                 try:
                     upped_pyrevit_repo_info = update_repo(pyrevit_repo)
-                    logger.info(':inbox_tray: Successfully updated: {} to {}'
-                                .format(
-                                    upped_pyrevit_repo_info.name,
-                                    upped_pyrevit_repo_info.last_commit_hash[:7])
-                                )
+                    logger.info(':inbox_tray: Successfully updated: %s to %s',
+                                upped_pyrevit_repo_info.name,
+                                upped_pyrevit_repo_info.last_commit_hash[:7])
                     pyrevit_updated = True
-                except Exception as e:
+                except Exception as err:
                     logger.info('Can not update pyrevit repo '
-                                '(Run in debug to see why) | {}'.format(e))
+                                '(Run in debug to see why) | %s', err)
                 # perform upgrade tasks
                 logger.info('Upgrading settings...')
                 upgrade.upgrade_existing_pyrevit()

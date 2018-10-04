@@ -19,7 +19,7 @@ MATHNET_LIB = 'MathNet.Numerics'
 
 if not EXEC_PARAMS.doc_mode:
     mathnet_dll = framework.get_dll_file(MATHNET_LIB)
-    logger.debug('Loading dll: {}'.format(mathnet_dll))
+    logger.debug('Loading dll: %s', mathnet_dll)
     try:
         clr.AddReferenceToFileAndPath(mathnet_dll)
         import MathNet

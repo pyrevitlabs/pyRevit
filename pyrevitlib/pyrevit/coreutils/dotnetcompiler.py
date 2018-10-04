@@ -15,8 +15,8 @@ def _compile_dotnet(code_provider,
                     resource_list=None,
                     ):
 
-    logger.debug('Compiling source files to: {}'.format(full_output_file_addr))
-    logger.debug('References assemblies are: {}'.format(reference_list))
+    logger.debug('Compiling source files to: %s', full_output_file_addr)
+    logger.debug('References assemblies are: %s', reference_list)
 
     compiler_params = Compiler.CompilerParameters()
 
@@ -31,11 +31,11 @@ def _compile_dotnet(code_provider,
     compiler_params.CompilerOptions = "/optimize"
 
     for reference in reference_list or []:
-        logger.debug('Adding reference to compiler: {}'.format(reference))
+        logger.debug('Adding reference to compiler: %s', reference)
         compiler_params.ReferencedAssemblies.Add(reference)
 
     for resource in resource_list or []:
-        logger.debug('Adding resource to compiler: {}'.format(resource))
+        logger.debug('Adding resource to compiler: %s', resource)
         compiler_params.EmbeddedResources.Add(resource)
 
     logger.debug('Compiling source files.')
@@ -53,7 +53,7 @@ def _compile_dotnet(code_provider,
                      .format(compiler.CompiledAssembly))
         return compiler.CompiledAssembly
     else:
-        logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
+        logger.debug('Compile successful: %s', compiler.PathToAssembly)
         return compiler.PathToAssembly
 
 

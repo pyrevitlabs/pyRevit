@@ -50,7 +50,7 @@ def ensure_family(family_name, family_file, doc=None):
     famsym = query.get_family(family_name, doc=doc)
     if not famsym:
         with transaction.Transaction('Load Family', doc=doc):
-            logger.debug('Family \"{}\" did not exist.'.format(family_name))
+            logger.debug('Family \"%s\" did not exist.', family_name)
             if create.load_family(family_file, doc=doc):
                 return query.get_family(family_name, doc=doc)
             else:

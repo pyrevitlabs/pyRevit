@@ -113,12 +113,12 @@ def _produce_ui_separator(ui_maker_params):
     ext_asm_info = ui_maker_params.asm_info
 
     if not ext_asm_info.reloading:
-        logger.debug('Adding separator to: {}'.format(parent_ui_item))
+        logger.debug('Adding separator to: %s', parent_ui_item)
         try:
             if hasattr(parent_ui_item, 'add_separator'):    # re issue #361
                 parent_ui_item.add_separator()
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            logger.error('UI error: %s', err.msg)
 
     return None
 
@@ -133,11 +133,11 @@ def _produce_ui_slideout(ui_maker_params):
     ext_asm_info = ui_maker_params.asm_info
 
     if not ext_asm_info.reloading:
-        logger.debug('Adding slide out to: {}'.format(parent_ui_item))
+        logger.debug('Adding slide out to: %s', parent_ui_item)
         try:
             parent_ui_item.add_slideout()
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            logger.error('UI error: %s', err.msg)
 
     return None
 
@@ -156,7 +156,7 @@ def _produce_ui_smartbutton(ui_maker_params):
     if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing smart button: {}'.format(smartbutton))
+    logger.debug('Producing smart button: %s', smartbutton)
     try:
         parent_ui_item.create_push_button(
             smartbutton.name,
@@ -171,11 +171,11 @@ def _produce_ui_smartbutton(ui_maker_params):
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
     new_uibutton = parent_ui_item.button(smartbutton.name)
-    logger.debug('Importing smart button as module: {}'.format(smartbutton))
+    logger.debug('Importing smart button as module: %s', smartbutton)
     try:
         # replacing EXEC_PARAMS.command_name value with button name so the
         # init script can log under its own name
@@ -210,8 +210,8 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__commandpath__'] = prev_commandpath
         __builtins__['__shiftclick__'] = prev_shiftclick
         __builtins__['__forceddebugmode__'] = prev_debugmode
-        logger.debug('Import successful: {}'.format(importedscript))
-        logger.debug('Running self initializer: {}'.format(smartbutton))
+        logger.debug('Import successful: %s', importedscript)
+        logger.debug('Running self initializer: %s', smartbutton)
 
         res = False
         try:
@@ -255,7 +255,7 @@ def _produce_ui_linkbutton(ui_maker_params):
     if not linkbutton.command_class:
         return None
 
-    logger.debug('Producing button: {}'.format(linkbutton))
+    logger.debug('Producing button: %s', linkbutton)
     try:
         linked_asm_list = find_loaded_asm(linkbutton.assembly)
         if not linked_asm_list:
@@ -278,7 +278,7 @@ def _produce_ui_linkbutton(ui_maker_params):
             ui_title=_make_ui_title(linkbutton))
         return parent_ui_item.button(linkbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -296,7 +296,7 @@ def _produce_ui_pushbutton(ui_maker_params):
     if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing button: {}'.format(pushbutton))
+    logger.debug('Producing button: %s', pushbutton)
     try:
         parent_ui_item.create_push_button(
             pushbutton.name,
@@ -312,7 +312,7 @@ def _produce_ui_pushbutton(ui_maker_params):
             ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -325,14 +325,14 @@ def _produce_ui_pulldown(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     pulldown = ui_maker_params.component
 
-    logger.debug('Producing pulldown button: {}'.format(pulldown))
+    logger.debug('Producing pulldown button: %s', pulldown)
     try:
         parent_ribbon_panel.create_pulldown_button(pulldown.name,
                                                    pulldown.icon_file,
                                                    update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(pulldown.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -345,14 +345,14 @@ def _produce_ui_split(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     split = ui_maker_params.component
 
-    logger.debug('Producing split button: {}'.format(split))
+    logger.debug('Producing split button: %s}', split)
     try:
         parent_ribbon_panel.create_split_button(split.name,
                                                 split.icon_file,
                                                 update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(split.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -365,14 +365,14 @@ def _produce_ui_splitpush(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     splitpush = ui_maker_params.component
 
-    logger.debug('Producing splitpush button: {}'.format(splitpush))
+    logger.debug('Producing splitpush button: %s', splitpush)
     try:
         parent_ribbon_panel.create_splitpush_button(splitpush.name,
                                                     splitpush.icon_file,
                                                     update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(splitpush.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -393,7 +393,7 @@ def _produce_ui_stacks(ui_maker_params):
     # (parent_ui_item.close_stack) to finish adding items to the stack.
     try:
         parent_ui_panel.open_stack()
-        logger.debug('Opened stack: {}'.format(stack_cmp.name))
+        logger.debug('Opened stack: %s', stack_cmp.name)
 
         if HOST_APP.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
@@ -419,9 +419,9 @@ def _produce_ui_stacks(ui_maker_params):
 
         try:
             parent_ui_panel.close_stack()
-            logger.debug('Closed stack: {}'.format(stack_cmp.name))
+            logger.debug('Closed stack: %s', stack_cmp.name)
         except PyRevitException as err:
-            logger.error('Error creating stack | {}'.format(err))
+            logger.error('Error creating stack | %s', err)
 
     except Exception as err:
         logger.error('Can not create stack under this parent: {} | {}'
@@ -442,7 +442,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
     if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing panel button: {}'.format(paneldlgbutton))
+    logger.debug('Producing panel button: %s', paneldlgbutton)
     try:
         parent_ui_item.create_panel_push_button(
             paneldlgbutton.name,
@@ -457,7 +457,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
 
         return parent_ui_item.button(paneldlgbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -470,12 +470,12 @@ def _produce_ui_panels(ui_maker_params):
     parent_ui_tab = ui_maker_params.parent_ui
     panel = ui_maker_params.component
 
-    logger.debug('Producing ribbon panel: {}'.format(panel))
+    logger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
         return parent_ui_tab.ribbon_panel(panel.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        logger.error('UI error: %s', err.msg)
         return None
 
 
@@ -488,15 +488,15 @@ def _produce_ui_tab(ui_maker_params):
     parent_ui = ui_maker_params.parent_ui
     tab = ui_maker_params.component
 
-    logger.debug('Verifying tab: {}'.format(tab))
+    logger.debug('Verifying tab: %s', tab)
     if tab.has_commands():
-        logger.debug('Tabs has command: {}'.format(tab))
-        logger.debug('Producing ribbon tab: {}'.format(tab))
+        logger.debug('Tabs has command: %s', tab)
+        logger.debug('Producing ribbon tab: %s', tab)
         try:
             parent_ui.create_ribbon_tab(tab.name, update_if_exists=True)
             return parent_ui.ribbon_tab(tab.name)
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            logger.error('UI error: %s', err.msg)
             return None
     else:
         logger.debug('Tab does not have any commands. Skipping: {}'
@@ -535,11 +535,11 @@ def _recursively_produce_ui_items(ui_maker_params):
                               ui_maker_params.asm_info,
                               ui_maker_params.create_beta_cmds))
         except KeyError:
-            logger.debug('Can not find create function for: {}'.format(sub_cmp))
+            logger.debug('Can not find create function for: %s', sub_cmp)
         except Exception as create_err:
             logger.critical(create_err)
 
-        logger.debug('UI item created by create func is: {}'.format(ui_item))
+        logger.debug('UI item created by create func is: %s', ui_item)
 
         if ui_item and sub_cmp.is_container:
                 _recursively_produce_ui_items(
@@ -570,7 +570,7 @@ def cleanup_pyrevit_ui():
     for item in untouched_items:
         if not item.is_native():
             try:
-                logger.debug('Deactivating: {}'.format(item))
+                logger.debug('Deactivating: %s', item)
                 item.deactivate()
             except Exception as deact_err:
                 logger.debug(deact_err)

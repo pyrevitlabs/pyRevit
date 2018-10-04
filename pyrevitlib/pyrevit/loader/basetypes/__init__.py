@@ -29,7 +29,7 @@ if not EXEC_PARAMS.doc_mode:
         FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
     except Exception as dotnet_sdk_err:
         FRAMEWORK_DIRS = None
-        logger.debug('Dotnet SDK is not installed. | {}'.format(dotnet_sdk_err))
+        logger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
     INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
 
@@ -79,13 +79,13 @@ else:
 def _get_source_files():
     source_files = list()
     source_dir = op.dirname(__file__)
-    logger.debug('Source files location: {}'.format(source_dir))
+    logger.debug('Source files location: %s', source_dir)
     for source_file in os.listdir(source_dir):
         if op.splitext(source_file)[1].lower() == '.cs':
-            logger.debug('Source file found: {}'.format(source_file))
+            logger.debug('Source file found: %s', source_file)
             source_files.append(op.join(source_dir, source_file))
 
-    logger.debug('Source files to be compiled: {}'.format(source_files))
+    logger.debug('Source files to be compiled: %s', source_files)
     return source_files
 
 
@@ -154,7 +154,7 @@ def _generate_base_classes_asm():
 
     # now try to compile
     try:
-        logger.debug('Compiling base types to: {}'.format(BASE_TYPES_ASM_FILE))
+        logger.debug('Compiling base types to: %s', BASE_TYPES_ASM_FILE)
         compile_csharp(source_list, BASE_TYPES_ASM_FILE,
                        reference_list=_get_references(), resource_list=[])
         return load_asm_file(BASE_TYPES_ASM_FILE)

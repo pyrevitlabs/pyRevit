@@ -83,7 +83,7 @@ def _remove_disabled_extensions(ext_list):
 def _parse_or_cache(ext_info):
     # parse the extension if ui_extension does not have a valid cache
     if not is_cache_valid(ext_info):
-        logger.debug('Cache is not valid for: {}'.format(ext_info))
+        logger.debug('Cache is not valid for: %s', ext_info)
 
         # Either cache is not available, not valid, or cache load has failed.
         # parse directory for components and return fully loaded ui_extension
@@ -99,7 +99,7 @@ def _parse_or_cache(ext_info):
 
     # otherwise load the cache
     else:
-        logger.debug('Cache is valid for: {}'.format(ext_info))
+        logger.debug('Cache is valid for: %s', ext_info)
         # if cache is valid, load the cached ui_extension
         # cacher module takes the ui_extension object and
         # injects cache data into it.
@@ -181,7 +181,7 @@ def get_installed_ui_extensions():
 
     # get a list of all directories that could include extensions
     ext_search_dirs = user_config.get_ext_root_dirs()
-    logger.debug('Extension Directories: {}'.format(ext_search_dirs))
+    logger.debug('Extension Directories: %s', ext_search_dirs)
 
     # collect all library extensions. Their dir paths need to be added
     # to sys.path for all commands

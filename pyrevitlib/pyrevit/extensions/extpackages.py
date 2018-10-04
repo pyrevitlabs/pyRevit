@@ -332,7 +332,7 @@ def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
     # if package is installable
     if ext_pkg.url:
         clone_path = op.join(install_dir, ext_pkg.ext_dirname)
-        logger.info('Installing {} to {}'.format(ext_pkg.name, clone_path))
+        logger.info('Installing %s to %s', ext_pkg.name, clone_path)
 
         if ext_pkg.config.username and ext_pkg.config.password:
             git.git_clone(ext_pkg.url, clone_path,
@@ -346,7 +346,7 @@ def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
 
     if install_dependencies:
         if ext_pkg.dependencies:
-            logger.info('Installing dependencies for {}'.format(ext_pkg.name))
+            logger.info('Installing dependencies for %s', ext_pkg.name)
             for dep_pkg_name in ext_pkg.dependencies:
                 dep_pkg = get_ext_package_by_name(dep_pkg_name)
                 if dep_pkg:
@@ -371,7 +371,7 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
 
     if remove_dependencies:
         dg = get_dependency_graph()
-        logger.info('Removing dependencies for {}'.format(ext_pkg.name))
+        logger.info('Removing dependencies for %s', ext_pkg.name)
         for dep_pkg_name in ext_pkg.dependencies:
             dep_pkg = get_ext_package_by_name(dep_pkg_name)
             if dep_pkg and not dg.has_installed_dependents(dep_pkg_name):

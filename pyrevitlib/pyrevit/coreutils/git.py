@@ -24,7 +24,7 @@ GIT_LIB = 'LibGit2Sharp'
 
 if not EXEC_PARAMS.doc_mode:
     libgit_dll = framework.get_dll_file(GIT_LIB)
-    logger.debug('Loading dll: {}'.format(libgit_dll))
+    logger.debug('Loading dll: %s', libgit_dll)
 
     try:
         clr.AddReferenceToFileAndPath(libgit_dll)
@@ -73,7 +73,7 @@ def _get_credentials_hndlr(username, password):
 
 
 def _make_pull_options(repo_info):
-    logger.debug('Making pull options: {}'.format(repo_info))
+    logger.debug('Making pull options: %s', repo_info)
     pull_ops = libgit.PullOptions()
     pull_ops.FetchOptions = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
@@ -88,7 +88,7 @@ def _make_pull_options(repo_info):
 
 
 def _make_fetch_options(repo_info):
-    logger.debug('Making fetch options: {}'.format(repo_info))
+    logger.debug('Making fetch options: %s', repo_info)
     fetch_ops = libgit.FetchOptions()
     if repo_info.username and repo_info.password:
         logger.debug('Making Credentials handler. '
@@ -151,7 +151,7 @@ def git_pull(repo_info):
                              _make_pull_signature(),
                              _make_pull_options(repo_info))
 
-        logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
+        logger.debug('Successfully pulled repo: %s', repo_info.directory)
         head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
@@ -173,7 +173,7 @@ def git_fetch(repo_info):
                               _make_fetch_options(repo_info),
                               'fetching pyrevit updates')
 
-        logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
+        logger.debug('Successfully pulled repo: %s', repo_info.directory)
         head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
@@ -193,7 +193,7 @@ def git_clone(repo_url, clone_dir, username=None, password=None):
                                 _make_clone_options(username=username,
                                                     password=password))
 
-        logger.debug('Completed git clone: {} @ {}'.format(repo_url, clone_dir))
+        logger.debug('Completed git clone: %s @ %s', repo_url, clone_dir)
 
     except Exception as clone_err:
         logger.debug('Error cloning repo: {} to {} '

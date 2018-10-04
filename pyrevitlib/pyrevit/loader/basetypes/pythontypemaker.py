@@ -77,7 +77,7 @@ def _make_python_types(extension, module_builder, cmd_component):
     Returns:
 
     """
-    logger.debug('Creating executor type for: {}'.format(cmd_component))
+    logger.debug('Creating executor type for: %s', cmd_component)
 
     # by default, core uses a clean engine for each command execution
     use_clean_engine = True

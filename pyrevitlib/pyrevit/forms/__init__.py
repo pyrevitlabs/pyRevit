@@ -1068,8 +1068,8 @@ class SearchPrompt(WPFWindow):
         results = self.search_matches
         res_cout = len(results)
 
-        logger.debug('unique results count: {}'.format(res_cout))
-        logger.debug('unique results: {}'.format(results))
+        logger.debug('unique results count: %s', res_cout)
+        logger.debug('unique results: %s', results)
 
         if res_cout > 1:
             self.show_element(self.tab_icon)
@@ -1094,7 +1094,7 @@ class SearchPrompt(WPFWindow):
         if results:
             input_term = self.search_term
             cur_res = results[self._result_index]
-            logger.debug('current result: {}'.format(cur_res))
+            logger.debug('current result: %s', cur_res)
             if fill_match:
                 self.search_input = cur_res
             else:
@@ -1119,19 +1119,19 @@ class SearchPrompt(WPFWindow):
         self._result_index = 0
         self._search_results = []
 
-        logger.debug('search input: {}'.format(self.search_input))
-        logger.debug('search term: {}'.format(self.search_term))
-        logger.debug('search term (main): {}'.format(self.search_term_main))
-        logger.debug('search term (parts): {}'.format(self.search_input_parts))
-        logger.debug('search term (args): {}'.format(self.search_term_args))
+        logger.debug('search input: %s', self.search_input)
+        logger.debug('search term: %s', self.search_term)
+        logger.debug('search term (main): %s', self.search_term_main)
+        logger.debug('search term (parts): %s', self.search_input_parts)
+        logger.debug('search term (args): %s', self.search_term_args)
         logger.debug('search term (switches): {}'
                      .format(self.search_term_switches))
 
         for resultset in args:
-            logger.debug('result set: {}'.format(resultset))
+            logger.debug('result set: %s}', resultset)
             self._search_results.extend(sorted(resultset))
 
-        logger.debug('results: {}'.format(self._search_results))
+        logger.debug('results: %s', self._search_results)
 
     def find_direct_match(self, input_text):
         """Find direct text matches in search term."""

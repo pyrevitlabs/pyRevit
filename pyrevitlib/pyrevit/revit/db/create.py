@@ -183,7 +183,7 @@ def create_revision_sheetset(revisions,
 
 def load_family(family_file, doc=None):
     doc = doc or HOST_APP.doc
-    logger.debug('Loading family from: {}'.format(family_file))
+    logger.debug('Loading family from: %s', family_file)
     ret_ref = clr.Reference[DB.Family]()
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 

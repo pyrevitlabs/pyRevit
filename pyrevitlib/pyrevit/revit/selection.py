@@ -125,7 +125,7 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
             logger.debug('Nothing picked by user...Returning None')
             return None
 
-        logger.debug('Picked elements are: {}'.format(refs))
+        logger.debug('Picked elements are: %s', refs)
 
         if obj_type == UI.Selection.ObjectType.Element:
             return_values = \
@@ -142,7 +142,7 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
                     .GetGeometryObjectFromReference(ref)
                  for ref in refs]
 
-        logger.debug('Processed return elements are: {}'.format(return_values))
+        logger.debug('Processed return elements are: %s', return_values)
 
         if len(return_values) > 1 or multiple:
             return return_values

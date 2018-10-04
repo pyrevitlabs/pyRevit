@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 def _get_discovered_comps(comp_path, component_types_list):
     discovered_cmps = []
-    logger.debug('Testing _get_component(s) on: {} '.format(comp_path))
+    logger.debug('Testing _get_component(s) on: %s ', comp_path)
     # comp_path might be a file or a dir,
     # but its name should not start with . or _:
     for component_type in component_types_list:
@@ -135,7 +135,7 @@ def parse_dir_for_ext_type(root_dir, parent_cmp_type):
     logger.debug('Parsing directory for extensions of type: {}'
                  .format(parent_cmp_type))
     for ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
-        logger.debug('Extension directory found: {}'.format(ext_data))
+        logger.debug('Extension directory found: %s', ext_data)
         ext_data_list.append(ext_data)
 
     return ext_data_list

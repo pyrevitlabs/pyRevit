@@ -58,7 +58,7 @@ def get_pyrevit_version():
     try:
         pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
-        logger.debug('Can not get pyRevit patch number. | {}'.format(ver_err))
+        logger.debug('Can not get pyRevit patch number. | %s', ver_err)
         pyrvt_ver = PyRevitVersion('')
 
     envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
