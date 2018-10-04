@@ -3,9 +3,10 @@ import os.path as op
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
-from Autodesk.Revit.DB import Element
+from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
 
+#pylint: disable=W0703,C0302,C0103
 __all__ = ('BaseWrapper', 'ElementWrapper', )
 
 
@@ -22,7 +23,7 @@ class BaseWrapper(object):
             pdata.update(data)
 
         datastr = ' '.join(['{0}:{1}'.format(k, v)
-                            for k, v in pdata.iteritems()])
+                            for k, v in pdata.iteritems()]) #pylint: disable=E1101
         return '<pyrevit.revit.db.{class_name} % {wrapping}{datastr}>' \
                .format(class_name=self.__class__.__name__,
                        wrapping=safe_strtype(self._wrapped),
@@ -194,7 +195,7 @@ class XYZPoint(BaseWrapper):
     def z(self):
         return round(self._wrapped.Z)
 
-    def __repr__(self):
+    def __repr__(self): #pylint: disable=W0222
         return super(XYZPoint, self).__repr__({'X': self.x,
                                                'Y': self.y,
                                                'Z': self.z})

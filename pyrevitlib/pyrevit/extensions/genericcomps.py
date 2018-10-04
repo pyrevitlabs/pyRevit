@@ -1,13 +1,14 @@
+"""Generic extension components."""
 import os
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
 import pyrevit.extensions as exts
-from pyrevit.userconfig import user_config
 
 
-logger = coreutils.logger.get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = coreutils.logger.get_logger(__name__)
 
 
 class GenericComponent(object):
@@ -94,12 +95,12 @@ class GenericUIComponent(GenericComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: %s to %s', path, self)
+            mlogger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: %s from %s', path, self)
+            mlogger.debug('Removing syspath: %s from %s', path, self)
             return self.syspath_search_paths.remove(path)
         else:
             return None
@@ -117,6 +118,7 @@ class GenericUIContainer(GenericUIComponent):
         GenericUIComponent.__init__(self)
         self._sub_components = []
         self.layout_list = None
+        self.name = self.ui_title = None
 
     def __init_from_dir__(self, ext_dir):
         GenericUIComponent.__init_from_dir__(self, ext_dir)
@@ -137,13 +139,12 @@ class GenericUIContainer(GenericUIComponent):
             self.syspath_search_paths.append(self.library_path)
 
         self.layout_list = self._read_layout_file()
-        logger.debug('Layout is: %s', self.layout_list)
+        mlogger.debug('Layout is: %s', self.layout_list)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
-            logger.debug('Icon file is: {}'
-                         .format(self.name, self.icon_file))
+            mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
 
     def __iter__(self):
         return iter(self._get_components_per_layout())
@@ -156,24 +157,24 @@ class GenericUIContainer(GenericUIComponent):
             # return [x.replace('\n', '') for x in layout_file.readlines()]
             return layout_file.read().splitlines()
         else:
-            logger.debug('Container does not have layout file defined: {}'
-                         .format(self))
+            mlogger.debug('Container does not have layout file defined: %s',
+                          self)
 
     def _get_components_per_layout(self):
         # if item is not listed in layout, it will not be created
         if self.layout_list and self._sub_components:
-            logger.debug('Reordering components per layout file...')
+            mlogger.debug('Reordering components per layout file...')
             layout_index = 0
             _processed_cmps = []
             for layout_item in self.layout_list:
-                for cmp_index, component in enumerate(self._sub_components):
+                for cmp_index, component in enumerate(self._sub_components):     #pylint: disable=W0612
                     if component.name == layout_item:
                         _processed_cmps.append(component)
                         layout_index += 1
                         break
 
             # insert separators and slideouts per layout definition
-            logger.debug('Adding separators and slide outs per layout...')
+            mlogger.debug('Adding separators and slide outs per layout...')
             last_item_index = len(self.layout_list) - 1
             for i_index, layout_item in enumerate(self.layout_list):
                 if exts.SEPARATOR_IDENTIFIER in layout_item \
@@ -187,8 +188,8 @@ class GenericUIContainer(GenericUIComponent):
                     slideout.type_id = exts.SLIDEOUT_IDENTIFIER
                     _processed_cmps.insert(i_index, slideout)
 
-            logger.debug('Reordered sub_component list is: {}'
-                         .format(_processed_cmps))
+            mlogger.debug('Reordered sub_component list is: %s',
+                          _processed_cmps)
             return _processed_cmps
         else:
             return self._sub_components
@@ -200,14 +201,14 @@ class GenericUIContainer(GenericUIComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: %s to %s', path, self)
+            mlogger.debug('Appending syspath: %s to %s', path, self)
             for component in self.get_components():
                 component.add_syspath(path)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: %s from %s', path, self)
+            mlogger.debug('Removing syspath: %s from %s', path, self)
             for component in self.get_components():
                 component.remove_syspath(path)
             return self.syspath_search_paths.remove(path)
@@ -258,7 +259,7 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
 
-    def __init_from_dir__(self, cmd_dir):
+    def __init_from_dir__(self, cmd_dir):   #pylint: disable=W0221
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
         self.name = op.splitext(op.basename(self.directory))[0]
@@ -270,13 +271,12 @@ class GenericUICommand(GenericUIComponent):
 
         icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = icon_path if op.exists(icon_path) else None
-        logger.debug('Command {}: Icon file is: {}'
-                     .format(self, self.icon_file))
+        mlogger.debug('Command %s: Icon file is: %s', self, self.icon_file)
 
         ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
         self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None
-        logger.debug('Command {}: Tooltip video file is: {}'
-                     .format(self, self.ttvideo_file))
+        mlogger.debug('Command %s: Tooltip video file is: %s',
+                      self, self.ttvideo_file)
 
         self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
                                                    exts.CSHARP_SCRIPT_POSTFIX,
@@ -285,7 +285,7 @@ class GenericUICommand(GenericUIComponent):
                                                    exts.DYNAMO_SCRIPT_POSTFIX])
 
         if self.script_file is None:
-            logger.error('Command %s: Does not have script file.', self)
+            mlogger.error('Command %s: Does not have script file.', self)
             raise PyRevitException()
         if self.script_language == exts.PYTHON_LANG:
             self._analyse_python_script()
@@ -294,8 +294,9 @@ class GenericUICommand(GenericUIComponent):
             self._find_script_file([exts.CONFIG_SCRIPT_POSTFIX])
 
         if self.config_script_file is None:
-            logger.debug('Command {}: Does not have independent config script.'
-                         .format(self))
+            mlogger.debug(
+                'Command %s: Does not have independent config script.', self
+                )
             self.config_script_file = self.script_file
 
         # each command can store custom libraries under
@@ -328,7 +329,7 @@ class GenericUICommand(GenericUIComponent):
                           lineno=parse_err.lineno,
                           colno=parse_err.offset,
                           linetext=parse_err.text)
-        logger.error(coreutils.prepare_html_str(err_msg))
+        mlogger.error(coreutils.prepare_html_str(err_msg))
 
     def _analyse_python_script(self):
         try:
@@ -361,7 +362,7 @@ class GenericUICommand(GenericUIComponent):
             if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                 self.cmd_context = script_content.extract_param(
                     exts.COMMAND_CONTEXT_PARAM)  # type: str
-                if type(self.cmd_context) is list:
+                if isinstance(self.cmd_context, list):
                     self.cmd_context = ';'.join(self.cmd_context)
             else:
                 self.cmd_context = exts.CTX_ZERODOC[0]
@@ -379,22 +380,22 @@ class GenericUICommand(GenericUIComponent):
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)
 
-        # fixme: logger reports module as 'ast' after a
+        # FIXME: logger reports module as 'ast' after a
         # successfull param retrieval. Must be ast.literal_eval()
-        logger.debug('Maximum host version: %s', self.max_revit_ver)
-        logger.debug('Minimum host version: %s', self.min_revit_ver)
-        logger.debug('command tooltip: %s', self.doc_string)
-        logger.debug('Command author: %s', self.author)
-        logger.debug('Command help url: %s', self.cmd_help_url)
+        mlogger.debug('Maximum host version: %s', self.max_revit_ver)
+        mlogger.debug('Minimum host version: %s', self.min_revit_ver)
+        mlogger.debug('command tooltip: %s', self.doc_string)
+        mlogger.debug('Command author: %s', self.author)
+        mlogger.debug('Command help url: %s', self.cmd_help_url)
 
         if self.beta_cmd:
-            logger.debug('Command is in beta.')
+            mlogger.debug('Command is in beta.')
 
         try:
             # check minimum requirements
             self._check_dependencies()
         except PyRevitException as dependency_err:
-            logger.debug(dependency_err)
+            mlogger.debug(dependency_err)
             raise dependency_err
 
     def _update_configurable_params(self, config_dict):
@@ -403,7 +404,7 @@ class GenericUICommand(GenericUIComponent):
             if pval:
                 for k, v in config_dict.items():
                     liquidtag = '{{' + k + '}}'
-                    if liquidtag in pval:
+                    if liquidtag in pval:   #pylint: disable=E1135
                         pval = pval.replace(liquidtag, v)
                         setattr(self, pname, pval)
 
@@ -455,7 +456,7 @@ class GenericUICommand(GenericUIComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: %s to %s', path, self)
+            mlogger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
 
     def configure(self, config_dict):

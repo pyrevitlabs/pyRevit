@@ -1234,3 +1234,10 @@ def has_nonprintable(input_str):
         bool: True if contains non-printable characters
     """
     return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])
+
+
+def get_enum_none(enum_type):
+    """Returns the None value in given Enum."""
+    for val in framework.Enum.GetValues(enum_type):
+        if str(val) == 'None':
+            return val

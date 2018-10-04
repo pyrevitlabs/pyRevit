@@ -1,5 +1,6 @@
 from pyrevit.framework import IntPtr
 
+#pylint: disable=W0611
 from pyrevit.api import AdInternal as ai
 from pyrevit.api import AdPrivate as ap
 from pyrevit.api import AdWindows as ad
@@ -25,10 +26,10 @@ def get_statusbar_hwnd():
 
 
 def set_statusbar_text(text):
-    statusBarPtr = get_statusbar_hwnd()
+    status_bar_ptr = get_statusbar_hwnd()
 
-    if (statusBarPtr != IntPtr.Zero):
-        User32.SetWindowText(statusBarPtr, text)
+    if status_bar_ptr != IntPtr.Zero:
+        User32.SetWindowText(status_bar_ptr, text)
         return True
 
     return False

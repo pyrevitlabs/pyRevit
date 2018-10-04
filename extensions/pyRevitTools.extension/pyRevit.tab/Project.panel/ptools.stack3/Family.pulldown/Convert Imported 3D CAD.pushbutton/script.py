@@ -13,7 +13,7 @@ logger = script.get_logger()
 
 
 # make sure active document is a family
-forms.check_familydoc(exit=True)
+forms.check_familydoc(exitscript=True)
 
 selection = revit.get_selection()
 

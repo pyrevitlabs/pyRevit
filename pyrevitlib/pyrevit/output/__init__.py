@@ -33,6 +33,7 @@ from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 
 
+#pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
 
 
@@ -218,7 +219,6 @@ class PyRevitOutputWindow(object):
             font_family (str): font family name e.g. 'Courier New'
             font_size (int): font size e.g. 16
         """
-        # noinspection PyUnresolvedReferences
         self.renderer.Font = \
             framework.Drawing.Font(font_family,
                                    font_size,
@@ -424,9 +424,14 @@ class PyRevitOutputWindow(object):
             >>> output.print_code('value = 12')
         """
         code_div = '<div class="code">{}</div>'
-        print(coreutils.prepare_html_str(
+        print(
+            coreutils.prepare_html_str(
                 code_div.format(
-                    code_str.replace('    ', '&nbsp;'*4))), end="")
+                    code_str.replace('    ', '&nbsp;'*4)
+                    )
+                ),
+            end=""
+            )
 
     @staticmethod
     def print_md(md_str):
@@ -442,7 +447,7 @@ class PyRevitOutputWindow(object):
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
 
-    def print_table(self, table_data, columns=[], formats=[],
+    def print_table(self, table_data, columns=None, formats=None,
                     title='', last_line_style=''):
         """Print provided data in a table in output window.
 
@@ -466,11 +471,16 @@ class PyRevitOutputWindow(object):
             ... last_line_style='color:red;'
             ... )
         """
+        if not columns:
+            columns = []
+        if not formats:
+            formats = []
+
         if last_line_style:
             self.add_style('tr:last-child {{ {style} }}'
                            .format(style=last_line_style))
 
-        zipper = itertools.izip_longest
+        zipper = itertools.izip_longest #pylint: disable=E1101
         adjust_base_col = '|'
         adjust_extra_col = ':---|'
         base_col = '|'
@@ -482,7 +492,7 @@ class PyRevitOutputWindow(object):
         header = ''
         if columns:
             header = base_col
-            for idx, col_name in zipper(range(max_col), columns, fillvalue=''):
+            for idx, col_name in zipper(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
                 header += extra_col.format(data=col_name)
 
             header += '\n'

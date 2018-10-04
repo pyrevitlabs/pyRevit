@@ -1,3 +1,4 @@
+"""Prepare and compile C# script types."""
 from pyrevit import PyRevitException
 from pyrevit.coreutils import find_loaded_asm, read_source_file, get_str_hash
 from pyrevit.coreutils import create_type, load_asm_file,\
@@ -6,11 +7,12 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import _get_references
-import pyrevit.coreutils.appdata as appdata
+from pyrevit.coreutils import appdata
 from pyrevit import UI
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def _get_csharp_cmd_asm(cmd_component):
@@ -32,7 +34,7 @@ def _get_csharp_cmd_asm(cmd_component):
     # check to see if compiled c# command assembly is already loaded
     compiled_assm_list = find_loaded_asm(command_assm_file_id,
                                          by_partial_name=True)
-    if len(compiled_assm_list) > 0:
+    if compiled_assm_list:
         return compiled_assm_list[0]
 
     # if not already loaded, check to see if the assembly file exits
@@ -46,8 +48,7 @@ def _get_csharp_cmd_asm(cmd_component):
     command_assm_file = \
         appdata.get_data_file(file_id=command_assm_file_id,
                               file_ext=ASSEMBLY_FILE_TYPE)
-    logger.debug('Compiling script {} to {}'
-                 .format(cmd_component, command_assm_file))
+    mlogger.debug('Compiling script %s to %s', cmd_component, command_assm_file)
     compiled_assm_path = compile_csharp([script_path],
                                         command_assm_file,
                                         reference_list=_get_references())
@@ -89,12 +90,11 @@ def _make_csharp_types(module_builder, cmd_component):
                     [])
         cmd_component.avail_class_name = cmd_component.unique_avail_name
     else:
-        logger.debug('Can not find UI.IExternalCommandAvailability derivatives '
-                     'for: {}'.format(cmd_component))
+        mlogger.debug('Can not find UI.IExternalCommandAvailability '
+                      'derivatives for: %s', cmd_component)
 
 
-# noinspection PyUnusedLocal
-def create_csharp_types(extension, cmd_component, module_builder=None):
+def create_csharp_types(extension, cmd_component, module_builder=None): #pylint: disable=W0613
     if module_builder:
         _make_csharp_types(module_builder, cmd_component)
     else:

@@ -1,3 +1,4 @@
+"""Base module ofr parsing extensions."""
 import os
 import os.path as op
 
@@ -6,29 +7,30 @@ from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def _get_discovered_comps(comp_path, component_types_list):
     discovered_cmps = []
-    logger.debug('Testing _get_component(s) on: %s ', comp_path)
+    mlogger.debug('Testing _get_component(s) on: %s ', comp_path)
     # comp_path might be a file or a dir,
     # but its name should not start with . or _:
     for component_type in component_types_list:
-        logger.debug('Testing sub_directory {} for {}'
-                     .format(comp_path, component_type))
+        mlogger.debug('Testing sub_directory %s for %s',
+                      comp_path, component_type)
         try:
             # if cmp_class can be created for this sub-dir, the add to list
             # cmp_class will raise error if comp_path is not of cmp_class type.
             component = component_type()
             component.__init_from_dir__(comp_path)
             discovered_cmps.append(component)
-            logger.debug('Successfuly created component: {} from: {}'
-                         .format(component, comp_path))
+            mlogger.debug('Successfuly created component: %s from: %s',
+                          component, comp_path)
             break
         except PyRevitException:
-            logger.debug('Can not create component of type: {} from: {}'
-                         .format(component_type, comp_path))
+            mlogger.debug('Can not create component of type: %s from: %s',
+                          component_type, comp_path)
 
     return discovered_cmps
 
@@ -49,7 +51,7 @@ def _create_subcomponents(search_dir,
     Example:
         _create_subcomponents(search_dir,
                               [LinkButton, PushButton, or ToggleButton])
-        this method creates LinkButton, PushButton, or ToggleButton for 
+        this method creates LinkButton, PushButton, or ToggleButton for
         the parsed sub-directories under search_dir with matching .type_id
         identifiers in their names. (e.g. "folder.LINK_BUTTON_POSTFIX")
 
@@ -59,17 +61,16 @@ def _create_subcomponents(search_dir,
     sub_cmp_list = []
 
     if not create_from_search_dir:
-        logger.debug('Searching directory: {} for components of type: {}'
-                     .format(search_dir, component_types_list))
+        mlogger.debug('Searching directory: %s for components of type: %s',
+                      search_dir, component_types_list)
         for file_or_dir in os.listdir(search_dir):
             full_path = op.join(search_dir, file_or_dir)
             if not file_or_dir.startswith(('.', '_')):
                 sub_cmp_list.extend(_get_discovered_comps(full_path,
                                                           component_types_list))
             else:
-                logger.debug('Skipping _get_component. '
-                             'Name can not start with . or _: {}'
-                             .format(full_path))
+                mlogger.debug('Skipping _get_component. '
+                              'Name can not start with . or _: %s', full_path)
     else:
         sub_cmp_list.extend(_get_discovered_comps(search_dir,
                                                   component_types_list))
@@ -125,17 +126,16 @@ def parse_dir_for_ext_type(root_dir, parent_cmp_type):
     # making sure the provided directory exists.
     # This is mainly for the user defined package directories
     if not op.exists(root_dir):
-        logger.debug('Extension search directory does not exist: {}'
-                     .format(root_dir))
+        mlogger.debug('Extension search directory does not exist: %s', root_dir)
         return []
 
     # try creating extensions in given directory
     ext_data_list = []
 
-    logger.debug('Parsing directory for extensions of type: {}'
-                 .format(parent_cmp_type))
+    mlogger.debug('Parsing directory for extensions of type: %s',
+                  parent_cmp_type)
     for ext_data in _create_subcomponents(root_dir, [parent_cmp_type]):
-        logger.debug('Extension directory found: %s', ext_data)
+        mlogger.debug('Extension directory found: %s', ext_data)
         ext_data_list.append(ext_data)
 
     return ext_data_list

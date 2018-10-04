@@ -1,3 +1,4 @@
+"""Base module to handle processing extensions as packages."""
 import os
 import os.path as op
 import codecs
@@ -13,11 +14,13 @@ from pyrevit.userconfig import user_config
 from pyrevit.extensions import ExtensionTypes
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 class PyRevitPluginAlreadyInstalledException(PyRevitException):
     def __init__(self, ext_pkg):
+        super(PyRevitPluginAlreadyInstalledException, self).__init__()
         self.ext_pkg = ext_pkg
         PyRevitException(self)
 
@@ -115,7 +118,7 @@ class ExtensionPackage:
             self.default_enabled = safe_strtype(
                 info_dict.get('enable', self.default_enabled)
                 ).lower() == 'true'
-            logger.deprecate(
+            mlogger.deprecate(
                 "Naming of \"enable\" property in extension.json files "
                 "has changed. Please revise your extension.json files to "
                 "use \"default_enabled\" (with underscore) instead.")
@@ -155,7 +158,7 @@ class ExtensionPackage:
         if 'author-url' in info_dict:
             self.author_profile = info_dict.get('author-url',
                                                 self.author_profile)
-            logger.deprecate(
+            mlogger.deprecate(
                 "Naming of \"author-url\" property in extension.json files "
                 "has changed. Please revise your extension.json files to "
                 "use \"author_profile\" (with underscore) instead.")
@@ -196,8 +199,8 @@ class ExtensionPackage:
                             and sub_dir == self.ext_dirname:
                         return op.join(ext_dir, sub_dir)
             else:
-                logger.error('custom Extension path does not exist: {}'
-                             .format(ext_dir))
+                mlogger.error('custom Extension path does not exist: %s',
+                              ext_dir)
 
         return ''
 
@@ -230,7 +233,7 @@ class ExtensionPackage:
             if self.is_installed:
                 ext_pkg_repo = git.get_repo(self.installed_dir)
                 return ext_pkg_repo.last_commit_hash
-        except:
+        except Exception:
             return None
 
     @property
@@ -246,7 +249,7 @@ class ExtensionPackage:
 
         try:
             return user_config.get_section(self.ext_dirname)
-        except:
+        except Exception:
             cfg_section = user_config.add_section(self.ext_dirname)
             self.config.disabled = not self.default_enabled
             self.config.private_repo = self.builtin
@@ -308,7 +311,7 @@ def _update_ext_pkgs(ext_def_file, loaded_pkgs):
             defined_exts_pkg = json.load(ext_pkg_def_file)['extensions']
         except Exception as def_file_err:
             print('Can not parse plugin ext definition file: {} '
-                         '| {}'.format(ext_def_file, def_file_err))
+                  '| {}'.format(ext_def_file, def_file_err))
             return
 
     for ext_pkg_dict in defined_exts_pkg:
@@ -332,7 +335,7 @@ def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
     # if package is installable
     if ext_pkg.url:
         clone_path = op.join(install_dir, ext_pkg.ext_dirname)
-        logger.info('Installing %s to %s', ext_pkg.name, clone_path)
+        mlogger.info('Installing %s to %s', ext_pkg.name, clone_path)
 
         if ext_pkg.config.username and ext_pkg.config.password:
             git.git_clone(ext_pkg.url, clone_path,
@@ -340,13 +343,13 @@ def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
                           password=ext_pkg.config.password)
         else:
             git.git_clone(ext_pkg.url, clone_path)
-        logger.info('Extension successfully installed :thumbs_up:')
+        mlogger.info('Extension successfully installed :thumbs_up:')
     else:
         raise PyRevitPluginNoInstallLinkException()
 
     if install_dependencies:
         if ext_pkg.dependencies:
-            logger.info('Installing dependencies for %s', ext_pkg.name)
+            mlogger.info('Installing dependencies for %s', ext_pkg.name)
             for dep_pkg_name in ext_pkg.dependencies:
                 dep_pkg = get_ext_package_by_name(dep_pkg_name)
                 if dep_pkg:
@@ -361,8 +364,8 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
         if dir_to_remove:
             fully_remove_dir(dir_to_remove)
             ext_pkg.remove_pkg_config()
-            logger.info('Successfully removed extension from: {}'
-                        .format(dir_to_remove))
+            mlogger.info('Successfully removed extension from: %s',
+                         dir_to_remove)
         else:
             raise PyRevitPluginRemoveException('Can not find installed path.')
     else:
@@ -371,7 +374,7 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
 
     if remove_dependencies:
         dg = get_dependency_graph()
-        logger.info('Removing dependencies for %s', ext_pkg.name)
+        mlogger.info('Removing dependencies for %s', ext_pkg.name)
         for dep_pkg_name in ext_pkg.dependencies:
             dep_pkg = get_ext_package_by_name(dep_pkg_name)
             if dep_pkg and not dg.has_installed_dependents(dep_pkg_name):
@@ -428,12 +431,12 @@ def install(ext_pkg, install_dir, install_dependencies=True):
     try:
         _install_ext_pkg(ext_pkg, install_dir, install_dependencies)
     except PyRevitPluginAlreadyInstalledException as already_installed_err:
-        logger.warning('{} extension is already installed under {}'
-                       .format(already_installed_err.ext_pkg.name,
-                               already_installed_err.ext_pkg.is_installed))
+        mlogger.warning('%s extension is already installed under %s',
+                        already_installed_err.ext_pkg.name,
+                        already_installed_err.ext_pkg.is_installed)
     except PyRevitPluginNoInstallLinkException:
-        logger.error('Extension does not have an install link '
-                     'and can not be installed.')
+        mlogger.error('Extension does not have an install link '
+                      'and can not be installed.')
 
 
 def remove(ext_pkg, remove_dependencies=True):
@@ -447,5 +450,5 @@ def remove(ext_pkg, remove_dependencies=True):
     try:
         _remove_ext_pkg(ext_pkg, remove_dependencies)
     except PyRevitPluginRemoveException as remove_err:
-        logger.error('Error removing extension: {} | {}'
-                     .format(ext_pkg.name, remove_err))
+        mlogger.error('Error removing extension: %s | %s',
+                      ext_pkg.name, remove_err)

@@ -33,6 +33,7 @@ if not EXEC_PARAMS.doc_mode:
         from pyrevit.extensions.cacher_bin import is_cache_valid,\
             get_cached_extension, update_cache
 
+#pylint: disable=C0413
 from pyrevit.extensions.parser import parse_dir_for_ext_type,\
     get_parsed_extension, parse_comp_dir
 from pyrevit.extensions.genericcomps import GenericUICommand
@@ -41,7 +42,8 @@ from pyrevit.extensions.components import Extension, LibraryExtension
 import pyrevit.extensions.extpackages as extpkgs
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def _update_extension_syspaths(ui_ext, lib_ext_list, pyrvt_paths):
@@ -58,11 +60,10 @@ def _is_extension_enabled(ext_info):
         if ext_pkg:
             return ext_pkg.is_enabled and ext_pkg.user_has_access
         else:
-            logger.debug('Extension package is not defined: {}'
-                         .format(ext_info.name))
+            mlogger.debug('Extension package is not defined: %s', ext_info.name)
     except Exception as ext_check_err:
-        logger.error('Error checking state for extension: {} | {}'
-                     .format(ext_info.name, ext_check_err))
+        mlogger.error('Error checking state for extension: %s | %s',
+                      ext_info.name, ext_check_err)
 
     # Lets be nice and load the package if it is not defined
     return True
@@ -74,8 +75,7 @@ def _remove_disabled_extensions(ext_list):
         if _is_extension_enabled(extension):
             cleaned_ext_list.append(extension)
         else:
-            logger.info('Skipping disabled extension: {}'
-                        .format(extension.name))
+            mlogger.info('Skipping disabled extension: %s', extension.name)
 
     return cleaned_ext_list
 
@@ -83,29 +83,27 @@ def _remove_disabled_extensions(ext_list):
 def _parse_or_cache(ext_info):
     # parse the extension if ui_extension does not have a valid cache
     if not is_cache_valid(ext_info):
-        logger.debug('Cache is not valid for: %s', ext_info)
+        mlogger.debug('Cache is not valid for: %s', ext_info)
 
         # Either cache is not available, not valid, or cache load has failed.
         # parse directory for components and return fully loaded ui_extension
-        logger.debug('Parsing for ui_extension...')
+        mlogger.debug('Parsing for ui_extension...')
         ui_extension = get_parsed_extension(ext_info)
 
         # update cache with newly parsed ui_extension
-        logger.info('UI Extension successfuly parsed: {}'
-                    .format(ui_extension.name))
-        logger.info('Updating cache for ui_extension: {}'
-                    .format(ui_extension.name))
+        mlogger.info('UI Extension successfuly parsed: %s', ui_extension.name)
+        mlogger.info('Updating cache for ui_extension: %s', ui_extension.name)
         update_cache(ui_extension)
 
     # otherwise load the cache
     else:
-        logger.debug('Cache is valid for: %s', ext_info)
+        mlogger.debug('Cache is valid for: %s', ext_info)
         # if cache is valid, load the cached ui_extension
         # cacher module takes the ui_extension object and
         # injects cache data into it.
         ui_extension = get_cached_extension(ext_info)
-        logger.info('UI Extension successfuly loaded from cache: {}'
-                    .format(ui_extension.name))
+        mlogger.info('UI Extension successfuly loaded from cache: %s',
+                     ui_extension.name)
 
     return ui_extension
 
@@ -121,7 +119,7 @@ def get_command_from_path(comp_path):
         genericcomps.GenericUICommand: A subclass of pyRevit command object.
     """
     cmds = parse_comp_dir(comp_path, GenericUICommand)
-    if len(cmds) > 0:
+    if cmds:
         return cmds[0]
 
     return None
@@ -135,7 +133,7 @@ def get_thirdparty_extension_data():
     Returns:
         list: list of components.Extension or components.LibraryExtension
     """
-    # fixme: reorganzie this code to use one single method to collect
+    # FIXME: reorganzie this code to use one single method to collect
     # extension data for both lib and ui
     ext_data_list = []
 
@@ -181,7 +179,7 @@ def get_installed_ui_extensions():
 
     # get a list of all directories that could include extensions
     ext_search_dirs = user_config.get_ext_root_dirs()
-    logger.debug('Extension Directories: %s', ext_search_dirs)
+    mlogger.debug('Extension Directories: %s', ext_search_dirs)
 
     # collect all library extensions. Their dir paths need to be added
     # to sys.path for all commands
@@ -206,8 +204,8 @@ def get_installed_ui_extensions():
                 ui_extension = _parse_or_cache(ext_info)
                 ui_ext_list.append(ui_extension)
             else:
-                logger.info('Skipping disabled ui extension: {}'
-                            .format(ext_info.name))
+                mlogger.info('Skipping disabled ui extension: %s',
+                             ext_info.name)
 
     # update extension master syspaths with standard pyrevit lib paths and
     # lib address of other lib extensions (to support extensions that provide

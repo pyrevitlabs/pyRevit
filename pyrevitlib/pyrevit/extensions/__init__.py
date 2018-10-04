@@ -1,22 +1,20 @@
+"""Base module for handling extensions parsing."""
 # Extension types
 # ------------------------------------------------------------------------------
 LIB_EXTENSION_POSTFIX = '.lib'
 UI_EXTENSION_POSTFIX = '.extension'
 
 
-# noinspection PyClassHasNoInit
 class UIExtensionType:
     ID = 'extension'
     POSTFIX = '.extension'
 
 
-# noinspection PyClassHasNoInit
 class LIBExtensionType:
     ID = 'lib'
     POSTFIX = '.lib'
 
 
-# noinspection PyClassHasNoInit
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType

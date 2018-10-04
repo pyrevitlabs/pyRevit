@@ -1,6 +1,6 @@
 """
 This module is used to access the usage logging records saved in usage
-log files. It is not used to access the usage log records sent to a 
+log files. It is not used to access the usage log records sent to a
 remote logging server.
 
     It has only one public function:
@@ -14,6 +14,7 @@ import os
 import os.path as op
 import json
 
+#pylint: disable=W0703,C0302,C0103,W0614,W0401,W0603
 from pyrevit import PyRevitException
 from pyrevit.coreutils import calculate_dir_hash
 from pyrevit.coreutils.logger import get_logger
@@ -24,7 +25,7 @@ from pyrevit.usagelog.record import UsageRecord
 from pyrevit.usagelog.filters import *
 
 
-logger = get_logger(__name__)
+mlogger = get_logger(__name__)
 
 
 def _logobj_decoder(logobj):
@@ -44,7 +45,7 @@ def _logobj_decoder(logobj):
 def _collect_records_from_file(usagelog_file):
     # collect all usage log records from the provided file
     try:
-        logger.debug('Reading usage log for: %s', usagelog_file)
+        mlogger.debug('Reading usage log for: %s', usagelog_file)
         with open(usagelog_file, 'r') as ulogf:
             record_list = json.load(ulogf, object_hook=_logobj_decoder)
             for record in record_list:
@@ -88,7 +89,7 @@ def _collect_all_records(source_path=None):
         if not source_path else source_path
 
     if current_log_path:
-        # todo: implement per file hash check to improve performance
+        # TODO: implement per file hash check to improve performance
         # check to make sure the data held in _records is up-to-date
         if _is_record_info_current(current_log_path):
             # return loaded data if it is up-to-date

@@ -5,10 +5,11 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit.db import query
 from pyrevit.revit.db import create
-from pyrevit.revit.db import transaction
+from pyrevit.revit.db import transaction    #pylint: disable=E0611
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
@@ -37,9 +38,8 @@ def ensure_sharedparam_file(spfilepath):
     if spfilepath and not HOST_APP.app.SharedParametersFilename:
         HOST_APP.app.SharedParametersFilename = spfilepath
     elif HOST_APP.app.SharedParametersFilename \
-            and not op.normpath(
-                HOST_APP.app.SharedParametersFilename
-                ) == op.normpath(spfilepath):
+            and not op.normpath(HOST_APP.app.SharedParametersFilename) \
+                == op.normpath(spfilepath):
         HOST_APP.app.SharedParametersFilename = spfilepath
 
     return HOST_APP.app.OpenSharedParameterFile()
@@ -50,7 +50,7 @@ def ensure_family(family_name, family_file, doc=None):
     famsym = query.get_family(family_name, doc=doc)
     if not famsym:
         with transaction.Transaction('Load Family', doc=doc):
-            logger.debug('Family \"%s\" did not exist.', family_name)
+            mlogger.debug('Family \"%s\" did not exist.', family_name)
             if create.load_family(family_file, doc=doc):
                 return query.get_family(family_name, doc=doc)
             else:
@@ -70,7 +70,7 @@ def ensure_element_ids(mixed_list):
             element_id_list.append(item)
         elif isinstance(item, DB.Element):
             element_id_list.append(item.Id)
-        elif type(item) == int:
+        elif isinstance(item, int):
             element_id_list.append(DB.ElementId(item))
 
     return element_id_list

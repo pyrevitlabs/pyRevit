@@ -1,5 +1,4 @@
-from pyrevit import HOST_APP, PyRevitException
-from pyrevit.coreutils.logger import get_logger
+from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import ensure

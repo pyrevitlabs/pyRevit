@@ -39,7 +39,8 @@ from pyrevit.versionmgr import upgrade
 from pyrevit import DB, UI, revit
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def _clear_running_engines():
@@ -55,7 +56,6 @@ def _clear_running_engines():
 
 
 def _setup_output():
-    from pyrevit.coreutils import loadertypes
     # create output window and assign handle
     out_window = loadertypes.ScriptOutput()
 
@@ -95,12 +95,12 @@ def _set_autoupdate_inprogress(state):
 def _perform_onsessionload_ops():
     # clear the cached engines
     if not _clear_running_engines():
-        logger.debug('No Engine Manager exists...')
+        mlogger.debug('No Engine Manager exists...')
 
     # check for updates
     if user_config.core.get_option('autoupdate', default_value=False) \
             and not _check_autoupdate_inprogress():
-        logger.info('Auto-update is active. Attempting update...')
+        mlogger.info('Auto-update is active. Attempting update...')
         _set_autoupdate_inprogress(True)
         updater.update_pyrevit()
         _set_autoupdate_inprogress(False)
@@ -144,20 +144,19 @@ def _new_session():
         # create a dll assembly and get assembly info
         ext_asm_info = create_assembly(ui_ext)
         if not ext_asm_info:
-            logger.critical('Failed to create assembly for: {}'
-                            .format(ui_ext))
+            mlogger.critical('Failed to create assembly for: %s', ui_ext)
             continue
 
-        logger.info('Extension assembly created: %s', ui_ext.name)
+        mlogger.info('Extension assembly created: %s', ui_ext.name)
 
         # add name of the created assembly to the session info
         loaded_assm_list.append(ext_asm_info.name)
 
         # run startup scripts for this ui extension, if any
         if ui_ext.startup_script:
-            logger.info('Running startup tasks...')
-            logger.debug('Executing startup script for extension: {}'
-                         .format(ui_ext.name))
+            mlogger.info('Running startup tasks...')
+            mlogger.debug('Executing startup script for extension: %s',
+                          ui_ext.name)
             execute_script(ui_ext.startup_script)
 
         # update/create ui (needs the assembly to link button actions
@@ -167,7 +166,7 @@ def _new_session():
                           ext_asm_info,
                           user_config.core.get_option('loadbeta',
                                                       default_value=False))
-        logger.info('UI created for extension: %s', ui_ext.name)
+        mlogger.info('UI created for extension: %s', ui_ext.name)
 
     # add names of the created assemblies to the session info
     sessioninfo.set_loaded_pyrevit_assemblies(loaded_assm_list)
@@ -212,7 +211,7 @@ def load_session():
     # log load time and thumbs-up :)
     endtime = timer.get_time()
     success_emoji = ':OK_hand:' if endtime < 3.00 else ':thumbs_up:'
-    logger.info('Load time: %s seconds %s', endtime, success_emoji)
+    mlogger.info('Load time: %s seconds %s', endtime, success_emoji)
 
     # if everything went well, self destruct
     try:
@@ -225,14 +224,14 @@ def load_session():
                 # output_window is of type PyRevitOutputWindow
                 output_window.self_destruct(timeout)
     except Exception as imp_err:
-        logger.error('Error setting up self_destruct on output window | {}'
-                     .format(imp_err))
+        mlogger.error('Error setting up self_destruct on output window | %s',
+                      imp_err)
 
     _cleanup_output()
 
 
 def reload_pyrevit():
-    logger.info('Reloading....')
+    mlogger.info('Reloading....')
     load_session()
 
 # -----------------------------------------------------------------------------
@@ -320,9 +319,8 @@ pyrevit_extcmdtype_cache = []
 
 
 def find_all_commands(category_set=None, cache=True):
-    global pyrevit_extcmdtype_cache
-
-    if cache and pyrevit_extcmdtype_cache:
+    global pyrevit_extcmdtype_cache    #pylint: disable=W0603
+    if cache and pyrevit_extcmdtype_cache:    #pylint: disable=E0601
         pyrevit_extcmds = pyrevit_extcmdtype_cache
     else:
         pyrevit_extcmds = []
@@ -330,7 +328,6 @@ def find_all_commands(category_set=None, cache=True):
             loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
             if loaded_assm:
                 all_exported_types = loaded_assm[0].GetTypes()
-                all_exported_type_names = [x.Name for x in all_exported_types]
 
                 for pyrvt_type in all_exported_types:
                     tname = pyrvt_type.FullName
@@ -388,22 +385,21 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
-    logger.debug('Searching for pyrevit command: {}'
-                 .format(pyrevitcmd_unique_id))
+    mlogger.debug('Searching for pyrevit command: %s', pyrevitcmd_unique_id)
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        logger.debug('Expecting assm: %s', loaded_assm_name)
+        mlogger.debug('Expecting assm: %s', loaded_assm_name)
         loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
-            logger.debug('Found assm: %s', loaded_assm_name)
+            mlogger.debug('Found assm: %s', loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
-                logger.debug('Found Type: %s', pyrvt_type)
+                mlogger.debug('Found Type: %s', pyrvt_type)
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
-                    logger.debug('Found pyRevit command in {}'
-                                 .format(loaded_assm_name))
+                    mlogger.debug('Found pyRevit command in %s',
+                                  loaded_assm_name)
                     return pyrvt_type
-            logger.debug('Could not find pyRevit command.')
+            mlogger.debug('Could not find pyRevit command.')
         else:
-            logger.debug('Can not find assm: %s', loaded_assm_name)
+            mlogger.debug('Can not find assm: %s', loaded_assm_name)
 
     return None
 
@@ -455,8 +451,8 @@ def execute_command(pyrevitcmd_unique_id):
     cmd_class = find_pyrevitcmd(pyrevitcmd_unique_id)
 
     if not cmd_class:
-        logger.error('Can not find command with unique name: {}'
-                     .format(pyrevitcmd_unique_id))
+        mlogger.error('Can not find command with unique name: %s',
+                      pyrevitcmd_unique_id)
         return None
     else:
         execute_command_cls(cmd_class)
@@ -474,7 +470,6 @@ def execute_script(script_path, arguments=None,
     """
 
     from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
-    from pyrevit.coreutils import loadertypes
     from pyrevit.coreutils import DEFAULT_SEPARATOR
     from pyrevit.framework import clr
 

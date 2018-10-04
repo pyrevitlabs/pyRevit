@@ -35,8 +35,8 @@ def get_server_path(doc, path_dict):
     """
     model_path = doc.GetWorksharingCentralModelPath()
     path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
-    for k, v in path_dict.items():
-        path = path.replace(k, v)
+    for key, value in path_dict.items():
+        path = path.replace(key, value)
 
     return path
 

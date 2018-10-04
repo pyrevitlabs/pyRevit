@@ -18,7 +18,6 @@ def copy_func(func, func_name, doc_string=None, arg_list=None):
     Returns:
         object: new python function objects
     """
-    # noinspection PyArgumentList
     new_func = types.FunctionType(func.func_code, func.func_globals,
                                   func_name, tuple(arg_list), func.func_closure)
     new_func.__doc__ = doc_string

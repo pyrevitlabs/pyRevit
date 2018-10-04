@@ -4,9 +4,10 @@ Example:
     >>> from pyrevit.framework import Assembly, Windows
 """
 
-import clr
+#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 import os.path as op
 
+import clr
 import System
 
 
@@ -26,7 +27,7 @@ from System import AppDomain, Version
 from System import Type
 from System import Uri, Guid
 from System import EventHandler
-from System import Array, IntPtr
+from System import Array, IntPtr, Enum
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
 from System import DateTime, DateTimeOffset
@@ -59,15 +60,12 @@ from System.Windows import Threading
 from System.Windows import Interop
 from System.Windows import Input
 from System.Windows.Media import Imaging, SolidColorBrush, Color
-
 from System import Math
-
 from System.CodeDom import Compiler
-from Microsoft.CSharp import CSharpCodeProvider
-
 from System.Management import ManagementObjectSearcher
-
 from System.Runtime.Serialization import FormatterServices
+
+from Microsoft.CSharp import CSharpCodeProvider
 
 clr.AddReference('IronPython.Wpf')
 import wpf

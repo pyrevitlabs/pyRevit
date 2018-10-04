@@ -1,3 +1,4 @@
+"""Module that compiles the base DLL on load."""
 import os
 import os.path as op
 import sys
@@ -10,12 +11,13 @@ from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
     load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
-import pyrevit.coreutils.appdata as appdata
+from pyrevit.coreutils import appdata
 
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 if not EXEC_PARAMS.doc_mode:
@@ -29,7 +31,7 @@ if not EXEC_PARAMS.doc_mode:
         FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
     except Exception as dotnet_sdk_err:
         FRAMEWORK_DIRS = None
-        logger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
+        mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
     INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
 
@@ -69,8 +71,7 @@ if not EXEC_PARAMS.doc_mode:
                                                 ASSEMBLY_FILE_TYPE)
     # taking the name of the generated data file and use it as assembly name
     BASE_TYPES_ASM_NAME = op.splitext(op.basename(BASE_TYPES_ASM_FILE))[0]
-    logger.debug('Interface types assembly file is: {}'
-                 .format(BASE_TYPES_ASM_NAME))
+    mlogger.debug('Interface types assembly file is: %s', BASE_TYPES_ASM_NAME)
 else:
     BASE_TYPES_DIR_HASH = BASE_TYPES_ASM_FILE_ID = None
     BASE_TYPES_ASM_FILE = BASE_TYPES_ASM_NAME = None
@@ -79,13 +80,13 @@ else:
 def _get_source_files():
     source_files = list()
     source_dir = op.dirname(__file__)
-    logger.debug('Source files location: %s', source_dir)
+    mlogger.debug('Source files location: %s', source_dir)
     for source_file in os.listdir(source_dir):
         if op.splitext(source_file)[1].lower() == '.cs':
-            logger.debug('Source file found: %s', source_file)
+            mlogger.debug('Source file found: %s', source_file)
             source_files.append(op.join(source_dir, source_file))
 
-    logger.debug('Source files to be compiled: %s', source_files)
+    mlogger.debug('Source files to be compiled: %s', source_files)
     return source_files
 
 
@@ -127,8 +128,8 @@ def _get_reference_file(ref_name):
         return loaded_asm[0].Location
 
     # if not worked raise critical error
-    logger.critical('Can not find required reference assembly: {}'
-                    .format(ref_name))
+    mlogger.critical('Can not find required reference assembly: %s',
+                     ref_name)
 
 
 def _get_references():
@@ -154,15 +155,15 @@ def _generate_base_classes_asm():
 
     # now try to compile
     try:
-        logger.debug('Compiling base types to: %s', BASE_TYPES_ASM_FILE)
+        mlogger.debug('Compiling base types to: %s', BASE_TYPES_ASM_FILE)
         compile_csharp(source_list, BASE_TYPES_ASM_FILE,
                        reference_list=_get_references(), resource_list=[])
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
-        logger.critical('Can not compile base types code into assembly.\n{}'
-                        .format(errors))
+        mlogger.critical('Can not compile base types code into assembly.\n%s',
+                         errors)
         raise compile_err
 
 

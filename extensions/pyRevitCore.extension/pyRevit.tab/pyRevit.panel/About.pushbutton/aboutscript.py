@@ -66,39 +66,40 @@ class AboutWindow(forms.WPFWindow):
         self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
-        script.open_url(urls.credits)
+        script.open_url(urls.PYREVIT_CREDITS)
 
     def opendocs(self, sender, args):
-        script.open_url(urls.docs)
+        script.open_url(urls.PYREVIT_DOCS)
 
     def openblog(self, sender, args):
-        script.open_url(urls.blog)
+        script.open_url(urls.PYREVIT_BLOG)
 
     def opengithubrepopage(self, sender, args):
-        script.open_url(urls.github)
+        script.open_url(urls.PYREVIT_GITHUB)
 
     def openyoutubechannel(self, sender, args):
-        script.open_url(urls.youtube)
+        script.open_url(urls.PYREVIT_YOUTUBE)
 
     def opensupportpage(self, sender, args):
-        script.open_url(urls.patron)
+        script.open_url(urls.PYREVIT_PATREON)
 
     def opengithubcommits(self, sender, args):
         if self.branch_name:
             commits_url = \
-                urls.githubbranchcommits.format(branch=self.branch_name)
+                urls.PYREVIT_GITHUBBRANCH_COMMIT.format(branch=self.branch_name)
             script.open_url(commits_url)
 
     def opengithubbranch(self, sender, args):
         if self.branch_name:
-            branch_url = urls.githubbranch.format(branch=self.branch_name)
+            branch_url = \
+                urls.PYREVIT_GITHUBBRANCH.format(branch=self.branch_name)
             script.open_url(branch_url)
 
     def openreleasenotes(self, sender, args):
-        script.open_url(urls.releasenotes)
+        script.open_url(urls.PYREVIT_RELEASENOTES)
 
     def openkeybaseprofile(self, sender, args):
-        script.open_url(urls.profile_ein)
+        script.open_url(urls.PROFILE_EIN)
 
     def handleclick(self, sender, args):
         self.Close()
