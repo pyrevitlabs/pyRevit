@@ -4,12 +4,13 @@ Shift-Click:
 Pick from all available categories.
 """
 
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
+#pylint: disable=E0401,W0703,C0103
+from pyrevit import revit, UI
 from pyrevit import forms
+from pyrevit import script
 
 
-selection = revit.get_selection()
+logger = script.get_logger()
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
@@ -24,23 +25,25 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
             return False
 
     # standard API override function
-    def AllowReference(self, refer, point):
+    def AllowReference(self, refer, point): #pylint: disable=W0613
         return False
 
 
 def pickbycategory(catname):
     try:
+        selection = revit.get_selection()
         msfilter = PickByCategorySelectionFilter(catname)
         selection_list = revit.pick_rectangle(pick_filter=msfilter)
         filtered_list = []
-        for el in selection_list:
-            filtered_list.append(el.Id)
+        for element in selection_list:
+            filtered_list.append(element.Id)
         selection.set_to(filtered_list)
-    except Exception:
-        pass
+    except Exception as err:
+        logger.debug(err)
 
 
-if __shiftclick__:
+
+if __shiftclick__:  #pylint: disable=E0602
     options = sorted([x.Name for x in revit.doc.Settings.Categories])
 else:
     options = sorted(['Area',
