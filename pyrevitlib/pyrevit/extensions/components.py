@@ -1,4 +1,4 @@
-import os
+"""Base classes for pyRevit extension components."""
 import os.path as op
 import json
 import codecs
@@ -14,7 +14,8 @@ from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.versionmgr import get_pyrevit_version
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 # Derived classes here correspond to similar elements in Revit ui.
@@ -49,10 +50,10 @@ class LinkButton(GenericUICommand):
                     exts.LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
 
         except PyRevitException as err:
-            logger.error(err)
+            mlogger.error(err)
 
-        logger.debug('Link button assembly.class: {}.{}'
-                     .format(self.assembly, self.command_class))
+        mlogger.debug('Link button assembly.class: %s.%s',
+                      self.assembly, self.command_class)
 
 
 class PushButton(GenericUICommand):
@@ -70,11 +71,11 @@ class ToggleButton(GenericUICommand):
         GenericUICommand.__init__(self)
         self.icon_on_file = self.icon_off_file = None
         if self.name:
-            logger.deprecate('{} | Toggle bundle is deprecated and will be '
-                             'removed soon. Please use SmartButton bundle, '
-                             'or any other bundle and use script.toggle_icon '
-                             'method to toggle the tool icon.'
-                             .format(self.name))
+            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
+                              'removed soon. Please use SmartButton bundle, '
+                              'or any other bundle and use script.toggle_icon '
+                              'method to toggle the tool icon.'
+                              .format(self.name))
 
     def __init_from_dir__(self, cmd_dir):
         GenericUICommand.__init_from_dir__(self, cmd_dir)
@@ -88,11 +89,11 @@ class ToggleButton(GenericUICommand):
             full_file_path if op.exists(full_file_path) else None
 
         if self.name:
-            logger.deprecate('{} | Toggle bundle is deprecated and will be '
-                             'removed soon. Please use SmartButton bundle, '
-                             'or any other bundle and use script.toggle_icon '
-                             'method to toggle the tool icon.'
-                             .format(self.name))
+            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
+                              'removed soon. Please use SmartButton bundle, '
+                              'or any other bundle and use script.toggle_icon '
+                              'method to toggle the tool icon.'
+                              .format(self.name))
 
 
 class SmartButton(GenericUICommand):
@@ -200,7 +201,7 @@ class Extension(GenericUIContainer):
         self.version = None
         self.pyrvt_version = self.dir_hash_value = None
 
-    def __init_from_dir__(self, package_dir):
+    def __init_from_dir__(self, package_dir):   #pylint: disable=W0221
         GenericUIContainer.__init_from_dir__(self, package_dir)
         self.pyrvt_version = get_pyrevit_version().get_formatted()
 

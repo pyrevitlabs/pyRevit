@@ -1,5 +1,6 @@
 import logging
 
+#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 from pyrevit import HOST_APP, HOME_DIR
 from pyrevit.framework import clr
 
@@ -35,10 +36,10 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
             event = asyncLogEvent.LogEvent
             level = self.convert_level(event.Level)
             if mlogger.is_enabled_for(level):
-                print(self.Layout.Render(event))
+                print(self.Layout.Render(event))    #pylint: disable=E1101
         except Exception as e:
             print(e)
-    
+
     def convert_level(self, nlog_level):
         if nlog_level == NLog.LogLevel.Fatal:
             return logging.CRITICAL
@@ -61,6 +62,7 @@ if HOST_APP.is_older_than(2019):
     TargetApps.Revit.PyRevitBindings.ActivateResolver()
 
 # configure NLog
+#pylint: disable=W0201
 config = NLog.Config.LoggingConfiguration()
 target = PyRevitOutputTarget()
 target.Name = __name__

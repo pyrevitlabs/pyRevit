@@ -1,15 +1,13 @@
 """Helper functions to update info and elements in Revit."""
 
-from pyrevit import HOST_APP, PyRevitException
-from pyrevit.compat import safe_strtype
+from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
 
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
-    doc or HOST_APP.doc
-
+    doc = doc or HOST_APP.doc
     # make sure revisions is a list
     if not isinstance(revisions, list):
         revisions = [revisions]
@@ -17,20 +15,20 @@ def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     updated_sheets = []
     if revisions:
         # get sheets if not available
-        for s in sheets or query.get_sheets(doc=doc):
+        for sheet in sheets or query.get_sheets(doc=doc):
             addrevs = set([x.IntegerValue
-                           for x in s.GetAdditionalRevisionIds()])
-            for r in revisions:
+                           for x in sheet.GetAdditionalRevisionIds()])
+            for rev in revisions:
                 # skip issued revisions
-                if not r.Issued:
+                if not rev.Issued:
                     if state:
-                        addrevs.add(r.Id.IntegerValue)
-                    elif r.Id.IntegerValue in addrevs:
-                        addrevs.remove(r.Id.IntegerValue)
+                        addrevs.add(rev.Id.IntegerValue)
+                    elif rev.Id.IntegerValue in addrevs:
+                        addrevs.remove(rev.Id.IntegerValue)
 
             rev_elids = [DB.ElementId(x) for x in addrevs]
-            s.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
-            updated_sheets.append(s)
+            sheet.SetAdditionalRevisionIds(List[DB.ElementId](rev_elids))
+            updated_sheets.append(sheet)
 
     return updated_sheets
 

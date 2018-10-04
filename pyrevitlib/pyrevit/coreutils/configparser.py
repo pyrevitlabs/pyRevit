@@ -1,3 +1,4 @@
+"""Base module for pyRevit config parsing."""
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
@@ -5,7 +6,7 @@ from pyrevit import PyRevitException, PyRevitIOError
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils import get_str_hash
 
-
+#pylint: disable=W0703,C0302
 KEY_VALUE_TRUE = "true"
 KEY_VALUE_FALSE = "false"
 
@@ -40,8 +41,8 @@ class PyRevitConfigSectionParser(object):
                 if value.isdecimal():
                     value = int(value)
 
-                return eval(value)
-            except:
+                return eval(value)  #pylint: disable=W0123
+            except Exception:
                 return value
         except (NoOptionError, NoSectionError):
             raise AttributeError('Parameter does not exist in config file: {}'

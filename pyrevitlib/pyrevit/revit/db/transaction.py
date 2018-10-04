@@ -1,4 +1,5 @@
 from pyrevit import HOST_APP, DB
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -6,7 +7,8 @@ __all__ = ('carryout',
            'Transaction', 'DryTransaction', 'TransactionGroup')
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 DEFAULT_TRANSACTION_NAME = 'pyRevit Transaction'
@@ -31,46 +33,40 @@ class FailureSwallower(DB.IFailuresPreprocessor):
     def PreprocessFailures(self, failuresAccessor):
         severity = failuresAccessor.GetSeverity()
         # log some info
-        logger.debug('processing failure with severity: {}'.format(severity))
+        mlogger.debug('processing failure with severity: %s', severity)
 
-        if severity == DB.FailureSeverity.None:
-            logger.debug('clean document. returning with'
-                         'FailureProcessingResult.Continue')
+        if severity == coreutils.get_enum_none(DB.FailureSeverity):
+            mlogger.debug('clean document. returning with'
+                          'FailureProcessingResult.Continue')
             return DB.FailureProcessingResult.Continue
 
         # log the failure messages
         failures = failuresAccessor.GetFailureMessages()
-        logger.debug('processing {} failure messages.'.format(len(failures)))
+        mlogger.debug('processing %s failure messages.', len(failures))
         for failure in failures:
             # log some info
-            logger.debug('processing failure msg: {}'
-                         .format(getattr(failure.GetFailureDefinitionId(),
-                                         'Guid',
-                                         '')))
-            logger.debug('\tseverity: {}'
-                         .format(failure.GetSeverity()))
-            logger.debug('\tdescription: {}'
-                         .format(failure.GetDescriptionText()))
-            logger.debug('\telements: {}'
-                         .format([x.IntegerValue
-                                  for x in failure.GetFailingElementIds()]))
-            logger.debug('\thas resolutions: {}'
-                         .format(failure.HasResolutions()))
+            mlogger.debug('processing failure msg: %s',
+                          getattr(failure.GetFailureDefinitionId(), 'Guid', '')
+                          )
+            mlogger.debug('\tseverity: %s', failure.GetSeverity())
+            mlogger.debug('\tdescription: %s', failure.GetDescriptionText())
+            mlogger.debug('\telements: %s',
+                          [x.IntegerValue
+                           for x in failure.GetFailingElementIds()])
+            mlogger.debug('\thas resolutions: %s', failure.HasResolutions())
 
         # now go through failures and attempt resolution
         action_taken = False
         for failure in failures:
-            logger.debug('attempt resolving failure: {}'
-                         .format(getattr(failure.GetFailureDefinitionId(),
-                                         'Guid',
-                                         '')))
+            mlogger.debug('attempt resolving failure: %s',
+                          getattr(failure.GetFailureDefinitionId(), 'Guid', '')
+                          )
             # iterate through resolution options, pick one and resolve
             for res_type in RESOLUTION_TYPES:
                 found_resolution = False
                 if failure.GetSeverity() != DB.FailureSeverity.Warning \
                         and failure.HasResolutionOfType(res_type):
-                    logger.debug('setting failure resolution to: {}'
-                                 .format(res_type))
+                    mlogger.debug('setting failure resolution to: %s', res_type)
                     failure.SetCurrentResolutionType(res_type)
                     action_taken = found_resolution = True
                     break
@@ -80,12 +76,12 @@ class FailureSwallower(DB.IFailuresPreprocessor):
 
         # report back
         if action_taken:
-            logger.debug('resolving failures with '
-                         'FailureProcessingResult.ProceedWithCommit')
+            mlogger.debug('resolving failures with '
+                          'FailureProcessingResult.ProceedWithCommit')
             return DB.FailureProcessingResult.ProceedWithCommit
         else:
-            logger.debug('resolving failures with '
-                         'FailureProcessingResult.Continue')
+            mlogger.debug('resolving failures with '
+                          'FailureProcessingResult.Continue')
             return DB.FailureProcessingResult.Continue
 
 
@@ -138,16 +134,16 @@ class Transaction():
         if exception:
             self._rvtxn.RollBack()
             if self._logerror:
-                logger.error('Error in Transaction Context. '
-                             'Rolling back changes. | {}:{}'
-                             .format(exception, exception_value))
+                mlogger.error('Error in Transaction Context. '
+                              'Rolling back changes. | %s:%s',
+                              exception, exception_value)
         else:
             try:
                 self._rvtxn.Commit()
             except Exception as errmsg:
                 self._rvtxn.RollBack()
-                logger.error('Error in Transaction Commit. '
-                             'Rolling back changes. | {}'.format(errmsg))
+                mlogger.error('Error in Transaction Commit. '
+                              'Rolling back changes. | %s', errmsg)
 
     @property
     def name(self):
@@ -191,9 +187,9 @@ class TransactionGroup():
         if exception:
             self._rvtxn_grp.RollBack()
             if self._logerror:
-                logger.error('Error in TransactionGroup Context. '
-                             'Rolling back changes. | {}:{}'
-                             .format(exception, exception_value))
+                mlogger.error('Error in TransactionGroup Context. '
+                              'Rolling back changes. | %s:%s',
+                              exception, exception_value)
         else:
             try:
                 if self.assimilate:
@@ -202,8 +198,8 @@ class TransactionGroup():
                     self._rvtxn_grp.Commit()
             except Exception as errmsg:
                 self._rvtxn_grp.RollBack()
-                logger.error('Error in TransactionGroup Commit: rolled back.')
-                logger.error('Error: {}'.format(errmsg))
+                mlogger.error('Error in TransactionGroup Commit: rolled back.')
+                mlogger.error('Error: %s', errmsg)
 
     @property
     def name(self):

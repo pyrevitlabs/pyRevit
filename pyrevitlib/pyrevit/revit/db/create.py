@@ -1,31 +1,33 @@
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.framework import clr
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit.db import query
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 # http://www.revitapidocs.com/2018.1/5da8e3c5-9b49-f942-02fc-7e7783fe8f00.htm
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
-    def OnFamilyFound(self, familyInUse, overwriteParameterValues):
+    def OnFamilyFound(self, familyInUse, overwriteParameterValues): #pylint: disable=W0613
         """A method called when the family was found in the target document."""
         return True
 
     def OnSharedFamilyFound(self,
-                            sharedFamily,
-                            familyInUse,
-                            source,
-                            overwriteParameterValues):
+                            sharedFamily, #pylint: disable=W0613
+                            familyInUse, #pylint: disable=W0613
+                            source, #pylint: disable=W0613
+                            overwriteParameterValues): #pylint: disable=W0613
         source = DB.FamilySource.Family
         overwriteParameterValues = True
         return True
 
 
 def create_shared_param(param_id_or_name, category_list, builtin_param_group,
-                        type_param=False, allow_vary_betwen_groups=False,
+                        type_param=False, allow_vary_betwen_groups=False,  #pylint: disable=W0613
                         doc=None):
     doc = doc or HOST_APP.doc
     msp_list = query.get_defined_sharedparams()
@@ -75,7 +77,7 @@ def create_revision(description=None, by=None, to=None, date=None,
     if alphanum:
         new_rev.NumberType = DB.RevisionNumberType.Alphanumeric
     if nonum:
-        new_rev.NumberType = DB.RevisionNumberType.None
+        new_rev.NumberType = coreutils.get_enum_none(DB.RevisionNumberType)
     new_rev.RevisionDate = date or ''
     return new_rev
 
@@ -90,13 +92,11 @@ def copy_revisions(src_doc, dest_doc, revisions=None):
         # get an updated list of revisions
         if any([query.compare_revisions(x, src_rev)
                 for x in query.get_revisions(doc=dest_doc)]):
-            logger.debug('Revision already exists: {} {}'
-                         .format(src_rev.RevisionDate,
-                                 src_rev.Description))
+            mlogger.debug('Revision already exists: %s %s',
+                          src_rev.RevisionDate, src_rev.Description)
         else:
-            logger.debug('Creating revision: {} {}'
-                         .format(src_rev.RevisionDate,
-                                 src_rev.Description))
+            mlogger.debug('Creating revision: %s %s',
+                          src_rev.RevisionDate, src_rev.Description)
             create_revision(description=src_rev.Description,
                             by=src_rev.IssuedBy,
                             to=src_rev.IssuedTo,
@@ -183,7 +183,7 @@ def create_revision_sheetset(revisions,
 
 def load_family(family_file, doc=None):
     doc = doc or HOST_APP.doc
-    logger.debug('Loading family from: {}'.format(family_file))
+    mlogger.debug('Loading family from: %s', family_file)
     ret_ref = clr.Reference[DB.Family]()
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 

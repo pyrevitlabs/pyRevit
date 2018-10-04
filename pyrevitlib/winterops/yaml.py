@@ -1,5 +1,4 @@
 """Wrapper for YamlDotNet."""
-# pylama:ignore=E402,W0611
 import os.path as op
 from collections import OrderedDict
 from winterops import clr, System, binary_path

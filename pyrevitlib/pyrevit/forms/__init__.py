@@ -27,7 +27,8 @@ from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 DEFAULT_CMDSWITCHWND_WIDTH = 600
@@ -73,7 +74,7 @@ class WPFWindow(framework.Windows.Window):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
         if handle_esc:
-            self.PreviewKeyDown += self.handle_input_key
+            self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
 
         self.setup_icon()
 
@@ -104,7 +105,7 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
-    def handle_input_key(self, sender, args):
+    def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""
         if args.Key == Input.Key.Escape:
             self.Close()
@@ -132,7 +133,6 @@ class WPFWindow(framework.Windows.Window):
         """
         wpfel = getattr(self, element_name)
         if not op.exists(image_file):
-            # noinspection PyUnresolvedReferences
             wpfel.Source = \
                 utils.bitmap_from_file(
                     os.path.join(EXEC_PARAMS.command_path,
@@ -176,9 +176,9 @@ class WPFWindow(framework.Windows.Window):
         """
         for wpfel in wpf_elements:
             if wpfel.Visibility == framework.Windows.Visibility.Visible:
-                self.hide_element(wpfel)
+                WPFWindow.hide_element(wpfel)
             elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
-                self.show_element(wpfel)
+                WPFWindow.show_element(wpfel)
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -213,7 +213,7 @@ class TemplateUserInputWindow(WPFWindow):
         pass
 
     @classmethod
-    def show(cls, context,
+    def show(cls, context,  #pylint: disable=W0221
              title='User Input',
              width=DEFAULT_INPUTWINDOW_WIDTH,
              height=DEFAULT_INPUTWINDOW_HEIGHT, **kwargs):
@@ -477,11 +477,11 @@ class SelectFromList(TemplateUserInputWindow):
     @staticmethod
     def _unwrap_options(options):
         unwrapped = []
-        for op in options:
-            if type(op) is TemplateListItem:
-                unwrapped.append(op.unwrap())
+        for optn in options:
+            if isinstance(optn, TemplateListItem):
+                unwrapped.append(optn.unwrap())
             else:
-                unwrapped.append(op)
+                unwrapped.append(optn)
         return unwrapped
 
     def _get_options(self):
@@ -514,32 +514,32 @@ class SelectFromList(TemplateUserInputWindow):
         self.list_lb.ItemsSource = None
         self.list_lb.ItemsSource = all_items
 
-    def toggle_all(self, sender, args):
+    def toggle_all(self, sender, args):    #pylint: disable=W0613
         """Handle toggle all button to toggle state of all check boxes."""
         self._set_states(flip=True)
 
-    def check_all(self, sender, args):
+    def check_all(self, sender, args):    #pylint: disable=W0613
         """Handle check all button to mark all check boxes as checked."""
         self._set_states(state=True)
 
-    def uncheck_all(self, sender, args):
+    def uncheck_all(self, sender, args):    #pylint: disable=W0613
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):
+    def check_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as checked."""
         self._set_states(state=True, selected=True)
 
-    def uncheck_selected(self, sender, args):
+    def uncheck_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as unchecked."""
         self._set_states(state=False, selected=True)
 
-    def button_select(self, sender, args):
+    def button_select(self, sender, args):    #pylint: disable=W0613
         """Handle select button click."""
         self.response = self._get_options()
         self.Close()
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text change in search box."""
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
@@ -548,7 +548,7 @@ class SelectFromList(TemplateUserInputWindow):
 
         self._list_options(option_filter=self.search_tb.Text)
 
-    def clear_search(self, sender, args):
+    def clear_search(self, sender, args):    #pylint: disable=W0613
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
@@ -617,7 +617,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         for switch in self._switches:
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
-            if configs and option in configs:
+            if configs and 'option' in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
 
@@ -676,7 +676,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 if x.IsFocused:
                     return x
 
-    def handle_click(self, sender, args):
+    def handle_click(self, sender, args):    #pylint: disable=W0613
         """Handle mouse click."""
         self.Close()
 
@@ -695,11 +695,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 and args.Key != Input.Key.RightShift:
             self.search_tb.Focus()
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text change in search box."""
         self._filter_options(option_filter=self.search_tb.Text)
 
-    def process_option(self, sender, args):
+    def process_option(self, sender, args):    #pylint: disable=W0613
         """Handle click on command option button."""
         self.Close()
         if sender:
@@ -726,7 +726,6 @@ class TemplatePromptBar(WPFWindow):
 
         self.user_height = height
         self.update_window()
-
         self._setup(**kwargs)
 
     def update_window(self):
@@ -895,8 +894,8 @@ class ProgressBar(TemplatePromptBar):
 
     @title.setter
     def title(self, value):
-        if type(value) == str:
-            self._title = value
+        if isinstance(value, str):
+            self._title = value    #pylint: disable=W0201
 
     @property
     def indeterminate(self):
@@ -907,10 +906,10 @@ class ProgressBar(TemplatePromptBar):
     def indeterminate(self, value):
         self.pbar.IsIndeterminate = value
 
-    def clicked_cancel(self, sender, args):
+    def clicked_cancel(self, sender, args):    #pylint: disable=W0613
         """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
-        self.cancelled = True
+        self.cancelled = True    #pylint: disable=W0201
 
     def wait_async(self, func, args=()):
         """Call a method asynchronosely and show progress."""
@@ -935,8 +934,8 @@ class ProgressBar(TemplatePromptBar):
             new_value (float): current progress value
             max_value (float): total progress value
         """
-        self.max_value = max_value
-        self.new_value = new_value
+        self.max_value = max_value    #pylint: disable=W0201
+        self.new_value = new_value    #pylint: disable=W0201
         if self.new_value == 0:
             self._dispatch_updater()
         elif self.step > 0:
@@ -1068,8 +1067,8 @@ class SearchPrompt(WPFWindow):
         results = self.search_matches
         res_cout = len(results)
 
-        logger.debug('unique results count: {}'.format(res_cout))
-        logger.debug('unique results: {}'.format(results))
+        mlogger.debug('unique results count: %s', res_cout)
+        mlogger.debug('unique results: %s', results)
 
         if res_cout > 1:
             self.show_element(self.tab_icon)
@@ -1082,10 +1081,10 @@ class SearchPrompt(WPFWindow):
             self.hide_element(self.return_icon)
 
         if self._result_index >= res_cout:
-            self._result_index = 0
+            self._result_index = 0   #pylint: disable=W0201
 
         if self._result_index < 0:
-            self._result_index = res_cout - 1
+            self._result_index = res_cout - 1   #pylint: disable=W0201
 
         if not self.search_input:
             self.directmatch_tb.Text = self.search_tip
@@ -1094,19 +1093,19 @@ class SearchPrompt(WPFWindow):
         if results:
             input_term = self.search_term
             cur_res = results[self._result_index]
-            logger.debug('current result: {}'.format(cur_res))
+            mlogger.debug('current result: %s', cur_res)
             if fill_match:
                 self.search_input = cur_res
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = \
                         self.search_input + cur_res[len(input_term):]
-                    logger.debug('directmatch_tb.Text: {}'
-                                 .format(self.directmatch_tb.Text))
+                    mlogger.debug('directmatch_tb.Text: %s',
+                                  self.directmatch_tb.Text)
                 else:
                     self.wordsmatch_tb.Text = '- {}'.format(cur_res)
-                    logger.debug('wordsmatch_tb.Text: {}'
-                                 .format(self.wordsmatch_tb.Text))
+                    mlogger.debug('wordsmatch_tb.Text: %s',
+                                  self.wordsmatch_tb.Text)
 
             self._setup_response(response=cur_res)
             return True
@@ -1119,19 +1118,18 @@ class SearchPrompt(WPFWindow):
         self._result_index = 0
         self._search_results = []
 
-        logger.debug('search input: {}'.format(self.search_input))
-        logger.debug('search term: {}'.format(self.search_term))
-        logger.debug('search term (main): {}'.format(self.search_term_main))
-        logger.debug('search term (parts): {}'.format(self.search_input_parts))
-        logger.debug('search term (args): {}'.format(self.search_term_args))
-        logger.debug('search term (switches): {}'
-                     .format(self.search_term_switches))
+        mlogger.debug('search input: %s', self.search_input)
+        mlogger.debug('search term: %s', self.search_term)
+        mlogger.debug('search term (main): %s', self.search_term_main)
+        mlogger.debug('search term (parts): %s', self.search_input_parts)
+        mlogger.debug('search term (args): %s', self.search_term_args)
+        mlogger.debug('search term (switches): %s', self.search_term_switches)
 
         for resultset in args:
-            logger.debug('result set: {}'.format(resultset))
+            mlogger.debug('result set: %s}', resultset)
             self._search_results.extend(sorted(resultset))
 
-        logger.debug('results: {}'.format(self._search_results))
+        mlogger.debug('results: %s', self._search_results)
 
     def find_direct_match(self, input_text):
         """Find direct text matches in search term."""
@@ -1154,7 +1152,7 @@ class SearchPrompt(WPFWindow):
 
         return results
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text changed event."""
         input_term = self.search_term_main
         dmresults = self.find_direct_match(input_term)
@@ -1162,7 +1160,7 @@ class SearchPrompt(WPFWindow):
         self.set_search_results(dmresults, wordresults)
         self.update_results_display()
 
-    def handle_kb_key(self, sender, args):
+    def handle_kb_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input event."""
         shiftdown = Input.Keyboard.IsKeyDown(Input.Key.LeftShift) \
             or Input.Keyboard.IsKeyDown(Input.Key.RightShift)
@@ -1193,7 +1191,7 @@ class SearchPrompt(WPFWindow):
             self.update_results_display(fill_match=True)
 
     @classmethod
-    def show(cls, search_db,
+    def show(cls, search_db,    #pylint: disable=W0221
              width=DEFAULT_SEARCHWND_WIDTH,
              height=DEFAULT_SEARCHWND_HEIGHT, **kwargs):
         """Show search prompt."""
@@ -1414,7 +1412,7 @@ def select_views(title='Select Views',
 
 def select_open_docs(title='Select Open Documents',
                      button_name='OK',
-                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     width=DEFAULT_INPUTWINDOW_WIDTH,    #pylint: disable=W0613
                      multiple=True,
                      filterfunc=None):
     """Standard form for selecting open documents.
@@ -1438,10 +1436,10 @@ def select_open_docs(title='Select Open Documents',
         ...  <Autodesk.Revit.DB.Document object>]
     """
     # find open documents other than the active doc
-    open_docs = [d for d in revit.docs if not d.IsLinked]
-    open_docs.remove(revit.doc)
+    open_docs = [d for d in revit.docs if not d.IsLinked]    #pylint: disable=E1101
+    open_docs.remove(revit.doc)    #pylint: disable=E1101
 
-    if len(open_docs) < 1:
+    if not open_docs:
         alert('Only one active document is found. '
               'At least two documents must be open. '
               'Operation cancelled.')
@@ -1510,7 +1508,7 @@ def select_titleblocks(title='Select Titleblock',
 
 
 def alert(msg, title='pyRevit', ok=True,
-          cancel=False, yes=False, no=False, retry=False, exit=False):
+          cancel=False, yes=False, no=False, retry=False, exitscript=False):
     """Show a task dialog with given message.
 
     Args:
@@ -1521,7 +1519,7 @@ def alert(msg, title='pyRevit', ok=True,
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
-        exit (bool, optional): exit command if cancel or no, defaults to False
+        exitscript (bool, optional): exit if cancel or no, defaults to False
 
     Returns:
         bool: True if okay, yes, or retry, otherwise False
@@ -1529,9 +1527,9 @@ def alert(msg, title='pyRevit', ok=True,
     Example:
         >>> from pyrevit import forms
         >>> forms.alert('Are you sure?',
-        ...              ok=False, yes=True, no=True, exit=True)
+        ...              ok=False, yes=True, no=True, exitscript=True)
     """
-    buttons = UI.TaskDialogCommonButtons.None   # noqa
+    buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
     if ok:
         buttons |= UI.TaskDialogCommonButtons.Ok
     if cancel:
@@ -1545,7 +1543,7 @@ def alert(msg, title='pyRevit', ok=True,
 
     res = UI.TaskDialog.Show(title, msg, buttons)
 
-    if not exit:
+    if not exitscript:
         if res == UI.TaskDialogResult.Ok \
                 or res == UI.TaskDialogResult.Yes \
                 or res == UI.TaskDialogResult.Retry:
@@ -1568,7 +1566,7 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
-        exit (bool, optional): exit command if cancel or no, defaults to False
+        exitscript (bool, optional): exit if cancel or no, defaults to False
 
     Returns:
         bool: True if okay, yes, or retry, otherwise False
@@ -1577,7 +1575,7 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         >>> from pyrevit import forms
         >>> forms.alert_ifnot(value > 12,
         ...                   'Are you sure?',
-        ...                    ok=False, yes=True, no=True, exit=True)
+        ...                    ok=False, yes=True, no=True, exitscript=True)
     """
     if not condition:
         return alert(msg, *args, **kwargs)
@@ -1601,7 +1599,7 @@ def pick_folder(title=None):
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
-    """Pick file dialog to select a destination file.
+    r"""Pick file dialog to select a destination file.
 
     Args:
         file_ext (str): file extension
@@ -1645,7 +1643,7 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
-    """Save file dialog to select a destination file for data.
+    r"""Save file dialog to select a destination file for data.
 
     Args:
         file_ext (str): file extension
@@ -1723,30 +1721,30 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     return True
 
 
-def check_selection(exit=False,
+def check_selection(exitscript=False,
                     message='At least one element must be selected.'):
     """Verify if selection is not empty notify user if it is.
 
     Args:
-        exit (bool): exit script if returning False
+        exitscript (bool): exit script if returning False
         message (str): prompt message if returning False
 
     Returns:
         bool: True if selection has at least one item
     """
     if revit.get_selection().is_empty:
-        alert(message, exit=exit)
+        alert(message, exitscript=exitscript)
         return False
     return True
 
 
-def check_familydoc(doc=None, family_cat=None, exit=False):
+def check_familydoc(doc=None, family_cat=None, exitscript=False):
     """Verify document is a Family and notify user of not.
 
     Args:
         doc (DB.Document): target document, current of not provided
         family_cat (str): family category name
-        exit (bool): exit script if returning False
+        exitscript (bool): exit script if returning False
 
     Returns:
         bool: True if doc is a Family and of provided category
@@ -1767,5 +1765,5 @@ def check_familydoc(doc=None, family_cat=None, exit=False):
     family_type_msg = ' of type {}'\
                       .format(family_cat.Name) if family_cat else''
     alert('Active document must be a Family document{}.'
-          .format(family_type_msg), exit=exit)
+          .format(family_type_msg), exitscript=exitscript)
     return False

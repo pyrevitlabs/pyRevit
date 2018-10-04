@@ -4,7 +4,7 @@ Admonition extension for Python-Markdown
 
 Adds rST-style admonitions. Inspired by [rST][] feature with the same name.
 
-[rST]: http://docutils.sourceforge.net/docs/ref/rst/directives.html#specific-admonitions  # noqa
+[rST]: http://docutils.sourceforge.net/docs/ref/rst/directives.html#specific-admonitions
 
 See <https://pythonhosted.org/Markdown/extensions/admonition.html>
 for documentation.

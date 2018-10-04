@@ -11,7 +11,8 @@ __all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
            'get_selection_category_set', 'get_selection')
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 class ElementSelection:
@@ -104,13 +105,10 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
     refs = []
 
     try:
-        logger.debug('Picking elements: '
-                     '{} pick_message: '
-                     '{} multiple: '
-                     '{} world: '
-                     '{}'.format(obj_type,
-                                 pick_message,
-                                 multiple, world))
+        mlogger.debug('Picking elements: %s '
+                      'pick_message: %s '
+                      'multiple: %s '
+                      'world: %s', obj_type, pick_message, multiple, world)
         if multiple:
             refs = list(
                 HOST_APP.uidoc.Selection.PickObjects(obj_type, pick_message)
@@ -122,10 +120,10 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
                 )
 
         if not refs:
-            logger.debug('Nothing picked by user...Returning None')
+            mlogger.debug('Nothing picked by user...Returning None')
             return None
 
-        logger.debug('Picked elements are: {}'.format(refs))
+        mlogger.debug('Picked elements are: %s', refs)
 
         if obj_type == UI.Selection.ObjectType.Element:
             return_values = \
@@ -139,18 +137,18 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
         else:
             return_values = \
                 [HOST_APP.doc.GetElement(ref)
-                    .GetGeometryObjectFromReference(ref)
+                 .GetGeometryObjectFromReference(ref)
                  for ref in refs]
 
-        logger.debug('Processed return elements are: {}'.format(return_values))
+        mlogger.debug('Processed return elements are: %s', return_values)
 
         if len(return_values) > 1 or multiple:
             return return_values
         elif len(return_values) == 1:
             return return_values[0]
         else:
-            logger.error('Error processing picked elements. '
-                         'return_values should be a list.')
+            mlogger.error('Error processing picked elements. '
+                          'return_values should be a list.')
     except Exception:
         return None
 
@@ -215,7 +213,7 @@ def pick_point(pick_message=''):
     try:
         return HOST_APP.uidoc.Selection.PickPoint(pick_message)
     except Exception:
-            return None
+        return None
 
 
 def pick_rectangle(pick_message='', pick_filter=None):

@@ -1,3 +1,4 @@
+"""Session info."""
 import sys
 import uuid
 
@@ -14,7 +15,9 @@ from pyrevit.userconfig import user_config
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
 
-logger = get_logger(__name__)
+
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
@@ -76,8 +79,10 @@ def get_loaded_pyrevit_assemblies():
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
-    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR,
-                        DEFAULT_SEPARATOR.join(loaded_assm_name_list))
+    envvars.set_pyrevit_env_var(
+        PYREVIT_LOADEDASSMS_ENVVAR,
+        DEFAULT_SEPARATOR.join(loaded_assm_name_list)
+        )
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()
                                 + len(loaded_assm_name_list))
@@ -90,10 +95,10 @@ def report_env():
 
     system_diag()
 
-    logger.info('pyRevit version: %s - </> with :growing_heart: in %s',
-                pyrvt_ver, about.get_pyrevit_about().madein)
+    mlogger.info('pyRevit version: %s - </> with :growing_heart: in %s',
+                 pyrvt_ver, about.get_pyrevit_about().madein)
     if user_config.core.get_option('rocketmode', False):
-        logger.info('pyRevit Rocket Mode enabled. :rocket:')
+        mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 
     if HOST_APP.is_newer_than(2017):
         full_host_name = \
@@ -101,12 +106,12 @@ def report_env():
                                           HOST_APP.subversion)
     else:
         full_host_name = HOST_APP.version_name
-    logger.info('Host is %s (build: %s id: %s)',
-                full_host_name, HOST_APP.build, HOST_APP.proc_id)
-    logger.info('Running on: %s', sys.version)
-    logger.info('User is: %s', HOST_APP.username)
-    logger.info('Home Directory is: %s', HOME_DIR)
-    logger.info('Session uuid is: %s', get_session_uuid())
-    logger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
-    logger.info('Config file is (%s): %s',
-                user_config.config_type, user_config.config_file)
+    mlogger.info('Host is %s (build: %s id: %s)',
+                 full_host_name, HOST_APP.build, HOST_APP.proc_id)
+    mlogger.info('Running on: %s', sys.version)
+    mlogger.info('User is: %s', HOST_APP.username)
+    mlogger.info('Home Directory is: %s', HOME_DIR)
+    mlogger.info('Session uuid is: %s', get_session_uuid())
+    mlogger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
+    mlogger.info('Config file is (%s): %s',
+                 user_config.config_type, user_config.config_file)

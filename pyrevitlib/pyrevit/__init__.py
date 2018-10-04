@@ -10,13 +10,13 @@ Examples:
     >>> from pyrevit import HOST_APP
     >>> from pyrevit import EXEC_PARAMS
 """
-
-import clr
+#pylint: disable=W0703,C0302,C0103,C0413
 import sys
 import os
 import os.path as op
 from collections import namedtuple
 import traceback
+import clr  #pylint: disable=E0401
 
 
 try:
@@ -86,13 +86,12 @@ sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 
 
-# pylama:ignore=E402
 # now we can start importing stuff
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI  # noqa pylama ignore DB not being used here
+from pyrevit.api import DB, UI
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -111,7 +110,7 @@ class PyRevitException(Exception):
     def msg(self):
         """Return exception message."""
         if self.args:
-            return self.args[0]
+            return self.args[0] #pylint: disable=E1136
         else:
             return ''
 
@@ -336,7 +335,7 @@ class _HostApplication(object):
 try:
     # Create an intance of host application wrapper
     # making sure __revit__ is available
-    HOST_APP = _HostApplication(__revit__)  # noqa
+    HOST_APP = _HostApplication(__revit__)  #pylint: disable=E0602
 except Exception:
     raise Exception('Critical Error: Host software is not supported. '
                     '(__revit__ handle is not available)')

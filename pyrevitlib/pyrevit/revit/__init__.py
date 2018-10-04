@@ -7,6 +7,7 @@ from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB, UI
 
+#pylint: disable=W0401
 from pyrevit.revit.db import *
 from pyrevit.revit.db import query
 from pyrevit.revit.db import create
@@ -23,7 +24,8 @@ from pyrevit.revit import serverutils
 from pyrevit.revit import geom
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def get_imported_symbol(symbol_name):
@@ -42,7 +44,7 @@ class RevitWrapper(types.ModuleType):
         attr = get_imported_symbol(attr_name)
         if not attr:
             raise AttributeError('\'module\' object has no attribute \'{}\''
-                                 .format(symbol_name))
+                                 .format(attr_name))
         return attr
 
     @property

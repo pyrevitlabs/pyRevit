@@ -7,8 +7,8 @@ suite to test the full functionality of that module, although only a subset of
 functions are used during startup and normal operations of pyRevit.
 """
 
-from pyrevit.unittests._testrunner import run_module_tests
 import warnings
+from pyrevit.unittests._testrunner import run_module_tests
 warnings.filterwarnings("ignore")
 
 

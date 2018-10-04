@@ -3,8 +3,8 @@ perform upgrades between versions here,
 e.g. adding a new config parameter
 
 """
-
-import pyrevit.coreutils.appdata as appdata
+#pylint: disable=W0611
+from pyrevit.coreutils import appdata
 from pyrevit.coreutils import find_loaded_asm, get_revit_instance_count
 
 
@@ -28,9 +28,10 @@ from pyrevit.coreutils import find_loaded_asm, get_revit_instance_count
 #     """
 #     cache_file_exts = ['pickle', 'json', 'log', 'pym']
 #     for cache_file_ext in cache_file_exts:
-#         for cache_file_path in appdata.list_data_files(file_ext=cache_file_ext,
-#                                                        universal=True):
-#                 appdata.garbage_data_file(cache_file_path)
+#         for cache_file_path in appdata.list_data_files(
+#                 file_ext=cache_file_ext,
+#                 universal=True):
+#             appdata.garbage_data_file(cache_file_path)
 
 #     # Cleanup Universal Dll files
 #     if get_revit_instance_count() == 1:
@@ -88,7 +89,7 @@ from pyrevit.coreutils import find_loaded_asm, get_revit_instance_count
 #         user_config.save_changes()
 
 
-def upgrade_user_config(user_config):
+def upgrade_user_config(user_config):   #pylint: disable=W0613
     # _filelogging_config_upgrade(user_config)
     # _loadbeta_config_upgrade(user_config)
     # _startuplogtimeout_config_upgrade(user_config)

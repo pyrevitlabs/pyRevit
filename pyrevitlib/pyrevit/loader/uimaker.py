@@ -1,3 +1,4 @@
+"""UI maker."""
 import imp
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
@@ -7,6 +8,7 @@ from pyrevit.coreutils.logger import get_logger
 if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils.ribbon import get_current_ui
 
+#pylint: disable=W0703,C0302,C0103,C0413
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
     STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
     PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
@@ -15,7 +17,7 @@ from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
     PANEL_PUSH_BUTTON_POSTFIX
 
 
-logger = get_logger(__name__)
+mlogger = get_logger(__name__)
 
 
 CONFIG_SCRIPT_TITLE_POSTFIX = u'\u25CF'
@@ -54,7 +56,7 @@ def _make_button_tooltip_ext(button, asm_name):
                     button.max_revit_ver)
 
     if button.min_revit_ver and button.max_revit_ver:
-        if not int(button.min_revit_ver) == int(button.max_revit_ver):
+        if int(button.min_revit_ver) != int(button.max_revit_ver):
             tooltip_ext += 'Compatible with {} {} to {}\n\n'\
                 .format(HOST_APP.proc_name,
                         button.min_revit_ver, button.max_revit_ver)
@@ -113,12 +115,12 @@ def _produce_ui_separator(ui_maker_params):
     ext_asm_info = ui_maker_params.asm_info
 
     if not ext_asm_info.reloading:
-        logger.debug('Adding separator to: {}'.format(parent_ui_item))
+        mlogger.debug('Adding separator to: %s', parent_ui_item)
         try:
             if hasattr(parent_ui_item, 'add_separator'):    # re issue #361
                 parent_ui_item.add_separator()
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            mlogger.error('UI error: %s', err.msg)
 
     return None
 
@@ -133,11 +135,11 @@ def _produce_ui_slideout(ui_maker_params):
     ext_asm_info = ui_maker_params.asm_info
 
     if not ext_asm_info.reloading:
-        logger.debug('Adding slide out to: {}'.format(parent_ui_item))
+        mlogger.debug('Adding slide out to: %s', parent_ui_item)
         try:
             parent_ui_item.add_slideout()
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            mlogger.error('UI error: %s', err.msg)
 
     return None
 
@@ -156,7 +158,7 @@ def _produce_ui_smartbutton(ui_maker_params):
     if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing smart button: {}'.format(smartbutton))
+    mlogger.debug('Producing smart button: %s', smartbutton)
     try:
         parent_ui_item.create_push_button(
             smartbutton.name,
@@ -171,11 +173,11 @@ def _produce_ui_smartbutton(ui_maker_params):
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
     new_uibutton = parent_ui_item.button(smartbutton.name)
-    logger.debug('Importing smart button as module: {}'.format(smartbutton))
+    mlogger.debug('Importing smart button as module: %s', smartbutton)
     try:
         # replacing EXEC_PARAMS.command_name value with button name so the
         # init script can log under its own name
@@ -197,8 +199,7 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__shiftclick__'] = False
         __builtins__['__forceddebugmode__'] = False
     except Exception as err:
-        logger.error('Smart button import setup: {} | {}'
-                     .format(smartbutton, err))
+        mlogger.error('Smart button import setup: %s | %s', smartbutton, err)
         return new_uibutton
 
     try:
@@ -210,8 +211,8 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__commandpath__'] = prev_commandpath
         __builtins__['__shiftclick__'] = prev_shiftclick
         __builtins__['__forceddebugmode__'] = prev_debugmode
-        logger.debug('Import successful: {}'.format(importedscript))
-        logger.debug('Running self initializer: {}'.format(smartbutton))
+        mlogger.debug('Import successful: %s', importedscript)
+        mlogger.debug('Running self initializer: %s', smartbutton)
 
         res = False
         try:
@@ -219,22 +220,21 @@ def _produce_ui_smartbutton(ui_maker_params):
             res = importedscript.__selfinit__(smartbutton,
                                               new_uibutton, HOST_APP.uiapp)
         except Exception as button_err:
-            logger.error('Error initializing smart button: {} | {}'
-                         .format(smartbutton, button_err))
+            mlogger.error('Error initializing smart button: %s | %s',
+                          smartbutton, button_err)
 
         # if the __selfinit__ function returns False
         # remove the button
         if res is False:
-            logger.debug('SelfInit returned False on Smartbutton: {}'
-                         .format(new_uibutton))
+            mlogger.debug('SelfInit returned False on Smartbutton: %s',
+                          new_uibutton)
             new_uibutton.deactivate()
 
-        logger.debug('SelfInit successful on Smartbutton: {}'
-                     .format(new_uibutton))
+        mlogger.debug('SelfInit successful on Smartbutton: %s', new_uibutton)
         return new_uibutton
     except Exception as err:
-        logger.error('Smart button script import error: {} | {}'
-                     .format(smartbutton, err))
+        mlogger.error('Smart button script import error: %s | %s',
+                      smartbutton, err)
         return new_uibutton
 
 
@@ -255,7 +255,7 @@ def _produce_ui_linkbutton(ui_maker_params):
     if not linkbutton.command_class:
         return None
 
-    logger.debug('Producing button: {}'.format(linkbutton))
+    mlogger.debug('Producing button: %s', linkbutton)
     try:
         linked_asm_list = find_loaded_asm(linkbutton.assembly)
         if not linked_asm_list:
@@ -278,7 +278,7 @@ def _produce_ui_linkbutton(ui_maker_params):
             ui_title=_make_ui_title(linkbutton))
         return parent_ui_item.button(linkbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -296,7 +296,7 @@ def _produce_ui_pushbutton(ui_maker_params):
     if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing button: {}'.format(pushbutton))
+    mlogger.debug('Producing button: %s', pushbutton)
     try:
         parent_ui_item.create_push_button(
             pushbutton.name,
@@ -312,7 +312,7 @@ def _produce_ui_pushbutton(ui_maker_params):
             ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -325,14 +325,14 @@ def _produce_ui_pulldown(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     pulldown = ui_maker_params.component
 
-    logger.debug('Producing pulldown button: {}'.format(pulldown))
+    mlogger.debug('Producing pulldown button: %s', pulldown)
     try:
         parent_ribbon_panel.create_pulldown_button(pulldown.name,
                                                    pulldown.icon_file,
                                                    update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(pulldown.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -345,14 +345,14 @@ def _produce_ui_split(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     split = ui_maker_params.component
 
-    logger.debug('Producing split button: {}'.format(split))
+    mlogger.debug('Producing split button: %s}', split)
     try:
         parent_ribbon_panel.create_split_button(split.name,
                                                 split.icon_file,
                                                 update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(split.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -365,14 +365,14 @@ def _produce_ui_splitpush(ui_maker_params):
     parent_ribbon_panel = ui_maker_params.parent_ui
     splitpush = ui_maker_params.component
 
-    logger.debug('Producing splitpush button: {}'.format(splitpush))
+    mlogger.debug('Producing splitpush button: %s', splitpush)
     try:
         parent_ribbon_panel.create_splitpush_button(splitpush.name,
                                                     splitpush.icon_file,
                                                     update_if_exists=True)
         return parent_ribbon_panel.ribbon_item(splitpush.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -393,7 +393,7 @@ def _produce_ui_stacks(ui_maker_params):
     # (parent_ui_item.close_stack) to finish adding items to the stack.
     try:
         parent_ui_panel.open_stack()
-        logger.debug('Opened stack: {}'.format(stack_cmp.name))
+        mlogger.debug('Opened stack: %s', stack_cmp.name)
 
         if HOST_APP.is_older_than('2017'):
             _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
@@ -419,13 +419,13 @@ def _produce_ui_stacks(ui_maker_params):
 
         try:
             parent_ui_panel.close_stack()
-            logger.debug('Closed stack: {}'.format(stack_cmp.name))
+            mlogger.debug('Closed stack: %s', stack_cmp.name)
         except PyRevitException as err:
-            logger.error('Error creating stack | {}'.format(err))
+            mlogger.error('Error creating stack | %s', err)
 
     except Exception as err:
-        logger.error('Can not create stack under this parent: {} | {}'
-                     .format(parent_ui_panel, err))
+        mlogger.error('Can not create stack under this parent: %s | %s',
+                      parent_ui_panel, err)
 
 
 def _produce_ui_panelpushbutton(ui_maker_params):
@@ -435,14 +435,14 @@ def _produce_ui_panelpushbutton(ui_maker_params):
         ui_maker_params (UIMakerParams): Standard parameters for making ui item
     """
     parent_ui_item = ui_maker_params.parent_ui
-    parent = ui_maker_params.parent_cmp
+    # parent = ui_maker_params.parent_cmp
     paneldlgbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
     if paneldlgbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    logger.debug('Producing panel button: {}'.format(paneldlgbutton))
+    mlogger.debug('Producing panel button: %s', paneldlgbutton)
     try:
         parent_ui_item.create_panel_push_button(
             paneldlgbutton.name,
@@ -457,7 +457,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
 
         return parent_ui_item.button(paneldlgbutton.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -470,12 +470,12 @@ def _produce_ui_panels(ui_maker_params):
     parent_ui_tab = ui_maker_params.parent_ui
     panel = ui_maker_params.component
 
-    logger.debug('Producing ribbon panel: {}'.format(panel))
+    mlogger.debug('Producing ribbon panel: %s', panel)
     try:
         parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
         return parent_ui_tab.ribbon_panel(panel.name)
     except PyRevitException as err:
-        logger.error('UI error: {}'.format(err.msg))
+        mlogger.error('UI error: %s', err.msg)
         return None
 
 
@@ -488,46 +488,46 @@ def _produce_ui_tab(ui_maker_params):
     parent_ui = ui_maker_params.parent_ui
     tab = ui_maker_params.component
 
-    logger.debug('Verifying tab: {}'.format(tab))
+    mlogger.debug('Verifying tab: %s', tab)
     if tab.has_commands():
-        logger.debug('Tabs has command: {}'.format(tab))
-        logger.debug('Producing ribbon tab: {}'.format(tab))
+        mlogger.debug('Tabs has command: %s', tab)
+        mlogger.debug('Producing ribbon tab: %s', tab)
         try:
             parent_ui.create_ribbon_tab(tab.name, update_if_exists=True)
             return parent_ui.ribbon_tab(tab.name)
         except PyRevitException as err:
-            logger.error('UI error: {}'.format(err.msg))
+            mlogger.error('UI error: %s', err.msg)
             return None
     else:
-        logger.debug('Tab does not have any commands. Skipping: {}'
-                     .format(tab.name))
+        mlogger.debug('Tab does not have any commands. Skipping: %s', tab.name)
         return None
 
 
-_component_creation_dict = {TAB_POSTFIX: _produce_ui_tab,
-                            PANEL_POSTFIX: _produce_ui_panels,
-                            STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
-                            STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
-                            PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
-                            SPLIT_BUTTON_POSTFIX: _produce_ui_split,
-                            SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
-                            PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-                            TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
-                            SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
-                            LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
-                            SEPARATOR_IDENTIFIER: _produce_ui_separator,
-                            SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
-                            PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
-                            }
+_component_creation_dict = {
+    TAB_POSTFIX: _produce_ui_tab,
+    PANEL_POSTFIX: _produce_ui_panels,
+    STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
+    STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
+    PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
+    SPLIT_BUTTON_POSTFIX: _produce_ui_split,
+    SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
+    PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
+    SEPARATOR_IDENTIFIER: _produce_ui_separator,
+    SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
+    PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
+    }
 
 
 def _recursively_produce_ui_items(ui_maker_params):
     for sub_cmp in ui_maker_params.component:
         ui_item = None
         try:
-            logger.debug('Calling create func {} for: {}'
-                         .format(_component_creation_dict[sub_cmp.type_id],
-                                 sub_cmp))
+            mlogger.debug('Calling create func %s for: %s',
+                          _component_creation_dict[sub_cmp.type_id],
+                          sub_cmp)
             ui_item = _component_creation_dict[sub_cmp.type_id](
                 UIMakerParams(ui_maker_params.parent_ui,
                               ui_maker_params.component,
@@ -535,19 +535,19 @@ def _recursively_produce_ui_items(ui_maker_params):
                               ui_maker_params.asm_info,
                               ui_maker_params.create_beta_cmds))
         except KeyError:
-            logger.debug('Can not find create function for: {}'.format(sub_cmp))
+            mlogger.debug('Can not find create function for: %s', sub_cmp)
         except Exception as create_err:
-            logger.critical(create_err)
+            mlogger.critical(create_err)
 
-        logger.debug('UI item created by create func is: {}'.format(ui_item))
+        mlogger.debug('UI item created by create func is: %s', ui_item)
 
         if ui_item and sub_cmp.is_container:
-                _recursively_produce_ui_items(
-                    UIMakerParams(ui_item,
-                                  ui_maker_params.component,
-                                  sub_cmp,
-                                  ui_maker_params.asm_info,
-                                  ui_maker_params.create_beta_cmds))
+            _recursively_produce_ui_items(
+                UIMakerParams(ui_item,
+                              ui_maker_params.component,
+                              sub_cmp,
+                              ui_maker_params.asm_info,
+                              ui_maker_params.create_beta_cmds))
 
 
 if not EXEC_PARAMS.doc_mode:
@@ -559,8 +559,7 @@ def update_pyrevit_ui(parsed_ext, ext_asm_info, create_beta=False):
     Updates/Creates pyRevit ui for the given extension and
     provided assembly dll address.
     """
-    logger.debug('Creating/Updating ui for extension: {}'
-                 .format(parsed_ext))
+    mlogger.debug('Creating/Updating ui for extension: %s', parsed_ext)
     _recursively_produce_ui_items(
         UIMakerParams(current_ui, None, parsed_ext, ext_asm_info, create_beta))
 
@@ -570,7 +569,7 @@ def cleanup_pyrevit_ui():
     for item in untouched_items:
         if not item.is_native():
             try:
-                logger.debug('Deactivating: {}'.format(item))
+                mlogger.debug('Deactivating: %s', item)
                 item.deactivate()
             except Exception as deact_err:
-                logger.debug(deact_err)
+                mlogger.debug(deact_err)

@@ -4,7 +4,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit.framework import clr
 from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE
 
-
+#pylint: disable=W0703,C0302,C0103
 if not EXEC_PARAMS.doc_mode:
     # import base classes module
     clr.AddReference(BASE_TYPES_ASM)

@@ -76,13 +76,13 @@ def get_param_value(targetparam):
 
 def get_value_range(param_name, doc=None):
     values = set()
-    for el in get_all_elements(doc):
-        targetparam = el.LookupParameter(param_name)
+    for element in get_all_elements(doc):
+        targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
             if value is not None \
                     and safe_strtype(value).lower() != 'none':
-                if type(value) == str \
+                if isinstance(value, str) \
                         and not value.isspace():
                     values.add(value)
                 else:
@@ -104,17 +104,17 @@ def get_elements_by_parameter(param_name, param_value,
     #           .ToElementIds()
 
     found_els = []
-    for el in get_all_elements(doc):
-        targetparam = el.LookupParameter(param_name)
+    for element in get_all_elements(doc):
+        targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
             if partial \
                     and value is not None \
-                    and type(value) == str \
+                    and isinstance(value, str) \
                     and param_value in value:
-                found_els.append(el)
+                found_els.append(element)
             elif param_value == value:
-                found_els.append(el)
+                found_els.append(element)
     return found_els
 
 
@@ -123,9 +123,9 @@ def get_elements_by_shared_parameter(param_name, param_value,
     doc = doc or HOST_APP.doc
     param_id = get_sharedparam_id(param_name)
     if param_id:
-        pp = DB.ParameterValueProvider(param_id)
-        pe = DB.FilterStringEquals()
-        vrule = DB.FilterStringRule(pp, pe, param_value, True)
+        pvprov = DB.ParameterValueProvider(param_id)
+        pfilter = DB.FilterStringEquals()
+        vrule = DB.FilterStringRule(pvprov, pfilter, param_value, True)
         if inverse:
             vrule = DB.FilterInverseRule(vrule)
         param_filter = DB.ElementParameterFilter(vrule)
@@ -195,13 +195,13 @@ def get_elements_by_familytype(family_name, symbol_name, doc=None):
 def find_workset(workset_name_or_list, doc=None, partial=True):
     workset_clctr = \
         DB.FilteredWorksetCollector(doc or HOST_APP.doc).ToWorksets()
-    if type(workset_name_or_list) == list:
+    if isinstance(workset_name_or_list, list):
         for workset in workset_clctr:
             for workset_name in workset_name_or_list:
                 if workset_name in workset.Name:
                     return workset
 
-    elif type(workset_name_or_list) == str:
+    elif isinstance(workset_name_or_list, str):
         workset_name = workset_name_or_list
 
         if partial:
@@ -258,16 +258,16 @@ def get_model_sharedparams(doc=None):
 
 
 def get_sharedparam_id(param_name):
-    for sp in get_model_sharedparams():
-        if sp.name == param_name:
-            return sp.param_def.Id
+    for shared_param in get_model_sharedparams():
+        if shared_param.name == param_name:
+            return shared_param.param_def.Id
 
 
 def get_model_sharedparam(param_id_or_name, doc=None):
     msp_list = get_model_sharedparams(doc or HOST_APP.doc)
-    for x in msp_list:
-        if x == param_id_or_name:
-            return x
+    for msp in msp_list:
+        if msp == param_id_or_name:
+            return msp
 
 
 def model_has_sharedparam(param_id_or_name, doc=None):
@@ -280,8 +280,8 @@ def get_project_info():
 
 def get_revisions(doc=None):
     return list(DB.FilteredElementCollector(doc or HOST_APP.doc)
-                  .OfCategory(DB.BuiltInCategory.OST_Revisions)
-                  .WhereElementIsNotElementType())
+                .OfCategory(DB.BuiltInCategory.OST_Revisions)
+                .WhereElementIsNotElementType())
 
 
 def get_sheet_revisions(sheet, doc=None):
@@ -307,25 +307,25 @@ def get_links(linktype=None, doc=None):
         raise PyRevitException('PathName is empty. Model is not saved.')
 
     links = []
-    modelPath = \
+    model_path = \
         DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
-    if not modelPath:
+    if not model_path:
         raise PyRevitException('Model is not saved. Can not read links.')
     try:
-        transData = DB.TransmissionData.ReadTransmissionData(modelPath)
-        externalReferences = transData.GetAllExternalFileReferenceIds()
-        for refId in externalReferences:
-            extRef = transData.GetLastSavedReferenceData(refId)
-            link = doc.GetElement(refId)
+        trans_data = DB.TransmissionData.ReadTransmissionData(model_path)
+        external_refs = trans_data.GetAllExternalFileReferenceIds()
+        for ref_id in external_refs:
+            ext_ref = trans_data.GetLastSavedReferenceData(ref_id)
+            link = doc.GetElement(ref_id)
             if linktype:
-                if extRef.ExternalFileReferenceType == linktype:
-                    links.append(db.ExternalRef(link, extRef))
+                if ext_ref.ExternalFileReferenceType == linktype:
+                    links.append(db.ExternalRef(link, ext_ref))
             else:
-                links.append(db.ExternalRef(link, extRef))
+                links.append(db.ExternalRef(link, ext_ref))
         return links
-    except Exception as e:
+    except Exception as data_err:
         raise PyRevitException('Error reading links from model path: {} | {}'
-                               .format(modelPath, e))
+                               .format(model_path, data_err))
 
 
 def get_linked_models(doc=None, loaded_only=False):
@@ -342,7 +342,7 @@ def get_linked_models(doc=None, loaded_only=False):
 def get_linked_model_doc(linked_model):
     lmodel = None
     if isinstance(linked_model, DB.RevitLinkType):
-        lmodel = db.ExternalRef(linked_model)
+        lmodel = db.ExternalRef(linked_model) #pylint: disable=E1120
     elif isinstance(linked_model, db.ExternalRef):
         lmodel = linked_model
 
@@ -354,9 +354,9 @@ def get_linked_model_doc(linked_model):
 
 def find_first_legend(doc=None):
     doc = doc or HOST_APP.doc
-    for v in DB.FilteredElementCollector(doc).OfClass(DB.View):
-        if v.ViewType == DB.ViewType.Legend:
-            return v
+    for view in DB.FilteredElementCollector(doc).OfClass(DB.View):
+        if view.ViewType == DB.ViewType.Legend:
+            return view
     return None
 
 
@@ -496,10 +496,10 @@ def get_all_grids(group_by_direction=False,
         if tdoc is not None:
             all_grids.extend(list(
                 DB.FilteredElementCollector(tdoc)
-                  .OfCategory(DB.BuiltInCategory.OST_Grids)
-                  .WhereElementIsNotElementType()
-                  .ToElements()
-                  ))
+                .OfCategory(DB.BuiltInCategory.OST_Grids)
+                .WhereElementIsNotElementType()
+                .ToElements()
+                ))
 
     if group_by_direction:
         direcs = {db.XYZPoint(x.Curve.Direction) for x in all_grids}
@@ -531,10 +531,10 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
 def get_closest_gridpoint(element, gridpoints):
     dist = (gridpoints[0].point.unwrap().DistanceTo(element.Location.Point),
             gridpoints[0])
-    for gp in gridpoints:
-        d = gp.point.unwrap().DistanceTo(element.Location.Point)
-        if d < dist[0]:
-            dist = (d, gp)
+    for grid_point in gridpoints:
+        gp_dist = grid_point.point.unwrap().DistanceTo(element.Location.Point)
+        if gp_dist < dist[0]:
+            dist = (gp_dist, grid_point)
     return dist[1]
 
 

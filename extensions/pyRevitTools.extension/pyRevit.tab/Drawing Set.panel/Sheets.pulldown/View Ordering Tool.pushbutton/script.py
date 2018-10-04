@@ -9,7 +9,7 @@ __doc__ = 'Run this tool in a sheet view and click on viewports one '\
 # verify active view is sheet
 curview = revit.activeview
 if not isinstance(curview, DB.ViewSheet):
-    forms.alert('You must be on a sheet to use this tool.', exit=True)
+    forms.alert('You must be on a sheet to use this tool.', exitscript=True)
 
 # collect viewports
 viewports = []
