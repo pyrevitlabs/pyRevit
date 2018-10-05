@@ -33,12 +33,10 @@ for flt in filters:
 # print('{} Filters found.'.format(len(allFilters)))
 
 for v in views:
-    try:
-        filters = v.GetFilters()
-        for flid in filters:
-            usedFiltersSet.add(flid.IntegerValue)
-    except Exception:
-        continue
+    if v.AreGraphicsOverridesAllowed():
+        view_filters = v.GetFilters()
+        for filter_id in view_filters:
+            usedFiltersSet.add(filter_id.IntegerValue)
 
 if not allFilters:
     forms.alert('There are no filters available.')
