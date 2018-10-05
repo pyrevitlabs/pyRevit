@@ -34,3 +34,4 @@ description = 'Latest Release Candidate (RC1)'
 [deployments]
 core = ['bin', 'pyrevitlib', 'site-packages', 'pyRevitfile']
 base = ['bin', 'extensions/pyRevitCore.extension', 'extensions/pyRevitTools.extension', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+basex = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
