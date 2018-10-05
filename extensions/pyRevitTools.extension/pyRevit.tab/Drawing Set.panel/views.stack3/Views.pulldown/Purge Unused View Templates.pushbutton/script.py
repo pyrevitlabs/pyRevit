@@ -5,11 +5,10 @@ __doc__ = 'Deletes all unused view templates '\
           '(Any view template that has not been assigned to a view).'
 
 
-class ViewTemplateToPurge:
-    def __init__(self, template_elid):
-        self.state = False
-        self.template_el = revit.doc.GetElement(DB.ElementId(template_elid))
-        self.name = self.template_el.Name
+class ViewTemplateToPurge(forms.TemplateListItem):
+    @property
+    def name(self):
+        return self.item.Name
 
 
 viewlist = DB.FilteredElementCollector(revit.doc)\
@@ -40,7 +39,8 @@ if unusedvtemp:
     # ask user for wipe actions
     return_options = \
         forms.SelectFromList.show(
-            [ViewTemplateToPurge(x) for x in unusedvtemp],
+            [ViewTemplateToPurge(revit.doc.GetElement(DB.ElementId(x)))
+             for x in unusedvtemp],
             title='Select View Templates to Purge',
             width=500,
             button_name='Purge View Templates',
@@ -50,7 +50,6 @@ if unusedvtemp:
     if return_options:
         with revit.Transaction('Purge Unused View Templates'):
             for vtp in return_options:
-                if vtp.state:
-                    print('Purging View Template: {0}\t{1}'
-                          .format(vtp.template_el.Id, vtp.name))
-                    revit.doc.Delete(vtp.template_el.Id)
+                print('Purging View Template: {0}\t{1}'
+                        .format(vtp.Id, vtp.Name))
+                revit.doc.Delete(vtp.Id)
