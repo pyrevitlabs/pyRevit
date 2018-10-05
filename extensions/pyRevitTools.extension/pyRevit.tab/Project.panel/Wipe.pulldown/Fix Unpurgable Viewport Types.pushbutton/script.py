@@ -77,8 +77,8 @@ dest_vp_types = \
         multiselect=False
         )
 
-if len(dest_vp_types) >= 1:
-    dest_vp_typeid = dest_vp_types[0].get_rvt_obj().Id
+if dest_vp_types:
+    dest_vp_typeid = dest_vp_types.get_rvt_obj().Id
 else:
     sys.exit()
 

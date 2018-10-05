@@ -489,9 +489,7 @@ class SelectFromList(TemplateUserInputWindow):
     def _get_options(self):
         if self.multiselect:
             if self.return_all:
-                return self._unwrap_options(
-                    [x for x in self._get_active_ctx()]
-                    )
+                return [x for x in self._get_active_ctx()]
             else:
                 return self._unwrap_options(
                     [x for x in self._get_active_ctx()
@@ -1292,8 +1290,7 @@ def select_revisions(title='Select Revision',
         checked_only=True
         )
 
-    if selected_revs:
-        return [x.unwrap() for x in selected_revs]
+    return selected_revs
 
 
 def select_sheets(title='Select Sheets',
@@ -1361,8 +1358,7 @@ def select_sheets(title='Select Sheets',
         checked_only=True
         )
 
-    if selected_sheets:
-        return [x.unwrap() for x in selected_sheets]
+    return selected_sheets
 
 
 def select_views(title='Select Views',
@@ -1405,11 +1401,11 @@ def select_views(title='Select Views',
         button_name=button_name,
         width=width,
         multiselect=multiple,
+        return_all=True,
         checked_only=True
         )
 
-    if selected_views:
-        return [x.unwrap() for x in selected_views]
+    return selected_views
 
 
 def select_open_docs(title='Select Open Documents',
