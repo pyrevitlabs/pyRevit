@@ -6,6 +6,7 @@ import json
 from collections import defaultdict
 
 from pyrevit import PyRevitException, HOST_APP
+from pyrevit import labs
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import git, fully_remove_dir
@@ -19,9 +20,9 @@ mlogger = get_logger(__name__)
 
 
 class PyRevitPluginAlreadyInstalledException(PyRevitException):
-    def __init__(self, ext_pkg):
+    def __init__(self, extpkg):
         super(PyRevitPluginAlreadyInstalledException, self).__init__()
-        self.ext_pkg = ext_pkg
+        self.extpkg = extpkg
         PyRevitException(self)
 
 
@@ -34,20 +35,21 @@ class PyRevitPluginRemoveException(PyRevitException):
 
 
 PLUGIN_EXT_DEF_FILE = 'extensions.json'
+PLUGIN_INTERNAL_EXT_DEF_FILE = 'extension.json'
 
 
 class DependencyGraph:
-    def __init__(self, ext_pkg_list):
+    def __init__(self, extpkg_list):
         self.dep_dict = defaultdict(list)
-        self.ext_pkgs = ext_pkg_list
-        for ext_pkg in ext_pkg_list:
-            if ext_pkg.dependencies:
-                for dep_pkg_name in ext_pkg.dependencies:
-                    self.dep_dict[dep_pkg_name].append(ext_pkg)
+        self.extpkgs = extpkg_list
+        for extpkg in extpkg_list:
+            if extpkg.dependencies:
+                for dep_pkg_name in extpkg.dependencies:
+                    self.dep_dict[dep_pkg_name].append(extpkg)
 
-    def has_installed_dependents(self, ext_pkg_name):
-        if ext_pkg_name in self.dep_dict:
-            for dep_pkg in self.dep_dict[ext_pkg_name]:
+    def has_installed_dependents(self, extpkg_name):
+        if extpkg_name in self.dep_dict:
+            for dep_pkg in self.dep_dict[extpkg_name]:
                 if dep_pkg.is_installed:
                     return True
         else:
@@ -95,6 +97,7 @@ class ExtensionPackage:
         self.url = None
         self.def_file_path = set()
         self.authusers = set()
+        self.authgroups = set()
         self.rocket_mode_compatible = False
         self.website = None
         self.image = None
@@ -138,6 +141,11 @@ class ExtensionPackage:
         authusers = info_dict.get('authusers', [])
         if authusers:
             self.authusers.update(authusers)
+
+        # update list of authorized user groups
+        authgroups = info_dict.get('authgroups', [])
+        if authgroups:
+            self.authgroups.update(authgroups)
 
         # rocket mode compatibility
         self.rocket_mode_compatible = \
@@ -231,8 +239,8 @@ class ExtensionPackage:
         """
         try:
             if self.is_installed:
-                ext_pkg_repo = git.get_repo(self.installed_dir)
-                return ext_pkg_repo.last_commit_hash
+                extpkg_repo = git.get_repo(self.installed_dir)
+                return extpkg_repo.last_commit_hash
         except Exception:
             return None
 
@@ -275,6 +283,11 @@ class ExtensionPackage:
         """
         if self.authusers:
             return HOST_APP.username in self.authusers
+        elif self.authgroups:
+            for authgroup in self.authgroups:
+                if labs.Common.Security.UserAuth.\
+                        UserIsInSecurityGroup(authgroup):
+                    return True
         else:
             return True
 
@@ -305,65 +318,65 @@ class ExtensionPackage:
         user_config.save_changes()
 
 
-def _update_ext_pkgs(ext_def_file, loaded_pkgs):
-    with codecs.open(ext_def_file, 'r', 'utf-8') as ext_pkg_def_file:
+def _update_extpkgs(ext_def_file, loaded_pkgs):
+    with codecs.open(ext_def_file, 'r', 'utf-8') as extpkg_def_file:
         try:
-            defined_exts_pkg = json.load(ext_pkg_def_file)['extensions']
+            defined_exts_pkg = json.load(extpkg_def_file)['extensions']
         except Exception as def_file_err:
             print('Can not parse plugin ext definition file: {} '
                   '| {}'.format(ext_def_file, def_file_err))
             return
 
-    for ext_pkg_dict in defined_exts_pkg:
-        ext_pkg = ExtensionPackage(ext_pkg_dict, ext_def_file)
+    for extpkg_dict in defined_exts_pkg:
+        extpkg = ExtensionPackage(extpkg_dict, ext_def_file)
         matched_pkg = None
         for loaded_pkg in loaded_pkgs:
-            if loaded_pkg.name == ext_pkg.name:
+            if loaded_pkg.name == extpkg.name:
                 matched_pkg = loaded_pkg
                 break
         if matched_pkg:
-            matched_pkg.update_info(ext_pkg_dict)
-        elif ext_pkg.is_valid():
-            loaded_pkgs.append(ext_pkg)
+            matched_pkg.update_info(extpkg_dict)
+        elif extpkg.is_valid():
+            loaded_pkgs.append(extpkg)
 
 
-def _install_ext_pkg(ext_pkg, install_dir, install_dependencies=True):
-    is_installed_path = ext_pkg.is_installed
+def _install_extpkg(extpkg, install_dir, install_dependencies=True):
+    is_installed_path = extpkg.is_installed
     if is_installed_path:
-        raise PyRevitPluginAlreadyInstalledException(ext_pkg)
+        raise PyRevitPluginAlreadyInstalledException(extpkg)
 
     # if package is installable
-    if ext_pkg.url:
-        clone_path = op.join(install_dir, ext_pkg.ext_dirname)
-        mlogger.info('Installing %s to %s', ext_pkg.name, clone_path)
+    if extpkg.url:
+        clone_path = op.join(install_dir, extpkg.ext_dirname)
+        mlogger.info('Installing %s to %s', extpkg.name, clone_path)
 
-        if ext_pkg.config.username and ext_pkg.config.password:
-            git.git_clone(ext_pkg.url, clone_path,
-                          username=ext_pkg.config.username,
-                          password=ext_pkg.config.password)
+        if extpkg.config.username and extpkg.config.password:
+            git.git_clone(extpkg.url, clone_path,
+                          username=extpkg.config.username,
+                          password=extpkg.config.password)
         else:
-            git.git_clone(ext_pkg.url, clone_path)
+            git.git_clone(extpkg.url, clone_path)
         mlogger.info('Extension successfully installed :thumbs_up:')
     else:
         raise PyRevitPluginNoInstallLinkException()
 
     if install_dependencies:
-        if ext_pkg.dependencies:
-            mlogger.info('Installing dependencies for %s', ext_pkg.name)
-            for dep_pkg_name in ext_pkg.dependencies:
+        if extpkg.dependencies:
+            mlogger.info('Installing dependencies for %s', extpkg.name)
+            for dep_pkg_name in extpkg.dependencies:
                 dep_pkg = get_ext_package_by_name(dep_pkg_name)
                 if dep_pkg:
-                    _install_ext_pkg(dep_pkg,
+                    _install_extpkg(dep_pkg,
                                      install_dir,
                                      install_dependencies=True)
 
 
-def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
-    if ext_pkg.is_removable:
-        dir_to_remove = ext_pkg.is_installed
+def _remove_extpkg(extpkg, remove_dependencies=True):
+    if extpkg.is_removable:
+        dir_to_remove = extpkg.is_installed
         if dir_to_remove:
             fully_remove_dir(dir_to_remove)
-            ext_pkg.remove_pkg_config()
+            extpkg.remove_pkg_config()
             mlogger.info('Successfully removed extension from: %s',
                          dir_to_remove)
         else:
@@ -374,11 +387,27 @@ def _remove_ext_pkg(ext_pkg, remove_dependencies=True):
 
     if remove_dependencies:
         dg = get_dependency_graph()
-        mlogger.info('Removing dependencies for %s', ext_pkg.name)
-        for dep_pkg_name in ext_pkg.dependencies:
+        mlogger.info('Removing dependencies for %s', extpkg.name)
+        for dep_pkg_name in extpkg.dependencies:
             dep_pkg = get_ext_package_by_name(dep_pkg_name)
             if dep_pkg and not dg.has_installed_dependents(dep_pkg_name):
-                _remove_ext_pkg(dep_pkg, remove_dependencies=True)
+                _remove_extpkg(dep_pkg, remove_dependencies=True)
+
+
+def _find_internal_extpkgs(ext_dir):
+    internal_extpkg_def_files = []
+    mlogger.debug('Looking for internal package defs under %s', ext_dir)
+    for subfolder in os.listdir(ext_dir):
+        if subfolder.endswith(ExtensionTypes.UI_EXTENSION.POSTFIX) \
+                or subfolder.endswith(ExtensionTypes.LIB_EXTENSION.POSTFIX):
+            mlogger.debug('Found extension foldere %s', subfolder)
+            int_extpkg_deffile = \
+                op.join(ext_dir, subfolder, PLUGIN_INTERNAL_EXT_DEF_FILE)
+            mlogger.debug('Looking for %s', int_extpkg_deffile)
+            if op.exists(int_extpkg_deffile):
+                mlogger.debug('Found %s', int_extpkg_deffile)
+                internal_extpkg_def_files.append(int_extpkg_deffile)
+    return internal_extpkg_def_files
 
 
 def get_ext_packages(authorized_only=True):
@@ -390,22 +419,29 @@ def get_ext_packages(authorized_only=True):
     Returns:
         list: list of registered plugin extensions (ExtensionPackage)
     """
-    ext_pkgs = []
+    extpkgs = []
     for ext_dir in user_config.get_ext_root_dirs():
-        ext_pkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
-        if op.exists(ext_pkg_deffile):
-            _update_ext_pkgs(ext_pkg_deffile, ext_pkgs)
+        extpkg_deffile = op.join(ext_dir, PLUGIN_EXT_DEF_FILE)
+        mlogger.debug('Looking for %s', extpkg_deffile)
+        # check for external ext def file
+        if op.exists(extpkg_deffile):
+            mlogger.debug('Found %s', extpkg_deffile)
+            _update_extpkgs(extpkg_deffile, extpkgs)
+        # check internals now
+        internal_extpkg_defs = _find_internal_extpkgs(ext_dir)
+        for int_def_file in internal_extpkg_defs:
+            _update_extpkgs(int_def_file, extpkgs)
 
     if authorized_only:
-        return [x for x in ext_pkgs if x.user_has_access]
+        return [x for x in extpkgs if x.user_has_access]
 
-    return ext_pkgs
+    return extpkgs
 
 
-def get_ext_package_by_name(ext_pkg_name):
-    for ext_pkg in get_ext_packages(authorized_only=False):
-        if ext_pkg.name == ext_pkg_name:
-            return ext_pkg
+def get_ext_package_by_name(extpkg_name):
+    for extpkg in get_ext_packages(authorized_only=False):
+        if extpkg.name == extpkg_name:
+            return extpkg
     return None
 
 
@@ -413,7 +449,7 @@ def get_dependency_graph():
     return DependencyGraph(get_ext_packages(authorized_only=False))
 
 
-def install(ext_pkg, install_dir, install_dependencies=True):
+def install(extpkg, install_dir, install_dependencies=True):
     """
     Installed the extension in the given parent directory. This method uses
     .installed_dir property of extension object as installation directory name
@@ -421,7 +457,7 @@ def install(ext_pkg, install_dir, install_dependencies=True):
     extension dependencies.
 
     Args:
-        ext_pkg (ExtensionPackage): Extension package to be installed
+        extpkg (ExtensionPackage): Extension package to be installed
         install_dir (str): Parent directory to install extension in.
         install_dependencies (bool): Install the dependencies as well
 
@@ -429,17 +465,17 @@ def install(ext_pkg, install_dir, install_dependencies=True):
         PyRevitException: on install error with error message
     """
     try:
-        _install_ext_pkg(ext_pkg, install_dir, install_dependencies)
+        _install_extpkg(extpkg, install_dir, install_dependencies)
     except PyRevitPluginAlreadyInstalledException as already_installed_err:
         mlogger.warning('%s extension is already installed under %s',
-                        already_installed_err.ext_pkg.name,
-                        already_installed_err.ext_pkg.is_installed)
+                        already_installed_err.extpkg.name,
+                        already_installed_err.extpkg.is_installed)
     except PyRevitPluginNoInstallLinkException:
         mlogger.error('Extension does not have an install link '
                       'and can not be installed.')
 
 
-def remove(ext_pkg, remove_dependencies=True):
+def remove(extpkg, remove_dependencies=True):
     """
     Removes the extension from its installed directory and
     clears its configuration.
@@ -448,7 +484,7 @@ def remove(ext_pkg, remove_dependencies=True):
         PyRevitException: on remove error with error message
     """
     try:
-        _remove_ext_pkg(ext_pkg, remove_dependencies)
+        _remove_extpkg(extpkg, remove_dependencies)
     except PyRevitPluginRemoveException as remove_err:
         mlogger.error('Error removing extension: %s | %s',
-                      ext_pkg.name, remove_err)
+                      extpkg.name, remove_err)
