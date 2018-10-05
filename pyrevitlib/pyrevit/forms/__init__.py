@@ -25,6 +25,7 @@ from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
+from pyrevit.forms import toaster
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -111,6 +112,7 @@ class WPFWindow(framework.Windows.Window):
             self.Close()
 
     def setup_icon(self):
+        """Setup default window icon."""
         iconpath = op.join(BIN_DIR, 'window_icon.png')
         self.Icon = utils.bitmap_from_file(iconpath)
 
@@ -1767,3 +1769,34 @@ def check_familydoc(doc=None, family_cat=None, exitscript=False):
     alert('Active document must be a Family document{}.'
           .format(family_type_msg), exitscript=exitscript)
     return False
+
+
+def toast(message, title='pyRevit', appid='pyRevit',
+          icon=None, click=None, actions=None):
+    """Show a Windows 10 notification.
+
+    Args:
+        message (str): notification message
+        title (str): notification title
+        appid (str): app name (will show under message)
+        icon (str): file path to icon .ico file (defaults to pyRevit icon)
+        click (str): click action commands string
+        actions (dict): dictionary of button names and action strings
+
+    Example:
+        >>> script.toast("Hello World!",
+        ...              title="My Script",
+        ...              appid="MyAPP",
+        ...              click="https://eirannejad.github.io/pyRevit/",
+        ...              actions={
+        ...                  "Open Google":"https://google.com",
+        ...                  "Open Toast64":"https://github.com/go-toast/toast"
+        ...                  })
+    """
+    toaster.send_toast(
+        message,
+        title=title,
+        appid=appid,
+        icon=icon,
+        click=click,
+        actions=actions)

@@ -17,6 +17,7 @@ from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import envvars
 from pyrevit import framework
+from pyrevit import forms
 from pyrevit import revit
 from pyrevit import output
 from pyrevit import versionmgr
