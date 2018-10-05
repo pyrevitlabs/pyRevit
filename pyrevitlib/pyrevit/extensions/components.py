@@ -275,7 +275,7 @@ class Extension(GenericUIContainer):
         if manifest_file:
             with codecs.open(manifest_file, 'r', 'utf-8') as mfile:
                 try:
-                    manifest_cfg = json.load(mfile)[exts.EXT_MANIFEST_NAME]
+                    manifest_cfg = json.load(mfile)
                     return manifest_cfg
                 except Exception as manfload_err:
                     print('Can not parse ext manifest file: {} '

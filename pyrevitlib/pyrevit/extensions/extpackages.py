@@ -12,7 +12,7 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import git, fully_remove_dir
 from pyrevit.userconfig import user_config
 
-from pyrevit.extensions import ExtensionTypes
+from pyrevit import extensions as exts
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -34,8 +34,8 @@ class PyRevitPluginRemoveException(PyRevitException):
     pass
 
 
-PLUGIN_EXT_DEF_FILE = 'extensions.json'
-PLUGIN_INTERNAL_EXT_DEF_FILE = 'extension.json'
+PLUGIN_EXT_DEF_MANIFEST_NAME = 'extensions'
+PLUGIN_EXT_DEF_FILE = PLUGIN_EXT_DEF_MANIFEST_NAME + exts.JSON_FILE_FORMAT
 
 
 class DependencyGraph:
@@ -89,7 +89,7 @@ class ExtensionPackage:
                               for initializing the extension.
             def_file_path (str): The file path of the extension definition file
         """
-        self.type = ExtensionTypes.UI_EXTENSION
+        self.type = exts.ExtensionTypes.UI_EXTENSION
         self.builtin = False
         self.default_enabled = True
         self.name = None
@@ -109,8 +109,8 @@ class ExtensionPackage:
 
     def update_info(self, info_dict, def_file_path=None):
         ext_type = info_dict.get('type', None)
-        if ext_type == ExtensionTypes.LIB_EXTENSION.ID:
-            self.type = ExtensionTypes.LIB_EXTENSION
+        if ext_type == exts.ExtensionTypes.LIB_EXTENSION.ID:
+            self.type = exts.ExtensionTypes.LIB_EXTENSION
 
         self.builtin = \
             safe_strtype(info_dict.get('builtin',
@@ -321,21 +321,25 @@ class ExtensionPackage:
 def _update_extpkgs(ext_def_file, loaded_pkgs):
     with codecs.open(ext_def_file, 'r', 'utf-8') as extpkg_def_file:
         try:
-            defined_exts_pkg = json.load(extpkg_def_file)['extensions']
+            extpkg_dict = json.load(extpkg_def_file)
+            defined_exts_pkgs = [extpkg_dict]
+            if PLUGIN_EXT_DEF_MANIFEST_NAME in extpkg_dict.keys():
+                defined_exts_pkgs = \
+                    extpkg_dict[PLUGIN_EXT_DEF_MANIFEST_NAME]
         except Exception as def_file_err:
             print('Can not parse plugin ext definition file: {} '
                   '| {}'.format(ext_def_file, def_file_err))
             return
 
-    for extpkg_dict in defined_exts_pkg:
-        extpkg = ExtensionPackage(extpkg_dict, ext_def_file)
+    for extpkg_def in defined_exts_pkgs:
+        extpkg = ExtensionPackage(extpkg_def, ext_def_file)
         matched_pkg = None
         for loaded_pkg in loaded_pkgs:
             if loaded_pkg.name == extpkg.name:
                 matched_pkg = loaded_pkg
                 break
         if matched_pkg:
-            matched_pkg.update_info(extpkg_dict)
+            matched_pkg.update_info(extpkg_def)
         elif extpkg.is_valid():
             loaded_pkgs.append(extpkg)
 
@@ -398,11 +402,11 @@ def _find_internal_extpkgs(ext_dir):
     internal_extpkg_def_files = []
     mlogger.debug('Looking for internal package defs under %s', ext_dir)
     for subfolder in os.listdir(ext_dir):
-        if subfolder.endswith(ExtensionTypes.UI_EXTENSION.POSTFIX) \
-                or subfolder.endswith(ExtensionTypes.LIB_EXTENSION.POSTFIX):
+        if subfolder.endswith(exts.ExtensionTypes.UI_EXTENSION.POSTFIX) \
+                or subfolder.endswith(exts.ExtensionTypes.LIB_EXTENSION.POSTFIX):
             mlogger.debug('Found extension foldere %s', subfolder)
             int_extpkg_deffile = \
-                op.join(ext_dir, subfolder, PLUGIN_INTERNAL_EXT_DEF_FILE)
+                op.join(ext_dir, subfolder, exts.EXT_MANIFEST_FILE)
             mlogger.debug('Looking for %s', int_extpkg_deffile)
             if op.exists(int_extpkg_deffile):
                 mlogger.debug('Found %s', int_extpkg_deffile)

@@ -4,6 +4,7 @@ from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import script
 from pyrevit import forms
+from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit.userconfig import user_config
@@ -42,10 +43,10 @@ class ExtensionPackageListItem:
         # setting up pretty type name that shows up on the list
         self.Type = 'Unknown'
         if self.ext_pkg.type == \
-                extpkgs.ExtensionTypes.LIB_EXTENSION:
+                exts.ExtensionTypes.LIB_EXTENSION:
             self.Type = 'IronPython Library'
         elif self.ext_pkg.type == \
-                extpkgs.ExtensionTypes.UI_EXTENSION:
+                exts.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
 
         # setting up other list data
@@ -331,7 +332,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
         try:
             extpkgs.install(self.selected_pkg.ext_pkg,
-                                        sender.install_path)
+                            sender.install_path)
             self.Close()
             call_reload()
         except Exception as pkg_install_err:
