@@ -1,13 +1,9 @@
 pyrevit cli:
-    ✔ pyrevit update commands should have options to ask for revit closure nicely @done (10/5/2018, 9:01:06 AM)
 
 installer:  
     ☐ uninstaller should remove update icon in start
     ☐ installer should wait for revits to close
 
 pyrevit:
-    ☐ SelectFromList compat
-    ✔ move extensions.json into name.extension/extension.json @done (10/5/2018, 9:00:45 AM)
-    ✔ add authgroups to extension.json @done (10/5/2018, 9:00:52 AM)
     ☐ slowly move collectors in List tool to db.query
     ☐ slowly phase out the extpackages module and user PyRevitLabs
