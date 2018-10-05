@@ -9,11 +9,10 @@ __doc__ = 'Deletes all view parameter filters that has not been '\
 logger = script.get_logger()
 
 
-class ViewFilterToPurge:
-    def __init__(self, filter_elid):
-        self.state = False
-        self.filter_el = revit.doc.GetElement(DB.ElementId(filter_elid))
-        self.name = self.filter_el.Name
+class ViewFilterToPurge(forms.TemplateListItem):
+    @property
+    def name(self):
+        return self.item.Name
 
 
 views = DB.FilteredElementCollector(revit.doc)\
@@ -50,7 +49,8 @@ if not unusedFilters:
 # ask user for wipe actions
 return_options = \
     forms.SelectFromList.show(
-        [ViewFilterToPurge(x) for x in unusedFilters],
+        [ViewFilterToPurge(revit.doc.GetElement(DB.ElementId(x)))
+         for x in unusedFilters],
         title='Select Filters to Purge',
         width=500,
         button_name='Purge Filters',
@@ -63,11 +63,10 @@ return_options = \
 if return_options:
     with revit.Transaction('Purge Unused Filters'):
         for vf in return_options:
-            if vf.state:
-                logger.debug('Purging Filter: {0}\t{1}'
-                             .format(vf.filter_el.Id, vf.name))
-                try:
-                    revit.doc.Delete(vf.filter_el.Id)
-                except Exception as del_err:
-                    logger.error('Error purging filter: {} | {}'
-                                 .format(vf.name, del_err))
+            logger.debug('Purging Filter: {0}\t{1}'
+                            .format(vf.Id, vf.Name))
+            try:
+                revit.doc.Delete(vf.Id)
+            except Exception as del_err:
+                logger.error('Error purging filter: {} | {}'
+                                .format(vf.Name, del_err))
