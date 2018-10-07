@@ -28,3 +28,7 @@ __py*
 
 # ignore local config file
 *.ini
+
+# Release files
+release/pyRevit-cache
+release/pyRevit-SetupFiles
