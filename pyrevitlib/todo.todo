@@ -1,8 +1,6 @@
 pyrevit cli:
 
 installer:  
-    ☐ uninstaller should remove update icon in start
-    ☐ installer should wait for revits to close
 
 pyrevit:
     ☐ slowly move collectors in List tool to db.query

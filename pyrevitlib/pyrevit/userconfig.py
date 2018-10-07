@@ -253,6 +253,21 @@ def verify_configs(config_file_path=None):
     if not parser.core.has_option(consts.ConfigsUserCanConfigKey):
         parser.core.set_option(consts.ConfigsUserCanConfigKey, True)
 
+    # usagelogging section
+    if not parser.has_section(consts.ConfigsUsageLoggingSection):
+        parser.add_section(consts.ConfigsUsageLoggingSection)
+    # usagelogging active
+    if not parser.usagelogging.has_option(consts.ConfigsUsageLoggingStatusKey):
+        parser.usagelogging.set_option(
+            consts.ConfigsUsageLoggingStatusKey, False
+            )
+    # usagelogging file
+    if not parser.usagelogging.has_option(consts.ConfigsUsageLogFilePathKey):
+        parser.usagelogging.set_option(consts.ConfigsUsageLogFilePathKey, "")
+    # usagelogging server
+    if not parser.usagelogging.has_option(consts.ConfigsUsageLogServerUrlKey):
+        parser.usagelogging.set_option(consts.ConfigsUsageLogServerUrlKey, "")
+
     # save config into config file
     if config_file_path:
         parser.save_changes()
