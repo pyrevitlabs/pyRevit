@@ -3,5 +3,6 @@ pyrevit cli:
 installer:  
 
 pyrevit:
+    ☐ faster titleblock selection tool
     ☐ slowly move collectors in List tool to db.query
     ☐ slowly phase out the extpackages module and user PyRevitLabs

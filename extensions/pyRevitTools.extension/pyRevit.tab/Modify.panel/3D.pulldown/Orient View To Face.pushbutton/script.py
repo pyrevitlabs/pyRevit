@@ -41,7 +41,7 @@ def reorient():
 
 curview = revit.activeview
 
-if isinstance(curview, DB.View3D) and curview.IsSectionBoxActive:
+if isinstance(curview, DB.View3D):
     reorient()
 else:
     forms.alert('You must be on a 3D view for this tool to work.')

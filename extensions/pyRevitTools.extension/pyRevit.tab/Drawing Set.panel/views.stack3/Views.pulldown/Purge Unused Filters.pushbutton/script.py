@@ -45,28 +45,28 @@ unusedFilters = allFilters - usedFiltersSet
 
 if not unusedFilters:
     forms.alert('All filters are in use. No purging in necessary.')
+else:
+    # ask user for wipe actions
+    return_options = \
+        forms.SelectFromList.show(
+            [ViewFilterToPurge(revit.doc.GetElement(DB.ElementId(x)))
+            for x in unusedFilters],
+            title='Select Filters to Purge',
+            width=500,
+            button_name='Purge Filters',
+            multiselect=True
+            )
 
-# ask user for wipe actions
-return_options = \
-    forms.SelectFromList.show(
-        [ViewFilterToPurge(revit.doc.GetElement(DB.ElementId(x)))
-         for x in unusedFilters],
-        title='Select Filters to Purge',
-        width=500,
-        button_name='Purge Filters',
-        multiselect=True
-        )
+    # print('{} Filters have not been used and will be purged.'
+    #        .format(len(unusedFilters)))
 
-# print('{} Filters have not been used and will be purged.'
-#        .format(len(unusedFilters)))
-
-if return_options:
-    with revit.Transaction('Purge Unused Filters'):
-        for vf in return_options:
-            logger.debug('Purging Filter: {0}\t{1}'
-                            .format(vf.Id, vf.Name))
-            try:
-                revit.doc.Delete(vf.Id)
-            except Exception as del_err:
-                logger.error('Error purging filter: {} | {}'
-                                .format(vf.Name, del_err))
+    if return_options:
+        with revit.Transaction('Purge Unused Filters'):
+            for vf in return_options:
+                logger.debug('Purging Filter: {0}\t{1}'
+                                .format(vf.Id, vf.Name))
+                try:
+                    revit.doc.Delete(vf.Id)
+                except Exception as del_err:
+                    logger.error('Error purging filter: {} | {}'
+                                    .format(vf.Name, del_err))

@@ -35,7 +35,9 @@ for v in views:
 unusedvtemp = vtemp - usedvtemp
 
 
-if unusedvtemp:
+if not unusedvtemp:
+    forms.alert('All View Templates are in use. No purging in necessary.')
+else:
     # ask user for wipe actions
     return_options = \
         forms.SelectFromList.show(
