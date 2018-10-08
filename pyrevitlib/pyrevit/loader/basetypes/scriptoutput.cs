@@ -192,29 +192,29 @@ namespace PyRevitBaseClasses {
             var rendererRow = new RowDefinition();
             baseGrid.RowDefinitions.Add(rendererRow);
 
-            if (_debugMode) {
-                var splitterRow = new RowDefinition();
-                var replRow = new RowDefinition();
+            //if (_debugMode) {
+            //    var splitterRow = new RowDefinition();
+            //    var replRow = new RowDefinition();
 
-                splitterRow.Height = new GridLength(6);
-                replRow.Height = new GridLength(100);
+            //    splitterRow.Height = new GridLength(6);
+            //    replRow.Height = new GridLength(100);
 
-                baseGrid.RowDefinitions.Add(splitterRow);
-                baseGrid.RowDefinitions.Add(replRow);
+            //    baseGrid.RowDefinitions.Add(splitterRow);
+            //    baseGrid.RowDefinitions.Add(replRow);
 
-                var splitter = new GridSplitter();
-                splitter.ResizeDirection = GridResizeDirection.Rows;
-                splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
-                splitter.Background = Brushes.LightGray;
+            //    var splitter = new GridSplitter();
+            //    splitter.ResizeDirection = GridResizeDirection.Rows;
+            //    splitter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            //    splitter.Background = Brushes.LightGray;
 
-                var repl = new REPLControl();
+            //    var repl = new REPLControl();
 
-                Grid.SetRow(splitter, 2);
-                Grid.SetRow(repl, 3);
+            //    Grid.SetRow(splitter, 2);
+            //    Grid.SetRow(repl, 3);
 
-                baseGrid.Children.Add(splitter);
-                baseGrid.Children.Add(repl);
-            }
+            //    baseGrid.Children.Add(splitter);
+            //    baseGrid.Children.Add(repl);
+            //}
 
             // set activity bar and host
             Grid.SetRow(activityBar, 0);
