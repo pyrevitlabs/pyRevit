@@ -80,7 +80,7 @@
                             <StackPanel>
                                 <WrapPanel Margin="10,15,0,5">
                                     <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Experimental / Reload Required)</TextBlock>
+                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Reload Required)</TextBlock>
                                 </WrapPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
                                                                                                If enabled, pyRevit will use a shared engine per each extension
