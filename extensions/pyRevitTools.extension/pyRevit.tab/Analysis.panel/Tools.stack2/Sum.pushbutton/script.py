@@ -149,8 +149,9 @@ def process_sets(element_list):
             el_sets[el.LineStyle.Name].append(el)
         else:
             eltype = revit.doc.GetElement(el.GetTypeId())
-            wrapped_eltype = revit.ElementWrapper(eltype)
-            el_sets[wrapped_eltype.name].append(el)
+            if eltype:
+                wrapped_eltype = revit.ElementWrapper(eltype)
+                el_sets[wrapped_eltype.name].append(el)
 
     return el_sets
 
