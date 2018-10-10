@@ -1,9 +1,9 @@
+#pylint: disable=C0111,E0401,C0103,W0201,W0613
 import re
 
-from pyrevit import coreutils
 from pyrevit.coreutils import pyutils
 from pyrevit import forms
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import script
 
 import patmaker
@@ -35,14 +35,19 @@ logger = script.get_logger()
 
 selection = revit.get_selection()
 
-accpeted_lines = [DB.DetailLine,
-                  DB.DetailArc,
-                  DB.DetailEllipse,
-                  DB.DetailNurbSpline]
 
-accpeted_curves = [DB.Arc,
-                   DB.Ellipse,
-                   DB.NurbSpline]
+acceptable_lines = (DB.DetailLine,
+                    DB.DetailArc,
+                    DB.DetailEllipse,
+                    DB.DetailNurbSpline,
+                    DB.ModelLine,
+                    DB.ModelArc,
+                    DB.ModelEllipse,
+                    DB.ModelNurbSpline)
+
+acceptable_curves = (DB.Arc,
+                     DB.Ellipse,
+                     DB.NurbSpline)
 
 detail_line_types = [DB.DetailLine,
                      DB.DetailEllipse,
@@ -115,12 +120,18 @@ class MakePatternWindow(forms.WPFWindow):
 
         return rvt_fillgrid
 
+    def grab_geom_curves(self, line):
+        return line.GeometryCurve
+
+    def convert_to_acceptable_line(self):
+        pass
+
     def cleanup_selection(self, rvt_elements, for_model=True):
-        lines = []
+        geom_curves = []
         adjusted_fillgrids = []
         for element in rvt_elements:
-            if type(element) in accpeted_lines:
-                lines.append(element)
+            if isinstance(element, acceptable_lines):
+                geom_curves.append(self.grab_geom_curves(element))
             elif isinstance(element, DB.FilledRegion):
                 frtype = revit.doc.GetElement(element.GetTypeId())
                 fillpat_element = revit.doc.GetElement(frtype.FillPatternId)
@@ -134,7 +145,7 @@ class MakePatternWindow(forms.WPFWindow):
                 else:
                     adjusted_fillgrids.extend(fillgrids)
 
-        return lines, adjusted_fillgrids
+        return geom_curves, adjusted_fillgrids
 
     def setup_patnames(self):
         existing_pats = DB.FilteredElementCollector(revit.doc)\
@@ -216,14 +227,13 @@ class MakePatternWindow(forms.WPFWindow):
 
     def create_pattern(self, domain, export_only=False, export_path=None):
         # cleanup selection (pick only acceptable curves)
-        self.selected_lines, self.selected_fillgrids = \
+        self.selected_geom_curves, self.selected_fillgrids = \
             self.cleanup_selection(self._selection,
                                    for_model=self.is_model_pat)
 
         line_tuples = []
-        for det_line in self.selected_lines:
-            geom_curve = det_line.GeometryCurve
-            if type(geom_curve) in accpeted_curves:
+        for geom_curve in self.selected_geom_curves:
+            if isinstance(geom_curve, acceptable_curves):
                 tes_points = [tp for tp in geom_curve.Tessellate()]
                 for xyz1, xyz2 in pyutils.pairwise(tes_points, step=1):
                     line_tuples.append(self.make_pattern_line(xyz1, xyz2))
