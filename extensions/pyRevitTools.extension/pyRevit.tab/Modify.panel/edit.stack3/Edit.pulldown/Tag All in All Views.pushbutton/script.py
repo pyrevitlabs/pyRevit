@@ -1,9 +1,12 @@
+"""Tag all chosen element types in all views."""
+#pylint: disable=C0103,E0401,C0111
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit import forms
 
 
 logger = script.get_logger()
+output = script.get_output()
 
 
 views = DB.FilteredElementCollector(revit.doc)\
@@ -12,7 +15,7 @@ views = DB.FilteredElementCollector(revit.doc)\
           .ToElements()
 
 
-def GetElementCenter(el, v):
+def GetElementCenter(el):
     cen = el.Location.Point
     z = (el.UpperLimit.Elevation + el.LimitOffset) / 2
     cen = cen.Add(DB.XYZ(0, 0, z))
@@ -26,41 +29,49 @@ def tag_all_rooms():
               .ToElements()
 
     with revit.Transaction('Tag All Rooms in All Views'):
-        for v in views:
+        for view in views:
             for el in rooms:
-                room_center = GetElementCenter(el, v)
-                if type(v) in [DB.ViewSection, DB.ViewPlan]:
-                    logger.debug('Working on view: %s' % v.ViewName)
-                    roomtag = \
+                room_center = GetElementCenter(el)
+                if not room_center:
+                    logger.debug('Can not detect center for element: {}',
+                                 output.linkify(el.Id))
+                    continue
+                if isinstance(view, (DB.ViewSection, DB.ViewPlan)):
+                    logger.debug('Working on view: %s' % view.ViewName)
+                    room_tag = \
                         revit.doc.Create.NewRoomTag(
                             DB.LinkElementId(el.Id),
                             DB.UV(room_center.X, room_center.Y),
-                            v.Id
+                            view.Id
                             )
-                    if isinstance(v, DB.ViewSection):
-                        roomtag.Location.Move(DB.XYZ(0, 0, room_center.Z))
+                    if isinstance(view, DB.ViewSection):
+                        room_tag.Location.Move(DB.XYZ(0, 0, room_center.Z))
 
 
 def tag_all_spaces():
     spaces = DB.FilteredElementCollector(revit.doc)\
-              .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)\
-              .WhereElementIsNotElementType()\
-              .ToElements()
+               .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)\
+               .WhereElementIsNotElementType()\
+               .ToElements()
 
     with revit.Transaction('Tag All Spaces in All Views'):
-        for v in views:
+        for view in views:
             for el in spaces:
-                room_center = GetElementCenter(el, v)
-                if type(v) in [DB.ViewSection, DB.ViewPlan]:
-                    logger.debug('Working on view: %s' % v.ViewName)
-                    roomtag = \
+                space_center = GetElementCenter(el)
+                if not space_center:
+                    logger.debug('Can not detect center for element: {}',
+                                 output.linkify(el.Id))
+                    continue
+                if isinstance(view, (DB.ViewSection, DB.ViewPlan)):
+                    logger.debug('Working on view: %s' % view.ViewName)
+                    space_tag = \
                         revit.doc.Create.NewRoomTag(
                             DB.LinkElementId(el.Id),
-                            DB.UV(room_center.X, room_center.Y),
-                            v.Id
+                            DB.UV(space_center.X, space_center.Y),
+                            view.Id
                             )
-                    if isinstance(v, DB.ViewSection):
-                        roomtag.Location.Move(DB.XYZ(0, 0, room_center.Z))
+                    if isinstance(view, DB.ViewSection):
+                        space_tag.Location.Move(DB.XYZ(0, 0, space_center.Z))
 
 
 options_dict = {'Tag All Rooms in All Views': tag_all_rooms,
