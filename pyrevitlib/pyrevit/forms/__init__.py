@@ -1341,7 +1341,8 @@ def select_sheets(title='Select Sheets',
 
     sheetsets = revit.query.get_sheet_sets(doc)
     for sheetset in sheetsets:
-        sheetset_sheets = sheetset.Views
+        sheetset_sheets = \
+            [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
         if filterfunc:
             sheetset_sheets = filter(filterfunc, sheetset_sheets)
         sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
