@@ -97,6 +97,18 @@ class PrintSheetsWindow(forms.WPFWindow):
     def include_placeholders(self):
         return self.indexspace_cb.IsChecked
 
+    @property
+    def sheet_list(self):
+        return self.sheets_lb.ItemsSource
+
+    @sheet_list.setter
+    def sheet_list(self, value):
+        self.sheets_lb.ItemsSource = value
+
+    @property
+    def printable_sheets(self):
+        return [x for x in self.sheet_list if x.printable]
+
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = \
             script.get_instance_data_file(str(schedule_view.Id.IntegerValue))
@@ -112,8 +124,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     as sched_data_file:
                 return sched_data_file.readlines()
         except Exception as open_err:
-            logger.error('Error opening sheet index export: {} | {}'
-                         .format(schedule_data_file, open_err))
+            logger.error('Error opening sheet index export: %s | %s',
+                         schedule_data_file, open_err)
             return sched_data
 
     def _order_sheets_by_schedule_data(self, schedule_view, sheet_list):
@@ -126,13 +138,12 @@ class PrintSheetsWindow(forms.WPFWindow):
         for sheet in sheet_list:
             for line_no, data_line in enumerate(sched_data):
                 try:
-                    if sheet.CanBePrinted:
-                        if sheet.SheetNumber in data_line:
-                            ordered_sheets_dict[line_no] = sheet
-                            break
-                    else:
-                        logger.warning('Sheet {} is not printable.'
-                                       .format(sheet.SheetNumber))
+                    if sheet.SheetNumber in data_line:
+                        ordered_sheets_dict[line_no] = sheet
+                        break
+                    if not sheet.CanBePrinted:
+                        logger.debug('Sheet %s is not printable.',
+                                     sheet.SheetNumber)
                 except Exception:
                     continue
 
@@ -166,7 +177,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         except Exception as printerr:
             logger.critical('Error getting printer manager from document. '
                             'Most probably there is not a printer defined '
-                            'on your system. | {}'.format(printerr))
+                            'on your system. | %s', printerr)
             return None
 
     def _print_combined_sheets_in_order(self):
@@ -182,11 +193,13 @@ class PrintSheetsWindow(forms.WPFWindow):
             sheet_set = DB.ViewSet()
             original_sheetnums = []
             with revit.Transaction('Fix Sheet Numbers') as t:
-                for idx, sheet in enumerate(self.sheets_lb.ItemsSource):
-                    sht = sheet.revit_sheet
-                    original_sheetnums.append(sht.SheetNumber)
-                    sht.SheetNumber = NPC * (idx + 1) + sht.SheetNumber
-                    sheet_set.Insert(sht)
+                for idx, sheet in enumerate(self.sheet_list):
+                    rvtsheet = sheet.revit_sheet
+                    original_sheetnums.append(rvtsheet.SheetNumber)
+                    rvtsheet.SheetNumber = \
+                        NPC * (idx + 1) + rvtsheet.SheetNumber
+                    if sheet.printable:
+                        sheet_set.Insert(rvtsheet)
 
             # Collect existing sheet sets
             cl = DB.FilteredElementCollector(revit.doc)
@@ -222,7 +235,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                     logger.critical(
                         'Error setting sheet set on print mechanism. '
                         'These items are included in the viewset '
-                        'object:\n{}'.format(sheet_report)
+                        'object:\n%s', sheet_report
                         )
                     raise viewset_err
 
@@ -241,10 +254,10 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             # now fix the sheet names
             with revit.Transaction('Restore Sheet Numbers') as t:
-                for sheet, sheetnum in zip(self.sheets_lb.ItemsSource,
+                for sheet, sheetnum in zip(self.sheet_list,
                                            original_sheetnums):
-                    sht = sheet.revit_sheet
-                    sht.SheetNumber = sheetnum
+                    rvtsheet = sheet.revit_sheet
+                    rvtsheet.SheetNumber = sheetnum
 
     def _print_sheets_in_order(self):
         # make sure we can access the print config
@@ -254,7 +267,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         print_mgr.PrintToFile = True
         # print_mgr.CombinedFile = False
         print_mgr.PrintRange = DB.PrintRange.Current
-        for sheet in self.sheets_lb.ItemsSource:
+        for sheet in self.sheet_list:
             output_fname = \
                 coreutils.cleanup_filename('{:05} {} - {}.pdf'
                                            .format(sheet.print_index,
@@ -265,8 +278,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             if sheet.printable:
                 print_mgr.SubmitPrint(sheet.revit_sheet)
             else:
-                logger.warning('Sheet {} is not printable. Skipping print.'
-                               .format(sheet.SheetNumber))
+                logger.debug('Sheet %s is not printable. Skipping print.',
+                             sheet.number)
 
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):
@@ -295,7 +308,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if not self.include_placeholders:
                     self._update_print_indices(printable_sheets)
 
-                self.sheets_lb.ItemsSource = printable_sheets
+                self.sheet_list = printable_sheets
 
             else:
                 self.indexspace_cb.IsChecked = True
@@ -303,12 +316,12 @@ class PrintSheetsWindow(forms.WPFWindow):
                 # update print indices
                 self._update_print_indices(sheet_list)
                 # Show all sheets
-                self.sheets_lb.ItemsSource = sheet_list
+                self.sheet_list = sheet_list
 
     def print_sheets(self, sender, args):
-        if self.sheets_lb.ItemsSource:
+        if self.sheet_list:
             if not self.combine_print:
-                sheet_count = len(self.sheets_lb.ItemsSource)
+                sheet_count = len(self.sheet_list)
                 if sheet_count > 5:
                     if not forms.alert('Are you sure you want to print {} '
                                        'sheets individually? The process can '
@@ -340,7 +353,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         dropped_idx = self.sheets_lb.Items.IndexOf(dropped_data)
         target_idx = self.sheets_lb.Items.IndexOf(target)
 
-        sheet_list = self.sheets_lb.ItemsSource
+        sheet_list = self.sheet_list
         sheet_list.remove(dropped_data)
         sheet_list.insert(target_idx, dropped_data)
         self._update_print_indices(sheet_list)
