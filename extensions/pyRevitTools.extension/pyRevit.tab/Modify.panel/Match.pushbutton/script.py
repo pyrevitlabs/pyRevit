@@ -3,7 +3,7 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__helpurl__ = "https://www.youtube.com/watch?v=SrjyyGvarhw"
+__helpurl__ = "{{docpath}}SrjyyGvarhw"
 
 __doc__ = 'Pick the source object that has the element graphics override '\
           'you like to match to, and then pick the destination objects '\
