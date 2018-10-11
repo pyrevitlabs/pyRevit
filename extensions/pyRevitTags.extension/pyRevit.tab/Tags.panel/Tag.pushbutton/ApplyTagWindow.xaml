@@ -1,0 +1,49 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        Width="407" Height="310"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        Title="Apply Tags">
+        <DockPanel Margin="10">
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Text="Enter Tag Name:" />
+            </StackPanel>
+            <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Content="Append Tag"
+                        Grid.Row="0" Grid.Column="1"
+                        Padding="10,0,10,0"
+                        ToolTip="Appends tag to list of tags already on the selected elements."
+                        Click="append_tags"/>
+                <Button Content="Replace Tags"
+                        Grid.Row="0" Grid.Column="2"
+                        Padding="10,0,10,0"
+                        Margin="5,0,0,0"
+                        ToolTip="Applies tag id to all selected elements&#x0a;and overwrites any existing tags."
+                        Click="overwrite_tags"/>
+                <GroupBox Header="Settings" Margin="0,2,0,0"
+                          Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
+                    <StackPanel Margin="10">
+                        <CheckBox x:Name="circuits_cb" IsChecked="True">Update Connected Circuits</CheckBox>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            <TextBox x:Name="tags_tb"
+                     AcceptsReturn="False" TextWrapping="Wrap"
+                     AcceptsTab="False" Margin="0 10 0 0"
+                     FontFamily="Courier New" FontSize="16"
+                     ScrollViewer.CanContentScroll="True"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+        </DockPanel>
+</Window>

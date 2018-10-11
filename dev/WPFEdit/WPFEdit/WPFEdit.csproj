@@ -85,6 +85,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml">
+      <Link>Tags\ManageTagsWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Tags.panel\Tag.pushbutton\ApplyTagWindow.xaml">
+      <Link>Tags\ApplyTagWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print.pulldown\Print Linked Sheets.pushbutton\PrintLinkedSheets.xaml">
       <Link>Tools\PrintLinkedSheets.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
