@@ -26,6 +26,7 @@ from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
+from pyrevit import versionmgr
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -1505,8 +1506,9 @@ def select_titleblocks(title='Select Titleblock',
             return tblock_dict[selected_titleblocks]
 
 
-def alert(msg, title='pyRevit', ok=True,
-          cancel=False, yes=False, no=False, retry=False, exitscript=False):
+def alert(msg, title=None, sub_msg=None, expanded=None, footer='', 
+          ok=True, cancel=False, yes=False, no=False, retry=False,
+          warn_icon=True, exitscript=False):
     """Show a task dialog with given message.
 
     Args:
@@ -1539,7 +1541,26 @@ def alert(msg, title='pyRevit', ok=True,
     if retry:
         buttons |= UI.TaskDialogCommonButtons.Retry
 
-    res = UI.TaskDialog.Show(title, msg, buttons)
+    cmd_name = EXEC_PARAMS.command_name
+    if not title:
+        title = cmd_name if cmd_name else 'pyRevit'
+
+    tdlg = UI.TaskDialog(title)
+    tdlg.CommonButtons = buttons
+    tdlg.MainInstruction = msg
+    tdlg.MainContent = sub_msg
+    tdlg.ExpandedContent = expanded
+    if footer:
+        footer += '\n'
+    tdlg.FooterText = \
+        footer + \
+        'pyRevit {}'.format(versionmgr.get_pyrevit_version().get_formatted())
+    tdlg.TitleAutoPrefix = False
+    tdlg.MainIcon = \
+        UI.TaskDialogIcon.TaskDialogIconWarning \
+        if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
+    # tdlg.VerificationText = 'verif'
+    res = tdlg.Show()
 
     if not exitscript:
         if res == UI.TaskDialogResult.Ok \
@@ -1714,7 +1735,7 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     """
     doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert(message)
+        alert(message ,warn_icon=True)
         return False
     return True
 

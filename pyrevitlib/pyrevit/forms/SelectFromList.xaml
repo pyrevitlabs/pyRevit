@@ -11,10 +11,11 @@
     <DockPanel Margin="10">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
             <DockPanel>
-                <TextBlock FontSize="14" Margin="0,3,10,0"
+                <TextBlock FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"
 						   DockPanel.Dock="Left">Filter:</TextBlock>
                 <StackPanel>
                     <TextBox x:Name="search_tb" Height="25px"
+                             VerticalContentAlignment="Center"
 							 TextChanged="search_txt_changed"/>
                     <Button Style="{StaticResource ClearButton}"
 							HorizontalAlignment="Right"
