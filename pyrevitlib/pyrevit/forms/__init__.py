@@ -11,6 +11,7 @@ import string
 from collections import OrderedDict
 import threading
 from functools import wraps
+import datetime
 
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
@@ -705,6 +706,59 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.Close()
         if sender:
             self._setup_response(response=sender.Content)
+
+
+class GetValueWindow(TemplateUserInputWindow):
+    """Standard form to get simple values from user.
+
+    Args:
+
+
+    Example:
+        >>> from pyrevit import forms
+        >>> items = ['item1', 'item2', 'item3']
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
+    """
+
+    xaml_source = 'GetValueWindow.xaml'
+
+    def _setup(self, **kwargs):
+        self.Width = 400
+        # determine value type
+        self.value_type = kwargs.get('value_type', 'string')
+        value_prompt = kwargs.get('prompt', None)
+        value_default = kwargs.get('default', None)
+
+        # customize window based on type
+        if self.value_type == 'string':
+            self.show_element(self.string_panel)
+            self.string_tb.Text = value_default if value_default else ''
+            self.string_tb.Focus()
+            self.string_tb.SelectAll()
+            self.string_prompt.Text = \
+                value_prompt if value_prompt else 'Enter string:'
+        elif self.value_type == 'dropdown':
+            self.show_element(self.dropdown_panel)
+            self.dropdown_prompt.Text = \
+                value_prompt if value_prompt else 'Pick one value:'
+            self.dropdown_cb.ItemsSource = self._context
+            if value_default:
+                self.dropdown_cb.SelectedItem = value_default
+        elif self.value_type == 'date':
+            self.show_element(self.date_panel)
+            self.date_prompt.Text = \
+                value_prompt if value_prompt else 'Pick date:'
+
+    def select(self, sender, args):    #pylint: disable=W0613
+        self.Close()
+        if self.value_type == 'string':
+            self.response = self.string_tb.Text
+        elif self.value_type == 'dropdown':
+            self.response = self.dropdown_cb.SelectedItem
+        elif self.value_type == 'date':
+            datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+            self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
 
 
 class TemplatePromptBar(WPFWindow):
@@ -1818,3 +1872,33 @@ def toast(message, title='pyRevit', appid='pyRevit',
         icon=icon,
         click=click,
         actions=actions)
+
+
+def ask_for_string(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='string',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_one_item(items, default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        items,
+        value_type='dropdown',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_date(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='date',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
