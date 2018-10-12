@@ -1,7 +1,8 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="False"
-        Width="407" Height="310"
+        Height="220" MinWidth="400"
+        SizeToContent="Width"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
@@ -17,18 +18,19 @@
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Button Content="Append Tag"
-                        Grid.Row="0" Grid.Column="1"
+                        Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                        Margin="5,0,0,0"
                         Padding="10,0,10,0"
                         ToolTip="Appends tag to list of tags already on the selected elements."
                         Click="append_tags"/>
                 <Button Content="Replace Tags"
-                        Grid.Row="0" Grid.Column="2"
+                        Grid.Row="0" Grid.Column="0"
                         Padding="10,0,10,0"
-                        Margin="5,0,0,0"
+                        Margin="0,0,5,0"
                         ToolTip="Applies tag id to all selected elements&#x0a;and overwrites any existing tags."
                         Click="overwrite_tags"/>
                 <GroupBox Header="Settings" Margin="0,2,0,0"
@@ -39,9 +41,12 @@
                 </GroupBox>
             </Grid>
             <TextBox x:Name="tags_tb"
-                     AcceptsReturn="False" TextWrapping="Wrap"
-                     AcceptsTab="False" Margin="0 10 0 0"
-                     FontFamily="Courier New" FontSize="16"
+                     AcceptsReturn="False" TextWrapping="NoWrap"
+                     HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     AcceptsTab="False"
+                     Margin="0 10 0 0"
+                     Padding="10,0,10,0"
+                     FontFamily="Courier New" FontSize="24" FontWeight="Bold"
                      ScrollViewer.CanContentScroll="True"
                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"/>

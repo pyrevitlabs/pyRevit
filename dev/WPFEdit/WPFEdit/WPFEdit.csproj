@@ -135,6 +135,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\GetValueWindow.xaml">
+      <Link>Forms\GetValueWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ProgressBar.xaml">
       <Link>Forms\ProgressBar.xaml</Link>
       <Generator>MSBuild:Compile</Generator>

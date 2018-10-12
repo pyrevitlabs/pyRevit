@@ -32,6 +32,12 @@ class ApplyTagWindow(forms.WPFWindow):
         if op.isfile(self._tag_cache):
             self._read_sow_cache()
 
+        selection = revit.get_selection().no_views()
+        sel_cnt = len(selection)
+        self.Title += ' (for {} Selected Elements)'.format(sel_cnt) #pylint: disable=E1101
+
+        self.tags_tb.Focus()
+
     @property
     def tags(self):
         return tagsmgr.extract_tags_from_str(self.tags_tb.Text)

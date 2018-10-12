@@ -73,10 +73,6 @@ class ManageTagsWindow(forms.WPFWindow):
     def selected_tags(self):
         return self._get_options()
 
-    @property
-    def new_tag_id(self):
-        return self.value_tb.Text
-
     def get_single_tag(self):
         if len(self.selected_tags) == 1:
             return self.selected_tags[0]
@@ -90,12 +86,10 @@ class ManageTagsWindow(forms.WPFWindow):
 
     def update_selection(self, sender, args):
         if len(self.selected_tags) > 1:
-            self.hide_element(self.newtag_dp)
             self.hide_element(self.rename_tag_b)
             self.hide_element(self.delete_tag_b)
             self.hide_element(self.create_schedules_b)
         else:
-            self.show_element(self.newtag_dp)
             self.show_element(self.rename_tag_b)
             self.show_element(self.delete_tag_b)
             self.show_element(self.create_schedules_b)
@@ -106,9 +100,6 @@ class ManageTagsWindow(forms.WPFWindow):
         else:
             self.show_element(self.create_3dview)
             self.show_element(self.create_filter_b)
-
-        tags_col = tagsmgr.join_tags(self.selected_tags)
-        self.value_tb.Text = tags_col.names
 
     def copy_tagid(self, sender, args):
         tags = '\r\n'.join([x.name for x in self.taglist_lb.SelectedItems])
@@ -127,14 +118,19 @@ class ManageTagsWindow(forms.WPFWindow):
     def rename_tag(self, sender, args):
         if self.selected_tags:
             self.Close()
-            try:
-                with revit.Transaction('Rename Tag',
-                                       log_errors=False):
-                    tagsmgr.rename_tag_id(self.selected_tags[0],
-                                          self.new_tag_id,
-                                          self._target_elements)
-            except Exception as e:
-                forms.alert(getattr(e, 'msg', str(e)))
+            new_tag = forms.ask_for_string(
+                default=self.selected_tags[0].name,
+                prompt='Enter new tag name:',
+                title='Tag Manager'
+                )
+            if new_tag:
+                try:
+                    with revit.Transaction('Rename Tag', log_errors=False):
+                        tagsmgr.rename_tag_id(self.selected_tags[0],
+                                              new_tag,
+                                              self._target_elements)
+                except Exception as e:
+                    forms.alert(getattr(e, 'msg', str(e)))
 
     def add_modifier(self, sender, args):
         if self.selected_tags:
