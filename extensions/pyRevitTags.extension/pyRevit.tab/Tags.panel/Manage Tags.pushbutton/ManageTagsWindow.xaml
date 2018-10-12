@@ -15,15 +15,7 @@
 
         <Style x:Key="ModiferTag" TargetType="Border">
             <Setter Property="CornerRadius" Value="5" />
-            <Setter Property="Background" Value="#f39c12" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=ModifierTitle, Path=Text}" Value="IFC">
-                    <Setter Property="Background" Value="#c7254e" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding ElementName=ModifierTitle, Path=Text}" Value="ASBUILT">
-                    <Setter Property="Background" Value="#909090" />
-                </DataTrigger>
-            </Style.Triggers>
+            <Setter Property="Background" Value="{Binding color}" />
         </Style>
 
         <DataTemplate x:Key="ModifierListItemTemplate">
@@ -38,6 +30,7 @@
                 </Border>
             </Grid>
         </DataTemplate>
+
         <DataTemplate x:Key="TagListItemTemplate">
             <WrapPanel>
                 <TextBlock HorizontalAlignment="Left"

@@ -1,5 +1,5 @@
 """Module for managing tags metadata."""
-#pylint: disable=E0401,C0111,W0603
+#pylint: disable=E0401,C0111,W0603,C0103
 from collections import namedtuple
 
 from pyrevit import framework
@@ -74,9 +74,10 @@ class TagModifier(object):
         False
     """
 
-    def __init__(self, name, abbrev):
+    def __init__(self, name, abbrev, color):
         self.name = name + ' ({})'.format(abbrev)
         self.abbrev = abbrev
+        self.color = color
 
     @property
     def tag(self):
@@ -113,15 +114,18 @@ class TagModifiers(object):
         [<TagModifier name=Issue For Fabrication>]
     """
 
-    MOD_IFF = TagModifier(name='Issue For Fabrication', abbrev='IFF')
-    MOD_IFC = TagModifier(name='Issue For Construction', abbrev='IFC')
-    MOD_ASBUILT = TagModifier(name='As-Built Content', abbrev='ASBUILT')
-
     @classmethod
     def get_modifiers(cls):
         """Return a list of currently implemented modifiers."""
-        return [cls.__dict__[x]
-                for x in cls.__dict__ if x.startswith('MOD_')]
+        modifs = tagscfg.get_modifiers_cfgdict() or {}
+        return [
+            TagModifier(
+                abbrev=k,
+                name=v.get(tagscfg.TAGS_CONFIG_MODIFIER_NAME_KEY, '??'),
+                color=v.get(tagscfg.TAGS_CONFIG_MODIFIER_COLOR_KEY,
+                            tagscfg.TAGS_CONFIG_MODIFIER_COLOR_DEFAULT))
+            for k, v in modifs.items()
+            ]
 
     @classmethod
     def get_modifier_names(cls):
