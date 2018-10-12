@@ -6,7 +6,7 @@ from pyrevit.coreutils import find_loaded_asm
 from pyrevit.coreutils.logger import get_logger
 
 if not EXEC_PARAMS.doc_mode:
-    from pyrevit.coreutils.ribbon import get_current_ui
+    from pyrevit.coreutils import ribbon
 
 #pylint: disable=W0703,C0302,C0103,C0413
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
@@ -551,17 +551,38 @@ def _recursively_produce_ui_items(ui_maker_params):
 
 
 if not EXEC_PARAMS.doc_mode:
-    current_ui = get_current_ui()
+    current_ui = ribbon.get_current_ui()
 
 
-def update_pyrevit_ui(parsed_ext, ext_asm_info, create_beta=False):
+def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
     """
     Updates/Creates pyRevit ui for the given extension and
     provided assembly dll address.
     """
-    mlogger.debug('Creating/Updating ui for extension: %s', parsed_ext)
+    mlogger.debug('Creating/Updating ui for extension: %s', ui_ext)
     _recursively_produce_ui_items(
-        UIMakerParams(current_ui, None, parsed_ext, ext_asm_info, create_beta))
+        UIMakerParams(current_ui, None, ui_ext, ext_asm_info, create_beta))
+
+
+def sort_pyrevit_ui(ui_ext):
+    layout_directives = []
+    for item in ui_ext:
+        layout_directives.extend(item.get_layout_directives())
+
+    for tab in current_ui.get_pyrevit_tabs():
+        for ldir in layout_directives:
+            if ldir.type == 'before':
+                tab.reorder_before(ldir.item, ldir.target)
+                layout_directives.remove(ldir)
+            elif ldir.type == 'after':
+                tab.reorder_after(ldir.item, ldir.target)
+                layout_directives.remove(ldir)
+            elif ldir.type == 'afterall':
+                tab.reorder_afterall(ldir.item)
+                layout_directives.remove(ldir)
+            elif ldir.type == 'beforeall':
+                tab.reorder_beforeall(ldir.item)
+                layout_directives.remove(ldir)
 
 
 def cleanup_pyrevit_ui():
