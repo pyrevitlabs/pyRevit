@@ -1,6 +1,8 @@
 """Generic extension components."""
 import os
 import os.path as op
+import re
+from collections import namedtuple
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
@@ -9,6 +11,9 @@ import pyrevit.extensions as exts
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = coreutils.logger.get_logger(__name__)
+
+
+LayoutDirective = namedtuple('LayoutDirective', ['type', 'item', 'target'])
 
 
 class GenericComponent(object):
@@ -117,7 +122,7 @@ class GenericUIContainer(GenericUIComponent):
     def __init__(self):
         GenericUIComponent.__init__(self)
         self._sub_components = []
-        self.layout_list = None
+        self.layout = self.layout_items = None
         self.name = self.ui_title = None
 
     def __init_from_dir__(self, ext_dir):
@@ -138,8 +143,8 @@ class GenericUIContainer(GenericUIComponent):
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
-        self.layout_list = self._read_layout_file()
-        mlogger.debug('Layout is: %s', self.layout_list)
+        self._read_layout_file()    # sets self.layout and self.layout_items
+        mlogger.debug('Layout is: %s', self.layout_items)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
@@ -149,24 +154,32 @@ class GenericUIContainer(GenericUIComponent):
     def __iter__(self):
         return iter(self._get_components_per_layout())
 
+    @staticmethod
+    def _remove_layout_directives(layout_items):
+        cleaned_items = []
+        for litem in layout_items:
+            cleaned_items.append(re.sub(r'\[.+\]', '', litem))
+        return cleaned_items
+
     def _read_layout_file(self):
         full_file_path = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(full_file_path):
             layout_file = open(op.join(self.directory,
                                        exts.DEFAULT_LAYOUT_FILE_NAME), 'r')
-            # return [x.replace('\n', '') for x in layout_file.readlines()]
-            return layout_file.read().splitlines()
+            self.layout = layout_file.read().splitlines()
+            self.layout_items = \
+                GenericUIContainer._remove_layout_directives(self.layout)
         else:
             mlogger.debug('Container does not have layout file defined: %s',
                           self)
 
     def _get_components_per_layout(self):
         # if item is not listed in layout, it will not be created
-        if self.layout_list and self._sub_components:
+        if self.layout_items and self._sub_components:
             mlogger.debug('Reordering components per layout file...')
             layout_index = 0
             _processed_cmps = []
-            for layout_item in self.layout_list:
+            for layout_item in self.layout_items:
                 for cmp_index, component in enumerate(self._sub_components):     #pylint: disable=W0612
                     if component.name == layout_item:
                         _processed_cmps.append(component)
@@ -175,8 +188,8 @@ class GenericUIContainer(GenericUIComponent):
 
             # insert separators and slideouts per layout definition
             mlogger.debug('Adding separators and slide outs per layout...')
-            last_item_index = len(self.layout_list) - 1
-            for i_index, layout_item in enumerate(self.layout_list):
+            last_item_index = len(self.layout_items) - 1
+            for i_index, layout_item in enumerate(self.layout_items):
                 if exts.SEPARATOR_IDENTIFIER in layout_item \
                         and i_index < last_item_index:
                     separator = GenericComponent()
@@ -233,6 +246,21 @@ class GenericUIContainer(GenericUIComponent):
 
         return sub_comp_list
 
+    def get_layout_directives(self):
+        layout_directives = []
+        if self.layout:
+            for item_def in self.layout:
+                for dir_defs in re.findall(r'(.+)\[(.+):(.*)\]', item_def):
+                    source_item, directive, target_name = dir_defs
+                    directive = directive.lower().strip()
+                    target_name = target_name.strip()
+                    layout_directives.append(
+                        LayoutDirective(
+                            type=directive,
+                            item=source_item,
+                            target=target_name
+                        ))
+        return layout_directives
 
 # superclass for all single command classes (link, push button, toggle button)
 # GenericUICommand is not derived from GenericUIContainer since a command
