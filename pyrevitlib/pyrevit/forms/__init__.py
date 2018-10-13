@@ -609,6 +609,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         message = kwargs.get('message', None)
         self._switches = kwargs.get('switches', [])
+        if not isinstance(self._switches, dict):
+            self._switches = dict.fromkeys(self._switches)
 
         configs = kwargs.get('config', None)
 
@@ -616,9 +618,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             message if message else 'Pick a command option:'
 
         # creates the switches first
-        for switch in self._switches:
+        for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
+            my_togglebutton.IsChecked = state if state else False
             if configs and 'option' in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
@@ -1457,7 +1460,6 @@ def select_views(title='Select Views',
         button_name=button_name,
         width=width,
         multiselect=multiple,
-        return_all=True,
         checked_only=True
         )
 

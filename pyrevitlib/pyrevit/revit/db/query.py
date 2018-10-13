@@ -151,6 +151,24 @@ def get_elements_by_category(element_bicats, elements=None, doc=None):
              .ToElements()
 
 
+def get_elements_by_class(element_class, elements=None, doc=None, view_id=None):
+    # if source elements is provided
+    if elements:
+        return [x for x in elements if isinstance(x, element_class)]
+
+    # otherwise collect from model
+    if view_id:
+        return DB.FilteredElementCollector(doc or HOST_APP.doc, view_id)\
+                .OfClass(element_class)\
+                .WhereElementIsNotElementType()\
+                .ToElements()
+    else:
+        return DB.FilteredElementCollector(doc or HOST_APP.doc)\
+                .OfClass(element_class)\
+                .WhereElementIsNotElementType()\
+                .ToElements()
+
+
 def get_family(family_name, doc=None):
     famsyms = \
         DB.FilteredElementCollector(doc or HOST_APP.doc)\
