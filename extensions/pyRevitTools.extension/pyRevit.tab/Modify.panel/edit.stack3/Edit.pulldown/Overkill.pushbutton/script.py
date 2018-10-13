@@ -186,8 +186,15 @@ if selected_option:
         logger.debug('Adding detail line to domains: %s', detline.Id.IntegerValue)
         detline_domaincl.extend(detline)
 
+    del_count = 0
     with revit.Transaction('Overkill'):
         for detline_domain in detline_domaincl:
             bounded_detline_ids = \
                 [DB.ElementId(x) for x in detline_domain.bounded]
+            del_count += len(bounded_detline_ids)
             revit.doc.Delete(List[DB.ElementId](bounded_detline_ids))
+
+    if del_count > 0:
+        forms.alert('{} lines were removed.'.format(del_count))
+    else:
+        forms.alert('Pretty clean! No lines were removed.')
