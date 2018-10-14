@@ -17,19 +17,24 @@
             <Setter Property="Background" Value="{Binding color}" />
         </Style>
 
+        <Style x:Key="ModiferTagPath" TargetType="Path">
+            <Setter Property="Fill" Value="{Binding color}" />
+        </Style>
+
         <DataTemplate x:Key="ModifierListItemTemplate">
-            <Grid VerticalAlignment="Center" Margin="5,0,0,0">
-                <Border Style="{DynamicResource ModiferTag}" CornerRadius="13,3,13,3">
-                    <TextBlock x:Name="ModifierTitle"
-                               HorizontalAlignment="Left"
+            <WrapPanel Margin="-1,0,0,0">
+                <Polygon Points="0,0 5,0 5,14 0,14 5,7" Fill="{Binding color}" />
+                <Border Style="{DynamicResource ModiferTag}" Height="14">
+                <TextBlock x:Name="ModifierTitle"
+                               HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Text="{Binding abbrev}"
                                Foreground="White"
                                FontSize="10"
-                               FontStyle="Italic"
-                               Margin="10,0,10,0"/>
+                               Margin="2,0,2,0"/>
                 </Border>
-            </Grid>
+                <Polygon Points="0,0 0,14 5,7" Fill="{Binding color}" />
+            </WrapPanel>
         </DataTemplate>
 
         <DataTemplate x:Key="TagListItemTemplate">
@@ -40,10 +45,11 @@
                            VerticalAlignment="Center"/>
                 <ItemsControl ItemsSource="{Binding modifiers}"
                               ItemTemplate="{DynamicResource ModifierListItemTemplate}"
-                              VerticalAlignment="Center">
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel IsItemsHost="True" />
+                            <WrapPanel IsItemsHost="True" Margin="10,0,0,0"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <!--<ListBox.ItemContainerStyle>
