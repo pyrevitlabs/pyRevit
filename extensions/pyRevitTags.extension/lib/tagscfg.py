@@ -38,6 +38,7 @@ def update_tags_config():
     global CACHED_TAGS_PARAM
     global CACHED_TAGS_PARAM_LISTSECTION
     global CACHED_TAGS_SHARED_PARAM_FILE
+    global CACHED_MODIFIERS_DEFS
 
     mlogger.debug('Looking up tags configs...')
     if user_config.has_section(TAGS_CONFIG_SECTION):
@@ -63,6 +64,7 @@ def update_tags_config():
 
         mlogger.debug('Looking up tags modifiers configs...')
 
+        CACHED_MODIFIERS_DEFS = []
         if user_config.has_section(TAGS_MODIFS_CONFIG_SECTION):
             modif_cfgsection = \
                 user_config.get_section(TAGS_MODIFS_CONFIG_SECTION)
