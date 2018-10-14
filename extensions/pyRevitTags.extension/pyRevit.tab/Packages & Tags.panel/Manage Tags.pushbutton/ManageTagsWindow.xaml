@@ -14,19 +14,20 @@
         </Style>
 
         <Style x:Key="ModiferTag" TargetType="Border">
-            <Setter Property="CornerRadius" Value="5" />
             <Setter Property="Background" Value="{Binding color}" />
         </Style>
 
         <DataTemplate x:Key="ModifierListItemTemplate">
             <Grid VerticalAlignment="Center" Margin="5,0,0,0">
-                <Border Style="{DynamicResource ModiferTag}">
+                <Border Style="{DynamicResource ModiferTag}" CornerRadius="13,3,13,3">
                     <TextBlock x:Name="ModifierTitle"
                                HorizontalAlignment="Left"
+                               VerticalAlignment="Center"
                                Text="{Binding abbrev}"
                                Foreground="White"
                                FontSize="10"
-                               Margin="5,0,5,0"/>
+                               FontStyle="Italic"
+                               Margin="10,0,10,0"/>
                 </Border>
             </Grid>
         </DataTemplate>
@@ -35,6 +36,7 @@
             <WrapPanel>
                 <TextBlock HorizontalAlignment="Left"
                            Text="{Binding name}"
+                           FontSize="14"
                            VerticalAlignment="Center"/>
                 <ItemsControl ItemsSource="{Binding modifiers}"
                               ItemTemplate="{DynamicResource ModifierListItemTemplate}"
@@ -95,7 +97,7 @@
                     <ContextMenu x:Key="ItemContextMenu">
                         <MenuItem x:Name="menuItem_CopyValue"
                                   Click="copy_tagid"
-                                  Header="Copy Tag ID">
+                                  Header="Copy Tag">
                         </MenuItem>
                     </ContextMenu>
                 </ListBox.Resources>
@@ -113,51 +115,54 @@
                                 Content="Select Tag Elements"
                                 Padding="8,4,8,4"
                                 ToolTip="Selects the Revit elements associated with this tag."
-                                Click="select_tag"/>
+                                Click="select_tag" IsEnabled="False"/>
                         <Button x:Name="rename_tag_b"
                                 Content="Rename Tag"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip = "Select the tag, enter the new name in&#xA;the box below the list and hit Rename Tag."
-                                Click="rename_tag"/>
+                                Click="rename_tag" IsEnabled="False"/>
                         <Button x:Name="delete_tag_b"
                                 Content="Delete Tag"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
-                                ToolTip="Removes Tag ID from elements. Does not delete the elements."
-                                Click="delete_tag"/>
+                                ToolTip="Removes Tag from elements. Does not delete the elements."
+                                Click="delete_tag" IsEnabled="False"/>
                         <Button x:Name="create_3dview"
                                 Content="Create Tag 3D View"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip = "Creates a 3D view only showing elements in this tag."
-                                Click="make_tag_3dview"/>
+                                Click="make_tag_3dview" IsEnabled="False"/>
                         <Button x:Name="create_schedules_b"
                                 Content="Create Tag Schedules"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip = "Creates a filtered schedule for elements in this tag."
-                                Click="make_schedule" />
+                                Click="make_schedule" IsEnabled="False" />
                         <Button x:Name="create_filter_b"
                                 Content="Create Tag Filters"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip = "Creates a Rule-based filter and inverse filter for selected tags."
-                                Click="make_filter"/>
+                                Click="make_filter" IsEnabled="False"/>
                     </StackPanel>
                 </GroupBox>
                 <GroupBox Header="Tag Modifiers" Margin="0,5,0,0">
                     <StackPanel Margin="5">
-                        <Button Content="Apply Modifier"
+                        <Button x:Name="apply_modif_b"
+                                Content="Apply Modifier"
                                 Padding="8,4,8,4"
                                 ToolTip="Marks the selected tag with a modifier."
-                                Click="add_modifier"/>
-                        <Button Content="Remove Modifier"
+                                Click="add_modifier" IsEnabled="False"/>
+                        <Button x:Name="remove_modif_b"
+                                Content="Remove Modifier"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip="Removes a modifier from selected tags."
-                                Click="remove_modifier"/>
-                        <Button Content="Create Modifier Filters"
+                                Click="remove_modifier" IsEnabled="False"/>
+                        <Button x:Name="create_modif_b"
+                                Content="Create Modifier Filters"
                                 Margin="0,5,0,0"
                                 Padding="8,4,8,4"
                                 ToolTip="Creates a Rule-based filter and inverse filter for all tag modifiers."

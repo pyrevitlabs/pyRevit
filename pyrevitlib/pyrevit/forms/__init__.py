@@ -184,6 +184,26 @@ class WPFWindow(framework.Windows.Window):
             elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
                 WPFWindow.show_element(wpfel)
 
+    @staticmethod
+    def disable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = False
+
+    @staticmethod
+    def enable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = True
+
 
 class TemplateUserInputWindow(WPFWindow):
     """Base class for pyRevit user input standard forms.
@@ -203,7 +223,7 @@ class TemplateUserInputWindow(WPFWindow):
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), self.xaml_source),
                            handle_esc=True)
-        self.Title = title
+        self.Title = title or 'pyRevit'
         self.Width = width
         self.Height = height
 

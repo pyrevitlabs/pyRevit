@@ -32,11 +32,13 @@ class ApplyTagWindow(forms.WPFWindow):
         if op.isfile(self._tag_cache):
             self._read_sow_cache()
 
-        selection = revit.get_selection().no_views()
+        selection = revit.get_selection()
         sel_cnt = len(selection)
+        self._target_elements = selection.elements
         self.Title += ' (for {} Selected Elements)'.format(sel_cnt) #pylint: disable=E1101
 
         self.tags_tb.Focus()
+        self.tags_tb.SelectAll()
 
     @property
     def tags(self):
@@ -64,7 +66,7 @@ class ApplyTagWindow(forms.WPFWindow):
                                       circuits=self.circuits_cb.IsChecked)
         with revit.Transaction(title, log_errors=False):
             if self._ensure_tag_validity():
-                for el in revit.get_selection():
+                for el in self._target_elements:
                     tagsmgr.apply_tags(el, self.tags, config=cfg)
 
         self._write_sow_cache()

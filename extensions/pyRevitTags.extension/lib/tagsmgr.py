@@ -1,6 +1,6 @@
 """Module for managing tags metadata."""
 #pylint: disable=E0401,C0111,W0603,C0103
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from pyrevit import framework
 from pyrevit import PyRevitException
@@ -117,14 +117,14 @@ class TagModifiers(object):
     @classmethod
     def get_modifiers(cls):
         """Return a list of currently implemented modifiers."""
-        modifs = tagscfg.get_modifiers_cfgdict() or {}
+        modifs = tagscfg.get_modifier_defs()
         return [
             TagModifier(
-                abbrev=k,
-                name=v.get(tagscfg.TAGS_CONFIG_MODIFIER_NAME_KEY, '??'),
-                color=v.get(tagscfg.TAGS_CONFIG_MODIFIER_COLOR_KEY,
-                            tagscfg.TAGS_CONFIG_MODIFIER_COLOR_DEFAULT))
-            for k, v in modifs.items()
+                abbrev=tagmod_def.abbrev,
+                name=tagmod_def.abbrev,
+                color=tagmod_def.color
+            )
+            for tagmod_def in modifs
             ]
 
     @classmethod
@@ -499,6 +499,11 @@ def get_available_tags(elements=None):
     return sorted(tags)
 
 
+def is_tag_available(tag):
+    all_tags = get_available_tags()
+    return tag.name in [x.name for x in all_tags]
+
+
 def select_tag_elements(tags):
     """Select elements of the given tag.
 
@@ -574,43 +579,49 @@ def match_tags(src_element, dest_elements):
         apply_tags(delement, tags)
 
 
-def add_modifier(tags, tag_modifier):
+def add_modifier(tags, tag_modifier, elements=None):
     """Add a modifier to list of tags.
 
     Args:
         tags (list[Tag]): list of target tags
         tag_modifier (TagModifier): tag modifier to apply to tags
+        elements (list[DB.Element], optional):
+            set of elements to rename the tag.
     """
     for tag in tags:
-        for element in get_all_tag_elements(tag):
+        target_elements = elements or get_all_tag_elements(tag)
+        for element in target_elements:
             el_tags = list(extract_tags(element))
             extag_idx = el_tags.index(tag)
             el_tags[extag_idx].add_modifier(tag_modifier)
             apply_tags(element, el_tags)
 
 
-def remove_modifier(tags, tag_modifier):
+def remove_modifier(tags, tag_modifier, elements=None):
     """Remove a modifier from list of tags.
 
     Args:
         tags (list[Tag]): list of target tags
         tag_modifier (TagModifier):
             tag modifier to be removed from tags
+        elements (list[DB.Element], optional):
+            set of elements to rename the tag.
     """
     for tag in tags:
-        for element in get_all_tag_elements(tag):
+        target_elements = elements or get_all_tag_elements(tag)
+        for element in target_elements:
             el_tags = list(extract_tags(element))
             extag_idx = el_tags.index(tag)
             el_tags[extag_idx].remove_modifier(tag_modifier)
             apply_tags(element, el_tags)
 
 
-def rename_tag_id(tag, new_tag_id, elements=None):
+def rename_tag(tag, new_tag_name, elements=None):
     """Rename a tag id in model or on a set of elements.
 
     Args:
         tag (Tag): tag to be renamed
-        new_tag_id (str): new tag identifier
+        new_tag_name (str): new tag identifier
         elements (list[DB.Element], optional):
             set of elements to rename the tag.
 
@@ -619,26 +630,29 @@ def rename_tag_id(tag, new_tag_id, elements=None):
 
     Examples:
         >>> import tagsmgr
-        >>> tagmgr.rename_tag_id(tag, 'NEW_SCOPE')
+        >>> tagmgr.rename_tag(tag, 'NEW_SCOPE')
 
-        >>> tagmgr.rename_tag_id(tag, 'NEW_SCOPEA,SCOPEB')
+        >>> tagmgr.rename_tag(tag, 'NEW_SCOPEA,SCOPEB')
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
         PyRevitException: Invalid Tag Name
     """
-    newtag = Tag(new_tag_id)
+    newtag = Tag(new_tag_name)
     if newtag.is_valid():
+        if is_tag_available(newtag):
+            raise PyRevitException('New tag name already exists.')
+
         target_elements = elements or get_all_tag_elements(tag)
         for element in target_elements:
             el_tags = list(extract_tags(element))
             extag_idx = el_tags.index(tag)
-            el_tags[extag_idx].rename(new_tag_id)
+            el_tags[extag_idx].rename(new_tag_name)
             apply_tags(element, el_tags)
     else:
         raise PyRevitException('Invalid Tag Name')
 
 
-def remove_tag_id(tag, elements=None):
+def remove_tag(tag, elements=None):
     """Remove a tag id from model or from a set of elements.
 
     Args:
@@ -648,7 +662,7 @@ def remove_tag_id(tag, elements=None):
 
     Examples:
         >>> import tagsmgr
-        >>> tagmgr.remove_tag_id(tag)
+        >>> tagmgr.remove_tag(tag)
     """
     target_elements = elements or get_all_tag_elements(tag)
     for element in target_elements:

@@ -19,7 +19,7 @@ class ManageTagsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         tagscfg.ensure_tag_param()
 
-        selection = revit.get_selection().no_views()
+        selection = revit.get_selection()
         sel_cnt = len(selection)
         if sel_cnt:
             forms.alert('You are managing tags on {} selected elements only.'
@@ -85,21 +85,36 @@ class ManageTagsWindow(forms.WPFWindow):
             tagsmgr.select_tag_elements(self.selected_tags)
 
     def update_selection(self, sender, args):
-        if len(self.selected_tags) > 1:
-            self.hide_element(self.rename_tag_b)
-            self.hide_element(self.delete_tag_b)
-            self.hide_element(self.create_schedules_b)
-        else:
-            self.show_element(self.rename_tag_b)
-            self.show_element(self.delete_tag_b)
-            self.show_element(self.create_schedules_b)
-
-        if len(self.selected_tags) > 3:
-            self.hide_element(self.create_3dview)
-            self.hide_element(self.create_filter_b)
-        else:
-            self.show_element(self.create_3dview)
-            self.show_element(self.create_filter_b)
+        selc_tags_count = len(self.selected_tags)
+        if selc_tags_count == 0:
+            self.disable_element(self.select_elements_b)
+            self.disable_element(self.rename_tag_b)
+            self.disable_element(self.delete_tag_b)
+            self.disable_element(self.create_3dview)
+            self.disable_element(self.create_schedules_b)
+            self.disable_element(self.create_filter_b)
+            self.disable_element(self.apply_modif_b)
+            self.disable_element(self.remove_modif_b)
+        elif selc_tags_count == 1:
+            self.enable_element(self.select_elements_b)
+            self.enable_element(self.rename_tag_b)
+            self.enable_element(self.delete_tag_b)
+            self.enable_element(self.create_3dview)
+            self.enable_element(self.create_schedules_b)
+            self.enable_element(self.create_filter_b)
+            self.enable_element(self.apply_modif_b)
+            self.enable_element(self.remove_modif_b)
+        elif selc_tags_count > 1:
+            self.enable_element(self.select_elements_b)
+            self.disable_element(self.rename_tag_b)
+            self.disable_element(self.delete_tag_b)
+            self.disable_element(self.create_schedules_b)
+            if selc_tags_count > 3:
+                self.disable_element(self.create_3dview)
+                self.disable_element(self.create_filter_b)
+            else:
+                self.enable_element(self.create_3dview)
+                self.enable_element(self.create_filter_b)
 
     def copy_tagid(self, sender, args):
         tags = '\r\n'.join([x.name for x in self.taglist_lb.SelectedItems])
@@ -110,8 +125,8 @@ class ManageTagsWindow(forms.WPFWindow):
             self.Close()
             try:
                 with revit.Transaction('Delete Tag'):
-                    tagsmgr.remove_tag_id(self.selected_tags[0],
-                                          self._target_elements)
+                    tagsmgr.remove_tag(self.selected_tags[0],
+                                       self._target_elements)
             except Exception as e:
                 forms.alert(getattr(e, 'msg', str(e)))
 
@@ -126,15 +141,15 @@ class ManageTagsWindow(forms.WPFWindow):
             if new_tag:
                 try:
                     with revit.Transaction('Rename Tag', log_errors=False):
-                        tagsmgr.rename_tag_id(self.selected_tags[0],
-                                              new_tag,
-                                              self._target_elements)
+                        tagsmgr.rename_tag(self.selected_tags[0],
+                                           new_tag,
+                                           self._target_elements)
                 except Exception as e:
                     forms.alert(getattr(e, 'msg', str(e)))
 
     def add_modifier(self, sender, args):
         if self.selected_tags:
-            mods = \
+            modifiers = \
                 forms.SelectFromList.show(
                     tagsmgr.TagModifiers.get_modifiers(),
                     title='Select Modifier',
@@ -142,30 +157,37 @@ class ManageTagsWindow(forms.WPFWindow):
                     width=400,
                     height=300
                     )
-            if mods:
+            if modifiers:
                 self.Close()
                 try:
                     with revit.Transaction('Apply Tag Modifier',
                                            log_errors=False):
-                        tagsmgr.add_modifier(self.selected_tags, mods)
+                        tagsmgr.add_modifier(self.selected_tags,
+                                             modifiers,
+                                             self._target_elements)
                 except Exception as e:
                     forms.alert(getattr(e, 'msg', str(e)))
 
     def remove_modifier(self, sender, args):
         if self.selected_tags:
-            mods = \
+            modifs = set()
+            for sel_tag in self.selected_tags:
+                modifs.update(sel_tag.modifiers)
+            modifiers = \
                 forms.SelectFromList.show(
-                    tagsmgr.TagModifiers.get_modifiers(),
+                    modifs,
                     title='Select Modifier',
                     button_name='Select Modifier',
                     width=400, height=300
                     )
-            if mods:
+            if modifiers:
                 self.Close()
                 try:
                     with revit.Transaction('Remove Tag Modifier',
                                            log_errors=False):
-                        tagsmgr.remove_modifier(self.selected_tags, mods)
+                        tagsmgr.remove_modifier(self.selected_tags,
+                                                modifiers,
+                                                self._target_elements)
                 except Exception as e:
                     forms.alert(getattr(e, 'msg', str(e)))
 
