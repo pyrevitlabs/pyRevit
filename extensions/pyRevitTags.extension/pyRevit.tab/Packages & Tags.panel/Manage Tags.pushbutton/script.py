@@ -11,14 +11,14 @@ import tagsmgr
 
 __title__ = 'Manage\nTags'
 __author__ = '{{author}}'
+__helpurl__ = '{{docpath}}'
+
 
 logger = script.get_logger()
 
 
 class ManageTagsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        tagscfg.ensure_tag_param()
-
         selection = revit.get_selection()
         sel_cnt = len(selection)
         if sel_cnt:
@@ -266,4 +266,8 @@ class ManageTagsWindow(forms.WPFWindow):
                 forms.alert(getattr(e, 'msg', str(e)))
 
 
-ManageTagsWindow('ManageTagsWindow.xaml').ShowDialog()
+if tagscfg.verify_tags_configs():
+    ManageTagsWindow('ManageTagsWindow.xaml').ShowDialog()
+else:
+    forms.alert('Tags tools need to be configured before using. '
+                'Click on the Tags Settings button to setup.')

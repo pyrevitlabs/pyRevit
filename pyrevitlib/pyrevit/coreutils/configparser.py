@@ -139,7 +139,11 @@ class PyRevitConfigParser(object):
         return cfg_hash
 
     def has_section(self, section_name):
-        return True if self.get_section(section_name) else False
+        try:
+            self.get_section(section_name)
+            return True
+        except Exception:
+            return False
 
     def add_section(self, section_name):
         self._parser.add_section(section_name)

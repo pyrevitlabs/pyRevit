@@ -15,15 +15,17 @@ __author__ = '{{author}}'
 logger = script.get_logger()
 
 
-if not forms.check_selection():
-    script.exit()
+if tagscfg.verify_tags_configs():
+    if not forms.check_selection():
+        script.exit()
 
-selection = revit.get_selection()
-if forms.alert('Are you sure you want to delete tag information from {} '
-               'selected elements?'.format(len(selection)),
-               yes=True, no=True):
-    # make sure tag param is setup correctly
-    tagscfg.ensure_tag_param()
-    # now cleanup
-    with revit.Transaction('Clear tags on selection'):
-        tagsmgr.clear_tags(elements=selection)
+    selection = revit.get_selection()
+    if forms.alert('Are you sure you want to delete tag information from {} '
+                   'selected elements?'.format(len(selection)),
+                   yes=True, no=True):
+        # cleanup
+        with revit.Transaction('Clear tags on selection'):
+            tagsmgr.clear_tags(elements=selection)
+else:
+    forms.alert('Tags tools need to be configured before using. '
+                'Click on the Tags Settings button to setup.')

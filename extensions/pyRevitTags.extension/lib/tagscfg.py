@@ -42,24 +42,24 @@ def update_tags_config():
     mlogger.debug('Looking up tags configs...')
     if user_config.has_section(TAGS_CONFIG_SECTION):
         cfgsection = user_config.get_section(TAGS_CONFIG_SECTION)
-        if cfgsection:
-            # tags param
-            CACHED_TAGS_PARAM = cfgsection.get_option('param', None)
-            mlogger.debug('Tags parameter is %s', CACHED_TAGS_PARAM)
-            if not CACHED_TAGS_PARAM:
-                raise PyRevitException('Tags parameter is not configured.')
 
-            # tags param list section
-            CACHED_TAGS_PARAM_LISTSECTION = \
-                cfgsection.get_option('paramlistsection', None)
-            mlogger.debug('Tags param list section is %s',
-                          CACHED_TAGS_PARAM_LISTSECTION)
+        # tags param
+        CACHED_TAGS_PARAM = cfgsection.get_option('param', None)
+        mlogger.debug('Tags parameter is %s', CACHED_TAGS_PARAM)
+        if not CACHED_TAGS_PARAM:
+            raise PyRevitException('Tags parameter is not configured.')
 
-            # tags shared param file
-            CACHED_TAGS_SHARED_PARAM_FILE = \
-                cfgsection.get_option('sharedparamfile', None)
-            mlogger.debug('Tags param list section is %s',
-                          CACHED_TAGS_SHARED_PARAM_FILE)
+        # tags param list section
+        CACHED_TAGS_PARAM_LISTSECTION = \
+            cfgsection.get_option('paramlistsection', None)
+        mlogger.debug('Tags param list section is %s',
+                      CACHED_TAGS_PARAM_LISTSECTION)
+
+        # tags shared param file
+        CACHED_TAGS_SHARED_PARAM_FILE = \
+            cfgsection.get_option('sharedparamfile', None)
+        mlogger.debug('Tags param list section is %s',
+                      CACHED_TAGS_SHARED_PARAM_FILE)
 
         mlogger.debug('Looking up tags modifiers configs...')
 
@@ -76,12 +76,18 @@ def update_tags_config():
                         color=color
                     )
                 )
-        else:
-            mlogger.debug('Config section for tags tools not found: %s',
-                          TAGS_CONFIG_SECTION)
     else:
         mlogger.debug('Config section for tags tools not found: %s',
                       TAGS_CONFIG_SECTION)
+        raise PyRevitException('Tags tools are not configured.')
+
+
+def verify_tags_configs():
+    try:
+        update_tags_config()
+        return True
+    except Exception:
+        return False
 
 
 def get_tags_param():

@@ -12,6 +12,7 @@ import tagsmgr
 
 __title__ = 'Tag\nSelected'
 __author__ = '{{author}}'
+__helpurl__ = '{{docpath}}'
 
 
 logger = script.get_logger()
@@ -20,8 +21,6 @@ output = script.get_output()
 
 class ApplyTagWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        # make sure parameter is setup correctly
-        tagscfg.ensure_tag_param()
         # make sure there is selection
         forms.check_selection(exitscript=True)
         # now setup window
@@ -78,4 +77,8 @@ class ApplyTagWindow(forms.WPFWindow):
         self._apply_tags()
 
 
-ApplyTagWindow('ApplyTagWindow.xaml').ShowDialog()
+if tagscfg.verify_tags_configs():
+    ApplyTagWindow('ApplyTagWindow.xaml').ShowDialog()
+else:
+    forms.alert('Tags tools need to be configured before using. '
+                'Click on the Tags Settings button to setup.')

@@ -23,11 +23,12 @@ def pick_and_match_styles(src_element):
                 tagsmgr.match_tags(src_element, [dest_element])
 
 
-with forms.WarningBar(title='Pick source element:'):
-    source_element = revit.pick_element()
+if tagscfg.verify_tags_configs():
+    with forms.WarningBar(title='Pick source element:'):
+        source_element = revit.pick_element()
 
-if source_element:
-    # make sure tags param is setup correctly
-    tagscfg.ensure_tag_param()
-
-    pick_and_match_styles(source_element)
+    if source_element:
+        pick_and_match_styles(source_element)
+else:
+    forms.alert('Tags tools need to be configured before using. '
+                'Click on the Tags Settings button to setup.')
