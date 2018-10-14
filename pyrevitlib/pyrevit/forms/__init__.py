@@ -11,6 +11,7 @@ import string
 from collections import OrderedDict
 import threading
 from functools import wraps
+import datetime
 
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
@@ -26,6 +27,7 @@ from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
+from pyrevit import versionmgr
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -607,6 +609,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         message = kwargs.get('message', None)
         self._switches = kwargs.get('switches', [])
+        if not isinstance(self._switches, dict):
+            self._switches = dict.fromkeys(self._switches)
 
         configs = kwargs.get('config', None)
 
@@ -614,9 +618,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             message if message else 'Pick a command option:'
 
         # creates the switches first
-        for switch in self._switches:
+        for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
+            my_togglebutton.IsChecked = state if state else False
             if configs and 'option' in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
@@ -704,6 +709,59 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.Close()
         if sender:
             self._setup_response(response=sender.Content)
+
+
+class GetValueWindow(TemplateUserInputWindow):
+    """Standard form to get simple values from user.
+
+    Args:
+
+
+    Example:
+        >>> from pyrevit import forms
+        >>> items = ['item1', 'item2', 'item3']
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
+    """
+
+    xaml_source = 'GetValueWindow.xaml'
+
+    def _setup(self, **kwargs):
+        self.Width = 400
+        # determine value type
+        self.value_type = kwargs.get('value_type', 'string')
+        value_prompt = kwargs.get('prompt', None)
+        value_default = kwargs.get('default', None)
+
+        # customize window based on type
+        if self.value_type == 'string':
+            self.show_element(self.string_panel)
+            self.string_tb.Text = value_default if value_default else ''
+            self.string_tb.Focus()
+            self.string_tb.SelectAll()
+            self.string_prompt.Text = \
+                value_prompt if value_prompt else 'Enter string:'
+        elif self.value_type == 'dropdown':
+            self.show_element(self.dropdown_panel)
+            self.dropdown_prompt.Text = \
+                value_prompt if value_prompt else 'Pick one value:'
+            self.dropdown_cb.ItemsSource = self._context
+            if value_default:
+                self.dropdown_cb.SelectedItem = value_default
+        elif self.value_type == 'date':
+            self.show_element(self.date_panel)
+            self.date_prompt.Text = \
+                value_prompt if value_prompt else 'Pick date:'
+
+    def select(self, sender, args):    #pylint: disable=W0613
+        self.Close()
+        if self.value_type == 'string':
+            self.response = self.string_tb.Text
+        elif self.value_type == 'dropdown':
+            self.response = self.dropdown_cb.SelectedItem
+        elif self.value_type == 'date':
+            datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+            self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
 
 
 class TemplatePromptBar(WPFWindow):
@@ -1340,7 +1398,8 @@ def select_sheets(title='Select Sheets',
 
     sheetsets = revit.query.get_sheet_sets(doc)
     for sheetset in sheetsets:
-        sheetset_sheets = sheetset.Views
+        sheetset_sheets = \
+            [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
         if filterfunc:
             sheetset_sheets = filter(filterfunc, sheetset_sheets)
         sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
@@ -1401,7 +1460,6 @@ def select_views(title='Select Views',
         button_name=button_name,
         width=width,
         multiselect=multiple,
-        return_all=True,
         checked_only=True
         )
 
@@ -1505,8 +1563,9 @@ def select_titleblocks(title='Select Titleblock',
             return tblock_dict[selected_titleblocks]
 
 
-def alert(msg, title='pyRevit', ok=True,
-          cancel=False, yes=False, no=False, retry=False, exitscript=False):
+def alert(msg, title=None, sub_msg=None, expanded=None, footer='', 
+          ok=True, cancel=False, yes=False, no=False, retry=False,
+          warn_icon=True, exitscript=False):
     """Show a task dialog with given message.
 
     Args:
@@ -1539,7 +1598,26 @@ def alert(msg, title='pyRevit', ok=True,
     if retry:
         buttons |= UI.TaskDialogCommonButtons.Retry
 
-    res = UI.TaskDialog.Show(title, msg, buttons)
+    cmd_name = EXEC_PARAMS.command_name
+    if not title:
+        title = cmd_name if cmd_name else 'pyRevit'
+
+    tdlg = UI.TaskDialog(title)
+    tdlg.CommonButtons = buttons
+    tdlg.MainInstruction = msg
+    tdlg.MainContent = sub_msg
+    tdlg.ExpandedContent = expanded
+    if footer:
+        footer += '\n'
+    tdlg.FooterText = \
+        footer + \
+        'pyRevit {}'.format(versionmgr.get_pyrevit_version().get_formatted())
+    tdlg.TitleAutoPrefix = False
+    tdlg.MainIcon = \
+        UI.TaskDialogIcon.TaskDialogIconWarning \
+        if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
+    # tdlg.VerificationText = 'verif'
+    res = tdlg.Show()
 
     if not exitscript:
         if res == UI.TaskDialogResult.Ok \
@@ -1714,7 +1792,7 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     """
     doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert(message)
+        alert(message ,warn_icon=True)
         return False
     return True
 
@@ -1796,3 +1874,33 @@ def toast(message, title='pyRevit', appid='pyRevit',
         icon=icon,
         click=click,
         actions=actions)
+
+
+def ask_for_string(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='string',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_one_item(items, default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        items,
+        value_type='dropdown',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_date(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='date',
+        default=default,
+        prompt=prompt,
+        title=title
+        )

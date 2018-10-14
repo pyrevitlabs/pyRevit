@@ -1,4 +1,5 @@
 """Base module for pyRevit config parsing."""
+import ast
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
@@ -41,7 +42,7 @@ class PyRevitConfigSectionParser(object):
                 if value.isdecimal():
                     value = int(value)
 
-                return eval(value)  #pylint: disable=W0123
+                return ast.literal_eval(value)  #pylint: disable=W0123
             except Exception:
                 return value
         except (NoOptionError, NoSectionError):

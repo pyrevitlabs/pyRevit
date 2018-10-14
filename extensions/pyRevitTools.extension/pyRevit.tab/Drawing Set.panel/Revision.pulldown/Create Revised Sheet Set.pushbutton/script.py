@@ -3,7 +3,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__author__ = '{{author}}'
 __doc__ = 'Select a revision from the list of revisions and this script '\
           'will create a print sheet set for the revised sheets under the '\
           'selected revision, and will assign the new sheet set as '\

@@ -12,6 +12,7 @@ Everything else is private.
 
 import os.path as op
 import sys
+from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import coreutils
@@ -25,7 +26,7 @@ from pyrevit.coreutils.logger import get_logger, get_stdout_hndlr, \
 # import the basetypes first to get all the c-sharp code to compile
 from pyrevit.loader import sessioninfo
 from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
-from pyrevit.loader.uimaker import update_pyrevit_ui, cleanup_pyrevit_ui
+from pyrevit.loader import uimaker
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
 from pyrevit.coreutils import loadertypes
 from pyrevit.output import get_output
@@ -41,6 +42,9 @@ from pyrevit import DB, UI, revit
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
+
+
+AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
 
 
 def _clear_running_engines():
@@ -138,7 +142,7 @@ def _new_session():
         None
     """
 
-    loaded_assm_list = []
+    assembled_exts = []
     # get all installed ui extensions
     for ui_ext in get_installed_ui_extensions():
         # create a dll assembly and get assembly info
@@ -146,33 +150,43 @@ def _new_session():
         if not ext_asm_info:
             mlogger.critical('Failed to create assembly for: %s', ui_ext)
             continue
+        else:
+            mlogger.info('Extension assembly created: %s', ui_ext.name)
 
-        mlogger.info('Extension assembly created: %s', ui_ext.name)
+        assembled_exts.append(
+            AssembledExtension(ext=ui_ext, assm=ext_asm_info)
+        )
 
-        # add name of the created assembly to the session info
-        loaded_assm_list.append(ext_asm_info.name)
-
-        # run startup scripts for this ui extension, if any
-        if ui_ext.startup_script:
-            mlogger.info('Running startup tasks...')
+    # run startup scripts for this ui extension, if any
+    for assm_ext in assembled_exts:
+        if assm_ext.ext.startup_script:
+            mlogger.info('Running startup tasks for %s', assm_ext.ext.name)
             mlogger.debug('Executing startup script for extension: %s',
-                          ui_ext.name)
-            execute_script(ui_ext.startup_script)
+                          assm_ext.ext.name)
+            execute_script(assm_ext.ext.startup_script)
 
-        # update/create ui (needs the assembly to link button actions
-        # to commands saved in the dll)
-
-        update_pyrevit_ui(ui_ext,
-                          ext_asm_info,
-                          user_config.core.get_option('loadbeta',
-                                                      default_value=False))
-        mlogger.info('UI created for extension: %s', ui_ext.name)
+    # update/create ui (needs the assembly to link button actions
+    # to commands saved in the dll)
+    for assm_ext in assembled_exts:
+        uimaker.update_pyrevit_ui(
+            assm_ext.ext,
+            assm_ext.assm,
+            user_config.core.get_option('loadbeta',
+                                        default_value=False)
+        )
+        mlogger.info('UI created for extension: %s', assm_ext.ext.name)
 
     # add names of the created assemblies to the session info
-    sessioninfo.set_loaded_pyrevit_assemblies(loaded_assm_list)
+    sessioninfo.set_loaded_pyrevit_assemblies(
+        [x.assm.name for x in assembled_exts]
+    )
+
+    # re-sort the ui elements
+    for assm_ext in assembled_exts:
+        uimaker.sort_pyrevit_ui(assm_ext.ext)
 
     # cleanup existing UI. This is primarily for cleanups after reloading
-    cleanup_pyrevit_ui()
+    uimaker.cleanup_pyrevit_ui()
 
 
 def load_session():

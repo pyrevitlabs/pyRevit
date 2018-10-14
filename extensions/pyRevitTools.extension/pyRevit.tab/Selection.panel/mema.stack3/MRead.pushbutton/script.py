@@ -5,7 +5,7 @@ from pyrevit import script
 from pyrevit import revit, DB
 
 
-__helpurl__ = 'https://www.youtube.com/watch?v=pAM-ARIXXLw'
+__helpurl__ = '{{docpath}}pAM-ARIXXLw'
 __doc__ = 'Read selection from memory.\n'\
           'Works like the MR button in a calculator. '\
           'This is a project-dependent memory. Every project has its own '\

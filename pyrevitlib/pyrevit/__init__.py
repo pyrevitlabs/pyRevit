@@ -38,7 +38,7 @@ except ImportError:
 PYREVIT_ADDON_NAME = 'pyRevit'
 VERSION_MAJOR = 4
 VERSION_MINOR = 6
-BUILD_METADATA = '-beta'
+BUILD_METADATA = '-beta2'
 
 # -----------------------------------------------------------------------------
 # config environment paths
@@ -281,13 +281,16 @@ class _HostApplication(object):
             scaled_width = screen.PrimaryScreen.WorkingArea.Width
             return abs(scaled_width / actual_wdith)
 
-    def is_newer_than(self, version):
+    def is_newer_than(self, version, or_equal=False):
         """bool: Return True if host app is newer than provided version.
 
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) > int(version)
+        if or_equal:
+            return int(self.version) >= int(version)
+        else:
+            return int(self.version) > int(version)
 
     def is_older_than(self, version):
         """bool: Return True if host app is older than provided version.

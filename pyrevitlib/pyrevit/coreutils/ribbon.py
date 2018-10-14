@@ -251,6 +251,57 @@ class _GenericPyRevitUIContainer(object):
     def get_unchanged_items(self):
         return self.get_flagged_children(state=False)
 
+    def reorder_before(self, litem_name, ritem_name):
+        apiobj = self.get_rvtapi_object()
+        litem_idx = ritem_idx = None
+        if hasattr(apiobj, 'Panels'):
+            for item in apiobj.Panels:
+                if item.Source.AutomationName == litem_name:
+                    litem_idx = apiobj.Panels.IndexOf(item)
+                elif item.Source.AutomationName == ritem_name:
+                    ritem_idx = apiobj.Panels.IndexOf(item)
+            if litem_idx and ritem_idx:
+                if litem_idx < ritem_idx:
+                    apiobj.Panels.Move(litem_idx, ritem_idx - 1)
+                elif litem_idx > ritem_idx:
+                    apiobj.Panels.Move(litem_idx, ritem_idx)
+
+    def reorder_beforeall(self, litem_name):
+        apiobj = self.get_rvtapi_object()
+        litem_idx = None
+        if hasattr(apiobj, 'Panels'):
+            for item in apiobj.Panels:
+                if item.Source.AutomationName == litem_name:
+                    litem_idx = apiobj.Panels.IndexOf(item)
+            if litem_idx:
+                apiobj.Panels.Move(litem_idx, 0)
+
+    def reorder_after(self, litem_name, ritem_name):
+        apiobj = self.get_rvtapi_object()
+        litem_idx = ritem_idx = None
+        if hasattr(apiobj, 'Panels'):
+            for item in apiobj.Panels:
+                if item.Source.AutomationName == litem_name:
+                    litem_idx = apiobj.Panels.IndexOf(item)
+                elif item.Source.AutomationName == ritem_name:
+                    ritem_idx = apiobj.Panels.IndexOf(item)
+            if litem_idx and ritem_idx:
+                if litem_idx < ritem_idx:
+                    apiobj.Panels.Move(litem_idx, ritem_idx)
+                elif litem_idx > ritem_idx:
+                    apiobj.Panels.Move(litem_idx, ritem_idx + 1)
+
+    def reorder_afterall(self, litem_name):
+        apiobj = self.get_rvtapi_object()
+        litem_idx = None
+        if hasattr(apiobj, 'Panels'):
+            for item in apiobj.Panels:
+                if item.Source.AutomationName == litem_name:
+                    litem_idx = apiobj.Panels.IndexOf(item)
+            if litem_idx:
+                max_idx = len(apiobj.Panels) - 1
+                apiobj.Panels.Move(litem_idx, max_idx)
+
 
 # Classes holding existing native ui elements
 # (These elements are native and can not be modified) --------------------------
@@ -1035,7 +1086,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
 
     ribbon_tab = _GenericPyRevitUIContainer._get_component
 
-    def __init__(self):
+    def __init__(self, all_native=False):
         _GenericPyRevitUIContainer.__init__(self)
 
         # Revit does not have any method to get a list of current tabs.
@@ -1054,7 +1105,8 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
             # pyrevit tabs (PYREVIT_TAB_IDENTIFIER) anyway.
             # if revit_ui_tab.IsVisible
             try:
-                if _PyRevitRibbonTab.check_pyrevit_tab(revit_ui_tab):
+                if not all_native \
+                        and _PyRevitRibbonTab.check_pyrevit_tab(revit_ui_tab):
                     new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
                 else:
                     new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
@@ -1114,7 +1166,7 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
 
 # Public function to return an instance of _PyRevitUI which is used
 # to interact with current ui --------------------------------------------------
-def get_current_ui():
+def get_current_ui(all_native=False):
     """Revit UI Wrapper class for interacting with current pyRevit UI.
     Returned class provides min required functionality for user interaction
 
@@ -1127,7 +1179,7 @@ def get_current_ui():
     :return: Returns an instance of _PyRevitUI that contains info on current ui
     :rtype: _PyRevitUI
     """
-    return _PyRevitUI()
+    return _PyRevitUI(all_native=all_native)
 
 
 def get_uibutton(command_unique_name):
