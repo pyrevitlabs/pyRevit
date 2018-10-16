@@ -793,8 +793,11 @@ class GetValueWindow(TemplateUserInputWindow):
         elif self.value_type == 'dropdown':
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == 'date':
-            datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
-            self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
+            if self.date_picker.SelectedDate:
+                datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+                self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
+            else:
+                self.response = None
 
 
 class TemplatePromptBar(WPFWindow):
@@ -1598,7 +1601,20 @@ def select_titleblocks(title='Select Titleblock',
 
 
 def select_swatch(title='Select Color Swatch', button_name='Select'):
-    # ict = wpf.LoadComponent(ict, framework.StringReader(ict_xaml))
+    """Standard form for selecting a color swatch.
+
+    Args:
+        title (str, optional): swatch list window title
+        button_name (str, optional): swatch list window button caption
+
+    Returns:
+        pyrevit.coreutils.colors.RGB: rgb color
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_swatch(title="Select Text Color")
+        ... <RGB #CD8800>
+    """
     ict_xaml_file = \
         os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
     ict = wpf.LoadComponent(Controls.ControlTemplate(), ict_xaml_file)
@@ -1614,7 +1630,7 @@ def select_swatch(title='Select Color Swatch', button_name='Select'):
     return swatch
 
 
-def alert(msg, title=None, sub_msg=None, expanded=None, footer='', 
+def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
           ok=True, cancel=False, yes=False, no=False, retry=False,
           warn_icon=True, exitscript=False):
     """Show a task dialog with given message.
@@ -1843,7 +1859,7 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     """
     doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert(message ,warn_icon=True)
+        alert(message, warn_icon=True)
         return False
     return True
 
