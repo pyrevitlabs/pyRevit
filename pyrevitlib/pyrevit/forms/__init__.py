@@ -1695,6 +1695,12 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
         >>> forms.pick_file(file_ext='csv', multi_file=True)
         ... [r'C:\output\somefile1.csv', r'C:\output\somefile2.csv']
+
+        >>> forms.pick_file(files_filter='All Files (*.*)|*.*|'
+                                         'Excel Workbook (*.xlsx)|*.xlsx|'
+                                         'Excel 97-2003 Workbook|*.xls',
+                            multi_file=True)
+        ... [r'C:\output\somefile1.xlsx', r'C:\output\somefile2.xls']
     """
     of_dlg = Forms.OpenFileDialog()
     if files_filter:
