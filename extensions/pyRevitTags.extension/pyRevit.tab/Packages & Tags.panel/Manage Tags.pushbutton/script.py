@@ -151,9 +151,12 @@ class ManageTagsWindow(forms.WPFWindow):
 
     def add_modifier(self, sender, args):
         if self.selected_tags:
+            modifs = set()
+            for sel_tag in self.selected_tags:
+                modifs.update(sel_tag.modifiers)
             modifiers = \
                 forms.SelectFromList.show(
-                    tagsmgr.TagModifiers.get_modifiers(),
+                    tagsmgr.TagModifiers.get_modifiers() - modifs,
                     title='Select Modifier',
                     button_name='Select Modifier',
                     width=400,

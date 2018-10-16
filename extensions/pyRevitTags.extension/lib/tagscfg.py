@@ -84,14 +84,6 @@ def update_tags_config():
         raise PyRevitException('Tags tools are not configured.')
 
 
-def verify_tags_configs():
-    try:
-        update_tags_config()
-        return True
-    except Exception:
-        return False
-
-
 def get_tags_param():
     global CACHED_TAGS_PARAM
 
@@ -108,6 +100,15 @@ def get_modifier_defs():
         update_tags_config()
 
     return CACHED_MODIFIERS_DEFS
+
+
+def verify_tags_configs():
+    try:
+        update_tags_config()
+        revit.query.get_sharedparam_id(get_tags_param())
+        return True
+    except Exception:
+        return False
 
 
 def ensure_tag_param():

@@ -118,14 +118,14 @@ class TagModifiers(object):
     def get_modifiers(cls):
         """Return a list of currently implemented modifiers."""
         modifs = tagscfg.get_modifier_defs()
-        return [
+        return {
             TagModifier(
                 abbrev=tagmod_def.abbrev,
                 name=tagmod_def.abbrev,
                 color=tagmod_def.color
             )
             for tagmod_def in modifs
-            ]
+        }
 
     @classmethod
     def get_modifier_names(cls):

@@ -2,11 +2,15 @@
 
 from collections import namedtuple
 
+from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
+
+
+mlogger = logger.get_logger(__name__)
 
 
 GRAPHICAL_VIEWTYPES = [
@@ -132,6 +136,8 @@ def get_elements_by_shared_parameter(param_name, param_value,
         return DB.FilteredElementCollector(doc)\
                  .WherePasses(param_filter)\
                  .ToElements()
+    else:
+        return []
 
 
 def get_elements_by_category(element_bicats, elements=None, doc=None):
@@ -261,6 +267,7 @@ def get_sharedparam_id(param_name):
     for shared_param in get_model_sharedparams():
         if shared_param.name == param_name:
             return shared_param.param_def.Id
+    raise PyRevitException('Parameter not found: {}'.format(param_name))
 
 
 def get_model_sharedparam(param_id_or_name, doc=None):
