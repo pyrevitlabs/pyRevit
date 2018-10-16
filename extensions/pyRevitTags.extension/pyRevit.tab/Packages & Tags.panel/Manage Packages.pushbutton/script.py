@@ -16,7 +16,7 @@ output = script.get_output()
 
 
 if tagscfg.verify_tags_configs():
-    pass
+    forms.inform_wip()
 else:
     forms.alert('Tags tools need to be configured before using. '
                 'Click on the Tags Settings button to setup.')

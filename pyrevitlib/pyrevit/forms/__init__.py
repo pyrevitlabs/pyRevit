@@ -17,6 +17,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import colors
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
@@ -431,10 +432,15 @@ class SelectFromList(TemplateUserInputWindow):
 
         self.ctx_groups_active = kwargs.get('default_group', None)
 
-        # check for custom data templates
+        # check for custom templates
         item_template = kwargs.get('item_template', None)
         if item_template:
             self.Resources["ListItemTemplate"] = item_template
+
+        item_container_template = kwargs.get('item_container_template', None)
+        if item_container_template:
+            self.Resources["ListItemContainerTemplate"] = \
+                item_container_template
 
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
@@ -1591,6 +1597,23 @@ def select_titleblocks(title='Select Titleblock',
             return tblock_dict[selected_titleblocks]
 
 
+def select_swatch(title='Select Color Swatch', button_name='Select'):
+    # ict = wpf.LoadComponent(ict, framework.StringReader(ict_xaml))
+    ict_xaml_file = \
+        os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
+    ict = wpf.LoadComponent(Controls.ControlTemplate(), ict_xaml_file)
+    swatch = SelectFromList.show(
+        colors.COLORS.values(),
+        title=title,
+        button_name=button_name,
+        width=300,
+        multiselect=False,
+        item_container_template=ict
+        )
+
+    return swatch
+
+
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='', 
           ok=True, cancel=False, yes=False, no=False, retry=False,
           warn_icon=True, exitscript=False):
@@ -1932,3 +1955,7 @@ def ask_for_date(default=None, prompt=None, title=None):
         prompt=prompt,
         title=title
         )
+
+
+def inform_wip():
+    alert("Work in progress.", exitscript=True)

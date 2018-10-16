@@ -158,7 +158,7 @@ class ManageTagsWindow(forms.WPFWindow):
                     button_name='Select Modifier',
                     width=400,
                     height=300,
-                    item_template=self.tagmodif_template
+                    item_container_template=self.tagmodif_template
                     )
             if modifiers:
                 self.Close()
@@ -183,7 +183,7 @@ class ManageTagsWindow(forms.WPFWindow):
                     button_name='Select Modifier',
                     width=400,
                     height=300,
-                    item_template=self.tagmodif_template
+                    item_container_template=self.tagmodif_template
                     )
             if modifiers:
                 self.Close()
