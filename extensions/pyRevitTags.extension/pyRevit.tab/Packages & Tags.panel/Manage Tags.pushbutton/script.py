@@ -38,6 +38,8 @@ class ManageTagsWindow(forms.WPFWindow):
             elmnt_count = tagsmgr.get_last_metadata()['count']
             self.Title += ' (for {} Elements)'.format(elmnt_count) #pylint: disable=E1101
 
+        self.tagmodif_template = \
+            self.Resources["ModifierListItemControlTemplate"]
         self._list_options()
         self.hide_element(self.clrsearch_b)
         self.clear_search(None, None)
@@ -155,7 +157,8 @@ class ManageTagsWindow(forms.WPFWindow):
                     title='Select Modifier',
                     button_name='Select Modifier',
                     width=400,
-                    height=300
+                    height=300,
+                    item_template=self.tagmodif_template
                     )
             if modifiers:
                 self.Close()
@@ -178,7 +181,9 @@ class ManageTagsWindow(forms.WPFWindow):
                     modifs,
                     title='Select Modifier',
                     button_name='Select Modifier',
-                    width=400, height=300
+                    width=400,
+                    height=300,
+                    item_template=self.tagmodif_template
                     )
             if modifiers:
                 self.Close()
