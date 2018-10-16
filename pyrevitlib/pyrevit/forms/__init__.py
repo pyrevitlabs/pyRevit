@@ -1587,12 +1587,13 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
     buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
-    if ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
     if yes:
         buttons |= UI.TaskDialogCommonButtons.Yes
+    elif ok:
+        buttons |= UI.TaskDialogCommonButtons.Ok
+
+    if cancel:
+        buttons |= UI.TaskDialogCommonButtons.Cancel
     if no:
         buttons |= UI.TaskDialogCommonButtons.No
     if retry:

@@ -17,3 +17,16 @@ def delete_elements(element_list, doc=None):
 def delete_revision(rvt_rev, doc=None):
     doc = doc or HOST_APP.doc
     return doc.Delete(rvt_rev.Id)
+
+
+def reset_subcategories(doc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    cats_to_delete = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            subcatid = subcat.Id.IntegerValue
+            if subcatid > 1:
+                cats_to_delete.append(subcatid)
+    # now delete
+    doc.Delete(List[DB.ElementId]([DB.ElementId(x) for x in cats_to_delete]))
