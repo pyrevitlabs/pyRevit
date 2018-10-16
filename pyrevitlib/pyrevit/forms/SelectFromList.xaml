@@ -7,6 +7,12 @@
         <Style x:Key="ClearButton" TargetType="Button">
             <Setter Property="Background" Value="White"/>
         </Style>
+
+        <ControlTemplate x:Key="ListItemTemplate">
+            <TextBlock Text="{Binding name}"
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"/>
+        </ControlTemplate>
     </Window.Resources>
     <DockPanel Margin="10">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
@@ -66,9 +72,7 @@
 								  Checked="check_selected"
 								  Unchecked="uncheck_selected"
                                   Visibility="{Binding checkable}"/>
-                        <TextBlock Text="{Binding name}"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"/>
+                        <Control Template="{DynamicResource ListItemTemplate}"/>
                     </WrapPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>

@@ -281,6 +281,9 @@ class TemplateListItem(object):
     def __contains__(self, value):
         return value in self.name
 
+    def __getattr__(self, param_name):
+        return getattr(self.item, param_name)
+
     @property
     def name(self):
         """Name property."""
@@ -428,8 +431,15 @@ class SelectFromList(TemplateUserInputWindow):
 
         self.ctx_groups_active = kwargs.get('default_group', None)
 
+        # check for custom data templates
+        item_template = kwargs.get('item_template', None)
+        if item_template:
+            self.Resources["ListItemTemplate"] = item_template
+
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
+
+        # list options now
         self._list_options()
 
         # setup search and filter fields
