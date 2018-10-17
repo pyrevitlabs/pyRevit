@@ -64,7 +64,7 @@ metric_units = [DB.DisplayUnitType.DUT_METERS,
 readonly_patterns = ['solid fill']
 
 
-PICK_COORD_RESOLUTION = 10
+PICK_COORD_RESOLUTION = 8
 
 
 class MakePatternWindow(forms.WPFWindow):
@@ -107,6 +107,10 @@ class MakePatternWindow(forms.WPFWindow):
     def export_scale(self):
         # 12 for feet to inch, 304.8 for feet to mm
         return 12.0 if self.export_units_cb.SelectedItem == 'INCH' else 304.8
+
+    @staticmethod
+    def round_coord(coord):
+        return round(coord, PICK_COORD_RESOLUTION)
 
     def update_fillgrid(self, rvt_fillgrid, scale):
         ext_origin = rvt_fillgrid.Origin
@@ -181,9 +185,6 @@ class MakePatternWindow(forms.WPFWindow):
             self.export_units_cb.SelectedIndex = 0
 
     def pick_domain(self):
-        def round_domain_coord(coord):
-            return round(coord, PICK_COORD_RESOLUTION)
-
         # ask user for origin and max domain points
         with forms.WarningBar(title='Pick origin point (bottom-left '
                                     'corner of the pattern area):'):
@@ -193,15 +194,18 @@ class MakePatternWindow(forms.WPFWindow):
                                         'of the pattern area:'):
                 pat_topright = revit.pick_point()
             if pat_topright:
-                return (round_domain_coord(pat_bottomleft.X),
-                        round_domain_coord(pat_bottomleft.Y)), \
-                       (round_domain_coord(pat_topright.X),
-                        round_domain_coord(pat_topright.Y))
+                return (MakePatternWindow.round_coord(pat_bottomleft.X),
+                        MakePatternWindow.round_coord(pat_bottomleft.Y)), \
+                       (MakePatternWindow.round_coord(pat_topright.X),
+                        MakePatternWindow.round_coord(pat_topright.Y))
 
         return False
 
     def make_pattern_line(self, start_xyz, end_xyz):
-        return (start_xyz.X, start_xyz.Y), (end_xyz.X, end_xyz.Y)
+        return (MakePatternWindow.round_coord(start_xyz.X),
+                MakePatternWindow.round_coord(start_xyz.Y)), \
+               (MakePatternWindow.round_coord(end_xyz.X),
+                MakePatternWindow.round_coord(end_xyz.Y))
 
     def export_pattern(self, export_dir):
         patname = self.pat_name_cb.SelectedItem

@@ -115,6 +115,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack3\ReValue.pushbutton\ReValueWindow.xaml">
+      <Link>Tools\ReValueWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.pushbutton\MatchConfigWindow.xaml">
       <Link>Tools\MatchConfigWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>

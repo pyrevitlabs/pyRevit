@@ -16,6 +16,8 @@ PI = pi
 HALF_PI = PI/2.0
 ZERO_TOL = 5e-06
 
+COORD_RESOLUTION = 8
+
 # 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
 MAX_MODEL_DOMAIN = 100.0
 
@@ -43,8 +45,8 @@ PAT_FILE_TEMPLATE = \
 
 class _PatternPoint:
     def __init__(self, u_point, v_point):
-        self.u = u_point
-        self.v = v_point
+        self.u = round(u_point, COORD_RESOLUTION)
+        self.v = round(v_point, COORD_RESOLUTION)
 
     def __repr__(self):
         return '<_PatternPoint U:{0:.20f} V:{1:.20f}>'.format(self.u, self.v)

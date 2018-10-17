@@ -163,8 +163,8 @@
 										</Storyboard>
 									</BeginStoryboard>
 								</Trigger.ExitActions>
-							</Trigger>
-							<Trigger Property="IsFocused" Value="true">
+                            </Trigger>
+							<Trigger Property="IsFocused" Value="True">
 								<Setter Property="Background" Value="{DynamicResource pyRevitAccentBrush}" />
 								<Setter Property="Foreground" Value="White" />
 							</Trigger>

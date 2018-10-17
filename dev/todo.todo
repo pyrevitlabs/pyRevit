@@ -8,3 +8,16 @@ pyrevit:
     ☐ the help uri for splitpushbutton doesn't work correctly e.g match tool
     ☐ slowly move collectors in List tool to db.query
     ☐ slowly phase out the extpackages module and user PyRevitLabs
+    ☐ Globally change text styles:
+        ☐ Text styles
+        ☐ Dim types:
+            Linear
+            Angular
+            Radial
+            Diameter
+            Spot Elev
+            Spot Coord
+            Spot Slope
+        ☐ Annotation Families:
+
+

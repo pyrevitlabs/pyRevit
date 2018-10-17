@@ -645,6 +645,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         message = kwargs.get('message', None)
         self._switches = kwargs.get('switches', [])
+        if not isinstance(self._switches, dict):
+            self._switches = dict.fromkeys(self._switches)
 
         configs = kwargs.get('config', None)
 
@@ -652,9 +654,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             message if message else 'Pick a command option:'
 
         # creates the switches first
-        for switch in self._switches:
+        for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
+            my_togglebutton.IsChecked = state if state else False
             if configs and 'option' in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
@@ -1496,7 +1499,6 @@ def select_views(title='Select Views',
         button_name=button_name,
         width=width,
         multiselect=multiple,
-        return_all=True,
         checked_only=True
         )
 
@@ -1654,12 +1656,13 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
     buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
-    if ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
     if yes:
         buttons |= UI.TaskDialogCommonButtons.Yes
+    elif ok:
+        buttons |= UI.TaskDialogCommonButtons.Ok
+
+    if cancel:
+        buttons |= UI.TaskDialogCommonButtons.Cancel
     if no:
         buttons |= UI.TaskDialogCommonButtons.No
     if retry:
@@ -1762,6 +1765,12 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
         >>> forms.pick_file(file_ext='csv', multi_file=True)
         ... [r'C:\output\somefile1.csv', r'C:\output\somefile2.csv']
+
+        >>> forms.pick_file(files_filter='All Files (*.*)|*.*|'
+                                         'Excel Workbook (*.xlsx)|*.xlsx|'
+                                         'Excel 97-2003 Workbook|*.xls',
+                            multi_file=True)
+        ... [r'C:\output\somefile1.xlsx', r'C:\output\somefile2.xls']
     """
     of_dlg = Forms.OpenFileDialog()
     if files_filter:
