@@ -22,7 +22,7 @@
                          FontSize="14" FontFamily="Courier New"
                          VerticalAlignment="Center"
                          VerticalContentAlignment="Center"
-                         TextChanged="on_param_change"/>
+                         TextChanged="on_format_change"/>
             </DockPanel>
             <DockPanel Margin="0,10,0,0">
                 <TextBlock FontSize="14" Margin="0,0,10,0" Width="100" DockPanel.Dock="Left" VerticalAlignment="Center">New Format:</TextBlock>
@@ -31,7 +31,7 @@
                          FontSize="14"  FontFamily="Courier New"
                          VerticalAlignment="Center"
                          VerticalContentAlignment="Center"
-                         TextChanged="on_param_change"/>
+                         TextChanged="on_format_change"/>
             </DockPanel>
         </StackPanel>
         <Grid x:Name="checkboxbuttons_g" DockPanel.Dock="Bottom" Margin="0,10,0,0">
@@ -44,12 +44,18 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Button x:Name="apply_b"
+                    Margin="5,0,0,0"
 				    Grid.Column="2" Grid.Row="0"
                     Height="25"
                     Content="Apply New Values"
                     Click="apply_new_values"/>
+            <Button x:Name="final_b"
+                    Margin="0,0,5,0"
+				    Grid.Column="1" Grid.Row="0"
+                    Height="25"
+                    Content="Mark Selected as Final"
+                    Click="mark_as_final"/>
         </Grid>
-
         <DataGrid x:Name="preview_dg"
                   Margin="0,10,0,0"
                   AutoGenerateColumns="False"
@@ -66,8 +72,18 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Old Value"
                                     Binding="{Binding oldvalue}" MinWidth="50" Width="*" IsReadOnly="True"/>
-                <DataGridTextColumn Header="New Value"
-                                    Binding="{Binding newvalue}" MinWidth="50" Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Header="NewValue"
+                                    Binding="{Binding newvalue}" MinWidth="50" Width="*" IsReadOnly="True">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding final}" Value="True">
+                                    <Setter Property="Background" Value="LightGreen"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

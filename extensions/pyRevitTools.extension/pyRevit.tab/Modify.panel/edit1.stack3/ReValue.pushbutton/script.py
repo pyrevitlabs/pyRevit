@@ -1,34 +1,44 @@
 """Reformat parameter string values (Super handy for renaming elements)"""
-#pylint: disable=E0401
-from collections import namedtuple
-
+#pylint: disable=E0401,W0703,W0613
 from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import forms
-from pyrevit import script
+
 
 __author__ = "{{author}}"
 __context__ = "selection"
 
-logger = script.get_logger()
-output = script.get_output()
 
+class ReValueItem(object):
+    def __init__(self, eid, oldvalue, final=False):
+        self.eid = eid
+        self.oldvalue = oldvalue
+        self.newvalue = ''
+        self.final = final
 
-ReValueItem = namedtuple('ReValueItem', ['oldvalue', 'newvalue'])
+    def format_value(self, old_format, new_format):
+        try:
+            self.newvalue = coreutils.reformat_string(self.oldvalue,
+                                                      old_format, new_format)
+        except Exception:
+            self.newvalue = ''
 
 
 class ReValueWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name, rvt_elements=None):
+    def __init__(self, xaml_file_name):
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)
+        self._revalue_items = []
         self._target_elements = revit.get_selection().elements
         self._setup_params()
-        # self.orig_format_tb.Text = '{company} - {type} - {name}'
-        # self.new_format_tb.Text = 'TVA_{type}_{name}'
 
     @property
     def selected_param(self):
         return self.params_cb.SelectedItem
+
+    @property
+    def selected_revalue_items(self):
+        return self.preview_dg.SelectedItems
 
     def _setup_params(self):
         unique_params = set()
@@ -42,34 +52,52 @@ class ReValueWindow(forms.WPFWindow):
         self.params_cb.ItemsSource = all_params
         self.params_cb.SelectedIndex = 0
 
-    def _get_new_value(self, old_value):
-        try:
-            return coreutils.reformat_string(old_value,
-                                             self.orig_format_tb.Text,
-                                             self.new_format_tb.Text)
-        except Exception:
-            return ''
+    def _refresh_preview(self):
+        self.preview_dg.ItemsSource = []
+        self.preview_dg.ItemsSource = self._revalue_items
 
     def on_param_change(self, sender, args):
-        self.preview_dg.ItemsSource = None
-        revalue_items = []
+        self._revalue_items = []
         for element in self._target_elements:
             if self.selected_param == 'Name':
                 old_value = revit.ElementWrapper(element).name
-                new_value = self._get_new_value(old_value)
             else:
                 param = element.LookupParameter(self.selected_param)
                 if param:
                     old_value = param.AsString()
-                    new_value = self._get_new_value(old_value)
 
-            revalue_items.append(ReValueItem(oldvalue=old_value,
-                                             newvalue=new_value))
+            newitem = ReValueItem(eid=element.Id, oldvalue=old_value)
+            newitem.format_value(self.orig_format_tb.Text,
+                                 self.new_format_tb.Text)
+            self._revalue_items.append(newitem)
+        self._refresh_preview()
 
-        self.preview_dg.ItemsSource = revalue_items
+    def on_format_change(self, sender, args):
+        for item in self._revalue_items:
+            if not item.final:
+                item.format_value(self.orig_format_tb.Text,
+                                  self.new_format_tb.Text)
+        self._refresh_preview()
+
+    def mark_as_final(self, sender, args):
+        selected_names = [x.eid for x in self.selected_revalue_items]
+        for item in self._revalue_items:
+            if item.eid in selected_names:
+                item.final = True
+        self._refresh_preview()
 
     def apply_new_values(self, sender, args):
-        pass
+        self.Close()
+        with revit.Transaction('ReValue {}'.format(self.selected_param)):
+            for item in self._revalue_items:
+                if item.newvalue:
+                    element = revit.doc.GetElement(item.eid)
+                    if self.selected_param == 'Name':
+                        element.Name = item.newvalue
+                    else:
+                        param = element.LookupParameter(self.selected_param)
+                        if param:
+                            param.Set(item.newvalue)
 
 
 ReValueWindow('ReValueWindow.xaml').show(modal=True)
