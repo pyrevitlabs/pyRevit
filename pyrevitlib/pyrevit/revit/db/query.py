@@ -159,14 +159,25 @@ def get_elements_by_class(element_class, elements=None, doc=None, view_id=None):
     # otherwise collect from model
     if view_id:
         return DB.FilteredElementCollector(doc or HOST_APP.doc, view_id)\
-                .OfClass(element_class)\
-                .WhereElementIsNotElementType()\
-                .ToElements()
+                 .OfClass(element_class)\
+                 .WhereElementIsNotElementType()\
+                 .ToElements()
     else:
         return DB.FilteredElementCollector(doc or HOST_APP.doc)\
                 .OfClass(element_class)\
                 .WhereElementIsNotElementType()\
                 .ToElements()
+
+
+def get_types_by_class(type_class, types=None, doc=None):
+    # if source types is provided
+    if types:
+        return [x for x in types if isinstance(x, type_class)]
+
+    # otherwise collect from model
+    return DB.FilteredElementCollector(doc or HOST_APP.doc)\
+            .OfClass(type_class)\
+            .ToElements()
 
 
 def get_family(family_name, doc=None):
