@@ -67,15 +67,17 @@
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >
                     <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="ToolTip" Value="{Binding tooltip}"/>
                 </Style>
             </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Old Value"
                                     Binding="{Binding oldvalue}" MinWidth="50" Width="*" IsReadOnly="True"/>
-                <DataGridTextColumn Header="NewValue"
+                <DataGridTextColumn Header="New Value"
                                     Binding="{Binding newvalue}" MinWidth="50" Width="*" IsReadOnly="True">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="DataGridCell">
+                            <Setter Property="ToolTip" Value="{Binding tooltip}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding final}" Value="True">
                                     <Setter Property="Background" Value="LightGreen"/>
