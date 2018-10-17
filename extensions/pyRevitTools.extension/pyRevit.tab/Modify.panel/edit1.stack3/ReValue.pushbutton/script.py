@@ -53,12 +53,21 @@ class ReValueWindow(forms.WPFWindow):
     def _setup_params(self):
         unique_params = set()
         for element in self._target_elements:
+            # grab element parameters
             for param in element.Parameters:
                 if not param.IsReadOnly \
                         and param.StorageType == DB.StorageType.String:
                     unique_params.add(param.Definition.Name)
+            # grab element family parameters
+            # if element.Family:
+            #     for param in element.Family.Parameters:
+            #         if not param.IsReadOnly \
+            #                 and param.StorageType == DB.StorageType.String:
+            #             unique_params.add(
+            #                 'Family: {}'.format(param.Definition.Name)
+            #                 )
 
-        all_params = ['Name']
+        all_params = ['Name', 'Family: Name']
         all_params.extend(sorted(list(unique_params)))
         self.params_cb.ItemsSource = all_params
         self.params_cb.SelectedIndex = 0
@@ -73,8 +82,18 @@ class ReValueWindow(forms.WPFWindow):
     def on_param_change(self, sender, args):
         self._reset_preview()
         for element in self._target_elements:
+            old_value = ''
             if self.selected_param == 'Name':
                 old_value = revit.ElementWrapper(element).name
+            elif self.selected_param == 'Family: Name':
+                if element.Family:
+                    old_value = revit.ElementWrapper(element.Family).name
+            # elif 'Family:' in self.selected_param:
+            #     if element.Family:
+            #         pname = self.selected_param.replace('Family: ', '')
+            #         param = element.Family.LookupParameter(pname)
+            #         if param:
+            #             old_value = param.AsString()
             else:
                 param = element.LookupParameter(self.selected_param)
                 if param:
@@ -110,6 +129,9 @@ class ReValueWindow(forms.WPFWindow):
                         element = revit.doc.GetElement(item.eid)
                         if self.selected_param == 'Name':
                             element.Name = item.newvalue
+                        elif self.selected_param == 'Family: Name':
+                            if element.Family:
+                                element.Family.Name = item.newvalue
                         else:
                             param = element.LookupParameter(self.selected_param)
                             if param:
