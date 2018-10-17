@@ -17,4 +17,7 @@ if forms.alert('This tool is very destructive. It resets all '
                'Are you sure you want to proceed?', yes=True, no=True):
     if forms.alert('Are you really really sure?', yes=True, no=True):
         with revit.Transaction('Reset SubCategories'):
-            revit.delete.reset_subcategories(doc=revit.doc)
+            revit.delete.reset_subcategories(
+                doc=revit.doc,
+                filterfunc=lambda x: '#' not in x.Name
+                )
