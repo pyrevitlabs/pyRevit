@@ -488,6 +488,15 @@ def get_builtincategory(cat_name_or_id, doc=None):
                 return bicat
 
 
+def get_builtinparameter(element, param_name, doc=None):
+    doc = doc or HOST_APP.doc
+    eparam = element.LookupParameter(param_name)
+    if eparam:
+        for biparam in DB.BuiltInParameter.GetValues(DB.BuiltInParameter):
+            if int(biparam) == eparam.Definition.Id.IntegerValue:
+                return biparam
+
+
 def get_view_cutplane_offset(view):
     viewrange = view.GetViewRange()
     return viewrange.GetOffset(DB.PlanViewPlane.CutPlane)

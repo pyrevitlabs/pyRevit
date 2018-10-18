@@ -18,7 +18,7 @@ view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
 def find_unrefed_views(view_list):
     for v in view_list:
         phasep = v.LookupParameter('Phase')
-        sheetnum = v.LookupParameter('Sheet Number')
+        sheetnum = v.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
         detnum = v.LookupParameter('Detail Number')
         refsheet = v.LookupParameter('Referencing Sheet')
         refviewport = v.LookupParameter('Referencing Detail')

@@ -44,9 +44,9 @@ class ReferencingView:
         # self._update_refs(self.element.GetReferenceElevations())
 
         self.sheet_num = \
-            self.element.LookupParameter('Sheet Number').AsString()
+            self.element.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString()
         self.sheet_name = \
-            self.element.LookupParameter('Sheet Name').AsString()
+            self.element.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()
         self.ref_det = \
             self.element.LookupParameter('Detail Number').AsString()
 
