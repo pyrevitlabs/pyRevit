@@ -1,5 +1,5 @@
 """Lists all sheets and views that the selected elements is visible in."""
-
+#pylint: disable=E0401,C0103
 from collections import defaultdict, namedtuple
 from pyrevit import script
 from pyrevit import revit, DB
@@ -23,10 +23,10 @@ allsheets = cl_views.OfCategory(DB.BuiltInCategory.OST_Sheets) \
 sorted_sheets = sorted(allsheets, key=lambda x: x.SheetNumber)
 
 
-def find_sheeted_views(sheet):
+def find_sheeted_views(target_sheet):
     return [VportView(revit.doc.GetElement(vp),
                       revit.doc.GetElement(revit.doc.GetElement(vp).ViewId))
-            for vp in sheet.GetAllViewports()]
+            for vp in target_sheet.GetAllViewports()]
 
 
 sheet_dict = defaultdict(list)
@@ -37,6 +37,11 @@ for sheet in sorted_sheets:
                      .WhereElementIsNotElementType() \
                      .ToElementIds()
 
+        # check if selected element is a viewport on a sheet
+        if vpview_tuple.viewport.Id in selection.element_ids:
+            sheet_dict[sheet].append(vpview_tuple)
+
+        # check if view contains any of the selected elements
         for el_id in selection.element_ids:
             if el_id in view_els:
                 sheet_dict[sheet].append(vpview_tuple)
@@ -50,6 +55,6 @@ for sheet in sheet_dict:
                             sheet.Name))
 
     for vpview_tuple in sheet_dict[sheet]:
-        print('\t\tVisible in View {}: {}'
+        print('\t\tViewport {}: {}'
               .format(output.linkify(vpview_tuple.viewport.Id),
                       vpview_tuple.view.ViewName))
