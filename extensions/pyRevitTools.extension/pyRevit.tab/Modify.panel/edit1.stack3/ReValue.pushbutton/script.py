@@ -5,7 +5,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-__author__ = "{{author}}"
 __context__ = "selection"
 
 
@@ -41,6 +40,18 @@ class ReValueWindow(forms.WPFWindow):
     @property
     def selected_param(self):
         return self.params_cb.SelectedItem
+
+    @property
+    def old_format(self):
+        return self.orig_format_tb.Text
+
+    @old_format.setter
+    def old_format(self, value):
+        self.orig_format_tb.Text = value
+
+    @property
+    def new_format(self):
+        return self.new_format_tb.Text
 
     @property
     def preview_items(self):
@@ -86,7 +97,7 @@ class ReValueWindow(forms.WPFWindow):
             if self.selected_param == 'Name':
                 old_value = revit.ElementWrapper(element).name
             elif self.selected_param == 'Family: Name':
-                if element.Family:
+                if hasattr(element, 'Family') and element.Family:
                     old_value = revit.ElementWrapper(element.Family).name
             # elif 'Family:' in self.selected_param:
             #     if element.Family:
@@ -100,17 +111,22 @@ class ReValueWindow(forms.WPFWindow):
                     old_value = param.AsString()
 
             newitem = ReValueItem(eid=element.Id, oldvalue=old_value)
-            newitem.format_value(self.orig_format_tb.Text,
-                                 self.new_format_tb.Text)
+            newitem.format_value(self.old_format,
+                                 self.new_format)
             self._revalue_items.append(newitem)
         self._refresh_preview()
 
     def on_format_change(self, sender, args):
         for item in self._revalue_items:
             if not item.final:
-                item.format_value(self.orig_format_tb.Text,
-                                  self.new_format_tb.Text)
+                item.format_value(self.old_format,
+                                  self.new_format)
         self._refresh_preview()
+
+    def on_selection_change(self, sender, args):
+        if self.preview_dg.SelectedItems.Count == 1 \
+                and not self.new_format:
+            self.old_format = self.preview_dg.SelectedItem.oldvalue
 
     def mark_as_final(self, sender, args):
         selected_names = [x.eid for x in self.selected_preview_items]
