@@ -5,6 +5,7 @@ from pyrevit.labs import TargetApps
 
 
 rvt_file = forms.pick_file(files_filter='Revit Model (*.rvt)|*.rvt|'
+										'Revit Template (*.rte)|*.rte|'
                                         'Revit Family (*.rfa)|*.rfa')
 if rvt_file:
     mfile = TargetApps.Revit.RevitModelFile(rvt_file)

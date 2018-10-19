@@ -711,3 +711,20 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
 
     return [x for x in existing_fp_elements
             if x.GetFillPattern().Target == fillpattern_target]
+
+
+def get_subcategories(doc=None, purgable=False, filterfunc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    subcategories = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if subcat.Id.IntegerValue > 1:
+                    subcategories.append(subcat)
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
+    
+    return subcategories
