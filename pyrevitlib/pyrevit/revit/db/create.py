@@ -1,8 +1,10 @@
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
+from pyrevit.revit import db
 from pyrevit.revit.db import query
 
 
@@ -196,3 +198,17 @@ def create_workset(workset_name, enable_worksharing=True, doc=None):
         doc.EnableWorksharing('Shared Levels and Grids', 'Workset1')
 
     return DB.Workset.Create(doc, workset_name)
+
+
+def create_filledregion(filledregion_name, fillpattern_element, doc=None):
+    doc = doc or HOST_APP.doc
+    filledregion_types = DB.FilteredElementCollector(doc) \
+                           .OfClass(DB.FilledRegionType)
+    for filledregion_type in filledregion_types:
+        if db.ElementWrapper(filledregion_type).name == filledregion_name:
+            raise PyRevitException('Filled Region matching \"{}\" already '
+                                   'exists.'.format(filledregion_name))
+    source_filledregion = filledregion_types.FirstElement()
+    new_filledregion = source_filledregion.Duplicate(filledregion_name)
+    new_filledregion.FillPatternId = fillpattern_element.Id
+    return new_filledregion
