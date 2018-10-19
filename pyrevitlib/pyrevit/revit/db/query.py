@@ -688,3 +688,26 @@ def get_mep_connections(element):
                         and y.Owner.Id != element.Id
                         and y.ConnectorType != DB.ConnectorType.Logical]
         return connelements
+
+
+def get_fillpattern_element(fillpattern_name, fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    for existing_fp_element in existing_fp_elements:
+        fillpattern = existing_fp_element.GetFillPattern()
+        if fillpattern_name == fillpattern.Name \
+                and fillpattern_target == fillpattern.Target:
+            return existing_fp_element
+
+
+def get_all_fillpattern_elements(fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    return [x for x in existing_fp_elements
+            if x.GetFillPattern().Target == fillpattern_target]
