@@ -170,7 +170,8 @@ def pick_and_match_styles(src_style):
                 break
 
             dest_element_ids = [dest_element.Id]
-            dest_element_ids.extend(dest_element.GetSubComponentIds())
+            if hasattr(dest_element, 'GetSubComponentIds'):
+                dest_element_ids.extend(dest_element.GetSubComponentIds())
             with revit.Transaction('Match Graphics Overrides'):
                 for dest_elid in dest_element_ids:
                     revit.activeview.SetElementOverrides(dest_elid, src_style)
