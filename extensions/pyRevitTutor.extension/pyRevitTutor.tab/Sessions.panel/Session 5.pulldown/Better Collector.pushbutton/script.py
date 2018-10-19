@@ -1,7 +1,5 @@
 """Advanced Collection of Data: Collects all the walls of height 10"""
 
-__author__ = 'Ehsan Iran-Nejad'
-
 
 # for timing -------------------------------------------------------------------
 from pyrevit.coreutils import Timer
