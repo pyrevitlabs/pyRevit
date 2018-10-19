@@ -1,4 +1,4 @@
-"""Generate FilledRegion Swatches"""
+"""Generate filledregion swatches in active view."""
 #pylint: disable=E0401,C0103
 from pyrevit.framework import List
 from pyrevit import revit, DB
