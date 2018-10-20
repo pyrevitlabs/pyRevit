@@ -12,10 +12,10 @@ class TestFillPatternViewer(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self.pat_name_cb.ItemsSource = \
-            [x.GetFillPattern().Name
-             for x in revit.query.get_all_fillpattern_elements(
-                 DB.FillPatternTarget.Drafting
-                 )]
+            sorted([x.GetFillPattern().Name
+                    for x in revit.query.get_all_fillpattern_elements(
+                        DB.FillPatternTarget.Drafting
+                        )])
         self.pat_name_cb.SelectedIndex = 0
 
     def fill_pattern_changed(self, sender, args):
