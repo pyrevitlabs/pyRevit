@@ -1587,12 +1587,13 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
     buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
-    if ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
     if yes:
         buttons |= UI.TaskDialogCommonButtons.Yes
+    elif ok:
+        buttons |= UI.TaskDialogCommonButtons.Ok
+
+    if cancel:
+        buttons |= UI.TaskDialogCommonButtons.Cancel
     if no:
         buttons |= UI.TaskDialogCommonButtons.No
     if retry:
@@ -1695,6 +1696,12 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
         >>> forms.pick_file(file_ext='csv', multi_file=True)
         ... [r'C:\output\somefile1.csv', r'C:\output\somefile2.csv']
+
+        >>> forms.pick_file(files_filter='All Files (*.*)|*.*|'
+                                         'Excel Workbook (*.xlsx)|*.xlsx|'
+                                         'Excel 97-2003 Workbook|*.xls',
+                            multi_file=True)
+        ... [r'C:\output\somefile1.xlsx', r'C:\output\somefile2.xls']
     """
     of_dlg = Forms.OpenFileDialog()
     if files_filter:

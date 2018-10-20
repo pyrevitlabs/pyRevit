@@ -1044,18 +1044,17 @@ def reformat_string(orig_str, orig_format, new_format):
         '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
     # find the tags
-    tag_extractor = re.compile('{(.*?)}')
+    tag_extractor = re.compile('{(.+?)}')
     tags = tag_extractor.findall(orig_format)
 
     # replace the tags with regex patterns
     # to create a regex pattern that finds values
-    tag_replacer = re.compile('{.*?}')
+    tag_replacer = re.compile('{.+?}')
     value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
     # find all values
     value_extractor = re.compile(value_extractor_pattern)
-    values = value_extractor.findall(orig_str)
-    if values:
-        values = values[0]
+    m = value_extractor.match(orig_str)
+    values = m.groups()
 
     # create a dictionary of tags and values
     reformat_dict = {}

@@ -1,4 +1,6 @@
 """Base module for handling extensions parsing."""
+from pyrevit import HOST_APP
+
 # Extension types
 # ------------------------------------------------------------------------------
 LIB_EXTENSION_POSTFIX = '.lib'
@@ -63,8 +65,13 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 
-# Component swf video for tooltips
-DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+# Component image for tooltips
+DEFAULT_TOOLTIP_IMAGE_FILE = 'tooltip.png'
+# Component video for tooltips
+if HOST_APP.is_newer_than(2019, or_equal=True):
+    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.mp4'
+else:
+    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
 
 # Command supported languages
 PYTHON_LANG = 'python'

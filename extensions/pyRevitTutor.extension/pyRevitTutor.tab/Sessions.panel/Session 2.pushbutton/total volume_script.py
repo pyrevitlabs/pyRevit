@@ -1,7 +1,6 @@
 """Calculates total volume of all walls in the model."""
 
 __title__ = 'Total\nVolume'
-__author__ = 'Ehsan Iran-Nejad'
 
 
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory

@@ -15,7 +15,7 @@ import codecs
 
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
-from pyrevit.framework import Windows
+from pyrevit.framework import Windows, Drawing
 from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
@@ -51,6 +51,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             if cat.Name == 'Sheets':
                 self.sheet_cat_id = cat.Id
 
+        self._setup_printers()
+        self._setup_print_settings()
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
         self.schedules_cb.SelectedIndex = 0
 
@@ -80,6 +82,14 @@ class PrintSheetsWindow(forms.WPFWindow):
     @property
     def selected_schedule(self):
         return self.schedules_cb.SelectedItem
+
+    @property
+    def selected_printer(self):
+        return self.printers_cb.SelectedItem
+
+    @property
+    def selected_print_setting(self):
+        return self.printsettings_cb.SelectedItem
 
     @property
     def reverse_print(self):
@@ -180,14 +190,34 @@ class PrintSheetsWindow(forms.WPFWindow):
                             'on your system. | %s', printerr)
             return None
 
+    def _setup_printers(self):
+        printers = list(Drawing.Printing.PrinterSettings.InstalledPrinters)
+        self.printers_cb.ItemsSource = printers
+        print_mgr = self._get_printmanager()
+        self.printers_cb.SelectedItem = print_mgr.PrinterName
+
+    def _setup_print_settings(self):
+        print_settings = [revit.doc.GetElement(x)
+                          for x in revit.doc.GetPrintSettingIds()]
+        self.printsettings_cb.ItemsSource = print_settings
+        print_mgr = self._get_printmanager()
+        if not isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
+                          DB.InSessionPrintSetting):
+            cur_psetting_name = print_mgr.PrintSetup.CurrentPrintSetting.Name
+            for psetting in print_settings:
+                if psetting.Name == cur_psetting_name:
+                    self.printsettings_cb.SelectedItem = psetting
+
     def _print_combined_sheets_in_order(self):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
-        if not print_mgr:
-            return
-        print_mgr.PrintRange = DB.PrintRange.Select
-
         with revit.TransactionGroup('Print Sheets in Order') as tg:
+            if not print_mgr:
+                return
+            print_mgr.PrintSetup.CurrentPrintSetting = \
+                self.selected_print_setting
+            print_mgr.SelectNewPrintDriver(self.selected_printer)
+            print_mgr.PrintRange = DB.PrintRange.Select
             # add non-printable char in front of sheet Numbers
             # to push revit to sort them per user
             sheet_set = DB.ViewSet()
@@ -248,7 +278,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                             '\nSet printer correctly in Print settings.')
                 script.exit()
             print_mgr.PrintToFile = True
-            print_mgr.PrintToFileName = op.join(r'C:', 'Ordered Sheet Set.pdf')
+            print_mgr.PrintToFileName = \
+                op.join(r'C:\\', 'Ordered Sheet Set.pdf')
             print_mgr.Apply()
             print_mgr.SubmitPrint()
 
@@ -265,21 +296,24 @@ class PrintSheetsWindow(forms.WPFWindow):
         if not print_mgr:
             return
         print_mgr.PrintToFile = True
-        # print_mgr.CombinedFile = False
-        print_mgr.PrintRange = DB.PrintRange.Current
-        for sheet in self.sheet_list:
-            output_fname = \
-                coreutils.cleanup_filename('{:05} {} - {}.pdf'
-                                           .format(sheet.print_index,
-                                                   sheet.number,
-                                                   sheet.name))
+        with revit.DryTransaction('Set Printer Settubgs') as t:
+            print_mgr.PrintSetup.CurrentPrintSetting = \
+                self.selected_print_setting
+            print_mgr.SelectNewPrintDriver(self.selected_printer)
+            print_mgr.PrintRange = DB.PrintRange.Current
+            for sheet in self.sheet_list:
+                output_fname = \
+                    coreutils.cleanup_filename('{:05} {} - {}.pdf'
+                                            .format(sheet.print_index,
+                                                    sheet.number,
+                                                    sheet.name))
 
-            print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
-            if sheet.printable:
-                print_mgr.SubmitPrint(sheet.revit_sheet)
-            else:
-                logger.debug('Sheet %s is not printable. Skipping print.',
-                             sheet.number)
+                print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
+                if sheet.printable:
+                    print_mgr.SubmitPrint(sheet.revit_sheet)
+                else:
+                    logger.debug('Sheet %s is not printable. Skipping print.',
+                                sheet.number)
 
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):

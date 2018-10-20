@@ -32,7 +32,29 @@ compatproducts = []
 description = 'Latest Release Candidate (RC1)'
 
 [deployments]
-core = ['bin', 'pyrevitlib', 'site-packages', 'pyRevitfile']
-base = ['bin', 'extensions/pyRevitCore.extension', 'extensions/pyRevitTools.extension', 'pyrevitlib', 'site-packages', 'pyRevitfile']
-basepublic = ['bin', 'extensions/pyRevitCore.extension', 'extensions/pyRevitTools.extension', 'extensions/pyRevitTutor.extension', 'pyrevitlib', 'site-packages', 'pyRevitfile']
-basex = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+core = ['bin',
+        'pyrevitlib',
+        'site-packages',
+        'pyRevitfile']
+corex = ['bin',
+         'extensions/pyRevitCore.extension',
+         'pyrevitlib',
+         'site-packages',
+         'pyRevitfile']
+base = ['bin',
+        'extensions/pyRevitCore.extension',
+        'extensions/pyRevitTools.extension',
+        'pyrevitlib',
+        'site-packages',
+        'pyRevitfile']
+basepublic = ['bin',
+              'extensions/pyRevitCore.extension',
+              'extensions/pyRevitTools.extension',
+              'extensions/pyRevitTutor.extension',
+              'pyrevitlib', 'site-packages',
+              'pyRevitfile']
+basex = ['bin',
+         'extensions',
+         'pyrevitlib',
+         'site-packages',
+         'pyRevitfile']
