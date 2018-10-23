@@ -1,9 +1,9 @@
 """Provides options for overriding Visibility/Graphics on selected elements."""
-
+#pylint: disable=E0401,C0103
+import re
 from collections import OrderedDict
 
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
@@ -17,12 +17,13 @@ selection = revit.get_selection()
 
 
 def find_solid_fillpat():
+    solid_fill_regex = re.compile('[<]?solid fill[>]?')
     existing_pats = DB.FilteredElementCollector(revit.doc)\
                       .OfClass(DB.FillPatternElement)\
                       .ToElements()
     for pat in existing_pats:
         fpat = pat.GetFillPattern()
-        if fpat.Name.lower() == 'solid fill' \
+        if solid_fill_regex.match(fpat.Name.lower()) \
                 and fpat.Target == DB.FillPatternTarget.Drafting:
             return pat
 

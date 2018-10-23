@@ -104,9 +104,26 @@ class MakePatternWindow(forms.WPFWindow):
         return self.createfilledregion_cb.IsChecked
 
     @property
+    def pat_scale_multiplier(self):
+        mult = self.multiplier_tb.Text
+        if pyutils.isnumber(mult):
+            logger.debug('Multiplier is %s', float(mult))
+            return float(mult)
+        else:
+            logger.debug('Multiplier is not a number (%s). Defaulting to 1.0',
+                         mult)
+
+    @property
     def export_scale(self):
         # 12 for feet to inch, 304.8 for feet to mm
         return 12.0 if self.export_units_cb.SelectedItem == 'INCH' else 304.8
+
+    @property
+    def pat_scale(self):
+        if not self.is_model_pat:
+            return (1.0 / revit.activeview.Scale) * self.pat_scale_multiplier
+        else:
+            return 1.0 * self.pat_scale_multiplier
 
     @staticmethod
     def round_coord(coord):
@@ -260,18 +277,13 @@ class MakePatternWindow(forms.WPFWindow):
 
         logger.debug(call_params)
 
-        if not self.is_model_pat:
-            pat_scale = 1.0 / revit.activeview.Scale
-        else:
-            pat_scale = 1.0
-
         if export_only:
             patmaker.export_pattern(
                 export_path,
                 self.pat_name,
                 line_tuples, domain,
                 fillgrids=self.selected_fillgrids,
-                scale=pat_scale * self.export_scale,
+                scale=self.pat_scale * self.export_scale,
                 model_pattern=self.is_model_pat,
                 allow_expansion=self.highestres_cb.IsChecked
                 )
@@ -280,7 +292,7 @@ class MakePatternWindow(forms.WPFWindow):
             patmaker.make_pattern(self.pat_name,
                                   line_tuples, domain,
                                   fillgrids=self.selected_fillgrids,
-                                  scale=pat_scale,
+                                  scale=self.pat_scale,
                                   model_pattern=self.is_model_pat,
                                   allow_expansion=self.highestres_cb.IsChecked,
                                   create_filledregion=self.create_filledregion)

@@ -1,11 +1,11 @@
 """Loads other types from selected family instance."""
-
+#pylint: disable=E0401,C0103
 import re
 import os.path as op
 
 from pyrevit.framework import clr
 from pyrevit import forms
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import script
 
 
@@ -50,7 +50,7 @@ class SmartSortableFamilyType:
     def __init__(self, type_name):
         self.type_name = type_name
         self.sort_alphabetically = False
-        self.number_list = [int(x) for x in re.findall('\d+', self.type_name)]
+        self.number_list = [int(x) for x in re.findall(r'\d+', self.type_name)]
         if not self.number_list:
             self.sort_alphabetically = True
 

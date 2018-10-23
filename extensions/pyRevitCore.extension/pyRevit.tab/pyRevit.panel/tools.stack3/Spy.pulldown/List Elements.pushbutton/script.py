@@ -1,4 +1,6 @@
-__doc__ = 'Lists specific elements from the model database.'
+"""Lists specific elements from the model database."""
+#pylint: disable=C0103,E0401,W0703
+from collections import defaultdict
 
 from pyrevit.framework import List
 from pyrevit import coreutils
@@ -22,7 +24,7 @@ switches = ['Graphic Styles',
             'Views',
             'View Templates',
             'Viewports',
-            'Viewport Types',
+            'Element Types',
             'Family Symbols',
             'Levels',
             'Scope Boxes',
@@ -172,17 +174,21 @@ elif selected_switch == 'Viewports':
                       str(v.Id).ljust(10),
                       revit.doc.GetElement(v.ViewId).ViewName))
 
-elif selected_switch == 'Viewport Types':
-    vps = []
+elif selected_switch == 'Element Types':
+    all_types = \
+        revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
+    etypes_dict = defaultdict(list)
+    for etype in all_types:
+        if etype.FamilyName:
+            etypes_dict[str(etype.FamilyName).strip()].append(etype)
 
-    cl_views = DB.FilteredElementCollector(revit.doc)
-    vptypes = cl_views.OfClass(DB.ElementType).ToElements()
+    for etype_name in sorted(etypes_dict.keys()):
+        etypes = etypes_dict[etype_name]
+        output.print_md('**{}**'.format(etype_name))
+        for et in etypes:
+            print('\t{} {}'.format(output.linkify(et.Id),
+                                   revit.ElementWrapper(et).name))
 
-    for tp in vptypes:
-        wrapperd_tp = revit.ElementWrapper(tp)
-        if tp.FamilyName == 'Viewport':
-            print('ID: {1} TYPE: {0}'.format(wrapperd_tp.name,
-                                             str(tp.Id).ljust(10)))
 
 elif selected_switch == 'Family Symbols':
     cl = DB.FilteredElementCollector(revit.doc)
@@ -249,14 +255,15 @@ elif selected_switch == 'Rooms':
 elif selected_switch == 'External References':
     location = revit.doc.PathName
     try:
-        modelPath = DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
+        modelPath = \
+            DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
         transData = DB.TransmissionData.ReadTransmissionData(modelPath)
         externalReferences = transData.GetAllExternalFileReferenceIds()
         for refId in externalReferences:
             extRef = transData.GetLastSavedReferenceData(refId)
             refpath = extRef.GetPath()
             path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(refpath)
-            if '' == path:
+            if not path:
                 path = '--NOT ASSIGNED--'
             reftype = str(extRef.ExternalFileReferenceType) + ':'
             print("{0}{1}".format(reftype.ljust(20), path))
@@ -305,7 +312,7 @@ elif selected_switch == 'Views':
 
     views = []
 
-    if len(selection) == 0:
+    if selection:
         cl_views = DB.FilteredElementCollector(revit.doc)
         views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                         .WhereElementIsNotElementType().ToElements()
@@ -405,11 +412,9 @@ elif selected_switch == 'Selected Line Coordinates':
 elif selected_switch == 'Data Schema Entities':
     allElements = \
         list(DB.FilteredElementCollector(revit.doc)
-               .WherePasses(
-                   DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
-                                      DB.ElementIsElementTypeFilter(True))
-            )
-        )
+             .WherePasses(
+                 DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
+                                    DB.ElementIsElementTypeFilter(True))))
 
     guids = {sc.GUID.ToString(): sc.SchemaName
              for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
@@ -466,4 +471,3 @@ elif selected_switch == 'Sheets with Hidden Characters':
                             .format(sheet.SheetNumber,
                                     repr(sheetnum),
                                     sheetnum_repr))
-

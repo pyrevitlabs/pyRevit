@@ -277,7 +277,7 @@ class GenericUICommand(GenericUIComponent):
         GenericUIComponent.__init__(self)
         self.ui_title = None
         self.script_file = self.config_script_file = None
-        self.ttvideo_file = None
+        self.ttimage_file = self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
         self.doc_string = self.author = None
         self.cmd_help_url = self.cmd_context = None
@@ -300,6 +300,11 @@ class GenericUICommand(GenericUIComponent):
         icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = icon_path if op.exists(icon_path) else None
         mlogger.debug('Command %s: Icon file is: %s', self, self.icon_file)
+
+        ttimage_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_IMAGE_FILE)
+        self.ttimage_file = ttimage_path if op.exists(ttimage_path) else None
+        mlogger.debug('Command %s: Tooltip image file is: %s',
+                      self, self.ttimage_file)
 
         ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
         self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None

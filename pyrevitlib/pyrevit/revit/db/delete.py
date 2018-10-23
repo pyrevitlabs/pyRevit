@@ -1,6 +1,7 @@
 from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import DB
+from pyrevit.revit.db import query
 from pyrevit.revit.db import ensure
 
 
@@ -19,14 +20,10 @@ def delete_revision(rvt_rev, doc=None):
     return doc.Delete(rvt_rev.Id)
 
 
-def reset_subcategories(doc=None):
-    doc = doc or HOST_APP.doc
-    # collect custom categories
-    cats_to_delete = []
-    for cat in doc.Settings.Categories:
-        for subcat in cat.SubCategories:
-            subcatid = subcat.Id.IntegerValue
-            if subcatid > 1:
-                cats_to_delete.append(subcatid)
-    # now delete
-    doc.Delete(List[DB.ElementId]([DB.ElementId(x) for x in cats_to_delete]))
+def reset_subcategories(doc=None, purgable=False, filterfunc=None):
+    # get subcategories
+    cats_to_delete = query.get_subcategories(doc=doc,
+                                             purgable=purgable,
+                                             filterfunc=filterfunc)
+    doc.Delete(List[DB.ElementId]([x.Id for x in cats_to_delete]))
+    del cats_to_delete

@@ -165,14 +165,25 @@ def get_elements_by_class(element_class, elements=None, doc=None, view_id=None):
     # otherwise collect from model
     if view_id:
         return DB.FilteredElementCollector(doc or HOST_APP.doc, view_id)\
-                .OfClass(element_class)\
-                .WhereElementIsNotElementType()\
-                .ToElements()
+                 .OfClass(element_class)\
+                 .WhereElementIsNotElementType()\
+                 .ToElements()
     else:
         return DB.FilteredElementCollector(doc or HOST_APP.doc)\
                 .OfClass(element_class)\
                 .WhereElementIsNotElementType()\
                 .ToElements()
+
+
+def get_types_by_class(type_class, types=None, doc=None):
+    # if source types is provided
+    if types:
+        return [x for x in types if isinstance(x, type_class)]
+
+    # otherwise collect from model
+    return DB.FilteredElementCollector(doc or HOST_APP.doc)\
+            .OfClass(type_class)\
+            .ToElements()
 
 
 def get_family(family_name, doc=None):
@@ -684,3 +695,43 @@ def get_mep_connections(element):
                         and y.Owner.Id != element.Id
                         and y.ConnectorType != DB.ConnectorType.Logical]
         return connelements
+
+
+def get_fillpattern_element(fillpattern_name, fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    for existing_fp_element in existing_fp_elements:
+        fillpattern = existing_fp_element.GetFillPattern()
+        if fillpattern_name == fillpattern.Name \
+                and fillpattern_target == fillpattern.Target:
+            return existing_fp_element
+
+
+def get_all_fillpattern_elements(fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    return [x for x in existing_fp_elements
+            if x.GetFillPattern().Target == fillpattern_target]
+
+
+def get_subcategories(doc=None, purgable=False, filterfunc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    subcategories = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if subcat.Id.IntegerValue > 1:
+                    subcategories.append(subcat)
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
+    
+    return subcategories

@@ -25,6 +25,17 @@ ICON_LARGE = 32
 DEFAULT_DPI = 96
 
 
+def load_bitmapimage(path):
+    bitmap = Imaging.BitmapImage()
+    bitmap.BeginInit()
+    bitmap.UriSource = Uri(path)
+    bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
+    bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
+    bitmap.EndInit()
+    bitmap.Freeze()
+    return bitmap
+
+
 # Helper classes and functions -------------------------------------------------
 class PyRevitUIError(PyRevitException):
     pass
@@ -482,6 +493,16 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Item does not have extended '
                                  'tooltip property: {}'.format(tooltip_err))
 
+    def set_tooltip_image(self, tooltip_image):
+        try:
+            adwindows_obj = self.get_adwindows_object()
+            if adwindows_obj.ToolTip:
+                adwindows_obj.ToolTip.ExpandedImage = \
+                    load_bitmapimage(tooltip_image)
+        except Exception as ttimage_err:
+            raise PyRevitUIError('Error setting tooltip image {} | {} '
+                                 .format(tooltip_image, ttimage_err))
+
     def set_tooltip_video(self, tooltip_video):
         try:
             adwindows_obj = self.get_adwindows_object()
@@ -609,8 +630,9 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
-                           tooltip='', tooltip_ext='', tooltip_video='',
-                           cxthelpurl=None,
+                           tooltip='', tooltip_ext='',
+                           tooltip_image='', tooltip_video='',
+                           ctxhelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
         if self.contains(button_name):
@@ -646,10 +668,12 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_image:
+                    existing_item.set_tooltip_image(tooltip_image)
                 if tooltip_video:
                     existing_item.set_tooltip_video(tooltip_video)
 
-                existing_item.set_contexthelp(cxthelpurl)
+                existing_item.set_contexthelp(ctxhelpurl)
 
                 if ui_title:
                     existing_item.set_title(ui_title)
@@ -698,10 +722,12 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
+            if tooltip_image:
+                new_button.set_tooltip_image(tooltip_image)
             if tooltip_video:
                 new_button.set_tooltip_video(tooltip_video)
 
-            new_button.set_contexthelp(cxthelpurl)
+            new_button.set_contexthelp(ctxhelpurl)
 
             new_button.set_dirty_flag()
             self._add_component(new_button)
@@ -843,7 +869,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
-                           tooltip='', tooltip_ext='', tooltip_video='',
+                           tooltip='', tooltip_ext='',
+                           tooltip_image='', tooltip_video='',
                            ctxhelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
@@ -865,6 +892,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
+                if tooltip_image:
+                    existing_item.set_tooltip_image(tooltip_image)
                 if tooltip_video:
                     existing_item.set_tooltip_video(tooltip_video)
 
@@ -920,6 +949,8 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
 
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
+                if tooltip_image:
+                    new_button.set_tooltip_image(tooltip_image)
                 if tooltip_video:
                     new_button.set_tooltip_video(tooltip_video)
 
@@ -1004,16 +1035,23 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
             self.ribbon_item(item_name).sync_with_current_item(False)
 
     def create_panel_push_button(self, button_name, asm_location, class_name,
-                                 tooltip='', tooltip_ext='', tooltip_video='',
-                                 cxthelpurl=None,
+                                 tooltip='', tooltip_ext='',
+                                 tooltip_image='', tooltip_video='',
+                                 ctxhelpurl=None,
                                  avail_class_name=None,
                                  update_if_exists=False):
-        self.create_push_button(button_name,
-                                asm_location, class_name,
-                                None, tooltip, tooltip_ext, tooltip_video,
-                                cxthelpurl,
-                                avail_class_name,
-                                update_if_exists, None)
+        self.create_push_button(button_name=button_name,
+                                asm_location=asm_location,
+                                class_name=class_name,
+                                icon_path=None,
+                                tooltip=tooltip,
+                                tooltip_ext=tooltip_ext,
+                                tooltip_image=tooltip_image,
+                                tooltip_video=tooltip_video,
+                                ctxhelpurl=ctxhelpurl,
+                                avail_class_name=avail_class_name,
+                                update_if_exists=update_if_exists,
+                                ui_title=None)
         self.set_dlglauncher(self.button(button_name))
 
 
