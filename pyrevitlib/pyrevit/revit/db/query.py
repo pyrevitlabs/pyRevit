@@ -726,5 +726,14 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
                 subcategories.append(subcat)
     if filterfunc:
         subcategories = filter(filterfunc, subcategories)
-    
+
     return subcategories
+
+
+def get_subcategory(category_name, subcategory_name, doc=None):
+    doc = doc or HOST_APP.doc
+    for cat in doc.Settings.Categories:
+        if cat.Name == category_name:
+            for subcat in cat.SubCategories:
+                if subcat.Name == subcategory_name:
+                    return subcat

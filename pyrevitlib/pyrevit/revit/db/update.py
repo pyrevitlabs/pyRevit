@@ -64,3 +64,14 @@ def update_param_value(rvt_param, value):
             rvt_param.Set(str(value))
         else:
             rvt_param.SetValueString(str(value))
+
+
+def toggle_category_visibility(view, subcat, hidden=None):
+    if HOST_APP.is_older_than(2018):
+        if hidden is None:
+            hidden = not view.GetVisibility(subcat.Id)
+        view.SetVisibility(subcat.Id, hidden)
+    else:
+        if hidden is None:
+            hidden = not view.GetCategoryHidden(subcat.Id)
+        view.SetCategoryHidden(subcat.Id, hidden)
