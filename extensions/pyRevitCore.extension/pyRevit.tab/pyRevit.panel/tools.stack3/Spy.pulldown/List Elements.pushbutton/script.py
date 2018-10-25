@@ -18,6 +18,7 @@ switches = ['Graphic Styles',
             'Selected Line Coordinates',
             'Model / Detail / Sketch Lines',
             'Project Parameters',
+            'Unused Shared Parameters',
             'Data Schemas',
             'Data Schema Entities',
             'Sketch Planes',
@@ -128,6 +129,16 @@ elif selected_switch == 'Project Parameters':
                       pp.param_binding_type,
                       [x.Name for x in pp.param_binding.Categories]
                       ))
+
+elif selected_switch == 'Unused Shared Parameters':
+    shared_params = \
+        set([x.Name + ':' + x.GUID.ToString()
+             for x in revit.query.get_defined_sharedparams()])
+    project_params = \
+        set([x.name + ':' + x.param_guid
+             for x in revit.query.get_project_parameters() if x.shared])
+    for unused_shared_param in shared_params - project_params:
+        print(unused_shared_param)
 
 elif selected_switch == 'Data Schemas':
     for sc in DB.ExtensibleStorage.Schema.ListSchemas():

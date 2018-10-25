@@ -160,7 +160,7 @@ class ProjectParameter(BaseWrapper):
         if param_ext_def:
             self.shared = True
             self.param_ext_def = param_ext_def
-            self.param_guid = self.param_ext_def.GUID
+            self.param_guid = self.param_ext_def.GUID.ToString()
 
         self.name = self.param_def.Name
         self.param_id = self.param_def.Id
