@@ -2,12 +2,15 @@ import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
+from pyrevit import coreutils
 from pyrevit import DB
 from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
 
 #pylint: disable=W0703,C0302,C0103
-__all__ = ('BaseWrapper', 'ElementWrapper', )
+__all__ = ('BaseWrapper', 'ElementWrapper',
+           'ExternalRef', 'ProjectParameter', 'CurrentProjectInfo',
+           'XYZPoint')
 
 
 class BaseWrapper(object):
@@ -145,21 +148,41 @@ class ExternalRef(ElementWrapper):
         return self._wrapped.Reload()
 
 
-class ModelSharedParam(BaseWrapper):
-    def __init__(self, param_def, param_binding=None):
-        super(ModelSharedParam, self).__init__()
+class ProjectParameter(BaseWrapper):
+    def __init__(self, param_def, param_binding=None, param_ext_def=False):
+        super(ProjectParameter, self).__init__()
         self.param_def = param_def
         self.param_binding = param_binding
+        self.param_binding_type = self._determine_binding_type()
 
-    @property
-    def name(self):
-        return self.param_def.Name
+        self.shared = False
+        self.param_guid = ''
+        if param_ext_def:
+            self.shared = True
+            self.param_ext_def = param_ext_def
+            self.param_guid = self.param_ext_def.GUID
+
+        self.name = self.param_def.Name
+        self.param_id = self.param_def.Id
+        self.unit_type = self.param_def.UnitType
+        self.param_type = self.param_def.ParameterType
+        self.param_group = self.param_def.ParameterGroup
 
     def __eq__(self, other):
         if isinstance(self.param_def, DB.ExternalDefinition):
-            return self.param_def.GUID == other or self.name == other
+            return self.param_def.GUID == other.GUID or self.name == other.Name
         else:
-            return self.name == other
+            guid = coreutils.extract_guid(str(other))
+            if guid:
+                return self.param_def.GUID.ToString() == guid
+            else:
+                return self.name == str(other)
+
+    def _determine_binding_type(self):
+        if isinstance(self.param_binding, DB.InstanceBinding):
+            return 'Instance'
+        elif isinstance(self.param_binding, DB.TypeBinding):
+            return 'Type'
 
 
 class CurrentProjectInfo(BaseWrapper):
