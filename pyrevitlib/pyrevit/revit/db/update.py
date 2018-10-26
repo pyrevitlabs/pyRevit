@@ -75,3 +75,8 @@ def toggle_category_visibility(view, subcat, hidden=None):
         if hidden is None:
             hidden = not view.GetCategoryHidden(subcat.Id)
         view.SetCategoryHidden(subcat.Id, hidden)
+
+
+def rename_workset(workset, new_name, doc=None):
+    doc = doc or HOST_APP.doc
+    DB.WorksetTable.RenameWorkset(doc, workset.Id, new_name)
