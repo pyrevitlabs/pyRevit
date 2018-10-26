@@ -323,10 +323,14 @@ def get_sheet_revisions(sheet, doc=None):
     return [doc.GetElement(x) for x in sheet.GetAdditionalRevisionIds()]
 
 
-def get_sheets(include_placeholders=True, doc=None):
+def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
                   .WhereElementIsNotElementType())
+    if not include_noappear:
+        sheets = [x for x in sheets
+                  if x.Parameter[DB.BuiltInParameter.SHEET_SCHEDULED]
+                  .AsInteger() > 0]
     if not include_placeholders:
         return [x for x in sheets if not x.IsPlaceholder]
 
