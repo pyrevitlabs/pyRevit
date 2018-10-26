@@ -3,18 +3,27 @@
         Title="Re-Order Sheets" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
-        <DataTemplate x:Key="IndexColumnStyle">
-            <TextBlock Foreground="Gray" Text="{Binding order_index}"/>
-        </DataTemplate>
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="Orange"/>
+        </Style>
 
-        <ControlTemplate x:Key="Default" TargetType="{x:Type ListViewItem}">
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="ToolTip" Value="{Binding tooltip}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding printable}" Value="False">
+                    <Setter Property="Foreground" Value="#bdbdbd" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <ControlTemplate x:Key="Default" TargetType="{x:Type DataGridCell}">
             <StackPanel Background="White">
                 <GridViewRowPresenter Content="{TemplateBinding Content}"
                                       Columns="{TemplateBinding GridView.ColumnCollection}"/>
             </StackPanel>
         </ControlTemplate>
 
-        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type ListViewItem}'>
+        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type DataGridCell}'>
             <StackPanel Background="#f6f6f6">
                 <GridViewRowPresenter Content="{TemplateBinding Content}"
                                           Columns="{TemplateBinding GridView.ColumnCollection}"/>
@@ -60,40 +69,50 @@
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
-            <Button Grid.Row="1" Margin="0,0,0,5" Content="10 &gt;&gt;">
+            <Button Grid.Row="1" Margin="0,0,0,5" Content="10 &gt;&gt;" Click="move_10_to_top">
                 <Button.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
-            <Button Grid.Row="2" Margin="0,0,0,5" Content="&gt;">
+            <Button Grid.Row="2" Margin="0,0,0,5" Content="&gt;" Click="move_1_to_top">
                 <Button.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
-            <Button Grid.Row="3" Margin="0,0,0,5" Content="&lt;">
+            <Button Grid.Row="3" Margin="0,0,0,5" Content="&lt;" Click="move_1_to_bottom">
                 <Button.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
-            <Button Grid.Row="4" Margin="0,0,0,5" Content="10 &lt;&lt;">
+            <Button Grid.Row="4" Margin="0,0,0,5" Content="10 &lt;&lt;" Click="move_10_to_bottom">
                 <Button.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
-            <Button Grid.Row="5" Margin="0,0,0,0" Content="Bottom &lt;&lt;&lt;">
+            <Button Grid.Row="5" Margin="0,0,0,0" Content="Bottom &lt;&lt;&lt;" Click="move_to_bottom">
                 <Button.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </Button.LayoutTransform>
             </Button>
         </Grid>
-        <ListView x:Name="sheets_lb" AllowDrop="True" SelectionMode="Extended">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Order Index" Width="70" CellTemplate="{StaticResource IndexColumnStyle}"/>
-                    <GridViewColumn Header="Sheet Number" Width="90" DisplayMemberBinding="{Binding number}" />
-                    <GridViewColumn Header="Sheet Name" DisplayMemberBinding="{Binding name}" />
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <DataGrid x:Name="items_dg"
+                  AutoGenerateColumns="False"
+                  BorderThickness="1"
+                  RowHeaderWidth="0"
+                  CanUserSortColumns="True"
+                  HorizontalGridLinesBrush="#dedede"
+                  VerticalGridLinesBrush="#dedede"
+                  Sorting="sorting_changed">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell" >
+                    <Setter Property="BorderThickness" Value="0"/>
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Index" Binding="{Binding order_index}" MinWidth="40" Width="40" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </DockPanel>
 </Window>
