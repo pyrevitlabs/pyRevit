@@ -61,7 +61,7 @@ class ReOrderWindow(forms.WPFWindow):
             items = sorted(
                 items,
                 key=lambda x: x.LookupParameter(self.selected_item_param)
-                .AsString()
+                .AsInteger()
                 )
         return items
 
