@@ -1,6 +1,6 @@
 {
     "builtin": "True",
-    "default_enabled": "True",
+    "default_enabled": "False",
     "type": "extension",
     "rocket_mode_compatible": "True",
     "name": "pyRevitTags",
