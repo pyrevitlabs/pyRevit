@@ -18,6 +18,7 @@ switches = ['Graphic Styles',
             'Selected Line Coordinates',
             'Model / Detail / Sketch Lines',
             'Project Parameters',
+            'Unused Shared Parameters',
             'Data Schemas',
             'Data Schema Entities',
             'Sketch Planes',
@@ -103,27 +104,41 @@ elif selected_switch == 'Model / Detail / Sketch Lines':
                       c.Category.Name))
 
 elif selected_switch == 'Project Parameters':
-    pm = revit.doc.ParameterBindings
-    it = pm.ForwardIterator()
-    it.Reset()
-    while it.MoveNext():
-        p = it.Key
-        b = pm[p]
-        if isinstance(b, DB.InstanceBinding):
-            bind = 'Instance'
-        elif isinstance(b, DB.TypeBinding):
-            bind = 'Type'
-        else:
-            bind = 'Uknown'
+    output.print_md('## Project Parameters')
+    for pp in revit.query.get_project_parameters():
+        if not pp.shared:
+            output.print_md('#### {}'.format(pp.name))
+            print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
+                  '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
+                      pp.unit_type,
+                      pp.param_type,
+                      pp.param_group,
+                      pp.param_binding_type,
+                      [x.Name for x in pp.param_binding.Categories]
+                      ))
 
-        print('PARAM: {0:<10} UNIT: {1:<10} TYPE: {2:<10} '
-              'GROUP: {3:<20} BINDING: {4}'
-              '\nAPPLIED TO: {5}\n'.format(p.Name,
-                                           str(p.UnitType),
-                                           str(p.ParameterType),
-                                           str(p.ParameterGroup),
-                                           bind,
-                                           [c.Name for c in b.Categories]))
+    output.print_md('# Shared Parameters')
+    for pp in revit.query.get_project_parameters():
+        if pp.shared:
+            output.print_md('#### {} : {}'.format(pp.name, pp.param_guid))
+            print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
+                  '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
+                      pp.unit_type,
+                      pp.param_type,
+                      pp.param_group,
+                      pp.param_binding_type,
+                      [x.Name for x in pp.param_binding.Categories]
+                      ))
+
+elif selected_switch == 'Unused Shared Parameters':
+    shared_params = \
+        set([x.Name + ':' + x.GUID.ToString()
+             for x in revit.query.get_defined_sharedparams()])
+    project_params = \
+        set([x.name + ':' + x.param_guid
+             for x in revit.query.get_project_parameters() if x.shared])
+    for unused_shared_param in shared_params - project_params:
+        print(unused_shared_param)
 
 elif selected_switch == 'Data Schemas':
     for sc in DB.ExtensibleStorage.Schema.ListSchemas():

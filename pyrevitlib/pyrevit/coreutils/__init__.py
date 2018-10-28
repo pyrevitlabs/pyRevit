@@ -1069,8 +1069,8 @@ def reformat_string(orig_str, orig_format, new_format):
     value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
     # find all values
     value_extractor = re.compile(value_extractor_pattern)
-    m = value_extractor.match(orig_str)
-    values = m.groups()
+    match = value_extractor.match(orig_str)
+    values = match.groups()
 
     # create a dictionary of tags and values
     reformat_dict = {}
@@ -1256,6 +1256,17 @@ def get_enum_none(enum_type):
     for val in framework.Enum.GetValues(enum_type):
         if str(val) == 'None':
             return val
+
+
+def extract_guid(source_str):
+    """Extract GUID number from a string."""
+    guid_match = re.match(".*([0-9A-Fa-f]{8}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{12}).*", source_str)
+    if guid_match:
+        return guid_match.groups()[0]
 
 
 def format_hex_rgb(rgb_value):
