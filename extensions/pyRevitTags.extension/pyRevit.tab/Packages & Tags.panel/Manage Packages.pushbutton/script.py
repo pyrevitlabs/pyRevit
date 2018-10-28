@@ -1,12 +1,31 @@
 """Manage sheet packages."""
 #pylint: disable=C0111,E0401,C0103,W0613,W0703
+import random
+
+from pyrevit import framework
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
 
+__title__ = 'Manage\nPackages'
+
 logger = script.get_logger()
 output = script.get_output()
+
+
+class PackageDataGridItem(object):
+    def __init__(self):
+        states = [framework.Windows.Visibility.Hidden,
+                  framework.Windows.Visibility.Visible]
+        self.hasbefore = states[1]
+        self.hasafter = states[1]
+
+        # self.committype = 'created'
+        # self.committype = 'issued'
+        self.committype = 'updated'
+        # self.committype = 'revised'
+        # self.committype = 'deleted'
 
 
 class SheetDataGridItem(object):
@@ -16,6 +35,7 @@ class SheetDataGridItem(object):
         self.number = self._item.SheetNumber
         self.printable = self._item.CanBePrinted
         self.order_index = 0
+        self.package = PackageDataGridItem()
 
     @property
     def revit_item(self):
