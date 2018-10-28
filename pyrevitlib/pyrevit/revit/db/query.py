@@ -272,8 +272,11 @@ def get_sharedparam_definition_file():
 def get_defined_sharedparams():
     # returns DB.ExternalDefinition
     pp_list = []
-    for def_group in get_sharedparam_definition_file().Groups:
-        pp_list.extend([x for x in def_group.Definitions])
+    try:
+        for def_group in get_sharedparam_definition_file().Groups:
+            pp_list.extend([x for x in def_group.Definitions])
+    except PyRevitException as ex:
+        mlogger.debug('Error getting shared parameters. | %s', ex)
     return pp_list
 
 

@@ -105,9 +105,10 @@ def get_modifier_defs():
 def verify_tags_configs():
     try:
         update_tags_config()
-        revit.query.get_sharedparam_id(get_tags_param())
+        revit.query.get_project_parameter_id(get_tags_param())
         return True
-    except Exception:
+    except Exception as e:
+        mlogger.debug('Error verifying tags configuration. | %s', e)
         return False
 
 
