@@ -16,16 +16,16 @@ output = script.get_output()
 
 class PackageDataGridItem(object):
     def __init__(self):
+        self.name = 'PPP'
         states = [framework.Windows.Visibility.Hidden,
                   framework.Windows.Visibility.Visible]
         self.hasbefore = states[1]
         self.hasafter = states[1]
 
-        # self.committype = 'created'
-        # self.committype = 'issued'
-        self.committype = 'updated'
-        # self.committype = 'revised'
-        # self.committype = 'deleted'
+        self.committype = random.choice(
+            ['created', 'issued', 'refissued',
+             'updated', 'revised', 'merged', 'deleted']
+            )
 
 
 class SheetDataGridItem(object):
@@ -36,6 +36,9 @@ class SheetDataGridItem(object):
         self.printable = self._item.CanBePrinted
         self.order_index = 0
         self.package = PackageDataGridItem()
+
+    def __getitem__(self, idx):
+        return self.package
 
     @property
     def revit_item(self):

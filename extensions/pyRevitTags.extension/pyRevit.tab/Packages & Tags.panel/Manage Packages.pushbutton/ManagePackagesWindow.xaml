@@ -8,35 +8,84 @@
         HorizontalContentAlignment="Center">
     <Window.Resources>
         <SolidColorBrush x:Key="GridColor" Color="#dedede"/>
+        <SolidColorBrush x:Key="AlternateRowColor" Color="#f5f5f5"/>
 
-        <Style x:Key="CreatedSymbol" TargetType="{x:Type Polygon}">
-            <Setter Property="Fill" Value="Black" />
-            <Setter Property="Points" Value="0,0 15,0 15,15 0,15 0,0" />
+        <Style x:Key="SymbolBase" TargetType="{x:Type Polygon}">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+        
+        <Style x:Key="CreatedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="Gold" />
+            <Setter Property="Points" Value="0,0 16,0 16,4 4,4 4,12 16,12 16,16 0,16" />
         </Style>
 
-        <Style x:Key="IssuedSymbol" TargetType="{x:Type Polygon}">
-            <Setter Property="Fill" Value="Black" />
-            <Setter Property="Points" Value="0,10 4,6 6,8 12,1 16,6 6,16 0,10" />
+        <Style x:Key="IssuedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="YellowGreen" />
+            <Setter Property="Points" Value="0,0 16,0 16,16 0,16" />
         </Style>
 
-        <Style x:Key="UpdatedSymbol" TargetType="{x:Type Polygon}">
-            <Setter Property="Fill" Value="Black" />
+        <Style x:Key="IssuedAsReferenceSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="SlateGray" />
+            <Setter Property="Points" Value="8,0 16,8 8,16 0,8" />
+        </Style>
+
+        <Style x:Key="UpdatedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="SandyBrown" />
             <Setter Property="Points" Value="0,0 4,0 4,12 12,12 12,0 16,0 16,16 0,16 0,0" />
         </Style>
 
-        <Style x:Key="RevisedSymbol" TargetType="{x:Type Polygon}">
-            <Setter Property="Fill" Value="Black" />
-            <Setter Property="Points" Value="0,10 4,6 6,8 12,1 16,6 6,16 0,10" />
+        <Style x:Key="RevisedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="CornflowerBlue" />
+            <Setter Property="Points" Value="0,0 16,0 16,6 11,9 16,14 16,16 12,16 4,8 12,4 4,4 4,16 0,16" />
         </Style>
 
-        <Style x:Key="DeletedSymbol" TargetType="{x:Type Polygon}">
-            <Setter Property="Fill" Value="Black" />
-            <Setter Property="Points" Value="0,10 4,6 6,8 12,1 16,6 6,16 0,10" />
+        <Style x:Key="MergedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="LightCoral" />
+            <Setter Property="Points" Value="0,0 0,16 4,16 4,6 8,16 12,6 12,16 16,16 16,0 10,0 8,6 6,0" />
+        </Style>
+
+        <Style x:Key="DeletedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="OrangeRed" />
+            <Setter Property="Points" Value="3,0 8,5 13,0 16,3 11,8 16,13 13,16 8,11 3,16 0,13 5,8 0,3" />
         </Style>
     </Window.Resources>
     <DockPanel Margin="10">
-        <DockPanel DockPanel.Dock="Right" Margin="10,0,10,0">
-            <GroupBox Header="Legend" DockPanel.Dock="Bottom" Height="150"/>
+        <DockPanel DockPanel.Dock="Right" Margin="10,0,0,0">
+            <GroupBox Header="Legend" DockPanel.Dock="Bottom" >
+                <StackPanel Margin="5,10,5,5">
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource CreatedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Created"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource IssuedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="(Re)Issued"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource IssuedAsReferenceSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Issued As Reference"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource UpdatedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Updated"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Revised"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource MergedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Merged"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource DeletedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Deleted"/>
+                    </WrapPanel>
+                </StackPanel>
+            </GroupBox>
             <StackPanel>
                 <Button Content="Update Sheets"
                         Margin="0,0,0,10"
@@ -52,6 +101,7 @@
                   CanUserSortColumns="True"
                   GridLinesVisibility="None"
                   CanUserReorderColumns="False"
+                  AlternatingRowBackground="{StaticResource AlternateRowColor}"
                   HorizontalGridLinesBrush="{StaticResource GridColor}"
                   VerticalGridLinesBrush="{StaticResource GridColor}">
             <DataGrid.Resources>
@@ -59,6 +109,44 @@
                     <Setter Property="BorderThickness" Value="0,0,1,0"/>
                     <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
                 </Style>
+
+                <DataTemplate x:Key="Test">
+                    <Border Height="24">
+                        <Grid HorizontalAlignment="Stretch" ShowGridLines="False">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Rectangle Grid.Column="0" Visibility="{Binding hasbefore, FallbackValue=Hidden}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
+                            <Rectangle Grid.Column="2" Visibility="{Binding hasafter, FallbackValue=Hidden}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
+                            <Polygon x:Name="committypeshape" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding committype}" Value="created">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource CreatedSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="issued">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource IssuedSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="refissued">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource IssuedAsReferenceSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="updated">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource UpdatedSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="revised">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource RevisedSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="merged">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource MergedSymbol}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding committype}" Value="deleted">
+                            <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource DeletedSymbol}"/>
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
 
                 <Style x:Key="PackageCellStyle" TargetType="{x:Type DataGridCell}">
                     <Setter Property="Background" Value="Transparent"/>
@@ -72,33 +160,37 @@
                                         Background="{TemplateBinding Background}"
                                         SnapsToDevicePixels="True"
                                         Height="24">
-                                    <!--<ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>-->
-                                    <Grid HorizontalAlignment="Stretch">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition />
-                                                <ColumnDefinition />
-                                            </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Visibility="{Binding package.hasbefore}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
-                                            <Rectangle Grid.Column="1" Visibility="{Binding package.hasafter}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
-                                        </Grid>
-                                        <Polygon x:Name="committypeshape" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Grid HorizontalAlignment="Stretch" ShowGridLines="False">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition Width="12"/> 
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Rectangle Grid.Column="0" Visibility="{Binding hasbefore, FallbackValue=Hidden}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
+                                        <Rectangle Grid.Column="2" Visibility="{Binding hasafter, FallbackValue=Hidden}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
+                                        <Polygon x:Name="committypeshape" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
                                 <ControlTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding package.committype}" Value="created">
+                                    <DataTrigger Binding="{Binding committype}" Value="created">
                                         <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource CreatedSymbol}"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding package.committype}" Value="issued">
+                                    <DataTrigger Binding="{Binding committype}" Value="issued">
                                         <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource IssuedSymbol}"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding package.committype}" Value="updated">
+                                    <DataTrigger Binding="{Binding committype}" Value="refissued">
+                                        <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource IssuedAsReferenceSymbol}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding committype}" Value="updated">
                                         <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource UpdatedSymbol}"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding package.committype}" Value="revised">
+                                    <DataTrigger Binding="{Binding committype}" Value="revised">
                                         <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource RevisedSymbol}"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding package.committype}" Value="deleted">
+                                    <DataTrigger Binding="{Binding committype}" Value="merged">
+                                        <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource MergedSymbol}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding committype}" Value="deleted">
                                         <Setter TargetName="committypeshape" Property="Style" Value="{StaticResource DeletedSymbol}"/>
                                     </DataTrigger>
                                 </ControlTemplate.Triggers>
@@ -140,14 +232,14 @@
                         <TextBlock><Run Text="Sheet"/><LineBreak/><Run Text="Name"/></TextBlock>
                     </DataGridTextColumn.Header>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Package 1" MinWidth="100" Width="100" IsReadOnly="True" />
-                <DataGridTextColumn Header="Package 2" MinWidth="100" Width="100" IsReadOnly="True" />
-                <DataGridTextColumn Header="Package 3" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource PackageCellStyle}"/>
-                <DataGridTextColumn Header="Package 4" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource PackageCellStyle}"/>
-                <DataGridTextColumn Header="Revision 1" MinWidth="100" Width="100" IsReadOnly="True" />
-                <DataGridTextColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
-                <DataGridTextColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
-                <DataGridTextColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Package 1" MinWidth="100" Width="100" IsReadOnly="True" CellTemplate="{StaticResource Test}" />
+                <!--<DataGridTextColumn Header="Package 2" MinWidth="100" Width="100" IsReadOnly="True" Binding="{Binding package}" CellStyle="{StaticResource PackageCellStyle}"/>-->
+                <!--<DataGridTemplateColumn Header="Package 3" MinWidth="100" Width="100" IsReadOnly="True" CellTemplate="{StaticResource PackageCellStyle}"/>
+                <DataGridTemplateColumn Header="Package 4" MinWidth="100" Width="100" IsReadOnly="True" CellTemplate="{StaticResource PackageCellStyle}"/>-->
+                <DataGridTemplateColumn Header="Revision 1" MinWidth="100" Width="100" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
+                <DataGridTemplateColumn Header="Revision 2" MinWidth="100" Width="100" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>
