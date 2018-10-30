@@ -42,6 +42,11 @@ DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
 
 
+WPF_HIDDEN = framework.Windows.Visibility.Hidden
+WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
+WPF_VISIBLE = framework.Windows.Visibility.Visible
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -160,7 +165,7 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be collaped
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Collapsed
+            wpfel.Visibility = WPF_COLLAPSED
 
     @staticmethod
     def show_element(*wpf_elements):
@@ -170,7 +175,7 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be set to visible.
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Visible
+            wpfel.Visibility = WPF_VISIBLE
 
     @staticmethod
     def toggle_element(*wpf_elements):
@@ -180,9 +185,9 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be toggled.
         """
         for wpfel in wpf_elements:
-            if wpfel.Visibility == framework.Windows.Visibility.Visible:
+            if wpfel.Visibility == WPF_VISIBLE:
                 WPFWindow.hide_element(wpfel)
-            elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
+            elif wpfel.Visibility == WPF_COLLAPSED:
                 WPFWindow.show_element(wpfel)
 
     @staticmethod
@@ -307,8 +312,8 @@ class TemplateListItem(object):
     @property
     def checkable(self):
         """List Item CheckBox Visibility."""
-        return framework.Windows.Visibility.Visible if self._checkable \
-            else framework.Windows.Visibility.Collapsed
+        return WPF_VISIBLE if self._checkable \
+            else WPF_COLLAPSED
 
     @checkable.setter
     def checkable(self, value):
@@ -696,19 +701,19 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             option_filter = option_filter.lower()
             for button in self.button_list.Children:
                 if option_filter not in button.Content.lower():
-                    button.Visibility = framework.Windows.Visibility.Collapsed
+                    button.Visibility = WPF_COLLAPSED
                 else:
-                    button.Visibility = framework.Windows.Visibility.Visible
+                    button.Visibility = WPF_VISIBLE
         else:
             self.search_tb.Tag = \
                 'Type to Filter / Tab to Select / Enter or Click to Run'
             for button in self.button_list.Children:
-                button.Visibility = framework.Windows.Visibility.Visible
+                button.Visibility = WPF_VISIBLE
 
     def _get_active_button(self):
         buttons = []
         for button in self.button_list.Children:
-            if button.Visibility == framework.Windows.Visibility.Visible:
+            if button.Visibility == WPF_VISIBLE:
                 buttons.append(button)
         if len(buttons) == 1:
             return buttons[0]

@@ -97,6 +97,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\PackagesDataTemplate.xaml">
+      <Link>Tags\PackagesDataTemplate.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml">
       <Link>Tags\ManageTagsWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
