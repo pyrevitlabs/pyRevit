@@ -146,6 +146,9 @@ class SheetItem(object):
     def get_commit_at_point(self, commit_point):
         return self._csheet.get_commit_at_point(commit_point)
 
+    def can_commit(self, commit_point, commit_type):
+        return self._csheet.can_commit(commit_point, commit_type)
+
     def commit(self, commit_point, commit_type):
         self._csheet.commit(commit_point,
                             commit_type,
@@ -219,7 +222,11 @@ class ManagePackagesWindow(forms.WPFWindow):
             if cp.idx == commit_pt_idx:
                 return cp
 
-    def _ask_for_commit_type(self, commit):
+    def _ask_for_commit_type(self, sheet_item, commit_pt, commit):
+        # allowed_types = []
+        # for type_opt in commit.cptype.allowed_commit_types:
+        #     if sheet_item.can_commit(commit_pt, type_opt):
+        #         allowed_types.append(type_opt)
         ctype_commit_op = forms.SelectFromList.show(
             sorted([CommitTypeOption(x)
                     for x in commit.cptype.allowed_commit_types],
@@ -243,11 +250,15 @@ class ManagePackagesWindow(forms.WPFWindow):
             commit = sheet_item.get_commit_at_point(commit_pt)
             # cancel if commit is readonly
             if commit.read_only:
-                return
-            commit_type = self._ask_for_commit_type(commit)
+                return forms.alert('Change is read-only.')
+            commit_type = \
+                self._ask_for_commit_type(sheet_item, commit_pt, commit)
             if commit_type:
                 try:
                     sheet_item.commit(commit_pt, commit_type)
+                except pkgexceptions.HistoryStartMustBeFirst:
+                    forms.alert('First change must be a "Create" or '
+                                '"Issued for Reference".')
                 except pkgexceptions.CanNotUnsetNonExisting:
                     forms.alert('Can not unset a non-existing change.')
                 except pkgexceptions.CanNotRemoveStart:

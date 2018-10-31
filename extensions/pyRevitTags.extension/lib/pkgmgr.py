@@ -54,9 +54,11 @@ class CommitedSheet(object):
                                     allow_endpoint_change=True)
                     except Exception as e:
                         mlogger.debug(
-                            'Commit error on %s:%s at %s | %s',
-                            self.number, self.name, commit_pt, type(e)
+                            'Commit type "%s" error on %s:%s at %s | (%s) %s',
+                            ctype, self.number, self.name, commit_pt,
+                            type(e), e
                             )
+                    mlogger.debug(self._chistory)
 
         # process revisions
         sheet_revids = \
@@ -81,9 +83,11 @@ class CommitedSheet(object):
                         new_commit.read_only = readonly
                     except Exception as e:
                         mlogger.debug(
-                            'Commit error on %s:%s at %s | %s',
-                            self.number, self.name, commit_pt, type(e)
+                            'Commit type "%s" error on %s:%s at %s | (%s) %s',
+                            ctype, self.number, self.name, commit_pt,
+                            type(e), e
                             )
+                    mlogger.debug(self._chistory)
 
     def update_commit_history(self):
         commit_cfg = pkgcfg.CommitConfigs()
@@ -94,13 +98,21 @@ class CommitedSheet(object):
             if pkg_param:
                 commit = self.get_commit_at_point(commit_pt)
                 pkg_param.Set(commit_cfg.get_commit_value(commit.ctype))
+            else:
+                mlogger.error('Package parameter "%s" does not exist for %s:%s',
+                              commit_pt.name, self.number, self.name)
 
         # process revisions
         sheet_revs = [revit.doc.GetElement(x)
                       for x in self.revit_sheet.GetAllRevisionIds()]
         for commit_pt in [x for x in self.commit_history.commit_points
                           if x.cptype == CommitPointTypes.Revision]:
+            # TODO: add support for setting revisions
             pass
+
+    def can_commit(self, commit_point, commit_type):
+        return self.commit_history.can_commit_at_point(commit_point,
+                                                       commit_type)
 
     def commit(self, commit_point, commit_type, allow_endpoint_change=False):
         return self.commit_history.commit_at_point(
