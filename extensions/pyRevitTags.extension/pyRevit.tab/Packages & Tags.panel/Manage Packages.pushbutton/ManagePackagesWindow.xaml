@@ -8,7 +8,7 @@
         HorizontalContentAlignment="Center">
     <Window.Resources>
         <SolidColorBrush x:Key="GridColor" Color="#dedede"/>
-        <SolidColorBrush x:Key="AlternateRowColor" Color="#f5f5f5"/>
+        <SolidColorBrush x:Key="AlternateRowColor" Color="#fbfbfb"/>
 
         <Style x:Key="SymbolBase" TargetType="{x:Type Polygon}">
             <Setter Property="Width" Value="12"/>
@@ -33,7 +33,7 @@
         </Style>
 
         <Style x:Key="UpdatedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
-            <Setter Property="Fill" Value="{DynamicResource pyRevitAccentBrush}" />
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
             <Setter Property="Points" Value="0,0 4,0 4,12 12,12 12,0 16,0 16,16 0,16 0,0" />
         </Style>
 
@@ -43,7 +43,7 @@
         </Style>
 
         <Style x:Key="MergedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
-            <Setter Property="Fill" Value="Crimson" />
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
             <Setter Property="Points" Value="0,0 10,0 10,2 16,2 16,16 12,16 12,6 10,6 10,12 6,12 6,4 4,4 4,16 0,16 0,0" />
         </Style>
 
@@ -58,25 +58,25 @@
                 <TextBlock Text="{Binding name}" Margin="10,0,0,0"/>
             </WrapPanel>
             <ControlTemplate.Triggers>
-                <DataTrigger Binding="{Binding ctype}" Value="created">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="created">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource CreatedSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="issued">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="issued">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource IssuedSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="refissued">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="issuedref">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource IssuedAsReferenceSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="updated">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="updated">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource UpdatedSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="revised">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="revised">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource RevisedSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="merged">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="merged">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource MergedSymbol}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding ctype}" Value="deleted">
+                <DataTrigger Binding="{Binding ctypeidx}" Value="deleted">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource DeletedSymbol}"/>
                 </DataTrigger>
             </ControlTemplate.Triggers>
@@ -92,12 +92,12 @@
                         <TextBlock Text="Created"/>
                     </WrapPanel>
                     <WrapPanel Margin="0,0,0,5">
-                        <Polygon Style="{StaticResource IssuedSymbol}" Margin="0,0,5,0"/>
-                        <TextBlock Text="(Re)Issued"/>
-                    </WrapPanel>
-                    <WrapPanel Margin="0,0,0,5">
                         <Polygon Style="{StaticResource IssuedAsReferenceSymbol}" Margin="0,0,5,0"/>
                         <TextBlock Text="Issued As Reference"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource IssuedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Issued"/>
                     </WrapPanel>
                     <WrapPanel Margin="0,0,0,5">
                         <Polygon Style="{StaticResource UpdatedSymbol}" Margin="0,0,5,0"/>
@@ -114,6 +114,10 @@
                     <WrapPanel Margin="0,0,0,5">
                         <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0"/>
                         <TextBlock Text="Revised"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,0">
+                        <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0" Fill="{StaticResource GridColor}"/>
+                        <TextBlock Text="Revised (ReadOnly)"/>
                     </WrapPanel>
                 </StackPanel>
             </GroupBox>
@@ -133,24 +137,47 @@
                   CanUserSortColumns="True"
                   GridLinesVisibility="None"
                   CanUserReorderColumns="False"
+                  AlternationCount="0"
                   AlternatingRowBackground="{StaticResource AlternateRowColor}"
                   HorizontalGridLinesBrush="{StaticResource GridColor}"
                   VerticalGridLinesBrush="{StaticResource GridColor}"
-                  BeginningEdit="mouse_up">
+                  BeginningEdit="edit_commit">
             <DataGrid.Resources>
-                <Style x:Key="DefaultTemplateCellStyle" TargetType="{x:Type DataGridCell}">
+                <Style x:Key="SheetColumn" TargetType="{x:Type DataGridCell}">
+                    <Setter Property="BorderThickness" Value="0,0,3,0"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
+                </Style>
+
+                <Style x:Key="PackageCellStyle" TargetType="{x:Type DataGridCell}">
                     <Setter Property="BorderThickness" Value="0,0,1,0"/>
                     <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
                 </Style>
 
-                <Style x:Key="DoubleLeftBorderCell" TargetType="{x:Type DataGridCell}">
+                <Style x:Key="RevisionCellStyle" TargetType="{x:Type DataGridCell}">
                     <Setter Property="BorderThickness" Value="0,0,1,0"/>
-                    <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
+                    <Setter Property="BorderBrush">
+                        <Setter.Value>
+                            <DrawingBrush Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
+                                <DrawingBrush.Drawing>
+                                    <DrawingGroup>
+                                        <GeometryDrawing Brush="{StaticResource GridColor}">
+                                            <GeometryDrawing.Geometry>
+                                                <GeometryGroup>
+                                                    <RectangleGeometry Rect="0,0,50,50" />
+                                                    <RectangleGeometry Rect="50,50,50,50" />
+                                                </GeometryGroup>
+                                            </GeometryDrawing.Geometry>
+                                        </GeometryDrawing>
+                                    </DrawingGroup>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="50" Width="Auto" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="Auto" IsReadOnly="True" CellStyle="{StaticResource DoubleLeftBorderCell}"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="Auto" IsReadOnly="True" CellStyle="{StaticResource SheetColumn}"/>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

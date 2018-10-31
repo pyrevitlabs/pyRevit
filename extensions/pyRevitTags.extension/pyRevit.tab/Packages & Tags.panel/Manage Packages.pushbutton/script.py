@@ -3,12 +3,13 @@
 from pyrevit import framework
 from pyrevit.framework import wpf
 from pyrevit.framework import Windows
-from pyrevit import revit, DB
+from pyrevit import revit
 from pyrevit import forms
 from pyrevit import script
 
 import pkgmgr
-from pkgcommits import CommitTypes, Commit
+import pkgexceptions
+from pkgcommits import CommitPointTypes, CommitTypes, Commit
 
 
 __title__ = 'Manage\nPackages'
@@ -20,9 +21,10 @@ NONE_COMMIT_INDEX = -1
 
 
 class CommitTypeOption:
-    def __init__(self, name, ctype=CommitTypes.NotSet):
-        self.name = name
-        self.ctype = ctype
+    def __init__(self, commit_type):
+        self.name = commit_type.name
+        self.ctype = commit_type
+        self.ctypeidx = self.ctype.idx
 
 
 class CommitItem(object):
@@ -33,6 +35,8 @@ class CommitItem(object):
 
         self.idx = self._commit.idx
         self.ctype = self._commit.ctype
+        self.ctypeidx = self.ctype.idx
+        self.readonly = self._commit.read_only
 
     @property
     def has_commit(self):
@@ -65,28 +69,28 @@ class CommitItem(object):
 
 
 class SheetItem(object):
-    def __init__(self, commited_sheet, commit_points):
+    def __init__(self, commited_sheet):
         self._commititems = []
         self._csheet = commited_sheet
-        self._update_commit_items(commit_points)
+        self._update_commit_items()
 
-    def _update_commit_items(self, commit_points):
-        commititems = []
-        for commit_pt in commit_points:
-            commititems.append(self._get_commititem(commit_pt))
+    def _update_commit_items(self):
+        commit_items = []
+        for commit_pt in self._csheet.commit_history.commit_points:
+            commit_items.append(self._get_commit_item(commit_pt))
         # clearn commit items and place passthroughs
         count = False
         self._commititems = []
-        for idx, citem in enumerate(commititems):
+        for idx, citem in enumerate(commit_items):
             if not citem.has_commit:
-                if count and any([x.has_commit for x in commititems[idx:]]):
+                if count and any([x.has_commit for x in commit_items[idx:]]):
                     citem.passthru = True
                 self._commititems.append(citem)
             else:
                 count = True
                 self._commititems.append(citem)
 
-    def _get_commititem(self, commit_pt):
+    def _get_commit_item(self, commit_pt):
         for commit in self._csheet.commit_history:
             if commit.is_at(commit_pt):
                 prev_commit = self._csheet.commit_history.get_prev(commit)
@@ -104,10 +108,12 @@ class SheetItem(object):
             sort_mode = True
 
         cidx = None
-        if pkgmgr.CommitTargets.Package in attr_name:
-            cidx = int(attr_name.replace(pkgmgr.CommitTargets.Package, ''))
-        elif pkgmgr.CommitTargets.Revision in attr_name:
-            cidx = int(attr_name.replace(pkgmgr.CommitTargets.Revision, ''))
+        if pkgmgr.CommitPointTypes.Package.idx in attr_name:
+            cidx = int(attr_name.replace(
+                pkgmgr.CommitPointTypes.Package.idx, ''))
+        elif pkgmgr.CommitPointTypes.Revision.idx in attr_name:
+            cidx = int(attr_name.replace(
+                pkgmgr.CommitPointTypes.Revision.idx, ''))
 
         citem = None
         if cidx is not None:
@@ -137,9 +143,18 @@ class SheetItem(object):
     def build_commit_sort_param(commit):
         return 'sort_{}{}'.format(commit.cptype, commit.idx)
 
-    def commit(self, commit_point, commit_type, commit_points):
-        self._csheet.commit(commit_point, commit_type)
-        self._update_commit_items(commit_points)
+    def get_commit_at_point(self, commit_point):
+        return self._csheet.get_commit_at_point(commit_point)
+
+    def commit(self, commit_point, commit_type):
+        self._csheet.commit(commit_point,
+                            commit_type,
+                            allow_endpoint_change=True)
+        self._update_commit_items()
+        logger.debug(self._csheet.commit_history)
+
+    def update_sheet_history(self):
+        self._csheet.update_commit_history()
 
 
 class ManagePackagesWindow(forms.WPFWindow):
@@ -148,8 +163,10 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         # prepare wpf resources
         self.dt_template = None
-        self.commit_column_cell_style = \
-            self.sheets_dg.Resources['DefaultTemplateCellStyle']
+        self.package_column_cell_style = \
+            self.sheets_dg.Resources['PackageCellStyle']
+        self.revision_column_cell_style = \
+            self.sheets_dg.Resources['RevisionCellStyle']
         self.committype_template = \
             self.Resources["CommitTypeListItemControlTemplate"]
         self._read_resources()
@@ -184,13 +201,14 @@ class ManagePackagesWindow(forms.WPFWindow):
             commit_column.SortMemberPath = sort_param
             # commit_column.SortDirection = \
             #     ComponentModel.ListSortDirection.Descending
-            commit_column.CellStyle = self.commit_column_cell_style
+            commit_column.CellStyle = self.package_column_cell_style
+            if commit.cptype == CommitPointTypes.Revision:
+                commit_column.CellStyle = self.revision_column_cell_style
             commit_column.CellTemplate = self._make_column_datatemplate(param)
             self.sheets_dg.Columns.Add(commit_column)
 
     def _list_sheets(self):
-        sheets = [SheetItem(x, self._commit_points)
-                  for x in pkgmgr.get_commited_sheets()]
+        sheets = [SheetItem(x) for x in pkgmgr.get_commited_sheets()]
         # scroll to last column for convenience
         self.sheets_dg.ItemsSource = sorted(sheets, key=lambda x: x.number)
         last_col = list(self.sheets_dg.Columns)[-1]
@@ -201,40 +219,57 @@ class ManagePackagesWindow(forms.WPFWindow):
             if cp.idx == commit_pt_idx:
                 return cp
 
-    def _ask_fro_commit_type(self):
-        options = [CommitTypeOption(name='Not Set', ctype=CommitTypes.NotSet)]
-        options.extend(
-            [CommitTypeOption(x, ctype=getattr(CommitTypes, x))
-             for x in dir(CommitTypes)
-             if not x.startswith('__') and x != 'NotSet'])
-        ctype_commit = forms.SelectFromList.show(
-            options,
+    def _ask_for_commit_type(self, commit):
+        ctype_commit_op = forms.SelectFromList.show(
+            sorted([CommitTypeOption(x)
+                    for x in commit.cptype.allowed_commit_types],
+                   key=lambda x: x.ctype.order),
             title='Select Change Type',
             button_name='Apply Change Type',
             width=400,
             height=300,
             item_container_template=self.committype_template
             )
-        if ctype_commit:
-            return ctype_commit.ctype
+        if ctype_commit_op:
+            return ctype_commit_op.ctype
 
-    def mouse_up(self, sender, args):
+    def edit_commit(self, sender, args):
         if self.sheets_dg.CurrentCell:
             selected_col = self.sheets_dg.CurrentCell.Column
+            sheet_item = self.sheets_dg.CurrentCell.Item
             # -2 since sheet name and number are the first two columns
             commit_pt_idx = int(selected_col.DisplayIndex) - 2
             commit_pt = self._get_commit_point(commit_pt_idx)
-            commit_type = self._ask_fro_commit_type()
+            commit = sheet_item.get_commit_at_point(commit_pt)
+            # cancel if commit is readonly
+            if commit.read_only:
+                return
+            commit_type = self._ask_for_commit_type(commit)
             if commit_type:
-                self.sheets_dg.CurrentCell.Item.commit(
-                    commit_pt, commit_type, self._commit_points
-                    )
+                try:
+                    sheet_item.commit(commit_pt, commit_type)
+                except pkgexceptions.CanNotUnsetNonExisting:
+                    forms.alert('Can not unset a non-existing change.')
+                except pkgexceptions.CanNotRemoveStart:
+                    forms.alert('Can not unset create in history.')
+                except (pkgexceptions.HistoryStartedAfter,
+                        pkgexceptions.HistoryStartedBefore):
+                    forms.alert('Sheet has already created in history.')
+                except (pkgexceptions.HistoryEndedBefore,
+                        pkgexceptions.HistoryEndedAfter):
+                    forms.alert('Sheet has already deleted/merged in history.')
+                except (pkgexceptions.ReadOnlyStart,
+                        pkgexceptions.ReadOnlyEnd,
+                        pkgexceptions.ReadOnlyCommitInHistory):
+                    forms.alert('Read-only change in history.')
             self.sheets_dg.CommitEdit()
             self.sheets_dg.Items.Refresh()
 
     def update_sheets(self, sender, args):
         self.Close()
-        # update sheets
+        with revit.Transaction('Update Change History'):
+            for sheet_item in self.sheets_dg.ItemsSource:
+                sheet_item.update_sheet_history()
 
 
 

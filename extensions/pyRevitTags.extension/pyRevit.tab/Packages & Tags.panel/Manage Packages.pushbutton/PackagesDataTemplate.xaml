@@ -7,37 +7,43 @@
                 <ColumnDefinition Width="12"/>
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Rectangle Grid.Column="0" Visibility="{{Binding {param}.linebefore, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
-            <Rectangle x:Name="cpointdot" Grid.Column="1" Height="2" Width="2" Fill="LightGray" SnapsToDevicePixels="True" Visibility="Hidden"/>
-            <Rectangle Grid.Column="1" Visibility="{{Binding {param}.linethru, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
-            <Rectangle Grid.Column="2" Visibility="{{Binding {param}.lineafter, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="LightGray" SnapsToDevicePixels="True"/>
+            <Rectangle Grid.Column="0" Visibility="{{Binding {param}.linebefore, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="{{DynamicResource GridColor}}" SnapsToDevicePixels="True"/>
+            <Rectangle x:Name="cpointdot" Grid.Column="1" Height="2" Width="2" Fill="{{DynamicResource GridColor}}" SnapsToDevicePixels="True" Visibility="Hidden"/>
+            <Rectangle Grid.Column="1" Visibility="{{Binding {param}.linethru, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="{{DynamicResource GridColor}}" SnapsToDevicePixels="True"/>
+            <Rectangle Grid.Column="2" Visibility="{{Binding {param}.lineafter, FallbackValue=Hidden}}" Height="2" Width="Auto" Fill="{{DynamicResource GridColor}}" SnapsToDevicePixels="True"/>
             <Polygon x:Name="committypeshape" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            <Rectangle  Grid.Column="1" Height="12" Fill="LightGray" Visibility="{{Binding {param}.deleted, FallbackValue=Hidden}}"/>
+            <Rectangle  Grid.Column="1" Height="12" Fill="{{DynamicResource GridColor}}" Visibility="{{Binding {param}.deleted, FallbackValue=Hidden}}"/>
         </Grid>
     </Border>
     <DataTemplate.Triggers>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="notset">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="notset">
             <Setter TargetName="cpointdot" Property="Visibility" Value="Visible"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="created">
+
+        <DataTrigger Binding="{{Binding {param}.readonly}}" Value="True">
+            <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource RevisedSymbol}}"/>
+            <Setter TargetName="committypeshape" Property="Fill" Value="{{DynamicResource GridColor}}"/>
+        </DataTrigger>
+
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="created">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource CreatedSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="issued">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="issued">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource IssuedSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="refissued">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="issuedref">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource IssuedAsReferenceSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="updated">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="updated">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource UpdatedSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="revised">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="revised">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource RevisedSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="merged">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="merged">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource MergedSymbol}}"/>
         </DataTrigger>
-        <DataTrigger Binding="{{Binding {param}.ctype}}" Value="deleted">
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="deleted">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource DeletedSymbol}}"/>
         </DataTrigger>
     </DataTemplate.Triggers>
