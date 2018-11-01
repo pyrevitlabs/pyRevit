@@ -630,10 +630,14 @@ class CommitHistory(object):
                         commit_source=CommitSources.User,
                         allow_endpoint_change=False,
                         dry_run=False):
+        existing_commit = self.get_commit_at(commit_point)
+
+        # is the commit really needed?
+        if existing_commit and existing_commit.commit_type == commit_type:
+            return existing_commit
         # notset commit?
-        if commit_type == CommitTypes.NotSet:
+        elif commit_type == CommitTypes.NotSet:
             # if notset and existing delete commit
-            existing_commit = self.get_commit_at(commit_point)
             if existing_commit:
                 try:
                     if self._can_delete(existing_commit):
