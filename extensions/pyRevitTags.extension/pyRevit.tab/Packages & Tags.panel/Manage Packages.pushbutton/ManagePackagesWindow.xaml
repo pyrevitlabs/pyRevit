@@ -9,6 +9,11 @@
     <Window.Resources>
         <SolidColorBrush x:Key="GridColor" Color="#dedede"/>
         <SolidColorBrush x:Key="AlternateRowColor" Color="#fbfbfb"/>
+        <SolidColorBrush x:Key="DataGridBackground" Color="#fcfcfc"/>
+
+        <Style x:Key="ClearButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+        </Style>
 
         <Style x:Key="SymbolBase" TargetType="{x:Type Polygon}">
             <Setter Property="Width" Value="12"/>
@@ -84,7 +89,32 @@
 
     </Window.Resources>
     <DockPanel Margin="10">
-        <DockPanel DockPanel.Dock="Right" Margin="10,0,0,0">
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" FontSize="14" VerticalAlignment="Center">
+                    Double-Click on a Cell to Specify the Change Type:
+            </TextBlock>
+            <DockPanel Grid.Column="1">
+                <TextBlock Text="Filter:"
+                           VerticalAlignment="Center"
+                           FontSize="14" DockPanel.Dock="Left"
+                           Margin="0,0,10,0"/>
+                <StackPanel>
+                    <TextBox x:Name="search_tb" Height="25px"
+                             TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
+                    <Button Style="{StaticResource ClearButton}"
+                                HorizontalAlignment="Right"
+                                x:Name="clrsearch_b" Content="x"
+                                Margin="0,-25,5,0" Padding="0,-4,0,0"
+                                Click="clear_search"
+                                Width="15px" Height="15px"/>
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+        <DockPanel DockPanel.Dock="Right" Margin="10,10,0,0">
             <GroupBox Header="Legend" DockPanel.Dock="Bottom" >
                 <StackPanel Margin="5,10,5,5">
                     <WrapPanel Margin="0,0,0,5">
@@ -122,14 +152,20 @@
                 </StackPanel>
             </GroupBox>
             <StackPanel>
-                <Button Content="Update Sheets"
+                <Button x:Name="updatesheets_b"
+                        Content="Update Sheets"
                         Margin="0,0,0,10"
                         Padding="8,4,8,4"
                         ToolTip=""
                         Click="update_sheets"/>
+                <Button Content="Manage Packages"
+                        Margin="0,0,0,10"
+                        Padding="8,4,8,4"
+                        ToolTip=""/>
             </StackPanel>
         </DockPanel>
         <DataGrid x:Name="sheets_dg"
+                  Margin="0,10,0,0"
                   AutoGenerateColumns="False"
                   BorderThickness="1"
                   RowHeaderWidth="0"
@@ -138,6 +174,7 @@
                   GridLinesVisibility="None"
                   CanUserReorderColumns="False"
                   AlternationCount="0"
+                  Background="{StaticResource DataGridBackground}"
                   AlternatingRowBackground="{StaticResource AlternateRowColor}"
                   HorizontalGridLinesBrush="{StaticResource GridColor}"
                   VerticalGridLinesBrush="{StaticResource GridColor}"

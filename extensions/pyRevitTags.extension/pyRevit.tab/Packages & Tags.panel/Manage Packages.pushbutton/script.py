@@ -3,7 +3,7 @@
 from pyrevit import framework
 from pyrevit.framework import wpf
 from pyrevit.framework import Windows
-from pyrevit import revit
+from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
@@ -166,6 +166,12 @@ class SheetItem(object):
 
 class ManagePackagesWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
+        selection = revit.get_selection()
+        sel_cnt = len(selection)
+        if sel_cnt:
+            forms.alert('You are managing packages on {} selected sheets only.'
+                        .format(sel_cnt))
+
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # prepare wpf resources
@@ -178,13 +184,28 @@ class ManagePackagesWindow(forms.WPFWindow):
             self.Resources["CommitTypeListItemControlTemplate"]
         self._read_resources()
 
-        # grab doc commits
+        # grab commit points
         self._commit_points = pkgmgr.get_commit_points()
         # prepare columns
         self._build_columns()
 
+        # collect sheets and wrap in sheetitem
+        committed_sheets = pkgmgr.get_commited_sheets()
+        sheet_numbers = [x.SheetNumber
+                         for x in selection if isinstance(x, DB.ViewSheet)]
+
+        if sheet_numbers:
+            sheetitems = [SheetItem(x) for x in committed_sheets
+                        if x.number in sheet_numbers]
+        else:
+            sheetitems = [SheetItem(x) for x in committed_sheets]
+
+        self._sheetitems = sorted(sheetitems, key=lambda x: x.number)
+
         # list all sheets
         self._list_sheets()
+        if isinstance(revit.activeview, DB.ViewSheet):
+            self.search_tb.Text = revit.activeview.SheetNumber
 
         self.last_selected_number = ''
 
@@ -214,12 +235,28 @@ class ManagePackagesWindow(forms.WPFWindow):
             commit_column.CellTemplate = self._make_column_datatemplate(param)
             self.sheets_dg.Columns.Add(commit_column)
 
-    def _list_sheets(self):
-        sheets = [SheetItem(x) for x in pkgmgr.get_commited_sheets()]
+    def _list_sheets(self, sheet_filter=None):
+        if not self.sheets_dg.ItemsSource or not sheet_filter:
+            self.sheets_dg.ItemsSource = list(self._sheetitems)
+
+        if sheet_filter:
+            sheet_filter = sheet_filter.lower()
+            self.sheets_dg.ItemsSource = \
+                [x for x in self.sheets_dg.ItemsSource
+                 if sheet_filter in x.number.lower()
+                 or sheet_filter in x.name.lower()]
+
+        # update misc gui items
+        if len(self.sheets_dg.ItemsSource) > 1:
+            self.updatesheets_b.Content = "Update Sheets"
+        else:
+            self.updatesheets_b.Content = "Update Sheet"
         # scroll to last column for convenience
-        self.sheets_dg.ItemsSource = sorted(sheets, key=lambda x: x.number)
-        last_col = list(self.sheets_dg.Columns)[-1]
-        self.sheets_dg.ScrollIntoView(self.sheets_dg.ItemsSource[0], last_col)
+        if self.sheets_dg.ItemsSource:
+            self.sheets_dg.ScrollIntoView(
+                self.sheets_dg.ItemsSource[0],
+                list(self.sheets_dg.Columns)[-1]
+                )
 
     def _get_commit_point(self, commit_pt_idx):
         for commit_point in self._commit_points:
@@ -247,6 +284,21 @@ class ManagePackagesWindow(forms.WPFWindow):
                 return ctype_commit_op.ctype
         else:
             forms.alert('No changes is allowed at this point.')
+
+    def search_txt_changed(self, sender, args):
+        """Handle text change in search box."""
+        if self.search_tb.Text == '':
+            self.hide_element(self.clrsearch_b)
+        else:
+            self.show_element(self.clrsearch_b)
+
+        self._list_sheets(sheet_filter=self.search_tb.Text)
+
+    def clear_search(self, sender, args):
+        """Clear search box."""
+        self.search_tb.Text = ' '
+        self.search_tb.Clear()
+        self.search_tb.Focus()
 
     def edit_commit(self, sender, args):
         if self.sheets_dg.CurrentCell:
