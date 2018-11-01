@@ -1,9 +1,9 @@
 """Module for managing tags metadata."""
 #pylint: disable=E0401,C0111,W0603,C0103,W0703
 from pyrevit.coreutils import logger
-from pyrevit import revit
+from pyrevit import revit, DB
 
-from pkgcommits import CommitPointTypes
+from pkgcommits import CommitPointTypes, CommitTypes
 from pkgcommits import CommitPoint, Commit, CommitHistory
 import pkgcfg
 
@@ -103,12 +103,20 @@ class CommitedSheet(object):
                               commit_pt.name, self.number, self.name)
 
         # process revisions
-        sheet_revs = [revit.doc.GetElement(x)
-                      for x in self.revit_sheet.GetAllRevisionIds()]
+        all_revs = []
+        sheet_revs = []
         for commit_pt in [x for x in self.commit_history.commit_points
                           if x.cptype == CommitPointTypes.Revision]:
-            # TODO: add support for setting revisions
-            pass
+            commit = self.get_commit_at_point(commit_pt)
+            revision = revit.doc.GetElement(DB.ElementId(commit_pt.target))
+            all_revs.append(revision)
+            if commit.commit_type == CommitTypes.Revised \
+                    and not commit.read_only:
+                sheet_revs.append(revision)
+        revit.update.update_sheet_revisions(all_revs,
+                                            [self.revit_sheet], state=False)
+        revit.update.update_sheet_revisions(sheet_revs,
+                                            [self.revit_sheet])
 
     def can_commit(self, commit_point, commit_type,
                    allow_endpoint_change=False):
