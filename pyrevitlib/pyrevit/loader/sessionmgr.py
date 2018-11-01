@@ -29,7 +29,7 @@ from pyrevit.loader.asmmaker import create_assembly, cleanup_assembly_files
 from pyrevit.loader import uimaker
 from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
 from pyrevit.coreutils import loadertypes
-from pyrevit.output import get_output
+from pyrevit import output
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions.extensionmgr import get_installed_ui_extensions
@@ -50,7 +50,7 @@ AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
 def _clear_running_engines():
     # clear the cached engines
     try:
-        my_output = get_output()
+        my_output = output.get_output()
         if my_output:
             my_output.close_others(all_open_outputs=True)
 
@@ -131,6 +131,9 @@ def _perform_onsessionloadcomplete_ops():
 
     # clean up temp app files between sessions.
     cleanup_appdata_folder()
+
+    # setup auto output closer
+    output.setup_output_closer()
 
 
 def _new_session():
