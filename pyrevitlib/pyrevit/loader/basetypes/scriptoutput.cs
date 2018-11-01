@@ -34,7 +34,7 @@ namespace PyRevitBaseClasses {
 
             ResetIcon();
 
-            ResizeBorderThickness = new Thickness(10);
+            //ResizeBorderThickness = new Thickness(10);
             BorderThickness = new Thickness();
             WindowStartupLocation = WindowStartupLocation.Manual;
             WindowTransitionsEnabled = false;
@@ -696,13 +696,13 @@ namespace PyRevitBaseClasses {
         private void CollapseWindow() {
             prevHeight = Height;
             Height = TitlebarHeight;
-            ResizeBorderThickness = new Thickness(0);
+            //ResizeBorderThickness = new Thickness(0);
             IsCollapsed = true;
         }
 
         private void UnCollapseWindow() {
             Height = prevHeight;
-            ResizeBorderThickness = new Thickness(10);
+            //ResizeBorderThickness = new Thickness(10);
             IsCollapsed = false;
         }
 
