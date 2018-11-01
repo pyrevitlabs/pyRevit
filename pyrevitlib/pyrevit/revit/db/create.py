@@ -190,12 +190,21 @@ def load_family(family_file, doc=None):
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 
 
-def create_workset(workset_name, enable_worksharing=True, doc=None):
+def enable_worksharing(levels_workset_name='Shared Levels and Grids',
+                       default_workset_name='Workset1',
+                       doc=None):
     doc = doc or HOST_APP.doc
-    if not doc.IsWorkshared \
-            and doc.CanEnableWorksharing \
-            and enable_worksharing:
-        doc.EnableWorksharing('Shared Levels and Grids', 'Workset1')
+    if doc.CanEnableWorksharing:
+        doc.EnableWorksharing(levels_workset_name, default_workset_name)
+    else:
+        raise PyRevitException('Worksharing can not be enabled. '
+                               '(CanEnableWorksharing is False)')
+
+
+def create_workset(workset_name, doc=None):
+    doc = doc or HOST_APP.doc
+    if not doc.IsWorkshared:
+        raise PyRevitException('Document is not workshared.') 
 
     return DB.Workset.Create(doc, workset_name)
 
