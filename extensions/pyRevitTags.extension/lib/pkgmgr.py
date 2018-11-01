@@ -36,7 +36,7 @@ class CommitedSheet(object):
         return self._chistory
 
     def get_commit_at_point(self, commit_point):
-        commit = self.commit_history.get_commit_at_point(commit_point)
+        commit = self.commit_history.get_commit_at(commit_point)
         return commit or Commit.from_point(commit_point)
 
     def _read_commit_history(self, commit_cfg):
@@ -97,7 +97,7 @@ class CommitedSheet(object):
             pkg_param = self.revit_sheet.LookupParameter(commit_pt.name)
             if pkg_param:
                 commit = self.get_commit_at_point(commit_pt)
-                pkg_param.Set(commit_cfg.get_commit_value(commit.ctype))
+                pkg_param.Set(commit_cfg.get_commit_value(commit.commit_type))
             else:
                 mlogger.error('Package parameter "%s" does not exist for %s:%s',
                               commit_pt.name, self.number, self.name)
@@ -110,9 +110,12 @@ class CommitedSheet(object):
             # TODO: add support for setting revisions
             pass
 
-    def can_commit(self, commit_point, commit_type):
-        return self.commit_history.can_commit_at_point(commit_point,
-                                                       commit_type)
+    def can_commit(self, commit_point, commit_type,
+                   allow_endpoint_change=False):
+        return self.commit_history.can_commit_at_point(
+            commit_point,
+            commit_type,
+            allow_endpoint_change=allow_endpoint_change)
 
     def commit(self, commit_point, commit_type, allow_endpoint_change=False):
         return self.commit_history.commit_at_point(

@@ -1,5 +1,5 @@
 """Manage commit history."""
-#pylint: disable=E0401,W0401,W0614
+#pylint: disable=E0401,W0401,W0614,W0703,C0103,C0111
 import copy
 
 from pyrevit.coreutils import logger
@@ -152,14 +152,6 @@ class CommitPoint(object):
         self.idx = idx
         self.name = name
 
-    def __hash__(self):
-        return hash(self.idx)
-
-    def __eq__(self, other):
-        if isinstance(other, CommitPoint):
-            return self.idx == other.idx
-        return False
-
     def __repr__(self):
         return '<{} cptype={} idx={} name={}>'.format(
             self.__class__.__name__,
@@ -167,432 +159,517 @@ class CommitPoint(object):
             self.idx,
             self.name)
 
+    def __hash__(self):
+        return hash(str(self.idx) + str(self.cptype))
 
-class Commit(CommitPoint):
-    def __init__(self, cptype, target, idx, name, ctype=CommitTypes.NotSet):
-        super(Commit, self).__init__(cptype, target, idx, name)
-        self.ctype = ctype
+    def __eq__(self, other):
+        if isinstance(other, CommitPoint):
+            return hash(self) == hash(other)
+        return False
+
+    def __lt__(self, other):
+        return self.idx < other.idx
+
+    def __le__(self, other):
+        return self.idx <= other.idx
+
+    def __gt__(self, other):
+        return self.idx > other.idx
+
+    def __ge__(self, other):
+        return self.idx >= other.idx
+
+    def is_before(self, commit_point):
+        return self < commit_point
+
+    def is_after(self, commit_point):
+        return self > commit_point
+
+
+class CommitSources(object):
+    User = 'user'
+    Recurring = 'recurring'
+    Required = 'required'
+
+
+class Commit(object):
+    def __init__(self, commit_point,
+                 commit_source=CommitSources.User,
+                 commit_type=CommitTypes.NotSet):
+        self.commit_point = commit_point
+        self.commit_type = commit_type
         self.read_only = False
+        self.commit_source = commit_source
+
+    @classmethod
+    def from_point(cls, commit_pt,
+                   commit_source=CommitSources.User,
+                   commit_type=CommitTypes.NotSet):
+        return cls(commit_point=commit_pt,
+                   commit_source=commit_source,
+                   commit_type=commit_type)
 
     def __hash__(self):
-        return hash(str(self.idx) + self.ctype)
+        return hash(str(self.commit_point)
+                    + str(self.commit_type)
+                    + str(self.commit_source))
 
     def __eq__(self, other):
         if isinstance(other, Commit):
-            return self.idx == other.idx and self.ctype == other.ctype
-        return super(Commit, self).__eq__(other)
+            return hash(self) == hash(other)
+        return False
 
     def __repr__(self):
-        return '<{} cptype={} idx={} name={} ctype={}>'.format(
+        return '<{} commit_point={} commit_type={} commit_source={}>'.format(
             self.__class__.__name__,
-            self.cptype,
-            self.idx,
-            self.name,
-            self.ctype
+            self.commit_point,
+            self.commit_type,
+            self.commit_source
             )
 
     def is_at(self, commit_point):
         if isinstance(commit_point, CommitPoint):
-            return self.idx == commit_point.idx
+            return self.commit_point == commit_point
         return False
-
-    @staticmethod
-    def from_point(commit_pt, ctype=CommitTypes.NotSet):
-        return Commit(cptype=commit_pt.cptype,
-                      target=commit_pt.target,
-                      idx=commit_pt.idx,
-                      name=commit_pt.name,
-                      ctype=ctype)
 
 
 class CommitHistory(object):
     def __init__(self, commit_points):
-        self._commits = []
         self._cpoints = commit_points
+        self._commits = []
+        self._last_replaced = None
 
     def __iter__(self):
-        return iter(self._commits)
+        return iter(self.commits)
 
     def __len__(self):
-        return len(self._commits)
+        return len(self.commits)
 
     def __repr__(self):
-        return repr(self._commits)
+        history_graph = '-----'.join(
+            ['[{}:{}]'.format(x.commit_point.idx, x.commit_type)
+             for x in self.commits]
+            )
+        return '<{} graph={} commits={}>'.format(self.__class__.__name__,
+                                                 history_graph,
+                                                 self.commits)
 
-    def _find_starting_commit(self):
-        starting_commits = \
-            [x for x in self._commits if x.ctype.starts_history]
-        return starting_commits[0] if starting_commits else None
+    def _find_starting_commits(self):
+        return \
+            sorted([x for x in self.commits if x.commit_type.starts_history],
+                   key=lambda x: x.commit_point.idx)
 
-    def _find_ending_commit(self):
-        ending_commits = \
-            [x for x in self._commits if x.ctype.ends_history]
-        return ending_commits[-1] if ending_commits else None
+    def _find_ending_commits(self):
+        return \
+            sorted([x for x in self.commits if x.commit_type.ends_history],
+                   key=lambda x: x.commit_point.idx)
 
-    def _refresh_commits(self):
-        next_commit_type = None
-        starting_commit = self._find_starting_commit()
-        ending_commit = self._find_ending_commit()
+    @property
+    def commits(self):
+        return sorted(self._commits, key=lambda x: x.commit_point.idx)
 
-        # insert required_after or recurring commits
+    @property
+    def commit_points(self):
+        return sorted(self._cpoints, key=lambda x: x.idx)
+
+    @property
+    def starting_commit(self):
+        starting_commits = self._find_starting_commits()
+        if starting_commits:
+            starting_commit = starting_commits[0]
+            mlogger.debug('Starting commit is: %s', starting_commit)
+            return starting_commit
+
+    @property
+    def ending_commit(self):
+        ending_commits = self._find_ending_commits()
+        if ending_commits:
+            ending_commit = ending_commits[-1]
+            mlogger.debug('Ending commit is: %s', ending_commit)
+            return ending_commit
+
+    def _uncommit_from_history(self, commit):
+        if commit.read_only:
+            raise ReadOnlyCommitInHistory()
+        self._commits.remove(commit)
+
+    def _commit_to_history(self, commit):
+        insert_index = 0
+
+        mlogger.debug('Calculating insersion index...')
+        existing_commit = self.get_commit_at(commit.commit_point)
+
+        if existing_commit:
+            insert_index = self._commits.index(existing_commit)
+            self._last_replaced = self._commits.pop(insert_index)
+        else:
+            prev_commit = self.get_commit_before(commit.commit_point)
+            if prev_commit:
+                insert_index = self._commits.index(prev_commit) + 1
+            else:
+                next_commit = self.get_commit_after(commit.commit_point)
+                if next_commit:
+                    insert_index = self._commits.index(next_commit)
+
+        mlogger.debug('Inserting %s at index %s', commit, insert_index)
+        self._commits.insert(insert_index, commit)
+
+    def _clear_nonuser_commits(self):
+        for commit in self.commits:
+            if commit.commit_source != CommitSources.User:
+                self._uncommit_from_history(commit)
+
+    def _clear_commits_before_start(self):
+        starting_commit = self.starting_commit
         if starting_commit:
-            if starting_commit.ctype.requires_after:
-                next_commit_type = starting_commit.ctype.requires_after
-            elif starting_commit.ctype.recurring:
-                next_commit_type = starting_commit.ctype
+            mlogger.debug('Cleaning commit before start %s', starting_commit)
+            for commit in self.get_commits_before(starting_commit.commit_point):
+                mlogger.debug('Removing %s', commit)
+                self._uncommit_from_history(commit)
 
-            if next_commit_type:
-                ending_index = len(self._cpoints)
-                if ending_commit:
-                    ending_index = ending_commit.idx
+    def _clear_commits_after_end(self):
+        ending_commit = self.ending_commit
+        if ending_commit:
+            mlogger.debug('Cleaning commit after end %s', ending_commit)
+            for commit in self.get_commits_after(ending_commit.commit_point):
+                mlogger.debug('Removing %s', commit)
+                self._uncommit_from_history(commit)
 
-                for commit_pt in \
-                        self._cpoints[starting_commit.idx:ending_index]:
-                    if commit_pt.cptype.requires_history_start:
-                        if not self.get_commit_at_point(commit_pt):
-                            self.commit_at_point(
-                                commit_point=commit_pt,
-                                commit_type=next_commit_type
-                                )
-                # delete everything after ends_history commit
-                # this is when a delete is inserted in history without an ending
-                for commit in self._commits[ending_index:]:
-                    if not commit.ctype.ends_history:
-                        self._commits.remove(commit)
+    def _add_nonuser_commits(self):
+        next_commit_type = None
+        commit_source = None
 
-    def _reposition_start(self, index, commit):
-        # remove any recurring or required commits
-        starting_commit = self._find_starting_commit()
-        if starting_commit.ctype.requires_after:
-            auto_inserted_type = starting_commit.ctype.requires_after
-        elif starting_commit.ctype.recurring:
-            auto_inserted_type = starting_commit.ctype
+        for commit_point in self.commit_points:
+            commit = self.get_commit_at(commit_point)
+            mlogger.debug('Processing %s for non-user commits.', commit)
+            if commit:
+                # check if this commit creates commits after
+                # if yes set the required data and continue
+                if commit.commit_type.requires_after:
+                    next_commit_type = commit.commit_type.requires_after
+                    commit_source = CommitSources.Required
+                    mlogger.debug('Commit %s requires after: %s',
+                                  commit, next_commit_type)
+                    continue
+                elif commit.commit_type.recurring:
+                    next_commit_type = commit.commit_type
+                    commit_source = CommitSources.Recurring
+                    mlogger.debug('Commit %s is recurring.', commit)
+                    continue
 
-        for possible_auto_insert_commit in [x for x in self._commits[index:]]:
-            if possible_auto_insert_commit.ctype == auto_inserted_type:
-                self._commits.remove(possible_auto_insert_commit)
+                # check if this is an ending commit
+                # if yes, stop creating non-user commits
+                if commit.commit_type.ends_history:
+                    next_commit_type = None
+                    commit_source = None
+                    mlogger.debug('Ends creating non-user commits.', commit)
 
-        # delete any starts_history commit after
-        starting_commit_after = [x for x in self._commits[index:]
-                                 if x.ctype.starts_history]
-        if starting_commit_after:
-            for starting_commit in starting_commit_after:
-                if starting_commit.read_only:
-                    raise ReadOnlyStart()
-                self._commits.remove(starting_commit)
+                # if existing commit matches the set non-user
+                # then set the source to non-user
+                if (next_commit_type and commit_source):
+                    if commit.commit_type == next_commit_type:
+                        commit.commit_source = commit_source
+
+            # create the non-user commit if type data is set
+            # and no existing commit is found
+            if (next_commit_type and commit_source) \
+                    and not commit \
+                    and commit_point.cptype.requires_history_start:
+                mlogger.debug('Applying non-user(%s) commit type: %s',
+                              commit_source, next_commit_type)
+                self._commit_to_history(
+                    Commit.from_point(commit_point,
+                                      commit_type=next_commit_type,
+                                      commit_source=commit_source)
+                    )
+
+    def _update_history(self):
+        self._clear_nonuser_commits()
+        self._add_nonuser_commits()
+        self._clear_commits_before_start()
+        self._clear_commits_after_end()
+
+    def _commit_new_start(self, commit):
+        # remove all starting commits
+        for starting_commit in self._find_starting_commits():
+            self._uncommit_from_history(starting_commit)
 
         # insert the new create
-        self._commits.insert(index, commit)
+        self._commit_to_history(commit)
 
         # delete all commits before
-        for prev_commit in self._commits[:index]:
-            if not prev_commit.read_only:
-                self._commits.remove(prev_commit)
+        for before_commit in self.get_commits_before(commit.commit_point):
+            self._uncommit_from_history(before_commit)
 
-    def _reposition_end(self, index, commit):
-        # delete all commits after
-        for after_commit in self._commits[index:]:
-            if after_commit.read_only:
-                raise ReadOnlyCommitInHistory()
-            self._commits.remove(after_commit)
+    def _commit_new_end(self, commit):
+        # remove all ending commits
+        for ending_commit in self._find_ending_commits():
+            self._uncommit_from_history(ending_commit)
 
-        # insert the new delete
-        self._commits.insert(index, commit)
+        # insert the new create
+        self._commit_to_history(commit)
 
-        # delete any 'deleted' commit before
-        deleted_before_cmts = [x for x in self._commits[:index]
-                               if x.ctype.ends_history]
-        if deleted_before_cmts:
-            for deleted_commit in deleted_before_cmts:
-                if deleted_commit.read_only:
-                    raise ReadOnlyEnd()
-                self._commits.remove(deleted_commit)
+        # delete all commits before
+        for after_commit in self.get_commits_after(commit.commit_point):
+            self._uncommit_from_history(after_commit)
 
-    def _can_insert_commit(self, insert_idx, commit):
-        ctype = commit.ctype
+    def _commit_and_update(self, commit, new_start=False, new_end=False):
+        if new_start:
+            self._commit_new_start(commit)
 
-        commits_before = self._commits[:insert_idx]
-        hist_ended_before = any([x.ctype.ends_history for x in commits_before])
-        hist_recurring_before = any([x.ctype.starts_history
-                                     and x.ctype.recurring
-                                     for x in commits_before])
-        hist_started_before = any([x.ctype.starts_history
-                                   for x in commits_before])
+        if new_end:
+            self._commit_new_end(commit)
 
-        if commits_before:
-            # if recurring
-            if (ctype.starts_history and ctype.recurring) \
-                    and hist_ended_before:
-                mlogger.debug('Insert recurring and history has ended before. '
-                              'raising HistoryEndedBefore')
-                raise HistoryEndedBefore()
+        self._commit_to_history(commit)
+        self._update_history()
 
-            if (ctype.starts_history and ctype.recurring) \
-                    and hist_recurring_before:
-                mlogger.debug('Insert recurring and history is recurring '
-                              'before. returning ok to insert')
-                return True
+    def _can_commit(self, commit):
+        mlogger.debug('Test commit possibility: %s', commit)
+        commit_type = commit.commit_type
+        commit_point = commit.commit_point
 
-            if (ctype.starts_history and ctype.recurring) \
-                    and hist_started_before:
-                mlogger.debug('Insert recurring and history has started '
-                              'before. raising HistoryStartedBefore')
-                raise HistoryStartedBefore()
+        # process commits before
+        commits_before = self.get_commits_before(commit_point)
+        user_commits_before = [x for x in commits_before
+                               if x.commit_source == CommitSources.User]
+        mlogger.debug('User commits before: %s', user_commits_before)
+        hist_ended_before = \
+            any([x.commit_type.ends_history for x in user_commits_before])
+        hist_started_before = \
+            any([x.commit_type.starts_history for x in user_commits_before])
 
+        mlogger.debug('History ended before: %s', hist_ended_before)
+        mlogger.debug('History started before: %s', hist_started_before)
+
+        if user_commits_before:
             # if starting history
-            if ctype.starts_history \
-                    and hist_ended_before:
+            if commit_type.starts_history and hist_ended_before:
                 mlogger.debug('Insert start and history has ended before. '
                               'raising HistoryEndedBefore')
                 raise HistoryEndedBefore()
 
-            if ctype.starts_history \
-                    and (hist_recurring_before or hist_started_before):
+            if commit_type.starts_history and hist_started_before:
                 mlogger.debug('Insert start and history has started or is '
                               'recurring before. raising HistoryStartedBefore')
                 raise HistoryStartedBefore()
 
             # if ending history
-            if ctype.ends_history and hist_ended_before:
+            if commit_type.ends_history and hist_ended_before:
                 mlogger.debug('Insert end and history has ended before. '
                               'raising HistoryEndedBefore')
                 raise HistoryEndedBefore()
 
             # if ending history
-            if ctype.ends_history \
-                    and (hist_recurring_before or hist_started_before):
+            if commit_type.ends_history and hist_started_before:
                 mlogger.debug('Insert end and history has started or is '
-                              'recurring before. skipping for commits_after.')
+                              'recurring before. skipping...')
 
-            # other types
-            if commit.cptype.requires_history_start \
-                    and not ctype.starts_history \
-                    and not hist_started_before:
-                mlogger.debug('Insert non-starting non-recurring '
-                              'into commit point type that requires '
-                              'a start commit and does not have one yet. '
-                              'raising HistoryStartMustBeFirst')
-                raise HistoryStartMustBeFirst()
-
-            if not (ctype.starts_history or ctype.recurring) \
-                    and not ctype.ends_history \
+            if not (commit_type.starts_history or commit_type.ends_history) \
                     and hist_ended_before:
-                mlogger.debug('Insert non-starting non-recurring non-ending '
+                mlogger.debug('Insert non-starting non-ending '
                               'and history has ended before. '
                               'raising HistoryEndedBefore')
                 raise HistoryEndedBefore()
 
-        commits_after = self._commits[insert_idx:]
-        hist_started_after = any([x.ctype.starts_history
-                                  for x in commits_after])
-        hist_recurring_after = any([x.ctype.starts_history
-                                    and x.ctype.recurring
-                                    for x in commits_after])
-        hist_ended_after = any([x.ctype.ends_history for x in commits_after])
+        commits_after = self.get_commits_after(commit_point)
+        user_commits_after = [x for x in commits_after
+                              if x.commit_source == CommitSources.User]
+        mlogger.debug('User commits after: %s', user_commits_after)
+        hist_started_after = \
+            any([x.commit_type.starts_history for x in user_commits_after])
+        hist_ended_after = \
+            any([x.commit_type.ends_history for x in user_commits_after])
 
-        if commits_after:
-            # if recurring
-            if (ctype.starts_history and ctype.recurring) \
-                    and (hist_recurring_after or hist_started_after):
-                mlogger.debug('Insert recurring and history has started or '
-                              'is recurring after. raising HistoryStartedAfter')
-                raise HistoryStartedAfter()
+        mlogger.debug('History ended after: %s', hist_ended_after)
+        mlogger.debug('History started after: %s', hist_started_after)
 
+        if user_commits_after:
             # if starting history
-            if ctype.starts_history \
-                    and (hist_recurring_after or hist_started_after):
+            if commit_type.starts_history and hist_started_after:
                 mlogger.debug('Insert start and history has started or '
                               'is recurring after. raising HistoryStartedAfter')
                 raise HistoryStartedAfter()
 
+            if not commit_type.starts_history and hist_started_after:
+                mlogger.debug('Insert non-starting non-ending '
+                              'and history has started after. '
+                              'raising HistoryStartedAfter')
+                raise HistoryStartedAfter()
+
             # if ending history
-            if ctype.ends_history and hist_ended_after:
+            if commit_type.ends_history and hist_ended_after:
                 mlogger.debug('Insert end and history has ended after. '
                               'raising HistoryEndedAfter')
                 raise HistoryEndedAfter()
 
-            if ctype.ends_history \
-                    and (hist_recurring_after or hist_started_after):
-                mlogger.debug('Insert end and history has started or '
-                              'is recurring after. raising HistoryStartedAfter')
-                raise HistoryStartedAfter()
-
         # if not prev or next, this is the first commit inserted in history
         # if commit point type does not require a create commit
         # allow the commit
-        if not commit.cptype.requires_history_start:
+        if not commit_point.cptype.requires_history_start:
             mlogger.debug('Insert into commit point type that '
                           'does not require a start. returning ok to insert')
             return True
 
-        if commit.cptype.requires_history_start \
-                and not ctype.starts_history \
-                and not (hist_recurring_before or hist_started_before):
-            mlogger.debug('Insert as first non-starting non-recurring '
-                          'into commit point type that requires a start commit.'
-                          ' raising HistoryStartMustBeFirst')
+        if commit_point.cptype.requires_history_start \
+                and commit_type.ends_history \
+                and hist_started_after:
+            mlogger.debug('Insert as first ending into commit point '
+                          'type that requires a start commit. '
+                          'raising HistoryEndMustBeLast')
+            raise HistoryEndMustBeLast()
+
+        if commit_point.cptype.requires_history_start \
+                and not commit_type.starts_history \
+                and not (hist_started_before or hist_started_after):
+            mlogger.debug('Insert as first non-starting into commit point '
+                          'type that requires a start commit. '
+                          'raising HistoryStartMustBeFirst')
             raise HistoryStartMustBeFirst()
 
         return True
 
-    def _insert_commit(self, insert_idx, commit,
-                       allow_endpoint_change=False):
-        try:
-            if self._can_insert_commit(insert_idx, commit):
-                self._commits.insert(insert_idx, commit)
-                self._refresh_commits()
-        except (HistoryStartMustBeFirst,
-                HistoryStartedBefore,
-                HistoryStartedAfter) as start_commit_err:
-            if allow_endpoint_change and commit.ctype.starts_history:
-                self._reposition_start(insert_idx, commit)
-                self._refresh_commits()
-            else:
-                raise start_commit_err
-        except (HistoryEndMustBeLast,
-                HistoryEndedAfter,
-                HistoryEndedBefore) as end_commit_err:
-            if allow_endpoint_change and commit.ctype.ends_history:
-                self._reposition_end(insert_idx, commit)
-                self._refresh_commits()
-            else:
-                raise end_commit_err
-        except Exception as commit_err:
-            raise commit_err
+    def _uncommit_and_update(self, commit):
+        # remove any non_user
+        self._uncommit_from_history(commit)
+        self._update_history()
 
-        return commit
-
-    def _can_delete_commit(self, commit):
+    def _can_delete(self, commit):
         # allow deleting recurrin commits
-        starting_commit = self._find_starting_commit()
-        if commit.ctype.recurring and commit.idx > starting_commit.idx:
-            return True
+        if commit.commit_source != CommitSources.User:
+            raise CanNotRemoveNonUser()
 
-        if commit.ctype.starts_history:
+        if commit.commit_type.starts_history:
             raise CanNotRemoveStart()
 
         return True
 
-    def _delete_commit(self, existing_commit, replacement=None,
-                       allow_endpoint_change=False):
-        commit_index = self._commits.index(existing_commit)
-        backup_commits = copy.copy(self._commits)
-        try:
-            if self._can_delete_commit(existing_commit):
-                self._commits.remove(existing_commit)
-                if replacement:
-                    return self._insert_commit(
-                        commit_index,
-                        replacement,
-                        allow_endpoint_change=allow_endpoint_change
-                        )
-                self._refresh_commits()
-        except Exception as delete_err:
-            self._commits = backup_commits
-            raise delete_err
+    def get_commits_before(self, commit_point):
+        mlogger.debug('Searching for commit before point %s', commit_point)
+        prev_commits = \
+            [x for x in self.commits if x.commit_point.is_before(commit_point)]
+        mlogger.debug('Commits before %s', prev_commits)
+        return prev_commits
 
-    def _replace_commit(self, existing_commit, new_commit,
-                        allow_endpoint_change=False):
-        self._delete_commit(existing_commit,
-                            replacement=new_commit,
-                            allow_endpoint_change=allow_endpoint_change)
+    def get_commits_after(self, commit_point):
+        mlogger.debug('Searching for commit after point %s', commit_point)
+        next_commits = \
+            [x for x in self.commits if x.commit_point.is_after(commit_point)]
+        mlogger.debug('Commits after %s', next_commits)
+        return next_commits
 
-    @property
-    def commit_points(self):
-        return self._cpoints
-
-    def get_prev(self, commit):
-        try:
-            idx = self._commits.index(commit)
-            prev_idx = idx - 1
-            if prev_idx >= 0:
-                return self._commits[prev_idx]
-        except ValueError:
-            pass
-
-    def get_next(self, commit):
-        try:
-            idx = self._commits.index(commit)
-            next_idx = idx + 1
-            if next_idx < len(self._commits):
-                return self._commits[next_idx]
-        except ValueError:
-            pass
-
-    def get_commit_at_prev_point(self, commit_point):
-        prev_commits = [x for x in self._commits if x.idx < commit_point.idx]
+    def get_commit_before(self, commit_point):
+        mlogger.debug('Searching for commit before point %s', commit_point)
+        prev_commits = \
+            [x for x in self.commits if x.commit_point.is_before(commit_point)]
         if prev_commits:
-            return sorted(prev_commits, key=lambda x: x.idx)[-1]
+            prev_commit = \
+                sorted(prev_commits, key=lambda x: x.commit_point.idx)[-1]
+            mlogger.debug('Commit %s found at point %s',
+                          prev_commit, commit_point)
+            return prev_commit
 
-    def get_commit_at_next_point(self, commit_point):
-        next_commits = [x for x in self._commits if x.idx > commit_point.idx]
+    def get_commit_after(self, commit_point):
+        mlogger.debug('Searching for commit after point %s', commit_point)
+        next_commits = \
+            [x for x in self.commits if x.commit_point.is_after(commit_point)]
         if next_commits:
-            return sorted(next_commits, key=lambda x: x.idx)[0]
+            next_commit = \
+                sorted(next_commits, key=lambda x: x.commit_point.idx)[0]
+            mlogger.debug('Commit %s found at point %s',
+                          next_commit, commit_point)
+            return next_commit
 
-    def get_commit_at_point(self, commit_point):
-        for commit in self._commits:
+    def get_commit_at(self, commit_point):
+        mlogger.debug('Searching for commit at point %s', commit_point)
+        for commit in self.commits:
             if commit.is_at(commit_point):
+                mlogger.debug('Commit %s found at point %s',
+                              commit, commit_point)
                 return commit
 
-    def can_commit_at_point(self, commit_point, commit_type):
-        test_commit = Commit.from_point(commit_point, ctype=commit_type)
+    def get_prev_commit(self, commit):
         try:
-            self._can_insert_commit(commit_point.idx, test_commit)
+            prev_idx = self.commits.index(commit) - 1
+            mlogger.debug('Previous index: %s before %s', prev_idx, commit)
+            if prev_idx >= 0:
+                prev_commit = self.commits[prev_idx]
+                mlogger.debug('Previous commit: %s', prev_commit)
+                return prev_commit
+        except ValueError:
+            return None
+        except Exception as ex:
+            mlogger.error(ex)
+
+    def get_next_commit(self, commit):
+        try:
+            next_idx = self.commits.index(commit) + 1
+            mlogger.debug('Next index: %s after %s', next_idx, commit)
+            if next_idx < len(self.commits):
+                next_commit = self.commits[next_idx]
+                mlogger.debug('Next commit: %s', next_commit)
+                return next_commit
+        except ValueError:
+            return None
+        except Exception as ex:
+            mlogger.error(ex)
+
+    def can_commit_at_point(self, commit_point, commit_type,
+                            allow_endpoint_change=False):
+        try:
+            self.commit_at_point(commit_point,
+                                 commit_type,
+                                 allow_endpoint_change=allow_endpoint_change,
+                                 dry_run=True)
+            mlogger.debug('Can commit type %s: yes', commit_type)
             return True
-        except Exception:
+        except Exception as ex:
+            mlogger.debug('Can commit type %s: %s', commit_type, type(ex))
             return False
 
-    def commit_at_point(self,
-                        commit_point, commit_type,
-                        allow_endpoint_change=False):
-        # no commit?
-        none_commit = \
-            commit_type == CommitTypes.NotSet \
-            or commit_type is None
-
-        # make a commit object
-        new_commit = Commit.from_point(commit_point, ctype=commit_type)
-        mlogger.debug('Attempting to commit %s', new_commit)
-
-        # check if there is a commit at this commit point
-        matched_commit = self.get_commit_at_point(commit_point)
-        if matched_commit:
-            mlogger.debug('Commit %s exists at point %s',
-                          matched_commit, commit_point)
-
-            # unset, means delete the existing commit
-            if none_commit:
-                return self._delete_commit(matched_commit)
-            # otherwise replace the existing with new commit
+    def commit_at_point(self, commit_point, commit_type,
+                        commit_source=CommitSources.User,
+                        allow_endpoint_change=False,
+                        dry_run=False):
+        # notset commit?
+        if commit_type == CommitTypes.NotSet:
+            # if notset and existing delete commit
+            existing_commit = self.get_commit_at(commit_point)
+            if existing_commit:
+                try:
+                    if self._can_delete(existing_commit):
+                        if not dry_run:
+                            self._uncommit_and_update(existing_commit)
+                except Exception as ex:
+                    raise ex
             else:
-                return self._replace_commit(
-                    matched_commit,
-                    new_commit,
-                    allow_endpoint_change=allow_endpoint_change
-                    )
-        else:
-            # it does not make sense to insert a notset commit
-            if none_commit:
                 raise CanNotUnsetNonExisting()
+        else:
+            new_commit = Commit.from_point(commit_point,
+                                           commit_source=commit_source,
+                                           commit_type=commit_type)
+            try:
+                mlogger.debug('History before commit: %s', self.commits)
+                mlogger.debug('Attempting commit %s', new_commit)
+                if self._can_commit(new_commit):
+                    if not dry_run:
+                        self._commit_and_update(new_commit)
+            except (HistoryStartMustBeFirst,
+                    HistoryStartedBefore,
+                    HistoryStartedAfter) as start_commit_err:
+                if allow_endpoint_change and commit_type.starts_history:
+                    if not dry_run:
+                        self._commit_and_update(new_commit, new_start=True)
+                else:
+                    raise start_commit_err
+            except (HistoryEndMustBeLast,
+                    HistoryEndedAfter,
+                    HistoryEndedBefore) as end_commit_err:
+                if allow_endpoint_change and commit_type.ends_history:
+                    if not dry_run:
+                        self._commit_and_update(new_commit, new_end=True)
+                else:
+                    raise end_commit_err
+            except Exception as commit_err:
+                raise commit_err
 
-        insert_idx = 0
-        # otherwise find previous commit point and insert after
-        prev_commit = self.get_commit_at_prev_point(commit_point)
-        if prev_commit:
-            mlogger.debug('Previous commit %s exists before point %s',
-                          prev_commit, commit_point)
-            insert_idx = self._commits.index(prev_commit) + 1
-
-        # if nothing prev, check next and insert before
-        next_commit = self.get_commit_at_next_point(commit_point)
-        if next_commit:
-            mlogger.debug('Next commit %s exists after point %s',
-                          next_commit, commit_point)
-            insert_idx = self._commits.index(next_commit)
-
-        # if no prev or next, means the history is empty so just insert
-        return self._insert_commit(
-            insert_idx,
-            new_commit,
-            allow_endpoint_change=allow_endpoint_change
-            )
+            return new_commit

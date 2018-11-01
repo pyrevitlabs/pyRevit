@@ -33,8 +33,8 @@ class CommitItem(object):
         self.hasbefore = hasbefore
         self.hasafter = hasafter
 
-        self.idx = self._commit.idx
-        self.ctype = self._commit.ctype
+        self.idx = self._commit.commit_point.idx
+        self.ctype = self._commit.commit_type
         self.ctypeidx = self.ctype.idx
         self.readonly = self._commit.read_only
 
@@ -93,8 +93,10 @@ class SheetItem(object):
     def _get_commit_item(self, commit_pt):
         for commit in self._csheet.commit_history:
             if commit.is_at(commit_pt):
-                prev_commit = self._csheet.commit_history.get_prev(commit)
-                next_commit = self._csheet.commit_history.get_next(commit)
+                prev_commit = \
+                    self._csheet.commit_history.get_prev_commit(commit)
+                next_commit = \
+                    self._csheet.commit_history.get_next_commit(commit)
                 return CommitItem(commit,
                                   hasbefore=prev_commit is not None,
                                   hasafter=next_commit is not None)
@@ -136,18 +138,20 @@ class SheetItem(object):
         return self._csheet.number
 
     @staticmethod
-    def build_commit_param(commit):
-        return '{}{}'.format(commit.cptype, commit.idx)
+    def build_commit_param(commit_point):
+        return '{}{}'.format(commit_point.cptype, commit_point.idx)
 
     @staticmethod
-    def build_commit_sort_param(commit):
-        return 'sort_{}{}'.format(commit.cptype, commit.idx)
+    def build_commit_sort_param(commit_point):
+        return 'sort_{}{}'.format(commit_point.cptype, commit_point.idx)
 
     def get_commit_at_point(self, commit_point):
         return self._csheet.get_commit_at_point(commit_point)
 
     def can_commit(self, commit_point, commit_type):
-        return self._csheet.can_commit(commit_point, commit_type)
+        return self._csheet.can_commit(commit_point,
+                                       commit_type,
+                                       allow_endpoint_change=True)
 
     def commit(self, commit_point, commit_type):
         self._csheet.commit(commit_point,
@@ -195,17 +199,17 @@ class ManagePackagesWindow(forms.WPFWindow):
         return wpf.LoadComponent(dtobj, framework.StringReader(template))
 
     def _build_columns(self):
-        for commit in self._commit_points:
-            param = SheetItem.build_commit_param(commit)
-            sort_param = SheetItem.build_commit_sort_param(commit)
+        for commit_point in self._commit_points:
+            param = SheetItem.build_commit_param(commit_point)
+            sort_param = SheetItem.build_commit_sort_param(commit_point)
             commit_column = Windows.Controls.DataGridTemplateColumn()
-            commit_column.Header = commit.name
+            commit_column.Header = commit_point.name
             commit_column.CanUserSort = True
             commit_column.SortMemberPath = sort_param
             # commit_column.SortDirection = \
             #     ComponentModel.ListSortDirection.Descending
             commit_column.CellStyle = self.package_column_cell_style
-            if commit.cptype == CommitPointTypes.Revision:
+            if commit_point.cptype == CommitPointTypes.Revision:
                 commit_column.CellStyle = self.revision_column_cell_style
             commit_column.CellTemplate = self._make_column_datatemplate(param)
             self.sheets_dg.Columns.Add(commit_column)
@@ -215,30 +219,34 @@ class ManagePackagesWindow(forms.WPFWindow):
         # scroll to last column for convenience
         self.sheets_dg.ItemsSource = sorted(sheets, key=lambda x: x.number)
         last_col = list(self.sheets_dg.Columns)[-1]
-        self.sheets_dg.ScrollIntoView(sheets[0], last_col)
+        self.sheets_dg.ScrollIntoView(self.sheets_dg.ItemsSource[0], last_col)
 
     def _get_commit_point(self, commit_pt_idx):
-        for cp in self._commit_points:
-            if cp.idx == commit_pt_idx:
-                return cp
+        for commit_point in self._commit_points:
+            if commit_point.idx == commit_pt_idx:
+                return commit_point
 
     def _ask_for_commit_type(self, sheet_item, commit_pt, commit):
-        # allowed_types = []
-        # for type_opt in commit.cptype.allowed_commit_types:
-        #     if sheet_item.can_commit(commit_pt, type_opt):
-        #         allowed_types.append(type_opt)
-        ctype_commit_op = forms.SelectFromList.show(
-            sorted([CommitTypeOption(x)
-                    for x in commit.cptype.allowed_commit_types],
-                   key=lambda x: x.ctype.order),
-            title='Select Change Type',
-            button_name='Apply Change Type',
-            width=400,
-            height=300,
-            item_container_template=self.committype_template
-            )
-        if ctype_commit_op:
-            return ctype_commit_op.ctype
+        allowed_types = []
+        for type_opt in commit.commit_point.cptype.allowed_commit_types:
+            if sheet_item.can_commit(commit_pt, type_opt):
+                allowed_types.append(type_opt)
+        # allowed_types = commit.commit_point.cptype.allowed_commit_types
+        if allowed_types:
+            ctype_commit_op = forms.SelectFromList.show(
+                sorted([CommitTypeOption(x)
+                        for x in allowed_types],
+                       key=lambda x: x.ctype.order),
+                title='Select Change Type',
+                button_name='Apply Change Type',
+                width=400,
+                height=300,
+                item_container_template=self.committype_template
+                )
+            if ctype_commit_op:
+                return ctype_commit_op.ctype
+        else:
+            forms.alert('No changes is allowed at this point.')
 
     def edit_commit(self, sender, args):
         if self.sheets_dg.CurrentCell:
@@ -269,9 +277,7 @@ class ManagePackagesWindow(forms.WPFWindow):
                 except (pkgexceptions.HistoryEndedBefore,
                         pkgexceptions.HistoryEndedAfter):
                     forms.alert('Sheet has already deleted/merged in history.')
-                except (pkgexceptions.ReadOnlyStart,
-                        pkgexceptions.ReadOnlyEnd,
-                        pkgexceptions.ReadOnlyCommitInHistory):
+                except pkgexceptions.ReadOnlyCommitInHistory:
                     forms.alert('Read-only change in history.')
             self.sheets_dg.CommitEdit()
             self.sheets_dg.Items.Refresh()

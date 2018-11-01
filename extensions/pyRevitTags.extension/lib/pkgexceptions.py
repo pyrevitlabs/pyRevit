@@ -27,14 +27,6 @@ class HistoryEndMustBeLast(PyRevitException):
     pass
 
 
-class ReadOnlyStart(PyRevitException):
-    pass
-
-
-class ReadOnlyEnd(PyRevitException):
-    pass
-
-
 class ReadOnlyCommitInHistory(PyRevitException):
     pass
 
@@ -44,4 +36,8 @@ class CanNotRemoveStart(PyRevitException):
 
 
 class CanNotUnsetNonExisting(PyRevitException):
+    pass
+
+
+class CanNotRemoveNonUser(PyRevitException):
     pass
