@@ -1,5 +1,5 @@
 """Package module exceptions."""
-#pylint: disable=E0401
+#pylint: disable=E0401,C0111
 from pyrevit import PyRevitException
 
 

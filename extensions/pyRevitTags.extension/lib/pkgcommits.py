@@ -1,7 +1,5 @@
 """Manage commit history."""
 #pylint: disable=E0401,W0401,W0614,W0703,C0103,C0111
-import copy
-
 from pyrevit.coreutils import logger
 
 from pkgexceptions import *
