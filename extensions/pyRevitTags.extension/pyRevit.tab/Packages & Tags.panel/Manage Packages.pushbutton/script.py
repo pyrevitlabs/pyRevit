@@ -196,7 +196,7 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         if sheet_numbers:
             sheetitems = [SheetItem(x) for x in committed_sheets
-                        if x.number in sheet_numbers]
+                          if x.number in sheet_numbers]
         else:
             sheetitems = [SheetItem(x) for x in committed_sheets]
 
