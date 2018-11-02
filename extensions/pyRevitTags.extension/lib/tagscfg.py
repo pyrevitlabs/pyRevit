@@ -22,7 +22,7 @@ TagModifierDef = namedtuple('TagModifierDef', ['abbrev', 'name', 'color'])
 
 def get_tags_param():
     for project_param in revit.query.get_project_parameters(doc=revit.doc):
-        if TAG_PARAM_ID in project_param.name:
+        if TAG_PARAM_ID in project_param.name.lower():
             return project_param.name
 
 
