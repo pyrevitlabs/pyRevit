@@ -41,3 +41,6 @@ class CanNotUnsetNonExisting(PyRevitException):
 
 class CanNotRemoveNonUser(PyRevitException):
     pass
+
+class DoesNotAllowOverride(PyRevitException):
+    pass

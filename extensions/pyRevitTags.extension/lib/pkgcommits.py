@@ -12,7 +12,7 @@ class CommitType(object):
     def __init__(self, order, idx, name,
                  starts_history=False, ends_history=False,
                  requires_after=None, requires_before=None,
-                 recurring=False):
+                 recurring=False, allows_override=True):
         self.order = order
         self.idx = idx
         self.name = name
@@ -21,6 +21,7 @@ class CommitType(object):
         self.requires_after = requires_after
         self.requires_before = requires_before
         self.recurring = recurring
+        self.allows_override = allows_override
 
     def __str__(self):
         return self.idx
@@ -55,7 +56,8 @@ class CommitTypes(object):
         idx='issuedref',
         name='Issued for Reference',
         starts_history=True,
-        recurring=True)
+        recurring=True,
+        allows_override=False)
 
     # inbetween commits
     Issued = CommitType(order=3, idx='issued', name='Issued')
@@ -630,8 +632,17 @@ class CommitHistory(object):
                         dry_run=False):
         existing_commit = self.get_commit_at(commit_point)
 
+        # does existing allow override?
+        if existing_commit \
+                and not existing_commit.commit_type.allows_override \
+                and not commit_type.starts_history \
+                and not commit_type.ends_history:
+            raise DoesNotAllowOverride()
         # is the commit really needed?
-        if existing_commit and existing_commit.commit_type == commit_type:
+        elif existing_commit \
+                and existing_commit.commit_type == commit_type \
+                and not commit_type.starts_history \
+                and not commit_type.ends_history:
             return existing_commit
         # notset commit?
         elif commit_type == CommitTypes.NotSet:
