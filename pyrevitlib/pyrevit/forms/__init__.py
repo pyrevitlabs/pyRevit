@@ -17,6 +17,7 @@ from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import colors
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
@@ -39,6 +40,11 @@ DEFAULT_SEARCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_HEIGHT = 100
 DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
+
+
+WPF_HIDDEN = framework.Windows.Visibility.Hidden
+WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
+WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 
 class WPFWindow(framework.Windows.Window):
@@ -159,7 +165,7 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be collaped
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Collapsed
+            wpfel.Visibility = WPF_COLLAPSED
 
     @staticmethod
     def show_element(*wpf_elements):
@@ -169,7 +175,7 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be set to visible.
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Visible
+            wpfel.Visibility = WPF_VISIBLE
 
     @staticmethod
     def toggle_element(*wpf_elements):
@@ -179,10 +185,30 @@ class WPFWindow(framework.Windows.Window):
             *wpf_elements: WPF framework elements to be toggled.
         """
         for wpfel in wpf_elements:
-            if wpfel.Visibility == framework.Windows.Visibility.Visible:
+            if wpfel.Visibility == WPF_VISIBLE:
                 WPFWindow.hide_element(wpfel)
-            elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
+            elif wpfel.Visibility == WPF_COLLAPSED:
                 WPFWindow.show_element(wpfel)
+
+    @staticmethod
+    def disable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = False
+
+    @staticmethod
+    def enable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = True
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -203,7 +229,7 @@ class TemplateUserInputWindow(WPFWindow):
         WPFWindow.__init__(self,
                            op.join(op.dirname(__file__), self.xaml_source),
                            handle_esc=True)
-        self.Title = title
+        self.Title = title or 'pyRevit'
         self.Width = width
         self.Height = height
 
@@ -261,6 +287,9 @@ class TemplateListItem(object):
     def __contains__(self, value):
         return value in self.name
 
+    def __getattr__(self, param_name):
+        return getattr(self.item, param_name)
+
     @property
     def name(self):
         """Name property."""
@@ -283,8 +312,8 @@ class TemplateListItem(object):
     @property
     def checkable(self):
         """List Item CheckBox Visibility."""
-        return framework.Windows.Visibility.Visible if self._checkable \
-            else framework.Windows.Visibility.Collapsed
+        return WPF_VISIBLE if self._checkable \
+            else WPF_COLLAPSED
 
     @checkable.setter
     def checkable(self, value):
@@ -408,8 +437,20 @@ class SelectFromList(TemplateUserInputWindow):
 
         self.ctx_groups_active = kwargs.get('default_group', None)
 
+        # check for custom templates
+        item_template = kwargs.get('item_template', None)
+        if item_template:
+            self.Resources["ListItemTemplate"] = item_template
+
+        item_container_template = kwargs.get('item_container_template', None)
+        if item_container_template:
+            self.Resources["ListItemContainerTemplate"] = \
+                item_container_template
+
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
+
+        # list options now
         self._list_options()
 
         # setup search and filter fields
@@ -660,19 +701,19 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             option_filter = option_filter.lower()
             for button in self.button_list.Children:
                 if option_filter not in button.Content.lower():
-                    button.Visibility = framework.Windows.Visibility.Collapsed
+                    button.Visibility = WPF_COLLAPSED
                 else:
-                    button.Visibility = framework.Windows.Visibility.Visible
+                    button.Visibility = WPF_VISIBLE
         else:
             self.search_tb.Tag = \
                 'Type to Filter / Tab to Select / Enter or Click to Run'
             for button in self.button_list.Children:
-                button.Visibility = framework.Windows.Visibility.Visible
+                button.Visibility = WPF_VISIBLE
 
     def _get_active_button(self):
         buttons = []
         for button in self.button_list.Children:
-            if button.Visibility == framework.Windows.Visibility.Visible:
+            if button.Visibility == WPF_VISIBLE:
                 buttons.append(button)
         if len(buttons) == 1:
             return buttons[0]
@@ -760,8 +801,11 @@ class GetValueWindow(TemplateUserInputWindow):
         elif self.value_type == 'dropdown':
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == 'date':
-            datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
-            self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
+            if self.date_picker.SelectedDate:
+                datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+                self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
+            else:
+                self.response = None
 
 
 class TemplatePromptBar(WPFWindow):
@@ -1563,7 +1607,37 @@ def select_titleblocks(title='Select Titleblock',
             return tblock_dict[selected_titleblocks]
 
 
-def alert(msg, title=None, sub_msg=None, expanded=None, footer='', 
+def select_swatch(title='Select Color Swatch', button_name='Select'):
+    """Standard form for selecting a color swatch.
+
+    Args:
+        title (str, optional): swatch list window title
+        button_name (str, optional): swatch list window button caption
+
+    Returns:
+        pyrevit.coreutils.colors.RGB: rgb color
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_swatch(title="Select Text Color")
+        ... <RGB #CD8800>
+    """
+    ict_xaml_file = \
+        os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
+    ict = wpf.LoadComponent(Controls.ControlTemplate(), ict_xaml_file)
+    swatch = SelectFromList.show(
+        colors.COLORS.values(),
+        title=title,
+        button_name=button_name,
+        width=300,
+        multiselect=False,
+        item_container_template=ict
+        )
+
+    return swatch
+
+
+def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
           ok=True, cancel=False, yes=False, no=False, retry=False,
           warn_icon=True, exitscript=False):
     """Show a task dialog with given message.
@@ -1799,7 +1873,7 @@ def check_workshared(doc=None, message='Model is not workshared.'):
     """
     doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert(message ,warn_icon=True)
+        alert(message, warn_icon=True)
         return False
     return True
 
@@ -1911,3 +1985,7 @@ def ask_for_date(default=None, prompt=None, title=None):
         prompt=prompt,
         title=title
         )
+
+
+def inform_wip():
+    alert("Work in progress.", exitscript=True)

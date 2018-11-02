@@ -35,6 +35,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="PresentationFramework.Aero2" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -91,6 +92,31 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\ManagePackagesWindow.xaml">
+      <Link>Tags\ManagePackagesWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Packages.pushbutton\PackagesDataTemplate.xaml">
+      <Link>Tags\PackagesDataTemplate.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Manage Tags.pushbutton\ManageTagsWindow.xaml">
+      <Link>Tags\ManageTagsWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\Tag.pushbutton\ApplyTagWindow.xaml">
+      <Link>Tags\ApplyTagWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\TagsConfig.panelbutton\TagsConfigsWindow.xaml">
+      <Link>Tags\TagsConfigsWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Print.pulldown\Print Linked Sheets.pushbutton\PrintLinkedSheets.xaml">
       <Link>Tools\PrintLinkedSheets.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -138,6 +164,11 @@
     </Page>
     <Page Include="..\..\..\pyrevitlib\pyrevit\forms\CommandSwitchWindow.xaml">
       <Link>Forms\CommandSwitchWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\GetValueWindow.xaml">
+      <Link>Forms\GetValueWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

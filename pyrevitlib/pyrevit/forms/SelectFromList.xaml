@@ -7,6 +7,30 @@
         <Style x:Key="ClearButton" TargetType="Button">
             <Setter Property="Background" Value="White"/>
         </Style>
+
+        <ControlTemplate x:Key="ListItemContainerTemplate">
+            <TextBlock Text="{Binding name}"
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"/>
+        </ControlTemplate>
+
+        <DataTemplate x:Key="ListItemTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding state}"
+                          Checked="check_selected"
+                          Unchecked="uncheck_selected"
+                          Visibility="{Binding checkable}"/>
+                <Control Grid.Column="1"
+                         VerticalAlignment="Center" VerticalContentAlignment="Center"
+                         Template="{DynamicResource ListItemContainerTemplate}"/>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
     <DockPanel Margin="10">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
@@ -57,21 +81,9 @@
             <Button x:Name="select_b" Content=""
 						Click="button_select" Margin="0,10,0,0"/>
         </StackPanel>
-        <ListView x:Name="list_lb" SelectionMode="Extended">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <WrapPanel>
-                        <CheckBox VerticalAlignment="Center"
-                                  IsChecked="{Binding state}"
-								  Checked="check_selected"
-								  Unchecked="uncheck_selected"
-                                  Visibility="{Binding checkable}"/>
-                        <TextBlock Text="{Binding name}"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"/>
-                    </WrapPanel>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+        <ListView x:Name="list_lb"
+                  SelectionMode="Extended"
+                  HorizontalContentAlignment="Stretch"
+                  ItemTemplate="{DynamicResource ListItemTemplate}"/>
     </DockPanel>
 </Window>

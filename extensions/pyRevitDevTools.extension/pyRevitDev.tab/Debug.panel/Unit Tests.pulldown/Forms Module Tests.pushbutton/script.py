@@ -31,12 +31,44 @@ def test_forms(forms_func, test_title, filterfuncstr='', *args, **kwargs):
     kwargs['title'] = ttitle
     kwargs['multiple'] = True
     if 'filterfunc' not in kwargs:
-        kwargs['filterfunc'] = lambda x: filterfuncstr in x
+        kwargs['filterfunc'] = lambda x: filterfuncstr in str(x)
     selection = forms_func(*args, **kwargs)
     if selection:
         print(selection)
     else:
         print('No selection...')
+
+
+print(
+    forms.ask_for_string(
+        default='test default',
+        prompt='test prompt',
+        title='test title'
+    ))
+
+
+print(
+    forms.ask_for_one_item(
+        ['test item 1', 'test item 2', 'test item 3'],
+        default='test item 2',
+        prompt='test prompt',
+        title='test title'
+    ))
+
+
+print(
+    forms.ask_for_date(
+        default='2018/11/09',
+        prompt='test prompt',
+        title='test title'
+    ))
+
+
+print(
+    forms.select_swatch(
+        title='test title',
+        button_name='Test button name'
+    ))
 
 
 test_forms(forms.select_titleblocks,
@@ -59,12 +91,12 @@ test_forms(forms.select_revisions,
            test_title='Testing Selecting Revisions',
            filterfuncstr='pyRevit')
 
-res = forms.SelectFromList.show(
-    {'All': '1 2 3 4 5 6 7 8 9 0'.split(),
-     'Odd': '1 3 5 7 9'.split(),
-     'Even': '2 4 6 8 0'.split()},
-    title='MultiGroup List',
-    group_selector_title='Select Integer Range:',
-    multiselect=True)
-
-print(res)
+print(
+    forms.SelectFromList.show(
+        {'All': '1 2 3 4 5 6 7 8 9 0'.split(),
+         'Odd': '1 3 5 7 9'.split(),
+         'Even': '2 4 6 8 0'.split()},
+        title='MultiGroup List',
+        group_selector_title='Select Integer Range:',
+        multiselect=True
+    ))

@@ -454,6 +454,22 @@ def make_canonical_name(*args):
     return '.'.join(args)
 
 
+def get_canonical_parts(canonical_string):
+    """Splots argument using dot, returning all composing parts.
+
+    Args:
+        canonical_string(:obj:`str`): Source string e.g. "Config.SubConfig"
+
+    Returns:
+        list[:obj:`str`]: list of composing parts
+
+    Example:
+        >>> get_canonical_parts("Config.SubConfig")
+        ['Config', 'SubConfig']
+    """
+    return canonical_string.split('.')
+
+
 def get_file_name(file_path):
     """Return file basename of the given file.
 
@@ -1251,3 +1267,14 @@ def extract_guid(source_str):
                           "[-][0-9A-Fa-f]{12}).*", source_str)
     if guid_match:
         return guid_match.groups()[0]
+
+
+def format_hex_rgb(rgb_value):
+    """Formats rgb value as #RGB value string."""
+    if isinstance(rgb_value, str):
+        if not rgb_value.startswith('#'):
+            return '#%s' % rgb_value
+        else:
+            return rgb_value
+    elif isinstance(rgb_value, int):
+        return '#%x' % rgb_value
