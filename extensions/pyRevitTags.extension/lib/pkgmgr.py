@@ -24,6 +24,7 @@ class CommitedSheet(object):
         self._item = view_sheet
         self._chistory = CommitHistory(commit_points)
         self._read_commit_history(commit_cfg)
+        self._ensure_history_start()
 
     @property
     def revit_sheet(self):
@@ -56,8 +57,7 @@ class CommitedSheet(object):
                 if ctype:
                     try:
                         self.commit(commit_pt,
-                                    commit_type=ctype,
-                                    allow_endpoint_change=True)
+                                    commit_type=ctype)
                     except Exception as e:
                         mlogger.debug(
                             'Commit type "%s" error on %s:%s at %s | (%s) %s',
@@ -94,6 +94,13 @@ class CommitedSheet(object):
                             type(e), e
                             )
                     mlogger.debug(self._chistory)
+
+    def _ensure_history_start(self):
+        if not self.commit_history:
+            if self.commit_history.commit_points:
+                pkg_cpoints = [x for x in self.commit_history.commit_points
+                               if x.cptype == CommitPointTypes.Package]
+                self.commit(pkg_cpoints[-1], commit_type=CommitTypes.Created)
 
     def update_commit_history(self):
         commit_cfg = pkgcfg.CommitConfigs()
@@ -143,7 +150,8 @@ def get_commit_points():
     commit_points = []
     # grab defined packages
     dockpkgs = []
-    docpkg_finder = re.compile(r'docpkg(\d+)\s+(.+)', flags=re.IGNORECASE)
+    docpkg_finder = \
+        re.compile(r'docpkg(\d+)\s*[-_]*?\s*(.+)', flags=re.IGNORECASE)
     for project_param in revit.query.get_project_parameters(doc=revit.doc):
         pkg_match = docpkg_finder.match(project_param.name)
         if pkg_match:
@@ -167,9 +175,9 @@ def get_commit_points():
     commit_points.extend([
         CommitPoint(cptype=CommitPointTypes.Revision,
                     target=x.Id.IntegerValue,
-                    idx=last_docpkg_idx + x.SequenceNumber,
+                    idx=last_docpkg_idx + i + 1,
                     name=x.Description)
-        for x in docrevs
+        for i, x in enumerate(docrevs)
         ])
 
     sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
