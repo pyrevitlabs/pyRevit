@@ -133,7 +133,7 @@ def _perform_onsessionloadcomplete_ops():
     cleanup_appdata_folder()
 
     # setup auto output closer
-    output.setup_output_closer()
+    # output.setup_output_closer()
 
 
 def _new_session():
