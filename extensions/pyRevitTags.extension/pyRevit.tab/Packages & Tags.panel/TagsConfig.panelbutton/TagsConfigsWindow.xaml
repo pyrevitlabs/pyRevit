@@ -3,8 +3,13 @@
         ShowInTaskbar="False"
         Width="600" Height="400"
         ResizeMode="NoResize"
+        SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
-        Title="Packages and Tags Configuration">
-    <Grid />
+        Title="Packages &amp; Tags Configuration">
+    <StackPanel Margin="10">
+        <GroupBox Header="Custom Tag Modifiers" Height="150" Padding="10">
+            <TextBlock Text="Work in progess..." />
+        </GroupBox>
+    </StackPanel>
 </Window>

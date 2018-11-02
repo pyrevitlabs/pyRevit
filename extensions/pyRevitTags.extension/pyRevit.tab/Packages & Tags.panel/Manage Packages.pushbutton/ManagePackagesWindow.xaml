@@ -158,10 +158,6 @@
                         Padding="8,4,8,4"
                         ToolTip=""
                         Click="update_sheets"/>
-                <Button Content="Manage Packages"
-                        Margin="0,0,0,10"
-                        Padding="8,4,8,4"
-                        ToolTip=""/>
             </StackPanel>
         </DockPanel>
         <DataGrid x:Name="sheets_dg"

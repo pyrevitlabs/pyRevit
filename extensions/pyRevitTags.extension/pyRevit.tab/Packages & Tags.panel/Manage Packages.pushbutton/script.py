@@ -226,6 +226,7 @@ class ManagePackagesWindow(forms.WPFWindow):
             commit_column = Windows.Controls.DataGridTemplateColumn()
             commit_column.Header = commit_point.name
             commit_column.CanUserSort = True
+            commit_column.MinWidth = 50
             commit_column.SortMemberPath = sort_param
             # commit_column.SortDirection = \
             #     ComponentModel.ListSortDirection.Descending
@@ -332,6 +333,7 @@ class ManagePackagesWindow(forms.WPFWindow):
                 except pkgexceptions.ReadOnlyCommitInHistory:
                     forms.alert('Read-only change in history.')
             self.sheets_dg.CommitEdit()
+            self.sheets_dg.Focus()
             self.sheets_dg.Items.Refresh()
 
     def update_sheets(self, sender, args):

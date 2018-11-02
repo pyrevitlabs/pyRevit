@@ -1,5 +1,8 @@
 """Module for managing tags metadata."""
 #pylint: disable=E0401,C0111,W0603,C0103,W0703
+import re
+from collections import namedtuple
+
 from pyrevit.coreutils import logger
 from pyrevit import revit, DB
 
@@ -9,6 +12,9 @@ import pkgcfg
 
 
 mlogger = logger.get_logger(__name__)
+
+
+DocPkg = namedtuple('DocPkg', ['param_name', 'pkg_idx', 'pkg_name'])
 
 
 class CommitedSheet(object):
@@ -43,7 +49,7 @@ class CommitedSheet(object):
         # process package commits
         for commit_pt in [x for x in self.commit_history.commit_points
                           if x.cptype == CommitPointTypes.Package]:
-            pkg_param = self.revit_sheet.LookupParameter(commit_pt.name)
+            pkg_param = self.revit_sheet.LookupParameter(commit_pt.target)
             if pkg_param:
                 ctype = commit_cfg.get_commit_type(pkg_param.AsString())
                 # add commit to sheet commits
@@ -94,13 +100,13 @@ class CommitedSheet(object):
         # process package commits
         for commit_pt in [x for x in self.commit_history.commit_points
                           if x.cptype == CommitPointTypes.Package]:
-            pkg_param = self.revit_sheet.LookupParameter(commit_pt.name)
+            pkg_param = self.revit_sheet.LookupParameter(commit_pt.target)
             if pkg_param:
                 commit = self.get_commit_at_point(commit_pt)
                 pkg_param.Set(commit_cfg.get_commit_value(commit.commit_type))
             else:
                 mlogger.error('Package parameter "%s" does not exist for %s:%s',
-                              commit_pt.name, self.number, self.name)
+                              commit_pt.target, self.number, self.name)
 
         # process revisions
         all_revs = []
@@ -136,43 +142,39 @@ class CommitedSheet(object):
 def get_commit_points():
     commit_points = []
     # grab defined packages
-    commit_points.extend([
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=0,
-                    name='Package 1'),
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=1,
-                    name='Package 2'),
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=2,
-                    name='Package 3'),
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=3,
-                    name='Package 4'),
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=4,
-                    name='Package 5'),
-        CommitPoint(cptype=CommitPointTypes.Package,
-                    target=None,
-                    idx=5,
-                    name='Package 6'),
-        ])
+    dockpkgs = []
+    docpkg_finder = re.compile(r'docpkg(\d+)\s+(.+)', flags=re.IGNORECASE)
+    for project_param in revit.query.get_project_parameters(doc=revit.doc):
+        pkg_match = docpkg_finder.match(project_param.name)
+        if pkg_match:
+            pkg_idx, pkg_name = pkg_match.groups()
+            dockpkgs.append(
+                DocPkg(param_name=project_param.name,
+                       pkg_idx=int(pkg_idx),
+                       pkg_name=pkg_name)
+                )
+
+    last_docpkg_idx = 0
+    for idx, docpkg in enumerate(sorted(dockpkgs, key=lambda x: x.pkg_idx)):
+        last_docpkg_idx = idx
+        commit_points.append(
+            CommitPoint(cptype=CommitPointTypes.Package,
+                        target=docpkg.param_name,
+                        idx=idx,
+                        name=docpkg.pkg_name))
     # grab revisions
-    last_pkg_index = 5
     docrevs = revit.query.get_revisions()
     commit_points.extend([
         CommitPoint(cptype=CommitPointTypes.Revision,
                     target=x.Id.IntegerValue,
-                    idx=x.SequenceNumber + last_pkg_index,
+                    idx=last_docpkg_idx + x.SequenceNumber,
                     name=x.Description)
         for x in docrevs
         ])
-    return sorted(commit_points, key=lambda x: x.idx)
+
+    sorted_cpoints = sorted(commit_points, key=lambda x: x.idx)
+    mlogger.debug(sorted_cpoints)
+    return sorted_cpoints
 
 
 def get_commited_sheets():
