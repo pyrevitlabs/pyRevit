@@ -8,6 +8,7 @@ from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import _get_references
 from pyrevit.coreutils import appdata
+from pyrevit import extensions as exts
 from pyrevit import UI
 
 
@@ -16,20 +17,40 @@ mlogger = get_logger(__name__)
 
 
 def _update_pyrevit_fields(cmd_component, iext_cmd):
-    # grab tooltip from C# type
-    docstring_field = iext_cmd.GetDeclaredField('__tooltip__')
+    # grab title from C# type
+    title_field = iext_cmd.GetDeclaredField(exts.UI_TITLE_PARAM)
+    if title_field:
+        cmd_component.ui_title = title_field.GetValue(iext_cmd)
+
+    # grab docstring from C# type
+    docstring_field = iext_cmd.GetDeclaredField(exts.DOCSTRING_PARAM)
     if docstring_field:
         cmd_component.doc_string = docstring_field.GetValue(iext_cmd)
 
     # grab author from C# type
-    author_field = iext_cmd.GetDeclaredField('__author__')
+    author_field = iext_cmd.GetDeclaredField(exts.AUTHOR_PARAM)
     if author_field:
         cmd_component.author = author_field.GetValue(iext_cmd)
 
     # grab help url from C# type
-    helpurl_field = iext_cmd.GetDeclaredField('__helpurl__')
+    helpurl_field = iext_cmd.GetDeclaredField(exts.COMMAND_HELP_URL)
     if helpurl_field:
         cmd_component.cmd_help_url = helpurl_field.GetValue(iext_cmd)
+
+    # grab min supported revit version from C# type
+    minrevit_field = iext_cmd.GetDeclaredField(exts.MIN_REVIT_VERSION_PARAM)
+    if minrevit_field:
+        cmd_component.min_revit_ver = minrevit_field.GetValue(iext_cmd)
+
+    # grab max supported revit version from C# type
+    maxrevit_field = iext_cmd.GetDeclaredField(exts.MAX_REVIT_VERSION_PARAM)
+    if maxrevit_field:
+        cmd_component.max_revit_ver = maxrevit_field.GetValue(iext_cmd)
+
+    # grab beta from C# type
+    isbeta_field = iext_cmd.GetDeclaredField(exts.BETA_SCRIPT_PARAM)
+    if isbeta_field:
+        cmd_component.beta_cmd = isbeta_field.GetValue(iext_cmd)
 
 
 def _get_csharp_cmd_asm(cmd_component):

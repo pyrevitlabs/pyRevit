@@ -155,6 +155,9 @@ def _produce_ui_smartbutton(ui_maker_params):
     smartbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not smartbutton.is_supported:
+        return None
+
     if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
@@ -251,6 +254,9 @@ def _produce_ui_linkbutton(ui_maker_params):
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not linkbutton.is_supported:
+        return None
+
     if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
@@ -294,6 +300,9 @@ def _produce_ui_pushbutton(ui_maker_params):
     parent = ui_maker_params.parent_cmp
     pushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
+
+    if not pushbutton.is_supported:
+        return None
 
     if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None

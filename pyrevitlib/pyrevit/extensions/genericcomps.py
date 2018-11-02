@@ -424,13 +424,6 @@ class GenericUICommand(GenericUIComponent):
         if self.beta_cmd:
             mlogger.debug('Command is in beta.')
 
-        try:
-            # check minimum requirements
-            self._check_dependencies()
-        except PyRevitException as dependency_err:
-            mlogger.debug(dependency_err)
-            raise dependency_err
-
     def _update_configurable_params(self, config_dict):
         for pname in self.configurable_params:
             pval = getattr(self, pname)
@@ -441,17 +434,19 @@ class GenericUICommand(GenericUIComponent):
                         pval = pval.replace(liquidtag, v)
                         setattr(self, pname, pval)
 
-    def _check_dependencies(self):
+    @property
+    def is_supported(self):
         if self.min_revit_ver:
             # If host is older than the minimum host version, raise exception
             if int(HOST_APP.version) < int(self.min_revit_ver):
-                raise PyRevitException('Script requires min host version: {}'
-                                       .format(self.min_revit_ver))
+                mlogger.debug('Requires min version: %s', self.min_revit_ver)
+                return False
         if self.max_revit_ver:
             # If host is newer than the max host version, raise exception
             if int(HOST_APP.version) > int(self.max_revit_ver):
-                raise PyRevitException('Script requires max host version: {}'
-                                       .format(self.max_revit_ver))
+                mlogger.debug('Requires max version: %s', self.max_revit_ver)
+                return False
+        return True        
 
     @property
     def configurable_params(self):
