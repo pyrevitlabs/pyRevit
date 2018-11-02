@@ -7,6 +7,10 @@ namespace HelloWorld
    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
    public class Test2 : IExternalCommand
    {
+      public const string __tooltip__ = "HelloWorld Testing tooltip";
+      public const string __author__ = "{{author}}";
+      public const string __helpurl__ = "{{docpath}}";
+
       public Autodesk.Revit.UI.Result Execute(ExternalCommandData revit,
          ref string message, ElementSet elements)
       {

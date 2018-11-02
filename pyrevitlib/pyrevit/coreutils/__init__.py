@@ -784,7 +784,7 @@ def create_type(modulebuilder,
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Ret)
-    type_builder.CreateType()
+    return type_builder.CreateType()
 
 
 def open_folder_in_explorer(folder_path):

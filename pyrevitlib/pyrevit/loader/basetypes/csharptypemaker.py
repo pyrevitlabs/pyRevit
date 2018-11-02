@@ -15,6 +15,23 @@ from pyrevit import UI
 mlogger = get_logger(__name__)
 
 
+def _update_pyrevit_fields(cmd_component, iext_cmd):
+    # grab tooltip from C# type
+    docstring_field = iext_cmd.GetDeclaredField('__tooltip__')
+    if docstring_field:
+        cmd_component.doc_string = docstring_field.GetValue(iext_cmd)
+
+    # grab author from C# type
+    author_field = iext_cmd.GetDeclaredField('__author__')
+    if author_field:
+        cmd_component.author = author_field.GetValue(iext_cmd)
+
+    # grab help url from C# type
+    helpurl_field = iext_cmd.GetDeclaredField('__helpurl__')
+    if helpurl_field:
+        cmd_component.cmd_help_url = helpurl_field.GetValue(iext_cmd)
+
+
 def _get_csharp_cmd_asm(cmd_component):
     """
 
@@ -78,6 +95,8 @@ def _make_csharp_types(module_builder, cmd_component):
                     iext_cmd,
                     cmd_component.unique_name,
                     create_ext_command_attrs())
+        
+        _update_pyrevit_fields(cmd_component, iext_cmd)
         cmd_component.class_name = cmd_component.unique_name
     else:
         raise PyRevitException('Can not find UI.IExternalCommand derivatives '
@@ -100,7 +119,10 @@ def create_csharp_types(extension, cmd_component, module_builder=None): #pylint:
     else:
         compiled_assm = _get_csharp_cmd_asm(cmd_component)
         iext_cmd, iext_cmd_avail = _verify_command_interfaces(compiled_assm)
+
         if iext_cmd:
+            _update_pyrevit_fields(cmd_component, iext_cmd)
             cmd_component.class_name = cmd_component.unique_name
+
         if iext_cmd_avail:
             cmd_component.avail_class_name = cmd_component.unique_avail_name

@@ -160,6 +160,10 @@ def _new_session():
             AssembledExtension(ext=ui_ext, assm=ext_asm_info)
         )
 
+    # configure extension components for metadata
+    for assm_ext in assembled_exts:
+        assm_ext.ext.configure()
+
     # run startup scripts for this ui extension, if any
     for assm_ext in assembled_exts:
         if assm_ext.ext.startup_script:
