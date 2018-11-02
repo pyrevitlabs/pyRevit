@@ -100,7 +100,9 @@ class CommitedSheet(object):
             if self.commit_history.commit_points:
                 pkg_cpoints = [x for x in self.commit_history.commit_points
                                if x.cptype == CommitPointTypes.Package]
-                self.commit(pkg_cpoints[-1], commit_type=CommitTypes.Created)
+                if pkg_cpoints:
+                    self.commit(pkg_cpoints[-1],
+                                commit_type=CommitTypes.Created)
 
     def update_commit_history(self):
         commit_cfg = pkgcfg.CommitConfigs()
