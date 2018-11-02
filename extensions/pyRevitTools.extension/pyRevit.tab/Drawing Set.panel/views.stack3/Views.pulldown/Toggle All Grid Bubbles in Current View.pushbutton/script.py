@@ -1,4 +1,4 @@
-"""Toggle all grid bubbles in the active view."""
+"""Toggle all/selected grid bubbles in the active view."""
 #pylint: disable=E0401
 from pyrevit import forms
 from pyrevit import revit, DB
