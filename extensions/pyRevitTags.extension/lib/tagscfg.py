@@ -13,6 +13,7 @@ TAG_PARAM_ID = 'doctag'
 TAGVIEW_PREFIX = 'TAG_VIEW'
 TAGS_MODIFS_COLOR_DEFAULT = '#909090'
 
+CACHE_TAG_PARAM = None
 
 mlogger = logger.get_logger(__name__)
 
@@ -20,10 +21,18 @@ mlogger = logger.get_logger(__name__)
 TagModifierDef = namedtuple('TagModifierDef', ['abbrev', 'name', 'color'])
 
 
-def get_tags_param():
+def _find_tags_param():
     for project_param in revit.query.get_project_parameters(doc=revit.doc):
         if TAG_PARAM_ID in project_param.name.lower():
             return project_param.name
+
+
+def get_tags_param():
+    global CACHE_TAG_PARAM
+    if not CACHE_TAG_PARAM:
+        CACHE_TAG_PARAM = _find_tags_param()
+
+    return CACHE_TAG_PARAM
 
 
 def get_modifier_defs():
@@ -34,6 +43,9 @@ def get_modifier_defs():
         TagModifierDef(abbrev='IFC',
                        name='Issue For Construction',
                        color='#c7254e'),
+        TagModifierDef(abbrev='IFR',
+                       name='Issue For Review',
+                       color='#a4cc00'),
         TagModifierDef(abbrev='ASBUILT',
                        name='As-Built Content',
                        color=TAGS_MODIFS_COLOR_DEFAULT),
@@ -47,9 +59,7 @@ def get_modifier_defs():
 
 
 def verify_tags_configs():
-    tags_param = get_tags_param()
-    if tags_param:
-        return True
-    else:
+    if not get_tags_param():
         mlogger.debug('Error verifying tags configuration.')
-    return False
+        return False
+    return True

@@ -359,10 +359,10 @@ def _get_tag_param(element):
 
 
 def _get_tag_paramid():
-    # get shared param id
-    param_id = revit.query.get_sharedparam_id(tagscfg.get_tags_param())
+    # get tags param id
+    param_id = revit.query.get_project_parameter_id(tagscfg.get_tags_param())
     if not param_id:
-        raise PyRevitException('Can not find tags shared param.')
+        raise PyRevitException('Can not find tags parameter.')
     return param_id
 
 
@@ -388,7 +388,7 @@ def get_last_metadata():
 def extract_tags(element):
     """Extarct tags from given element.
 
-    This method, reads the tag shared parameter value on this element and
+    This method, reads the tag project parameter value on this element and
     determines the tags applied to it.
 
     Args:
@@ -485,7 +485,7 @@ def get_available_tags(elements=None):
     global _METADATA_DICT
     target_elements = \
         elements \
-        or query.get_elements_by_shared_parameter(
+        or query.get_elements_by_param_value(
             param_name=tagscfg.get_tags_param(),
             param_value="",
             inverse=True,
@@ -717,7 +717,7 @@ def create_tag_filter(tags, name_format=None, exclude=False):
             sfilters.append(exst_filter)
             return sfilters
 
-    # get shared param id
+    # get tags param id
     param_id = _get_tag_paramid()
 
     # create filter rule
@@ -778,7 +778,7 @@ def create_modifier_filters(exclude=False):
         if filter_exists:
             continue
 
-        # get shared param id
+        # get tags param id
         param_id = _get_tag_paramid()
 
         # create filter rule

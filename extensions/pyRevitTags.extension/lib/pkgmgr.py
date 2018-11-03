@@ -164,7 +164,7 @@ def get_commit_points():
                        pkg_name=pkg_name)
                 )
 
-    last_docpkg_idx = 0
+    last_docpkg_idx = -1
     for idx, docpkg in enumerate(sorted(dockpkgs, key=lambda x: x.pkg_idx)):
         last_docpkg_idx = idx
         commit_points.append(

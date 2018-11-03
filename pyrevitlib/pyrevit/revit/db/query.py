@@ -122,8 +122,8 @@ def get_elements_by_parameter(param_name, param_value,
     return found_els
 
 
-def get_elements_by_shared_parameter(param_name, param_value,
-                                     inverse=False, doc=None):
+def get_elements_by_param_value(param_name, param_value,
+                                inverse=False, doc=None):
     doc = doc or HOST_APP.doc
     param_id = get_project_parameter_id(param_name)
     if param_id:
