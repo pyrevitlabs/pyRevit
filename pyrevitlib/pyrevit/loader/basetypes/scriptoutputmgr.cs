@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Forms;
 
 
 namespace PyRevitBaseClasses
@@ -75,7 +74,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public static List<Object> GetAllActiveOutputWindows(String outputWindowId = null)
+        public static List<Object> GetAllActiveOutputWindows(string outputWindowId = null)
         {
             if (outputWindowId != null)
             {

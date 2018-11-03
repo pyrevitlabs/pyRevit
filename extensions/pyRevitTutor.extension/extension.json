@@ -1,0 +1,14 @@
+{
+    "builtin": "True",
+    "default_enabled": "False",
+    "type": "extension",
+    "rocket_mode_compatible": "False",
+    "name": "pyRevitTutor",
+    "description": "Python for Revit Tutorials form pyRevit Youtube Channel",
+    "author": "Ehsan Iran-Nejad",
+    "author_profile": "https://keybase.io/ein",
+    "url": "https://github.com/eirannejad/pyRevit.git",
+    "website": "http://eirannejad.github.io/pyRevit/",
+    "image": "",
+    "dependencies": []
+}

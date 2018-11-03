@@ -1,0 +1,62 @@
+[core]
+enginename = 'pyRevitLoader.dll'
+
+[engines]
+
+[engines.IPY273]
+kernel = 'IronPython'
+version = 273
+path = 'bin\engines\273'
+compatproducts = ['dynamo']
+description = 'Provided for backward-compatibility with Dynamo BIM <= 2.0.1'
+
+[engines.IPY277]
+kernel = 'IronPython'
+version = 277
+path = 'bin\engines\277'
+compatproducts = []
+description = 'Compatible with RevitPythonShell'
+
+[engines.IPY278]
+kernel = 'IronPython'
+version = 278
+path = 'bin\engines\278'
+compatproducts = []
+description = 'Latest Stable IronPython Engine'
+
+[engines.IPY279]
+kernel = 'IronPython'
+version = 279
+path = 'bin\engines\279'
+compatproducts = []
+description = 'Latest Release Candidate (RC1)'
+
+[deployments]
+core = ['bin',
+        'pyrevitlib',
+        'site-packages',
+        'pyRevitfile']
+corex = ['bin',
+         'extensions/pyRevitCore.extension',
+         'pyrevitlib',
+         'site-packages',
+         'pyRevitfile']
+base = ['bin',
+        'extensions/pyRevitCore.extension',
+        'extensions/pyRevitTags.extension',
+        'extensions/pyRevitTools.extension',
+        'pyrevitlib',
+        'site-packages',
+        'pyRevitfile']
+basepublic = ['bin',
+              'extensions/pyRevitCore.extension',
+              'extensions/pyRevitTags.extension',
+              'extensions/pyRevitTools.extension',
+              'extensions/pyRevitTutor.extension',
+              'pyrevitlib', 'site-packages',
+              'pyRevitfile']
+basex = ['bin',
+         'extensions',
+         'pyrevitlib',
+         'site-packages',
+         'pyRevitfile']

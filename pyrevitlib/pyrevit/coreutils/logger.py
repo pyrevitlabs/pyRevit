@@ -2,12 +2,12 @@ import sys
 import os.path
 import logging
 
-from pyrevit import PYREVIT_ADDON_NAME, EXEC_PARAMS
+#pylint: disable=W0703,C0302,C0103
+from pyrevit import EXEC_PARAMS
 from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import prepare_html_str
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils.emoji import emojize
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
@@ -70,7 +70,7 @@ class LoggerWrapper(logging.Logger):
         self._filelogstate = False
         self._curlevel = DEFAULT_LOGGING_LEVEL
 
-    def _log(self, level, msg, args, exc_info=None, extra=None):
+    def _log(self, level, msg, args, exc_info=None, extra=None): #pylint: disable=W0221
         self._has_errors = (self._has_errors or level >= logging.ERROR)
 
         # any report other than logging.INFO level,
@@ -82,9 +82,6 @@ class LoggerWrapper(logging.Logger):
         # get rid of unicode characters
         msg_str = msg_str.encode('ascii', 'ignore')
         msg_str = msg_str.replace(os.path.sep, '/')
-        msg_str = emojize(msg_str)
-        if level == logging.INFO:
-            msg_str = prepare_html_str(msg_str)
 
         logging.Logger._log(self, level, msg_str, args,
                             exc_info=exc_info, extra=extra)
@@ -93,17 +90,19 @@ class LoggerWrapper(logging.Logger):
         for hdlr in self.handlers:
             # stream-handler only records based on current level
             if isinstance(hdlr, logging.StreamHandler) \
-                and record.levelno >= self._curlevel:
-                    hdlr.handle(record)
+                    and record.levelno >= self._curlevel:
+                hdlr.handle(record)
             # file-handler must record everything
             elif isinstance(hdlr, logging.FileHandler) \
-                and self._filelogstate:
-                    hdlr.handle(record)
+                    and self._filelogstate:
+                hdlr.handle(record)
 
     def isEnabledFor(self, level):
         # update current logging level and file logging state
-        self._filelogstate = envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
-        self._curlevel = envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+        self._filelogstate = \
+            envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
+        self._curlevel = \
+            envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
         # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
@@ -116,6 +115,17 @@ class LoggerWrapper(logging.Logger):
         # outputs the record based on the current logging level
         if self._filelogstate:
             return level >= logging.DEBUG
+
+        return level >= self._curlevel
+
+    def is_enabled_for(self, level):
+        self._curlevel = \
+            envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+
+        # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
+        # user Ctrl-clicks on the button at script runtime.
+        if EXEC_PARAMS.forced_debug_mode:
+            self._curlevel = logging.DEBUG
 
         return level >= self._curlevel
 
@@ -164,20 +174,20 @@ file_hndlr.setFormatter(file_formatter)
 
 
 def get_stdout_hndlr():
-    global stdout_hndlr
+    global stdout_hndlr     #pylint: disable=W0603
 
     return stdout_hndlr
 
 
 def get_file_hndlr():
-    global file_hndlr
+    global file_hndlr       #pylint: disable=W0603
 
     if EXEC_PARAMS.command_mode:
         cmd_file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH,
                                              mode='a', delay=True)
         logformat = LOG_REC_FORMAT_FILE_C.format(EXEC_PARAMS.command_name)
-        file_formatter = logging.Formatter(logformat)
-        cmd_file_hndlr.setFormatter(file_formatter)
+        formatter = logging.Formatter(logformat)
+        cmd_file_hndlr.setFormatter(formatter)
         return cmd_file_hndlr
     else:
         return file_hndlr

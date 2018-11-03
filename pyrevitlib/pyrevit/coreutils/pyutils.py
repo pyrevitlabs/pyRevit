@@ -1,6 +1,76 @@
-"""Helper functions for python."""
+"""Helper functions for python.
 
+Example:
+    >>> from pyrevit.coreutils import pyutils
+    >>> pyutils.safe_cast('string', int, 0)
+"""
+#pylint: disable=C0103
 import re
+from collections import OrderedDict, Callable   #pylint: disable=E0611
+
+
+class DefaultOrderedDict(OrderedDict):
+    """Ordered dictionary with default type.
+
+    This is similar to defaultdict and maintains the order of items added
+    to it so in that regards it functions similar to OrderedDict.
+
+    Example:
+        >>> from pyrevit.coreutils import pyutils
+        >>> od = pyutils.DefaultOrderedDict(list)
+        >>> od['A'] = [1, 2, 3]
+        >>> od['B'] = [4, 5, 6]
+        >>> od['C'].extend([7, 8, 9])
+        >>> for k, v in od.items():
+        ...     print(k, v)
+        ('A', [1, 2, 3])
+        ('B', [4, 5, 6])
+        ('C', [7, 8, 9])
+    """
+
+    # Source: http://stackoverflow.com/a/6190500/562769
+    def __init__(self, default_factory=None, *a, **kw): #pylint: disable=W1113
+
+        if (default_factory is not None \
+                and not isinstance(default_factory, Callable)):
+            raise TypeError('first argument must be callable')
+        OrderedDict.__init__(self, *a, **kw)
+        self.default_factory = default_factory
+
+    def __getitem__(self, key):
+        try:
+            return OrderedDict.__getitem__(self, key)
+        except KeyError:
+            return self.__missing__(key)
+
+    def __missing__(self, key):
+        if self.default_factory is None:
+            raise KeyError(key)
+        self[key] = value = self.default_factory()
+        return value
+
+    def __reduce__(self):
+        if self.default_factory is None:
+            args = tuple()
+        else:
+            args = self.default_factory,
+        return type(self), args, None, None, self.items()
+
+    def copy(self):
+        """Copy the dictionary."""
+        return self.__copy__()
+
+    def __copy__(self):
+        return type(self)(self.default_factory, self)
+
+    def __deepcopy__(self, memo):
+        import copy
+        return type(self)(self.default_factory,
+                          copy.deepcopy(self.items()))
+
+    def __repr__(self, _repr_running=None):
+        return 'OrderedDefaultDict(%s, %s)' % (self.default_factory,
+                                               OrderedDict.__repr__(self))
 
 
 def pairwise(iterable, step=2):
@@ -22,7 +92,7 @@ def pairwise(iterable, step=2):
         [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
     """
     if step == 1:
-        from itertools import tee, izip
+        from itertools import tee, izip    #pylint: disable=E0611
         a, b = tee(iterable)
         next(b, None)
         return izip(a, b)
@@ -65,4 +135,19 @@ def isnumber(token):
         >>> isnumber('12.3')
         True
     """
-    return re.match("^[0-9.]+?$", token) is not None
+    if token:
+        return re.match("^[0-9.]+?$", token) is not None
+    else:
+        return False
+
+
+def compare_lists(x, y):
+    """Compare two lists.
+
+    See: https://stackoverflow.com/a/10872313/2350244
+
+    Args:
+        x (list): first list
+        y (list): second list
+    """
+    return len(frozenset(x).difference(y)) == 0

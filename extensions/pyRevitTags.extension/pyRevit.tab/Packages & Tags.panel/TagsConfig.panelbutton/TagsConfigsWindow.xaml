@@ -1,0 +1,15 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        Width="600" Height="400"
+        ResizeMode="NoResize"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center"
+        Title="Packages &amp; Tags Configuration">
+    <StackPanel Margin="10">
+        <GroupBox Header="Custom Tag Modifiers" Height="150" Padding="10">
+            <TextBlock Text="Work in progess..." />
+        </GroupBox>
+    </StackPanel>
+</Window>

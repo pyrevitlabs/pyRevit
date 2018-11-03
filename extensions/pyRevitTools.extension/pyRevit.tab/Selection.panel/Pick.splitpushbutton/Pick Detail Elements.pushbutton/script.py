@@ -10,7 +10,10 @@ selection = revit.get_selection()
 class MassSelectionFilter(UI.Selection.ISelectionFilter):
     # standard API override function
     def AllowElement(self, element):
+        # only allow view-specific (detail) elements
         if element.ViewSpecific:
+            # but if it is part of a group, don't select them,
+            # unless it is a nested group object
             if not isinstance(element, DB.Group) \
                     and element.GroupId != element.GroupId.InvalidElementId:
                 return False

@@ -1,4 +1,3 @@
-# pylama:skip=1
 # initializtion templates ------------------------------------------------------
 # timestamp format: 27-Oct-2016 19:33:31.459
 INIT = """' revit_journal_maker generated journal

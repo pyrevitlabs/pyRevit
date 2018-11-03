@@ -23,12 +23,12 @@ def reload_links(linktype=DB.ExternalFileReferenceType.RevitLink):
             refcount = len(extrefs)
             if refcount > 1:
                 selected_extrefs = \
-                    forms.SelectFromCheckBoxes.show(
+                    forms.SelectFromList.show(
                         extrefs,
                         title='Select Links to Reload',
                         width=500,
                         button_name='Reload',
-                        checked_only=True
+                        multiselect=True
                         )
                 if not selected_extrefs:
                     script.exit()

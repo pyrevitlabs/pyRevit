@@ -4,9 +4,10 @@ from pyrevit.framework import List
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit import script
+from Autodesk.Revit.DB import Element as DBElement
 
 
-__helpurl__ = 'https://www.youtube.com/watch?v=9Q-J6mWBYJI&t=17s'
+__helpurl__ = '{{docpath}}9Q-J6mWBYJI&t=17s'
 __doc__ = 'Copies selected or current sheet(s) to other ' \
           'projects currently open in Revit. Make sure the destination ' \
           'documents have at least one Legend view (Revit API does not ' \
@@ -20,13 +21,10 @@ output = script.get_output()
 selection = revit.get_selection()
 
 
-class Option:
+class Option(forms.TemplateListItem):
     def __init__(self, op_name, default_state=False):
+        super(Option, self).__init__(op_name)
         self.state = default_state
-        self.name = op_name
-
-    def __nonzero__(self):
-        return self.state
 
 
 class OptionSet:
@@ -53,10 +51,12 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
 def get_user_options():
     op_set = OptionSet()
     return_options = \
-        forms.SelectFromCheckBoxes.show(
+        forms.SelectFromList.show(
             [getattr(op_set, x) for x in dir(op_set) if x.startswith('op_')],
             title='Select Copy Options',
-            button_name='Copy Now')
+            button_name='Copy Now',
+            multiselect=True
+            )
 
     if not return_options:
         sys.exit(0)
@@ -66,7 +66,8 @@ def get_user_options():
 
 def get_dest_docs():
     # find open documents other than the active doc
-    selected_dest_docs = forms.select_dest_docs()
+    selected_dest_docs = \
+        forms.select_open_docs(title='Select Destination Documents')
     if not selected_dest_docs:
         sys.exit(0)
     else:
@@ -125,7 +126,7 @@ def get_view_contents(dest_doc, source_view):
                 and not OPTION_SET.op_copy_schedules:
             continue
         elif isinstance(element, DB.Viewport) \
-                or 'extentelem' in str(element.Name).lower():
+                or 'ExtentElem' in revit.ElementWrapper(element).name:
             continue
         elif isinstance(element, DB.Element) \
                 and element.Category \
@@ -189,7 +190,9 @@ def copy_view_contents(activedoc, source_view, dest_doc, dest_view,
     cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
 
     if elements_ids:
-        with revit.Transaction('Copy View Contents', doc=dest_doc):
+        with revit.Transaction('Copy View Contents',
+                               doc=dest_doc,
+                               swallow_errors=True):
             DB.ElementTransformUtils.CopyElements(
                 source_view,
                 List[DB.ElementId](elements_ids),
@@ -274,6 +277,44 @@ def copy_view(activedoc, source_view, dest_doc):
     return new_view
 
 
+def copy_viewport_types(activedoc, vport_type, vport_typename,
+                        dest_doc, newvport):
+    dest_vport_typenames = [DBElement.Name.GetValue(dest_doc.GetElement(x))
+                            for x in newvport.GetValidTypes()]
+
+    cp_options = DB.CopyPasteOptions()
+    cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+
+    if vport_typename not in dest_vport_typenames:
+        with revit.Transaction('Copy Viewport Types',
+                               doc=dest_doc,
+                               swallow_errors=True):
+            DB.ElementTransformUtils.CopyElements(
+                activedoc,
+                List[DB.ElementId]([vport_type.Id]),
+                dest_doc,
+                None,
+                cp_options,
+                )
+
+
+def apply_viewport_type(activedoc, vport_id, dest_doc, newvport_id):
+    with revit.Transaction('Apply Viewport Type', doc=dest_doc):
+        vport = activedoc.GetElement(vport_id)
+        vport_type = activedoc.GetElement(vport.GetTypeId())
+        vport_typename = DBElement.Name.GetValue(vport_type)
+
+        newvport = dest_doc.GetElement(newvport_id)
+
+        copy_viewport_types(activedoc, vport_type, vport_typename,
+                            dest_doc, newvport)
+
+        for vtype_id in newvport.GetValidTypes():
+            vtype = dest_doc.GetElement(vtype_id)
+            if DBElement.Name.GetValue(vtype) == vport_typename:
+                newvport.ChangeTypeId(vtype_id)
+
+
 def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
     existing_views = [dest_doc.GetElement(x).ViewId
                       for x in dest_sheet.GetAllViewports()]
@@ -289,10 +330,13 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
             if new_view.Id not in existing_views:
                 print('\t\t\tPlacing copied view on sheet.')
                 with revit.Transaction('Place View on Sheet', doc=dest_doc):
-                    DB.Viewport.Create(dest_doc,
-                                       dest_sheet.Id,
-                                       new_view.Id,
-                                       vport.GetBoxCenter())
+                    nvport = DB.Viewport.Create(dest_doc,
+                                                dest_sheet.Id,
+                                                new_view.Id,
+                                                vport.GetBoxCenter())
+                if nvport:
+                    apply_viewport_type(activedoc, vport_id,
+                                        dest_doc, nvport.Id)
             else:
                 print('\t\t\tView already exists on the sheet.')
 

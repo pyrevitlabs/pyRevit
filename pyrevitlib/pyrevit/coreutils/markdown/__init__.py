@@ -40,7 +40,7 @@ import sys
 import warnings
 
 from . import util
-from .__version__ import version, version_info  # noqa
+from .__version__ import version, version_info
 from .blockprocessors import build_block_parser
 from .extensions import Extension
 from .inlinepatterns import build_inlinepatterns

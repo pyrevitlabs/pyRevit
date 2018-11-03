@@ -1,9 +1,11 @@
-import os
+"""Base classes for pyRevit extension components."""
 import os.path as op
+import json
+import codecs
 
 from pyrevit import PyRevitException
 from pyrevit.compat import safe_strtype
-from pyrevit.coreutils import ScriptFileParser, calculate_dir_hash, get_str_hash
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
 from pyrevit.extensions.genericcomps import GenericComponent
@@ -11,7 +13,9 @@ from pyrevit.extensions.genericcomps import GenericUIContainer
 from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit.versionmgr import get_pyrevit_version
 
-logger = get_logger(__name__)
+
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 # Derived classes here correspond to similar elements in Revit ui.
@@ -35,7 +39,8 @@ class LinkButton(GenericUICommand):
         self.assembly = self.command_class = None
         try:
             # reading script file content to extract parameters
-            script_content = ScriptFileParser(self.get_full_script_address())
+            script_content = \
+                coreutils.ScriptFileParser(self.get_full_script_address())
 
             self.assembly = script_content.extract_param(
                 exts.LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
@@ -45,10 +50,10 @@ class LinkButton(GenericUICommand):
                     exts.LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
 
         except PyRevitException as err:
-            logger.error(err)
+            mlogger.error(err)
 
-        logger.debug('Link button assembly.class: {}.{}'
-                     .format(self.assembly, self.command_class))
+        mlogger.debug('Link button assembly.class: %s.%s',
+                      self.assembly, self.command_class)
 
 
 class PushButton(GenericUICommand):
@@ -66,11 +71,11 @@ class ToggleButton(GenericUICommand):
         GenericUICommand.__init__(self)
         self.icon_on_file = self.icon_off_file = None
         if self.name:
-            logger.deprecate('{} | Toggle bundle is deprecated and will be '
-                             'removed soon. Please use SmartButton bundle, '
-                             'or any other bundle and use script.toggle_icon '
-                             'method to toggle the tool icon.'
-                             .format(self.name))
+            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
+                              'removed soon. Please use SmartButton bundle, '
+                              'or any other bundle and use script.toggle_icon '
+                              'method to toggle the tool icon.'
+                              .format(self.name))
 
     def __init_from_dir__(self, cmd_dir):
         GenericUICommand.__init_from_dir__(self, cmd_dir)
@@ -84,11 +89,11 @@ class ToggleButton(GenericUICommand):
             full_file_path if op.exists(full_file_path) else None
 
         if self.name:
-            logger.deprecate('{} | Toggle bundle is deprecated and will be '
-                             'removed soon. Please use SmartButton bundle, '
-                             'or any other bundle and use script.toggle_icon '
-                             'method to toggle the tool icon.'
-                             .format(self.name))
+            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
+                              'removed soon. Please use SmartButton bundle, '
+                              'or any other bundle and use script.toggle_icon '
+                              'method to toggle the tool icon.'
+                              .format(self.name))
 
 
 class SmartButton(GenericUICommand):
@@ -196,7 +201,7 @@ class Extension(GenericUIContainer):
         self.version = None
         self.pyrvt_version = self.dir_hash_value = None
 
-    def __init_from_dir__(self, package_dir):
+    def __init_from_dir__(self, package_dir):   #pylint: disable=W0221
         GenericUIContainer.__init_from_dir__(self, package_dir)
         self.pyrvt_version = get_pyrevit_version().get_formatted()
 
@@ -214,7 +219,7 @@ class Extension(GenericUIContainer):
 
     @property
     def ext_hash_value(self):
-        return get_str_hash(safe_strtype(self.get_cache_data()))
+        return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
 
     # def _write_dir_hash(self, hash_value):
     #     if os.access(self.hash_cache, os.W_OK):
@@ -257,18 +262,35 @@ class Extension(GenericUIContainer):
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
-        return calculate_dir_hash(self.directory, pat, patfile)
+        return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
     def get_all_commands(self):
         return self.get_components_of_type(GenericUICommand)
 
+    def get_manifest_file(self):
+        return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
+
+    def get_manifest(self):
+        manifest_file = self.get_manifest_file()
+        if manifest_file:
+            with codecs.open(manifest_file, 'r', 'utf-8') as mfile:
+                try:
+                    manifest_cfg = json.load(mfile)
+                    return manifest_cfg
+                except Exception as manfload_err:
+                    print('Can not parse ext manifest file: {} '
+                          '| {}'.format(manifest_file, manfload_err))
+                    return
+
+    def configure(self):
+        cfg_dict = self.get_manifest()
+        if cfg_dict:
+            for cmd in self.get_all_commands():
+                cmd.configure(cfg_dict)
+
     @property
     def startup_script(self):
-        for ext_file in os.listdir(self.directory):
-            if ext_file.endswith('startup.py'):
-                return op.join(self.directory, ext_file)
-
-        return None
+        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
 
 
 # library extension class

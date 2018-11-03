@@ -1,0 +1,18 @@
+{
+    "builtin": "True",
+    "default_enabled": "False",
+    "type": "extension",
+    "rocket_mode_compatible": "True",
+    "name": "pyRevitDevTools",
+    "description": "Development Tools for pyRevit",
+    "author": "Ehsan Iran-Nejad",
+    "author_profile": "https://keybase.io/ein",
+    "url": "https://github.com/eirannejad/pyRevit.git",
+    "website": "http://eirannejad.github.io/pyRevit/",
+    "image": "",
+    "templates": {
+        "author": "Ehsan Iran-Nejad",
+        "docpath": "https://www.youtube.com/watch?v="
+    },
+    "dependencies": []
+}

@@ -6,7 +6,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__helpurl__ = "https://www.youtube.com/watch?v=SJzs9ZxqRYc"
+__helpurl__ = "{{docpath}}SJzs9ZxqRYc"
 
 __doc__ = 'Enter sheet names and numbers in the text box and '\
           'this tool will create all at once.'
@@ -46,24 +46,9 @@ class BatchSheetMakerWindow(forms.WPFWindow):
         return True
 
     def _ask_for_titleblock(self):
-        no_tb_option = 'No Title Block'
-        titleblocks = DB.FilteredElementCollector(revit.doc)\
-                        .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
-                        .WhereElementIsElementType()\
-                        .ToElements()
-
-        tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                       revit.ElementWrapper(tb).name): tb
-                       for tb in titleblocks}
-        options = [no_tb_option]
-        options.extend(tblock_dict.keys())
-        selected_titleblocks = forms.SelectFromList.show(options,
-                                                         multiselect=False)
-        if selected_titleblocks:
-            if no_tb_option not in selected_titleblocks:
-                self._titleblock_id = tblock_dict[selected_titleblocks[0]].Id
-            else:
-                self._titleblock_id = DB.ElementId.InvalidElementId
+        tblock = forms.select_titleblocks(doc=revit.doc)
+        if tblock is not None:
+            self._titleblock_id = tblock
             return True
 
         return False

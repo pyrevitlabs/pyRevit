@@ -1,12 +1,13 @@
+"""Base module to handle extension ASCII caching."""
 import json
 
 from pyrevit import PyRevitException
-import pyrevit.coreutils.appdata as appdata
+from pyrevit.coreutils import appdata
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
 
-
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 EXT_HASH_VALUE_KEY = 'dir_hash_value'
@@ -30,16 +31,16 @@ def _make_cache_from_cmp(obj):
 
 
 def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
-    logger.debug('Processing cache for: {}'.format(parent_cmp))
+    mlogger.debug('Processing cache for: %s', parent_cmp)
     # get allowed classes under this component
     allowed_sub_cmps = get_all_subclasses(parent_cmp.allowed_sub_cmps)
-    logger.debug('Allowed sub components are: {}'.format(allowed_sub_cmps))
+    mlogger.debug('Allowed sub components are: %s', allowed_sub_cmps)
     # iterate through list of cached sub components
     for cached_cmp in cached_sub_cmps:  # type: dict
         for sub_class in allowed_sub_cmps:
             if sub_class.type_id == cached_cmp[TYPE_ID_KEY]:
-                logger.debug('Creating sub component from cache: {}, {}'
-                             .format(cached_cmp[NAME_KEY], sub_class))
+                mlogger.debug('Creating sub component from cache: %s, %s',
+                              cached_cmp[NAME_KEY], sub_class)
 
                 # cached_cmp might contain SUB_CMP_KEY. This needs to be
                 # removed since this function will make all the children
@@ -64,9 +65,9 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
 
 def _read_cache_for(cached_ext):
     try:
-        logger.debug('Reading cache for: {}'.format(cached_ext))
+        mlogger.debug('Reading cache for: %s', cached_ext)
         cache_file = _get_cache_file(cached_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        mlogger.debug('Cache file is: %s', cache_file)
         with open(_get_cache_file(cached_ext), 'r') as cache_file:
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
@@ -77,9 +78,9 @@ def _read_cache_for(cached_ext):
 
 def _write_cache_for(parsed_ext):
     try:
-        logger.debug('Writing cache for: {}'.format(parsed_ext))
+        mlogger.debug('Writing cache for: %s', parsed_ext)
         cache_file = _get_cache_file(parsed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        mlogger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'w') as cache_file:
             cache_file.write(_make_cache_from_cmp(parsed_ext))
     except Exception as err:
@@ -88,22 +89,22 @@ def _write_cache_for(parsed_ext):
 
 
 def update_cache(parsed_ext):
-    logger.debug('Updating cache for tab: {} ...'.format(parsed_ext.name))
+    mlogger.debug('Updating cache for tab: %s ...', parsed_ext.name)
     _write_cache_for(parsed_ext)
-    logger.debug('Cache updated for tab: {}'.format(parsed_ext.name))
+    mlogger.debug('Cache updated for tab: %s', parsed_ext.name)
 
 
 def get_cached_extension(installed_ext):
     cached_ext_dict = _read_cache_for(installed_ext)
     try:
-        logger.debug('Constructing components from cache for: {}'
-                     .format(installed_ext))
+        mlogger.debug('Constructing components from cache for: %s',
+                      installed_ext)
         # get cached sub component dictionary and call recursive maker function
         _make_sub_cmp_from_cache(installed_ext,
                                  cached_ext_dict.pop(SUB_CMP_KEY))
-        logger.debug('Load successful...')
+        mlogger.debug('Load successful...')
     except Exception as err:
-        logger.debug('Error reading cache...')
+        mlogger.debug('Error reading cache...')
         raise PyRevitException(err)
 
     return installed_ext
@@ -112,17 +113,17 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext_dict = _read_cache_for(extension)  # type: dict
-        logger.debug('Extension cache directory is: {} for: {}'
-                     .format(extension.directory, extension))
+        mlogger.debug('Extension cache directory is: %s for: %s',
+                      extension.directory, extension)
         cache_dir_valid = cached_ext_dict[EXT_DIR_KEY] == extension.directory
 
-        logger.debug('Extension cache version is: {} for: {}'
-                     .format(extension.pyrvt_version, extension))
+        mlogger.debug('Extension cache version is: %s for: %s',
+                      extension.pyrvt_version, extension)
         cache_version_valid = \
             cached_ext_dict[EXT_HASH_VERSION_KEY] == extension.pyrvt_version
 
-        logger.debug('Extension hash value is: {} for: {}'
-                     .format(extension.dir_hash_value, extension))
+        mlogger.debug('Extension hash value is: %s for:%s',
+                      extension.dir_hash_value, extension)
         cache_hash_valid = \
             cached_ext_dict[EXT_HASH_VALUE_KEY] == extension.dir_hash_value
 
@@ -133,9 +134,9 @@ def is_cache_valid(extension):
         return cache_valid
 
     except PyRevitException as err:
-        logger.debug(err)
+        mlogger.debug(err)
         return False
 
     except Exception as err:
-        logger.debug('Error determining cache validity: {} | {}'
-                     .format(extension, err))
+        mlogger.debug('Error determining cache validity: %s | %s',
+                      extension, err)

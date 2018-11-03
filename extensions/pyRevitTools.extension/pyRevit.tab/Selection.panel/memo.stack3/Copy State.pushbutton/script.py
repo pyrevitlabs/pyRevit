@@ -13,8 +13,8 @@ __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
           ' Zoom state. Run it how see how it works.'
 
-__author__ = 'Gui Talarico | github.com/gtalarico\n'\
-             'Ehsan Iran-Nejad | eirannejad@gmail.com'
+__author__ = 'Gui Talarico\n'\
+             'Ehsan Iran-Nejad'
 
 
 class Point:
@@ -61,13 +61,17 @@ class TransformationMatrix:
         self.destmax = None
 
 
-def make_picklable_list(revit_curve_list):
-    lines = []
-    for rvt_line in revit_curve_list:
-        p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
-        p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
-        lines.append((p1, p2))
-    return lines
+def make_picklable_list(curve_loops):
+    all_cloops = []
+    for curve_loop in curve_loops:
+        cloop_lines = []
+        for rvt_line in curve_loop:
+            p1 = (rvt_line.GetEndPoint(0).X, rvt_line.GetEndPoint(0).Y)
+            p2 = (rvt_line.GetEndPoint(1).X, rvt_line.GetEndPoint(1).Y)
+            cloop_lines.append((p1, p2))
+        
+        all_cloops.append(cloop_lines)
+    return all_cloops
 
 
 selected_option = \
@@ -330,15 +334,18 @@ elif selected_option == 'Crop Region':
     av = revit.activeview
     crsm = av.GetCropRegionShapeManager()
 
-    if crsm.Valid:
+    crsm_valid = False
+    if HOST_APP.is_newer_than(2015):
+        crsm_valid = crsm.CanHaveShape
+    else:
+        crsm_valid = crsm.Valid
+
+    if crsm_valid:
         with open(datafile, 'w') as f:
             if HOST_APP.is_newer_than(2015):
-                clooplist = crsm.GetCropShape()
-                if clooplist:
-                    curvedata = clooplist[0]
-                else:
-                    script.exit()
+                curve_loops = list(crsm.GetCropShape())
             else:
-                curvedata = crsm.GetCropRegionShape()
-
-            pickle.dump(make_picklable_list(curvedata), f)
+                curve_loops = [crsm.GetCropRegionShape()]
+            
+            if curve_loops:
+                pickle.dump(make_picklable_list(curve_loops), f)

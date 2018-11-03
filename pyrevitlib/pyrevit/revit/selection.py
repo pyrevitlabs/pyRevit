@@ -2,6 +2,8 @@ from pyrevit import HOST_APP
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
 
+from pyrevit.revit import ensure
+
 
 __all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
            'pick_linked', 'pick_elements', 'pick_elementpoints', 'pick_edges',
@@ -9,16 +11,20 @@ __all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
            'get_selection_category_set', 'get_selection')
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
-class CurrentElementSelection:
-    def __init__(self):
-        if HOST_APP.uidoc:
-            self._refs = \
-                [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
+class ElementSelection:
+    def __init__(self, element_list=None):
+        if element_list is None:
+            if HOST_APP.uidoc:
+                self._refs = \
+                    [x for x in HOST_APP.uidoc.Selection.GetElementIds()]
+            else:
+                self._refs = []
         else:
-            self._refs = []
+            self._refs = ElementSelection.get_element_ids(element_list)
 
     def __len__(self):
         return len(self._refs)
@@ -27,8 +33,8 @@ class CurrentElementSelection:
         for elref in self._refs:
             yield HOST_APP.doc.GetElement(elref)
 
-    def __getitem__(self, key):
-        return self.elements[key]
+    def __getitem__(self, index):
+        return self.elements[index]
 
     def __contains__(self, item):
         if isinstance(item, DB.Element):
@@ -39,22 +45,9 @@ class CurrentElementSelection:
             elref = DB.ElementId.InvalidElementId
         return elref in self._refs
 
-    @staticmethod
-    def _get_element_ids(mixed_list):
-        element_id_list = []
-
-        if not isinstance(mixed_list, list):
-            mixed_list = [mixed_list]
-
-        for item in mixed_list:
-            if isinstance(item, DB.ElementId):
-                element_id_list.append(item)
-            elif isinstance(item, DB.Element):
-                element_id_list.append(item.Id)
-            elif type(item) == int:
-                element_id_list.append(DB.ElementId(item))
-
-        return element_id_list
+    @classmethod
+    def get_element_ids(cls, mixed_list):
+        return ensure.ensure_element_ids(mixed_list)
 
     @property
     def is_empty(self):
@@ -79,28 +72,43 @@ class CurrentElementSelection:
             return HOST_APP.doc.GetElement(self._refs[-1])
 
     def set_to(self, element_list):
-        self._refs = self._get_element_ids(element_list)
+        self._refs = ElementSelection.get_element_ids(element_list)
         HOST_APP.uidoc.Selection.SetElementIds(
             framework.List[DB.ElementId](self._refs)
             )
         HOST_APP.uidoc.RefreshActiveView()
 
     def append(self, element_list):
-        self._refs.extend(self._get_element_ids(element_list))
+        self._refs.extend(ElementSelection.get_element_ids(element_list))
         self.set_to(self._refs)
+
+    def include(self, element_type):
+        refs = [x for x in self._refs
+                if isinstance(HOST_APP.doc.GetElement(x),
+                              element_type)]
+        return ElementSelection(refs)
+
+    def exclude(self, element_type):
+        refs = [x for x in self._refs
+                if not isinstance(HOST_APP.doc.GetElement(x),
+                                  element_type)]
+        return ElementSelection(refs)
+
+    def no_views(self):
+        return self.exclude(DB.View)
+
+    def only_views(self):
+        return self.include(DB.View)
 
 
 def _pick_obj(obj_type, pick_message, multiple=False, world=False):
     refs = []
 
     try:
-        logger.debug('Picking elements: '
-                     '{} pick_message: '
-                     '{} multiple: '
-                     '{} world: '
-                     '{}'.format(obj_type,
-                                 pick_message,
-                                 multiple, world))
+        mlogger.debug('Picking elements: %s '
+                      'pick_message: %s '
+                      'multiple: %s '
+                      'world: %s', obj_type, pick_message, multiple, world)
         if multiple:
             refs = list(
                 HOST_APP.uidoc.Selection.PickObjects(obj_type, pick_message)
@@ -112,10 +120,10 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
                 )
 
         if not refs:
-            logger.debug('Nothing picked by user...Returning None')
+            mlogger.debug('Nothing picked by user...Returning None')
             return None
 
-        logger.debug('Picked elements are: {}'.format(refs))
+        mlogger.debug('Picked elements are: %s', refs)
 
         if obj_type == UI.Selection.ObjectType.Element:
             return_values = \
@@ -129,18 +137,18 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
         else:
             return_values = \
                 [HOST_APP.doc.GetElement(ref)
-                    .GetGeometryObjectFromReference(ref)
+                 .GetGeometryObjectFromReference(ref)
                  for ref in refs]
 
-        logger.debug('Processed return elements are: {}'.format(return_values))
+        mlogger.debug('Processed return elements are: %s', return_values)
 
         if len(return_values) > 1 or multiple:
             return return_values
         elif len(return_values) == 1:
             return return_values[0]
         else:
-            logger.error('Error processing picked elements. '
-                         'return_values should be a list.')
+            mlogger.error('Error processing picked elements. '
+                          'return_values should be a list.')
     except Exception:
         return None
 
@@ -205,7 +213,7 @@ def pick_point(pick_message=''):
     try:
         return HOST_APP.uidoc.Selection.PickPoint(pick_message)
     except Exception:
-            return None
+        return None
 
 
 def pick_rectangle(pick_message='', pick_filter=None):
@@ -217,7 +225,7 @@ def pick_rectangle(pick_message='', pick_filter=None):
 
 
 def get_selection_category_set():
-    selection = CurrentElementSelection()
+    selection = ElementSelection()
     cset = DB.CategorySet()
     for element in selection:
         cset.Insert(element.Category)
@@ -225,4 +233,4 @@ def get_selection_category_set():
 
 
 def get_selection():
-    return CurrentElementSelection()
+    return ElementSelection()

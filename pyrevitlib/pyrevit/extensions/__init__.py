@@ -1,22 +1,22 @@
+"""Base module for handling extensions parsing."""
+from pyrevit import HOST_APP
+
 # Extension types
 # ------------------------------------------------------------------------------
 LIB_EXTENSION_POSTFIX = '.lib'
 UI_EXTENSION_POSTFIX = '.extension'
 
 
-# noinspection PyClassHasNoInit
 class UIExtensionType:
     ID = 'extension'
     POSTFIX = '.extension'
 
 
-# noinspection PyClassHasNoInit
 class LIBExtensionType:
     ID = 'lib'
     POSTFIX = '.lib'
 
 
-# noinspection PyClassHasNoInit
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
@@ -24,6 +24,21 @@ class ExtensionTypes:
 
 # UI_EXTENSION_POSTFIX components
 # ------------------------------------------------------------------------------
+PYTHON_SCRIPT_FILE_FORMAT = '.py'
+CSHARP_SCRIPT_FILE_FORMAT = '.cs'
+VB_SCRIPT_FILE_FORMAT = '.vb'
+RUBY_SCRIPT_FILE_FORMAT = '.rb'
+DYNAMO_SCRIPT_FILE_FORMAT = '.dyn'
+YAML_FILE_FORMAT = '.yaml'
+JSON_FILE_FORMAT = '.json'
+
+EXT_MANIFEST_NAME = 'extension'
+EXT_MANIFEST_TEMPLATES_KEY = 'templates'
+EXT_MANIFEST_FILE = EXT_MANIFEST_NAME + JSON_FILE_FORMAT
+
+EXT_STARTUP_NAME = 'startup'
+EXT_STARTUP_FILE = EXT_STARTUP_NAME + PYTHON_SCRIPT_FILE_FORMAT
+
 TAB_POSTFIX = '.tab'
 PANEL_POSTFIX = '.panel'
 LINK_BUTTON_POSTFIX = '.linkbutton'
@@ -50,30 +65,34 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 
-# Component swf video for tooltips
-DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+# Component image for tooltips
+DEFAULT_TOOLTIP_IMAGE_FILE = 'tooltip.png'
+# Component video for tooltips
+if HOST_APP.is_newer_than(2019, or_equal=True):
+    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.mp4'
+else:
+    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
 
 # Command supported languages
 PYTHON_LANG = 'python'
 CSHARP_LANG = 'csharp'
 VB_LANG = 'visualbasic'
+DYNAMO_LANG = 'dynamobim'
 
 # Component scripts
 DEFAULT_SCRIPT_NAME = 'script'
-PYTHON_SCRIPT_FILE_FORMAT = '.py'
-CSHARP_SCRIPT_FILE_FORMAT = '.cs'
-VB_SCRIPT_FILE_FORMAT = '.vb'
-RUBY_SCRIPT_FILE_FORMAT = '.rb'
+DEFAULT_CONFIG_NAME = 'config'
 
 # Hash file for caching directory state hash value
 EXTENSION_HASH_CACHE_FILENAME = 'ext_hash'
 
-
+# script files
 PYTHON_SCRIPT_POSTFIX = DEFAULT_SCRIPT_NAME + PYTHON_SCRIPT_FILE_FORMAT
 CSHARP_SCRIPT_POSTFIX = DEFAULT_SCRIPT_NAME + CSHARP_SCRIPT_FILE_FORMAT
 VB_SCRIPT_POSTFIX = DEFAULT_SCRIPT_NAME + VB_SCRIPT_FILE_FORMAT
 RUBY_SCRIPT_POSTFIX = DEFAULT_SCRIPT_NAME + RUBY_SCRIPT_FILE_FORMAT
-DEFAULT_CONFIG_SCRIPT_FILE = 'config' + PYTHON_SCRIPT_FILE_FORMAT
+DYNAMO_SCRIPT_POSTFIX = DEFAULT_SCRIPT_NAME + DYNAMO_SCRIPT_FILE_FORMAT
+CONFIG_SCRIPT_POSTFIX = DEFAULT_CONFIG_NAME + PYTHON_SCRIPT_FILE_FORMAT
 
 # Command component defaults
 UI_TITLE_PARAM = '__title__'
@@ -97,4 +116,4 @@ COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
 COMP_LIBRARY_DIR_NAME = 'lib'
 
 CTX_SELETION = 'selection'
-CTX_ZERODOC = 'zerodoc'
+CTX_ZERODOC = ['zero-doc', 'zerodoc']

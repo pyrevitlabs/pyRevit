@@ -2,74 +2,32 @@
 "extensions":
     [
         {
-        "builtin": "True",
-        "enable": "False",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "pyRevitDevTools",
-        "description": "Development Tools for pyRevit",
-        "author": "Ehsan Iran-Nejad",
-        "author-url": "https://keybase.io/ein",
-        "url": "https://github.com/eirannejad/pyRevit.git",
-        "website": "http://eirannejad.github.io/pyRevit/",
-        "image" : "",
-        "dependencies": []
-        },
-        {
-        "builtin": "True",
-        "enable": "False",
-        "type": "extension",
-        "rocket_mode_compatible": "False",
-        "name": "pyRevitTutor",
-        "description": "Python for Revit Tutorials form pyRevit Youtube Channel",
-        "author": "Ehsan Iran-Nejad",
-        "author-url": "https://keybase.io/ein",
-        "url": "https://github.com/eirannejad/pyRevit.git",
-        "website": "http://eirannejad.github.io/pyRevit/",
-        "image" : "",
-        "dependencies": []
-        },
-        {
-        "builtin": "True",
-        "enable": "True",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "pyRevitTools",
-        "description": "IronPython Scripts for Autodesk Revit",
-        "author": "Ehsan Iran-Nejad",
-        "author-url": "https://keybase.io/ein",
-        "url": "https://github.com/eirannejad/pyRevit.git",
-        "website": "http://eirannejad.github.io/pyRevit/",
-        "image" : "",
-        "dependencies": []
-        },
-        {
         "builtin": "False",
-        "enable": "True",
+        "default_enabled": "True",
         "type": "extension",
         "rocket_mode_compatible": "True",
         "name": "PyRevitMEP",
         "description": "MEP extension for PyRevit",
         "author": "Cyril Waechter",
-        "author-url": "https://github.com/CyrilWaechter",
+        "author_profile": "https://github.com/CyrilWaechter",
         "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
         "website": "http://pythoncvc.net/?page_id=123",
         "image" : "",
         "dependencies": []
-        },  
+        },
         {
         "builtin": "False",
-        "enable": "True",
+        "default_enabled": "True",
         "type": "extension",
         "rocket_mode_compatible": "True",
         "name": "pyApex",
         "description": "Apex Project BIM Utils",
         "author": "Aleksey Melnikov",
-        "author-url": "https://github.com/melnikovalex",
+        "author_profile": "https://github.com/melnikovalex",
         "url": "https://github.com/apex-project/pyApex.git",
         "website": "https://github.com/apex-project/pyApex",
         "image": "",
         "dependencies": []
-        }     
+        }
     ]
 }

@@ -31,7 +31,8 @@ from pyrevit.loader.sessioninfo import get_session_uuid
 from pyrevit.userconfig import user_config
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 PYREVIT_USAGELOGSTATE_ENVVAR = \
@@ -71,15 +72,17 @@ def _disable_server_usage_logging():
 
 def _setup_default_logfile(usagelog_fullfilepath):
     # setup default usage logging file name
-    envvars.set_pyrevit_env_var(PYREVIT_USAGELOGFILE_ENVVAR, usagelog_fullfilepath)
+    envvars.set_pyrevit_env_var(
+        PYREVIT_USAGELOGFILE_ENVVAR, usagelog_fullfilepath
+        )
     if not op.exists(usagelog_fullfilepath):
         # if file does not exist, let's write the basic JSON list to it.
         try:
             with open(usagelog_fullfilepath, 'w') as log_file:
                 log_file.write('[]')
         except Exception as write_err:
-            logger.error('Usage logging is active but log file location '
-                         'is not accessible. | {}'.format(write_err))
+            mlogger.error('Usage logging is active but log file location '
+                          'is not accessible. | %s', write_err)
             _disable_usage_logging()
 
 
@@ -107,7 +110,9 @@ def setup_usage_logfile(session_id=None):
     # setup default value for usage logging global switch
     ul_config = user_config.usagelogging
     usageloggingactive = ul_config.get_option('active', default_value=False)
-    envvars.set_pyrevit_env_var(PYREVIT_USAGELOGSTATE_ENVVAR, usageloggingactive)
+    envvars.set_pyrevit_env_var(
+        PYREVIT_USAGELOGSTATE_ENVVAR, usageloggingactive
+        )
 
     # FILE usage logging -------------------------------------------------------
     # read or setup default values for file usage logging
@@ -127,8 +132,8 @@ def setup_usage_logfile(session_id=None):
                 _setup_default_logfile(logfile_fullpath)
             else:
                 # if not, show error and disable usage logging
-                logger.error('Provided usage log address does not exits or is '
-                             'not a directory. Usage logging disabled.')
+                mlogger.error('Provided usage log address does not exits or is '
+                              'not a directory. Usage logging disabled.')
                 _disable_usage_logging()
 
     # SERVER usage logging -----------------------------------------------------

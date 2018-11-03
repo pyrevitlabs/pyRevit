@@ -8,7 +8,6 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
-__author__ = "Ehsan Iran-Nejad"
 
 logger = script.get_logger()
 output = script.get_output()
@@ -90,8 +89,13 @@ def extract_patdefs(patfile):
                     )
                 # grab name and comments of new pattern
                 # effectively starting a new capture
-                active_name, active_comments = \
+                name_and_comment = \
                     patline.replace('\n', '')[1:].split(',')
+                if len(name_and_comment) == 2:
+                    active_name, active_comments = name_and_comment
+                else:
+                    active_name = name_and_comment[0]
+                    active_comments = ''
                 active_version = ''
                 active_units = ''
                 active_type = ''
@@ -134,18 +138,6 @@ def make_fillgrid(gridstring, scale=0.00328084):
         return rvt_fill_grid
 
 
-def get_existing_fillpatternelement(fpname, fptarget):
-    existing_fillpatternelements = \
-        DB.FilteredElementCollector(revit.doc)\
-        .OfClass(framework.get_type(DB.FillPatternElement))
-
-    for exfpe in existing_fillpatternelements:
-        exfp = exfpe.GetFillPattern()
-        if fpname == exfp.Name \
-                and fptarget == exfp.Target:
-            return exfpe
-
-
 def make_pattern(patdef):
     logger.debug(patdef)
 
@@ -164,7 +156,8 @@ def make_pattern(patdef):
     logger.debug('type is set to: {}'.format(fp_target))
 
     # check if fillpattern element exists
-    existing_fpelement = get_existing_fillpatternelement(patdef.name, fp_target)
+    existing_fpelement = \
+        revit.query.get_fillpattern_element(patdef.name, fp_target)
 
     # make fillpattern
     rvt_fill_pat = DB.FillPattern(patdef.name,

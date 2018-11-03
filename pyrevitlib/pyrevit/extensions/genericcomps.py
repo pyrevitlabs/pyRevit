@@ -1,13 +1,19 @@
+"""Generic extension components."""
 import os
 import os.path as op
+import re
+from collections import namedtuple
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
 import pyrevit.extensions as exts
-from pyrevit.userconfig import user_config
 
 
-logger = coreutils.logger.get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = coreutils.logger.get_logger(__name__)
+
+
+LayoutDirective = namedtuple('LayoutDirective', ['type', 'item', 'target'])
 
 
 class GenericComponent(object):
@@ -94,12 +100,12 @@ class GenericUIComponent(GenericComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            mlogger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: {} from {}'.format(path, self))
+            mlogger.debug('Removing syspath: %s from %s', path, self)
             return self.syspath_search_paths.remove(path)
         else:
             return None
@@ -116,7 +122,8 @@ class GenericUIContainer(GenericUIComponent):
     def __init__(self):
         GenericUIComponent.__init__(self)
         self._sub_components = []
-        self.layout_list = None
+        self.layout = self.layout_items = None
+        self.name = self.ui_title = None
 
     def __init_from_dir__(self, ext_dir):
         GenericUIComponent.__init_from_dir__(self, ext_dir)
@@ -136,46 +143,53 @@ class GenericUIContainer(GenericUIComponent):
         if self.library_path:
             self.syspath_search_paths.append(self.library_path)
 
-        self.layout_list = self._read_layout_file()
-        logger.debug('Layout is: {}'.format(self.layout_list))
+        self._read_layout_file()    # sets self.layout and self.layout_items
+        mlogger.debug('Layout is: %s', self.layout_items)
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
         if self.icon_file:
-            logger.debug('Icon file is: {}'
-                         .format(self.name, self.icon_file))
+            mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
 
     def __iter__(self):
         return iter(self._get_components_per_layout())
+
+    @staticmethod
+    def _remove_layout_directives(layout_items):
+        cleaned_items = []
+        for litem in layout_items:
+            cleaned_items.append(re.sub(r'\[.+\]', '', litem))
+        return cleaned_items
 
     def _read_layout_file(self):
         full_file_path = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(full_file_path):
             layout_file = open(op.join(self.directory,
                                        exts.DEFAULT_LAYOUT_FILE_NAME), 'r')
-            # return [x.replace('\n', '') for x in layout_file.readlines()]
-            return layout_file.read().splitlines()
+            self.layout = layout_file.read().splitlines()
+            self.layout_items = \
+                GenericUIContainer._remove_layout_directives(self.layout)
         else:
-            logger.debug('Container does not have layout file defined: {}'
-                         .format(self))
+            mlogger.debug('Container does not have layout file defined: %s',
+                          self)
 
     def _get_components_per_layout(self):
         # if item is not listed in layout, it will not be created
-        if self.layout_list and self._sub_components:
-            logger.debug('Reordering components per layout file...')
+        if self.layout_items and self._sub_components:
+            mlogger.debug('Reordering components per layout file...')
             layout_index = 0
             _processed_cmps = []
-            for layout_item in self.layout_list:
-                for cmp_index, component in enumerate(self._sub_components):
+            for layout_item in self.layout_items:
+                for cmp_index, component in enumerate(self._sub_components):     #pylint: disable=W0612
                     if component.name == layout_item:
                         _processed_cmps.append(component)
                         layout_index += 1
                         break
 
             # insert separators and slideouts per layout definition
-            logger.debug('Adding separators and slide outs per layout...')
-            last_item_index = len(self.layout_list) - 1
-            for i_index, layout_item in enumerate(self.layout_list):
+            mlogger.debug('Adding separators and slide outs per layout...')
+            last_item_index = len(self.layout_items) - 1
+            for i_index, layout_item in enumerate(self.layout_items):
                 if exts.SEPARATOR_IDENTIFIER in layout_item \
                         and i_index < last_item_index:
                     separator = GenericComponent()
@@ -187,28 +201,28 @@ class GenericUIContainer(GenericUIComponent):
                     slideout.type_id = exts.SLIDEOUT_IDENTIFIER
                     _processed_cmps.insert(i_index, slideout)
 
-            logger.debug('Reordered sub_component list is: {}'
-                         .format(_processed_cmps))
+            mlogger.debug('Reordered sub_component list is: %s',
+                          _processed_cmps)
             return _processed_cmps
         else:
             return self._sub_components
 
     def contains(self, item_name):
-        for component in self._sub_components:
+        for component in self.get_components():
             if item_name == component.name:
                 return True
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
-            for component in self._sub_components:
+            mlogger.debug('Appending syspath: %s to %s', path, self)
+            for component in self.get_components():
                 component.add_syspath(path)
             self.syspath_search_paths.append(path)
 
     def remove_syspath(self, path):
         if path and self.has_syspath(path):
-            logger.debug('Removing syspath: {} from {}'.format(path, self))
-            for component in self._sub_components:
+            mlogger.debug('Removing syspath: %s from %s', path, self)
+            for component in self.get_components():
                 component.remove_syspath(path)
             return self.syspath_search_paths.remove(path)
         else:
@@ -217,14 +231,14 @@ class GenericUIContainer(GenericUIComponent):
     def add_component(self, comp):
         for path in self.syspath_search_paths:
             comp.add_syspath(path)
-        self._sub_components.append(comp)
+        self.get_components().append(comp)
 
     def get_components(self):
         return self._sub_components
 
     def get_components_of_type(self, cmp_type):
         sub_comp_list = []
-        for sub_comp in self._sub_components:
+        for sub_comp in self.get_components():
             if isinstance(sub_comp, cmp_type):
                 sub_comp_list.append(sub_comp)
             elif sub_comp.is_container:
@@ -232,6 +246,21 @@ class GenericUIContainer(GenericUIComponent):
 
         return sub_comp_list
 
+    def get_layout_directives(self):
+        layout_directives = []
+        if self.layout:
+            for item_def in self.layout:
+                for dir_defs in re.findall(r'(.+)\[(.+):(.*)\]', item_def):
+                    source_item, directive, target_name = dir_defs
+                    directive = directive.lower().strip()
+                    target_name = target_name.strip()
+                    layout_directives.append(
+                        LayoutDirective(
+                            type=directive,
+                            item=source_item,
+                            target=target_name
+                        ))
+        return layout_directives
 
 # superclass for all single command classes (link, push button, toggle button)
 # GenericUICommand is not derived from GenericUIContainer since a command
@@ -248,7 +277,7 @@ class GenericUICommand(GenericUIComponent):
         GenericUIComponent.__init__(self)
         self.ui_title = None
         self.script_file = self.config_script_file = None
-        self.ttvideo_file = None
+        self.ttimage_file = self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
         self.doc_string = self.author = None
         self.cmd_help_url = self.cmd_context = None
@@ -258,7 +287,7 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
 
-    def __init_from_dir__(self, cmd_dir):
+    def __init_from_dir__(self, cmd_dir):   #pylint: disable=W0221
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
         self.name = op.splitext(op.basename(self.directory))[0]
@@ -270,31 +299,37 @@ class GenericUICommand(GenericUIComponent):
 
         icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = icon_path if op.exists(icon_path) else None
-        logger.debug('Command {}: Icon file is: {}'
-                     .format(self, self.icon_file))
+        mlogger.debug('Command %s: Icon file is: %s', self, self.icon_file)
+
+        ttimage_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_IMAGE_FILE)
+        self.ttimage_file = ttimage_path if op.exists(ttimage_path) else None
+        mlogger.debug('Command %s: Tooltip image file is: %s',
+                      self, self.ttimage_file)
 
         ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
         self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None
-        logger.debug('Command {}: Tooltip video file is: {}'
-                     .format(self, self.ttvideo_file))
+        mlogger.debug('Command %s: Tooltip video file is: %s',
+                      self, self.ttvideo_file)
 
         self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
                                                    exts.CSHARP_SCRIPT_POSTFIX,
                                                    exts.VB_SCRIPT_POSTFIX,
-                                                   exts.RUBY_SCRIPT_POSTFIX])
+                                                   exts.RUBY_SCRIPT_POSTFIX,
+                                                   exts.DYNAMO_SCRIPT_POSTFIX])
 
         if self.script_file is None:
-            logger.error('Command {}: Does not have script file.'.format(self))
+            mlogger.error('Command %s: Does not have script file.', self)
             raise PyRevitException()
         if self.script_language == exts.PYTHON_LANG:
             self._analyse_python_script()
 
         self.config_script_file = \
-            self._find_script_file([exts.DEFAULT_CONFIG_SCRIPT_FILE])
+            self._find_script_file([exts.CONFIG_SCRIPT_POSTFIX])
 
         if self.config_script_file is None:
-            logger.debug('Command {}: Does not have independent config script.'
-                         .format(self))
+            mlogger.debug(
+                'Command %s: Does not have independent config script.', self
+                )
             self.config_script_file = self.script_file
 
         # each command can store custom libraries under
@@ -327,7 +362,7 @@ class GenericUICommand(GenericUIComponent):
                           lineno=parse_err.lineno,
                           colno=parse_err.offset,
                           linetext=parse_err.text)
-        logger.error(coreutils.prepare_html_str(err_msg))
+        mlogger.error(coreutils.prepare_html_str(err_msg))
 
     def _analyse_python_script(self):
         try:
@@ -360,10 +395,10 @@ class GenericUICommand(GenericUIComponent):
             if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                 self.cmd_context = script_content.extract_param(
                     exts.COMMAND_CONTEXT_PARAM)  # type: str
-                if type(self.cmd_context) is list:
+                if isinstance(self.cmd_context, list):
                     self.cmd_context = ';'.join(self.cmd_context)
             else:
-                self.cmd_context = exts.CTX_ZERODOC
+                self.cmd_context = exts.CTX_ZERODOC[0]
 
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
@@ -378,35 +413,44 @@ class GenericUICommand(GenericUIComponent):
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)
 
-        # fixme: logger reports module as 'ast' after a
+        # FIXME: logger reports module as 'ast' after a
         # successfull param retrieval. Must be ast.literal_eval()
-        logger.debug('Maximum host version: {}'.format(self.max_revit_ver))
-        logger.debug('Minimum host version: {}'.format(self.min_revit_ver))
-        logger.debug('command tooltip: {}'.format(self.doc_string))
-        logger.debug('Command author: {}'.format(self.author))
-        logger.debug('Command help url: {}'.format(self.cmd_help_url))
+        mlogger.debug('Maximum host version: %s', self.max_revit_ver)
+        mlogger.debug('Minimum host version: %s', self.min_revit_ver)
+        mlogger.debug('command tooltip: %s', self.doc_string)
+        mlogger.debug('Command author: %s', self.author)
+        mlogger.debug('Command help url: %s', self.cmd_help_url)
 
         if self.beta_cmd:
-            logger.debug('Command is in beta.')
+            mlogger.debug('Command is in beta.')
 
-        try:
-            # check minimum requirements
-            self._check_dependencies()
-        except PyRevitException as dependency_err:
-            logger.debug(dependency_err)
-            raise dependency_err
+    def _update_configurable_params(self, config_dict):
+        for pname in self.configurable_params:
+            pval = getattr(self, pname)
+            if pval:
+                for k, v in config_dict.items():
+                    liquidtag = '{{' + k + '}}'
+                    if liquidtag in pval:   #pylint: disable=E1135
+                        pval = pval.replace(liquidtag, v)
+                        setattr(self, pname, pval)
 
-    def _check_dependencies(self):
+    @property
+    def is_supported(self):
         if self.min_revit_ver:
             # If host is older than the minimum host version, raise exception
             if int(HOST_APP.version) < int(self.min_revit_ver):
-                raise PyRevitException('Script requires min host version: {}'
-                                       .format(self.min_revit_ver))
+                mlogger.debug('Requires min version: %s', self.min_revit_ver)
+                return False
         if self.max_revit_ver:
             # If host is newer than the max host version, raise exception
             if int(HOST_APP.version) > int(self.max_revit_ver):
-                raise PyRevitException('Script requires max host version: {}'
-                                       .format(self.max_revit_ver))
+                mlogger.debug('Requires max version: %s', self.max_revit_ver)
+                return False
+        return True        
+
+    @property
+    def configurable_params(self):
+        return ['ui_title', 'doc_string', 'author', 'cmd_help_url']
 
     @property
     def script_language(self):
@@ -417,6 +461,8 @@ class GenericUICommand(GenericUIComponent):
                 return exts.CSHARP_LANG
             elif self.script_file.endswith(exts.VB_SCRIPT_FILE_FORMAT):
                 return exts.VB_LANG
+            elif self.script_file.endswith(exts.DYNAMO_SCRIPT_FILE_FORMAT):
+                return exts.DYNAMO_LANG
         else:
             return None
 
@@ -438,5 +484,10 @@ class GenericUICommand(GenericUIComponent):
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):
-            logger.debug('Appending syspath: {} to {}'.format(path, self))
+            mlogger.debug('Appending syspath: %s to %s', path, self)
             self.syspath_search_paths.append(path)
+
+    def configure(self, config_dict):
+        templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)
+        if templates:
+            self._update_configurable_params(templates)

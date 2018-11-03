@@ -43,26 +43,26 @@ allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
                         .ToElements()
 
 
-selSheets = forms.select_sheets(title='Select Target Sheets',
-                                button_name='Select Sheets')
+selected_sheets = forms.select_sheets(title='Select Target Sheets',
+                                      button_name='Select Sheets')
 
 # get a list of viewports to be copied, updated
-if selSheets and len(selSheets) > 0:
-    if int(__revit__.Application.VersionNumber) > 2014: #noqa
+if selected_sheets and len(selected_sheets) > 0:
+    if int(__revit__.Application.VersionNumber) > 2014:
         cursheet = revit.uidoc.ActiveGraphicalView
-        for v in selSheets:
+        for v in selected_sheets:
             if cursheet.Id == v.Id:
-                selSheets.remove(v)
+                selected_sheets.remove(v)
     else:
-        cursheet = selSheets[0]
-        selSheets.remove(cursheet)
+        cursheet = selected_sheets[0]
+        selected_sheets.remove(cursheet)
 
     revit.uidoc.ActiveView = cursheet
     selected_vps = revit.pick_elements()
 
     if selected_vps:
         with revit.Transaction('Copy Viewports to Sheets'):
-            for sht in selSheets:
+            for sht in selected_sheets:
                 existing_vps = [revit.doc.GetElement(x)
                                 for x in sht.GetAllViewports()]
                 existing_schedules = [x for x in allSheetedSchedules

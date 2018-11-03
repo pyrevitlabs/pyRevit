@@ -3,7 +3,8 @@
         ShowInTaskbar="False"
         Width="600" Height="500" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
-        HorizontalContentAlignment="Center">
+        HorizontalContentAlignment="Center"
+		Title="Batch Sheet Maker">
         <DockPanel Margin="10">
             <TextBlock DockPanel.Dock="Top">
                 Enter list of sheet number and names in this format:<LineBreak />

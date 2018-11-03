@@ -22,7 +22,7 @@ logger = script.get_logger()
 MINIFYUI_ENV_VAR = 'MINIFYUIACTIVE'
 
 
-class TabOption(forms.BaseCheckBoxItem):
+class TabOption(forms.TemplateListItem):
     def __init__(self, uitab, hidden_tabs_list):
         super(TabOption, self).__init__(uitab)
         self.state = self.name in hidden_tabs_list
@@ -44,11 +44,12 @@ def get_minifyui_config():
 def config_minifyui():
     this_ext_name = script.get_extension_name()
     hidden_tabs = get_minifyui_config()
-    tabs = forms.SelectFromCheckBoxes.show(
+    tabs = forms.SelectFromList.show(
         [TabOption(x, hidden_tabs) for x in ribbon.get_current_ui()
          if x.name not in this_ext_name],
-        title='Minify UI Config:',
-        button_name='Hide Selected Tabs in Minified Mode'
+        title='Minify UI Config',
+        button_name='Hide Selected Tabs in Minified Mode',
+        multiselect=True
         )
 
     if tabs:

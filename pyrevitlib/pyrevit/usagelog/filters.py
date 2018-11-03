@@ -18,7 +18,8 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.usagelog.record import RESULT_DICT
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 class RecordFilter(object):
@@ -60,7 +61,7 @@ class RecordFilter(object):
         # less-than operator overload that causes the filter list to be
         # sorted by name and then by value if two filters are the same type,
         # compare based on filter_value
-        if type(self) == type(other):
+        if isinstance(self, type(other)):
             return self.filter_value < other.filter_value
         else:
             # if not, compare based on filter_name
@@ -110,10 +111,10 @@ class RecordNoneFilter(RecordFilter):
         self.filter_name = 'No Filter'
 
     def __eq__(self, other):
-        return type(self) == type(other)
+        return isinstance(self, type(other))
 
     def __ne__(self, other):
-        return type(self) != type(other)
+        return not isinstance(self, type(other))
 
     def __hash__(self):
         return hash(0)
@@ -273,8 +274,7 @@ def get_auto_filters(record_list):
             if param in filters_dict:
                 # and if a filter is provided for that parameter,
                 # setup the filter and add to the list.
-                logger.debug('Adding filter: param={} value={}'
-                             .format(param, value))
+                mlogger.debug('Adding filter: param=%s value=%s', param, value)
                 auto_filters.add(filters_dict[param](value))
 
     # return a sorted list of filters for ease of use

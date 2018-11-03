@@ -1,4 +1,8 @@
-"""Reusable WPF forms for pyRevit."""
+"""Reusable WPF forms for pyRevit.
+
+Example:
+    >>> from pyrevit.forms import WPFWindow
+"""
 
 import sys
 import os
@@ -7,21 +11,28 @@ import string
 from collections import OrderedDict
 import threading
 from functools import wraps
+import datetime
 
-from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import colors
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
 from pyrevit.framework import Interop
+from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
+from pyrevit.forms import utils
+from pyrevit.forms import toaster
+from pyrevit import versionmgr
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 DEFAULT_CMDSWITCHWND_WIDTH = 600
@@ -31,12 +42,18 @@ DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
 
 
+WPF_HIDDEN = framework.Windows.Visibility.Hidden
+WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
+WPF_VISIBLE = framework.Windows.Visibility.Visible
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
     Args:
         xaml_source (str): xaml source filepath or xaml content
         literal_string (bool): xaml_source contains xaml content, not filepath
+        handle_esc (bool): handle Escape button and close the window
 
     Example:
         >>> from pyrevit import forms
@@ -48,7 +65,7 @@ class WPFWindow(framework.Windows.Window):
         >>> w.show()
     """
 
-    def __init__(self, xaml_source, literal_string=False):
+    def __init__(self, xaml_source, literal_string=False, handle_esc=True):
         """Initialize WPF window and resources."""
         # self.Parent = self
         wih = Interop.WindowInteropHelper(self)
@@ -65,19 +82,24 @@ class WPFWindow(framework.Windows.Window):
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
-        #2c3e50 #noqa
+        if handle_esc:
+            self.PreviewKeyDown += self.handle_input_key    #pylint: disable=E1101
+
+        self.setup_icon()
+
+        #2c3e50
         self.Resources['pyRevitDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50)
 
-        #23303d #noqa
+        #23303d
         self.Resources['pyRevitDarkerDarkColor'] = \
             Media.Color.FromArgb(0xFF, 0x23, 0x30, 0x3d)
 
-        #ffffff #noqa
+        #ffffff
         self.Resources['pyRevitButtonColor'] = \
             Media.Color.FromArgb(0xFF, 0xff, 0xff, 0xff)
 
-        #f39c12 #noqa
+        #f39c12
         self.Resources['pyRevitAccentColor'] = \
             Media.Color.FromArgb(0xFF, 0xf3, 0x9c, 0x12)
 
@@ -91,6 +113,16 @@ class WPFWindow(framework.Windows.Window):
 
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
+
+    def handle_input_key(self, sender, args):    #pylint: disable=W0613
+        """Handle keyboard input and close the window on Escape."""
+        if args.Key == Input.Key.Escape:
+            self.Close()
+
+    def setup_icon(self):
+        """Setup default window icon."""
+        iconpath = op.join(BIN_DIR, 'window_icon.png')
+        self.Icon = utils.bitmap_from_file(iconpath)
 
     def show(self, modal=False):
         """Show window."""
@@ -111,12 +143,16 @@ class WPFWindow(framework.Windows.Window):
         """
         wpfel = getattr(self, element_name)
         if not op.exists(image_file):
-            # noinspection PyUnresolvedReferences
             wpfel.Source = \
-                framework.Imaging.BitmapImage(
-                    framework.Uri(os.path.join(EXEC_PARAMS.command_path,
-                                               image_file))
+                utils.bitmap_from_file(
+                    os.path.join(EXEC_PARAMS.command_path,
+                                 image_file)
                     )
+            # wpfel.Source = \
+            #     framework.Imaging.BitmapImage(
+            #         framework.Uri(os.path.join(EXEC_PARAMS.command_path,
+            #                                    image_file))
+            #         )
         else:
             wpfel.Source = \
                 framework.Imaging.BitmapImage(framework.Uri(image_file))
@@ -126,33 +162,53 @@ class WPFWindow(framework.Windows.Window):
         """Collapse elements.
 
         Args:
-            *wpf_elements (str): element names to be collaped
+            *wpf_elements: WPF framework elements to be collaped
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Collapsed
+            wpfel.Visibility = WPF_COLLAPSED
 
     @staticmethod
     def show_element(*wpf_elements):
         """Show collapsed elements.
 
         Args:
-            *wpf_elements (str): element names to be set to visible.
+            *wpf_elements: WPF framework elements to be set to visible.
         """
         for wpfel in wpf_elements:
-            wpfel.Visibility = framework.Windows.Visibility.Visible
+            wpfel.Visibility = WPF_VISIBLE
 
     @staticmethod
     def toggle_element(*wpf_elements):
         """Toggle visibility of elements.
 
         Args:
-            *wpf_elements (str): element names to be toggled.
+            *wpf_elements: WPF framework elements to be toggled.
         """
         for wpfel in wpf_elements:
-            if wpfel.Visibility == framework.Windows.Visibility.Visible:
-                self.hide_element(wpfel)
-            elif wpfel.Visibility == framework.Windows.Visibility.Collapsed:
-                self.show_element(wpfel)
+            if wpfel.Visibility == WPF_VISIBLE:
+                WPFWindow.hide_element(wpfel)
+            elif wpfel.Visibility == WPF_COLLAPSED:
+                WPFWindow.show_element(wpfel)
+
+    @staticmethod
+    def disable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = False
+
+    @staticmethod
+    def enable_element(*wpf_elements):
+        """Enable elements.
+
+        Args:
+            *wpf_elements: WPF framework elements to be enabled
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = True
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -171,14 +227,14 @@ class TemplateUserInputWindow(WPFWindow):
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source))
-        self.Title = title
+                           op.join(op.dirname(__file__), self.xaml_source),
+                           handle_esc=True)
+        self.Title = title or 'pyRevit'
         self.Width = width
         self.Height = height
 
         self._context = context
         self.response = None
-        self.PreviewKeyDown += self.handle_input_key
 
         self._setup(**kwargs)
 
@@ -186,13 +242,8 @@ class TemplateUserInputWindow(WPFWindow):
         """Private method to be overriden by subclasses for window setup."""
         pass
 
-    def handle_input_key(self, sender, args):
-        """Handle keyboard input."""
-        if args.Key == framework.Windows.Input.Key.Escape:
-            self.Close()
-
     @classmethod
-    def show(cls, context,
+    def show(cls, context,  #pylint: disable=W0221
              title='User Input',
              width=DEFAULT_INPUTWINDOW_WIDTH,
              height=DEFAULT_INPUTWINDOW_HEIGHT, **kwargs):
@@ -200,99 +251,32 @@ class TemplateUserInputWindow(WPFWindow):
 
         Args:
             context (any): window context element(s)
-            title (type): window title
-            width (type): window width
-            height (type): window height
-            **kwargs (type): other arguments to be passed to window
+            title (str): window title
+            width (str): window width
+            height (str): window height
+            **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
         dlg.ShowDialog()
         return dlg.response
 
 
-class SelectFromList(TemplateUserInputWindow):
-    """Standard form to select from a list of items.
-
-    Args:
-        context (list[str]): list of items to be selected from
-        title (str): window title
-        width (int): window width
-        height (int): window height
-        button_name (str): name of select button
-        multiselect (bool): allow multi-selection
-
-    Example:
-        >>> from pyrevit import forms
-        >>> items = ['item1', 'item2', 'item3']
-        >>> forms.SelectFromList.show(items, button_name='Select Item')
-        >>> ['item1']
-    """
-
-    xaml_source = 'SelectFromList.xaml'
-
-    def _setup(self, **kwargs):
-        self.hide_element(self.clrsearch_b)
-        self.clear_search(None, None)
-        self.search_tb.Focus()
-
-        if 'multiselect' in kwargs and not kwargs['multiselect']:
-            self.list_lb.SelectionMode = Controls.SelectionMode.Single
-        else:
-            self.list_lb.SelectionMode = Controls.SelectionMode.Extended
-
-        button_name = kwargs.get('button_name', None)
-        if button_name:
-            self.select_b.Content = button_name
-
-        self._list_options()
-
-    def _list_options(self, option_filter=None):
-        if option_filter:
-            option_filter = option_filter.lower()
-            self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context
-                 if option_filter in safe_strtype(option).lower()]
-        else:
-            self.list_lb.ItemsSource = \
-                [safe_strtype(option) for option in self._context]
-
-    def _get_options(self):
-        return [option for option in self._context
-                if safe_strtype(option) in self.list_lb.SelectedItems]
-
-    def button_select(self, sender, args):
-        """Handle select button click."""
-        self.response = self._get_options()
-        self.Close()
-
-    def search_txt_changed(self, sender, args):
-        """Handle text change in search box."""
-        if self.search_tb.Text == '':
-            self.hide_element(self.clrsearch_b)
-        else:
-            self.show_element(self.clrsearch_b)
-
-        self._list_options(option_filter=self.search_tb.Text)
-
-    def clear_search(self, sender, args):
-        """Clear search box."""
-        self.search_tb.Text = ' '
-        self.search_tb.Clear()
-        self.search_tb.Focus()
-
-
-class BaseCheckBoxItem(object):
+class TemplateListItem(object):
     """Base class for checkbox option wrapping another object."""
 
-    def __init__(self, orig_item):
+    def __init__(self, orig_item, checkable=True, name_attr=None):
         """Initialize the checkbox option and wrap given obj.
 
         Args:
-            orig_item (any): object to wrap (must have name property
+            orig_item (any): Object to wrap (must have name property
                              or be convertable to string with str()
+            checkable (bool): Use checkbox for items
+            name_attr (str): Get this attribute of wrapped object as name
         """
         self.item = orig_item
         self.state = False
+        self._nameattr = name_attr
+        self._checkable = checkable
 
     def __nonzero__(self):
         return self.state
@@ -300,106 +284,262 @@ class BaseCheckBoxItem(object):
     def __str__(self):
         return self.name or str(self.item)
 
+    def __contains__(self, value):
+        return value in self.name
+
+    def __getattr__(self, param_name):
+        return getattr(self.item, param_name)
+
     @property
     def name(self):
         """Name property."""
-        return getattr(self.item, 'name', '')
+        # get custom attr, or name or just str repr
+        if self._nameattr:
+            return str(getattr(self.item, self._nameattr))
+        elif hasattr(self.item, 'name'):
+            return getattr(self.item, 'name', '')
+        else:
+            return safe_strtype(self.item)
 
     def unwrap(self):
         """Unwrap and return wrapped object."""
         return self.item
 
+    def matches(self, filter_str):
+        """Check if instance matches the filter string."""
+        return filter_str in self.name.lower()
 
-class SelectFromCheckBoxes(TemplateUserInputWindow):
-    """Standard form to select from a list of check boxes.
+    @property
+    def checkable(self):
+        """List Item CheckBox Visibility."""
+        return WPF_VISIBLE if self._checkable \
+            else WPF_COLLAPSED
 
-    Check box items passed in context to this standard form, must implement
-    ``name`` and ``state`` parameter and ``__nonzero__`` method for truth
-    value testing.
+    @checkable.setter
+    def checkable(self, value):
+        self._checkable = value
+
+    @classmethod
+    def is_checkbox(cls, item):
+        """Check if the object has all necessary attribs for a checkbox."""
+        return isinstance(item, TemplateListItem)
+
+
+class SelectFromList(TemplateUserInputWindow):
+    """Standard form to select from a list of items.
+
+    Any object can be passed in a list to the ``context`` argument. This class
+    wraps the objects passed to context, in :obj:`TemplateListItem`.
+    This class provides the necessary mechanism to make this form work both
+    for selecting items from a list, and from a list of checkboxes. See the
+    list of arguments below for additional options and features.
 
     Args:
-        context (list[object]): list of items to be selected from
-        title (str): window title
-        width (int): window width
-        height (int): window height
-        button_name (str): name of select button
+        context (list[str] or dict[list[str]]):
+            list of items to be selected from
+            OR
+            dict of list of items to be selected from.
+            use dict when input items need to be grouped
+            e.g. List of sheets grouped by sheet set.
+        title (str, optional): window title. see super class for defaults.
+        width (int, optional): window width. see super class for defaults.
+        height (int, optional): window height. see super class for defaults.
+        button_name (str, optional):
+            name of select button. defaults to 'Select'
+        name_attr (str, optional):
+            object attribute that should be read as item name.
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to False
+        return_all (bool, optional):
+            return all items. This is handly when some input items have states
+            and the script needs to check the state changes on all items.
+            This options works in multiselect mode only. defaults to False
+        filterfunc (function):
+            filter function to be applied to context items.
+        group_selector_title (str):
+            title for list group selector. defaults to 'List Group'
+        default_group (str): name of defautl group to be selected
+
 
     Example:
         >>> from pyrevit import forms
-        >>> class MyOption(object):
-        ...     def __init__(self, name, state=False):
-        ...         self.state = state
-        ...         self.name = name
-        ...
-        ...     def __nonzero__(self):
-        ...         return self.state
-        ...
-        ...     def __str__(self):
-        ...         return self.name
-        >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = forms.SelectFromCheckBoxes.show(ops,
-        ...                                       button_name='Select Item')
-        >>> [bool(x) for x in res]  # or [x.state for x in res]
-        [True, False, True]
+        >>> items = ['item1', 'item2', 'item3']
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
 
-        This module also provides a wrapper base class :obj:`BaseCheckBoxItem`
+        >>> from pyrevit import forms
+        >>> ops = [viewsheet1, viewsheet2, viewsheet3]
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=False,
+        ...                                 name_attr='Name',
+        ...                                 button_name='Select Sheet')
+
+        >>> from pyrevit import forms
+        >>> ops = {'Sheet Set A': [viewsheet1, viewsheet2, viewsheet3],
+        ...        'Sheet Set B': [viewsheet4, viewsheet5, viewsheet6]}
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=True,
+        ...                                 name_attr='Name',
+        ...                                 group_selector_title='Sheet Sets',
+        ...                                 button_name='Select Sheets')
+
+        This module also provides a wrapper base class :obj:`TemplateListItem`
         for when the checkbox option is wrapping another element,
         e.g. a Revit ViewSheet. Derive from this base class and define the
         name property to customize how the checkbox is named on the dialog.
 
         >>> from pyrevit import forms
-        >>> class MyOption(forms.BaseCheckBoxItem)
+        >>> class MyOption(forms.TemplateListItem)
         ...    @property
         ...    def name(self):
         ...        return '{} - {}{}'.format(self.item.SheetNumber,
         ...                                  self.item.SheetNumber)
         >>> ops = [MyOption('op1'), MyOption('op2', True), MyOption('op3')]
-        >>> res = forms.SelectFromCheckBoxes.show(ops,
-        ...                                       button_name='Select Item')
+        >>> res = forms.SelectFromList.show(ops,
+        ...                                 multiselect=True,
+        ...                                 button_name='Select Item')
         >>> [bool(x) for x in res]  # or [x.state for x in res]
         [True, False, True]
+
     """
 
-    xaml_source = 'SelectFromCheckboxes.xaml'
+    xaml_source = 'SelectFromList.xaml'
 
     def _setup(self, **kwargs):
-        self.hide_element(self.clrsearch_b)
-        self.search_tb.Focus()
-
-        self.checked_only = kwargs.get('checked_only', False)
-        button_name = kwargs.get('button_name', None)
+        # custom button name?
+        button_name = kwargs.get('button_name', 'Select')
         if button_name:
             self.select_b.Content = button_name
 
-        self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+        # attribute to use as name?
+        self._nameattr = kwargs.get('name_attr', None)
 
-        self._verify_context()
+        # multiselect?
+        if kwargs.get('multiselect', False):
+            self.multiselect = True
+            self.list_lb.SelectionMode = Controls.SelectionMode.Extended
+            self.show_element(self.checkboxbuttons_g)
+        else:
+            self.multiselect = False
+            self.list_lb.SelectionMode = Controls.SelectionMode.Single
+            self.hide_element(self.checkboxbuttons_g)
+
+        # return checked items only?
+        self.return_all = kwargs.get('return_all', False)
+
+        # filter function?
+        self.filter_func = kwargs.get('filterfunc', None)
+
+        # context group title?
+        self.ctx_groups_title = \
+            kwargs.get('group_selector_title', 'List Group')
+        self.ctx_groups_title_tb.Text = self.ctx_groups_title
+
+        self.ctx_groups_active = kwargs.get('default_group', None)
+
+        # check for custom templates
+        item_template = kwargs.get('item_template', None)
+        if item_template:
+            self.Resources["ListItemTemplate"] = item_template
+
+        item_container_template = kwargs.get('item_container_template', None)
+        if item_container_template:
+            self.Resources["ListItemContainerTemplate"] = \
+                item_container_template
+
+        # nicely wrap and prepare context for presentation, then present
+        self._prepare_context()
+
+        # list options now
         self._list_options()
 
-    def _verify_context(self):
-        new_context = []
-        for item in self._context:
-            if not hasattr(item, 'state'):
-                new_context.append(BaseCheckBoxItem(item))
+        # setup search and filter fields
+        self.hide_element(self.clrsearch_b)
+        self.clear_search(None, None)
+
+    def _prepare_context_items(self, ctx_items):
+        new_ctx = []
+        # filter context if necessary
+        if self.filter_func:
+            ctx_items = filter(self.filter_func, ctx_items)
+
+        for item in ctx_items:
+            if TemplateListItem.is_checkbox(item):
+                item.checkable = self.multiselect
+                new_ctx.append(item)
             else:
-                new_context.append(item)
+                new_ctx.append(
+                    TemplateListItem(item,
+                                     checkable=self.multiselect,
+                                     name_attr=self._nameattr)
+                    )
 
-        self._context = new_context
+        return new_ctx
 
-    def _list_options(self, checkbox_filter=None):
-        if checkbox_filter:
+    def _prepare_context(self):
+        if isinstance(self._context, dict) and self._context.keys():
+            self._update_ctx_groups(self._context.keys())
+            new_ctx = dict()
+            for ctx_grp, ctx_items in self._context.items():
+                new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
+        else:
+            new_ctx = self._prepare_context_items(self._context)
+
+        self._context = new_ctx
+
+    def _update_ctx_groups(self, ctx_group_names):
+        self.show_element(self.ctx_groups_dock)
+        self.ctx_groups_selector_cb.ItemsSource = ctx_group_names
+        if self.ctx_groups_active in ctx_group_names:
+            self.ctx_groups_selector_cb.SelectedIndex = \
+                ctx_group_names.index(self.ctx_groups_active)
+        else:
+            self.ctx_groups_selector_cb.SelectedIndex = 0
+
+    def _get_active_ctx_group(self):
+        return self.ctx_groups_selector_cb.SelectedItem
+
+    def _get_active_ctx(self):
+        if isinstance(self._context, dict):
+            return self._context[self._get_active_ctx_group()]
+        else:
+            return self._context
+
+    def _list_options(self, option_filter=None):
+        if option_filter:
             self.checkall_b.Content = 'Check'
             self.uncheckall_b.Content = 'Uncheck'
             self.toggleall_b.Content = 'Toggle'
-            checkbox_filter = checkbox_filter.lower()
+            option_filter = option_filter.lower()
             self.list_lb.ItemsSource = \
-                [checkbox for checkbox in self._context
-                 if checkbox_filter in checkbox.name.lower()]
+                [x for x in self._get_active_ctx() if x.matches(option_filter)]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
             self.toggleall_b.Content = 'Toggle All'
-            self.list_lb.ItemsSource = self._context
+            self.list_lb.ItemsSource = [x for x in self._get_active_ctx()]
+
+    @staticmethod
+    def _unwrap_options(options):
+        unwrapped = []
+        for optn in options:
+            if isinstance(optn, TemplateListItem):
+                unwrapped.append(optn.unwrap())
+            else:
+                unwrapped.append(optn)
+        return unwrapped
+
+    def _get_options(self):
+        if self.multiselect:
+            if self.return_all:
+                return [x for x in self._get_active_ctx()]
+            else:
+                return self._unwrap_options(
+                    [x for x in self._get_active_ctx()
+                     if x.state or x in self.list_lb.SelectedItems]
+                    )
+        else:
+            return self._unwrap_options([self.list_lb.SelectedItem])[0]
 
     def _set_states(self, state=True, flip=False, selected=False):
         all_items = self.list_lb.ItemsSource
@@ -417,44 +557,41 @@ class SelectFromCheckBoxes(TemplateUserInputWindow):
         self.list_lb.ItemsSource = None
         self.list_lb.ItemsSource = all_items
 
-    def toggle_all(self, sender, args):
+    def toggle_all(self, sender, args):    #pylint: disable=W0613
         """Handle toggle all button to toggle state of all check boxes."""
         self._set_states(flip=True)
 
-    def check_all(self, sender, args):
+    def check_all(self, sender, args):    #pylint: disable=W0613
         """Handle check all button to mark all check boxes as checked."""
         self._set_states(state=True)
 
-    def uncheck_all(self, sender, args):
+    def uncheck_all(self, sender, args):    #pylint: disable=W0613
         """Handle uncheck all button to mark all check boxes as un-checked."""
         self._set_states(state=False)
 
-    def check_selected(self, sender, args):
+    def check_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as checked."""
         self._set_states(state=True, selected=True)
 
-    def uncheck_selected(self, sender, args):
+    def uncheck_selected(self, sender, args):    #pylint: disable=W0613
         """Mark selected checkboxes as unchecked."""
         self._set_states(state=False, selected=True)
 
-    def button_select(self, sender, args):
+    def button_select(self, sender, args):    #pylint: disable=W0613
         """Handle select button click."""
-        if self.checked_only:
-            self.response = [x.item for x in self._context if x.state]
-        else:
-            self.response = self._context
+        self.response = self._get_options()
         self.Close()
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text change in search box."""
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
         else:
             self.show_element(self.clrsearch_b)
 
-        self._list_options(checkbox_filter=self.search_tb.Text)
+        self._list_options(option_filter=self.search_tb.Text)
 
-    def clear_search(self, sender, args):
+    def clear_search(self, sender, args):    #pylint: disable=W0613
         """Clear search box."""
         self.search_tb.Text = ' '
         self.search_tb.Clear()
@@ -513,6 +650,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         message = kwargs.get('message', None)
         self._switches = kwargs.get('switches', [])
+        if not isinstance(self._switches, dict):
+            self._switches = dict.fromkeys(self._switches)
 
         configs = kwargs.get('config', None)
 
@@ -520,10 +659,11 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             message if message else 'Pick a command option:'
 
         # creates the switches first
-        for switch in self._switches:
+        for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
             my_togglebutton.Content = switch
-            if configs and option in configs:
+            my_togglebutton.IsChecked = state if state else False
+            if configs and 'option' in configs:
                 self._set_config(my_togglebutton, configs[switch])
             self.button_list.Children.Add(my_togglebutton)
 
@@ -561,19 +701,19 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             option_filter = option_filter.lower()
             for button in self.button_list.Children:
                 if option_filter not in button.Content.lower():
-                    button.Visibility = framework.Windows.Visibility.Collapsed
+                    button.Visibility = WPF_COLLAPSED
                 else:
-                    button.Visibility = framework.Windows.Visibility.Visible
+                    button.Visibility = WPF_VISIBLE
         else:
             self.search_tb.Tag = \
                 'Type to Filter / Tab to Select / Enter or Click to Run'
             for button in self.button_list.Children:
-                button.Visibility = framework.Windows.Visibility.Visible
+                button.Visibility = WPF_VISIBLE
 
     def _get_active_button(self):
         buttons = []
         for button in self.button_list.Children:
-            if button.Visibility == framework.Windows.Visibility.Visible:
+            if button.Visibility == WPF_VISIBLE:
                 buttons.append(button)
         if len(buttons) == 1:
             return buttons[0]
@@ -582,34 +722,90 @@ class CommandSwitchWindow(TemplateUserInputWindow):
                 if x.IsFocused:
                     return x
 
-    def handle_click(self, sender, args):
+    def handle_click(self, sender, args):    #pylint: disable=W0613
         """Handle mouse click."""
         self.Close()
 
     def handle_input_key(self, sender, args):
         """Handle keyboard inputs."""
-        if args.Key == framework.Windows.Input.Key.Escape:
+        if args.Key == Input.Key.Escape:
             if self.search_tb.Text:
                 self.search_tb.Text = ''
             else:
                 self.Close()
-        elif args.Key == framework.Windows.Input.Key.Enter:
+        elif args.Key == Input.Key.Enter:
             self.process_option(self._get_active_button(), None)
-        elif args.Key != framework.Windows.Input.Key.Tab \
-                and args.Key != framework.Windows.Input.Key.Space\
-                and args.Key != framework.Windows.Input.Key.LeftShift\
-                and args.Key != framework.Windows.Input.Key.RightShift:
+        elif args.Key != Input.Key.Tab \
+                and args.Key != Input.Key.Space\
+                and args.Key != Input.Key.LeftShift\
+                and args.Key != Input.Key.RightShift:
             self.search_tb.Focus()
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text change in search box."""
         self._filter_options(option_filter=self.search_tb.Text)
 
-    def process_option(self, sender, args):
+    def process_option(self, sender, args):    #pylint: disable=W0613
         """Handle click on command option button."""
         self.Close()
         if sender:
             self._setup_response(response=sender.Content)
+
+
+class GetValueWindow(TemplateUserInputWindow):
+    """Standard form to get simple values from user.
+
+    Args:
+
+
+    Example:
+        >>> from pyrevit import forms
+        >>> items = ['item1', 'item2', 'item3']
+        >>> forms.SelectFromList.show(items, button_name='Select Item')
+        >>> ['item1']
+    """
+
+    xaml_source = 'GetValueWindow.xaml'
+
+    def _setup(self, **kwargs):
+        self.Width = 400
+        # determine value type
+        self.value_type = kwargs.get('value_type', 'string')
+        value_prompt = kwargs.get('prompt', None)
+        value_default = kwargs.get('default', None)
+
+        # customize window based on type
+        if self.value_type == 'string':
+            self.show_element(self.string_panel)
+            self.string_tb.Text = value_default if value_default else ''
+            self.string_tb.Focus()
+            self.string_tb.SelectAll()
+            self.string_prompt.Text = \
+                value_prompt if value_prompt else 'Enter string:'
+        elif self.value_type == 'dropdown':
+            self.show_element(self.dropdown_panel)
+            self.dropdown_prompt.Text = \
+                value_prompt if value_prompt else 'Pick one value:'
+            self.dropdown_cb.ItemsSource = self._context
+            if value_default:
+                self.dropdown_cb.SelectedItem = value_default
+        elif self.value_type == 'date':
+            self.show_element(self.date_panel)
+            self.date_prompt.Text = \
+                value_prompt if value_prompt else 'Pick date:'
+
+    def select(self, sender, args):    #pylint: disable=W0613
+        self.Close()
+        if self.value_type == 'string':
+            self.response = self.string_tb.Text
+        elif self.value_type == 'dropdown':
+            self.response = self.dropdown_cb.SelectedItem
+        elif self.value_type == 'date':
+            if self.date_picker.SelectedDate:
+                datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+                self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
+            else:
+                self.response = None
 
 
 class TemplatePromptBar(WPFWindow):
@@ -632,7 +828,6 @@ class TemplatePromptBar(WPFWindow):
 
         self.user_height = height
         self.update_window()
-
         self._setup(**kwargs)
 
     def update_window(self):
@@ -801,8 +996,8 @@ class ProgressBar(TemplatePromptBar):
 
     @title.setter
     def title(self, value):
-        if type(value) == str:
-            self._title = value
+        if isinstance(value, str):
+            self._title = value    #pylint: disable=W0201
 
     @property
     def indeterminate(self):
@@ -813,10 +1008,10 @@ class ProgressBar(TemplatePromptBar):
     def indeterminate(self, value):
         self.pbar.IsIndeterminate = value
 
-    def clicked_cancel(self, sender, args):
+    def clicked_cancel(self, sender, args):    #pylint: disable=W0613
         """Handler for cancel button clicked event."""
         self.cancel_b.Content = 'Cancelling...'
-        self.cancelled = True
+        self.cancelled = True    #pylint: disable=W0201
 
     def wait_async(self, func, args=()):
         """Call a method asynchronosely and show progress."""
@@ -841,8 +1036,8 @@ class ProgressBar(TemplatePromptBar):
             new_value (float): current progress value
             max_value (float): total progress value
         """
-        self.max_value = max_value
-        self.new_value = new_value
+        self.max_value = max_value    #pylint: disable=W0201
+        self.new_value = new_value    #pylint: disable=W0201
         if self.new_value == 0:
             self._dispatch_updater()
         elif self.step > 0:
@@ -869,13 +1064,15 @@ class SearchPrompt(WPFWindow):
     Example:
         >>> from pyrevit import forms
         >>> # assume search input of '/switch1 target1'
-        >>> matched_str, switches = forms.SearchPrompt.show(
+        >>> matched_str, args, switches = forms.SearchPrompt.show(
         ...     search_db=['target1', 'target2', 'target3', 'target4'],
         ...     switches=['/switch1', '/switch2'],
         ...     search_tip='pyRevit Search'
         ...     )
         ... matched_str
         'target1'
+        ... args
+        ['--help', '--branch', 'branchname']
         ... switches
         {'/switch1': True, '/switch2': False}
     """
@@ -900,13 +1097,15 @@ class SearchPrompt(WPFWindow):
         self.set_search_results()
 
     def _setup_response(self, response=None):
-        if self._switches:
-            switch_dict = dict.fromkeys(self._switches)
-            for mswitch in self.find_switch_match():
-                switch_dict[mswitch] = True
-            self.response = response, switch_dict
-        else:
-            self.response = response
+        switch_dict = dict.fromkeys(self._switches)
+        for switch in self.search_term_switches:
+            switch_dict[switch] = True
+        arguments = self.search_term_args
+        # remove first arg which is command name
+        if len(arguments) >= 1:
+            arguments = arguments[1:]
+
+        self.response = response, arguments, switch_dict
 
     @property
     def search_input(self):
@@ -916,6 +1115,12 @@ class SearchPrompt(WPFWindow):
     @search_input.setter
     def search_input(self, value):
         self.search_tb.Text = value
+        self.search_tb.CaretIndex = len(value)
+
+    @property
+    def search_input_parts(self):
+        """Current cleaned up search term."""
+        return self.search_input.strip().split()
 
     @property
     def search_term(self):
@@ -923,12 +1128,31 @@ class SearchPrompt(WPFWindow):
         return self.search_input.lower().strip()
 
     @property
-    def search_term_noswitch(self):
+    def search_term_switches(self):
+        """Find matching switches in search term."""
+        switches = set()
+        for stpart in self.search_input_parts:
+            if stpart.lower() in self._switches:
+                switches.add(stpart)
+        return switches
+
+    @property
+    def search_term_args(self):
+        """Find arguments in search term."""
+        args = []
+        switches = self.search_term_switches
+        for spart in self.search_input_parts:
+            if spart.lower() not in switches:
+                args.append(spart)
+        return args
+
+    @property
+    def search_term_main(self):
         """Current cleaned up search term without the listed switches."""
-        term = self.search_term
-        for switch in self._switches:
-            term = term.replace(switch.lower() + ' ', '')
-        return term.strip()
+        if len(self.search_term_args) >= 1:
+            return self.search_term_args[0]
+        else:
+            return ''
 
     @property
     def search_matches(self):
@@ -937,7 +1161,7 @@ class SearchPrompt(WPFWindow):
         # results = list(set(self._search_results))
         return OrderedDict.fromkeys(self._search_results).keys()
 
-    def update_results_display(self, input_term=None):
+    def update_results_display(self, fill_match=False):
         """Update search prompt results based on current input text."""
         self.directmatch_tb.Text = ''
         self.wordsmatch_tb.Text = ''
@@ -945,8 +1169,8 @@ class SearchPrompt(WPFWindow):
         results = self.search_matches
         res_cout = len(results)
 
-        logger.debug('unique results count: {}'.format(res_cout))
-        logger.debug('unique results: {}'.format(results))
+        mlogger.debug('unique results count: %s', res_cout)
+        mlogger.debug('unique results: %s', results)
 
         if res_cout > 1:
             self.show_element(self.tab_icon)
@@ -959,30 +1183,33 @@ class SearchPrompt(WPFWindow):
             self.hide_element(self.return_icon)
 
         if self._result_index >= res_cout:
-            self._result_index = 0
+            self._result_index = 0   #pylint: disable=W0201
 
         if self._result_index < 0:
-            self._result_index = res_cout - 1
-
-        if not input_term:
-            input_term = self.search_term_noswitch
+            self._result_index = res_cout - 1   #pylint: disable=W0201
 
         if not self.search_input:
             self.directmatch_tb.Text = self.search_tip
             return
 
         if results:
+            input_term = self.search_term
             cur_res = results[self._result_index]
-            logger.debug('current result: {}'.format(cur_res))
-            if cur_res.lower().startswith(input_term):
-                logger.debug('directmatch_tb.Text: {}'.format(cur_res))
-                self.directmatch_tb.Text = \
-                    self.search_input + cur_res[len(input_term):]
+            mlogger.debug('current result: %s', cur_res)
+            if fill_match:
+                self.search_input = cur_res
             else:
-                logger.debug('wordsmatch_tb.Text: {}'.format(cur_res))
-                self.wordsmatch_tb.Text = '- {}'.format(cur_res)
+                if cur_res.lower().startswith(input_term):
+                    self.directmatch_tb.Text = \
+                        self.search_input + cur_res[len(input_term):]
+                    mlogger.debug('directmatch_tb.Text: %s',
+                                  self.directmatch_tb.Text)
+                else:
+                    self.wordsmatch_tb.Text = '- {}'.format(cur_res)
+                    mlogger.debug('wordsmatch_tb.Text: %s',
+                                  self.wordsmatch_tb.Text)
 
-            self._setup_response(cur_res)
+            self._setup_response(response=cur_res)
             return True
 
         self._setup_response()
@@ -993,20 +1220,18 @@ class SearchPrompt(WPFWindow):
         self._result_index = 0
         self._search_results = []
 
+        mlogger.debug('search input: %s', self.search_input)
+        mlogger.debug('search term: %s', self.search_term)
+        mlogger.debug('search term (main): %s', self.search_term_main)
+        mlogger.debug('search term (parts): %s', self.search_input_parts)
+        mlogger.debug('search term (args): %s', self.search_term_args)
+        mlogger.debug('search term (switches): %s', self.search_term_switches)
+
         for resultset in args:
-            logger.debug('result set: {}'.format(resultset))
+            mlogger.debug('result set: %s}', resultset)
             self._search_results.extend(sorted(resultset))
 
-        logger.debug('results: {}'.format(self._search_results))
-
-    def find_switch_match(self):
-        """Find matching switches in search term."""
-        results = []
-        cur_txt = self.search_term
-        for switch in self._switches:
-            if switch.lower() in cur_txt:
-                results.append(switch)
-        return results
+        mlogger.debug('results: %s', self._search_results)
 
     def find_direct_match(self, input_text):
         """Find direct text matches in search term."""
@@ -1029,33 +1254,46 @@ class SearchPrompt(WPFWindow):
 
         return results
 
-    def search_txt_changed(self, sender, args):
+    def search_txt_changed(self, sender, args):    #pylint: disable=W0613
         """Handle text changed event."""
-        input_term = self.search_term_noswitch
+        input_term = self.search_term_main
         dmresults = self.find_direct_match(input_term)
         wordresults = self.find_word_match(input_term)
         self.set_search_results(dmresults, wordresults)
-        self.update_results_display(input_term)
+        self.update_results_display()
 
-    def handle_kb_key(self, sender, args):
+    def handle_kb_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input event."""
-        if args.Key == framework.Windows.Input.Key.Escape:
+        shiftdown = Input.Keyboard.IsKeyDown(Input.Key.LeftShift) \
+            or Input.Keyboard.IsKeyDown(Input.Key.RightShift)
+        # Escape: set response to none and close
+        if args.Key == Input.Key.Escape:
             self._setup_response()
             self.Close()
-        elif args.Key == framework.Windows.Input.Key.Enter:
+        # Enter: close, returns matched response automatically
+        elif args.Key == Input.Key.Enter:
             self.Close()
-        elif args.Key == framework.Windows.Input.Key.Tab:
-            self._result_index += 1
-            self.update_results_display()
-        elif args.Key == framework.Windows.Input.Key.Down:
-            self._result_index += 1
-            self.update_results_display()
-        elif args.Key == framework.Windows.Input.Key.Up:
+        # Shift+Tab, Tab: Cycle through matches
+        elif args.Key == Input.Key.Tab and shiftdown:
             self._result_index -= 1
             self.update_results_display()
+        elif args.Key == Input.Key.Tab:
+            self._result_index += 1
+            self.update_results_display()
+        # Up, Down: Cycle through matches
+        elif args.Key == Input.Key.Up:
+            self._result_index -= 1
+            self.update_results_display()
+        elif args.Key == Input.Key.Down:
+            self._result_index += 1
+            self.update_results_display()
+        # Right, End: Autocomplete with displayed match
+        elif args.Key in [Input.Key.Right,
+                          Input.Key.End]:
+            self.update_results_display(fill_match=True)
 
     @classmethod
-    def show(cls, search_db,
+    def show(cls, search_db,    #pylint: disable=W0221
              width=DEFAULT_SEARCHWND_WIDTH,
              height=DEFAULT_SEARCHWND_HEIGHT, **kwargs):
         """Show search prompt."""
@@ -1064,12 +1302,14 @@ class SearchPrompt(WPFWindow):
         return dlg.response
 
 
-class RevisionOption(BaseCheckBoxItem):
+class RevisionOption(TemplateListItem):
+    """Revision wrapper for :func:`select_revisions`."""
     def __init__(self, revision_element):
         super(RevisionOption, self).__init__(revision_element)
 
     @property
     def name(self):
+        """Revision name (description)."""
         revnum = self.item.SequenceNumber
         if hasattr(self.item, 'RevisionNumber'):
             revnum = self.item.RevisionNumber
@@ -1078,12 +1318,14 @@ class RevisionOption(BaseCheckBoxItem):
                                  self.item.RevisionDate)
 
 
-class SheetOption(BaseCheckBoxItem):
+class SheetOption(TemplateListItem):
+    """Sheet wrapper for :func:`select_sheets`."""
     def __init__(self, sheet_element):
         super(SheetOption, self).__init__(sheet_element)
 
     @property
     def name(self):
+        """Sheet name."""
         return '{} - {}{}' \
             .format(self.item.SheetNumber,
                     self.item.Name,
@@ -1091,158 +1333,368 @@ class SheetOption(BaseCheckBoxItem):
 
     @property
     def number(self):
+        """Sheet number."""
         return self.item.SheetNumber
 
 
-class ViewOption(BaseCheckBoxItem):
+class ViewOption(TemplateListItem):
+    """View wrapper for :func:`select_views`."""
     def __init__(self, view_element):
         super(ViewOption, self).__init__(view_element)
 
     @property
     def name(self):
+        """View name."""
         return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
-
-
-class DestDocOption(BaseCheckBoxItem):
-    def __init__(self, doc):
-        super(DestDocOption, self).__init__(doc)
-
-    @property
-    def name(self):
-        return getattr(self.item, 'Title', '')
 
 
 def select_revisions(title='Select Revision',
                      button_name='Select',
-                     width=DEFAULT_INPUTWINDOW_WIDTH, multiselect=True,
-                     filterfunc=None, doc=None):
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     multiple=True,
+                     filterfunc=None,
+                     doc=None):
+    """Standard form for selecting revisions.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for revisions; defaults to active document
+
+    Returns:
+        list[DB.Revision]: list of selected revisions
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_revisions()
+        ... [<Autodesk.Revit.DB.Revision object>,
+        ...  <Autodesk.Revit.DB.Revision object>]
+    """
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
 
     if filterfunc:
         revisions = filter(filterfunc, revisions)
-    revision_options = [RevisionOption(x) for x in revisions]
 
     # ask user for revisions
-    return_options = \
-        SelectFromList.show(
-            revision_options,
-            title=title,
-            button_name=button_name,
-            width=width,
-            multiselect=multiselect
-            )
+    selected_revs = SelectFromList.show(
+        [RevisionOption(x) for x in revisions],
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
 
-    if return_options:
-        if not multiselect and len(return_options) == 1:
-            return return_options[0].unwrap()
-        else:
-            return [x.unwrap() for x in return_options]
+    return selected_revs
 
 
-def select_sheets(title='Select Sheets', button_name='Select',
-                  width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                  filterfunc=None, doc=None):
+def select_sheets(title='Select Sheets',
+                  button_name='Select',
+                  width=DEFAULT_INPUTWINDOW_WIDTH,
+                  multiple=True,
+                  filterfunc=None,
+                  doc=None):
+    """Standard form for selecting sheets.
+
+    Sheets are grouped into sheet sets and sheet set can be selected from
+    a drop down box at the top of window.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for sheets; defaults to active document
+
+    Returns:
+        list[DB.ViewSheet]: list of selected sheets
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_sheets()
+        ... [<Autodesk.Revit.DB.ViewSheet object>,
+        ...  <Autodesk.Revit.DB.ViewSheet object>]
+    """
     doc = doc or HOST_APP.doc
+    all_ops = dict()
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
+
     if filterfunc:
         all_sheets = filter(filterfunc, all_sheets)
 
+    all_sheets_ops = sorted([SheetOption(x) for x in all_sheets],
+                            key=lambda x: x.number)
+    all_ops['All Sheets'] = all_sheets_ops
+
+    sheetsets = revit.query.get_sheet_sets(doc)
+    for sheetset in sheetsets:
+        sheetset_sheets = \
+            [x for x in sheetset.Views if isinstance(x, DB.ViewSheet)]
+        if filterfunc:
+            sheetset_sheets = filter(filterfunc, sheetset_sheets)
+        sheetset_ops = sorted([SheetOption(x) for x in sheetset_sheets],
+                              key=lambda x: x.number)
+        all_ops[sheetset.Name] = sheetset_ops
+
     # ask user for multiple sheets
-    if multiple:
-        return_options = \
-            SelectFromCheckBoxes.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width)
-        if return_options:
-            return [x.unwrap() for x in return_options if x.state]
-    else:
-        return_option = \
-            SelectFromList.show(
-                sorted([SheetOption(x) for x in all_sheets],
-                       key=lambda x: x.number),
-                title=title,
-                button_name=button_name,
-                width=width,
-                multiselect=False)
-        if return_option:
-            return return_option[0].unwrap()
+    selected_sheets = SelectFromList.show(
+        all_ops,
+        title=title,
+        group_selector_title='Sheet Sets:',
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
+
+    return selected_sheets
 
 
-def select_views(title='Select Views', button_name='Select',
-                 width=DEFAULT_INPUTWINDOW_WIDTH, multiple=True,
-                 filterfunc=None, doc=None):
+def select_views(title='Select Views',
+                 button_name='Select',
+                 width=DEFAULT_INPUTWINDOW_WIDTH,
+                 multiple=True,
+                 filterfunc=None,
+                 doc=None):
+    """Standard form for selecting views.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+
+    Returns:
+        list[DB.View]: list of selected views
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_views()
+        ... [<Autodesk.Revit.DB.View object>,
+        ...  <Autodesk.Revit.DB.View object>]
+    """
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
         all_graphviews = filter(filterfunc, all_graphviews)
 
-    # ask user for multiple sheets
-    if multiple:
-        return_options = \
-            SelectFromCheckBoxes.show(
-                sorted([ViewOption(x) for x in all_graphviews],
-                       key=lambda x: x.name),
-                title=title,
-                button_name=button_name,
-                width=width)
-        if return_options:
-            return [x.unwrap() for x in return_options if x.state]
-    else:
-        return_option = \
-            SelectFromList.show(
-                sorted([ViewOption(x) for x in all_graphviews],
-                       key=lambda x: x.name),
-                title=title,
-                button_name=button_name,
-                width=width,
-                multiselect=False)
-        if return_option:
-            return return_option[0].unwrap()
+    selected_views = SelectFromList.show(
+        sorted([ViewOption(x) for x in all_graphviews],
+               key=lambda x: x.name),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
+
+    return selected_views
 
 
-def select_dest_docs():
+def select_open_docs(title='Select Open Documents',
+                     button_name='OK',
+                     width=DEFAULT_INPUTWINDOW_WIDTH,    #pylint: disable=W0613
+                     multiple=True,
+                     filterfunc=None):
+    """Standard form for selecting open documents.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+
+    Returns:
+        list[DB.Document]: list of selected documents
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_open_docs()
+        ... [<Autodesk.Revit.DB.Document object>,
+        ...  <Autodesk.Revit.DB.Document object>]
+    """
     # find open documents other than the active doc
-    open_docs = [d for d in revit.docs if not d.IsLinked]
-    open_docs.remove(revit.doc)
+    open_docs = [d for d in revit.docs if not d.IsLinked]    #pylint: disable=E1101
+    open_docs.remove(revit.doc)    #pylint: disable=E1101
 
-    if len(open_docs) < 1:
+    if not open_docs:
         alert('Only one active document is found. '
               'At least two documents must be open. '
               'Operation cancelled.')
         return
 
-    return_options = \
-        SelectFromCheckBoxes.show([DestDocOption(x) for x in open_docs],
-                                  title='Select Destination Documents',
-                                  button_name='OK')
-    if return_options:
-        return [x.unwrap() for x in return_options if x]
+    return SelectFromList.show(
+        open_docs,
+        name_attr='Title',
+        multiselect=multiple,
+        title=title,
+        button_name=button_name,
+        filterfunc=filterfunc
+        )
 
 
-def alert(msg, title='pyRevit', ok=True,
-          cancel=False, yes=False, no=False, retry=False, exit=False):
-    buttons = UI.TaskDialogCommonButtons.None   # noqa
-    if ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
+def select_titleblocks(title='Select Titleblock',
+                       button_name='Select',
+                       no_tb_option='No Title Block',
+                       width=DEFAULT_INPUTWINDOW_WIDTH,
+                       multiple=False,
+                       filterfunc=None,
+                       doc=None):
+    """Standard form for selecting a titleblock.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        no_tb_option (str, optional): name of option for no title block
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for titleblocks; defaults to active document
+
+    Returns:
+        DB.ElementId: selected titleblock id.
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_titleblocks()
+        ... <Autodesk.Revit.DB.ElementId object>
+    """
+    doc = doc or HOST_APP.doc
+    titleblocks = DB.FilteredElementCollector(doc)\
+                    .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
+                    .WhereElementIsElementType()\
+                    .ToElements()
+
+    tblock_dict = {'{}: {}'.format(tb.FamilyName,
+                                   revit.ElementWrapper(tb).name): tb.Id
+                   for tb in titleblocks}
+    tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
+    selected_titleblocks = SelectFromList.show(tblock_dict.keys(),
+                                               title=title,
+                                               button_name=button_name,
+                                               width=width,
+                                               multiselect=multiple,
+                                               filterfunc=filterfunc)
+    if selected_titleblocks:
+        if multiple:
+            return [tblock_dict[x] for x in selected_titleblocks]
+        else:
+            return tblock_dict[selected_titleblocks]
+
+
+def select_swatch(title='Select Color Swatch', button_name='Select'):
+    """Standard form for selecting a color swatch.
+
+    Args:
+        title (str, optional): swatch list window title
+        button_name (str, optional): swatch list window button caption
+
+    Returns:
+        pyrevit.coreutils.colors.RGB: rgb color
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_swatch(title="Select Text Color")
+        ... <RGB #CD8800>
+    """
+    ict_xaml_file = \
+        os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
+    ict = wpf.LoadComponent(Controls.ControlTemplate(), ict_xaml_file)
+    swatch = SelectFromList.show(
+        colors.COLORS.values(),
+        title=title,
+        button_name=button_name,
+        width=300,
+        multiselect=False,
+        item_container_template=ict
+        )
+
+    return swatch
+
+
+def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
+          ok=True, cancel=False, yes=False, no=False, retry=False,
+          warn_icon=True, exitscript=False):
+    """Show a task dialog with given message.
+
+    Args:
+        msg (str): message to be displayed
+        title (str, optional): task dialog title
+        ok (bool, optional): show OK button, defaults to True
+        cancel (bool, optional): show Cancel button, defaults to False
+        yes (bool, optional): show Yes button, defaults to False
+        no (bool, optional): show NO button, defaults to False
+        retry (bool, optional): show Retry button, defaults to False
+        exitscript (bool, optional): exit if cancel or no, defaults to False
+
+    Returns:
+        bool: True if okay, yes, or retry, otherwise False
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.alert('Are you sure?',
+        ...              ok=False, yes=True, no=True, exitscript=True)
+    """
+    buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
     if yes:
         buttons |= UI.TaskDialogCommonButtons.Yes
+    elif ok:
+        buttons |= UI.TaskDialogCommonButtons.Ok
+
+    if cancel:
+        buttons |= UI.TaskDialogCommonButtons.Cancel
     if no:
         buttons |= UI.TaskDialogCommonButtons.No
     if retry:
         buttons |= UI.TaskDialogCommonButtons.Retry
 
-    res = UI.TaskDialog.Show(title, msg, buttons)
+    cmd_name = EXEC_PARAMS.command_name
+    if not title:
+        title = cmd_name if cmd_name else 'pyRevit'
 
-    if not exit:
+    tdlg = UI.TaskDialog(title)
+    tdlg.CommonButtons = buttons
+    tdlg.MainInstruction = msg
+    tdlg.MainContent = sub_msg
+    tdlg.ExpandedContent = expanded
+    if footer:
+        footer += '\n'
+    tdlg.FooterText = \
+        footer + \
+        'pyRevit {}'.format(versionmgr.get_pyrevit_version().get_formatted())
+    tdlg.TitleAutoPrefix = False
+    tdlg.MainIcon = \
+        UI.TaskDialogIcon.TaskDialogIconWarning \
+        if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
+    # tdlg.VerificationText = 'verif'
+    res = tdlg.Show()
+
+    if not exitscript:
         if res == UI.TaskDialogResult.Ok \
                 or res == UI.TaskDialogResult.Yes \
                 or res == UI.TaskDialogResult.Retry:
@@ -1253,14 +1705,78 @@ def alert(msg, title='pyRevit', ok=True,
     sys.exit()
 
 
-def pick_folder():
+def alert_ifnot(condition, msg, *args, **kwargs):
+    """Show a task dialog with given message if condition is NOT met.
+
+    Args:
+        condition (bool): condition to test
+        msg (str): message to be displayed
+        title (str, optional): task dialog title
+        ok (bool, optional): show OK button, defaults to True
+        cancel (bool, optional): show Cancel button, defaults to False
+        yes (bool, optional): show Yes button, defaults to False
+        no (bool, optional): show NO button, defaults to False
+        retry (bool, optional): show Retry button, defaults to False
+        exitscript (bool, optional): exit if cancel or no, defaults to False
+
+    Returns:
+        bool: True if okay, yes, or retry, otherwise False
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.alert_ifnot(value > 12,
+        ...                   'Are you sure?',
+        ...                    ok=False, yes=True, no=True, exitscript=True)
+    """
+    if not condition:
+        return alert(msg, *args, **kwargs)
+
+
+def pick_folder(title=None):
+    """Show standard windows pick folder dialog.
+
+    Args:
+        title (str, optional): title for the window
+
+    Returns:
+        str: folder path
+    """
     fb_dlg = Forms.FolderBrowserDialog()
+    if title:
+        fb_dlg.Description = title
     if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
         return fb_dlg.SelectedPath
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
+    r"""Pick file dialog to select a destination file.
+
+    Args:
+        file_ext (str): file extension
+        files_filter (str): file filter
+        init_dir (str): initial directory
+        restore_dir (bool): restore last directory
+        multi_file (bool): allow select multiple files
+        unc_paths (bool): return unc paths
+
+    Returns:
+        str or list[str]: file path or list of file paths if multi_file=True
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.pick_file(file_ext='csv')
+        ... r'C:\output\somefile.csv'
+
+        >>> forms.pick_file(file_ext='csv', multi_file=True)
+        ... [r'C:\output\somefile1.csv', r'C:\output\somefile2.csv']
+
+        >>> forms.pick_file(files_filter='All Files (*.*)|*.*|'
+                                         'Excel Workbook (*.xlsx)|*.xlsx|'
+                                         'Excel 97-2003 Workbook|*.xls',
+                            multi_file=True)
+        ... [r'C:\output\somefile1.xlsx', r'C:\output\somefile2.xls']
+    """
     of_dlg = Forms.OpenFileDialog()
     if files_filter:
         of_dlg.Filter = files_filter
@@ -1284,6 +1800,24 @@ def pick_file(file_ext='', files_filter='', init_dir='',
 
 def save_file(file_ext='', files_filter='', init_dir='', default_name='',
               restore_dir=True, unc_paths=False):
+    r"""Save file dialog to select a destination file for data.
+
+    Args:
+        file_ext (str): file extension
+        files_filter (str): file filter
+        init_dir (str): initial directory
+        default_name (str): default file name
+        restore_dir (bool): restore last directory
+        unc_paths (bool): return unc paths
+
+    Returns:
+        str: file path
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.save_file(file_ext='csv')
+        ... r'C:\output\somefile.csv'
+    """
     sf_dlg = Forms.SaveFileDialog()
     if files_filter:
         sf_dlg.Filter = files_filter
@@ -1302,8 +1836,156 @@ def save_file(file_ext='', files_filter='', init_dir='', default_name='',
         return sf_dlg.FileName
 
 
-def check_workshared(doc):
+def pick_excel_file(save=False):
+    """File pick/save dialog for an excel file.
+
+    Args:
+        save (bool): show file save dialog, instead of file pick dialog
+
+    Returns:
+        str: file path
+    """
+    if save:
+        return save_file(file_ext='xlsx')
+    return pick_file(files_filter='All Files (*.*)|*.*|'
+                     'Excel Workbook (*.xlsx)|*.xlsx|'
+                     'Excel 97-2003 Workbook|*.xls')
+
+
+def save_excel_file():
+    """File save dialog for an excel file.
+
+    Returns:
+        str: file path
+    """
+    return pick_excel_file(save=True)
+
+
+def check_workshared(doc=None, message='Model is not workshared.'):
+    """Verify if model is workshared and notify user if not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        message (str): prompt message if returning False
+
+    Returns:
+        bool: True if doc is workshared
+    """
+    doc = doc or HOST_APP.doc
     if not doc.IsWorkshared:
-        alert('Model is not workshared.')
+        alert(message, warn_icon=True)
         return False
     return True
+
+
+def check_selection(exitscript=False,
+                    message='At least one element must be selected.'):
+    """Verify if selection is not empty notify user if it is.
+
+    Args:
+        exitscript (bool): exit script if returning False
+        message (str): prompt message if returning False
+
+    Returns:
+        bool: True if selection has at least one item
+    """
+    if revit.get_selection().is_empty:
+        alert(message, exitscript=exitscript)
+        return False
+    return True
+
+
+def check_familydoc(doc=None, family_cat=None, exitscript=False):
+    """Verify document is a Family and notify user of not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        family_cat (str): family category name
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if doc is a Family and of provided category
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_familydoc(doc=revit.doc, family_cat='Data Devices')
+        ... True
+    """
+    doc = doc or HOST_APP.doc
+    family_cat = revit.query.get_category(family_cat)
+    if doc.IsFamilyDocument and family_cat:
+        if doc.OwnerFamily.FamilyCategory.Id == family_cat.Id:
+            return True
+    elif doc.IsFamilyDocument and not family_cat:
+        return True
+
+    family_type_msg = ' of type {}'\
+                      .format(family_cat.Name) if family_cat else''
+    alert('Active document must be a Family document{}.'
+          .format(family_type_msg), exitscript=exitscript)
+    return False
+
+
+def toast(message, title='pyRevit', appid='pyRevit',
+          icon=None, click=None, actions=None):
+    """Show a Windows 10 notification.
+
+    Args:
+        message (str): notification message
+        title (str): notification title
+        appid (str): app name (will show under message)
+        icon (str): file path to icon .ico file (defaults to pyRevit icon)
+        click (str): click action commands string
+        actions (dict): dictionary of button names and action strings
+
+    Example:
+        >>> script.toast("Hello World!",
+        ...              title="My Script",
+        ...              appid="MyAPP",
+        ...              click="https://eirannejad.github.io/pyRevit/",
+        ...              actions={
+        ...                  "Open Google":"https://google.com",
+        ...                  "Open Toast64":"https://github.com/go-toast/toast"
+        ...                  })
+    """
+    toaster.send_toast(
+        message,
+        title=title,
+        appid=appid,
+        icon=icon,
+        click=click,
+        actions=actions)
+
+
+def ask_for_string(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='string',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_one_item(items, default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        items,
+        value_type='dropdown',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def ask_for_date(default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='date',
+        default=default,
+        prompt=prompt,
+        title=title
+        )
+
+
+def inform_wip():
+    alert("Work in progress.", exitscript=True)

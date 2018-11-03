@@ -22,23 +22,15 @@ logger = script.get_logger()
 
 
 class WipeOption:
-    def __init__(self, name, default_state=False,
-                 wipe_action=None, wipe_args=None):
+    def __init__(self, name, wipe_action=None, wipe_args=None):
         self.name = name
-        self.state = default_state
         self.wipe_action = wipe_action
         self.wipe_args = wipe_args
         self.is_dependent = getattr(self.wipe_action, 'is_dependent', False)
 
     def __repr__(self):
-        return '<WipeOption Name:{} State:{} Action:{}>'\
-               .format(self.name, self.state, self.wipe_action)
-
-    def __bool__(self):
-        return self.state
-
-    def __nonzero__(self):
-        return self.state
+        return '<WipeOption Name:{} Action:{}>'\
+               .format(self.name, self.wipe_action)
 
 
 # generate wipe options based on functions in
@@ -61,11 +53,12 @@ for wscleaner_func in wipeactions.get_worksetcleaners():
 
 # ask user for wipe actions
 return_options = \
-    forms.SelectFromCheckBoxes.show(
+    forms.SelectFromList.show(
         sorted(wipe_options, key=lambda x: x.name),
         title='Wipe Options',
         width=500,
-        button_name='Wipe Model'
+        button_name='Wipe Model',
+        multiselect=True
         )
 
 if return_options:
@@ -79,9 +72,8 @@ if return_options:
 
     for actions in [dependent_actions, not_dependent_actions]:
         for wipe_act in actions:
-            if wipe_act:
-                logger.debug('Calling: {}'.format(wipe_act))
-                if wipe_act.wipe_args:
-                    wipe_act.wipe_action(*wipe_act.wipe_args)
-                else:
-                    wipe_act.wipe_action()
+            logger.debug('Calling: {}'.format(wipe_act))
+            if wipe_act.wipe_args:
+                wipe_act.wipe_action(*wipe_act.wipe_args)
+            else:
+                wipe_act.wipe_action()
