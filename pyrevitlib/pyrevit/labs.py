@@ -12,6 +12,7 @@ clr.AddReference('Nett')
 clr.AddReference('Nlog')
 clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
+clr.AddReference('MahApps.Metro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.Language')
@@ -20,6 +21,7 @@ import Nett
 import NLog
 import MadMilkman.Ini
 import OpenMcdf
+import MahApps.Metro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import Language

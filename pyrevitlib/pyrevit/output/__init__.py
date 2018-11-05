@@ -21,7 +21,7 @@ from __future__ import print_function
 import os.path as op
 import itertools
 
-from pyrevit import EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -31,6 +31,7 @@ from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 from pyrevit.coreutils.loadertypes import ScriptOutputManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
+from pyrevit import DB
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -38,6 +39,19 @@ mlogger = logger.get_logger(__name__)
 
 
 DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+
+
+def docclosing_eventhandler(sender, args):  #pylint: disable=W0613
+    """Close all output window on document closing."""
+    ScriptOutputManager.CloseActiveOutputWindows()
+
+
+def setup_output_closer():
+    """Setup document closing event listener."""
+    HOST_APP.app.DocumentClosing += \
+        framework.EventHandler[DB.Events.DocumentClosingEventArgs](
+            docclosing_eventhandler
+            )
 
 
 def set_stylesheet(stylesheet):

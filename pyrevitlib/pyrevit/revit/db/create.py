@@ -1,8 +1,10 @@
 from pyrevit import HOST_APP, PyRevitException
+from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
+from pyrevit.revit import db
 from pyrevit.revit.db import query
 
 
@@ -188,11 +190,34 @@ def load_family(family_file, doc=None):
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 
 
-def create_workset(workset_name, enable_worksharing=True, doc=None):
+def enable_worksharing(levels_workset_name='Shared Levels and Grids',
+                       default_workset_name='Workset1',
+                       doc=None):
     doc = doc or HOST_APP.doc
-    if not doc.IsWorkshared \
-            and doc.CanEnableWorksharing \
-            and enable_worksharing:
-        doc.EnableWorksharing('Shared Levels and Grids', 'Workset1')
+    if doc.CanEnableWorksharing:
+        doc.EnableWorksharing(levels_workset_name, default_workset_name)
+    else:
+        raise PyRevitException('Worksharing can not be enabled. '
+                               '(CanEnableWorksharing is False)')
+
+
+def create_workset(workset_name, doc=None):
+    doc = doc or HOST_APP.doc
+    if not doc.IsWorkshared:
+        raise PyRevitException('Document is not workshared.') 
 
     return DB.Workset.Create(doc, workset_name)
+
+
+def create_filledregion(filledregion_name, fillpattern_element, doc=None):
+    doc = doc or HOST_APP.doc
+    filledregion_types = DB.FilteredElementCollector(doc) \
+                           .OfClass(DB.FilledRegionType)
+    for filledregion_type in filledregion_types:
+        if db.ElementWrapper(filledregion_type).name == filledregion_name:
+            raise PyRevitException('Filled Region matching \"{}\" already '
+                                   'exists.'.format(filledregion_name))
+    source_filledregion = filledregion_types.FirstElement()
+    new_filledregion = source_filledregion.Duplicate(filledregion_name)
+    new_filledregion.FillPatternId = fillpattern_element.Id
+    return new_filledregion

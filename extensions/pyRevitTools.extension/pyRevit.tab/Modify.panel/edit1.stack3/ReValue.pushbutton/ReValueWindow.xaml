@@ -63,7 +63,8 @@
                   RowHeaderWidth="0"
                   CanUserSortColumns="True"
                   HorizontalGridLinesBrush="#dedede"
-                  VerticalGridLinesBrush="#dedede">
+                  VerticalGridLinesBrush="#dedede"
+                  SelectedCellsChanged="on_selection_change">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >
                     <Setter Property="BorderThickness" Value="0"/>

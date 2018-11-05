@@ -155,21 +155,26 @@ def _produce_ui_smartbutton(ui_maker_params):
     smartbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not smartbutton.is_supported:
+        return None
+
     if smartbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing smart button: %s', smartbutton)
     try:
         parent_ui_item.create_push_button(
-            smartbutton.name,
-            ext_asm_info.location,
-            _get_effective_classname(smartbutton),
-            smartbutton.icon_file or parent.icon_file,
-            _make_button_tooltip(smartbutton),
-            _make_button_tooltip_ext(smartbutton, ext_asm_info.name),
-            smartbutton.ttvideo_file,
-            smartbutton.get_help_url() or '',
-            smartbutton.avail_class_name,
+            button_name=smartbutton.name,
+            asm_location=ext_asm_info.location,
+            class_name=_get_effective_classname(smartbutton),
+            icon_path=smartbutton.icon_file or parent.icon_file,
+            tooltip=_make_button_tooltip(smartbutton),
+            tooltip_ext=_make_button_tooltip_ext(smartbutton,
+                                                 ext_asm_info.name),
+            tooltip_image=smartbutton.ttimage_file,
+            tooltip_video=smartbutton.ttvideo_file,
+            ctxhelpurl=smartbutton.get_help_url() or '',
+            avail_class_name=smartbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
     except PyRevitException as err:
@@ -249,6 +254,9 @@ def _produce_ui_linkbutton(ui_maker_params):
     linkbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not linkbutton.is_supported:
+        return None
+
     if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
@@ -293,21 +301,26 @@ def _produce_ui_pushbutton(ui_maker_params):
     pushbutton = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
+    if not pushbutton.is_supported:
+        return None
+
     if pushbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
     mlogger.debug('Producing button: %s', pushbutton)
     try:
         parent_ui_item.create_push_button(
-            pushbutton.name,
-            ext_asm_info.location,
-            _get_effective_classname(pushbutton),
-            pushbutton.icon_file or parent.icon_file,
-            _make_button_tooltip(pushbutton),
-            _make_button_tooltip_ext(pushbutton, ext_asm_info.name),
-            pushbutton.ttvideo_file,
-            pushbutton.get_help_url() or '',
-            pushbutton.avail_class_name,
+            button_name=pushbutton.name,
+            asm_location=ext_asm_info.location,
+            class_name=_get_effective_classname(pushbutton),
+            icon_path=pushbutton.icon_file or parent.icon_file,
+            tooltip=_make_button_tooltip(pushbutton),
+            tooltip_ext=_make_button_tooltip_ext(pushbutton,
+                                                 ext_asm_info.name),
+            tooltip_image=pushbutton.ttimage_file,
+            tooltip_video=pushbutton.ttvideo_file,
+            ctxhelpurl=pushbutton.get_help_url() or '',
+            avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
         return parent_ui_item.button(pushbutton.name)
@@ -445,14 +458,16 @@ def _produce_ui_panelpushbutton(ui_maker_params):
     mlogger.debug('Producing panel button: %s', paneldlgbutton)
     try:
         parent_ui_item.create_panel_push_button(
-            paneldlgbutton.name,
-            ext_asm_info.location,
-            _get_effective_classname(paneldlgbutton),
-            _make_button_tooltip(paneldlgbutton),
-            _make_button_tooltip_ext(paneldlgbutton, ext_asm_info.name),
-            paneldlgbutton.ttvideo_file,
-            paneldlgbutton.get_help_url() or '',
-            paneldlgbutton.avail_class_name,
+            button_name=paneldlgbutton.name,
+            asm_location=ext_asm_info.location,
+            class_name=_get_effective_classname(paneldlgbutton),
+            tooltip=_make_button_tooltip(paneldlgbutton),
+            tooltip_ext=_make_button_tooltip_ext(paneldlgbutton,
+                                                 ext_asm_info.name),
+            tooltip_image=paneldlgbutton.ttimage_file,
+            tooltip_video=paneldlgbutton.ttvideo_file,
+            ctxhelpurl=paneldlgbutton.get_help_url() or '',
+            avail_class_name=paneldlgbutton.avail_class_name,
             update_if_exists=True)
 
         return parent_ui_item.button(paneldlgbutton.name)

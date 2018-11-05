@@ -10,5 +10,9 @@
     "url": "https://github.com/eirannejad/pyRevit.git",
     "website": "http://eirannejad.github.io/pyRevit/",
     "image": "",
+    "templates": {
+        "author": "Ehsan Iran-Nejad",
+        "docpath": "https://www.youtube.com/watch?v="
+    },
     "dependencies": []
 }

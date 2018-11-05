@@ -2,11 +2,15 @@
 
 from collections import namedtuple
 
+from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
+
+
+mlogger = logger.get_logger(__name__)
 
 
 GRAPHICAL_VIEWTYPES = [
@@ -118,10 +122,10 @@ def get_elements_by_parameter(param_name, param_value,
     return found_els
 
 
-def get_elements_by_shared_parameter(param_name, param_value,
-                                     inverse=False, doc=None):
+def get_elements_by_param_value(param_name, param_value,
+                                inverse=False, doc=None):
     doc = doc or HOST_APP.doc
-    param_id = get_sharedparam_id(param_name)
+    param_id = get_project_parameter_id(param_name)
     if param_id:
         pvprov = DB.ParameterValueProvider(param_id)
         pfilter = DB.FilterStringEquals()
@@ -132,6 +136,8 @@ def get_elements_by_shared_parameter(param_name, param_value,
         return DB.FilteredElementCollector(doc)\
                  .WherePasses(param_filter)\
                  .ToElements()
+    else:
+        return []
 
 
 def get_elements_by_category(element_bicats, elements=None, doc=None):
@@ -264,43 +270,52 @@ def get_sharedparam_definition_file():
 
 
 def get_defined_sharedparams():
-    msp_list = []
-    for def_group in get_sharedparam_definition_file().Groups:
-        msp_list.extend([db.ModelSharedParam(x)
-                         for x in def_group.Definitions])
-    return msp_list
+    # returns DB.ExternalDefinition
+    pp_list = []
+    try:
+        for def_group in get_sharedparam_definition_file().Groups:
+            pp_list.extend([x for x in def_group.Definitions])
+    except PyRevitException as ex:
+        mlogger.debug('Error getting shared parameters. | %s', ex)
+    return pp_list
 
 
-def get_model_sharedparams(doc=None):
+def get_project_parameters(doc=None):
     doc = doc or HOST_APP.doc
+    # collect shared parameter names
+    shared_params = {x.Name: x for x in get_defined_sharedparams()}
+
     param_bindings = doc.ParameterBindings
     pb_iterator = param_bindings.ForwardIterator()
     pb_iterator.Reset()
 
-    msp_list = []
+    pp_list = []
     while pb_iterator.MoveNext():
-        msp = db.ModelSharedParam(pb_iterator.Key,
-                                  param_bindings[pb_iterator.Key])
-        msp_list.append(msp)
+        msp = db.ProjectParameter(
+            pb_iterator.Key,
+            param_bindings[pb_iterator.Key],
+            param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
+        pp_list.append(msp)
 
-    return msp_list
+    return pp_list
 
 
-def get_sharedparam_id(param_name):
-    for shared_param in get_model_sharedparams():
+def get_project_parameter_id(param_name):
+    for shared_param in get_project_parameters():
         if shared_param.name == param_name:
             return shared_param.param_def.Id
+    raise PyRevitException('Parameter not found: {}'.format(param_name))
 
 
-def get_model_sharedparam(param_id_or_name, doc=None):
-    msp_list = get_model_sharedparams(doc or HOST_APP.doc)
-    for msp in msp_list:
+def get_project_parameter(param_id_or_name, doc=None):
+    pp_list = get_project_parameters(doc or HOST_APP.doc)
+    for msp in pp_list:
         if msp == param_id_or_name:
             return msp
 
 
-def model_has_sharedparam(param_id_or_name, doc=None):
-    return get_model_sharedparam(param_id_or_name, doc=doc)
+def model_has_parameter(param_id_or_name, doc=None):
+    return get_project_parameter(param_id_or_name, doc=doc)
 
 
 def get_project_info():
@@ -318,10 +333,14 @@ def get_sheet_revisions(sheet, doc=None):
     return [doc.GetElement(x) for x in sheet.GetAdditionalRevisionIds()]
 
 
-def get_sheets(include_placeholders=True, doc=None):
+def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     sheets = list(DB.FilteredElementCollector(doc or HOST_APP.doc)
                   .OfCategory(DB.BuiltInCategory.OST_Sheets)
                   .WhereElementIsNotElementType())
+    if not include_noappear:
+        sheets = [x for x in sheets
+                  if x.Parameter[DB.BuiltInParameter.SHEET_SCHEDULED]
+                  .AsInteger() > 0]
     if not include_placeholders:
         return [x for x in sheets if not x.IsPlaceholder]
 
@@ -697,3 +716,52 @@ def get_mep_connections(element):
                         and y.Owner.Id != element.Id
                         and y.ConnectorType != DB.ConnectorType.Logical]
         return connelements
+
+
+def get_fillpattern_element(fillpattern_name, fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    for existing_fp_element in existing_fp_elements:
+        fillpattern = existing_fp_element.GetFillPattern()
+        if fillpattern_name == fillpattern.Name \
+                and fillpattern_target == fillpattern.Target:
+            return existing_fp_element
+
+
+def get_all_fillpattern_elements(fillpattern_target, doc=None):
+    doc = doc or HOST_APP.doc
+    existing_fp_elements = \
+        DB.FilteredElementCollector(doc) \
+          .OfClass(framework.get_type(DB.FillPatternElement))
+
+    return [x for x in existing_fp_elements
+            if x.GetFillPattern().Target == fillpattern_target]
+
+
+def get_subcategories(doc=None, purgable=False, filterfunc=None):
+    doc = doc or HOST_APP.doc
+    # collect custom categories
+    subcategories = []
+    for cat in doc.Settings.Categories:
+        for subcat in cat.SubCategories:
+            if purgable:
+                if subcat.Id.IntegerValue > 1:
+                    subcategories.append(subcat)
+            else:
+                subcategories.append(subcat)
+    if filterfunc:
+        subcategories = filter(filterfunc, subcategories)
+
+    return subcategories
+
+
+def get_subcategory(category_name, subcategory_name, doc=None):
+    doc = doc or HOST_APP.doc
+    for cat in doc.Settings.Categories:
+        if cat.Name == category_name:
+            for subcat in cat.SubCategories:
+                if subcat.Name == subcategory_name:
+                    return subcat

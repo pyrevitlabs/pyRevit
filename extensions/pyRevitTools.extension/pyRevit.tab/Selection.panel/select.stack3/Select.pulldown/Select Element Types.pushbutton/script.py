@@ -14,14 +14,41 @@ element_types = \
      for x in revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
      if x.FamilyName}
 
+graphic_styles = \
+    {'Graphics Styles: ' + x.GraphicsStyleCategory.Name
+     for x in revit.query.get_types_by_class(DB.GraphicsStyle, doc=revit.doc)
+     if x.GraphicsStyleCategory
+     and x.GraphicsStyleCategory.CategoryType != DB.CategoryType.Internal}
+
+all_options = list(element_types)
+all_options.extend(graphic_styles)
+all_options.extend(['Fill Patterns', 'Area Schemes'])
 selected_option = \
-    forms.CommandSwitchWindow.show(list(element_types),
+    forms.CommandSwitchWindow.show(all_options,
                                    message='Pick type category:')
 
 if selected_option:
-    all_types = \
-        revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
     selection = revit.get_selection()
-    selection.set_to([x for x in all_types
-                      if x.FamilyName == selected_option
-                      and revit.ElementWrapper(x).name != x.FamilyName])
+    if selected_option == 'Fill Patterns':
+        fill_patterns = revit.query.get_types_by_class(DB.FillPatternElement,
+                                                       doc=revit.doc)
+        selection.set_to(list(fill_patterns))
+    if selected_option == 'Area Schemes':
+        area_schemes = revit.query.get_types_by_class(DB.AreaScheme,
+                                                      doc=revit.doc)
+        selection.set_to(list(area_schemes))
+    elif selected_option.startswith('Graphics Styles: '):
+        graphic_style_cat = selected_option.replace('Graphics Styles: ', '')
+        graphic_styles = \
+            [x for x in revit.query.get_types_by_class(DB.GraphicsStyle,
+                                                       doc=revit.doc)
+             if x.GraphicsStyleCategory
+             and x.GraphicsStyleCategory.CategoryType != DB.CategoryType.Internal
+             and graphic_style_cat == x.GraphicsStyleCategory.Name]
+        selection.set_to(list(graphic_styles))
+    else:
+        all_types = \
+            revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
+        selection.set_to([x for x in all_types
+                          if selected_option == x.FamilyName
+                          and revit.ElementWrapper(x).name != x.FamilyName])

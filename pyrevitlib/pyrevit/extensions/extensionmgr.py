@@ -215,7 +215,6 @@ def get_installed_ui_extensions():
     # over paths added by this method (they're the first paths added to the
     # search paths list, and these paths will follow)
     for ui_extension in ui_ext_list:
-        ui_extension.configure()
         _update_extension_syspaths(ui_extension,
                                    lib_ext_list,
                                    [MAIN_LIB_DIR,

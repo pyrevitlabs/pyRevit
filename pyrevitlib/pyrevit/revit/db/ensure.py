@@ -70,6 +70,8 @@ def ensure_element_ids(mixed_list):
             element_id_list.append(item)
         elif isinstance(item, DB.Element):
             element_id_list.append(item.Id)
+        elif hasattr(item, 'Id') and isinstance(item.Id, DB.ElementId):
+            element_id_list.append(item.Id)
         elif isinstance(item, int):
             element_id_list.append(DB.ElementId(item))
 

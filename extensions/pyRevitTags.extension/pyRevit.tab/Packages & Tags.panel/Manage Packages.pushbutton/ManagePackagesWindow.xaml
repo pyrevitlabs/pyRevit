@@ -1,0 +1,217 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Manage Packages"
+        Height="600" Width="1200"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center">
+    <Window.Resources>
+        <SolidColorBrush x:Key="GridColor" Color="#dedede"/>
+        <SolidColorBrush x:Key="AlternateRowColor" Color="#fbfbfb"/>
+        <SolidColorBrush x:Key="DataGridBackground" Color="#fcfcfc"/>
+
+        <Style x:Key="ClearButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+
+        <Style x:Key="SymbolBase" TargetType="{x:Type Polygon}">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="CreatedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{DynamicResource pyRevitAccentBrush}" />
+            <Setter Property="Points" Value="0,0 16,0 16,4 4,4 4,12 16,12 16,16 0,16" />
+        </Style>
+
+        <Style x:Key="IssuedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
+            <Setter Property="Points" Value="8,0 16,8 8,16 0,8" />
+        </Style>
+
+        <Style x:Key="IssuedAsReferenceSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
+            <Setter Property="Points" Value="0,0 16,0 16,16 0,16 0,0 4,4 4,12 12,12 12,4 4,4" />
+        </Style>
+
+        <Style x:Key="UpdatedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
+            <Setter Property="Points" Value="0,0 4,0 4,12 12,12 12,0 16,0 16,16 0,16 0,0" />
+        </Style>
+
+        <Style x:Key="RevisedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="LightSlateGray" />
+            <Setter Property="Points" Value="0,0 12,0 12,6 16,6 16,16 12,16 12,10 4,10 4,16 0,16 0,0 4,4 4,6 8,6 8,4 4,4" />
+        </Style>
+
+        <Style x:Key="MergedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{DynamicResource pyRevitDarkBrush}" />
+            <Setter Property="Points" Value="0,0 10,0 10,2 16,2 16,16 12,16 12,6 10,6 10,12 6,12 6,4 4,4 4,16 0,16 0,0" />
+        </Style>
+
+        <Style x:Key="DeletedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="Crimson" />
+            <Setter Property="Points" Value="3,0 8,5 13,0 16,3 11,8 16,13 13,16 8,11 3,16 0,13 5,8 0,3" />
+        </Style>
+
+        <ControlTemplate x:Key="CommitTypeListItemControlTemplate">
+            <WrapPanel>
+                <Polygon x:Name="ctypelistshape"/>
+                <TextBlock Text="{Binding name}" Margin="10,0,0,0"/>
+            </WrapPanel>
+            <ControlTemplate.Triggers>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="created">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource CreatedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="issued">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource IssuedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="issuedref">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource IssuedAsReferenceSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="updated">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource UpdatedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="revised">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource RevisedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="merged">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource MergedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="deleted">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource DeletedSymbol}"/>
+                </DataTrigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+    </Window.Resources>
+    <DockPanel Margin="10">
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" FontSize="14" VerticalAlignment="Center">
+                    Double-Click on a Cell to Specify the Change Type:
+            </TextBlock>
+            <DockPanel Grid.Column="1">
+                <TextBlock Text="Filter:"
+                           VerticalAlignment="Center"
+                           FontSize="14" DockPanel.Dock="Left"
+                           Margin="0,0,10,0"/>
+                <StackPanel>
+                    <TextBox x:Name="search_tb" Height="25px"
+                             TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
+                    <Button Style="{StaticResource ClearButton}"
+                                HorizontalAlignment="Right"
+                                x:Name="clrsearch_b" Content="x"
+                                Margin="0,-25,5,0" Padding="0,-4,0,0"
+                                Click="clear_search"
+                                Width="15px" Height="15px"/>
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+        <DockPanel DockPanel.Dock="Right" Margin="10,10,0,0">
+            <GroupBox Header="Legend" DockPanel.Dock="Bottom" >
+                <StackPanel Margin="5,10,5,5">
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource CreatedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Created"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource IssuedAsReferenceSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Issued As Reference"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource IssuedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Issued"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource UpdatedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Updated"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource MergedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Merged"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource DeletedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Deleted"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,5">
+                        <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Revised"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,0">
+                        <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0" Fill="{StaticResource GridColor}"/>
+                        <TextBlock Text="Revised (ReadOnly)"/>
+                    </WrapPanel>
+                </StackPanel>
+            </GroupBox>
+            <StackPanel>
+                <Button x:Name="updatesheets_b"
+                        Content="Update Sheets"
+                        Margin="0,0,0,10"
+                        Padding="8,4,8,4"
+                        ToolTip=""
+                        Click="update_sheets"/>
+            </StackPanel>
+        </DockPanel>
+        <DataGrid x:Name="sheets_dg"
+                  Margin="0,10,0,0"
+                  AutoGenerateColumns="False"
+                  BorderThickness="1"
+                  RowHeaderWidth="0"
+                  FrozenColumnCount="2"
+                  CanUserSortColumns="True"
+                  GridLinesVisibility="None"
+                  CanUserReorderColumns="False"
+                  AlternationCount="0"
+                  Background="{StaticResource DataGridBackground}"
+                  AlternatingRowBackground="{StaticResource AlternateRowColor}"
+                  HorizontalGridLinesBrush="{StaticResource GridColor}"
+                  VerticalGridLinesBrush="{StaticResource GridColor}"
+                  BeginningEdit="edit_commit">
+            <DataGrid.Resources>
+                <Style x:Key="SheetColumn" TargetType="{x:Type DataGridCell}">
+                    <Setter Property="BorderThickness" Value="0,0,3,0"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
+                </Style>
+
+                <Style x:Key="PackageCellStyle" TargetType="{x:Type DataGridCell}">
+                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
+                </Style>
+
+                <Style x:Key="RevisionCellStyle" TargetType="{x:Type DataGridCell}">
+                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                    <Setter Property="BorderBrush">
+                        <Setter.Value>
+                            <DrawingBrush Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
+                                <DrawingBrush.Drawing>
+                                    <DrawingGroup>
+                                        <GeometryDrawing Brush="{StaticResource GridColor}">
+                                            <GeometryDrawing.Geometry>
+                                                <GeometryGroup>
+                                                    <RectangleGeometry Rect="0,0,50,50" />
+                                                    <RectangleGeometry Rect="50,50,50,50" />
+                                                </GeometryGroup>
+                                            </GeometryDrawing.Geometry>
+                                        </GeometryDrawing>
+                                    </DrawingGroup>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="50" Width="Auto" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="Auto" IsReadOnly="True" CellStyle="{StaticResource SheetColumn}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

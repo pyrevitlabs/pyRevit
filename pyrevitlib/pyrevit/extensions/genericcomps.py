@@ -277,7 +277,7 @@ class GenericUICommand(GenericUIComponent):
         GenericUIComponent.__init__(self)
         self.ui_title = None
         self.script_file = self.config_script_file = None
-        self.ttvideo_file = None
+        self.ttimage_file = self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
         self.doc_string = self.author = None
         self.cmd_help_url = self.cmd_context = None
@@ -300,6 +300,11 @@ class GenericUICommand(GenericUIComponent):
         icon_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = icon_path if op.exists(icon_path) else None
         mlogger.debug('Command %s: Icon file is: %s', self, self.icon_file)
+
+        ttimage_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_IMAGE_FILE)
+        self.ttimage_file = ttimage_path if op.exists(ttimage_path) else None
+        mlogger.debug('Command %s: Tooltip image file is: %s',
+                      self, self.ttimage_file)
 
         ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
         self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None
@@ -419,13 +424,6 @@ class GenericUICommand(GenericUIComponent):
         if self.beta_cmd:
             mlogger.debug('Command is in beta.')
 
-        try:
-            # check minimum requirements
-            self._check_dependencies()
-        except PyRevitException as dependency_err:
-            mlogger.debug(dependency_err)
-            raise dependency_err
-
     def _update_configurable_params(self, config_dict):
         for pname in self.configurable_params:
             pval = getattr(self, pname)
@@ -436,17 +434,19 @@ class GenericUICommand(GenericUIComponent):
                         pval = pval.replace(liquidtag, v)
                         setattr(self, pname, pval)
 
-    def _check_dependencies(self):
+    @property
+    def is_supported(self):
         if self.min_revit_ver:
             # If host is older than the minimum host version, raise exception
             if int(HOST_APP.version) < int(self.min_revit_ver):
-                raise PyRevitException('Script requires min host version: {}'
-                                       .format(self.min_revit_ver))
+                mlogger.debug('Requires min version: %s', self.min_revit_ver)
+                return False
         if self.max_revit_ver:
             # If host is newer than the max host version, raise exception
             if int(HOST_APP.version) > int(self.max_revit_ver):
-                raise PyRevitException('Script requires max host version: {}'
-                                       .format(self.max_revit_ver))
+                mlogger.debug('Requires max version: %s', self.max_revit_ver)
+                return False
+        return True        
 
     @property
     def configurable_params(self):
