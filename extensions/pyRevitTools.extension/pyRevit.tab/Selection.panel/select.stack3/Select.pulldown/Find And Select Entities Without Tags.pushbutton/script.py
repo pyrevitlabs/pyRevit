@@ -121,11 +121,12 @@ elif selected_switch == 'Doors' \
     for elid in elements:
         el = revit.doc.GetElement(elid)
         try:
-            typecomment = el.Symbol.LookupParameter('Type Comments')
+            tcomment_param = \
+                el.Symbol.Parameter[DB.BuiltInParameter.ALL_MODEL_TYPE_COMMENTS]
             if el.Id.IntegerValue not in tagged_elements \
-                    and typecomment \
-                    and typecomment.HasValue \
-                    and ('auxiliary' not in typecomment.AsString().lower()):
+                    and tcomment_param \
+                    and tcomment_param.HasValue \
+                    and ('auxiliary' not in tcomment_param.AsString().lower()):
                 untagged_elements.append(elid)
         except Exception:
             if el.Id.IntegerValue not in tagged_elements:

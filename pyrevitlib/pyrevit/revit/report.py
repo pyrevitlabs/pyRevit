@@ -1,5 +1,6 @@
 """"Utility methods for reporting Revit data uniformly."""
 
+from pyrevit import DB
 from pyrevit.output import PyRevitOutputWindow
 from pyrevit.revit import db
 
@@ -18,8 +19,10 @@ def print_revision(rev, prefix='', print_id=True):
 
 
 def print_sheet(sht, prefix='', print_id=True):
-    outstr = '{}\t{}'.format(sht.LookupParameter('Sheet Number').AsString(),
-                             sht.LookupParameter('Sheet Name').AsString())
+    outstr = '{}\t{}'.format(
+        sht.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
+        sht.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()
+        )
     if print_id:
         outstr = PyRevitOutputWindow.linkify(sht.Id) + '\t' + outstr
     print(prefix + outstr)

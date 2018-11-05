@@ -92,7 +92,7 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def mark(self):
-        mparam = self._wrapped.LookupParameter('Mark')
+        mparam = self._wrapped.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
         return mparam.AsString() if mparam else ''
 
     @property
