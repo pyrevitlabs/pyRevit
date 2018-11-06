@@ -163,6 +163,9 @@ def get_commit_points():
                        pkg_idx=int(pkg_idx),
                        pkg_name=pkg_name)
                 )
+        elif 'docpkg' in project_param.name.lower():
+            mlogger.warning('Package parameter "%s" is not formatted '
+                            'correctly and is skipped.', project_param.name)
 
     last_docpkg_idx = -1
     for idx, docpkg in enumerate(sorted(dockpkgs, key=lambda x: x.pkg_idx)):
