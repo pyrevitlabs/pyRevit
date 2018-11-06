@@ -1694,15 +1694,15 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     # tdlg.VerificationText = 'verif'
     res = tdlg.Show()
 
-    if not exitscript:
-        if res == UI.TaskDialogResult.Ok \
-                or res == UI.TaskDialogResult.Yes \
-                or res == UI.TaskDialogResult.Retry:
-            return True
-        else:
+    if res == UI.TaskDialogResult.Ok \
+            or res == UI.TaskDialogResult.Yes \
+            or res == UI.TaskDialogResult.Retry:
+        return True
+    else:
+        if not exitscript:
             return False
-
-    sys.exit()
+        else:
+            sys.exit()
 
 
 def alert_ifnot(condition, msg, *args, **kwargs):
