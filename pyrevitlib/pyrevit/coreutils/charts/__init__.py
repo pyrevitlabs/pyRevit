@@ -137,12 +137,13 @@ class PyRevitOutputChart:
     def _make_canvas_code(self, canvas_id):
         attribs = ''
         attribs += ' id="{}"'.format(canvas_id)
-        if self._width:
-            attribs += ' width="{}px"'.format(self._width)
-        if self._height:
-            attribs += ' height="{}px"'.format(self._height)
         if self._style:
-            return 'style="{}"'.format(self._style)
+            attribs += ' style="{}"'.format(self._style)
+        else:
+            if self._width:
+                attribs += ' width="{}px"'.format(self._width)
+            if self._height:
+                attribs += ' height="{}px"'.format(self._height)
 
         return '<canvas {}></canvas>'.format(attribs)
 
