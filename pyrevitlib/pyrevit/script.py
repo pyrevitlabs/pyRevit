@@ -322,6 +322,16 @@ def get_bundle_file(file_name):
     return op.join(EXEC_PARAMS.command_path, file_name)
 
 
+def get_bundle_files():
+    """Return full path to all file under current script bundle.
+
+    Returns:
+        list[str]: list of bundle file paths
+    """
+    return [op.join(EXEC_PARAMS.command_path, x)
+            for x in os.listdir(EXEC_PARAMS.command_path)]
+
+
 def journal_write(data_key, msg):
     """Write key and value to active Revit journal for current command.
 
