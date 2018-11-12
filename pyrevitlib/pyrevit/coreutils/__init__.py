@@ -18,10 +18,16 @@ import stat
 import codecs
 from collections import defaultdict
 
+#pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import api
+
+# RE: https://github.com/eirannejad/pyRevit/issues/413
+# import uuid
+from System import Guid
+
 
 #pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
@@ -1278,3 +1284,9 @@ def format_hex_rgb(rgb_value):
             return rgb_value
     elif isinstance(rgb_value, int):
         return '#%x' % rgb_value
+
+
+def new_uuid():
+    # RE: https://github.com/eirannejad/pyRevit/issues/413
+    # return uuid.uuid1()
+    return str(Guid.NewGuid())
