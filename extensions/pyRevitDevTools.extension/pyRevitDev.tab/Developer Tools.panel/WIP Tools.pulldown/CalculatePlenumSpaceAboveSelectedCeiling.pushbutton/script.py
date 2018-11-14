@@ -30,7 +30,7 @@ selection = [ doc.GetElement( elId ) for elId in __revit__.ActiveUIDocument.Sele
 
 list = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Levels).WhereElementIsNotElementType()
 
-levels = dict()
+levels = {}
 bottomOfRoof = 0
 bottomOfFloor = 0
 bottomOfRatedLid = 0

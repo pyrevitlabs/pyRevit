@@ -18,7 +18,7 @@ for vport_id in curview.GetAllViewports():
     sheet_vports.append(revit.doc.GetElement(vport_id))
 
 # find max count for sheet_vports
-vports = dict()
+vports = {}
 for vp in sheet_vports:
     detnum_param = vp.LookupParameter('Detail Number')
     if detnum_param:

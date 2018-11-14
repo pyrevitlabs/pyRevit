@@ -79,7 +79,7 @@ else:
 
 
 def _get_source_files_in(source_files_path):
-    source_files = dict()
+    source_files = {}
     for source_file in os.listdir(source_files_path):
         if op.splitext(source_file)[1].lower() == SOURCE_FILE_EXT:
             source_filepath = op.join(source_files_path, source_file)

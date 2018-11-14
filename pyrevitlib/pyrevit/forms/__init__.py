@@ -479,7 +479,7 @@ class SelectFromList(TemplateUserInputWindow):
     def _prepare_context(self):
         if isinstance(self._context, dict) and self._context.keys():
             self._update_ctx_groups(self._context.keys())
-            new_ctx = dict()
+            new_ctx = {}
             for ctx_grp, ctx_items in self._context.items():
                 new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
         else:
@@ -1427,7 +1427,7 @@ def select_sheets(title='Select Sheets',
         ...  <Autodesk.Revit.DB.ViewSheet object>]
     """
     doc = doc or HOST_APP.doc
-    all_ops = dict()
+    all_ops = {}
     all_sheets = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSheet) \
                    .WhereElementIsNotElementType() \
