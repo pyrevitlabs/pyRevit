@@ -138,7 +138,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             :obj:`list`: list of strings. user extension directories.
 
         """
-        dir_list = list()
+        dir_list = []
         dir_list.append(EXTENSIONS_DEFAULT_DIR)
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
         return dir_list
@@ -149,7 +149,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Returns:
             :obj:`list`: list of strings. External user extension directories.
         """
-        dir_list = list()
+        dir_list = []
         try:
             dir_list.extend([op.expandvars(p)
                              for p in self.core.userextensions])

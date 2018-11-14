@@ -89,7 +89,7 @@ def _get_source_files_in(source_files_path):
 
 
 def _get_source_files():
-    source_files = list()
+    source_files = []
     source_dir = op.dirname(__file__)
     mlogger.debug('Source files location: %s', source_dir)
     all_sources = _get_source_files_in(source_dir)
@@ -165,7 +165,7 @@ def _get_references():
 
 
 def _generate_base_classes_asm():
-    source_list = list()
+    source_list = []
     for source_file in _get_source_files():
         source_list.append(source_file)
 
