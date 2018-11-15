@@ -196,11 +196,12 @@ def enable_worksharing(levels_workset_name='Shared Levels and Grids',
                        default_workset_name='Workset1',
                        doc=None):
     doc = doc or HOST_APP.doc
-    if doc.CanEnableWorksharing:
-        doc.EnableWorksharing(levels_workset_name, default_workset_name)
-    else:
-        raise PyRevitException('Worksharing can not be enabled. '
-                               '(CanEnableWorksharing is False)')
+    if not doc.IsWorkshared:
+        if doc.CanEnableWorksharing:
+            doc.EnableWorksharing(levels_workset_name, default_workset_name)
+        else:
+            raise PyRevitException('Worksharing can not be enabled. '
+                                '(CanEnableWorksharing is False)')
 
 
 def create_workset(workset_name, doc=None):
