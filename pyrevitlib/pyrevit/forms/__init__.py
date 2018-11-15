@@ -976,9 +976,15 @@ class ProgressBar(TemplatePromptBar):
 
         self.pbar_text.Text = title_text
 
+    def _donothing(self):
+        pass
+
     def _dispatch_updater(self):
         # ask WPF dispatcher for gui update
         self.pbar.Dispatcher.Invoke(System.Action(self._update_pbar),
+                                    Threading.DispatcherPriority.Background)
+        # give it a little free time to update ui
+        self.pbar.Dispatcher.Invoke(System.Action(self._donothing),
                                     Threading.DispatcherPriority.Background)
 
     @staticmethod
