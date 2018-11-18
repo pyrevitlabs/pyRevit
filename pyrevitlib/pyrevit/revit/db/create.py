@@ -109,6 +109,8 @@ def copy_revisions(src_doc, dest_doc, revisions=None):
 def create_sheet(sheet_num, sheet_name,
                  titleblock_id=DB.ElementId.InvalidElementId, doc=None):
     doc = doc or HOST_APP.doc
+    mlogger.debug('Creating sheet: %s - %s', sheet_num, sheet_name)
+    mlogger.debug('Titleblock id is: %s', titleblock_id)
     newsheet = DB.ViewSheet.Create(doc, titleblock_id)
     newsheet.Name = sheet_name
     newsheet.SheetNumber = sheet_num
@@ -194,11 +196,12 @@ def enable_worksharing(levels_workset_name='Shared Levels and Grids',
                        default_workset_name='Workset1',
                        doc=None):
     doc = doc or HOST_APP.doc
-    if doc.CanEnableWorksharing:
-        doc.EnableWorksharing(levels_workset_name, default_workset_name)
-    else:
-        raise PyRevitException('Worksharing can not be enabled. '
-                               '(CanEnableWorksharing is False)')
+    if not doc.IsWorkshared:
+        if doc.CanEnableWorksharing:
+            doc.EnableWorksharing(levels_workset_name, default_workset_name)
+        else:
+            raise PyRevitException('Worksharing can not be enabled. '
+                                '(CanEnableWorksharing is False)')
 
 
 def create_workset(workset_name, doc=None):
@@ -221,3 +224,31 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
     new_filledregion = source_filledregion.Duplicate(filledregion_name)
     new_filledregion.FillPatternId = fillpattern_element.Id
     return new_filledregion
+
+
+def create_text_type(name,
+                     font_name=None,
+                     font_size=0.01042,
+                     tab_size=0.02084,
+                     bold=False,
+                     italic=False,
+                     underline=False,
+                     with_factor=1.0,
+                     doc=None):
+    doc = doc or HOST_APP.doc
+    tnote_typeid = doc.GetDefaultElementTypeId(DB.ElementTypeGroup.TextNoteType)
+    tnote_type = doc.GetElement(tnote_typeid)
+    spec_tnote_type = tnote_type.Duplicate(name)
+    if font_name:
+        spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_FONT].Set(font_name)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_SIZE].Set(font_size)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_TAB_SIZE].Set(tab_size)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_BOLD]\
+        .Set(1 if bold else 0)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_ITALIC]\
+        .Set(1 if italic else 0)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_STYLE_UNDERLINE]\
+        .Set(1 if underline else 0)
+    spec_tnote_type.Parameter[DB.BuiltInParameter.TEXT_WIDTH_SCALE]\
+        .Set(1 if with_factor else 0)
+    return spec_tnote_type

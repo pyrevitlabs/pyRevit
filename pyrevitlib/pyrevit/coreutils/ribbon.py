@@ -1,10 +1,10 @@
 """Base module to interact with Revit ribbon."""
 from collections import OrderedDict
-import uuid
 
 #pylint: disable=W0703,C0302,C0103
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.compat import safe_strtype
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import System, Uri
 from pyrevit.framework import IO
@@ -437,7 +437,7 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
 class _PyRevitSeparator(_GenericPyRevitUIContainer):
     def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
-        self.name = uuid.uuid1()
+        self.name = coreutils.new_uuid()
         self.itemdata_mode = True
 
 

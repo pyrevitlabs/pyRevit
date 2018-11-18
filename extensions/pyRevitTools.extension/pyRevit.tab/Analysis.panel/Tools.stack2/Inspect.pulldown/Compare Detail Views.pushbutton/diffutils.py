@@ -26,7 +26,7 @@ class DiffResults:
     def __init__(self):
         self.processed_params = set()
         self.rvt_element_types = set()
-        self.diff_elements = list()
+        self.diff_elements = []
 
 
 def cleanup_repr_str(repr_str):

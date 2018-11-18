@@ -1,5 +1,5 @@
 """Add or remove pyRevit extensions."""
-
+#pylint: disable=E0401,W0703,W0613,C0103,C0111
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit import script
@@ -121,6 +121,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
         """
 
+        #pylint: disable=E1101,W0201
         for ext_dir in ext_dirs_list:
             ext_dir_install_menu_item = InstallPackageMenuItem()
             ext_dir_install_menu_item.install_path = ext_dir
@@ -142,7 +143,8 @@ class ExtensionsWindow(forms.WPFWindow):
         for plugin_ext in ext_pkgs_list:
             self._exts_list.append(ExtensionPackageListItem(plugin_ext))
 
-        self.extpkgs_lb.ItemsSource = self._exts_list
+        self.extpkgs_lb.ItemsSource = \
+            sorted(self._exts_list, key=lambda x: x.Builtin, reverse=True)
         self.extpkgs_lb.SelectedIndex = 0
 
     def _update_ext_info_panel(self, ext_pkg_item):
@@ -391,7 +393,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # windows explorer
 # otherwise, will show the Extension manager user interface
 if __name__ == '__main__':
-    if __shiftclick__:
+    if __shiftclick__:  #pylint: disable=E0602
         open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
     else:
         ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()

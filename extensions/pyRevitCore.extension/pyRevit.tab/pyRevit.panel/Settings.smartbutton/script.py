@@ -1,7 +1,8 @@
+#pylint: disable=E0401,W0703,W0613,C0111,C0103
 import os
 import os.path as op
 
-from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
 from pyrevit import usagelog
 from pyrevit import script
@@ -26,10 +27,27 @@ Revit = TargetApps.Revit
 PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 
 
+class EnvVariable:
+    """List item for an environment variable.
+
+    Attributes:
+        Id (str): Env Variable name
+        Value (str): Env Variable value
+    """
+
+    def __init__(self, var_id, value):
+        self.Id = var_id
+        self.Value = value
+
+    def __repr__(self):
+        return '<EnvVariable Name: {} Value: {}>' \
+                .format(self.Id, self.Value)
+
+
 class PyRevitEngineConfig(object):
     def __init__(self, engine):
         self.engine = engine
-    
+
     @property
     def name(self):
         return '{} ({}): {}'.format(self.engine.KernelName,
@@ -38,13 +56,10 @@ class PyRevitEngineConfig(object):
 
 
 class SettingsWindow(forms.WPFWindow):
-    """pyRevit Settings window that handles setting the pyRevit configs
-    """
+    """pyRevit Settings window that handles setting the pyRevit configs"""
 
     def __init__(self, xaml_file_name):
-        """Sets up the settings ui
-        """
-
+        """Sets up the settings ui"""
         forms.WPFWindow.__init__(self, xaml_file_name)
         try:
             self._setup_core_options()
@@ -72,9 +87,7 @@ class SettingsWindow(forms.WPFWindow):
         self._setup_addinfiles()
 
     def _setup_core_options(self):
-        """Sets up the pyRevit core configurations
-        """
-
+        """Sets up the pyRevit core configurations"""
         self.checkupdates_cb.IsChecked = user_config.core.checkupdates
 
         if not user_config.core.verbose and not user_config.core.debug:
@@ -109,43 +122,29 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_engines(self):
         attachment = self.get_current_attachment()
-        engineCfgs = \
-            [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
-        engineCfgs = \
-            sorted(engineCfgs, key=lambda x: x.engine.Version, reverse=True)
-        self.availableEngines.ItemsSource = engineCfgs
-        
-        # now select the current engine
-        for engineCfg in self.availableEngines.ItemsSource:
-            if engineCfg.engine.Version == int(EXEC_PARAMS.engine_ver):
-                self.availableEngines.SelectedItem = engineCfg
-                break
+        if attachment and attachment.Clone:
+            engine_cfgs = \
+                [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
+            engine_cfgs = \
+                sorted(engine_cfgs,
+                       key=lambda x: x.engine.Version, reverse=True)
+            self.availableEngines.ItemsSource = engine_cfgs
+
+            # now select the current engine
+            for engine_cfg in self.availableEngines.ItemsSource:
+                if engine_cfg.engine.Version == int(EXEC_PARAMS.engine_ver):
+                    self.availableEngines.SelectedItem = engine_cfg
+                    break
+        else:
+            logger.error('Error determining current attached clone.')
+            self.disable_element(self.availableEngines)
 
     def _setup_user_extensions_list(self):
-        """Reads the user extension folders and updates the list
-        """
-
+        """Reads the user extension folders and updates the list"""
         self.extfolders_lb.ItemsSource = user_config.core.userextensions
 
     def _setup_env_vars_list(self):
-        """Reads the pyRevit environment variables and updates the list
-        """
-        class EnvVariable:
-            """List item for an environment variable.
-
-            Attributes:
-                Id (str): Env Variable name
-                Value (str): Env Variable value
-            """
-
-            def __init__(self, var_id, value):
-                self.Id = var_id
-                self.Value = value
-
-            def __repr__(self):
-                return '<EnvVariable Name: {} Value: {}>' \
-                       .format(self.Id, self.Value)
-
+        """Reads the pyRevit environment variables and updates the list"""
         env_vars_list = [EnvVariable(k, v)
                          for k, v in envvars.get_pyrevit_env_vars().items()]
 
@@ -156,8 +155,7 @@ class SettingsWindow(forms.WPFWindow):
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
     def _setup_usagelogging(self):
-        """Reads the pyRevit usage logging config and updates the ui
-        """
+        """Reads the pyRevit usage logging config and updates the ui"""
         self.usagelogging_cb.IsChecked = \
             user_config.usagelogging.get_option('active',
                                                 default_value=False)
@@ -232,8 +230,10 @@ class SettingsWindow(forms.WPFWindow):
 
     @staticmethod
     def update_usagelogging():
-        """Updates the usage logging system per changes. This is usually
-        called after new settings are saved and before pyRevit is reloaded.
+        """Updates the usage logging system per changes.
+
+        This is usually called after new settings are saved and before
+        pyRevit is reloaded.
         """
         usagelog.setup_usage_logfile()
 
@@ -244,68 +244,64 @@ class SettingsWindow(forms.WPFWindow):
         """Enables/Disables the adding files for different Revit versions."""
         # update active engine
         attachment = self.get_current_attachment()
-        all_users = attachment.AttachmentType == \
-            Revit.PyRevitAttachmentType.AllUsers
+        if attachment:
+            all_users = attachment.AttachmentType == \
+                Revit.PyRevitAttachmentType.AllUsers
 
-        # notify use to restart if engine has changed
-        new_engine = self.availableEngines.SelectedItem.engine.Version
-        if not self.is_same_version_as_running(new_engine):
-            forms.alert("Active engine has changed. Restart Revit for this "
-                        "change to take effect.")
-        # configure the engine on this version
-        Revit.PyRevit.Attach(
-            int(HOST_APP.version),
-            attachment.Clone,
-            new_engine,
-            all_users
-            )
+            # notify use to restart if engine has changed
+            new_engine = self.availableEngines.SelectedItem.engine.Version
+            if not self.is_same_version_as_running(new_engine):
+                forms.alert('Active engine has changed. '
+                            'Restart Revit for this change to take effect.')
+            # configure the engine on this version
+            Revit.PyRevit.Attach(
+                int(HOST_APP.version),
+                attachment.Clone,
+                new_engine,
+                all_users
+                )
 
-        # now setup the attachments for other versions
-        for rvt_ver, checkbox in self._addinfiles_cboxes.items():
-            if checkbox.IsEnabled:
-                if checkbox.IsChecked:
-                    Revit.PyRevit.Attach(
-                        int(rvt_ver),
-                        attachment.Clone,
-                        self.availableEngines.SelectedItem.engine.Version,
-                        all_users
-                        )
-                else:
-                    Revit.PyRevit.Detach(int(rvt_ver))
+            # now setup the attachments for other versions
+            for rvt_ver, checkbox in self._addinfiles_cboxes.items():
+                if checkbox.IsEnabled:
+                    if checkbox.IsChecked:
+                        Revit.PyRevit.Attach(
+                            int(rvt_ver),
+                            attachment.Clone,
+                            self.availableEngines.SelectedItem.engine.Version,
+                            all_users
+                            )
+                    else:
+                        Revit.PyRevit.Detach(int(rvt_ver))
+        else:
+            logger.error('Error determining current attached clone.')
 
     def resetreportinglevel(self, sender, args):
-        """Callback method for resetting reporting (logging) levels to defaults
-        """
+        """Callback method for resetting logging levels to defaults"""
         self.verbose_rb.IsChecked = True
         self.noreporting_rb.IsChecked = False
         self.debug_rb.IsChecked = False
         self.filelogging_cb.IsChecked = False
 
     def reset_requiredhostbuild(self, sender, args):
-        """Callback method for resetting requried host version to current
-        """
+        """Callback method for resetting requried host version to current"""
         self.requiredhostbuild_tb.Text = HOST_APP.build
 
     def resetcache(self, sender, args):
-        """Callback method for resetting cache config to defaults
-        """
+        """Callback method for resetting cache config to defaults"""
         self.bincache_rb.IsChecked = True
 
     def copy_envvar_value(self, sender, args):
-        """Callback method for copying selected env var value to clipboard
-        """
+        """Callback method for copying selected env var value to clipboard"""
         script.clipboard_copy(self.envvars_lb.SelectedItem.Value)
 
     def copy_envvar_id(self, sender, args):
-        """Callback method for copying selected env var name to clipboard
-        """
+        """Callback method for copying selected env var name to clipboard"""
         script.clipboard_copy(self.envvars_lb.SelectedItem.Id)
 
     def addfolder(self, sender, args):
-        """Callback method for adding extension folder to configs and list
-        """
+        """Callback method for adding extension folder to configs and list"""
         new_path = forms.pick_folder()
-
         if new_path:
             new_path = os.path.normpath(new_path)
 
@@ -317,8 +313,7 @@ class SettingsWindow(forms.WPFWindow):
             self.extfolders_lb.ItemsSource = [new_path]
 
     def removefolder(self, sender, args):
-        """Callback method for removing extension folder from configs and list
-        """
+        """Callback method for removing extension folder from configs"""
         selected_path = self.extfolders_lb.SelectedItem
         if selected_path and self.extfolders_lb.ItemsSource:
             uniq_items = set(self.extfolders_lb.ItemsSource)
@@ -326,47 +321,37 @@ class SettingsWindow(forms.WPFWindow):
             self.extfolders_lb.ItemsSource = list(uniq_items)
 
     def removeallfolders(self, sender, args):
-        """Callback method for removing all extension folders
-        """
+        """Callback method for removing all extension folders"""
         self.extfolders_lb.ItemsSource = []
 
     def pick_usagelog_folder(self, sender, args):
-        """Callback method for picking destination folder for usage log files
-        """
+        """Callback method for picking destination folder for usage log files"""
         new_path = forms.pick_folder()
-
         if new_path:
             self.usagelogfile_tb.Text = os.path.normpath(new_path)
 
     def reset_usagelog_folder(self, sender, args):
-        """Callback method for resetting usage log file folder to defaults
-        """
+        """Callback method for resetting usage log file folder to defaults"""
         self.usagelogfile_tb.Text = usagelog.get_default_usage_logfilepath()
 
     def open_usagelog_folder(self, sender, args):
-        """Callback method for opening destination folder for usage log files
-        """
+        """Callback method for opening destination folder for usage log files"""
         cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
     def pick_stylesheet(self, sender, args):
-        """Callback method for picking custom style sheet file
-        """
+        """Callback method for picking custom style sheet file"""
         new_stylesheet = forms.pick_file(file_ext='css')
-
         if new_stylesheet:
             self.cur_stylesheet_tb.Text = os.path.normpath(new_stylesheet)
 
     def reset_stylesheet(self, sender, args):
-        """Callback method for resetting custom style sheet file
-        """
+        """Callback method for resetting custom style sheet file"""
         self.cur_stylesheet_tb.Text = output.get_default_stylesheet()
 
     def savesettings(self, sender, args):
-        """Callback method for saving pyRevit settings
-        """
-
+        """Callback method for saving pyRevit settings"""
         # update the logging system changes first and update.
         if self.verbose_rb.IsChecked:
             logger.set_verbose_mode()
@@ -422,10 +407,8 @@ class SettingsWindow(forms.WPFWindow):
         self.Close()
 
     def savesettingsandreload(self, sender, args):
-        """Callback method for saving pyRevit settings and reloading
-        """
+        """Callback method for saving pyRevit settings and reloading"""
         self.savesettings(sender, args)
-
         from pyrevit.loader.sessionmgr import execute_command
         execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
@@ -442,7 +425,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # otherwise, will show the Settings user interface
 
 if __name__ == '__main__':
-    if __shiftclick__:
+    if __shiftclick__:  #pylint: disable=E0602
         script.show_file_in_explorer(user_config.config_file)
     else:
         SettingsWindow('SettingsWindow.xaml').show_dialog()
