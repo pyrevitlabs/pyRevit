@@ -53,9 +53,6 @@ except NameError:
 # BIN directory
 BIN_DIR = op.join(HOME_DIR, 'bin')
 
-# default extensions directory
-EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
-
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
 MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
@@ -493,9 +490,15 @@ ALLUSER_PROGRAMDATA = os.getenv('programdata')
 USER_ROAMING_DIR = os.getenv('appdata')
 USER_SYS_TEMP = os.getenv('temp')
 USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+
 # verify directory per issue #369
 if not USER_DESKTOP or not op.exists(USER_DESKTOP):
     USER_DESKTOP = USER_SYS_TEMP
+
+# default extensions directory
+EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
+THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
+    op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME, 'Extensions')
 
 # create paths for pyrevit files
 if EXEC_PARAMS.doc_mode:
@@ -509,7 +512,9 @@ else:
     # add runtime paths to sys.paths
     # this will allow importing any dynamically compiled DLLs that
     # would be placed under this paths.
-    for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
+    for pyrvt_app_dir in [PYREVIT_APP_DIR,
+                          PYREVIT_VERSION_APP_DIR,
+                          THIRDPARTY_EXTENSIONS_DEFAULT_DIR]:
         if not op.isdir(pyrvt_app_dir):
             try:
                 os.mkdir(pyrvt_app_dir)
