@@ -537,28 +537,43 @@ if EXEC_PARAMS.doc_mode:
         PYREVIT_FILE_PREFIX_STAMPED_USER = None
 else:
     # e.g. pyRevit_
-    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}'.format(PYREVIT_ADDON_NAME)
+    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_'.format(PYREVIT_ADDON_NAME)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_
-    PYREVIT_FILE_PREFIX = '{}_{}'.format(PYREVIT_ADDON_NAME,
-                                         HOST_APP.version)
+    PYREVIT_FILE_PREFIX = '{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                          HOST_APP.version)
+    PYREVIT_FILE_PREFIX_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<version>\d{4})_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_14422_
-    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                    HOST_APP.version,
-                                                    HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                     HOST_APP.version,
+                                                     HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<pid>\d+)_(?P<fname>.+)'
 
     # e.g. pyRevit_eirannejad_
-    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                        HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                         HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<user>.+)_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_eirannejad_
-    PYREVIT_FILE_PREFIX_USER = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                 HOST_APP.version,
-                                                 HOST_APP.username)
+    PYREVIT_FILE_PREFIX_USER = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                  HOST_APP.version,
+                                                  HOST_APP.username)
+    PYREVIT_FILE_PREFIX_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_eirannejad_14422_
-    PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                            HOST_APP.version,
-                                                            HOST_APP.username,
-                                                            HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                             HOST_APP.version,
+                                                             HOST_APP.username,
+                                                             HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<pid>\d+)_(?P<fname>.+)'
