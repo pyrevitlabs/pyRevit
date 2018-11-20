@@ -148,14 +148,8 @@ class WPFWindow(framework.Windows.Window):
                     os.path.join(EXEC_PARAMS.command_path,
                                  image_file)
                     )
-            # wpfel.Source = \
-            #     framework.Imaging.BitmapImage(
-            #         framework.Uri(os.path.join(EXEC_PARAMS.command_path,
-            #                                    image_file))
-            #         )
         else:
-            wpfel.Source = \
-                framework.Imaging.BitmapImage(framework.Uri(image_file))
+            wpfel.Source = utils.bitmap_from_file(image_file)
 
     @staticmethod
     def hide_element(*wpf_elements):
@@ -438,14 +432,18 @@ class SelectFromList(TemplateUserInputWindow):
         self.ctx_groups_active = kwargs.get('default_group', None)
 
         # check for custom templates
-        item_template = kwargs.get('item_template', None)
-        if item_template:
-            self.Resources["ListItemTemplate"] = item_template
+        items_panel_template = kwargs.get('items_panel_template', None)
+        if items_panel_template:
+            self.Resources["ItemsPanelTemplate"] = items_panel_template
 
         item_container_template = kwargs.get('item_container_template', None)
         if item_container_template:
-            self.Resources["ListItemContainerTemplate"] = \
-                item_container_template
+            self.Resources["ItemContainerTemplate"] = item_container_template
+
+        item_template = kwargs.get('item_template', None)
+        if item_template:
+            self.Resources["ItemTemplate"] = \
+                item_template
 
         # nicely wrap and prepare context for presentation, then present
         self._prepare_context()
@@ -1628,19 +1626,69 @@ def select_swatch(title='Select Color Swatch', button_name='Select'):
         >>> forms.select_swatch(title="Select Text Color")
         ... <RGB #CD8800>
     """
-    ict_xaml_file = \
+    itemplate_xaml_file = \
         os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
-    ict = wpf.LoadComponent(Controls.ControlTemplate(), ict_xaml_file)
+    itemplate = \
+        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
     swatch = SelectFromList.show(
         colors.COLORS.values(),
         title=title,
         button_name=button_name,
         width=300,
         multiselect=False,
-        item_container_template=ict
+        item_template=itemplate
         )
 
     return swatch
+
+
+def select_image(images, title='Select Image', button_name='Select'):
+    """Standard form for selecting an image.
+
+    Args:
+        images (str | framework.Imaging.BitmapImage):
+            list of image file paths or bitmaps
+        title (str, optional): swatch list window title
+        button_name (str, optional): swatch list window button caption
+
+    Returns:
+        str : path of the selected image
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_image(title="Select Variation")
+        ... c:/path/to/image.png
+    """
+    ptemplate_xaml_file = \
+        os.path.join(op.dirname(__file__), "ImageListPanelStyle.xaml")
+    ptemplate = \
+        wpf.LoadComponent(Controls.ItemsPanelTemplate(), ptemplate_xaml_file)
+
+    itemplate_xaml_file = \
+        os.path.join(op.dirname(__file__), "ImageListContainerStyle.xaml")
+    itemplate = \
+        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
+
+    bitmap_images = {}
+    for imageobj in images:
+        if isinstance(imageobj, str):
+            img = utils.bitmap_from_file(imageobj)
+            if img:
+                bitmap_images[img] = imageobj
+        elif isinstance(imageobj, framework.Imaging.BitmapImage):
+            bitmap_images[imageobj] = imageobj
+
+    selected_image = SelectFromList.show(
+        sorted(bitmap_images.keys(), key=lambda x: x.UriSource.AbsolutePath),
+        title=title,
+        button_name=button_name,
+        width=500,
+        multiselect=False,
+        item_template=itemplate,
+        items_panel_template=ptemplate
+        )
+
+    return bitmap_images.get(selected_image, None)
 
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',

@@ -1,10 +1,10 @@
 """Unit Tests for pyrevit.forms module."""
+#pylint: disable=E0401
+from pyrevit import script
+from pyrevit import forms
 
 
 __context__ = 'zerodoc'
-
-
-from pyrevit import forms
 
 
 def test_forms(forms_func, test_title, filterfuncstr='', *args, **kwargs):
@@ -100,3 +100,8 @@ print(
         group_selector_title='Select Integer Range:',
         multiselect=True
     ))
+
+
+print(
+    forms.select_image(script.get_bundle_files('images/'))
+    )

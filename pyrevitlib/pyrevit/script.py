@@ -17,7 +17,6 @@ from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import envvars
 from pyrevit import framework
-from pyrevit import forms
 from pyrevit import revit
 from pyrevit import output
 from pyrevit import versionmgr
@@ -322,14 +321,17 @@ def get_bundle_file(file_name):
     return op.join(EXEC_PARAMS.command_path, file_name)
 
 
-def get_bundle_files():
+def get_bundle_files(sub_path=None):
     """Return full path to all file under current script bundle.
 
     Returns:
         list[str]: list of bundle file paths
     """
-    return [op.join(EXEC_PARAMS.command_path, x)
-            for x in os.listdir(EXEC_PARAMS.command_path)]
+    if sub_path:
+        command_path = op.join(EXEC_PARAMS.command_path, sub_path)
+    else:
+        command_path = EXEC_PARAMS.command_path
+    return [op.join(command_path, x) for x in os.listdir(command_path)]
 
 
 def journal_write(data_key, msg):

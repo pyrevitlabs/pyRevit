@@ -172,6 +172,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ImageListContainerStyle.xaml">
+      <Link>Forms\ImageListContainerStyle.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ImageListPanelStyle.xaml">
+      <Link>Forms\ImageListPanelStyle.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ProgressBar.xaml">
       <Link>Forms\ProgressBar.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -184,6 +194,11 @@
     </Page>
     <Page Include="..\..\..\pyrevitlib\pyrevit\forms\SelectFromList.xaml">
       <Link>Forms\SelectFromList.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\SwatchContainerStyle.xaml">
+      <Link>Forms\SwatchContainerStyle.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

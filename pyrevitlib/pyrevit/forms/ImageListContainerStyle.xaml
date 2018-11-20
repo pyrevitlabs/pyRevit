@@ -1,0 +1,5 @@
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+    <Border VerticalAlignment="Center">
+        <Image Height="100" Source="{Binding item}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+    </Border>
+</ControlTemplate>
