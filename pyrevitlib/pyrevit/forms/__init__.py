@@ -1598,7 +1598,7 @@ def select_titleblocks(title='Select Titleblock',
                                    revit.ElementWrapper(tb).name): tb.Id
                    for tb in titleblocks}
     tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
-    selected_titleblocks = SelectFromList.show(tblock_dict.keys(),
+    selected_titleblocks = SelectFromList.show(sorted(tblock_dict.keys()),
                                                title=title,
                                                button_name=button_name,
                                                width=width,
