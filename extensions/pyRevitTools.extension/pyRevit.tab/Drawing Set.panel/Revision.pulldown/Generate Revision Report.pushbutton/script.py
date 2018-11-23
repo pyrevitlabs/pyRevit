@@ -109,7 +109,9 @@ class RevisedSheet:
     def get_comments(self):
         all_comments = set()
         for cloud in self._clouds:
-            comment = cloud.LookupParameter('Comments').AsString()
+            cparam = \
+                cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+            comment = cparam.AsString()
             if not coreutils.is_blank(comment):
                 all_comments.add(comment)
         return all_comments

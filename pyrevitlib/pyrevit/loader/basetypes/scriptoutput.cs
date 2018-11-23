@@ -29,13 +29,16 @@ namespace PyRevitBaseClasses {
             // setup template styles
             Background = Brushes.White;
             var glowColor = Color.FromArgb(0x66, 0x2c, 0x3e, 0x50);
-            GlowBrush = new SolidColorBrush() { Color = glowColor };
-            NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
+            // activating glow on the window causes an exception in PresentationFramework on Revit 2019
+            // when closing Revit with pyRevit windows open.
+            //GlowBrush = new SolidColorBrush() { Color = glowColor };
+            //NonActiveGlowBrush = new SolidColorBrush() { Color = glowColor };
 
             ResetIcon();
 
             //ResizeBorderThickness = new Thickness(10);
-            BorderThickness = new Thickness();
+            // added thickness after disabling glow brush due to a bug
+            BorderThickness = new Thickness(1);
             WindowStartupLocation = WindowStartupLocation.Manual;
             WindowTransitionsEnabled = false;
             SaveWindowPosition = false;

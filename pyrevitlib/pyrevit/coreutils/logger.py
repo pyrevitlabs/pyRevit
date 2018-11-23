@@ -45,7 +45,7 @@ if not EXEC_PARAMS.doc_mode:
 
 
 # Creating default file log name and status
-FILE_LOG_FILENAME = '{}.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
+FILE_LOG_FILENAME = '{}runtime.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
 FILE_LOG_FILEPATH = os.path.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
 FILE_LOGGING_DEFAULT_STATE = False
 

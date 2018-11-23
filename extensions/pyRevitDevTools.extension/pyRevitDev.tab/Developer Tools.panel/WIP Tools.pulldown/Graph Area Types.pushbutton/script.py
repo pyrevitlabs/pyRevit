@@ -15,7 +15,7 @@ areas = DB.FilteredElementCollector(doc) \
 total = {}
 for area in areas:
     try:
-        area_type = area.LookupParameter('Area Type').AsValueString()
+        area_type = area.Parameter[DB.BuiltInParameter.AREA_TYPE].AsValueString()
         if area_type.lower() != '(none)':
             if area_type in total:
                 total[area_type] += area.Area

@@ -29,7 +29,7 @@ with revit.Transaction('Shift Sheets'):
     for sheet in sorted_sheet_list:
         try:
             cur_sheet_num = sheet.SheetNumber
-            sheet_num_param = sheet.LookupParameter('Sheet Number')
+            sheet_num_param = sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
             sheet_num_param.Set(coreutils.increment_str(sheet.SheetNumber,
                                                         shift))
             new_sheet_num = sheet.SheetNumber

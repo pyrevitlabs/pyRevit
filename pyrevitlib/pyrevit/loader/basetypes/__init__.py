@@ -28,9 +28,9 @@ if not EXEC_PARAMS.doc_mode:
                              'Microsoft', 'Framework', '.NETFramework')
 
     try:
-        FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
+        FRAMEWORK_DIRS = sorted(os.listdir(DOTNET_SDK_DIR), reverse=True)
     except Exception as dotnet_sdk_err:
-        FRAMEWORK_DIRS = None
+        FRAMEWORK_DIRS = []
         mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
     INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
@@ -113,7 +113,7 @@ def _get_resource_file(resource_name):
 def _get_framework_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
-    for sdk_folder in reversed(FRAMEWORK_DIRS):
+    for sdk_folder in FRAMEWORK_DIRS:
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,
                                  make_canonical_name(fw_module,

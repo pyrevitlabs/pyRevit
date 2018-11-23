@@ -2,6 +2,7 @@
 #pylint: disable=C0103,E0401,W0703
 from collections import defaultdict
 
+from pyrevit import HOST_APP
 from pyrevit.framework import List
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI
@@ -244,8 +245,8 @@ elif selected_switch == 'Areas':
               'AREA ID: {2} '
               'LEVEL: {3} '
               'AREA: {4}'
-              .format(el.LookupParameter('Name').AsString().ljust(30),
-                      el.LookupParameter('Number').AsString().ljust(10),
+              .format(el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
+                      el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(10),
                       el.Id,
                       str(el.Level.Name).ljust(50),
                       el.Area))
@@ -261,8 +262,8 @@ elif selected_switch == 'Rooms':
         print('ROOM NAME: {0} '
               'ROOM NUMBER: {1} '
               'ROOM ID: {2}'
-              .format(el.LookupParameter('Name').AsString().ljust(30),
-                      el.LookupParameter('Number').AsString().ljust(20),
+              .format(el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
+                      el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(20),
                       el.Id))
 
     print('\n\nTOTAL ROOMS FOUND: {0}'.format(len(roomlist)))
@@ -302,8 +303,8 @@ elif selected_switch == 'Sheets':
     for s in sheets:
         print('NUMBER: {0}   '
               'NAME:{1}'
-              .format(s.LookupParameter('Sheet Number').AsString().rjust(10),
-                      s.LookupParameter('Sheet Name').AsString().ljust(50)))
+              .format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10),
+                      s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)))
 
 elif selected_switch == 'System Categories':
     for cat in revit.doc.Settings.Categories:
@@ -337,22 +338,34 @@ elif selected_switch == 'Views':
                 views.append(el)
 
     for v in views:
-        phasep = v.LookupParameter('Phase')
-        underlayp = v.LookupParameter('Underlay')
-        print('TYPE: {1}'
-              'ID: {2}'
-              'TEMPLATE: {3}'
-              'PHASE:{4} '
-              'UNDERLAY:{5}  '
-              '{0}'
-              .format(v.ViewName,
-                      str(v.ViewType).ljust(20),
-                      str(v.Id).ljust(10),
-                      str(v.IsTemplate).ljust(10),
-                      phasep.AsValueString().ljust(25)
-                      if phasep else '---'.ljust(25),
-                      underlayp.AsValueString().ljust(25)
-                      if underlayp else '---'.ljust(25)))
+        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
+        if HOST_APP.is_older_than(2016):
+            underlayp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_ID]
+            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} UNDERLAY:{5} {0}'
+                  .format(v.ViewName,
+                          str(v.ViewType).ljust(20),
+                          str(v.Id).ljust(10),
+                          str(v.IsTemplate).ljust(10),
+                          phasep.AsValueString().ljust(25)
+                          if phasep else '---'.ljust(25),
+                          underlayp.AsValueString().ljust(25)
+                          if underlayp else '---'.ljust(25)))
+        else:
+            underlaytp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID]
+            underlaybp = \
+                v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID]
+            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} '
+                  'UNDERLAY TOP:{5} UNDERLAY BOTTOM:{6} {0}'
+                  .format(v.ViewName,
+                          str(v.ViewType).ljust(20),
+                          str(v.Id).ljust(10),
+                          str(v.IsTemplate).ljust(10),
+                          phasep.AsValueString().ljust(25)
+                          if phasep else '---'.ljust(25),
+                          underlaytp.AsValueString().ljust(25)
+                          if underlaytp else '---'.ljust(25),
+                          underlaybp.AsValueString().ljust(25)
+                          if underlaybp else '---'.ljust(25)))
 
 elif selected_switch == 'View Templates':
     cl_views = DB.FilteredElementCollector(revit.doc)
@@ -472,10 +485,8 @@ elif selected_switch == 'Connected Circuits':
 
 elif selected_switch == 'Point Cloud Instances':
     for pc in revit.query.get_pointclouds(doc=revit.doc):
-        print('Name: {}\tWorkset:{}'.format(
-            pc.Name,
-            pc.LookupParameter('Workset').AsValueString())
-              )
+        ws = revit.doc.GetElement(pc.WorksetId)
+        print('Name: {}\tWorkset:{}'.format(pc.Name, ws.Name if ws else '---'))
 
 elif selected_switch == 'Sheets with Hidden Characters':
     for sheet in revit.query.get_sheets(doc=revit.doc):

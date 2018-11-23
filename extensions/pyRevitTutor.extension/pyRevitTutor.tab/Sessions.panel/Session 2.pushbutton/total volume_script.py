@@ -17,7 +17,7 @@ wall_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Wa
 total_volume = 0.0
 
 for wall in wall_collector:
-    vol_param = wall.LookupParameter('Volume')
+    vol_param = wall.Parameter[DB.BuiltInParameter.HOST_VOLUME_COMPUTED]
     if vol_param:
         total_volume = total_volume + vol_param.AsDouble()
 

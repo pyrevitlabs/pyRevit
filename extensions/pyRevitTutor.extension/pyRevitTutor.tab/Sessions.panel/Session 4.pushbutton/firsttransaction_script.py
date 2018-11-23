@@ -23,7 +23,7 @@ t = Transaction(doc, "Update Sheet Parmeters")
 t.Start()
 
 for sheet in sheets_collector:
-    custom_param = sheet.LookupParameter('Comments')
+    custom_param = sheet.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
     if custom_param:
         custom_param.Set("Example value")
 
