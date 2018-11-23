@@ -560,7 +560,7 @@ def get_all_grids(group_by_direction=False,
 
     if group_by_direction:
         direcs = {db.XYZPoint(x.Curve.Direction) for x in all_grids}
-        grouped_grids = dict()
+        grouped_grids = {}
         for direc in direcs:
             grouped_grids[direc] = [x for x in all_grids
                                     if direc == db.XYZPoint(x.Curve.Direction)]
@@ -574,7 +574,7 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
         doc=doc,
         include_linked_models=include_linked_models
         )
-    gints = dict()
+    gints = {}
     for grid1 in source_grids:
         for grid2 in source_grids:
             results = framework.clr.Reference[DB.IntersectionResultArray]()

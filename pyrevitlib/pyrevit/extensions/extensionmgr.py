@@ -174,8 +174,8 @@ def get_installed_ui_extensions():
     Returns:
         list: list of components.Extension objects
     """
-    ui_ext_list = list()
-    lib_ext_list = list()
+    ui_ext_list = []
+    lib_ext_list = []
 
     # get a list of all directories that could include extensions
     ext_search_dirs = user_config.get_ext_root_dirs()

@@ -123,7 +123,7 @@ class LogViewerWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         self.hide_element(self.clrsearch_b)
-        self._current_entry_list = list()
+        self._current_entry_list = []
         self._log_files = \
             {op.basename(f): f for f in appdata.list_data_files('log')}
         self.logfiles_cb.ItemsSource = self._log_files.keys()

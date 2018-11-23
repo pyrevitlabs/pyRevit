@@ -12,10 +12,7 @@ logger = script.get_logger()
 
 res = \
     forms.alert('Make sure your models are saved and synced. '
-                'Hit OK to continue...', cancel=True)
-
-if not res == UI.TaskDialogResult.Ok:
-    script.exit()
+                'Hit OK to continue...', cancel=True, exitscript=True)
 
 if revit.doc.IsFamilyDocument:
     params = revit.doc.FamilyManager.GetParameters()

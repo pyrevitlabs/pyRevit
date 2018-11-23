@@ -279,7 +279,7 @@ class ManagePackagesWindow(forms.WPFWindow):
                 button_name='Apply Change Type',
                 width=400,
                 height=300,
-                item_container_template=self.committype_template
+                item_template=self.committype_template
                 )
             if ctype_commit_op:
                 return ctype_commit_op.ctype

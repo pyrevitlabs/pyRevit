@@ -1,10 +1,10 @@
 """Base module to interact with Revit ribbon."""
 from collections import OrderedDict
-import uuid
 
 #pylint: disable=W0703,C0302,C0103
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.compat import safe_strtype
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.framework import System, Uri
 from pyrevit.framework import IO
@@ -44,6 +44,7 @@ class PyRevitUIError(PyRevitException):
 class _ButtonIcons(object):
     def __init__(self, file_address):
         self.icon_file_path = file_address
+        self.check_icon_size()
         self.filestream = IO.FileStream(file_address,
                                         IO.FileMode.Open,
                                         IO.FileAccess.Read)
@@ -63,6 +64,16 @@ class _ButtonIcons(object):
                 image_data[idx+1] = color >> 8 & 0xff     # green
                 image_data[idx+2] = color >> 16 & 0xff    # red
 
+    def check_icon_size(self):
+        image = System.Drawing.Image.FromFile(self.icon_file_path)
+        image_size = max(image.Width, image.Height)
+        if image_size > 96:
+            mlogger.warning('Icon file is too large. Large icons adversely '
+                            'affect the load time since they need to be '
+                            'processed and adjusted for screen scaling. '
+                            'Keep icons at max 96x96 pixels: %s',
+                            self.icon_file_path)
+
     def create_bitmap(self, icon_size):
         mlogger.debug('Creating %sx%s bitmap from: %s',
                       icon_size, icon_size, self.icon_file_path)
@@ -70,6 +81,7 @@ class _ButtonIcons(object):
         adjusted_dpi = DEFAULT_DPI * 2
         screen_scaling = HOST_APP.proc_screen_scalefactor
 
+        self.filestream.Seek(0, IO.SeekOrigin.Begin)
         base_image = Imaging.BitmapImage()
         base_image.BeginInit()
         base_image.StreamSource = self.filestream
@@ -437,7 +449,7 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
 class _PyRevitSeparator(_GenericPyRevitUIContainer):
     def __init__(self):
         _GenericPyRevitUIContainer.__init__(self)
-        self.name = uuid.uuid1()
+        self.name = coreutils.new_uuid()
         self.itemdata_mode = True
 
 

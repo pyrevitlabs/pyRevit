@@ -3,7 +3,7 @@ import os
 import os.path as op
 import sys
 
-from pyrevit import PyRevitException, EXEC_PARAMS
+from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
@@ -28,9 +28,9 @@ if not EXEC_PARAMS.doc_mode:
                              'Microsoft', 'Framework', '.NETFramework')
 
     try:
-        FRAMEWORK_DIRS = os.listdir(DOTNET_SDK_DIR)
+        FRAMEWORK_DIRS = sorted(os.listdir(DOTNET_SDK_DIR), reverse=True)
     except Exception as dotnet_sdk_err:
-        FRAMEWORK_DIRS = None
+        FRAMEWORK_DIRS = []
         mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
     INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
@@ -57,6 +57,7 @@ CMD_AVAIL_TYPE_NAME_SELECTION = \
 DYNOCMD_EXECUTOR_TYPE_NAME = '{}.{}'\
     .format(LOADER_BASE_NAMESPACE, 'PyRevitCommandDynamoBIM')
 
+SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
@@ -77,15 +78,30 @@ else:
     BASE_TYPES_ASM_FILE = BASE_TYPES_ASM_NAME = None
 
 
+def _get_source_files_in(source_files_path):
+    source_files = {}
+    for source_file in os.listdir(source_files_path):
+        if op.splitext(source_file)[1].lower() == SOURCE_FILE_EXT:
+            source_filepath = op.join(source_files_path, source_file)
+            mlogger.debug('Source file found: %s', source_filepath)
+            source_files[source_file] = source_filepath
+    return source_files
+
+
 def _get_source_files():
-    source_files = list()
+    source_files = []
     source_dir = op.dirname(__file__)
     mlogger.debug('Source files location: %s', source_dir)
-    for source_file in os.listdir(source_dir):
-        if op.splitext(source_file)[1].lower() == '.cs':
-            mlogger.debug('Source file found: %s', source_file)
-            source_files.append(op.join(source_dir, source_file))
+    all_sources = _get_source_files_in(source_dir)
 
+    version_source_dir = op.join(op.dirname(__file__), HOST_APP.version)
+    if op.exists(version_source_dir):
+        mlogger.debug('Version-specific Source files location: %s',
+                      version_source_dir)
+        version_sources = _get_source_files_in(version_source_dir)
+        all_sources.update(version_sources)
+
+    source_files = all_sources.values()
     mlogger.debug('Source files to be compiled: %s', source_files)
     return source_files
 
@@ -97,7 +113,7 @@ def _get_resource_file(resource_name):
 def _get_framework_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
-    for sdk_folder in reversed(FRAMEWORK_DIRS):
+    for sdk_folder in FRAMEWORK_DIRS:
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,
                                  make_canonical_name(fw_module,
@@ -149,7 +165,7 @@ def _get_references():
 
 
 def _generate_base_classes_asm():
-    source_list = list()
+    source_list = []
     for source_file in _get_source_files():
         source_list.append(source_file)
 

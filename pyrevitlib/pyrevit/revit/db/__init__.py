@@ -18,7 +18,7 @@ class BaseWrapper(object):
         self._wrapped = obj
 
     def __repr__(self, data=None):
-        pdata = dict()
+        pdata = {}
         if hasattr(self._wrapped, 'Id'):
             pdata['id'] = self._wrapped.Id.IntegerValue
 

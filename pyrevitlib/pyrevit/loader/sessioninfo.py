@@ -1,13 +1,12 @@
 """Session info."""
 import sys
-import uuid
 
 from pyrevit import HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
 from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
-from pyrevit.coreutils import DEFAULT_SEPARATOR
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
@@ -34,7 +33,7 @@ def get_session_uuid():
 
 
 def new_session_uuid():
-    uuid_str = safe_strtype(uuid.uuid1())
+    uuid_str = safe_strtype(coreutils.new_uuid())
     set_session_uuid(uuid_str)
     return uuid_str
 
@@ -73,7 +72,7 @@ def set_total_loaded_assm_count(assm_count):
 def get_loaded_pyrevit_assemblies():
     loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
-        return loaded_assms_str.split(DEFAULT_SEPARATOR)
+        return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)
     else:
         return []
 
@@ -81,7 +80,7 @@ def get_loaded_pyrevit_assemblies():
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
     envvars.set_pyrevit_env_var(
         PYREVIT_LOADEDASSMS_ENVVAR,
-        DEFAULT_SEPARATOR.join(loaded_assm_name_list)
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
         )
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()

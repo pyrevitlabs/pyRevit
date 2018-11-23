@@ -8,13 +8,13 @@
             <Setter Property="Background" Value="White"/>
         </Style>
 
-        <ControlTemplate x:Key="ListItemContainerTemplate">
+        <ControlTemplate x:Key="ItemTemplate">
             <TextBlock Text="{Binding name}"
                        VerticalAlignment="Center"
                        Margin="10,0,0,0"/>
         </ControlTemplate>
 
-        <DataTemplate x:Key="ListItemTemplate">
+        <DataTemplate x:Key="ItemContainerTemplate">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -28,9 +28,13 @@
                           Visibility="{Binding checkable}"/>
                 <Control Grid.Column="1"
                          VerticalAlignment="Center" VerticalContentAlignment="Center"
-                         Template="{DynamicResource ListItemContainerTemplate}"/>
+                         Template="{DynamicResource ItemTemplate}"/>
             </Grid>
         </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="ItemsPanelTemplate">
+            <StackPanel />
+        </ItemsPanelTemplate>
     </Window.Resources>
     <DockPanel Margin="10">
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
@@ -84,6 +88,8 @@
         <ListView x:Name="list_lb"
                   SelectionMode="Extended"
                   HorizontalContentAlignment="Stretch"
-                  ItemTemplate="{DynamicResource ListItemTemplate}"/>
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ItemTemplate="{DynamicResource ItemContainerTemplate}"
+                  ItemsPanel="{DynamicResource ItemsPanelTemplate}" />
     </DockPanel>
 </Window>

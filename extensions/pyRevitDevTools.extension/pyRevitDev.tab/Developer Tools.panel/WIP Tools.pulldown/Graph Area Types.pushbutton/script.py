@@ -12,7 +12,7 @@ areas = DB.FilteredElementCollector(doc) \
           .WhereElementIsNotElementType().ToElements()
 
 
-total = dict()
+total = {}
 for area in areas:
     try:
         area_type = area.LookupParameter('Area Type').AsValueString()

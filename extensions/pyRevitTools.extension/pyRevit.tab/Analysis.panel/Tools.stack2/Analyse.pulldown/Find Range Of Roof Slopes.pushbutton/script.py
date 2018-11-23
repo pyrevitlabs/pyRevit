@@ -11,7 +11,7 @@ rooflist = DB.FilteredElementCollector(revit.doc)\
              .WhereElementIsNotElementType().ToElements()
 
 
-slopes = dict()
+slopes = {}
 
 
 for el in rooflist:

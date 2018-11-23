@@ -13,14 +13,15 @@ import os
 import os.path as op
 import re
 
-from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, EXEC_PARAMS
-from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL,\
-                    PYREVIT_FILE_PREFIX, PYREVIT_FILE_PREFIX_STAMPED
+import pyrevit
+from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit.coreutils import make_canonical_name
-from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import logger
+from pyrevit.labs import TargetApps
+
 
 #pylint: disable=W0703,C0302
-mlogger = get_logger(__name__)  #pylint: disable=C0103
+mlogger = logger.get_logger(__name__)  #pylint: disable=C0103
 
 
 TEMP_FILE_EXT = 'tmp'
@@ -37,9 +38,9 @@ def _list_app_files(prefix, file_ext, universal=False):
     requested_files = []
 
     if universal:
-        appdata_folder = PYREVIT_APP_DIR
+        appdata_folder = pyrevit.PYREVIT_APP_DIR
     else:
-        appdata_folder = PYREVIT_VERSION_APP_DIR
+        appdata_folder = pyrevit.PYREVIT_VERSION_APP_DIR
 
     for appdata_file in os.listdir(appdata_folder):
         if appdata_file.startswith(prefix) and appdata_file.endswith(file_ext):
@@ -50,21 +51,60 @@ def _list_app_files(prefix, file_ext, universal=False):
 
 def _get_app_file(file_id, file_ext,
                   filename_only=False, stamped=False, universal=False):
-    appdata_folder = PYREVIT_VERSION_APP_DIR
-    file_prefix = PYREVIT_FILE_PREFIX
+    appdata_folder = pyrevit.PYREVIT_VERSION_APP_DIR
+    file_prefix = pyrevit.PYREVIT_FILE_PREFIX
 
     if stamped:
-        file_prefix = PYREVIT_FILE_PREFIX_STAMPED
+        file_prefix = pyrevit.PYREVIT_FILE_PREFIX_STAMPED
     elif universal:
-        appdata_folder = PYREVIT_APP_DIR
-        file_prefix = PYREVIT_FILE_PREFIX_UNIVERSAL
+        appdata_folder = pyrevit.PYREVIT_APP_DIR
+        file_prefix = pyrevit.PYREVIT_FILE_PREFIX_UNIVERSAL
 
-    full_filename = '{}_{}.{}'.format(file_prefix, file_id, file_ext)
+    full_filename = '{}{}.{}'.format(file_prefix, file_id, file_ext)
 
     if filename_only:
         return full_filename
     else:
         return op.join(appdata_folder, full_filename)
+
+
+def _match_file(file_name):
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    # e.g. pyRevit_2018_14422_
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_STAMPED_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    # e.g. pyRevit_2018_eirannejad_
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_USER_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    # e.g. pyRevit_2018_
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    # e.g. pyRevit_eirannejad_
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    # e.g. pyRevit_
+    match = re.match(pattern=pyrevit.PYREVIT_FILE_PREFIX_UNIVERSAL_REGEX,
+                     string=file_name)
+    if match:
+        return match.groupdict()
+
+    return {}
 
 
 def get_universal_data_file(file_id, file_ext, name_only=False):
@@ -128,7 +168,7 @@ def is_pyrevit_data_file(file_name):
     Returns:
         bool: True if file is a pyRevit data file
     """
-    return PYREVIT_FILE_PREFIX in file_name
+    return pyrevit.PYREVIT_FILE_PREFIX in file_name
 
 
 def is_file_available(file_name, file_ext, universal=False):
@@ -143,10 +183,10 @@ def is_file_available(file_name, file_ext, universal=False):
         str: file path if file is available
     """
     if universal:
-        full_filename = op.join(PYREVIT_APP_DIR,
+        full_filename = op.join(pyrevit.PYREVIT_APP_DIR,
                                 make_canonical_name(file_name, file_ext))
     else:
-        full_filename = op.join(PYREVIT_VERSION_APP_DIR,
+        full_filename = op.join(pyrevit.PYREVIT_VERSION_APP_DIR,
                                 make_canonical_name(file_name, file_ext))
     if op.exists(full_filename):
         return full_filename
@@ -181,7 +221,7 @@ def list_data_files(file_ext, universal=False):
     Returns:
         :obj:`list`: list of files
     """
-    return _list_app_files(PYREVIT_FILE_PREFIX, file_ext, universal=universal)
+    return _list_app_files(pyrevit.PYREVIT_FILE_PREFIX, file_ext, universal=universal)
 
 
 def list_session_data_files(file_ext):
@@ -194,7 +234,7 @@ def list_session_data_files(file_ext):
         :obj:`list`: list of data files
 
     """
-    return _list_app_files(PYREVIT_FILE_PREFIX_STAMPED, file_ext)
+    return _list_app_files(pyrevit.PYREVIT_FILE_PREFIX_STAMPED, file_ext)
 
 
 def garbage_data_file(file_path):
@@ -211,12 +251,18 @@ def garbage_data_file(file_path):
 def cleanup_appdata_folder():
     """Cleanup appdata folder of all temporary appdata files."""
     if EXEC_PARAMS.first_load:
-        finder = re.compile(r'(.+)_(.+)_(.+)_(\d+).+')
-        for appdata_file in os.listdir(PYREVIT_VERSION_APP_DIR):
-            file_name_pieces = finder.findall(appdata_file)
-            if file_name_pieces \
-                    and len(file_name_pieces[0]) == 4 \
-                    and int(file_name_pieces[0][3]) > 0 \
-                    and appdata_file.endswith(TEMP_FILE_EXT):
-                _remove_app_file(op.join(PYREVIT_VERSION_APP_DIR,
-                                         appdata_file))
+        hostapp_pids = \
+            [x.ProcessId
+             for x in TargetApps.Revit.RevitController.ListRunningRevits()]
+        for appdata_file in os.listdir(pyrevit.PYREVIT_VERSION_APP_DIR):
+            file_naming_dict = _match_file(appdata_file)
+            if 'pid' in file_naming_dict:
+                try:
+                    pid = int(file_naming_dict['pid'])
+                    if pid not in hostapp_pids:
+                        _remove_app_file(
+                            op.join(pyrevit.PYREVIT_VERSION_APP_DIR,
+                                    appdata_file)
+                            )
+                except Exception:
+                    pass

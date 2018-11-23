@@ -3,6 +3,7 @@ import os.path as op
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
+from pyrevit.revit import db
 from pyrevit.revit.db import query
 from pyrevit.revit.db import create
 from pyrevit.revit.db import transaction    #pylint: disable=E0611
@@ -85,3 +86,30 @@ def ensure_workset(workset_name, partial=False, doc=None):
         return workset
     else:
         return create.create_workset(workset_name, doc=doc)
+
+
+def ensure_text_type(name,
+                     font_name=None,
+                     font_size=0.01042,
+                     tab_size=0.02084,
+                     bold=False,
+                     italic=False,
+                     underline=False,
+                     with_factor=1.0,
+                     doc=None):
+    doc = doc or HOST_APP.doc
+    # check if type exists
+    for ttype in query.get_types_by_class(DB.TextNoteType, doc=doc):
+        if db.ElementWrapper(ttype).name == name:
+            return ttype
+    # otherwise create it
+    return create.create_text_type(
+        name,
+        font_name=font_name,
+        font_size=font_size,
+        tab_size=tab_size,
+        bold=bold,
+        italic=italic,
+        underline=underline,
+        with_factor=with_factor,
+        doc=doc)
