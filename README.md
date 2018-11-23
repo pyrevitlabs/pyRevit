@@ -7,8 +7,4 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 [![madewithloveinportland](https://img.shields.io/badge/%3C%2F%3E%20with%20%3C3-Portland%2C%20OR-green.svg)](https://en.wikipedia.org/wiki/Portland,_Oregon)
 
-[Browse to pyRevit blog to learn more and download the installation.](http://eirannejad.github.io/pyRevit/)
-
-#### License: This package is licensed under  GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007.
-
-#### Credits: [See Credits here](http://eirannejad.github.io/pyRevit/credits/)
+[See pyRevit Blog](http://eirannejad.github.io/pyRevit/)
