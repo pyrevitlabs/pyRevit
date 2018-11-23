@@ -1,5 +1,4 @@
 """Lists all roof slopes in the model."""
-
 from pyrevit import script
 from pyrevit import revit, DB
 
@@ -16,13 +15,13 @@ slopes = {}
 
 
 for el in rooflist:
-    p = el.LookupParameter('Slope')
-    if p:
-        s = p.AsValueString()
-        if s in slopes.keys():
-            slopes[s].append(el.Id)
+    slope_param = el.Parameter[DB.BuiltInParameter.ROOF_SLOPE]
+    if slope_param:
+        slope_value = slope_param.AsValueString()
+        if slope_value in slopes.keys():
+            slopes[slope_value].append(el.Id)
         else:
-            slopes[s] = [el.Id]
+            slopes[slope_value] = [el.Id]
 
 for sl, elids in slopes.items():
     print('SLOPE: {0}'.format(sl))

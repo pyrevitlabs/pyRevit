@@ -25,7 +25,7 @@ walls = DB.FilteredElementCollector(doc) \
 tallwalls_ids = []
 
 for wall in walls:
-    heightp = wall.LookupParameter('Unconnected Height')
+    heightp = wall.Parameter[DB.BuiltInParameter.WALL_USER_HEIGHT_PARAM]
     if heightp and heightp.AsDouble() == 10.0:
         tallwalls_ids.append(wall.Id)
 

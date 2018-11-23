@@ -20,7 +20,7 @@ for vport_id in curview.GetAllViewports():
 # find max count for sheet_vports
 vports = {}
 for vp in sheet_vports:
-    detnum_param = vp.LookupParameter('Detail Number')
+    detnum_param = vp.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
     if detnum_param:
         try:
             detnum = int(detnum_param.AsString())
@@ -48,9 +48,9 @@ with revit.Transaction('Re-number Viewports'):
 
     for i in range(1, len(selection) + 1):
         try:
-            vports[i].LookupParameter('Detail Number').Set(str(max_num + i))
+            vports[i].Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER].Set(str(max_num + i))
         except KeyError:
             continue
 
     for i, el in enumerate(selection):
-        el.LookupParameter('Detail Number').Set(str(i + 1))
+        el.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER].Set(str(i + 1))

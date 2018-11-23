@@ -28,7 +28,7 @@ with revit.Transaction('Explode and Purge Selected Groups'):
             grps.append(grp)
 
     for g in grps:
-        if g.LookupParameter('Attached to'):
+        if g.Parameter[DB.BuiltInParameter.GROUP_ATTACHED_PARENT_NAME]:
             attachedGrps.append(g.GroupType)
         g.UngroupMembers()
 

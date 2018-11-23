@@ -7,7 +7,7 @@ from pyrevit import forms
 def change_case(sheetlist, upper=True, verbose=False):
     with revit.Transaction('Rename Sheets to Upper'):
         for el in sheetlist:
-            sheetnameparam = el.LookupParameter('Sheet Name')
+            sheetnameparam = el.Parameter[DB.BuiltInParameter.SHEET_NAME]
             orig_name = sheetnameparam.AsString()
             new_name = orig_name.upper() if upper else orig_name.lower()
             if verbose:

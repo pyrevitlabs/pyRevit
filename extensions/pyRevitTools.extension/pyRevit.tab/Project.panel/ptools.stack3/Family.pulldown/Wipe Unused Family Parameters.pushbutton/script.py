@@ -34,11 +34,11 @@ if revit.doc.IsFamilyDocument:
     visibParams = set()
     for el in allelements:
         try:
-            visibparam = el.LookupParameter('Visible')
-            if visibparam is not None:
+            visible_param = el.Parameter[DB.BuiltInParameter.IS_VISIBLE_PARAM]
+            if visible_param is not None:
                 famvisibparam = \
                     revit.doc.FamilyManager.GetAssociatedFamilyParameter(
-                        visibparam
+                        visible_param
                         )
 
                 if famvisibparam is not None \

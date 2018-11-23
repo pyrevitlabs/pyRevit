@@ -53,7 +53,8 @@ def listdwgs(current_view_only=False):
         output.print_md("####{}".format(link_mode))
         for dwg in dwgInst[link_mode]:
             dwg_id = dwg.Id
-            dwg_name = dwg.LookupParameter("Name").AsString()
+            dwg_name = \
+                dwg.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
             dwg_workset = workset_table.GetWorkset(dwg.WorksetId).Name
             dwg_instance_creator = \
                 DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,

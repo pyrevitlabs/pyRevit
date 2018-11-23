@@ -1,3 +1,4 @@
+#pylint: disable=E0401,C0103
 from pyrevit import revit, DB
 
 
@@ -33,36 +34,42 @@ for el in selection.elements:
     total = 0.0
     average = 0.0
     if isinstance(el, DB.Area):
-        selareaname = el.LookupParameter('Name').AsString()
+        selareaname = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
         if selareaname not in processed_items[DB.Area]:
             print("AREA TYPE IS: {}".format(selareaname))
             for area in areas:
-                areaname = area.LookupParameter('Name').AsString()
+                areaname = \
+                    area.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
                 if area.AreaScheme.Name == el.AreaScheme.Name\
                         and selareaname == areaname:
-                    total += area.LookupParameter('Area').AsDouble()
+                    area_param = area.Parameter[DB.BuiltInParameter.ROOM_AREA]
+                    total += area_param.AsDouble()
                     count += 1
             print("TOTAL OF {} AREAS WERE FOUND.".format(count))
             processed_items[DB.Area].append(selareaname)
     elif isinstance(el, DB.Architecture.Room):
-        selroomname = el.LookupParameter('Name').AsString()
+        selroomname = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
         if selroomname not in processed_items[DB.Architecture.Room]:
             print("ROOM TYPE IS: {}".format(selroomname))
             for room in rms:
-                roomname = room.LookupParameter('Name').AsString()
+                roomname = \
+                    room.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
                 if selroomname == roomname:
-                    total += room.LookupParameter('Area').AsDouble()
+                    area_param = room.Parameter[DB.BuiltInParameter.ROOM_AREA]
+                    total += area_param.AsDouble()
                     count += 1
             print("TOTAL OF {} ROOMS WERE FOUND.".format(count))
             processed_items[DB.Architecture.Room].append(selroomname)
     elif isinstance(el, DB.Mechanical.Space):
-        selspacename = el.LookupParameter('Name').AsString()
+        selspacename = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
         if selspacename not in processed_items[DB.Mechanical.Space]:
             print("SPACE TYPE IS: {}".format(selspacename))
             for space in spaces:
-                spacename = space.LookupParameter('Name').AsString()
+                spacename = \
+                    space.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
                 if selspacename == spacename:
-                    total += space.LookupParameter('Area').AsDouble()
+                    area_param = space.Parameter[DB.BuiltInParameter.ROOM_AREA]
+                    total += area_param.AsDouble()
                     count += 1
             print("TOTAL OF {} SPACES WERE FOUND.".format(count))
             processed_items[DB.Mechanical.Space].append(selspacename)

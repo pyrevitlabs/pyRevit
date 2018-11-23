@@ -23,7 +23,7 @@ if len(duplicates) > 0:
             rm = revit.doc.GetElement(rmid)
             if rm.Number == rn:
                 print('\tROOM NAME:  {} LEVEL: {}'
-                      .format(rm.LookupParameter('Name').AsString().ljust(30),
+                      .format(rm.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
                               rm.Level.Name))
         print('\n')
 else:

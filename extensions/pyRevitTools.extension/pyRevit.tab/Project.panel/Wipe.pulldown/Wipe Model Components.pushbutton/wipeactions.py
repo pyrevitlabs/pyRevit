@@ -359,11 +359,13 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
 
         view_refs_names = set()
         for view_ref in view_refs:
-            ref_param = view_ref.LookupParameter('Target view')
+            ref_param = view_ref.Parameter[
+                DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
+                ]
             view_refs_names.add(ref_param.AsValueString())
 
-        refsheet = v.LookupParameter('Referencing Sheet')
-        refviewport = v.LookupParameter('Referencing Detail')
+        refsheet = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
+        refviewport = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
         refprefix = VIEWREF_PREFIX.get(v.ViewType, '')
         if refsheet \
                 and refviewport \

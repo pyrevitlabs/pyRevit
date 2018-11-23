@@ -18,9 +18,11 @@ views = DB.FilteredElementCollector(revit.doc)\
 def find_views_with_underlay():
     for v in views:
         try:
-            if HOST_APP.version == '2017':
-                base_underlay_param = v.LookupParameter('Range: Base Level')
-                top_underlay_param = v.LookupParameter('Range: Top Level')
+            if HOST_APP.is_newer_than(2016, or_equal=True):
+                base_underlay_param = \
+                    v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID]
+                top_underlay_param = \
+                    v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID]
                 if base_underlay_param \
                         and top_underlay_param \
                         and base_underlay_param.AsValueString() != 'None' \
@@ -38,7 +40,7 @@ def find_views_with_underlay():
                                   base_underlay_param.AsValueString().ljust(25),
                                   top_underlay_param.AsValueString().ljust(25)))
             else:
-                underlayp = v.LookupParameter('Underlay')
+                underlayp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_ID]
                 if underlayp and underlayp.AsValueString() != 'None':
                     print('TYPE: {1}\n'
                           'ID: {2}\n'
@@ -58,7 +60,7 @@ def find_view_with_template():
         vtid = v.ViewTemplateId
         vt = revit.doc.GetElement(vtid)
         if vt:
-            phasep = v.LookupParameter('Phase')
+        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
             print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} {0}'.format(
                 v.ViewName,
                 str(v.ViewType).ljust(20),

@@ -34,8 +34,8 @@ for s in sheets:
         if sr in revids:
             hasSelectedRevision = True
     if hasSelectedRevision:
-        print('{0}\t{1}'.format(s.LookupParameter('Sheet Number').AsString(),
-                                s.LookupParameter('Sheet Name').AsString()))
+        print('{0}\t{1}'.format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
+                                s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()))
 
         if multipleRevs:
             for revid in revision_ids:

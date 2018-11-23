@@ -37,7 +37,7 @@ def flip_wall_location():
     with revit.TransactionGroup("Flip Wall On CenterLine"):
         for el in revit.get_selection():
             if isinstance(el, DB.Wall):
-                param = el.LookupParameter('Location Line')
+                param = el.Parameter[DB.BuiltInParameter.WALL_KEY_REF_PARAM]
                 current_value = param.AsInteger()
                 with revit.Transaction('Change Wall Location Line'):
                     param.Set(location_line_values['Core Centerline'][0])
@@ -50,7 +50,7 @@ def flip_wall_location():
 def flip_wall_location_line():
     for el in revit.get_selection():
         if isinstance(el, DB.Wall):
-            param = el.LookupParameter('Location Line')
+            param = el.Parameter[DB.BuiltInParameter.WALL_KEY_REF_PARAM]
             current_value = param.AsInteger()
             for pair in location_line_values.values():
                 if pair[0] == current_value:
