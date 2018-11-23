@@ -24,10 +24,13 @@ for open_doc in revit.docs:
         with revit.Transaction('Match Title on Sheets', doc=open_doc):
             for v in views:
                 if v.ViewName in curdoc_views_dict:
-                    tos_param = v.LookupParameter('Title on Sheet')
+                    tos_param = v.Parameter[
+                        DB.BuiltInParameter.VIEW_DESCRIPTION
+                        ]
                     matching_view = curdoc_views_dict[v.ViewName]
-                    orig_tos_param = \
-                        matching_view.LookupParameter('Title on Sheet')
+                    orig_tos_param = matching_view.Parameter[
+                        DB.BuiltInParameter.VIEW_DESCRIPTION
+                        ]
 
                     if orig_tos_param and tos_param:
                         print('Matching Views: {} / {}'

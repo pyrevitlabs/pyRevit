@@ -17,11 +17,11 @@ view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
 
 def find_unrefed_views(view_list):
     for v in view_list:
-        phasep = v.LookupParameter('Phase')
+        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
         sheetnum = v.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
-        detnum = v.LookupParameter('Detail Number')
-        refsheet = v.LookupParameter('Referencing Sheet')
-        refviewport = v.LookupParameter('Referencing Detail')
+        detnum = v.Parameter[DB.BuiltInParameter.VIEWER_DETAIL_NUMBER]
+        refsheet = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
+        refviewport = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
         refprefix = view_ref_prefixes.get(v.ViewType, '')
         if refsheet \
                 and refviewport \
@@ -55,7 +55,8 @@ view_refs = DB.FilteredElementCollector(revit.doc)\
 
 view_refs_names = set()
 for view_ref in view_refs:
-    ref_param = view_ref.LookupParameter('Target view')
+    ref_param = \
+        view_ref.Parameter[DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW]
     view_refs_names.add(ref_param.AsValueString())
 
 dviews = []
