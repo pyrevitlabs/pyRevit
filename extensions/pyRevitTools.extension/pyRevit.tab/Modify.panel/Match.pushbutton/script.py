@@ -150,6 +150,8 @@ def get_source_style(element_id):
 def pick_and_match_dim_overrides(src_dim_id):
     with forms.WarningBar(title='Pick dimensions to match overrides:'):
         src_dim = revit.doc.GetElement(src_dim_id)
+        if src_dim.NumberOfSegments > 1:
+            src_dim = src_dim.Segments[0]
         while True:
             dest_dim = revit.pick_element()
 
@@ -158,7 +160,12 @@ def pick_and_match_dim_overrides(src_dim_id):
 
             if isinstance(dest_dim, DB.Dimension):
                 with revit.Transaction('Match Dimension Overrides'):
-                    setup_dim_overrides_per_config(src_dim, dest_dim)
+                    if dest_dim.NumberOfSegments > 1:
+                        segments = dest_dim.Segments
+                        for segment in segments:
+                            setup_dim_overrides_per_config(src_dim, segment)
+                    else:
+                        setup_dim_overrides_per_config(src_dim, dest_dim)
 
 
 def pick_and_match_styles(src_style):
