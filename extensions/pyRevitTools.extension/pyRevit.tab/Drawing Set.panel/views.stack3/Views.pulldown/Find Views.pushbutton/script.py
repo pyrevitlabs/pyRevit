@@ -60,7 +60,7 @@ def find_view_with_template():
         vtid = v.ViewTemplateId
         vt = revit.doc.GetElement(vtid)
         if vt:
-        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
+            phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
             print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} {0}'.format(
                 v.ViewName,
                 str(v.ViewType).ljust(20),
