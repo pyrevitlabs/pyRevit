@@ -3,7 +3,7 @@
 __title__ = 'First\nTransactions'
 
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, TransactionGroup
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, TransactionGroup, BuiltInParameter
 
 doc = __revit__.ActiveUIDocument.Document
 
@@ -23,7 +23,7 @@ t = Transaction(doc, "Update Sheet Parmeters")
 t.Start()
 
 for sheet in sheets_collector:
-    custom_param = sheet.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+    custom_param = sheet.Parameter[BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
     if custom_param:
         custom_param.Set("Example value")
 

@@ -3,7 +3,7 @@
 __title__ = 'Total\nVolume'
 
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter
 
 doc = __revit__.ActiveUIDocument.Document
 
@@ -17,7 +17,7 @@ wall_collector = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Wa
 total_volume = 0.0
 
 for wall in wall_collector:
-    vol_param = wall.Parameter[DB.BuiltInParameter.HOST_VOLUME_COMPUTED]
+    vol_param = wall.Parameter[BuiltInParameter.HOST_VOLUME_COMPUTED]
     if vol_param:
         total_volume = total_volume + vol_param.AsDouble()
 
