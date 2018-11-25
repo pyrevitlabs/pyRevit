@@ -107,6 +107,12 @@ class MockImporter(object):
                       'wpf',
                       'Rhino',
                       'Newtonsoft',
+                      'Nett',
+                      'NLog',
+                      'MadMilkman',
+                      'OpenMcdf',
+                      'MahApps',
+                      'pyRevitLabs',
                       ]
 
     def find_module(self, fullname, path=None):

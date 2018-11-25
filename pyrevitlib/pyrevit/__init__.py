@@ -486,19 +486,23 @@ EXEC_PARAMS = _ExecutorParams()
 # config user environment paths
 # -----------------------------------------------------------------------------
 # user env paths
-ALLUSER_PROGRAMDATA = os.getenv('programdata')
-USER_ROAMING_DIR = os.getenv('appdata')
-USER_SYS_TEMP = os.getenv('temp')
-USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+if EXEC_PARAMS.doc_mode:
+    ALLUSER_PROGRAMDATA = USER_ROAMING_DIR = USER_SYS_TEMP = USER_DESKTOP = \
+    EXTENSIONS_DEFAULT_DIR = THIRDPARTY_EXTENSIONS_DEFAULT_DIR = ' '
+else:
+    ALLUSER_PROGRAMDATA = os.getenv('programdata')
+    USER_ROAMING_DIR = os.getenv('appdata')
+    USER_SYS_TEMP = os.getenv('temp')
+    USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
 
-# verify directory per issue #369
-if not USER_DESKTOP or not op.exists(USER_DESKTOP):
-    USER_DESKTOP = USER_SYS_TEMP
+    # verify directory per issue #369
+    if not USER_DESKTOP or not op.exists(USER_DESKTOP):
+        USER_DESKTOP = USER_SYS_TEMP
 
-# default extensions directory
-EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
-THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
-    op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME, 'Extensions')
+    # default extensions directory
+    EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
+    THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
+        op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME, 'Extensions')
 
 # create paths for pyrevit files
 if EXEC_PARAMS.doc_mode:

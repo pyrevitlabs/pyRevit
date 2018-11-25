@@ -1646,7 +1646,7 @@ def select_image(images, title='Select Image', button_name='Select'):
     """Standard form for selecting an image.
 
     Args:
-        images (str | framework.Imaging.BitmapImage):
+        images (list[str] | list[framework.Imaging.BitmapImage]):
             list of image file paths or bitmaps
         title (str, optional): swatch list window title
         button_name (str, optional): swatch list window button caption
@@ -1656,8 +1656,10 @@ def select_image(images, title='Select Image', button_name='Select'):
 
     Example:
         >>> from pyrevit import forms
-        >>> forms.select_image(title="Select Variation")
-        ... c:/path/to/image.png
+        >>> forms.select_image(['C:/path/to/image1.png',
+                                'C:/path/to/image2.png'],
+                                title="Select Variation")
+        ... 'C:/path/to/image1.png'
     """
     ptemplate_xaml_file = \
         os.path.join(op.dirname(__file__), "ImageListPanelStyle.xaml")
