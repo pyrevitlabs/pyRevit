@@ -3,35 +3,27 @@ Anatomy of a pyRevit Script
 
 pyRevit provides a few basic services to python scripts that use its engine.
 These fuctionalities are accessible through a few high level modules.
-This is a quick look at these services and their associated python modules.
+This article is a quick look at these services and their associated
+python modules.
 
 
-Basic script parameters
------------------------
+Script Metadata Variables
+-------------------------
 
-* **Command Tooltips**
-
-    Tooltips are shown similarly to the other buttons in Revit interface.
-    You can define the tooltip for a script using the doscstring at the top of
-    the script or by explicitly defining ``__doc__`` parameter.
-
-    .. code-block:: python
-
-        """You can place the docstring (tooltip) at the top of the script file.
-        This serves both as python docstring and also button tooltip in pyRevit.
-        You should use triple quotes for standard python docstrings."""
+pyRevit looks for certain global scope variables in each scripts that provide
+metadata about the script and follow the ``__<name>__`` format.
 
 
-    .. code-block:: python
+__title__
+^^^^^^^^^
 
-        __doc__ = 'This is the text for the button tooltip associated with this script.'
+.. image:: https://via.placeholder.com/150
 
-
-* **Custom Command Title**
-
-    When using the bundle name is not desired or you want to add a newline character
-    to the command name for better display inside Revit UI Panel, you can define
-    the ``__title__`` variable in your script and set it to the desired button title.
+**Button Title**: When using the bundle name as the
+button name in Revit UI is not desired, or you want to add a newline
+character to the command name to better display the butonn name inside
+Revit UI Panel, you can define the ``__title__`` variable in your script
+and set it to the desired button title.
 
 
     .. code-block:: python
@@ -39,19 +31,69 @@ Basic script parameters
         __title__ = 'Sample\\nCommand'
 
 
-* **Command Author**
+__doc__
+^^^^^^^
 
-    You can define the script author as shown below. This will show up on the button tooltip.
+.. image:: https://via.placeholder.com/400x150
+
+**Button Tooltip**: Tooltips are displayed similar to the
+other buttons in Revit interface. You can define the tooltip for a script
+using the doscstring at the top of the script or by explicitly defining
+``__doc__`` metadata variable.
+
+
+    .. code-block:: python
+
+        # defining tooltip as the script docstring
+        """You can place the docstring (tooltip) at the top of the script file.
+        This serves both as python docstring and also button tooltip in pyRevit.
+        You should use triple quotes for standard python docstrings."""
+
+
+    .. code-block:: python
+
+        # defining tooltip by setting metadata variable
+        __doc__ = 'This is the text for the button tooltip associated with this script.'
+
+
+__author__
+^^^^^^^^^^
+
+.. image:: https://via.placeholder.com/400x50
+
+**Script Author**: You can define the script author as shown below.
+This will show up on the button tooltip.
+
 
     .. code-block:: python
 
         __author__ = 'Ehsan Iran-Nejad'
 
 
-Command Availability
---------------------
+__helpurl__
+^^^^^^^^^^^
 
-Revit commands use standard ``IExternalCommandAvailability`` class to let Revit
+**F1 Shortcut Help Url**: xx
+
+__min_revit_ver__
+^^^^^^^^^^^^^^^^^
+
+**Min Revit Version Required**: xx
+
+__max_revit_ver__
+^^^^^^^^^^^^^^^^^
+
+**Max Revit Version Supported**: xx
+
+__beta__
+^^^^^^^^
+
+**Script In Beta**: xx
+
+__context__
+^^^^^^^^^^^
+
+**Command Availability**: Revit commands use standard ``IExternalCommandAvailability`` class to let Revit
 know if they are available in different contexts. For example, if a command needs
 to work on a set of elements, it can tell Revit to deactivate the button unless
 the user has selected one or more elements.
@@ -72,13 +114,12 @@ Currently, pyRevit support three types of command availability types.
     __context__ = ['<Element Category>', '<Element Category>']
 
 
-* **Element Categories**
+``<Element Category>`` can be any of the standard Revit element categories.
+See :ref:`appendix-b` for a full list of system categories.
+You can use the ``List`` tool under ``pyRevit > Spy`` and list the standard categories.
 
-    ``<Element Category>`` can be any of the standard Revit element categories.
-    See :ref:`appendix-b` for a full list of system categories.
-    You can use the ``List`` tool under ``pyRevit > Spy`` and list the standard categories.
+Here are a few examples:
 
-    Here are a few examples:
 
     .. code-block:: python
 
