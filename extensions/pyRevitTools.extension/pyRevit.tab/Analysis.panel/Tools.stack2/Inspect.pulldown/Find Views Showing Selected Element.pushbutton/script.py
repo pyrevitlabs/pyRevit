@@ -1,42 +1,38 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+"""Lists all views that the selected elements is visible in."""
+from pyrevit import revit, DB
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+__context__ = 'selection'
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
 
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
+selection = revit.get_selection()
 
-__doc__ = 'Lists all views that the selected elements is visible in.'
 
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, ViewType
+cl_views = DB.FilteredElementCollector(revit.doc)
+allviews = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
+                   .WhereElementIsNotElementType()\
+                   .ToElements()
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-
-cl_views = FilteredElementCollector(doc)
-allviews = cl_views.OfCategory(BuiltInCategory.OST_Views).WhereElementIsNotElementType().ToElements()
-views = filter(lambda x: ((x.ViewType != ViewType.DraftingView or x.ViewType != ViewType.ThreeD) and not x.IsTemplate),
+views = filter(lambda x: ((x.ViewType != DB.ViewType.DraftingView
+                           or x.ViewType != DB.ViewType.ThreeD)
+                          and not x.IsTemplate),
                allviews)
 
 viewList = []
 
+
 for v in views:
-    print('Searching {0} of type: {1}'.format(v.ViewName, str(v.ViewType).ljust(25)))
-    cl_els = FilteredElementCollector(doc, v.Id).WhereElementIsNotElementType().ToElementIds()
+    print('Searching {0} of type: {1}'.format(v.ViewName,
+                                              str(v.ViewType).ljust(25)))
+
+    cl_els = DB.FilteredElementCollector(revit.doc, v.Id)\
+               .WhereElementIsNotElementType()\
+               .ToElementIds()
+
     print('\tTotal found: {0}'.format(len(cl_els)))
+
     i = 0
-    for elId in uidoc.Selection.GetElementIds():
+    for elId in selection:
         if elId in cl_els:
             i = + 1
             viewList.append(v)

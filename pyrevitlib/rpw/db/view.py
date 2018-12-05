@@ -27,15 +27,16 @@ class View(Element):
     As with other wrappers, you can use the Element() factory class to
     use the best wrapper available:
 
-    >>> wrapped_view = rpw.db.Element(some_view_plan)
+    >>> from rpw import db
+    >>> wrapped_view = db.Element(some_view_plan)
     <rpw:ViewPlan>
-    >>> wrapped_view = rpw.db.Element(some_legend)
+    >>> wrapped_view = db.Element(some_legend)
     <rpw:View>
-    >>> wrapped_view = rpw.db.Element(some_schedule)
+    >>> wrapped_view = db.Element(some_schedule)
     <rpw:ViewSchedule>
 
 
-    >>> wrapped_view = rpw.db.Element(some_view_plan)
+    >>> wrapped_view = db.Element(some_view_plan)
     >>> wrapped_view.view_type
     <rpw:ViewType | view_type: FloorPlan>
     >>> wrapped_view.view_family_type
@@ -57,17 +58,6 @@ class View(Element):
     _revit_object_category = DB.BuiltInCategory.OST_Views
     _revit_object_class = DB.View
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
-
-    @property
-    def name(self):
-        """ Name Property """
-        # TODO: Make Mixin ?
-        return self._revit_object.Name
-
-    @name.setter
-    def name(self, value):
-        """ Name Property Setter """
-        self._revit_object.Name == value
 
     @property
     def view_type(self):
@@ -100,8 +90,10 @@ class View(Element):
 
         For more information see :any:`OverrideGraphicSettings`
 
-        >>> view.override.projection_line(element, color=[0,255,0])
-        >>> view.override.cut_line(category, weight=5)
+        >>> from rpw import db
+        >>> wrapped_view = db.Element(some_view)
+        >>> wrapped_view.override.projection_line(element, color=[0,255,0])
+        >>> wrapped_view.override.cut_line(category, weight=5)
 
         """
         return OverrideGraphicSettings(self)
@@ -120,7 +112,12 @@ class View(Element):
 
 
 class ViewPlan(View):
-    """ ViewPlan Wrapper. ``ViewType`` is ViewType.FloorPlan or  ViewType.CeilingPlan"""
+    """
+    ViewPlan Wrapper.
+
+    ``ViewType`` is ViewType.FloorPlan or  ViewType.CeilingPlan
+
+    """
     _revit_object_class = DB.ViewPlan
     _collector_params = {'of_class': _revit_object_class, 'is_type': False}
 
@@ -159,22 +156,6 @@ class ViewFamilyType(Element):
     _collector_params = {'of_class': _revit_object_class, 'is_type': True}
 
     @property
-    def name(self):
-        """ Name of ViewFamilyType """
-        # return self.parameters.builtins['SYMBOL_FAMILY_NAME_PARAM'].value
-        return DB.Element.Name.__get__(self._revit_object)
-
-    @name.setter
-    def name(self, value):
-        """ Name Property Setter"""
-        # Requires Re-importing Element due to IronPython Bug:
-        # https://github.com/IronLanguages/ironpython2/issues/79
-        raise NotImplemented('Not possible due to ironpython bug')
-        # This works in IronPython but does not work in Pyrevit
-        DB.Element.Name.__set__(self._revit_object, value)
-        # DB.Element.Name.SetValue(self._revit_object, value)
-
-    @property
     def view_family(self):
         """ Returns ViewFamily Enumerator """
         # Autodesk.Revit.DB.ViewFamily.FloorPlan
@@ -183,7 +164,7 @@ class ViewFamilyType(Element):
     @property
     def views(self):
         """ Collect All Views of the same ViewFamilyType """
-        views = Collector(of_class='View').wrapped_elements
+        views = Collector(of_class='View').get_elements(wrapped=True)
         return [view for view in views if
                 getattr(view.view_family_type, '_revit_object', None) == self.unwrap()]
 
@@ -216,7 +197,7 @@ class ViewFamily(BaseObjectWrapper):
     @property
     def views(self):
         """ Collect All Views of the same ViewFamily """
-        views = Collector(of_class='View').wrapped_elements
+        views = Collector(of_class='View').get_elements(wrapped=True)
         return [view for view in views if
                 getattr(view.view_family, '_revit_object', None) == self.unwrap()]
 
@@ -248,7 +229,7 @@ class ViewType(BaseObjectWrapper):
     @property
     def views(self):
         """ Collect All Views of the same ViewType """
-        views = Collector(of_class='View').wrapped_elements
+        views = Collector(of_class='View').get_elements(wrapped=True)
         return [view for view in views if view.view_type.unwrap() == self.unwrap()]
 
     def __repr__(self):
@@ -269,7 +250,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
 
 
 
-    >>> wrapped_view = rpw.db.Element(some_view)
+    >>> from rpw import db
+    >>> wrapped_view = db.Element(some_view)
     >>> wrapped_view.override.projection_line(target, color=(255,0,0))
     >>> wrapped_view.override.projection_fill(target, color=(0,0,255), pattern=pattern_id)
     >>> wrapped_view.override.cut_line(target, color=(0,0,255), weight=2)
@@ -293,6 +275,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
     # TODO: Pattern: Add pattern_id from name. None sets InvalidElementId
     # TODO: Weight: None to set InvalidPenNumber
     # TODO: Color: Add color from name util
+    # ISSUE: Cannot set LinePatterns to Solid because it's not collectible:
+    # https://forums.autodesk.com/t5/revit-api-forum/solid-linepattern/td-p/4651067
 
     _revit_object_class = DB.OverrideGraphicSettings
 
@@ -311,7 +295,6 @@ class OverrideGraphicSettings(BaseObjectWrapper):
                 element_id = to_element_id(target)
                 self._set_element_overrides(element_id)
 
-    # @rpw.db.Transaction.ensure('Set OverrideGraphicSettings')
     def _set_element_overrides(self, element_id):
         self.view.SetElementOverrides(element_id, self._revit_object)
 
@@ -323,9 +306,10 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Matches the settings of another element
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             element_to_match (``Element``, ``ElementId``): Element to match
+
         """
         element_to_match = to_element_id(element_to_match)
 
@@ -337,12 +321,13 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets ProjectionLine overrides
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
             pattern (``DB.ElementId``): ElementId of Pattern
-            weight (``int``,``None``): Line weight must be a positive integer less than 17 or
-                                       None(sets invalidPenNumber)
+            weight (``int``,``None``): Line weight must be a positive integer
+                less than 17 or None(sets invalidPenNumber)
+
         """
         if color:
             Color = DB.Color(*color)
@@ -360,12 +345,12 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets CutLine Overrides
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
             pattern (``DB.ElementId``): ElementId of Pattern
-            weight (``int``,``None``): Line weight must be a positive integer less than 17 or
-                                       None(sets invalidPenNumber)
+            weight (``int``,``None``): Line weight must be a positive integer
+                less than 17 or None(sets invalidPenNumber)
         """
         if color:
             Color = DB.Color(*color)
@@ -383,8 +368,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets ProjectionFill overrides
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
             pattern (``DB.ElementId``): ElementId of Pattern
             visible (``bool``): Cut Fill Visibility
@@ -405,8 +390,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets CutFill overrides
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             color (``tuple``, ``list``): RGB Colors [ex. (255, 255, 0)]
             pattern (``DB.ElementId``): ElementId of Pattern
             visible (``bool``): Cut Fill Visibility
@@ -428,8 +413,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets SurfaceTransparency override
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             transparency (``int``): Value of the transparency of the projection surface
                                     (0 = opaque, 100 = fully transparent)
         """
@@ -441,8 +426,8 @@ class OverrideGraphicSettings(BaseObjectWrapper):
         Sets Halftone Override
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
             halftone (``bool``): Halftone
         """
         self._revit_object.SetHalftone(halftone)
@@ -458,9 +443,10 @@ class OverrideGraphicSettings(BaseObjectWrapper):
             * Fine
 
         Args:
-            target (``Element``, ``ElementId``, ``Category``): Target Element(s) or Category(ies) to
-                                                               apply override. Can be list.
-            detail_level (``DB.ViewDetailLevel``, ``str``): Detail Level Enumerator or name
+            target (``Element``, ``ElementId``, ``Category``): Target
+                Element(s) or Category(ies) to apply override. Can be list.
+            detail_level (``DB.ViewDetailLevel``, ``str``): Detail Level
+                Enumerator or name
         """
 
         if isinstance(detail_level, str):

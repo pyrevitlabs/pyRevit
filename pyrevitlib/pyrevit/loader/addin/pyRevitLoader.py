@@ -1,4 +1,15 @@
+# -*- coding: utf-8 -*-
 """
+   ██▓███▓██   ██▓ ██▀███  ▓█████ ██▒   █▓ ██▓▄▄▄█████▓
+  ▓██░  ██▒██  ██▒▓██ ▒ ██▒▓█   ▀▓██░   █▒▓██▒▓  ██▒ ▓▒
+  ▓██░ ██▓▒▒██ ██░▓██ ░▄█ ▒▒███   ▓██  █▒░▒██▒▒ ▓██░ ▒░
+  ▒██▄█▓▒ ▒░ ▐██▓░▒██▀▀█▄  ▒▓█  ▄  ▒██ █░░░██░░ ▓██▓ ░
+  ▒██▒ ░  ░░ ██▒▓░░██▓ ▒██▒░▒████▒  ▒▀█░  ░██░  ▒██▒ ░
+  ▒▓▒░ ░  ░ ██▒▒▒ ░ ▒▓ ░▒▓░░░ ▒░ ░  ░ ▐░  ░▓    ▒ ░░
+  ░▒ ░    ▓██ ░▒░   ░▒ ░ ▒░ ░ ░  ░  ░ ░░   ▒ ░    ░
+  ░░      ▒ ▒ ░░    ░░   ░    ░       ░░   ▒ ░  ░
+          ░ ░        ░        ░  ░     ░   ░
+          ░ ░                         ░
 This is the starting point for pyRevit. At Revit loads the PyRevitLoader.dll
  addon at startup. This dll then creates an ironpython engine and runs
  pyRevitLoader.py (this script). It's the job of this script to setup the
@@ -14,7 +25,7 @@ import os.path as op
 sys.path.append(op.dirname(op.dirname(op.dirname(op.dirname(__file__)))))
 
 # now pyrevit can be imported
-from pyrevit.loader.sessionmgr import load_session
+from pyrevit.loader import sessionmgr
 
 # ask sessionmgr to start a new session
-load_session()
+sessionmgr.load_session()

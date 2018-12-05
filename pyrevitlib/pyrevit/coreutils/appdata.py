@@ -2,14 +2,11 @@ import os
 import os.path as op
 import re
 
-from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, FIRST_LOAD
+from pyrevit import PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR, EXEC_PARAMS
 from pyrevit import PYREVIT_FILE_PREFIX_UNIVERSAL,\
                     PYREVIT_FILE_PREFIX, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils.logger import get_logger
-
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
 
 
 logger = get_logger(__name__)
@@ -151,7 +148,7 @@ def garbage_data_file(file_path):
 
 
 def cleanup_appdata_folder():
-    if FIRST_LOAD:
+    if EXEC_PARAMS.first_load:
         finder = re.compile('(.+)_(.+)_(.+)_(\d+).+')
         for appdata_file in os.listdir(PYREVIT_VERSION_APP_DIR):
             file_name_pieces = finder.findall(appdata_file)

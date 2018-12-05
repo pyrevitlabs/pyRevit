@@ -1,0 +1,119 @@
+.wy-nav-content {
+    max-width: none;
+}
+
+.document {
+    max-width: 800px;
+}
+
+a {
+    color: #23303d;
+}
+
+a:hover,
+a:active {
+    color: #f39c12;
+}
+
+a:visited {
+    color: #23303d;
+}
+
+.icon.icon-home {
+    width: 200px;
+}
+
+.version {
+    display:none;
+}
+
+.highlight {
+    background: white;
+}
+
+.s1, .highlight .sd {
+    color: #408090;
+}
+
+.highlight .c1 {
+    color: #c4c4c4;
+    font-style: italic;
+}
+
+.admonition.note {
+    background-color: #23303d;
+    color: white;
+}
+
+.rst-content .note .admonition-title {
+    background-color: #f39c12;
+    color: white;
+}
+
+.rst-content dl:not(.docutils) dt {
+    display: inline-block;
+    margin: 6px 0;
+    font-size: 90%;
+    line-height: normal;
+    background: #23303d;
+    color: #f39c12;
+    border-top: solid 0px;
+    padding: 6px;
+    position: relative;
+}
+
+.rst-content dl:not(.docutils) dt code.descclassname {
+    color: #c1c1c1;
+}
+
+.rst-content dl:not(.docutils) dt code.descname {
+    color: white;
+}
+
+.rst-content dl.method dt code.descname,
+.rst-content dl.staticmethod dt code.descname,
+.rst-content dl.attribute dt code.descname {
+    color: #23303d;
+}
+
+.rst-content dl:not(.docutils) dt .headerlink {
+    color: white;
+}
+
+.wy-nav-side {
+    background: #23303d;
+}
+
+.wy-side-nav-search {
+    background-color: #f39c12;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: white;
+}
+
+.wy-side-nav-search>a,
+.wy-side-nav-search .wy-dropdown>a,
+.wy-menu-vertical a:hover {
+    color: #fff !important;
+}
+
+.wy-menu-vertical a:active {
+    background-color: #f39c12;
+}
+
+.wy-menu-vertical a:visited {
+    color: #b3b3b3;
+}
+
+.wy-nav-top {
+    background: #23303d;
+}
+
+.wy-nav-top a {
+    color: white;
+}
+
+.pre {
+    font-size: 13px;
+}

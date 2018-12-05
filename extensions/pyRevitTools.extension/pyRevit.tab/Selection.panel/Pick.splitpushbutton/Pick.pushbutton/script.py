@@ -1,17 +1,18 @@
-"""Activates selection tool that picks a specific type of element."""
+"""Activates selection tool that picks a specific type of element.
 
-from scriptutils.userinput import CommandSwitchWindow
-from revitutils import doc, uidoc
+Shift-Click:
+Pick from all available categories.
+"""
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.UI.Selection import ISelectionFilter
-# noinspection PyUnresolvedReferences
-from System.Collections.Generic import List
+from pyrevit.framework import List
+from pyrevit import revit, DB, UI
+from pyrevit import forms
 
 
-class PickByCategorySelectionFilter(ISelectionFilter):
+selection = revit.get_selection()
+
+
+class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
     def __init__(self, catname):
         self.category = catname
 
@@ -29,34 +30,41 @@ class PickByCategorySelectionFilter(ISelectionFilter):
 
 def pickbycategory(catname):
     try:
-        sel = PickByCategorySelectionFilter(catname)
-        sellist = uidoc.Selection.PickElementsByRectangle(sel)
-        filteredlist = []
-        for el in sellist:
-            filteredlist.append(el.Id)
-        uidoc.Selection.SetElementIds(List[ElementId](filteredlist))
-    except:
+        msfilter = PickByCategorySelectionFilter(catname)
+        selection_list = revit.pick_rectangle(pick_filter=msfilter)
+        filtered_list = []
+        for el in selection_list:
+            filtered_list.append(el.Id)
+        selection.set_to(filtered_list)
+    except Exception:
         pass
 
 
-selected_switch = CommandSwitchWindow(sorted(['Area',
-                                              'Area Boundary',
-                                              'Column',
-                                              'Dimension',
-                                              'Door',
-                                              'Floor',
-                                              'Framing',
-                                              'Furniture',
-                                              'Grid',
-                                              'Rooms',
-                                              'Room Tag',
-                                              'Truss',
-                                              'Wall',
-                                              'Window',
-                                              'Ceiling',
-                                              'Section Box',
-                                              'Elevation Mark',
-                                              'Parking', ]), 'Pick only elements of type:').pick_cmd_switch()
+if __shiftclick__:
+    options = sorted([x.Name for x in revit.doc.Settings.Categories])
+else:
+    options = sorted(['Area',
+                      'Area Boundary',
+                      'Column',
+                      'Dimension',
+                      'Door',
+                      'Floor',
+                      'Framing',
+                      'Furniture',
+                      'Grid',
+                      'Rooms',
+                      'Room Tag',
+                      'Truss',
+                      'Wall',
+                      'Window',
+                      'Ceiling',
+                      'Section Box',
+                      'Elevation Mark',
+                      'Parking'])
 
-if selected_switch is not '':
+selected_switch = \
+    forms.CommandSwitchWindow.show(options,
+                                   message='Pick only elements of type:')
+
+if selected_switch:
     pickbycategory(selected_switch)

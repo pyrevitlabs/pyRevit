@@ -233,14 +233,6 @@ class RecordResultFilter(RecordFilter):
             .format(RESULT_DICT[self.filter_value])
 
 
-# lets find all subclasses of the RecordFilter class (all custom filters)
-filter_types = get_all_subclasses([RecordFilter])
-# and make a filter dictionary based on the filter parameter names
-# so FILTERS_DICT['commandname'] returns a filter that filters the
-# records based on their 'commandname' property
-FILTERS_DICT = {f.filter_param: f for f in filter_types}
-
-
 def get_auto_filters(record_list):
     """
     Returns a list of RecordFilter objects. This function works on the input
@@ -265,6 +257,12 @@ def get_auto_filters(record_list):
         list: returns a list of RecordFilter objects, sorted; Empty list if
               no filters could be created.
     """
+    # lets find all subclasses of the RecordFilter class (all custom filters)
+    filter_types = get_all_subclasses([RecordFilter])
+    # and make a filter dictionary based on the filter parameter names
+    # so filters_dict['commandname'] returns a filter that filters the
+    # records based on their 'commandname' property
+    filters_dict = {f.filter_param: f for f in filter_types}
 
     # make a filter list and add the `None` filter to it.
     auto_filters = set()
@@ -272,12 +270,12 @@ def get_auto_filters(record_list):
     for record in record_list:
         # find parameters in the record object
         for param, value in record.__dict__.items():
-            if param in FILTERS_DICT:
+            if param in filters_dict:
                 # and if a filter is provided for that parameter,
                 # setup the filter and add to the list.
                 logger.debug('Adding filter: param={} value={}'
                              .format(param, value))
-                auto_filters.add(FILTERS_DICT[param](value))
+                auto_filters.add(filters_dict[param](value))
 
     # return a sorted list of filters for ease of use
     return sorted(auto_filters)

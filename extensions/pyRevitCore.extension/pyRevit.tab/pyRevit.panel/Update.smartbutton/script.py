@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from time import sleep
-
 from pyrevit import HOME_DIR
-from pyrevit.coreutils import check_internet_connection
-# from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.ribbon import ICON_LARGE
-from pyrevit.loader.sessioninfo import get_session_uuid
-
-import pyrevit.versionmgr.updater as updater
-import pyrevit.versionmgr.upgrade as upgrade
+from pyrevit import coreutils
+from pyrevit.coreutils import ribbon
+from pyrevit.loader import sessioninfo
+from pyrevit.versionmgr import updater
+from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
+from pyrevit import script
 
-from scriptutils import logger, this_script
+
+logger = script.get_logger()
 
 
 __context__ = 'zerodoc'
 
-__doc__ = 'Downloads updates from the remote libgit repositories ' \
+__doc__ = 'Downloads updates from the remote git repositories ' \
           '(e.g github, bitbucket).'
 
 
@@ -39,7 +37,7 @@ COREUPDATE_MESSAGE = '<div style="background:#F7F3F2; color:#C64325; ' \
 
 def _check_connection():
     logger.info('Checking internet connection...')
-    successful_url = check_internet_connection()
+    successful_url = coreutils.check_internet_connection()
     if successful_url:
         logger.debug('Url access successful: {}'.format(successful_url))
         return True
@@ -53,7 +51,11 @@ def _check_for_updates():
 
         for repo in updater.get_all_extension_repos():
             if updater.has_pending_updates(repo):
+                logger.info('Updates are available for {}...'
+                            .format(repo.name))
                 return True
+            else:
+                logger.info('{} is up-to-date...'.format(repo.name))
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
@@ -68,19 +70,19 @@ def _update_repo(repo_info):
         logger.info(':inbox_tray: Successfully updated: {} to {}'
                     .format(upped_repo_info.name,
                             upped_repo_info.last_commit_hash[:7]))
-    except:
+    except Exception:
         logger.info('Can not update repo: {}  (Run in debug to see why)'
                     .format(repo_info.name))
 
 
-# noinspection PyUnusedLocal
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     try:
         has_update_icon = script_cmp.get_bundle_file('icon_hasupdates.png')
         if user_config.core.checkupdates and _check_for_updates():
-            ui_button_cmp.set_icon(has_update_icon, icon_size=ICON_LARGE)
+            ui_button_cmp.set_icon(has_update_icon,
+                                   icon_size=ribbon.ICON_LARGE)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -108,12 +110,9 @@ if __name__ == '__main__':
             # modules need to be re-imported again in a clean engine.
             from pyrevit.loader.sessionmgr import execute_command
             execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
-
-            this_script.results.newsession = get_session_uuid()
-
         else:
-            this_script.output.print_html(COREUPDATE_MESSAGE
-                                          .format(home=HOME_DIR))
+            output = script.get_output()
+            output.print_html(COREUPDATE_MESSAGE.format(home=HOME_DIR))
             logger.debug('Core updates. Skippin update and reload.')
     else:
         logger.warning('No internet access detected. Skipping update.')

@@ -1,33 +1,24 @@
 """
+The main rpw namespace and rpw.revit provide you with most of the imports will
+need.
 
-Revit Application Wrapper.
+>>> from rpw import revit, db, ui
+>>> db.Element(SomeElement)
+>>> ui.Selection()
+>>> revit.doc
+>>> revit.uidoc.ActiveView
 
-All common global variables and namespaces accessible a single import
 
-    >>> from rpw import revit, DB, UI
-    >>> revit.doc.Delete(SomeElementId)
-    >>> revit.uidoc.ActiveView
-    >>> revit.username
-    gtalarico
-    >>> revit.host
-    'Dynamo'
-    >>> revit.active_view
-    < Autodesk.Revit.DB.View >
+Revit Namespaces are also available:
 
-Namespaces:
+>>> from rpw import DB, UI
+>>> DB.ElementId(00000)
+>>> UI.TaskDialog
 
-    >>> from rpw import DB, UI
-    >>> DB.ElementId(00000)
-    >>> UI.TaskDialog
+In summary, if you use rpw, this could potentially be the only import line
+you would need:
 
-Note:
-    The module path for the Revit Wrapper and its namespaces is ``rpw.__revit.Revit``.
-    However, the ``Revit()`` is always instantiated on the initialization of rpw,
-    and is stored along with the ``DB`` and ``UI`` namespaces in the
-    root of rpw module.
-
-    In other words, to use this wrapper all you need is to import ``from rpw import revit``
-
+>>> from rpw import revit, db, ui, DB, UI
 
 """  #
 import rpw
@@ -37,7 +28,27 @@ from rpw.base import BaseObject
 
 
 class Revit(BaseObject):
-    """Revit Application Wrapper """
+    """
+    Revit Application Wrapper
+
+    Note:
+        The module path for the Revit Wrapper and its namespaces is ``rpw.__revit.Revit``.
+        However, the ``Revit()`` is always instantiated on the initialization of rpw,
+        and is stored along with the ``DB`` and ``UI`` namespaces in the
+        root of rpw module.
+
+        In other words, to use this wrapper all you need is to import
+        ``from rpw import revit``
+
+    >>> from rpw import revit
+    >>> revit.doc
+    <Autodesk.Revit.DB.Document>
+    >>> revit.username
+    gtalarico
+    >>> revit.host
+    'Dynamo'
+
+    """
 
     class HOSTS():
         RPS = 'RPS'

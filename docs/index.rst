@@ -1,19 +1,72 @@
-.. pyRevit documentation master file, created by
-   sphinx-quickstart on Mon Jan  2 09:24:40 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+..  note::
+    This documentation is a work-in-progress. Thanks for your patience.
 
-Welcome to pyRevit's documentation!
-===================================
+Index
+-----
 
-..  note:: This documentation is a work-in-progress. I'm working on the documentation of the loader module at the moment and will continue with  documenting the tools after this step. Thanks for your patience.
+**Getting Started**
+
+I suggest reading this section completely as it provides 99% of what you will
+need to know for developing scripts in pyRevit environment. Other sections dive
+deeper into pyRevit inner workings.
+
+* :doc:`scriptanatomy`
+* :doc:`outputfeatures`
+* :doc:`commandbutton`
+* :doc:`creatingexts`
+* :doc:`config`
+* :doc:`usagelogger`
+* :doc:`installer`
 
 ..  toctree::
     :maxdepth: 2
     :hidden:
+    :caption: Getting Started
 
-    core
-    scriptutils
-    revitutils
-    coretoolset
-    standardtoolset
+    scriptanatomy.rst
+    outputfeatures.rst
+    commandbutton.rst
+    creatingexts.rst
+    config.rst
+    usagelogger.rst
+    installer.rst
+
+**pyRevit Core**
+
+* :doc:`loaderaddon`
+* :doc:`loadseq`
+
+..  toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: pyRevit Core
+
+    loaderaddon.rst
+    loadseq.rst
+
+**Modules**
+
+* :doc:`pyrevit/init`
+* :doc:`pyrevit/api`
+* :doc:`pyrevit/compat`
+* :doc:`pyrevit/forms`
+* :doc:`pyrevit/framework`
+* :doc:`pyrevit/script`
+* :doc:`pyrevit/userconfig`
+* :doc:`coreutils`
+* :doc:`output`
+
+..  toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: Modules
+
+    pyrevit/init.rst
+    pyrevit/api.rst
+    pyrevit/compat.rst
+    pyrevit/forms.rst
+    pyrevit/framework.rst
+    pyrevit/script.rst
+    pyrevit/userconfig.rst
+    coreutils.rst
+    output.rst

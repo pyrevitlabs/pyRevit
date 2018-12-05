@@ -1,6 +1,8 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="pyRevit Settings" Height="660" Width="700" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="pyRevit Settings"
+        Height="600" Width="700"
+        ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <Window.Resources>
             <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
@@ -27,8 +29,8 @@
                                <Trigger.EnterActions>
                                   <BeginStoryboard>
                                      <Storyboard>
-                                        <ColorAnimation Storyboard.TargetProperty="Background.Color" To="#52D468" Duration="0:0:0.2" />
-                                        <ColorAnimation Storyboard.TargetProperty="BorderBrush.Color" To="#41C955" Duration="0:0:0.2" />
+                                        <ColorAnimation Storyboard.TargetProperty="Background.Color" To="#2c3e50" Duration="0:0:0.2" />
+                                        <ColorAnimation Storyboard.TargetProperty="BorderBrush.Color" To="#1e2b38" Duration="0:0:0.2" />
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)" Storyboard.TargetName="ellipse">
                                            <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
                                            <SplineDoubleKeyFrame KeyTime="0:0:0.4" Value="15" KeySpline="0, 1, 0.6, 1"/>
@@ -63,225 +65,276 @@
                  </Style.Triggers>
              </Style>
         </Window.Resources>
-        <ScrollViewer>
-            <StackPanel>
-            <Expander Header="pyRevit Core Settings:" IsExpanded="False" Margin="10px">
-                <StackPanel Margin="10px">
-                    <GroupBox Header="Version Control:">
-                        <StackPanel>
-                            <WrapPanel Margin="10,10,0,10">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Check updates at startup</TextBlock>
-                            </WrapPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">If activated, pyRevit will check updates for all installed extensions
-                                                                                           at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Reporting Level:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">No Reporting (logging.WARNING and above)</RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">No reports will be printed from the logging system.
-                                                                                          This means that pyRevit will not show the output window at
-                                                                                          Revit startup and all the INFO messages will be suppressed.
-                                                                                          Only Warnings, Errors, and Critical Errors will be printed.</TextBlock>
-
-                            <RadioButton x:Name="verbose_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="True">Verbose (logging.INFO and above)</RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Verbose reporting opens the output window and only prints the info messages.
-                                                                                          These messages are meant to provide the most basic necessary information about
-                                                                                          the current pyRevit session to the user.</TextBlock>
-
-                           <WrapPanel Margin="10,15,0,5">
-                               <Label>If no errors, close startup window after</Label>
-                               <TextBox x:Name="startup_log_timeout" Width="50px" Height="25px"  IsEnabled="{Binding ElementName=verbose_rb, Path=IsChecked}"/>
-                               <Label>seconds. (Set to 0 to keep it open anyways)</Label>
-                           </WrapPanel>
-
-                            <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode (logging.DEBUG and above)</RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">This activates the pyRevit debug mode which enables all components and scripts to
-                                                                                           report their debug messages. Generally this causes a very lengthy report and
-                                                                                           increases the script running time, but it is very valuable for debugging.
-                                                                                           Activate this only for debugging purposes.</TextBlock>
-                            <CheckBox x:Name="filelogging_cb" Margin="10,10,0,5" IsChecked="False">File debug logging</CheckBox>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">This activates the pyRevit file debug mode. All debug messages during a session
-                                                                                           (from loader or tools) will be written to a log file in pyRevit appdata folder.</TextBlock>
-
-                            <Button Content="Reset Reporting Level to default" Click="resetreportinglevel" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Caching:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit caches the extension data so it can run faster.
-                                                                                           This section controls the type of caching.
-                                                                                           Restart is required after changing this setting.</TextBlock>
-                            <RadioButton x:Name="bincache_rb" GroupName="cache_type" Margin="10,10,0,5" IsChecked="False">Binary Cache</RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Binary cache is the fastest but the cache files are not human readable
-                                                                                          and not very useful for debugging.</TextBlock>
-
-                            <RadioButton x:Name="asciicache_rb" GroupName="cache_type" Margin="10,15,0,5" IsChecked="False">ASCII Cache</RadioButton>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">ASCII cache files are JSON files and are human readable.
-                                                                                           They are very helpful for debugging purposes.</TextBlock>
-
-                            <Button Content="Reset Caching to default" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Revit Versions:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock x:Name="revitversions_tb"
-                                       TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can disable or enable pyRevit for installed
-                                                                                           Revit versions from here. This effectively removes the
-                                                                                           pyRevit.addin file from %appdata%/Autodesk/Revit/Addins folders.</TextBlock>
-                            <CheckBox x:Name="revit2015_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
-                            <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
-                            <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
-                            <CheckBox x:Name="revit2018_cb" Margin="10,5,0,10" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Runtime Checks:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the required host build number.
-                                                                                           pyRevit will show a warning if it's being run
-                                                                                           on a host with different build number. Set to 0
-                                                                                           to disable.</TextBlock>
-                            <DockPanel Margin="10,10,10,10">
-                                <TextBlock x:Name="requiredhostbuild_t" DockPanel.Dock="Left" Margin="0,2,0,0">
-                                    Required Build Number (build):
-                                </TextBlock>
-                                <Button DockPanel.Dock="Right" Content="Set to Current Host Build Number" Width="200" Margin="10,0,0,0"
-                                        Click="reset_requiredhostbuild" ToolTip="Set the required build number to current host build number"/>
-                                <TextBox x:Name="requiredhostbuild_tb" Margin="10,0,0,0" Height="25"/>
-                            </DockPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the minimum free space on host drive.
-                                                                                           pyRevit will show a warning if free space is less
-                                                                                           than minimum value. Set to 0 to disable.</TextBlock>
-                            <DockPanel Margin="10,10,10,10">
-                                <TextBlock DockPanel.Dock="Left" Margin="0,2,0,0">Minimum Free Space on Host Drive (in GigaByte):</TextBlock>
-                                <TextBox x:Name="minhostdrivefreespace_tb" Margin="10,0,0,0" Height="25"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Development:" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
-                            <WrapPanel Margin="10,10,0,10">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Load Beta Tools (Ignores beta parameters in scripts, Reload is required)</TextBlock>
-                            </WrapPanel>
-                        </StackPanel>
-                    </GroupBox>
-                </StackPanel>
-            </Expander>
-            <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-            <Expander Header="Runtime Compiler:" IsExpanded="False" Margin="10px">
-                <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
-                                                                                  to machine code. These settings affect compiler behaviour.</TextBlock>
-                    <StackPanel>
-                        <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
-                        <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands (Not Yet Implemented)</CheckBox>
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
-            <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-            <Expander Header="Environment Variables:" IsExpanded="False" Margin="10px">
-                <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Environment Variables are set in current Application Domain (AppDomain) and
-                                                                                  are available to scripts. They're used as global flags for setting
-                                                                                  reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
-                                                                                  These variables are accessible by scripts through scriptutils module.</TextBlock>
-                    <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="150">
-                        <ListView.Resources>
-                            <ContextMenu x:Key="ItemContextMenu">
-                                <MenuItem x:Name="menuItem_CopyValue"
-                                         Click="copy_envvar_value"
-                                         Header="Copy Variable Value">
-                                </MenuItem>
-                                <MenuItem x:Name="menuItem_CopyId"
-                                         Click="copy_envvar_id"
-                                         Header="Copy Variable Name">
-                                </MenuItem>
-                            </ContextMenu>
-                        </ListView.Resources>
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}">
-                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Variable Name" Width="180" DisplayMemberBinding="{Binding Id}"/>
-                                <GridViewColumn Header="Value" DisplayMemberBinding="{Binding Value}"/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </StackPanel>
-            </Expander>
-            <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-            <Expander Header="Usage Logging:" IsExpanded="False" Margin="10px">
-                <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Usage logging system, records each use of tools under any of the pyRevit extensions.
-                                                                                  You can activate usage logging to a local or network folder, or logging to an outside
-                                                                                  webserver, or both. If activated, the system will log usage to any of the outputs provided
-                                                                                  here. Leave any of the fields blank to disable logging to that destination.</TextBlock>
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit creates a new log file for every sesssion to avoid creating large log files that
-                                                                                  would potentially slow down the logger. Log files are written in *.JSON format.</TextBlock>
-                    <StackPanel >
-                        <WrapPanel Margin="10,10,10,0">
-                            <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="usagelogging_cb" IsChecked="False"/>
-                            <TextBlock Margin="30,4,0,0">Log Tool Usage</TextBlock>
-                        </WrapPanel>
-                        <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                            <TextBlock DockPanel.Dock="Left">Current usage log file:</TextBlock>
-                            <WrapPanel DockPanel.Dock="Right">
-                                <Button Content="Open Folder" Width="86" Margin="6,0,0,0" Click="open_usagelog_folder" ToolTip="Open the current usage log folder"/>
-                            </WrapPanel>
-                            <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
-                        </DockPanel>
-                        <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                            <TextBlock DockPanel.Dock="Left">Log usage to folder (e.g. C:\pyRevitUsageLogs):</TextBlock>
-                            <WrapPanel DockPanel.Dock="Right">
-                                <Button Content="..." Width="40" Margin="6,0,3,0" Click="pick_usagelog_folder" ToolTip="Pick a folder for usage logging"/>
-                                <Button Content="Reset" Width="40" Margin="3,0,0,0" Click="reset_usagelog_folder" ToolTip="Reset usage logging folder back to default"/>
-                            </WrapPanel>
-                            <TextBox x:Name="usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
-                        </DockPanel>
-                        <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                            <TextBlock DockPanel.Dock="Left">Current usage server url:</TextBlock>
-                            <TextBox x:Name="cur_usageserverurl_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
-                        </DockPanel>
-                        <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                            <TextBlock DockPanel.Dock="Left">Log usage to webserver (e.g. http://logserver.io):</TextBlock>
-                            <TextBox x:Name="usagelogserver_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
-                        </DockPanel>
-                    </StackPanel>
-                </StackPanel>
-            </Expander>
-            <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-            <Expander Header="Custom user extension folders:" IsExpanded="True" Margin="10px">
-                <StackPanel Margin="10px">
-                    <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">pyRevit can search in custom folders for extensions.
-                                                                                  You can setup your custom extensions in any directory and add the directory address here.
-                                                                                  pyRevit searches these folders on startup and loads the extensions. This helps to decouple the
-                                                                                  custom extensions from pyRevit's default extension folder so you can upgrade/remove pyRevit without
-                                                                                  worrying about your own extension folders.</TextBlock>
-                     <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Reload is required for changes to take effect.</TextBlock>
-                    <DockPanel HorizontalAlignment="Stretch" Margin="10px" Height="100px">
-                        <StackPanel MinWidth="150px" MaxWidth="200px" DockPanel.Dock="Right">
-                            <Button Content="Add folder" Click="addfolder" Margin="0,0,0,5"/>
-                            <Button Content="Remove folder" Click="removefolder" Margin="0,0,0,5"/>
-                            <Button Content="Remove All" Click="removeallfolders" Margin="0,0,0,5"/>
-                        </StackPanel>
-                        <ListBox x:Name="extfolders_lb" Margin="0,0,10,0">
-                        </ListBox>
-                    </DockPanel>
-                </StackPanel>
-            </Expander>
-            <GroupBox Header="Import / Export Settings:" Margin="10px">
+        <DockPanel>
+            <Grid Background="LightGray" DockPanel.Dock="Bottom">
+            <WrapPanel HorizontalAlignment="Right">
+                <Button x:Name="save_b" Content="Just Save Settings" Click="savesettings" Width="150" Margin="10,10,10,10"/>
+                <Button x:Name="savereload_b" Content="Save Settings and Reload" Click="savesettingsandreload" Width="200" Margin="10,10,10,10"/>
+            </WrapPanel>
+        </Grid>
+            <ScrollViewer>
                 <StackPanel>
-                    <Button Content="Import Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
-                    <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
-                </StackPanel>
-            </GroupBox>
-            <Button x:Name="save_b" Click="savesettings" Content="Save Settings" HorizontalAlignment="Right" Width="200px" Margin="0,10,25,25"/>
-        </StackPanel>
-        </ScrollViewer>
+                <Expander Header="pyRevit Core Settings" IsExpanded="False" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <GroupBox Header="General">
+                            <StackPanel>
+                                <WrapPanel Margin="10,15,0,5">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Rocket Mode &#x1F680; (Experimental / Reload Required)</TextBlock>
+                                </WrapPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">This is the switch for pyRevit Rocket Mode.
+                                                                                               If enabled, pyRevit will use a shared engine per each extension
+                                                                                               that supports the Rocket mode. For pyRevit developers,
+                                                                                               this means that your custom python modules should not use any
+                                                                                               module level variables that retain information from Revit like
+                                                                                               the active document, element information, etc.
+                                                                                               Why Rocket Mode? Yuuuuuge speed boost!!</TextBlock>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Check updates at startup</TextBlock>
+                                </WrapPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit will check updates for all installed extensions
+                                                                                               at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="dynamocompatmode_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Dynamo 1.3 Compatibility Mode (Must Reload Revit)</TextBlock>
+                                </WrapPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10">If activated, pyRevit runs under IronPython 2.7.3 for compatibility with Dynamo.</TextBlock>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Development" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Misc options for pyRevit development </TextBlock>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
+                                    <TextBlock Margin="30,4,0,0">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</TextBlock>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Reporting Level" Margin="0,10,0,0">
+                            <StackPanel>
+                                <RadioButton x:Name="noreporting_rb" GroupName="reporting_level" Margin="10,10,0,5" IsChecked="True">No Reporting (logging.WARNING and above)</RadioButton>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,0">No reports will be printed from the logging system.
+                                                                                              This means that pyRevit will not show the output window at
+                                                                                              Revit startup and all the INFO messages will be suppressed.
+                                                                                              Only Warnings, Errors, and Critical Errors will be printed.</TextBlock>
+
+                                <RadioButton x:Name="verbose_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="True">Verbose (logging.INFO and above)</RadioButton>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,0">Verbose reporting opens the output window and only prints the info messages.
+                                                                                              These messages are meant to provide the most basic necessary information about
+                                                                                              the current pyRevit session to the user.</TextBlock>
+
+                               <WrapPanel Margin="26,15,0,5">
+                                   <Label>If no errors, close startup window after</Label>
+                                   <TextBox x:Name="startup_log_timeout" Width="50px" Height="25px"
+                                            IsEnabled="{Binding ElementName=verbose_rb, Path=IsChecked}"/>
+                                   <Label>seconds. (Set to 0 to keep it open anyways)</Label>
+                               </WrapPanel>
+
+                                <RadioButton x:Name="debug_rb" GroupName="reporting_level" Margin="10,15,0,5" IsChecked="False">Debug mode (logging.DEBUG and above)</RadioButton>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,10">This activates the pyRevit debug mode which enables all components and scripts to
+                                                                                               report their debug messages. Generally this causes a very lengthy report and
+                                                                                               increases the script running time, but it is very valuable for debugging.
+                                                                                               Activate this only for debugging purposes.</TextBlock>
+                                <CheckBox x:Name="filelogging_cb" Margin="10,10,0,5" IsChecked="False">File debug logging</CheckBox>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,10">This activates the pyRevit file debug mode. All debug messages during a session
+                                                                                               (from loader or tools) will be written to a log file in pyRevit appdata folder.</TextBlock>
+
+                                <Button Content="Reset Reporting Level to default" Click="resetreportinglevel" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Caching" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit caches the extension data so it can run faster.
+                                                                                               This section controls the type of caching.
+                                                                                               Restart is required after changing this setting.</TextBlock>
+                                <RadioButton x:Name="bincache_rb" GroupName="cache_type" Margin="10,10,0,5" IsChecked="False">Binary Cache</RadioButton>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,0">Binary cache is the fastest but the cache files are not human readable
+                                                                                              and not very useful for debugging.</TextBlock>
+
+                                <RadioButton x:Name="asciicache_rb" GroupName="cache_type" Margin="10,15,0,5" IsChecked="False">ASCII Cache</RadioButton>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="26,0,10,10">ASCII cache files are JSON files and are human readable.
+                                                                                               They are very helpful for debugging purposes.</TextBlock>
+
+                                <Button Content="Reset Caching to default" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Runtime Checks" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the required host build number.
+                                                                                               pyRevit will show a warning if it's being run
+                                                                                               on a host with different build number. Set to 0
+                                                                                               to disable.</TextBlock>
+                                <DockPanel Margin="10,10,10,10">
+                                    <TextBlock x:Name="requiredhostbuild_t" DockPanel.Dock="Left" Margin="0,2,0,0">
+                                        Required Build Number (build):
+                                    </TextBlock>
+                                    <Button DockPanel.Dock="Right" Content="Set to Current Host Build Number" Width="200" Margin="10,0,0,0"
+                                            Click="reset_requiredhostbuild" ToolTip="Set the required build number to current host build number"/>
+                                    <TextBox x:Name="requiredhostbuild_tb" Margin="10,0,0,0" Height="25"/>
+                                </DockPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can set the minimum free space on host drive.
+                                                                                               pyRevit will show a warning if free space is less
+                                                                                               than minimum value. Set to 0 to disable.</TextBlock>
+                                <DockPanel Margin="10,10,10,10">
+                                    <TextBlock DockPanel.Dock="Left" Margin="0,2,0,0">Minimum Free Space on Host Drive (in GigaByte):</TextBlock>
+                                    <TextBox x:Name="minhostdrivefreespace_tb" Margin="10,0,0,0" Height="25"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="Runtime Compiler" Margin="0,10,0,0">
+                            <StackPanel Margin="10px">
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Runtime compiler, compiles C# and VB source files as part of the button bundles
+                                                                                              to machine code. These settings affect compiler behaviour.</TextBlock>
+                                <StackPanel>
+                                    <CheckBox x:Name="compilecsharp_cb" Margin="10,20,0,10" IsChecked="True" IsEnabled="False">Compile C# (.cs) source files into commands</CheckBox>
+                                    <CheckBox x:Name="compilevb_cb" Margin="10,0,0,5" IsChecked="True" IsEnabled="False">Compile Visual Basic (.vb) source files into commands (Not Yet Implemented)</CheckBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Environment Variables" IsExpanded="False" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Environment Variables are set in current Application Domain (AppDomain) and
+                                                                                      are available to scripts. They're used as global flags for setting
+                                                                                      reporting mode, and also by scripts (e.g. Sync Views) to set their current toggle state.
+                                                                                      These variables are accessible by scripts through scriptutils module.</TextBlock>
+                        <ListView x:Name="envvars_lb" Margin="0,10,0,0" Height="300">
+                            <ListView.Resources>
+                                <ContextMenu x:Key="ItemContextMenu">
+                                    <MenuItem x:Name="menuItem_CopyValue"
+                                             Click="copy_envvar_value"
+                                             Header="Copy Variable Value">
+                                    </MenuItem>
+                                    <MenuItem x:Name="menuItem_CopyId"
+                                             Click="copy_envvar_id"
+                                             Header="Copy Variable Name">
+                                    </MenuItem>
+                                </ContextMenu>
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Variable Name" Width="170" DisplayMemberBinding="{Binding Id}"/>
+                                    <GridViewColumn Header="Value" Width="445">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Usage Logging" IsExpanded="False" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">Usage logging system, records each use of tools under any of the pyRevit extensions.
+                                                                                      You can activate usage logging to a local or network folder, or logging to an outside
+                                                                                      webserver, or both. If activated, the system will log usage to any of the outputs provided
+                                                                                      here. Leave any of the fields blank to disable logging to that destination.</TextBlock>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">pyRevit creates a new log file for every sesssion to avoid creating large log files that
+                                                                                      would potentially slow down the logger. Log files are written in *.JSON format.</TextBlock>
+                        <StackPanel >
+                            <WrapPanel Margin="10,10,10,0">
+                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="usagelogging_cb" IsChecked="False"/>
+                                <TextBlock Margin="30,4,0,0">Log Tool Usage</TextBlock>
+                            </WrapPanel>
+                            <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Left">Current usage log file:</TextBlock>
+                                <WrapPanel DockPanel.Dock="Right">
+                                    <Button Content="Open Folder" Width="86" Margin="6,0,0,0" Click="open_usagelog_folder" ToolTip="Open the current usage log folder"/>
+                                </WrapPanel>
+                                <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                            </DockPanel>
+                            <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Left">Log usage to folder (e.g. C:\pyRevitUsageLogs):</TextBlock>
+                                <WrapPanel DockPanel.Dock="Right">
+                                    <Button Content="..." Width="40" Margin="6,0,3,0" Click="pick_usagelog_folder" ToolTip="Pick a folder for usage logging"/>
+                                    <Button Content="Reset" Width="40" Margin="3,0,0,0" Click="reset_usagelog_folder" ToolTip="Reset usage logging folder back to default"/>
+                                </WrapPanel>
+                                <TextBox x:Name="usagelogfile_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                            </DockPanel>
+                            <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Left">Current usage server url:</TextBlock>
+                                <TextBox x:Name="cur_usageserverurl_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                            </DockPanel>
+                            <DockPanel Margin="10,10,10,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Left">Log usage to webserver (e.g. http://logserver.io):</TextBlock>
+                                <TextBox x:Name="usagelogserver_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Supported Revit Versions" IsExpanded="False" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <TextBlock x:Name="revitversions_tb"
+                                   TextWrapping="WrapWithOverflow" Margin="10,10,10,0">You can disable or enable pyRevit for installed
+                                                                                       Revit versions from here. This effectively removes the
+                                                                                       pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
+                        </TextBlock>
+                        <CheckBox x:Name="revit2019_cb" Margin="10,10,0,0" IsChecked="False" IsEnabled="False">Revit 2019</CheckBox>
+                        <CheckBox x:Name="revit2018_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2018</CheckBox>
+                        <CheckBox x:Name="revit2017_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2017</CheckBox>
+                        <CheckBox x:Name="revit2016_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2016</CheckBox>
+                        <CheckBox x:Name="revit2015_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2015</CheckBox>
+                        <CheckBox x:Name="revit2014_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2014</CheckBox>
+                        <CheckBox x:Name="revit2013_cb" Margin="10,5,0,0" IsChecked="False" IsEnabled="False">Revit 2013</CheckBox>
+                    </StackPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Output Window Settings" IsExpanded="False" Margin="10px">
+                    <DockPanel Margin="10,10,10,0">
+                        <TextBlock DockPanel.Dock="Left">Current CSS Style Sheet:</TextBlock>
+                        <WrapPanel DockPanel.Dock="Right">
+                            <Button Content="..."
+                                    Width="40" Margin="6,0,3,0"
+                                    Click="pick_stylesheet"
+                                    ToolTip="Pick a CSS style sheet to override the default."/>
+                            <Button Content="Reset"
+                                    Width="40" Margin="3,0,0,0"
+                                    Click="reset_stylesheet"
+                                    ToolTip="Reset CSS style sheet back to default"/>
+                        </WrapPanel>
+                        <TextBox x:Name="cur_stylesheet_tb" FontFamily="Courier New" Margin="15,0,0,0" Height="20"/>
+                    </DockPanel>
+                </Expander>
+                <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
+                <Expander Header="Custom Extension Directories" IsExpanded="True" Margin="10px">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,0">pyRevit can search in custom folders for extensions.
+                                                                                      You can setup your custom extensions in any directory and add the directory address here.
+                                                                                      pyRevit searches these folders on startup and loads the extensions. This helps to decouple the
+                                                                                      custom extensions from pyRevit's default extension folder so you can upgrade/remove pyRevit without
+                                                                                      worrying about your own extension folders.</TextBlock>
+                         <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0">Reload is required for changes to take effect.</TextBlock>
+                        <DockPanel HorizontalAlignment="Stretch" Margin="10px" Height="100px">
+                            <StackPanel MinWidth="150px" MaxWidth="200px" DockPanel.Dock="Right">
+                                <Button Content="Add folder" Click="addfolder" Margin="0,0,0,5"/>
+                                <Button Content="Remove folder" Click="removefolder" Margin="0,0,0,5"/>
+                                <Button Content="Remove All" Click="removeallfolders" Margin="0,0,0,5"/>
+                            </StackPanel>
+                            <ListBox x:Name="extfolders_lb" Margin="0,0,10,0">
+                            </ListBox>
+                        </DockPanel>
+                    </StackPanel>
+                </Expander>
+                <!-- <GroupBox Header="Import / Export Settings:" Margin="10px">
+                    <StackPanel>
+                        <Button Content="Import Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,0"/>
+                        <Button Content="Export Settings" IsEnabled="False" HorizontalAlignment="Right" Width="200px" Margin="0,5,10,10"/>
+                    </StackPanel>
+                </GroupBox> -->
+            </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
 </Window>

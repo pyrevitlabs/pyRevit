@@ -6,18 +6,15 @@ Documentation:
 https://github.com/libgit2/libgit2sharp/wiki
 """
 
-import clr
 import importlib
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
+from pyrevit.framework import clr
+from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.loader.addin import get_addin_dll_file
-
-# noinspection PyUnresolvedReferences
-import System
-# noinspection PyUnresolvedReferences
-from System import DateTime, DateTimeOffset
 
 
 logger = get_logger(__name__)
@@ -26,21 +23,17 @@ logger = get_logger(__name__)
 GIT_LIB = 'LibGit2Sharp'
 
 if not EXEC_PARAMS.doc_mode:
-    # todo: figure out how to import extensions on the caller's scope.
-    clr.AddReference("System.Core")
-    clr.ImportExtensions(System.Linq)
-    # clr.AddReferenceByName(GIT_LIB)
+    libgit_dll = get_addin_dll_file(GIT_LIB)
+    logger.debug('Loading dll: {}'.format(libgit_dll))
+
     try:
-        clr.AddReferenceToFileAndPath(get_addin_dll_file(GIT_LIB))
-    except:
-        logger.error('Can not load %s module. '
+        clr.AddReferenceToFileAndPath(libgit_dll)
+        # public libgit module
+        libgit = importlib.import_module(GIT_LIB)
+    except Exception as load_err:
+        logger.error('Can not load {} module. '
                      'This module is necessary for getting pyRevit version '
-                     'and staying updated.' % GIT_LIB)
-
-
-if not EXEC_PARAMS.doc_mode:
-    # public libgit module
-    libgit = importlib.import_module(GIT_LIB)
+                     'and staying updated. | {}'.format(GIT_LIB, load_err))
 
 
 class PyRevitGitAuthenticationError(PyRevitException):
@@ -131,7 +124,7 @@ def _make_pull_signature():
 
 
 def _process_git_error(exception_err):
-    exception_msg = unicode(exception_err)
+    exception_msg = safe_strtype(exception_err)
     if '401' in exception_msg:
         raise PyRevitGitAuthenticationError(exception_msg)
     else:
@@ -158,7 +151,7 @@ def git_pull(repo_info):
                           _make_pull_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
                                                    head_msg))
@@ -177,7 +170,7 @@ def git_fetch(repo_info):
                            _make_fetch_options(repo_info))
 
         logger.debug('Successfully pulled repo: {}'.format(repo_info.directory))
-        head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
+        head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
 
         logger.debug('New head is: {} > {}'.format(repo.Head.Tip.Id.Sha,
                                                    head_msg))
@@ -208,10 +201,11 @@ def compare_branch_heads(repo_info):
     repo = repo_info.repo
     repo_branches = repo.Branches
 
-    logger.debug('Repo branches: {}'.format([b for b in repo_branches]))
+    logger.debug('Repo branches: {}'
+                 .format([b.Name for b in repo_branches]))
 
     for branch in repo_branches:
-        if not branch.IsRemote:
+        if branch.Name == repo_info.branch and not branch.IsRemote:
             try:
                 if branch.TrackedBranch:
                     logger.debug('Comparing heads: {} of {}'
@@ -225,7 +219,11 @@ def compare_branch_heads(repo_info):
             except Exception as compare_err:
                 logger.error('Can not compare branch {} in repo: {} | {}'
                              .format(branch, repo,
-                                     unicode(compare_err).replace('\n', '')))
+                                     safe_strtype(compare_err).replace('\n', '')))
+        else:
+            logger.debug('Skipping remote branch: {}'
+                         .format(branch.CanonicalName))
+
 
 
 def get_all_new_commits(repo_info):

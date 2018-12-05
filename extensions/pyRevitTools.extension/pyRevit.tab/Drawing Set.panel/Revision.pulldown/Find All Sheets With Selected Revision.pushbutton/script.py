@@ -1,63 +1,43 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+from pyrevit import revit, DB
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
+__doc__ = 'Select a revision cloud and this tool will list all '\
+          'the sheets revised under the same revision.'
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Select a revision cloud and this tool will list all the sheets revised under the same revision.'
-
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud, ElementId
-
-doc = __revit__.ActiveUIDocument.Document
-
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
-selection = [doc.GetElement(elId) for elId in __revit__.ActiveUIDocument.Selection.GetElementIds()]
+selection = revit.get_selection()
 
 selectedrevs = []
 hasSelectedRevision = False
 multipleRevs = False
 
 for s in selection:
-    if isinstance(s, RevisionCloud):
+    if isinstance(s, DB.RevisionCloud):
         selectedrevs.append(s.RevisionId.IntegerValue)
 
 if len(selectedrevs) > 1:
     multipleRevs = True
 
-print('REVISED SHEETS:\n\nNAME\tNUMBER\n--------------------------------------------------------------------------')
-cl_sheets = FilteredElementCollector(doc)
-sheetsnotsorted = cl_sheets.OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
+print('REVISED SHEETS:\n\nNAME\tNUMBER\n' + '-'*70)
+
+sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
+                    .OfCategory(DB.BuiltInCategory.OST_Sheets)\
+                    .WhereElementIsNotElementType()\
+                    .ToElements()
+
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
 for s in sheets:
     hasSelectedRevision = False
-    revs = s.GetAllRevisionIds()
-    revIds = [x.IntegerValue for x in revs]
+    revision_ids = s.GetAllRevisionIds()
+    revids = [x.IntegerValue for x in revision_ids]
     for sr in selectedrevs:
-        if sr in revIds:
+        if sr in revids:
             hasSelectedRevision = True
     if hasSelectedRevision:
         print('{0}\t{1}'.format(s.LookupParameter('Sheet Number').AsString(),
-                                s.LookupParameter('Sheet Name').AsString()
-                                ))
+                                s.LookupParameter('Sheet Name').AsString()))
+
         if multipleRevs:
-            for rev in revs:
-                rev = doc.GetElement(rev)
-                print('\tREV#: {0}\t\tDATE: {1}\t\tDESC:{2}'.format(rev.RevisionNumber,
-                                                                    rev.RevisionDate,
-                                                                    rev.Description
-                                                                    ))
+            for revid in revision_ids:
+                rev = revit.doc.GetElement(revid)
+                revit.report.print_revision(rev, prefix='\t\t', print_id=False)

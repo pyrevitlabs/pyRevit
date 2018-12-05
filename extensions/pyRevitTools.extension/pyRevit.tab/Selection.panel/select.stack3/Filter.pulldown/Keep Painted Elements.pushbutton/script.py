@@ -1,12 +1,11 @@
 """keeps elements with painted faces in current selection and filters everything else out."""
 
-from revitutils import doc, uidoc, selection
-
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId, Group
+from pyrevit import revit, DB
 
 
 __context__ = 'Selection'
+
+selection = revit.get_selection()
 
 
 filtered_elements = []

@@ -1,14 +1,17 @@
 """Replaces current selection with elements inside the groups."""
 
-from revitutils import doc, uidoc, selection
+from pyrevit import revit, DB
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import ElementId, Group
+
+__context__ = 'selection'
+
+
+selection = revit.get_selection()
 
 
 filtered_elements = []
 for el in selection:
-    if isinstance(el, Group):
+    if isinstance(el, DB.Group):
         for subelid in el.GetMemberIds():
             filtered_elements.append(subelid)
 

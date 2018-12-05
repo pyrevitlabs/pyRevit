@@ -1,3 +1,0 @@
-<Category>:
-☐ <Not completed>
-✔ <Completed> @done

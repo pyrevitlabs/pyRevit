@@ -2,6 +2,7 @@ from rpw import DB
 from rpw.base import BaseObjectWrapper
 from rpw.exceptions import RpwCoerceError
 from rpw.db.transform import Transform
+from collections import OrderedDict
 
 class XYZ(BaseObjectWrapper):
     """
@@ -9,8 +10,8 @@ class XYZ(BaseObjectWrapper):
 
     XYZ light wrapper with a few helpful methods:
 
-    >>> from rpw.db import XYZ
-    >>> pt = XYZ(some_point)
+    >>> from rpw.db import db
+    >>> pt = db.XYZ(some_point)
     >>> pt.as_tuple
     (0,0,0)
     >>> pt.x = 10
@@ -88,7 +89,7 @@ class XYZ(BaseObjectWrapper):
     def z(self, value):
         self._revit_object = DB.XYZ(self.x, self.y, value)
 
-    def at_z(self, z):
+    def at_z(self, z, wrapped=True):
         """ Returns a new point at the passed Z value
 
         Args:
@@ -97,7 +98,7 @@ class XYZ(BaseObjectWrapper):
         Returns:
             (:any:`XYZ`): New Points
         """
-        return XYZ(self.x, self.y, z)
+        return XYZ(self.x, self.y, z) if wrapped else DB.XYZ(self.x, self.y, z)
 
     @property
     def as_tuple(self):
@@ -119,7 +120,7 @@ class XYZ(BaseObjectWrapper):
             (dict): dict with float of XYZ values
 
         """
-        return {'x': self.x, 'y': self.y, 'z': self.z}
+        return OrderedDict([('x', self.x), ('y', self.y), ('z', self.z)])
 
     def rotate(self, rotation, axis=None, radians=False):
         rotated_xyz = Transform.rotate_vector(self.unwrap(),

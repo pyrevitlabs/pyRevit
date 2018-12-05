@@ -1,49 +1,31 @@
-"""
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-Python scripts for Autodesk Revit
+import pickle
 
-This file is part of pyRevit repository at https://github.com/eirannejad/pyRevit
+from pyrevit import script
+from pyrevit import revit
 
-pyRevit is a free set of scripts for Autodesk Revit: you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 3, as published by
-the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-See this link for a copy of the GNU General Public License protecting this package.
-https://github.com/eirannejad/pyRevit/blob/master/LICENSE
-"""
-
-__doc__ = 'Append current selection to memory. Works like the M+ button in a calculator. This is a project-dependent (Revit *.rvt) memory. Every project has its own memory saved in user temp folder as *.pym files.'
-
-# from Autodesk.Revit.DB import ElementId
-import os
-import os.path as op
-import pickle as pl
 
 __context__ = 'Selection'
+__helpurl__ = 'https://www.youtube.com/watch?v=pAM-ARIXXLw'
+__doc__ = 'Append current selection to memory.\n'\
+          'Works like the M+ button in a calculator. '\
+          'This is a project-dependent memory. Every project has its own '\
+          'selection memory saved in %appdata%/pyRevit folder as *.pym files.'
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
-usertemp = os.getenv('Temp')
-prjname = op.splitext(op.basename(doc.PathName))[0]
-datafile = usertemp + '\\' + prjname + '_pySaveRevitSelection.pym'
+datafile = script.get_document_data_file("SelList", "pym")
 
-selection = {elId.ToString() for elId in uidoc.Selection.GetElementIds()}
+
+selection = revit.get_selection()
+selected_ids = {str(elid.IntegerValue) for elid in selection.element_ids}
 
 try:
     f = open(datafile, 'r')
-    prevsel = pl.load(f)
-    newsel = prevsel.union(selection)
+    prevsel = pickle.load(f)
+    new_selection = prevsel.union(selected_ids)
     f.close()
-    f = open(datafile, 'w')
-    pl.dump(newsel, f)
-    f.close()
-except:
-    f = open(datafile, 'w')
-    pl.dump(selection, f)
-    f.close()
+except Exception:
+    new_selection = selected_ids
+
+f = open(datafile, 'w')
+pickle.dump(new_selection, f)
+f.close()

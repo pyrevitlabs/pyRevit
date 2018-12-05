@@ -32,7 +32,6 @@ Warning:
 """
 
 import rpw
-from rpw.exceptions import RpwTypeError, RpwException
 from rpw.utils.logger import logger
 
 
@@ -50,8 +49,9 @@ class BaseObject(object):
             # return list(self.__dict__)
 
         # TODO: Clean up repr. remove wraps, add brackets to data
-        def __repr__(self, data=None):
-            data = data or ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
+        def __repr__(self, data=''):
+            if data:
+                data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
             return '<rpw:{class_name} | {data}>'.format(
                                         class_name=self.__class__.__name__,
                                         data=data)
@@ -69,14 +69,17 @@ class BaseObjectWrapper(BaseObject):
 
         Warning:
             Any Wrapper that inherits and overrides __init__ class MUST
-            super to ensure _revit_object is created by calling super().__init__
-            BaseObjectWrapper must define a class variable _revit_object_class
-            to define the object being wrapped.
+            ensure ``_revit_object`` is created by calling super().__init__
+            before setting any self attributes. Not doing so will
+            cause recursion errors and Revit will crash.
+            BaseObjectWrapper should define a class variable _revit_object_class
+            to define the object class being wrapped.
+
         """
         _revit_object_class = self.__class__._revit_object_class
 
         if enforce_type and not isinstance(revit_object, _revit_object_class):
-            raise RpwTypeError(_revit_object_class, type(revit_object))
+            raise rpw.exceptions.RpwTypeError(_revit_object_class, type(revit_object))
 
         object.__setattr__(self, '_revit_object', revit_object)
 
@@ -96,7 +99,7 @@ class BaseObjectWrapper(BaseObject):
             # attr_pascal_case = rpw.utils.coerce.to_pascal_case(attr)
             # return getattr(self.__dict__['_revit_object'], attr_pascal_case)
         except KeyError:
-            raise RpwException('BaseObjectWrapper is missing _revit_object')
+            raise rpw.exceptions.RpwException('BaseObjectWrapper is missing _revit_object')
 
     def __setattr__(self, attr, value):
         """

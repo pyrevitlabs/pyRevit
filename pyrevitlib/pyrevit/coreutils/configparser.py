@@ -2,9 +2,8 @@ import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
 from pyrevit import PyRevitException, PyRevitIOError
-
-# noinspection PyUnresolvedReferences
-from System.IO import IOException
+from pyrevit.compat import safe_strtype
+from pyrevit.coreutils import get_str_hash
 
 
 KEY_VALUE_TRUE = "true"
@@ -17,7 +16,7 @@ class PyRevitConfigSectionParser(object):
         self._section_name = section_name
 
     def __iter__(self):
-        return self._parser.options(self._section_name)
+        return iter(self._parser.options(self._section_name))
 
     def __str__(self):
         return self._section_name
@@ -55,7 +54,7 @@ class PyRevitConfigSectionParser(object):
         else:
             try:
                 return self._parser.set(self._section_name,
-                                        param_name, unicode(value))
+                                        param_name, safe_strtype(value))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))
@@ -73,13 +72,20 @@ class PyRevitConfigSectionParser(object):
             else:
                 raise opt_get_err
 
+    def set_option(self, op_name, value):
+        self.__setattr__(op_name, value)
+
+    def remove_option(self, option_name):
+        return self._parser.remove_option(self._section_name, option_name)
+
 
 class PyRevitConfigParser(object):
     def __init__(self, cfg_file_path=None):
+        self._cfg_file_path = cfg_file_path
         self._parser = ConfigParser.ConfigParser()
-        if cfg_file_path is not None:
+        if self._cfg_file_path is not None:
             try:
-                with open(cfg_file_path, 'r') as cfg_file:
+                with open(self._cfg_file_path, 'r') as cfg_file:
                     self._parser.readfp(cfg_file)
             except (OSError, IOError):
                 raise PyRevitIOError()
@@ -87,13 +93,19 @@ class PyRevitConfigParser(object):
                 raise PyRevitException(read_err)
 
     def __iter__(self):
-        return [self.get_section(x) for x in self._parser.sections()]
+        return iter([self.get_section(x) for x in self._parser.sections()])
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
             return PyRevitConfigSectionParser(self._parser, section_name)
         else:
             raise AttributeError('Section does not exist in config file.')
+
+    def get_config_file_hash(self):
+        with open(self._cfg_file_path, 'r') as cfg_file:
+            cfg_hash = get_str_hash(cfg_file.read())
+
+        return cfg_hash
 
     def has_section(self, section_name):
         return self._parser.has_section(section_name)

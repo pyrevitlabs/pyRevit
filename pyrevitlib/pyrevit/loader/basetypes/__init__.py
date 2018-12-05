@@ -3,25 +3,22 @@ import os.path as op
 import sys
 
 from pyrevit import PyRevitException, EXEC_PARAMS
+from pyrevit.compat import safe_strtype
+from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
 from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
-    load_asm_file, calculate_dir_hash, find_type_by_name
+    load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
-from pyrevit.versionmgr import PYREVIT_VERSION
 import pyrevit.coreutils.appdata as appdata
 
-from pyrevit.loader import LOADER_DIR
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
-from pyrevit.loader.addin import ADDIN_DIR, ADDIN_RESOURCE_DIR,\
-    get_addin_dll_file
+from pyrevit.loader.addin import get_addin_dll_file
 
 
 logger = get_logger(__name__)
 
 
 if not EXEC_PARAMS.doc_mode:
-    sys.path.append(ADDIN_DIR)
-
     INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
@@ -58,8 +55,10 @@ source_file_filter = '(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
     BASE_TYPES_DIR_HASH = \
-        calculate_dir_hash(INTERFACE_TYPES_DIR, '',
-                           source_file_filter)[:HASH_CUTOFF_LENGTH]
+        get_str_hash(
+            calculate_dir_hash(INTERFACE_TYPES_DIR, '', source_file_filter)
+            + EXEC_PARAMS.engine_ver
+            )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, LOADER_BASE_NAMESPACE)
     BASE_TYPES_ASM_FILE = appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
@@ -71,18 +70,6 @@ if not EXEC_PARAMS.doc_mode:
 else:
     BASE_TYPES_DIR_HASH = BASE_TYPES_ASM_FILE_ID = None
     BASE_TYPES_ASM_FILE = BASE_TYPES_ASM_NAME = None
-
-
-def _get_asm_attr_source():
-    asm_att_source = """
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using PyRevitBaseClasses;
-    [assembly: AssemblyPyRevitVersion("{}")]
-    """.format(PYREVIT_VERSION.get_formatted())
-
-    return asm_att_source
 
 
 def _get_source_files():
@@ -98,25 +85,13 @@ def _get_source_files():
     return source_files
 
 
-def _get_xaml_files():
-    xaml_files = list()
-    source_dir = op.dirname(__file__)
-    logger.debug('Xaml files location: {}'.format(source_dir))
-    for source_file in os.listdir(source_dir):
-        if op.splitext(source_file)[1].lower() == '.xaml':
-            logger.debug('Xaml file found: {}'.format(source_file))
-            xaml_files.append(op.join(source_dir, source_file))
-
-    logger.debug('Xaml files to be compiled: {}'.format(xaml_files))
-    return xaml_files
-
-
 def _get_resource_file(resource_name):
     return op.join(ADDIN_RESOURCE_DIR, resource_name)
 
 
 def _get_framework_module(fw_module):
-    # start with the newest sdk folder and work backwards trying to find the dll
+    # start with the newest sdk folder and
+    # work backwards trying to find the dll
     for sdk_folder in reversed(FRAMEWORK_DIRS):
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,
@@ -133,6 +108,7 @@ def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
     addin_file = get_addin_dll_file(ref_name)
     if addin_file:
+        load_asm_file(addin_file)
         return addin_file
 
     # Then try to find the dll in windows SDK
@@ -152,20 +128,22 @@ def _get_reference_file(ref_name):
 
 
 def _get_references():
-    ref_list = ['RevitAPI', 'RevitAPIUI', 'IronPython', 'IronPython.Modules',
+    ref_list = ['pyRevitLoader',
+                'RevitAPI', 'RevitAPIUI',
+                'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
                 'System', 'System.Core', 'System.Drawing',
+                'System.Xaml', 'System.Web',
                 'System.Windows.Forms', 'System.Web.Extensions',
-                'PresentationCore', 'PresentationFramework', 'WindowsBase']
+                'PresentationCore', 'PresentationFramework',
+                'WindowsBase', 'WindowsFormsIntegration']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
 
 def _generate_base_classes_asm():
     source_list = list()
-    # source_list.append(_get_asm_attr_source())
     for source_file in _get_source_files():
-        # source_list.append(read_source_file(source_file))
         source_list.append(source_file)
 
     # now try to compile
@@ -176,8 +154,7 @@ def _generate_base_classes_asm():
         return load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
-        errors = '\n'.join(eval(str(compile_err)
-                                .replace('Compile error: ', '')))
+        errors = safe_strtype(compile_err).replace('Compile error: ', '')
         logger.critical('Can not compile base types code into assembly.\n{}'
                         .format(errors))
         raise compile_err

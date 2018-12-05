@@ -1,81 +1,94 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from scriptutils import open_url
-from scriptutils.userinput import WPFWindow
-from pyrevit.versionmgr import PYREVIT_VERSION, PYREVIT_REPO
-# from pyrevit.coreutils.git import compare_branch_heads
-# from pyrevit.versionmgr.updater import get_pyrevit_repo, has_pending_updates
+from pyrevit import coreutils
+from pyrevit import versionmgr
+from pyrevit.versionmgr import urls
+from pyrevit.versionmgr import about
+from pyrevit import forms
+from pyrevit import script
 
 
 __context__ = 'zerodoc'
 
 __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
-          'detailed information on how pyrevit works, updates about the' \
+          'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
 
-class AboutWindow(WPFWindow):
+class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
-        self.set_image_source('image_credits', 'credits.png')
-        self.set_image_source('pyrevit_logo', 'pyRevitlogo.png')
-        self.set_image_source('keybase_profile', 'keybase.png')
+        pyrvtabout = about.get_pyrevit_about()
 
         try:
-            self.version_info.Text = ' v{}' \
-                                     .format(PYREVIT_VERSION.get_formatted())
-            if PYREVIT_REPO.branch != 'master':
-                self.branch_info.Text = ' ({})'.format(PYREVIT_REPO.branch)
-        except:
-            self.version_info.Text = ''
-        self.pyrevit_subtitle.Text += '\nRunning on IronPython {}.{}.{}' \
-                                      .format(sys.version_info.major,
-                                              sys.version_info.minor,
-                                              sys.version_info.micro)
+            pyrvt_repo = versionmgr.get_pyrevit_repo()
+            pyrvt_ver = versionmgr.get_pyrevit_version()
+            nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
+            short_version = \
+                ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
+            self.branch_name = pyrvt_repo.branch
+        except Exception:
+            nice_version = short_version = ''
+            self.branch_name = None
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def opengithubrepopage(self, sender, args):
-        open_url('https://github.com/eirannejad/pyRevit')
+        self.short_version_info.Text = short_version
+        self.pyrevit_subtitle.Text = pyrvtabout.subtitle
+        self.pyrevit_version.Text = nice_version
+        self.pyrevit_branch.Text = self.branch_name
+        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
+                                   .format(sys.version_info.major,
+                                           sys.version_info.minor,
+                                           sys.version_info.micro)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def opengithubcommits(self, sender, args):
-        open_url('https://github.com/eirannejad/pyRevit/commits/master')
+        rocketmodetext = \
+            'Rocket-mode {}' \
+            .format('enabled' if __cachedengine__ else 'disabled')
+        self.pyrevit_rmode.Text = rocketmodetext
+        if not __cachedengine__:
+            self.hide_element(self.rmode_icon)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def openrevisionhistory(self, sender, args):
-        open_url('http://eirannejad.github.io/pyRevit/releasenotes/')
+        self.madein_tb.Text = 'in {}'.format(pyrvtabout.madein)
+        self.copyright_tb.Text = pyrvtabout.copyright
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def opencredits(self, sender, args):
-        open_url('http://eirannejad.github.io/pyRevit/credits/')
+        script.open_url(urls.credits)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
+    def opendocs(self, sender, args):
+        script.open_url(urls.docs)
+
+    def openblog(self, sender, args):
+        script.open_url(urls.blog)
+
+    def opengithubrepopage(self, sender, args):
+        script.open_url(urls.github)
+
+    def openyoutubechannel(self, sender, args):
+        script.open_url(urls.youtube)
+
+    def opensupportpage(self, sender, args):
+        script.open_url(urls.patron)
+
+    def opengithubcommits(self, sender, args):
+        if self.branch_name:
+            commits_url = \
+                urls.githubbranchcommits.format(branch=self.branch_name)
+            script.open_url(commits_url)
+
+    def opengithubbranch(self, sender, args):
+        if self.branch_name:
+            branch_url = urls.githubbranch.format(branch=self.branch_name)
+            script.open_url(branch_url)
+
+    def openreleasenotes(self, sender, args):
+        script.open_url(urls.releasenotes)
+
     def openkeybaseprofile(self, sender, args):
-        open_url('https://keybase.io/ein')
+        script.open_url(urls.profile_ein)
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
     def handleclick(self, sender, args):
         self.Close()
 
-    # noinspection PyUnusedLocal
-    # noinspection PyMethodMayBeStatic
-    def onactivated(self, sender, args):
-        pass
-        # pyrvt_repo = get_pyrevit_repo()
-        # if has_pending_updates(pyrvt_repo):
-        #     hist_div = compare_branch_heads(pyrvt_repo)
-        #     self.version_info.Text = '{} {}'
-        #                              .format(self.version_info.Text,
-        #                                      hist_div.BehindBy)
 
-
-if __name__ == '__main__':
-    AboutWindow('AboutWindow.xaml').ShowDialog()
+AboutWindow('AboutWindow.xaml').show_dialog()

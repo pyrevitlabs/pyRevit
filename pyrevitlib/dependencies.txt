@@ -1,3 +1,0 @@
-markdown==2.6.8.0
-enum==1.1.6
-rpw==1.3.0:d51bfb3

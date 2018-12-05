@@ -26,7 +26,7 @@ Copyright 2017 Gui Talarico
 """
 
 __title__ = 'revitpythonwrapper'
-__version__ = '1.3.0'
+__version__ = '1.7.4'
 __maintainer__ = ['Gui Talarico', 'Ehsan Iran-Nejad']
 __license__ = 'MIT'
 __contact__ = 'github.com/gtalarico/revitpythonwrapper'
@@ -37,5 +37,6 @@ import rpw.db
 import rpw.ui
 import rpw.extras
 
-# For Compatibility. Use revit.doc instead?
+# For Compatibility. Use `from rpw import revit; revit.doc` instead.doc
+# This module import will be disable on rpw 2.0
 doc, uidoc = revit.doc, revit.uidoc

@@ -12,12 +12,20 @@ lib/*
 !lib/README.md
 !lib/enum
 !lib/customcollections
+!lib/requests
+!lib/urllib3
 
 # ignore pyCharm workspace settings
 .idea/workspace.xml
 
+# ignore visual studio files
+**/.vs
+**/bin
+**/obj
+
 # ignore sphinx build files
 docs/_*
+!docs/_static
 
 # ignore release files
 release/*.exe
@@ -37,3 +45,6 @@ __py*
 
 # ignore sphinx files
 *.pyc
+
+# ignore local config file
+pyRevit_config.ini

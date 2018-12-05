@@ -1,0 +1,15 @@
+"""pyRevit related links."""
+
+credits = 'http://eirannejad.github.io/pyRevit/credits/'
+docs = 'http://pyrevit.readthedocs.io/en/latest/'
+blog = 'http://eirannejad.github.io/pyRevit/'
+github = 'https://github.com/eirannejad/pyRevit'
+githubbranch = 'https://github.com/eirannejad/pyRevit/tree/{branch}'
+githubmastercommits = 'https://github.com/eirannejad/pyRevit/commits/master'
+githubbranchcommits = 'https://github.com/eirannejad/pyRevit/commits/{branch}'
+githubissues = 'https://github.com/eirannejad/pyrevit/issues'
+youtube = 'https://www.youtube.com/pyrevit'
+patron = 'https://www.patreon.com/pyrevit'
+releasenotes = 'http://eirannejad.github.io/pyRevit/releasenotes/'
+profile_ein = 'https://keybase.io/ein'
+blog_scriptanat = 'http://pyrevit.readthedocs.io/en/latest/scriptanatomy.html'

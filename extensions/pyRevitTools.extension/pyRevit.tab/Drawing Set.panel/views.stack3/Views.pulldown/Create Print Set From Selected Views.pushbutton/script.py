@@ -1,41 +1,42 @@
-import clr
+"""Creates print set from selected views."""
 
-from Autodesk.Revit.DB import Transaction, FilteredElementCollector, PrintRange, View, ViewSet, ViewSheetSet
-from Autodesk.Revit.UI import TaskDialog
+from pyrevit import framework
+from pyrevit import revit, DB, UI
+from pyrevit import forms
 
-uidoc = __revit__.ActiveUIDocument
-doc = __revit__.ActiveUIDocument.Document
 
 sheetsetname = 'ViewPrintSet'
 
 # Get printmanager / viewsheetsetting
-printmanager = doc.PrintManager
-printmanager.PrintRange = PrintRange.Select
+printmanager = revit.doc.PrintManager
+printmanager.PrintRange = DB.PrintRange.Select
 viewsheetsetting = printmanager.ViewSheetSetting
 
 # Collect selected views
-myviewset = ViewSet()
-for elId in uidoc.Selection.GetElementIds():
-    el = doc.GetElement(elId)
-    if isinstance(el, View):
+selected_views = forms.select_views()
+if selected_views:
+    myviewset = DB.ViewSet()
+    for el in selected_views:
         myviewset.Insert(el)
 
-if myviewset.IsEmpty:
-    TaskDialog.Show('pyRevit', 'At least one view must be selected.')
-else:
-    # Collect existing sheet sets
-    cl = FilteredElementCollector(doc)
-    viewsheetsets = cl.OfClass(clr.GetClrType(ViewSheetSet)).WhereElementIsNotElementType().ToElements()
-    allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
+    if myviewset.IsEmpty:
+        forms.alert('At least one view must be selected.')
+    else:
+        # Collect existing sheet sets
+        viewsheetsets = DB.FilteredElementCollector(revit.doc)\
+                          .OfClass(framework.get_type(DB.ViewSheetSet))\
+                          .WhereElementIsNotElementType()\
+                          .ToElements()
 
-    with Transaction(doc, 'Created Print Set') as t:
-        t.Start()
-        # Delete existing matching sheet set
-        if sheetsetname in allviewsheetsets.keys():
-            viewsheetsetting.CurrentViewSheetSet = allviewsheetsets[sheetsetname]
-            viewsheetsetting.Delete()
+        allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
 
-        # Create new sheet set
-        viewsheetsetting.CurrentViewSheetSet.Views = myviewset
-        viewsheetsetting.SaveAs(sheetsetname)
-        t.Commit()
+        with revit.Transaction('Created Print Set'):
+            # Delete existing matching sheet set
+            if sheetsetname in allviewsheetsets.keys():
+                viewsheetsetting.CurrentViewSheetSet = \
+                    allviewsheetsets[sheetsetname]
+                viewsheetsetting.Delete()
+
+            # Create new sheet set
+            viewsheetsetting.CurrentViewSheetSet.Views = myviewset
+            viewsheetsetting.SaveAs(sheetsetname)

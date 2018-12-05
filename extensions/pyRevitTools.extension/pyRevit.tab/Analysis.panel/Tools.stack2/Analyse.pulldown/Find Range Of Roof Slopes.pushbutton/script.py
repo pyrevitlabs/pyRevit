@@ -1,17 +1,19 @@
-from scriptutils import this_script
-from revitutils import doc
+"""Lists all roof slopes in the model."""
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory
-
-
-__doc__ = 'Lists all roof slopes in the model.'
+from pyrevit import script
+from pyrevit import revit, DB
 
 
-rooflist = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Roofs)\
-                                        .WhereElementIsNotElementType().ToElements()
+output = script.get_output()
+
+
+rooflist = DB.FilteredElementCollector(revit.doc)\
+             .OfCategory(DB.BuiltInCategory.OST_Roofs)\
+             .WhereElementIsNotElementType().ToElements()
+
 
 slopes = dict()
+
 
 for el in rooflist:
     p = el.LookupParameter('Slope')
@@ -27,6 +29,6 @@ for sl, elids in slopes.items():
     print('ROOF ELEMENTS WITH THIS SLOPE:')
     el_links = ''
     for elid in elids:
-        el_links += this_script.output.linkify(elid)
+        el_links += output.linkify(elid)
     print(el_links)
     print('\n')

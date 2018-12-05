@@ -1,38 +1,45 @@
-"""Pins all viewports on selected sheets or active sheet"""
+"""Pins all viewports on selected sheets.
+
+Shift-Click:
+Pin all viewports on active sheet.
+"""
 
 import sys
-from revitutils import selection, doc, uidoc, curview, Action
-from Autodesk.Revit.UI import TaskDialog
-from Autodesk.Revit.DB import ViewSheet
+
+from pyrevit import revit, DB, UI
+from pyrevit import script
+from pyrevit import forms
 
 
+def pin_viewports(sheet_list):
+    with revit.Transaction('Pin all viewports'):
+        for sheet in sheet_list:
+            count = 0
+            alreadypinnedcount = 0
+            for vportid in sheet.GetAllViewports():
+                vport = revit.doc.GetElement(vportid)
+                if not vport.Pinned:
+                    vport.Pinned = True
+                    count += 1
+                else:
+                    alreadypinnedcount += 1
+            print('Pinned {} viewports on sheet: {} - {}'
+                  '\n({} viewports were already pinned)'
+                  .format(count,
+                          sheet.SheetNumber,
+                          sheet.Name,
+                          alreadypinnedcount))
 
-filteredlist = []
-sheetlist = []
 
-if selection.is_empty:
-    if isinstance(curview, ViewSheet):
-        sheetlist.append(curview)
+if __shiftclick__:
+    if isinstance(revit.activeview, DB.ViewSheet):
+        sel_sheets = [revit.activeview]
+    else:
+        forms.alert('Active view must be a sheet.')
+        script.exit()
 else:
-    for sel_view in selection:
-        if isinstance(sel_view, ViewSheet):
-            sheetlist.append(sel_view)
+    sel_sheets = forms.select_sheets(title='Select Sheets')
 
-if not sheetlist:
-    TaskDialog.Show('pyrevit','You must have at least one sheet selected or active view must be a sheet.')
-    sys.exit()
 
-with Action('Pin all viewports'):
-    for sheet in sheetlist:
-        count = 0
-        alreadypinnedcount = 0
-        for vportid in sheet.GetAllViewports():
-            vport = doc.GetElement(vportid)
-            if not vport.Pinned:
-                vport.Pinned = True
-                count += 1
-            else:
-                alreadypinnedcount += 1
-        print('Pinned {} viewports on sheet: {} - {}'
-              '\n({} viewports were already pinned)'
-              .format(count, sheet.SheetNumber, sheet.Name, alreadypinnedcount))
+if sel_sheets:
+    pin_viewports(sel_sheets)

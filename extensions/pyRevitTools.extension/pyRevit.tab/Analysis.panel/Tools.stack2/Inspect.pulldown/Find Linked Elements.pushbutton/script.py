@@ -1,27 +1,30 @@
-"""Lists all the elements that are tied to the selected element. For example elements tags or dimensions."""
+from pyrevit import script
+from pyrevit import revit
 
-from scriptutils import this_script
-from revitutils import doc, selection
 
-# noinspection PyUnresolvedReferences
-from Autodesk.Revit.DB import Transaction
+__context__ = 'selection'
+__helpurl__ = 'https://www.youtube.com/watch?v=4IlvCkoOolw'
+__doc__ = 'Lists all the elements that are tied to the selected element.'\
+          ' For example elements tags or dimensions.'
+
+
+selection = revit.get_selection()
+output = script.get_output()
 
 
 if not selection.is_empty:
-    t = Transaction(doc, "Search for linked elements")
-    t.Start()
-
-    print("Searching for all objects tied to ELEMENT ID: {0}...".format(selection.first.Id))
-    linked_elements_list = doc.Delete(selection.first.Id)
-
-    t.RollBack()
-
+    print("Searching for all objects tied to ELEMENT ID: {0}..."
+          .format(selection.first.Id))
+    with revit.DryTransaction("Search for linked elements"):
+        linked_elements_list = revit.doc.Delete(selection.first.Id)
 
     for elId in linked_elements_list:
-        el = doc.GetElement(elId)
+        el = revit.doc.GetElement(elId)
         if el and elId in selection.element_ids:
-            elid_link = this_script.output.linkify(elId)
-            print("ID: {0}\t\tTYPE: {1} ( selected object )".format(elid_link, el.GetType().Name))
+            elid_link = output.linkify(elId)
+            print("ID: {0}\t\tTYPE: {1} ( selected object )"
+                  .format(elid_link, el.GetType().Name))
         elif el:
-            elid_link = this_script.output.linkify(elId)
-            print("ID: {0}\t\tTYPE: {1}".format(elid_link, el.GetType().Name))
+            elid_link = output.linkify(elId)
+            print("ID: {0}\t\tTYPE: {1}"
+                  .format(elid_link, el.GetType().Name))

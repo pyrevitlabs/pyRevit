@@ -1,4 +1,5 @@
 import pyrevit.coreutils.git as git
+from pyrevit.compat import safe_strtype
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.versionmgr import get_pyrevit_repo
 
@@ -68,7 +69,7 @@ def get_all_extension_repos():
 def update_pyrevit(repo_info):
     repo = repo_info.repo
     logger.debug('Updating repo: {}'.format(repo_info.directory))
-    head_msg = unicode(repo.Head.Tip.Message).replace('\n', '')
+    head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
     logger.debug('Current head is: {} > {}'
                  .format(repo.Head.Tip.Id.Sha, head_msg))
     username, password = _get_extension_credentials(repo_info)
