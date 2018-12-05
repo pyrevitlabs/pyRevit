@@ -1,7 +1,7 @@
 from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import forms
-from pyrevit import script
+from pyrevit import script, revit
 
 
 __doc__ = 'Decreases the sheet number of the selected sheets by one. '\
