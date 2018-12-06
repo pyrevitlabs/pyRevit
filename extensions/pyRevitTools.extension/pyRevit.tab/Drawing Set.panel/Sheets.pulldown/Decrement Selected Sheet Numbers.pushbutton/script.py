@@ -1,7 +1,8 @@
+#pylint: disable=W0703,E0401,C0103,C0111
 from pyrevit import coreutils
-from pyrevit import revit, DB
+from pyrevit import revit
 from pyrevit import forms
-from pyrevit import script, revit
+from pyrevit import script
 
 
 __doc__ = 'Decreases the sheet number of the selected sheets by one. '\
@@ -22,21 +23,17 @@ if not selected_sheets:
 sorted_sheet_list = sorted(selected_sheets, key=lambda x: x.SheetNumber)
 if shift >= 0:
     sorted_sheet_list.reverse()
-with DB.TransactionGroup(revit.doc, 'Shift Sheets') as tgr:
-    tgr.Start()
+with revit.TransactionGroup('Shift Sheets'):
     for sheet in sorted_sheet_list:
-        with DB.Transaction(revit.doc, 'Shift Single Sheet') as t:
-            t.Start()
+        with revit.Transaction('Shift Single Sheet'):
             try:
                 cur_sheet_num = sheet.SheetNumber
                 sheet_num_param = sheet.LookupParameter('Sheet Number')
-                sheet_num_param.Set(coreutils.increment_str(sheet.SheetNumber,
+                sheet_num_param.Set(coreutils.decrement_str(sheet.SheetNumber,
                                                             shift))
                 new_sheet_num = sheet.SheetNumber
                 logger.info('{} -> {}'.format(cur_sheet_num, new_sheet_num))
             except Exception as shift_err:
                 logger.error(shift_err)
-            
+
             revit.doc.Regenerate()
-            t.Commit()
-    tgr.Assimilate()
