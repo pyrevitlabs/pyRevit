@@ -4,7 +4,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit.framework import clr
 from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE
 
-
+#pylint: disable=W0703,C0302,C0103
 if not EXEC_PARAMS.doc_mode:
     # import base classes module
     clr.AddReference(BASE_TYPES_ASM)
@@ -21,7 +21,7 @@ if not EXEC_PARAMS.doc_mode:
 
     # baseclasses.cs
     PyRevitCommand = base_module.PyRevitCommand
-    PyRevitCommandCategoryAvail = base_module.PyRevitCommandCategoryAvail
+    PyRevitCommandExtendedAvail = base_module.PyRevitCommandExtendedAvail
     PyRevitCommandSelectionAvail = base_module.PyRevitCommandSelectionAvail
     PyRevitCommandDefaultAvail = base_module.PyRevitCommandDefaultAvail
 
@@ -32,7 +32,10 @@ if not EXEC_PARAMS.doc_mode:
     ScriptExecutor = base_module.ScriptExecutor
 
     # scriptoutput.cs
+    PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
     ScriptOutput = base_module.ScriptOutput
+    # scriptoutputemojis.cs
+    ScriptOutputEmojis = base_module.ScriptOutputEmojis
     # scriptoutputmgr.cs
     ScriptOutputManager = base_module.ScriptOutputManager
     # scriptoutputstream.cs
@@ -46,10 +49,10 @@ if not EXEC_PARAMS.doc_mode:
     User32 = base_module.User32
     GDI32 = base_module.GDI32
 else:
-        DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
-            EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
-            PyRevitCommandCategoryAvail = PyRevitCommandSelectionAvail = \
-            PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
-            ScriptExecutor = ScriptOutput = ScriptOutputManager = \
-            ScriptOutputStream = ScriptUsageLogger = \
-            RECT = User32 = GDI32 = None
+    DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
+        EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
+        PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
+        PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
+        ScriptExecutor = ScriptOutput = ScriptOutputManager = \
+        ScriptOutputStream = ScriptUsageLogger = \
+        RECT = User32 = GDI32 = None

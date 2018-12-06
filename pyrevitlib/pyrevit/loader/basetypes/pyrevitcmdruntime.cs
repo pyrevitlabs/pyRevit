@@ -36,7 +36,7 @@ namespace PyRevitBaseClasses
         private EnvDictionary _envDict = new EnvDictionary();
 
         private int _execResults = 0;
-        private Dictionary<String, String> _resultsDict = null;
+        private Dictionary<string, string> _resultsDict = null;
 
 
         public PyRevitCommandRuntime(ExternalCommandData cmdData,
@@ -288,10 +288,10 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public Dictionary<String, String> GetResultsDictionary()
+        public Dictionary<string, string> GetResultsDictionary()
         {
             if(_resultsDict == null)
-                _resultsDict = new Dictionary<String, String>();
+                _resultsDict = new Dictionary<string, string>();
 
             return _resultsDict;
         }

@@ -1,27 +1,57 @@
-"""Provide access to output window and its functionality."""
+"""Provide access to output window and its functionality.
+
+This module provides access to the output window for the currently running
+pyRevit command. The proper way to access this wrapper object is through
+the :func:`get_output` of :mod:`pyrevit.script` module. This method, in return
+uses the `pyrevit.output` module to get access to the output wrapper.
+
+Example:
+    >>> from pyrevit import script
+    >>> output = script.get_output()
+
+Here is the source of :func:`pyrevit.script.get_output`. As you can see this
+functions calls the :func:`pyrevit.output.get_output` to receive the
+output wrapper.
+
+.. literalinclude:: ../../../pyrevitlib/pyrevit/script.py
+    :pyobject: get_output
+"""
 
 from __future__ import print_function
 import os.path as op
 import itertools
 
-from pyrevit import EXEC_PARAMS
-from pyrevit.compat import safe_strtype
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
-from pyrevit.coreutils import emoji
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
 from pyrevit.coreutils.loadertypes import ScriptOutputManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
+from pyrevit import DB
 
 
+#pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
 
 
 DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+
+
+def docclosing_eventhandler(sender, args):  #pylint: disable=W0613
+    """Close all output window on document closing."""
+    ScriptOutputManager.CloseActiveOutputWindows()
+
+
+def setup_output_closer():
+    """Setup document closing event listener."""
+    HOST_APP.app.DocumentClosing += \
+        framework.EventHandler[DB.Events.DocumentClosingEventArgs](
+            docclosing_eventhandler
+            )
 
 
 def set_stylesheet(stylesheet):
@@ -203,7 +233,6 @@ class PyRevitOutputWindow(object):
             font_family (str): font family name e.g. 'Courier New'
             font_size (int): font size e.g. 16
         """
-        # noinspection PyUnresolvedReferences
         self.renderer.Font = \
             framework.Drawing.Font(font_family,
                                    font_size,
@@ -262,6 +291,21 @@ class PyRevitOutputWindow(object):
         if self.window:
             self.window.LockSize()
 
+    def unlock_size(self):
+        """Unock window size."""
+        if self.window:
+            self.window.UnlockSize()
+
+    def freeze(self):
+        """Freeze output contetn update."""
+        if self.window:
+            self.window.Freeze()
+
+    def unfreeze(self):
+        """Unfreeze output contetn update."""
+        if self.window:
+            self.window.Unfreeze()
+
     def save_contents(self, dest_file):
         """Save html code of the window.
 
@@ -307,35 +351,72 @@ class PyRevitOutputWindow(object):
             >>>     output.update_progress(i, 100)
         """
         if self.window:
-            self.window.UpdateProgressBar(cur_value, max_value)
+            self.window.UpdateActivityBar(cur_value, max_value)
 
     def reset_progress(self):
         """Reset output window progress bar to zero."""
         if self.window:
-            self.window.UpdateProgressBar(0, 1)
+            self.window.UpdateActivityBar(0, 1)
 
     def hide_progress(self):
         """Hide output window progress bar."""
         if self.window:
-            self.window.SetProgressBarVisibility(False)
+            self.window.SetActivityBarVisibility(False)
 
     def unhide_progress(self):
         """Unhide output window progress bar."""
         if self.window:
-            self.window.SetProgressBarVisibility(True)
+            self.window.SetActivityBarVisibility(True)
 
-    @staticmethod
-    def emojize(md_str):
-        """Replace emoji codes with emoji images and print.
+    def indeterminate_progress(self, state):
+        """Show or hide indeterminate progress bar. """
+        if self.window:
+            self.window.UpdateActivityBar(state)
 
-        Args:
-            md_str (str): string containing emoji code
+    def show_logpanel(self):
+        """Show output window logging panel."""
+        if self.window:
+            self.window.SetActivityBarVisibility(True)
 
-        Example:
-            >>> output = pyrevit.output.get_output()
-            >>> output.emojize('Process completed. :thumbs_up:')
-        """
-        print(emoji.emojize(md_str), end="")
+    def hide_logpanel(self):
+        """Hide output window logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.SetActivityBarVisibility(False)
+
+    def log_ok(self, message):
+        """Report OK message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogOK(message)
+
+    def log_info(self, message):
+        """Report INFO message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogInfo(message)
+
+    def log_warning(self, message):
+        """Report WARNING message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogWarning(message)
+
+    def log_error(self, message):
+        """Report ERROR message into output logging panel."""
+        if self.window:
+            self.show_logpanel()
+            self.window.activityBar.ConsoleLogError(message)
+
+    def set_icon(self, iconpath):
+        """Sets icon on the output window."""
+        if self.window:
+            self.window.SetIcon(iconpath)
+
+    def reset_icon(self):
+        """Sets icon on the output window."""
+        if self.window:
+            self.window.ResetIcon()
 
     @staticmethod
     def print_html(html_str):
@@ -345,7 +426,7 @@ class PyRevitOutputWindow(object):
             >>> output = pyrevit.output.get_output()
             >>> output.print_html('<strong>Title</strong>')
         """
-        print(coreutils.prepare_html_str(emoji.emojize(html_str)),
+        print(coreutils.prepare_html_str(html_str),
               end="")
 
     @staticmethod
@@ -357,9 +438,14 @@ class PyRevitOutputWindow(object):
             >>> output.print_code('value = 12')
         """
         code_div = '<div class="code">{}</div>'
-        print(coreutils.prepare_html_str(
+        print(
+            coreutils.prepare_html_str(
                 code_div.format(
-                    code_str.replace('    ', '&nbsp;'*4))), end="")
+                    code_str.replace('    ', '&nbsp;'*4)
+                    )
+                ),
+            end=""
+            )
 
     @staticmethod
     def print_md(md_str):
@@ -372,10 +458,10 @@ class PyRevitOutputWindow(object):
         tables_ext = 'pyrevit.coreutils.markdown.extensions.tables'
         markdown_html = markdown.markdown(md_str, extensions=[tables_ext])
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
-        html_code = emoji.emojize(coreutils.prepare_html_str(markdown_html))
+        html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
 
-    def print_table(self, table_data, columns=[], formats=[],
+    def print_table(self, table_data, columns=None, formats=None,
                     title='', last_line_style=''):
         """Print provided data in a table in output window.
 
@@ -399,11 +485,16 @@ class PyRevitOutputWindow(object):
             ... last_line_style='color:red;'
             ... )
         """
+        if not columns:
+            columns = []
+        if not formats:
+            formats = []
+
         if last_line_style:
             self.add_style('tr:last-child {{ {style} }}'
                            .format(style=last_line_style))
 
-        zipper = itertools.izip_longest
+        zipper = itertools.izip_longest #pylint: disable=E1101
         adjust_base_col = '|'
         adjust_extra_col = ':---|'
         base_col = '|'
@@ -415,7 +506,7 @@ class PyRevitOutputWindow(object):
         header = ''
         if columns:
             header = base_col
-            for idx, col_name in zipper(range(max_col), columns, fillvalue=''):
+            for idx, col_name in zipper(range(max_col), columns, fillvalue=''): #pylint: disable=W0612
                 header += extra_col.format(data=col_name)
 
             header += '\n'

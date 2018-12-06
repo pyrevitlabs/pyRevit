@@ -1,6 +1,10 @@
-__doc__ = 'Lists specific elements from the model database.'
+"""Lists specific elements from the model database."""
+#pylint: disable=C0103,E0401,W0703
+from collections import defaultdict
 
+from pyrevit import HOST_APP
 from pyrevit.framework import List
+from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
@@ -15,13 +19,14 @@ switches = ['Graphic Styles',
             'Selected Line Coordinates',
             'Model / Detail / Sketch Lines',
             'Project Parameters',
+            'Unused Shared Parameters',
             'Data Schemas',
             'Data Schema Entities',
             'Sketch Planes',
             'Views',
             'View Templates',
             'Viewports',
-            'Viewport Types',
+            'Element Types',
             'Family Symbols',
             'Levels',
             'Scope Boxes',
@@ -31,10 +36,13 @@ switches = ['Graphic Styles',
             'Revisions',
             'Revision Clouds',
             'Sheets',
+            'Sheets with Hidden Characters',
             'System Categories',
             'System Postable Commands',
             'Worksets',
             'Fill Grids',
+            'Connected Circuits',
+            'Point Cloud Instances'
             ]
 
 selected_switch = \
@@ -97,27 +105,41 @@ elif selected_switch == 'Model / Detail / Sketch Lines':
                       c.Category.Name))
 
 elif selected_switch == 'Project Parameters':
-    pm = revit.doc.ParameterBindings
-    it = pm.ForwardIterator()
-    it.Reset()
-    while it.MoveNext():
-        p = it.Key
-        b = pm[p]
-        if isinstance(b, DB.InstanceBinding):
-            bind = 'Instance'
-        elif isinstance(b, DB.TypeBinding):
-            bind = 'Type'
-        else:
-            bind = 'Uknown'
+    output.print_md('## Project Parameters')
+    for pp in revit.query.get_project_parameters():
+        if not pp.shared:
+            output.print_md('#### {}'.format(pp.name))
+            print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
+                  '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
+                      pp.unit_type,
+                      pp.param_type,
+                      pp.param_group,
+                      pp.param_binding_type,
+                      [x.Name for x in pp.param_binding.Categories]
+                      ))
 
-        print('PARAM: {0:<10} UNIT: {1:<10} TYPE: {2:<10} '
-              'GROUP: {3:<20} BINDING: {4}'
-              '\nAPPLIED TO: {5}\n'.format(p.Name,
-                                           str(p.UnitType),
-                                           str(p.ParameterType),
-                                           str(p.ParameterGroup),
-                                           bind,
-                                           [c.Name for c in b.Categories]))
+    output.print_md('# Shared Parameters')
+    for pp in revit.query.get_project_parameters():
+        if pp.shared:
+            output.print_md('#### {} : {}'.format(pp.name, pp.param_guid))
+            print('\tUNIT: {}\n\tTYPE: {}\n\tGROUP: {}'
+                  '\n\tBINDING: {}\n\tAPPLIED TO: {}\n'.format(
+                      pp.unit_type,
+                      pp.param_type,
+                      pp.param_group,
+                      pp.param_binding_type,
+                      [x.Name for x in pp.param_binding.Categories]
+                      ))
+
+elif selected_switch == 'Unused Shared Parameters':
+    shared_params = \
+        set([x.Name + ':' + x.GUID.ToString()
+             for x in revit.query.get_defined_sharedparams()])
+    project_params = \
+        set([x.name + ':' + x.param_guid
+             for x in revit.query.get_project_parameters() if x.shared])
+    for unused_shared_param in shared_params - project_params:
+        print(unused_shared_param)
 
 elif selected_switch == 'Data Schemas':
     for sc in DB.ExtensibleStorage.Schema.ListSchemas():
@@ -168,17 +190,21 @@ elif selected_switch == 'Viewports':
                       str(v.Id).ljust(10),
                       revit.doc.GetElement(v.ViewId).ViewName))
 
-elif selected_switch == 'Viewport Types':
-    vps = []
+elif selected_switch == 'Element Types':
+    all_types = \
+        revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
+    etypes_dict = defaultdict(list)
+    for etype in all_types:
+        if etype.FamilyName:
+            etypes_dict[str(etype.FamilyName).strip()].append(etype)
 
-    cl_views = DB.FilteredElementCollector(revit.doc)
-    vptypes = cl_views.OfClass(DB.ElementType).ToElements()
+    for etype_name in sorted(etypes_dict.keys()):
+        etypes = etypes_dict[etype_name]
+        output.print_md('**{}**'.format(etype_name))
+        for et in etypes:
+            print('\t{} {}'.format(output.linkify(et.Id),
+                                   revit.ElementWrapper(et).name))
 
-    for tp in vptypes:
-        wrapperd_tp = revit.ElementWrapper(tp)
-        if tp.FamilyName == 'Viewport':
-            print('ID: {1} TYPE: {0}'.format(wrapperd_tp.name,
-                                             str(tp.Id).ljust(10)))
 
 elif selected_switch == 'Family Symbols':
     cl = DB.FilteredElementCollector(revit.doc)
@@ -219,8 +245,8 @@ elif selected_switch == 'Areas':
               'AREA ID: {2} '
               'LEVEL: {3} '
               'AREA: {4}'
-              .format(el.LookupParameter('Name').AsString().ljust(30),
-                      el.LookupParameter('Number').AsString().ljust(10),
+              .format(el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
+                      el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(10),
                       el.Id,
                       str(el.Level.Name).ljust(50),
                       el.Area))
@@ -236,8 +262,8 @@ elif selected_switch == 'Rooms':
         print('ROOM NAME: {0} '
               'ROOM NUMBER: {1} '
               'ROOM ID: {2}'
-              .format(el.LookupParameter('Name').AsString().ljust(30),
-                      el.LookupParameter('Number').AsString().ljust(20),
+              .format(el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
+                      el.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString().ljust(20),
                       el.Id))
 
     print('\n\nTOTAL ROOMS FOUND: {0}'.format(len(roomlist)))
@@ -245,14 +271,15 @@ elif selected_switch == 'Rooms':
 elif selected_switch == 'External References':
     location = revit.doc.PathName
     try:
-        modelPath = DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
+        modelPath = \
+            DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(location)
         transData = DB.TransmissionData.ReadTransmissionData(modelPath)
         externalReferences = transData.GetAllExternalFileReferenceIds()
         for refId in externalReferences:
             extRef = transData.GetLastSavedReferenceData(refId)
             refpath = extRef.GetPath()
             path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(refpath)
-            if '' == path:
+            if not path:
                 path = '--NOT ASSIGNED--'
             reftype = str(extRef.ExternalFileReferenceType) + ':'
             print("{0}{1}".format(reftype.ljust(20), path))
@@ -276,8 +303,8 @@ elif selected_switch == 'Sheets':
     for s in sheets:
         print('NUMBER: {0}   '
               'NAME:{1}'
-              .format(s.LookupParameter('Sheet Number').AsString().rjust(10),
-                      s.LookupParameter('Sheet Name').AsString().ljust(50)))
+              .format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10),
+                      s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)))
 
 elif selected_switch == 'System Categories':
     for cat in revit.doc.Settings.Categories:
@@ -301,7 +328,7 @@ elif selected_switch == 'Views':
 
     views = []
 
-    if len(selection) == 0:
+    if selection:
         cl_views = DB.FilteredElementCollector(revit.doc)
         views = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                         .WhereElementIsNotElementType().ToElements()
@@ -311,22 +338,34 @@ elif selected_switch == 'Views':
                 views.append(el)
 
     for v in views:
-        phasep = v.LookupParameter('Phase')
-        underlayp = v.LookupParameter('Underlay')
-        print('TYPE: {1}'
-              'ID: {2}'
-              'TEMPLATE: {3}'
-              'PHASE:{4} '
-              'UNDERLAY:{5}  '
-              '{0}'
-              .format(v.ViewName,
-                      str(v.ViewType).ljust(20),
-                      str(v.Id).ljust(10),
-                      str(v.IsTemplate).ljust(10),
-                      phasep.AsValueString().ljust(25)
-                      if phasep else '---'.ljust(25),
-                      underlayp.AsValueString().ljust(25)
-                      if underlayp else '---'.ljust(25)))
+        phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
+        if HOST_APP.is_older_than(2016):
+            underlayp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_ID]
+            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} UNDERLAY:{5} {0}'
+                  .format(v.ViewName,
+                          str(v.ViewType).ljust(20),
+                          str(v.Id).ljust(10),
+                          str(v.IsTemplate).ljust(10),
+                          phasep.AsValueString().ljust(25)
+                          if phasep else '---'.ljust(25),
+                          underlayp.AsValueString().ljust(25)
+                          if underlayp else '---'.ljust(25)))
+        else:
+            underlaytp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_TOP_ID]
+            underlaybp = \
+                v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID]
+            print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} '
+                  'UNDERLAY TOP:{5} UNDERLAY BOTTOM:{6} {0}'
+                  .format(v.ViewName,
+                          str(v.ViewType).ljust(20),
+                          str(v.Id).ljust(10),
+                          str(v.IsTemplate).ljust(10),
+                          phasep.AsValueString().ljust(25)
+                          if phasep else '---'.ljust(25),
+                          underlaytp.AsValueString().ljust(25)
+                          if underlaytp else '---'.ljust(25),
+                          underlaybp.AsValueString().ljust(25)
+                          if underlaybp else '---'.ljust(25)))
 
 elif selected_switch == 'View Templates':
     cl_views = DB.FilteredElementCollector(revit.doc)
@@ -401,11 +440,9 @@ elif selected_switch == 'Selected Line Coordinates':
 elif selected_switch == 'Data Schema Entities':
     allElements = \
         list(DB.FilteredElementCollector(revit.doc)
-               .WherePasses(
-                   DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
-                                      DB.ElementIsElementTypeFilter(True))
-            )
-        )
+             .WherePasses(
+                 DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
+                                    DB.ElementIsElementTypeFilter(True))))
 
     guids = {sc.GUID.ToString(): sc.SchemaName
              for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
@@ -438,3 +475,25 @@ elif selected_switch == 'Fill Grids':
                 print('\tShift: {}'.format(fg.Shift))
                 for seg in fg.GetSegments():
                     print('\tSegment: {}'.format(seg))
+
+elif selected_switch == 'Connected Circuits':
+    selection = revit.get_selection()
+    for el in selection:
+        esystems = revit.query.get_connected_circuits(el)
+        for esys in esystems:
+            print(esys.Name)
+
+elif selected_switch == 'Point Cloud Instances':
+    for pc in revit.query.get_pointclouds(doc=revit.doc):
+        ws = revit.doc.GetElement(pc.WorksetId)
+        print('Name: {}\tWorkset:{}'.format(pc.Name, ws.Name if ws else '---'))
+
+elif selected_switch == 'Sheets with Hidden Characters':
+    for sheet in revit.query.get_sheets(doc=revit.doc):
+        sheetnum = sheet.SheetNumber
+        sheetnum_repr = repr(str(sheet.SheetNumber).encode("utf-8"))
+        if coreutils.has_nonprintable(sheetnum):
+            output.print_md('**{}**: Unicode: {}  Bytes: {}'
+                            .format(sheet.SheetNumber,
+                                    repr(sheetnum),
+                                    sheetnum_repr))

@@ -19,4 +19,4 @@ if isinstance(el, DB.ElevationMarker):
                           str(v.ViewType).ljust(15),
                           str(v.Id).ljust(10),
                           str(v.IsTemplate).ljust(10),
-                          v.LookupParameter('Detail Number').AsString()))
+                          v.Parameter[DB.BuiltInParameter.VIEWER_DETAIL_NUMBER].AsString()))

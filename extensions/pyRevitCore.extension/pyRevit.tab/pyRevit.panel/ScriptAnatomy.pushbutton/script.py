@@ -8,4 +8,4 @@ __context__ = 'zerodoc'
 __title__ = 'Script\nAnatomy'
 
 
-script.open_url(urls.blog_scriptanat)
+script.open_url(urls.PYREVIT_BLOG_SCRIPTANAT)

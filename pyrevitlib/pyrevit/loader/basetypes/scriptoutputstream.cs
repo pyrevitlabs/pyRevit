@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-
 
 namespace PyRevitBaseClasses
 {
@@ -15,13 +13,14 @@ namespace PyRevitBaseClasses
         private WeakReference<PyRevitCommandRuntime> _pyrvtCmd;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
+        private bool _errored = false;
 
         public bool PrintDebugInfo = false;
 
 
         public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
         {
-            _outputBuffer = String.Empty;
+            _outputBuffer = string.Empty;
             _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(pyrvtCmd);
             _gui = new WeakReference<ScriptOutput>(null);
         }
@@ -29,13 +28,13 @@ namespace PyRevitBaseClasses
 
         public ScriptOutputStream(ScriptOutput gui)
         {
-            _outputBuffer = String.Empty;
+            _outputBuffer = string.Empty;
             _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
 
 
-        private ScriptOutput GetOutput()
+        public ScriptOutput GetOutput()
         {
             PyRevitCommandRuntime pyrvtCmd;
             var re = _pyrvtCmd.TryGetTarget(out pyrvtCmd);
@@ -80,12 +79,12 @@ namespace PyRevitBaseClasses
                 if (output.ClosedByUser)
                 {
                     _gui = null;
-                    _outputBuffer = String.Empty;
+                    _outputBuffer = string.Empty;
                     return;
                 }
 
+                _errored = true;
                 var err_div = output.ComposeEntry(error_msg.Replace("\n", "<br/>"), ExternalConfig.errordiv);
-
                 var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
                 foreach(string message_part in Split(output_err_message, 1024)) {
                     Write(Encoding.ASCII.GetBytes(message_part), 0, message_part.Length);
@@ -102,7 +101,7 @@ namespace PyRevitBaseClasses
                 if(output.ClosedByUser)
                 {
                     _gui = null;
-                    _outputBuffer = String.Empty;
+                    _outputBuffer = string.Empty;
                     return;
                 }
 
@@ -130,7 +129,7 @@ namespace PyRevitBaseClasses
                     _outputBuffer += text;
 
                     if(PrintDebugInfo) {
-                        output.AppendText(String.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
+                        output.AppendText(string.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
                     }
 
                     if (count < 1024)
@@ -144,10 +143,13 @@ namespace PyRevitBaseClasses
                         _outputBuffer = _outputBuffer.Replace("\t", "&emsp;&emsp;");
 
                         // write to output window
-                        output.AppendText(_outputBuffer, ExternalConfig.defaultelement);
+                        if (!_errored)
+                            output.AppendText(_outputBuffer, ExternalConfig.defaultelement);
+                        else
+                            output.AppendError(_outputBuffer, ExternalConfig.defaultelement);
 
                         // reset buffer and flush state for next time
-                        _outputBuffer = String.Empty;
+                        _outputBuffer = string.Empty;
                     }
                 }
             }

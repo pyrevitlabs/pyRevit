@@ -10,7 +10,7 @@ __doc__ = 'Select a revision from the list of revisions and '\
 
 
 revisions = forms.select_revisions(button_name='Select Revision',
-                                   multiselect=True)
+                                   multiple=True)
 
 if revisions:
     sheets = forms.select_sheets(button_name='Set Revision')

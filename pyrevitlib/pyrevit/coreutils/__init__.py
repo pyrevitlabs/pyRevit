@@ -1,4 +1,9 @@
-"""Misc Helper functions for pyRevit."""
+"""Misc Helper functions for pyRevit.
+
+Example:
+    >>> from pyrevit import coreutils
+    >>> coreutils.cleanup_string('some string')
+"""
 
 import os
 import os.path as op
@@ -10,16 +15,36 @@ import datetime
 import shutil
 import random
 import stat
+import codecs
 from collections import defaultdict
 
+#pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import framework
 from pyrevit import api
 
+# RE: https://github.com/eirannejad/pyRevit/issues/413
+# import uuid
+from System import Guid
 
-# pylama:ignore=D105
+
+#pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
+
+
+# extracted from
+# https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
+UNICODE_NONPRINTABLE_CHARS = [
+    u'\u2000', u'\u2001', u'\u2002', u'\u2003', u'\u2004', u'\u2005', u'\u2006',
+    u'\u2007', u'\u2008', u'\u2009', u'\u200A', u'\u200B', u'\u200C', u'\u200D',
+    u'\u200E', u'\u200F',
+    u'\u2028', u'\u2029', u'\u202A', u'\u202B', u'\u202C', u'\u202D', u'\u202E',
+    u'\u202F',
+    u'\u205F', u'\u2060',
+    u'\u2066', u'\u2067', u'\u2068', u'\u2069', u'\u206A', u'\u206B', u'\u206C'
+    u'\u206D', u'\u206E', u'\u206F'
+    ]
 
 
 class Timer:
@@ -65,8 +90,8 @@ class ScriptFileParser:
             file_address (str): python script file path
         """
         self.file_addr = file_address
-        with open(file_address, 'r') as f:
-            self.ast_tree = ast.parse(f.read())
+        with open(file_address, 'r') as source_file:
+            self.ast_tree = ast.parse(source_file.read())
 
     def get_docstring(self):
         """Get global docstring."""
@@ -168,7 +193,7 @@ def get_all_subclasses(parent_classes):
     for parent_class in parent_classes:
         try:
             derived_classes = parent_class.__subclasses__()
-            if len(derived_classes) == 0:
+            if not derived_classes:
                 sub_classes.append(parent_class)
             else:
                 sub_classes.extend(derived_classes)
@@ -187,9 +212,9 @@ def get_sub_folders(search_folder):
         list: list of subfolder names
     """
     sub_folders = []
-    for f in os.listdir(search_folder):
-        if op.isdir(op.join(search_folder, f)):
-            sub_folders.append(f)
+    for sub_folder in os.listdir(search_folder):
+        if op.isdir(op.join(search_folder, sub_folder)):
+            sub_folders.append(sub_folder)
     return sub_folders
 
 
@@ -242,7 +267,7 @@ SPECIAL_CHARS = {' ': '',
                  '*': 'STAR',
                  '+': 'PLUS',
                  ';': '', ':': '', ',': '', '\"': '',
-                 '{': '', '}': '', '[': '', ']': '', '\(': '', '\)': '',
+                 '{': '', '}': '', '[': '', ']': '', r'\(': '', r'\)': '',
                  '-': 'MINUS',
                  '=': 'EQUALS',
                  '<': '', '>': '',
@@ -250,7 +275,7 @@ SPECIAL_CHARS = {' ': '',
                  '.': 'DOT',
                  '_': 'UNDERS',
                  '|': 'VERT',
-                 '\/': '', '\\': ''}
+                 r'\/': '', '\\': ''}
 
 
 def cleanup_string(input_str):
@@ -435,6 +460,22 @@ def make_canonical_name(*args):
     return '.'.join(args)
 
 
+def get_canonical_parts(canonical_string):
+    """Splots argument using dot, returning all composing parts.
+
+    Args:
+        canonical_string(:obj:`str`): Source string e.g. "Config.SubConfig"
+
+    Returns:
+        list[:obj:`str`]: list of composing parts
+
+    Example:
+        >>> get_canonical_parts("Config.SubConfig")
+        ['Config', 'SubConfig']
+    """
+    return canonical_string.split('.')
+
+
 def get_file_name(file_path):
     """Return file basename of the given file.
 
@@ -474,7 +515,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
-    for root, dirs, files in os.walk(dir_path):
+    for root, dirs, files in os.walk(dir_path): #pylint: disable=W0612
         if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
             mtime_sum += op.getmtime(root)
             for filename in files:
@@ -545,6 +586,28 @@ def reverse_html(input_html):
     #         return False
 
 
+def can_access_url(url_to_open, timeout=1000):
+    """Check if url is accessible within timeout.
+
+    Args:
+        url_to_open (str): url to check access for
+        timeout (int): timeout in milliseconds
+
+    Returns:
+        bool: true if accessible
+    """
+    try:
+        client = framework.WebRequest.Create(url_to_open)
+        client.Method = "HEAD"
+        client.Timeout = timeout
+        client.Proxy = framework.WebProxy.GetDefaultProxy()
+        response = client.GetResponse()
+        response.GetResponseStream()
+        return True
+    except Exception:
+        return False
+
+
 def check_internet_connection(timeout=1000):
     """Check if internet connection is available.
 
@@ -554,27 +617,22 @@ def check_internet_connection(timeout=1000):
         timeout (int): timeout in milliseconds
 
     Returns:
-        bool: True if internet connection is present.
+        url if internet connection is present, None if no internet.
     """
-    def can_access(url_to_open):
-        try:
-            client = framework.WebRequest.Create(url_to_open)
-            client.Method = "HEAD"
-            client.Timeout = timeout
-            client.Proxy = framework.WebProxy.GetDefaultProxy()
-            response = client.GetResponse()
-            response.GetResponseStream()
-            return True
-        except Exception:
-                return False
-
-    for url in ["http://google.com/",
-                "http://github.com/",
-                "http://bitbucket.com/"]:
-        if can_access(url):
+    solid_urls = ["http://google.com/",
+                  "http://github.com/",
+                  "http://bitbucket.com/",
+                  "http://airtable.com/",
+                  "http://todoist.com/",
+                  "http://stackoverflow.com/",
+                  "http://twitter.com/",
+                  "http://youtube.com/"]
+    random.shuffle(solid_urls)
+    for url in solid_urls:
+        if can_access_url(url, timeout):
             return url
 
-    return False
+    return None
 
 
 def touch(fname, times=None):
@@ -622,27 +680,25 @@ def create_ext_command_attrs():
     regen_const_info = \
         framework.clr.GetClrType(api.Attributes.RegenerationAttribute) \
         .GetConstructor(
-               framework.Array[framework.Type](
-                   (api.Attributes.RegenerationOption,)
-                   )
-               )
+            framework.Array[framework.Type](
+                (api.Attributes.RegenerationOption,)
+                ))
 
     regen_attr_builder = \
         framework.CustomAttributeBuilder(
             regen_const_info,
             framework.Array[object](
                 (api.Attributes.RegenerationOption.Manual,)
-                )
-            )
+                ))
 
     # add TransactionAttribute to framework.Type
     trans_constructor_info = \
         framework.clr.GetClrType(api.Attributes.TransactionAttribute) \
         .GetConstructor(
-               framework.Array[framework.Type](
-                   (api.Attributes.TransactionMode,)
-                   )
-               )
+            framework.Array[framework.Type](
+                (api.Attributes.TransactionMode,)
+                )
+            )
 
     trans_attrib_builder = \
         framework.CustomAttributeBuilder(
@@ -703,13 +759,14 @@ def create_type(modulebuilder,
     type_list = []
     param_list = []
     for param in args:
-        if type(param) == str \
-                or type(param) == int:
+        if isinstance(param, str) \
+                or isinstance(param, int):
             type_list.append(type(param))
             param_list.append(param)
 
     # call base constructor
-    ci = type_class.GetConstructor(framework.Array[framework.Type](type_list))
+    constructor = \
+        type_class.GetConstructor(framework.Array[framework.Type](type_list))
     # create class constructor builder
     const_builder = \
         type_builder.DefineConstructor(framework.MethodAttributes.Public,
@@ -727,13 +784,13 @@ def create_type(modulebuilder,
             gen.Emit(framework.OpCodes.Ldc_I4, param)
 
     # call base constructor (consumes "this" and the created stack)
-    gen.Emit(framework.OpCodes.Call, ci)
+    gen.Emit(framework.OpCodes.Call, constructor)
     # Fill some space - this is how it is generated for equivalent C# code
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Nop)
     gen.Emit(framework.OpCodes.Ret)
-    type_builder.CreateType()
+    return type_builder.CreateType()
 
 
 def open_folder_in_explorer(folder_path):
@@ -753,7 +810,7 @@ def fully_remove_dir(dir_path):
     Args:
         dir_path (str): directory path
     """
-    def del_rw(action, name, exc):
+    def del_rw(action, name, exc):   #pylint: disable=W0613
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
 
@@ -773,7 +830,7 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Myfile-(3).txt')
         "Myfile3.txt"
     """
-    return re.sub('[^\w_.)( -]', '', file_name)
+    return re.sub(r'[^\w_.)( -]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
@@ -977,13 +1034,13 @@ def is_url_valid(url_string):
         True
     """
     regex = re.compile(
-            r'^(?:http|ftp)s?://'                   # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
-            r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-            r'localhost|'                           # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'                            # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'^(?:http|ftp)s?://'                   # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
+        r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'                           # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'                            # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     return regex.match(url_string)
 
@@ -1009,23 +1066,22 @@ def reformat_string(orig_str, orig_format, new_format):
         '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
     # find the tags
-    tag_extractor = re.compile('{(.*?)}')
+    tag_extractor = re.compile('{(.+?)}')
     tags = tag_extractor.findall(orig_format)
 
     # replace the tags with regex patterns
     # to create a regex pattern that finds values
-    tag_replacer = re.compile('{.*?}')
+    tag_replacer = re.compile('{.+?}')
     value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
     # find all values
     value_extractor = re.compile(value_extractor_pattern)
-    values = value_extractor.findall(orig_str)
-    if len(values) > 0:
-        values = values[0]
+    match = value_extractor.match(orig_str)
+    values = match.groups()
 
     # create a dictionary of tags and values
     reformat_dict = {}
-    for k, v in zip(tags, values):
-        reformat_dict[k] = v
+    for key, value in zip(tags, values):
+        reformat_dict[key] = value
 
     # use dictionary to reformat the string into new
     return new_format.format(**reformat_dict)
@@ -1129,7 +1185,7 @@ def random_rgba_color():
                                        random_alpha())
 
 
-def exract_range(formatted_str, max_range=500):
+def extract_range(formatted_str, max_range=500):
     """Extract range from formatted string.
 
     String must be formatted as below
@@ -1153,7 +1209,7 @@ def exract_range(formatted_str, max_range=500):
         >>> exract_range('M00A,M00B')
         ['M00A', 'M00B']
     """
-    for rchar, rchartype in {':': 'range', '-': 'range',
+    for rchar, rchartype in {'::': 'range', '--': 'range',
                              ',': 'list', ';': 'list'}.items():
         if rchar in formatted_str:
             if rchartype == 'range' \
@@ -1175,3 +1231,62 @@ def exract_range(formatted_str, max_range=500):
             elif rchartype == 'list':
                 return [x.strip() for x in formatted_str.split(rchar)]
     return [formatted_str]
+
+
+def correct_revittxt_encoding(filename):
+    """Convert encoding of text file generated by Revit to UTF-8.
+
+    Args:
+        filename (str): file path
+    """
+    with codecs.open(filename, 'r', 'utf_16_le') as oldf:
+        fcontent = oldf.readlines()
+    with codecs.open(filename, 'w', 'utf-8') as newf:
+        newf.writelines(fcontent)
+
+
+def has_nonprintable(input_str):
+    """Check input string for non-printable characters.
+
+    Args:
+        input_str (str): input string
+
+    Returns:
+        bool: True if contains non-printable characters
+    """
+    return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])
+
+
+def get_enum_none(enum_type):
+    """Returns the None value in given Enum."""
+    for val in framework.Enum.GetValues(enum_type):
+        if str(val) == 'None':
+            return val
+
+
+def extract_guid(source_str):
+    """Extract GUID number from a string."""
+    guid_match = re.match(".*([0-9A-Fa-f]{8}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{4}"
+                          "[-][0-9A-Fa-f]{12}).*", source_str)
+    if guid_match:
+        return guid_match.groups()[0]
+
+
+def format_hex_rgb(rgb_value):
+    """Formats rgb value as #RGB value string."""
+    if isinstance(rgb_value, str):
+        if not rgb_value.startswith('#'):
+            return '#%s' % rgb_value
+        else:
+            return rgb_value
+    elif isinstance(rgb_value, int):
+        return '#%x' % rgb_value
+
+
+def new_uuid():
+    # RE: https://github.com/eirannejad/pyRevit/issues/413
+    # return uuid.uuid1()
+    return str(Guid.NewGuid())

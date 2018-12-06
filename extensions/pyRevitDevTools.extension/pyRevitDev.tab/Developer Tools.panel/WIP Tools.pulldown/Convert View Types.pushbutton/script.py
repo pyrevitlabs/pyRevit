@@ -121,14 +121,14 @@ def create_dest_view(view_type, view_name, view_scale):
                 trans_identity.BasisZ = XYZ.BasisY    # view direction
                 view_direction.Transform = trans_identity
                 dest_view = ViewSection.CreateSection(doc, view_fam_typeid, view_direction)
-                scale_param = dest_view.LookupParameter('Hide at scales coarser than')
+                scale_param = dest_view.Parameter[DB.BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_IMPERIAL]
                 scale_param.Set(1)
             elif view_type == 'Elevation':
                 view_fam_typeid = doc.GetDefaultElementTypeId(ElementTypeGroup.ViewTypeElevation)
                 elev_marker = ElevationMarker.CreateElevationMarker(doc, view_fam_typeid, XYZ(0,0,0), 1)
                 default_floor_plan = find_first_floorplan()
                 dest_view = elev_marker.CreateElevation(doc, default_floor_plan.Id, 0)
-                scale_param = dest_view.LookupParameter('Hide at scales coarser than')
+                scale_param = dest_view.Parameter[DB.BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_IMPERIAL]
                 scale_param.Set(1)
             elif view_type == 'Drafting':
                 view_fam_typeid = doc.GetDefaultElementTypeId(ElementTypeGroup.ViewTypeDrafting)
@@ -136,7 +136,7 @@ def create_dest_view(view_type, view_name, view_scale):
 
             dest_view.ViewName = view_name
             dest_view.Scale = view_scale
-            model_visib_param = dest_view.LookupParameter('Display Model')
+            model_visib_param = dest_view.Parameter[DB.BuiltInParameter.VIEW_MODEL_DISPLAY_MODE]
             if model_visib_param:
                 model_visib_param.Set(2)
             dest_view.CropBoxActive = False

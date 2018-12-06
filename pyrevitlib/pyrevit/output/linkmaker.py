@@ -1,14 +1,12 @@
 """Handle creation of output window helper links."""
 
-import json
-
-from pyrevit import HOST_APP
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.coreutils.logger import get_logger
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 PROTOCOL_NAME = 'revit://outputhelpers?'

@@ -5,7 +5,8 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import git
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
@@ -25,7 +26,7 @@ class PyRevitVersion(object):
         """Returns version as an int tuple (major, minor, patch)"""
         try:
             patch_number = int(self.patch, 16)
-        except:
+        except Exception:
             patch_number = 0
         ver_tuple = (PyRevitVersion.major, PyRevitVersion.minor, patch_number)
         return ver_tuple
@@ -42,23 +43,24 @@ class PyRevitVersion(object):
                                          PyRevitVersion.minor,
                                          PyRevitVersion.metadata)
 
-        return formatted_ver if nopatch else formatted_ver + ':' + self.patch
+        return formatted_ver if (nopatch or not self.patch) \
+                             else formatted_ver + ':' + self.patch
 
 
 def get_pyrevit_repo():
     try:
         return git.get_repo(HOME_DIR)
     except Exception as repo_err:
-        logger.error('Can not create repo from directory: {} | {}'
-                     .format(HOME_DIR, repo_err))
+        mlogger.debug('Can not create repo from directory: %s | %s',
+                      HOME_DIR, repo_err)
 
 
 def get_pyrevit_version():
     try:
         pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
-        logger.error('Can not get pyRevit patch number. | {}'.format(ver_err))
-        pyrvt_ver = PyRevitVersion('?')
+        mlogger.debug('Can not get pyRevit patch number. | %s', ver_err)
+        pyrvt_ver = PyRevitVersion('')
 
     envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
                                 pyrvt_ver.get_formatted())

@@ -1,4 +1,9 @@
 Wipe Model Components
-Remove All Constraints Attached To Selected Obj
-Delete Site Designer Line Styles
-Fix Unpurgable Viewport Types
+Wipe Attached Constraints
+Wipe Site Designer Line Styles
+Wipe Unpurgable Viewport Types
+Wipe Data Schema
+Wipe SubCategories
+Wipe Unused Filters
+Wipe Unused View Templates
+Wipe Empty Elevation Tags

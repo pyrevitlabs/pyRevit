@@ -2,41 +2,23 @@
 extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
+!extensions/pyRevitTemplates.extension/
+!extensions/pyRevitTags.extension/
 !extensions/pyRevitTools.extension/
 !extensions/pyRevitTutor.extension/
 !extensions/extensions.json
 !extensions/README.md
 
-# ignore third-party lib folder
-lib/*
-!lib/README.md
-!lib/enum
-!lib/customcollections
-!lib/requests
-!lib/urllib3
-
-# ignore pyCharm workspace settings
-.idea/workspace.xml
-
 # ignore visual studio files
 **/.vs
-**/bin
+**/.suo
 **/obj
+**/packages
+**/pyRevitLoader/bin
 
 # ignore sphinx build files
 docs/_*
 !docs/_static
-
-# ignore release files
-release/*.exe
-release/setupmaker/output/*
-
-# ignore uninstaller files that will be copied to this folder at installation
-unins*.dat
-unins*.exe
-
-# ignore Goodsync cache folder
-_gsdata_/
 
 # ignore standard python and os temp files
 __py*
@@ -47,4 +29,8 @@ __py*
 *.pyc
 
 # ignore local config file
-pyRevit_config.ini
+*.ini
+
+# Release files
+release/pyRevit-cache
+release/pyRevit-SetupFiles

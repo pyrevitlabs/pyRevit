@@ -5,7 +5,7 @@ from pyrevit import revit
 
 
 __context__ = 'Selection'
-__helpurl__ = 'https://www.youtube.com/watch?v=pAM-ARIXXLw'
+__helpurl__ = '{{docpath}}pAM-ARIXXLw'
 __doc__ = 'Clear memory and Append current selection.\n'\
           'Works like the MC and M+ button in a calculator. '\
           'This is a project-dependent memory. Every project has its own '\

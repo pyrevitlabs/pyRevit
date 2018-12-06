@@ -50,8 +50,10 @@ for view_id in clouded_views:
         rev_creator = \
             DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
                                                           rev_cloud.Id).Creator
-        if rev_cloud.LookupParameter("Comments").HasValue:
-            rev_comments = rev_cloud.LookupParameter("Comments").AsString()
+        commet_param = \
+            rev_cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        if commet_param.HasValue:
+            rev_comments = commet_param.AsString()
         else:
             rev_comments = ""
 

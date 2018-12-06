@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
 
+from pyrevit import HOST_APP
 from pyrevit import coreutils
 from pyrevit import versionmgr
+from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
@@ -15,6 +17,8 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
           'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
+Revit = TargetApps.Revit
+
 
 class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
@@ -22,25 +26,34 @@ class AboutWindow(forms.WPFWindow):
 
         pyrvtabout = about.get_pyrevit_about()
 
+        pyrvt_ver = versionmgr.get_pyrevit_version()
+        nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
+        short_version = \
+            ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
+
+        self.branch_name = self.deployname = None
+        # check to see if git repo is valid
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
-            pyrvt_ver = versionmgr.get_pyrevit_version()
-            nice_version = 'v{}'.format(pyrvt_ver.get_formatted())
-            short_version = \
-                ' v{}'.format(pyrvt_ver.get_formatted(nopatch=True))
             self.branch_name = pyrvt_repo.branch
+            self.show_element(self.git_branch)
         except Exception:
-            nice_version = short_version = ''
-            self.branch_name = None
+            # other wise try to get deployment name
+            attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
+            if attachment:
+                try:
+                    self.deployname = attachment.Clone.GetDeployment().Name
+                    self.show_element(self.repo_deploy)
+                except Exception as e:
+                    pass
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.pyrevit_version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
-        self.pyrevit_engine.Text = 'Running on IronPython {}.{}.{}'\
-                                   .format(sys.version_info.major,
-                                           sys.version_info.minor,
-                                           sys.version_info.micro)
+        self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
+        self.pyrevit_engine.Text = 'Running on IronPython {}'\
+                                   .format(sys.version.split('(')[0].strip())
 
         rocketmodetext = \
             'Rocket-mode {}' \
@@ -53,39 +66,40 @@ class AboutWindow(forms.WPFWindow):
         self.copyright_tb.Text = pyrvtabout.copyright
 
     def opencredits(self, sender, args):
-        script.open_url(urls.credits)
+        script.open_url(urls.PYREVIT_CREDITS)
 
     def opendocs(self, sender, args):
-        script.open_url(urls.docs)
+        script.open_url(urls.PYREVIT_DOCS)
 
     def openblog(self, sender, args):
-        script.open_url(urls.blog)
+        script.open_url(urls.PYREVIT_BLOG)
 
     def opengithubrepopage(self, sender, args):
-        script.open_url(urls.github)
+        script.open_url(urls.PYREVIT_GITHUB)
 
     def openyoutubechannel(self, sender, args):
-        script.open_url(urls.youtube)
+        script.open_url(urls.PYREVIT_YOUTUBE)
 
     def opensupportpage(self, sender, args):
-        script.open_url(urls.patron)
+        script.open_url(urls.PYREVIT_PATREON)
 
     def opengithubcommits(self, sender, args):
         if self.branch_name:
             commits_url = \
-                urls.githubbranchcommits.format(branch=self.branch_name)
+                urls.PYREVIT_GITHUBBRANCH_COMMIT.format(branch=self.branch_name)
             script.open_url(commits_url)
 
     def opengithubbranch(self, sender, args):
         if self.branch_name:
-            branch_url = urls.githubbranch.format(branch=self.branch_name)
+            branch_url = \
+                urls.PYREVIT_GITHUBBRANCH.format(branch=self.branch_name)
             script.open_url(branch_url)
 
     def openreleasenotes(self, sender, args):
-        script.open_url(urls.releasenotes)
+        script.open_url(urls.PYREVIT_RELEASENOTES)
 
     def openkeybaseprofile(self, sender, args):
-        script.open_url(urls.profile_ein)
+        script.open_url(urls.PROFILE_EIN)
 
     def handleclick(self, sender, args):
         self.Close()

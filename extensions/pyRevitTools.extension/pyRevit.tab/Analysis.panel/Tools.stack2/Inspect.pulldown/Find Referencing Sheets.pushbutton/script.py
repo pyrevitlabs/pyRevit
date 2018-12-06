@@ -30,7 +30,7 @@ for s in sheets:
     if curview.Id in vpsIds:
         count += 1
         print('NUMBER: {0}   NAME:{1}'
-              .format(s.LookupParameter('Sheet Number').AsString().rjust(10),
-                      s.LookupParameter('Sheet Name').AsString().ljust(50)))
+              .format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10),
+                      s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)))
 
 print('\n\nView is referenced on {0} sheets.'.format(count))

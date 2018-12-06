@@ -21,10 +21,10 @@ def verify_selection(selected_elems, doc):
             return True
         else:
             forms.alert('More than one element is selected or selected '
-                        'element is not an ACIS Solid.', exit=True)
+                        'element is not an ACIS Solid.', exitscript=True)
     else:
         forms.alert('Please select one imported ACIS SAT DirectShape '
-                    'while in Family Editor.', exit=True)
+                    'while in Family Editor.', exitscript=True)
     return False
 
 

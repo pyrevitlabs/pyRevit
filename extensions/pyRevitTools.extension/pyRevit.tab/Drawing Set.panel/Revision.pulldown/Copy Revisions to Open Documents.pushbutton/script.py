@@ -9,9 +9,9 @@ __doc__ = 'Copy selected revisions from current model ' \
 
 
 selected_revisions = forms.select_revisions(button_name='Select Revision',
-                                            multiselect=True)
+                                            multiple=True)
 if selected_revisions:
-    dest_docs = forms.select_dest_docs()
+    dest_docs = forms.select_open_docs(title='Select Destination Documents')
     if dest_docs:
         for ddoc in dest_docs:
             with revit.Transaction('Copy Revisions', doc=ddoc):

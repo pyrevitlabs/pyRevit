@@ -16,10 +16,10 @@ view_ref_prefixes = {DB.ViewType.CeilingPlan: 'Reflected Ceiling Plan: ',
 
 def find_sheeted_unrefed_views(view_list):
     for v in view_list:
-        sheetnum = v.LookupParameter('Sheet Number')
-        detnum = v.LookupParameter('Detail Number')
-        refsheet = v.LookupParameter('Referencing Sheet')
-        refviewport = v.LookupParameter('Referencing Detail')
+        sheetnum = v.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
+        detnum = v.Parameter[DB.BuiltInParameter.VIEWER_DETAIL_NUMBER]
+        refsheet = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET]
+        refviewport = v.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL]
         # is the view placed on a sheet?
         if sheetnum \
                 and detnum \
@@ -30,7 +30,8 @@ def find_sheeted_unrefed_views(view_list):
                     and refviewport \
                     and refsheet.AsString() != '' \
                     and refviewport.AsString() != '' \
-                    or (view_ref_prefixes[v.ViewType] + v.ViewName) \
+                    or (v.ViewType in view_ref_prefixes
+                        and (view_ref_prefixes[v.ViewType] + v.ViewName))\
                     in view_refs_names:
                 continue
             else:
@@ -58,7 +59,8 @@ view_refs = DB.FilteredElementCollector(revit.doc)\
 
 view_refs_names = set()
 for view_ref in view_refs:
-    ref_param = view_ref.LookupParameter('Target view')
+    ref_param = \
+        view_ref.Parameter[DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW]
     view_refs_names.add(ref_param.AsValueString())
 
 dviews = []

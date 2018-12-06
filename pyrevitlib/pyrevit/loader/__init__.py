@@ -1,4 +1,4 @@
-import os.path as op
+"""Loader base module."""
 from pyrevit import EXEC_PARAMS
 
 

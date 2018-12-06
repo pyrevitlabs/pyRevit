@@ -1,9 +1,9 @@
 from collections import namedtuple
-from customcollections import DefaultOrderedDict
 
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.coreutils import pyutils
 
 
 __context__ = 'selection'
@@ -138,7 +138,7 @@ def process_options(element_list):
 
 
 def process_sets(element_list):
-    el_sets = DefaultOrderedDict(list)
+    el_sets = pyutils.DefaultOrderedDict(list)
 
     # add all elements as first set, for totals of all elements
     el_sets['All Selected Elements'].extend(element_list)
@@ -149,8 +149,9 @@ def process_sets(element_list):
             el_sets[el.LineStyle.Name].append(el)
         else:
             eltype = revit.doc.GetElement(el.GetTypeId())
-            wrapped_eltype = revit.ElementWrapper(eltype)
-            el_sets[wrapped_eltype.name].append(el)
+            if eltype:
+                wrapped_eltype = revit.ElementWrapper(eltype)
+                el_sets[wrapped_eltype.name].append(el)
 
     return el_sets
 

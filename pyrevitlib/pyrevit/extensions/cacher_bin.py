@@ -1,11 +1,12 @@
+"""Base module to handle extension binary caching."""
 import pickle
 
 from pyrevit import PyRevitException
-import pyrevit.coreutils.appdata as appdata
+from pyrevit.coreutils import appdata
 from pyrevit.coreutils.logger import get_logger
 
-
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 loaded_extensions = []
@@ -18,9 +19,9 @@ def _get_cache_file(cached_ext):
 
 def update_cache(parsed_ext):
     try:
-        logger.debug('Writing cache for: {}'.format(parsed_ext))
+        mlogger.debug('Writing cache for: %s', parsed_ext)
         cache_file = _get_cache_file(parsed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        mlogger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'wb') as bin_cache_file:
             pickle.dump(parsed_ext, bin_cache_file, pickle.HIGHEST_PROTOCOL)
     except Exception as err:
@@ -34,9 +35,9 @@ def get_cached_extension(installed_ext):
             return loaded_ext
 
     try:
-        logger.debug('Reading cache for: {}'.format(installed_ext))
+        mlogger.debug('Reading cache for: %s', installed_ext)
         cache_file = _get_cache_file(installed_ext)
-        logger.debug('Cache file is: {}'.format(cache_file))
+        mlogger.debug('Cache file is: %s', cache_file)
         with open(cache_file, 'rb') as bin_cache_file:
             unpickled_pkg = pickle.load(bin_cache_file)
     except Exception as err:
@@ -49,18 +50,18 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext = get_cached_extension(extension)
-        logger.debug('Extension cache directory is: {} for: {}'
-                     .format(extension.directory, extension))
+        mlogger.debug('Extension cache directory is: %s for: %s',
+                      extension.directory, extension)
         cache_dir_valid = \
             cached_ext.directory == extension.directory
 
-        logger.debug('Extension cache version is: {} for: {}'
-                     .format(extension.pyrvt_version, extension))
+        mlogger.debug('Extension cache version is: %s for: %s',
+                      extension.pyrvt_version, extension)
         cache_version_valid = \
             cached_ext.pyrvt_version == extension.pyrvt_version
 
-        logger.debug('Extension hash value is: {} for: {}'
-                     .format(extension.dir_hash_value, extension))
+        mlogger.debug('Extension hash value is: %s for: %s',
+                      extension.dir_hash_value, extension)
         cache_hash_valid = \
             cached_ext.dir_hash_value == extension.dir_hash_value
 
@@ -75,11 +76,11 @@ def is_cache_valid(extension):
         return cache_valid
 
     except PyRevitException as err:
-        logger.debug('Error reading cache file or file is not available: {}'
-                     .format(err))
+        mlogger.debug('Error reading cache file or file is not available: %s',
+                      err)
         return False
 
     except Exception as err:
-        logger.debug('Error determining cache validity: {} | {}'
-                     .format(extension, err))
+        mlogger.debug('Error determining cache validity: %s | %s',
+                      extension, err)
         return False

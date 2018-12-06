@@ -18,7 +18,7 @@ logger = script.get_logger()
 selected_views = []
 
 
-if __shiftclick__:    #noqa
+if __shiftclick__:
     selected_views = forms.select_views()
 else:
     # get selection and verify a view is selected
@@ -37,7 +37,7 @@ else:
     else:
         selected_view = revit.activeview
         if not isinstance(selected_view, DB.View):
-            forms.alert('Active view must be placable on a sheet.', exit=True)
+            forms.alert('Active view must be placable on a sheet.', exitscript=True)
         logger.debug('Selected view: {}'.format(selected_view))
         selected_views = [selected_view]
 
