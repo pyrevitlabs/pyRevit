@@ -2,7 +2,7 @@
 
 
 __title__ = 'Get Extension\nHash Values'
-
+# __beta__ = True
 
 from pyrevit import script
 from pyrevit.extensions import extensionmgr
