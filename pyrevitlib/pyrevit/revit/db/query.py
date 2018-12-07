@@ -765,3 +765,33 @@ def get_subcategory(category_name, subcategory_name, doc=None):
             for subcat in cat.SubCategories:
                 if subcat.Name == subcategory_name:
                     return subcat
+
+
+def get_keynote_file(doc=None):
+    doc = doc or HOST_APP.doc
+    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+    knote_table_ref = knote_table.GetExternalFileReference()
+    return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
+        knote_table_ref.GetAbsolutePath()
+        )
+
+
+def get_used_keynotes(doc=None):
+    doc = doc or HOST_APP.doc
+    return DB.FilteredElementCollector(doc)\
+             .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+
+
+def get_available_keynotes(doc=None):
+    doc = doc or HOST_APP.doc
+    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+    return knote_table.GetKeyBasedTreeEntries()
+
+
+def get_available_keynotes_tree(doc=None):
+    doc = doc or HOST_APP.doc
+    knotes = get_available_keynotes(doc=doc)
+    # TODO: implement knotes tree
+    raise NotImplementedError()

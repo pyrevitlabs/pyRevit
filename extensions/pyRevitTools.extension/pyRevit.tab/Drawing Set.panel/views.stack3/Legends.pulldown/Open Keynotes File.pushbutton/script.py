@@ -7,19 +7,11 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__author__ = 'Dan Mapes'
+__author__ = 'Dan Mapes\n{{author}}'
 __contact__ = 'https://github.com/DMapes'
 
 
-logger = script.get_logger()
-
-
-kt = DB.KeynoteTable.GetKeynoteTable(revit.doc)
-kt_ref = kt.GetExternalFileReference()
-path = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(
-    kt_ref.GetAbsolutePath()
-    )
-
+path = revit.query.get_keynote_file()
 if not path:
     forms.alert('No keynote file is assigned.')
 else:
