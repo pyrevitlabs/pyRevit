@@ -26,6 +26,7 @@ namespace PyRevitBaseClasses
         public int resultcode { get; set; }
         public Dictionary<string, string> commandresults { get; set; }
         public string scriptpath { get; set; }
+        public Dictionary<string, object> trace { get; set; }
 
         public LogEntry()
         {
@@ -36,7 +37,7 @@ namespace PyRevitBaseClasses
                         string pyRevitVersion,
                         bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName, string pyRevitCommandPath,
-                        int executorResultCode, Dictionary<string, string> resultDict)
+                        int executorResultCode, Dictionary<string, string> resultDict, string engineVesion, List<string> enginePaths, string ipyTrace, string clrTrace)
         {
             username = revitUsername;
             revit = revitVersion;
@@ -52,6 +53,14 @@ namespace PyRevitBaseClasses
             scriptpath = pyRevitCommandPath;
             resultcode = executorResultCode;
             commandresults = resultDict;
+            trace = new Dictionary<string, object>() {
+                { "engine", new Dictionary<string, object>(){
+                    { "version",  engineVesion},
+                    { "syspath", enginePaths},
+                } },
+                { "ipy" , ipyTrace},
+                { "clr", clrTrace }
+            };
         }
 
         public void TimeStamp()
@@ -98,11 +107,11 @@ namespace PyRevitBaseClasses
             string jsonData = "[]";
             if (File.Exists(_usageLogFilePath))
             {
-                jsonData = System.IO.File.ReadAllText(_usageLogFilePath);
+                jsonData = File.ReadAllText(_usageLogFilePath);
             }
             else
             {
-                System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
+                File.WriteAllText(_usageLogFilePath, jsonData);
             }
 
             // De-serialize to object or create new list
@@ -114,7 +123,7 @@ namespace PyRevitBaseClasses
 
             // Update json data string
             jsonData = new JavaScriptSerializer().Serialize(logData);
-            System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
+            File.WriteAllText(_usageLogFilePath, jsonData);
         }
 
         public static void LogUsage(LogEntry logEntry)

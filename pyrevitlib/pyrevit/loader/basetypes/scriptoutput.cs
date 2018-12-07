@@ -270,7 +270,7 @@ namespace PyRevitBaseClasses {
             this.Activated += ScriptOutput_GotFocus;
             this.Deactivated += ScriptOutput_LostFocus;
 
-            this.Title = "pyRevit";
+            this.OutputTitle = "pyRevit";
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
@@ -317,6 +317,15 @@ namespace PyRevitBaseClasses {
 
         public void WaitReadyBrowser() {
             System.Windows.Forms.Application.DoEvents();
+        }
+
+        public string OutputTitle {
+            get {
+                return Title;
+            }
+            set {
+                Title = value;
+            }
         }
 
         public void LockSize() {
@@ -674,7 +683,7 @@ namespace PyRevitBaseClasses {
         }
 
         private string SaveContentsToTemp() {
-            string tempHtml = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), string.Format("{0}.html", Title));
+            string tempHtml = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), string.Format("{0}.html", OutputTitle));
             var f = File.CreateText(tempHtml);
             f.Write(GetFullHtml());
             f.Close();

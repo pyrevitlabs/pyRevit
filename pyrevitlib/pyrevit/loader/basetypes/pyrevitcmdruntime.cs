@@ -5,10 +5,8 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
 
-namespace PyRevitBaseClasses
-{
-	public class PyRevitCommandRuntime: IDisposable
-	{
+namespace PyRevitBaseClasses {
+    public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private ElementSet _elements = null;
 
@@ -36,6 +34,8 @@ namespace PyRevitBaseClasses
         private EnvDictionary _envDict = new EnvDictionary();
 
         private int _execResults = 0;
+        private string _ipyTrace = "";
+        private string _clrTrace = "";
         private Dictionary<string, string> _resultsDict = null;
 
 
@@ -55,8 +55,7 @@ namespace PyRevitBaseClasses
                                      bool refreshEngine,
                                      bool forcedDebugMode,
                                      bool altScriptMode,
-                                     bool executedFromUI)
-        {
+                                     bool executedFromUI) {
             _commandData = cmdData;
             _elements = elements;
 
@@ -79,27 +78,26 @@ namespace PyRevitBaseClasses
             _execFromUI = executedFromUI;
         }
 
-        public ExternalCommandData CommandData
-        {
-            get
-            {
+        public ExternalCommandData CommandData {
+            get {
                 return _commandData;
             }
         }
 
-        public ElementSet SelectedElements
-        {
-            get
-            {
+        public ElementSet SelectedElements {
+            get {
                 return _elements;
             }
         }
 
+        public string EngineVersion {
+            get {
+                return PyRevitLoader.ScriptExecutor.EngineVersion;
+            }
+        }
 
-        public string ScriptSourceFile
-        {
-            get
-            {
+        public string ScriptSourceFile {
+            get {
                 if (_altScriptMode)
                     return _alternateScriptSource;
                 else
@@ -107,34 +105,26 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public string OriginalScriptSourceFile
-        {
-            get
-            {
+        public string OriginalScriptSourceFile {
+            get {
                 return _scriptSource;
             }
         }
 
-        public string AlternateScriptSourceFile
-        {
-            get
-            {
+        public string AlternateScriptSourceFile {
+            get {
                 return _alternateScriptSource;
             }
         }
 
-        public List<string> ModuleSearchPaths
-        {
-            get
-            {
+        public List<string> ModuleSearchPaths {
+            get {
                 return new List<string>(_syspaths.Split(';'));
             }
         }
 
-        public List<string> Arguments
-        {
-            get
-            {
+        public List<string> Arguments {
+            get {
                 var argv = new List<string>();
 
                 // add script source as the first argument
@@ -148,108 +138,83 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public string HelpSource
-        {
-            get
-            {
+        public string HelpSource {
+            get {
                 return _helpSource;
             }
         }
 
-        public string CommandName
-        {
-            get
-            {
+        public string CommandName {
+            get {
                 return _cmdName;
             }
         }
 
-        public string CommandUniqueId
-        {
-            get
-            {
+        public string CommandUniqueId {
+            get {
                 return _cmdUniqueName;
             }
         }
 
-        public string CommandBundle
-        {
-            get
-            {
+        public string CommandBundle {
+            get {
                 return _cmdBundle;
             }
         }
 
-        public string CommandExtension
-        {
-            get
-            {
+        public string CommandExtension {
+            get {
                 return _cmdExtension;
             }
         }
 
-        public bool NeedsCleanEngine
-        {
-            get
-            {
+        public bool NeedsCleanEngine {
+            get {
                 return _needsCleanEngine;
             }
         }
 
-        public bool NeedsFullFrameEngine
-        {
-            get
-            {
+        public bool NeedsFullFrameEngine {
+            get {
                 return _needsFullFrameEngine;
             }
         }
 
-        public bool NeedsRefreshedEngine
-        {
-            get
-            {
+        public bool NeedsRefreshedEngine {
+            get {
                 return _refreshEngine;
             }
         }
 
-        public bool DebugMode
-        {
-            get
-            {
+        public bool DebugMode {
+            get {
                 return _forcedDebugMode;
             }
         }
 
-        public bool AlternateMode
-        {
-            get
-            {
+        public bool AlternateMode {
+            get {
                 return _altScriptMode;
             }
         }
 
-        public bool ExecutedFromUI
-        {
-            get
-            {
+        public bool ExecutedFromUI {
+            get {
                 return _execFromUI;
             }
         }
 
-        public ScriptOutput OutputWindow
-        {
-            get
-            {
+        public ScriptOutput OutputWindow {
+            get {
                 // get ScriptOutput from the weak reference
                 ScriptOutput output;
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (re && output != null)
                     return output;
-                else
-                {
+                else {
                     // Stating a new output window
                     var newOutput = new ScriptOutput(DebugMode, UIApp);
-                    newOutput.Title = _cmdName;              // Set output window title to command name
+                    newOutput.OutputTitle = _cmdName;              // Set output window title to command name
                     newOutput.OutputId = _cmdUniqueName;     // Set window identity to the command unique identifier
                     _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
                     return newOutput;
@@ -257,17 +222,14 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public ScriptOutputStream OutputStream
-        {
-            get
-            {
+        public ScriptOutputStream OutputStream {
+            get {
                 // get ScriptOutputStream from the weak reference
                 ScriptOutputStream outputStream;
                 var re = _outputStream.TryGetTarget(out outputStream);
                 if (re && outputStream != null)
                     return outputStream;
-                else
-                {
+                else {
                     // Setup the output stream
                     ScriptOutputStream newStream = new ScriptOutputStream(this);
                     _outputStream = new WeakReference<ScriptOutputStream>(newStream);
@@ -276,60 +238,65 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public int ExecutionResult
-        {
-            get
-            {
+        public int ExecutionResult {
+            get {
                 return _execResults;
             }
-            set
-            {
+            set {
                 _execResults = value;
             }
         }
 
-        public Dictionary<string, string> GetResultsDictionary()
-        {
-            if(_resultsDict == null)
+        public string IronPythonTraceBack {
+            get {
+                return _ipyTrace;
+            }
+            set {
+                _ipyTrace = value;
+            }
+        }
+
+        public string ClrTraceBack {
+            get {
+                return _clrTrace;
+            }
+            set {
+                _clrTrace = value;
+            }
+        }
+
+        public Dictionary<string, string> GetResultsDictionary() {
+            if (_resultsDict == null)
                 _resultsDict = new Dictionary<string, string>();
 
             return _resultsDict;
         }
 
-        public UIApplication UIApp
-        {
-            get
-            {
+        public UIApplication UIApp {
+            get {
                 return _commandData.Application;
             }
         }
 
-        public Application App
-        {
-            get
-            {
+        public Application App {
+            get {
                 return _commandData.Application.Application;
             }
         }
 
-        public string PyRevitVersion
-        {
-            get
-            {
+        public string PyRevitVersion {
+            get {
                 return _envDict.pyRevitVersion;
             }
         }
 
-        public string SessionUUID
-        {
-            get
-            {
+        public string SessionUUID {
+            get {
                 return _envDict.sessionUUID;
             }
         }
 
-        public LogEntry MakeLogEntry()
-        {
+        public LogEntry MakeLogEntry() {
             return new LogEntry(App.Username,
                                 App.VersionNumber,
                                 App.VersionBuild,
@@ -343,11 +310,14 @@ namespace PyRevitBaseClasses
                                 CommandUniqueId,
                                 ScriptSourceFile,
                                 ExecutionResult,
-                                GetResultsDictionary());
+                                GetResultsDictionary(),
+                                EngineVersion,
+                                ModuleSearchPaths,
+                                IronPythonTraceBack,
+                                ClrTraceBack);
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             _scriptOutput = null;
             _outputStream = null;
             _resultsDict = null;
