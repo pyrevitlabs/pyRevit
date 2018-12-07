@@ -72,7 +72,7 @@ namespace PyRevitBaseClasses
                 pyrvtCmd.IronPythonTraceBack = _ipy_err_messages;
 
                 _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
-                pyrvtCmd.ClrTraceBack = _ipy_err_messages;
+                pyrvtCmd.ClrTraceBack = _dotnet_err_message;
 
                 _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
                 _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
