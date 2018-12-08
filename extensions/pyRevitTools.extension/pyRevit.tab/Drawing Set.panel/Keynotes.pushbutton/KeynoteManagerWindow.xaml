@@ -124,6 +124,11 @@
                                     Padding="8,4,8,4"
                                     ToolTip="Removes Tag from elements. Does not delete the elements."
                                     IsEnabled="False"/>
+                            <Button Content="Toggle History"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip="Removes Tag from elements. Does not delete the elements."
+                                    IsEnabled="False"/>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

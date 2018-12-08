@@ -4,7 +4,7 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
-__title__ = ""
+__title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
 __context__ = ""
 
