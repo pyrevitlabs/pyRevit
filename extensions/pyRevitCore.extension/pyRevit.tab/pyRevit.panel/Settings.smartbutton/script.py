@@ -141,7 +141,8 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_user_extensions_list(self):
         """Reads the user extension folders and updates the list"""
-        self.extfolders_lb.ItemsSource = user_config.core.userextensions
+        self.extfolders_lb.ItemsSource = \
+            user_config.get_thirdparty_ext_root_dirs(include_default=False)
 
     def _setup_env_vars_list(self):
         """Reads the pyRevit environment variables and updates the list"""
@@ -381,10 +382,11 @@ class SettingsWindow(forms.WPFWindow):
 
         # set extension folders from the list, after cleanup empty items
         if isinstance(self.extfolders_lb.ItemsSource, list):
-            user_config.core.userextensions = \
+            user_config.set_thirdparty_ext_root_dirs(
                 coreutils.filter_null_items(self.extfolders_lb.ItemsSource)
+            )
         else:
-            user_config.core.userextensions = []
+            user_config.set_thirdparty_ext_root_dirs([])
 
         # set usage logging configs
         user_config.usagelogging.active = self.usagelogging_cb.IsChecked
