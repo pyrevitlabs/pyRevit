@@ -101,6 +101,9 @@ class AboutWindow(forms.WPFWindow):
     def openkeybaseprofile(self, sender, args):
         script.open_url(urls.PROFILE_EIN)
 
+    def openlicensepage(self, sender, args):
+        script.open_url(urls.PYREVIT_LICENSE)
+
     def handleclick(self, sender, args):
         self.Close()
 

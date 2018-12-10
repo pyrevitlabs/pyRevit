@@ -297,6 +297,8 @@
                             Click="openyoutubechannel"/>
                 </WrapPanel>
                 <WrapPanel HorizontalAlignment="Center">
+                    <Button Content="License" FontSize="14"
+                            Click="openlicensepage"/>
                     <Button Content="Support" FontSize="14"
                             Click="opensupportpage"/>
                     <Button Content="Release Notes" FontSize="14"
