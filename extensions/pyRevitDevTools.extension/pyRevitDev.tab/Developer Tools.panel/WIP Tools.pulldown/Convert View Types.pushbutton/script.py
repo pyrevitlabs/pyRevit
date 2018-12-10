@@ -22,7 +22,7 @@ output = script.get_output()
 
 selected_level = None
 
-view_types_dict = {'Floor Plan': DB.ViewPlan,
+VIEW_TYPES_DICT = {'Floor Plan': DB.ViewPlan,
                    'Section': DB.ViewSection,
                    'Reflected Ceiling Plan': DB.ViewPlan,
                    'Elevation': DB.ViewSection,
@@ -30,6 +30,10 @@ view_types_dict = {'Floor Plan': DB.ViewPlan,
                    # 'Area Plan': DB.ViewPlan,
                    # 'Structural Plan': DB.ViewPlan,
                    }
+
+# 'Views' skips the view references and crop boundaries in model views
+# when converting from model to drafting view
+EXCLUDE_CATS = ['Views']
 
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
@@ -72,7 +76,7 @@ def process_selection():
 
 
 def get_modelview_type():
-    switch = forms.CommandSwitchWindow.show(view_types_dict.keys(),
+    switch = forms.CommandSwitchWindow.show(VIEW_TYPES_DICT.keys(),
                                             message='Pick view type:')
     if switch:
         return switch
@@ -169,6 +173,7 @@ def create_dest_view(view_type, view_name, view_scale):
                     DB.BuiltInParameter.SECTION_COARSER_SCALE_PULLDOWN_IMPERIAL
                     ]
                 scale_param.Set(1)
+
             elif view_type == 'Drafting':
                 view_fam_typeid = \
                     doc.GetDefaultElementTypeId(
@@ -200,7 +205,9 @@ def get_copyable_elements(source_view):
         DB.FilteredElementCollector(doc, source_view.Id).ToElements()
     elements_to_copy = []
     for el in view_elements:
-        if isinstance(el, DB.Element) and el.Category:
+        if isinstance(el, DB.Element) \
+                and el.Category \
+                and el.Category.Name not in EXCLUDE_CATS:
             elements_to_copy.append(el.Id)
         else:
             logger.debug('Skipping Element with id: {0}'.format(el.Id))
