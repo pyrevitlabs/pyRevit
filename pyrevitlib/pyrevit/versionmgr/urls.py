@@ -1,5 +1,6 @@
 """pyRevit related links."""
 
+PYREVIT_LICENSE = 'https://choosealicense.com/licenses/gpl-3.0/'
 PYREVIT_CREDITS = 'http://eirannejad.github.io/pyRevit/credits/'
 PYREVIT_DOCS = 'http://pyrevit.readthedocs.io/en/latest/'
 PYREVIT_BLOG = 'http://eirannejad.github.io/pyRevit/'
