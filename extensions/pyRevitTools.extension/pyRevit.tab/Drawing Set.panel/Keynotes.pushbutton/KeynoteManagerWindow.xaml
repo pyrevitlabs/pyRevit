@@ -1,12 +1,13 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="False"
-        Width="800" Height="600"
+        Width="750" Height="700"
         MinWidth="600" MinHeight="435"
         ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
-        Title="Manage Keynotes">
+        Title="Manage Keynotes"
+        Closed="window_closed">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
             <Setter Property="Background" Value="White"/>
@@ -40,32 +41,33 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="160"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="keynotes_tv" Margin="0,10,10,0" Grid.Column="0">
-                <TreeView.Items>
-                    <TreeViewItem Header="A0 Architecture" IsExpanded="True">
-                        <TreeViewItem Header="A001 Example Keynote" />
-                        <TreeViewItem Header="A002 Example Keynote" />
-                        <TreeViewItem Header="A003 Example Keynote" />
-                    </TreeViewItem>
-                    <TreeViewItem Header="S0 Structure" IsExpanded="True">
-                        <TreeViewItem Header="S001 Example Keynote" />
-                        <TreeViewItem Header="S002 Example Keynote" />
-                        <TreeViewItem Header="S003 Example Keynote" />
-                    </TreeViewItem>
-                    <TreeViewItem Header="C0 Civil" IsExpanded="True">
-                        <TreeViewItem Header="C001 Example Keynote" />
-                        <TreeViewItem Header="C002 Example Keynote" />
-                        <TreeViewItem Header="C003 Example Keynote" />
-                    </TreeViewItem>
-                </TreeView.Items>
+            <TreeView x:Name="keynotes_tv"
+                      Margin="0,10,10,0"
+                      Grid.Column="0"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,0,10,0"
+                      PreviewMouseDoubleClick="place_keynote">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Subordinates}">
+                        <Grid Margin="0,2,0,2"
+                              Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}, Path=ActualWidth}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition MinWidth="30" Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
+                            <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" Grid.Column="1"/>
+                        </Grid>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
             </TreeView>
             <DockPanel Grid.Column="1" Margin="0,5,0,0">
                 <StackPanel DockPanel.Dock="Bottom">
                     <Button Content="Import Keynotes"
                             Margin="0,15,0,0"
                             Padding="8,4,8,4"
-                            ToolTip = "Creates a Rule-based filter and inverse filter for selected tags."
-                            IsEnabled="False"/>
+                            ToolTip = "Import keynotes from Revit standard keynote file."
+                            Click="import_keynotes"/>
                     <Button Content="Export Keynotes"
                             Margin="0,5,0,0"
                             Padding="8,4,8,4"
@@ -75,30 +77,40 @@
                 <StackPanel Margin="0,5,0,0">
                     <Button Content="Update Keynotes"
                             Padding="8,4,8,4"
-                            ToolTip="Selects the Revit elements associated with this tag."
-                            IsEnabled="False"/>
+                            ToolTip="Reloads keynote file and updates keynotes per changes."
+                            Click="update_model"/>
                     <GroupBox Header="Keynotes" Margin="0,15,0,0" Padding="5">
-                        <StackPanel>
+                        <StackPanel IsEnabled="True">
                             <Button Content="Add Category"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip = "Select the tag, enter the new name in&#xA;the box below the list and hit Rename Tag."
-                                    IsEnabled="False"/>
+                                    ToolTip = "Add root keynootes category."
+                                    Click="add_category"/>
                             <Button Content="Add Keynote"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip = "Select the tag, enter the new name in&#xA;the box below the list and hit Rename Tag."
-                                    IsEnabled="False"/>
+                                    ToolTip = "Add a new keynote after selected keynote or category."
+                                    Click="add_keynote"/>
+                            <Button Content="Duplicate Keynote"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip = "Duplicte selected keynote."
+                                    Click="add_keynote"/>
                             <Button Content="Add Child Keynote"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip = "Select the tag, enter the new name in&#xA;the box below the list and hit Rename Tag."
-                                    IsEnabled="False"/>
-                            <Button Content="Edit"
+                                    ToolTip = "Add a new keynote as a child to selected keynote."
+                                    Click="add_child_keynote"/>
+                            <Button Content="Edit Keynote Key"
                                     Margin="0,15,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip = "Select the tag, enter the new name in&#xA;the box below the list and hit Rename Tag."
-                                    IsEnabled="False"/>
+                                    ToolTip = "Edit selected keynote's key and update model if necessary."
+                                    Click="update_keynote_key"/>
+                            <Button Content="Edit Keynote Text"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip = "Edit selected keynote's text."
+                                    Click="update_keynote_text"/>
                             <Button Content="Merge"
                                     Margin="0,15,0,0"
                                     Padding="8,4,8,4"
@@ -107,28 +119,33 @@
                             <Button Content="Remove"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
-                                    ToolTip="Removes Tag from elements. Does not delete the elements."
-                                    IsEnabled="False"/>
+                                    ToolTip="Remove selected keynote."
+                                    Click="remove_keynote"/>
                         </StackPanel>
                     </GroupBox>
 
                     <GroupBox Header="Keynotes History" Margin="0,15,0,0" Padding="5">
-                        <StackPanel>
+                        <StackPanel IsEnabled="False">
+                            <Button Content="Enable History"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip="Removes Tag from elements. Does not delete the elements."
+                                    />
                             <Button Content="Show History"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip="Removes Tag from elements. Does not delete the elements."
-                                    IsEnabled="False"/>
+                                    />
                             <Button Content="Clear History"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip="Removes Tag from elements. Does not delete the elements."
-                                    IsEnabled="False"/>
+                                    />
                             <Button Content="Toggle History"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip="Removes Tag from elements. Does not delete the elements."
-                                    IsEnabled="False"/>
+                                    />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

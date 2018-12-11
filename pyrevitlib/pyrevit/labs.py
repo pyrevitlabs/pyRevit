@@ -16,6 +16,7 @@ clr.AddReference('MahApps.Metro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.Language')
+clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 import Nett
 import NLog
@@ -25,6 +26,7 @@ import MahApps.Metro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import Language
+from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
 
 
