@@ -304,9 +304,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # figure out how to place a keynote
 
     def import_keynotes(self, sender, args):
+        # verify existing keynotes when importing
+        # maybe allow for merge conflict?
         kfile = forms.pick_file('txt')
         if kfile:
             import_legacy_keynotes(self._conn, kfile)
+            self._update_ktree()
 
     def update_model(self, sender, args):
         self.Close()
