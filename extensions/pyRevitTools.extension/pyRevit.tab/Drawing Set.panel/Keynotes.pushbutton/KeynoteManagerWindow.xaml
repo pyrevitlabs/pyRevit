@@ -12,6 +12,43 @@
         <Style x:Key="ClearButton" TargetType="Button">
             <Setter Property="Background" Value="White"/>
         </Style>
+
+        <Style x:Key="treeItemStyle" TargetType="TreeViewItem">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding locked}" Value="True">
+                    <Setter Property="Foreground" Value="DarkGray" />
+                    <Setter Property="Background" Value="WhiteSmoke" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding Subordinates}">
+            <Grid Margin="0,2,0,2" Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}, Path=ActualWidth}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition MinWidth="30" Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
+                <WrapPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" />
+                    <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="5,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat=" {0} is editing...">
+                                    <Binding Path="owner"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                </WrapPanel>
+            </Grid>
+            <HierarchicalDataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Path=locked}" Value="True">
+                    <Setter TargetName="ownerId" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+
     </Window.Resources>
     <DockPanel Margin="10">
         <Grid DockPanel.Dock="Top">
@@ -46,30 +83,9 @@
                       Grid.Column="0"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       Padding="0,0,10,0"
-                      PreviewMouseDoubleClick="place_keynote">
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding Subordinates}">
-                        <Grid Margin="0,2,0,2"
-                              Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}, Path=ActualWidth}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition MinWidth="30" Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
-                            <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" Grid.Column="1"/>
-                        </Grid>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding locked}" Value="True">
-                                <Setter Property="Background" Value="#bdbdbd" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-            </TreeView>
+                      PreviewMouseDoubleClick="place_keynote"
+                      ItemTemplate="{StaticResource treeViewItem}"
+                      ItemContainerStyle="{StaticResource treeItemStyle}" />
             <DockPanel Grid.Column="1" Margin="0,5,0,0">
                 <StackPanel DockPanel.Dock="Bottom">
                     <Button Content="Import Keynotes"

@@ -30,7 +30,7 @@ from collections import namedtuple
 from pyrevit.labs import DeffrelDB as kdb
 
 
-RKeynote = namedtuple('RKeynote', ['key', 'text', 'parent_key', 'locked'])
+RKeynote = namedtuple('RKeynote', ['key', 'text', 'parent_key', 'locked', 'owner'])
 
 KEYNOTES_DB = 'keynotesdb'
 KEYNOTES_DB_DESC = "pyRevit Keynotes Manager DB"
@@ -116,12 +116,14 @@ def get_keynotes_under_edit(conn):
 
 def get_keynotes_tree(conn):
     db_locks = get_locks(conn)
-    locked_records = [x.LockTargetRecordKey for x in db_locks if x.IsRecordLock]
+    locked_records = {x.LockTargetRecordKey: x.LockRequester
+                      for x in db_locks if x.IsRecordLock}
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
     return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
                      text=x[KEYNOTES_TEXT_FIELD],
                      parent_key=x[CATEGORY_KEY_FIELD],
-                     locked=x[KEYNOTES_KEY_FIELD] in locked_records)
+                     locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''))
             for x in keynote_records]
 
 
@@ -254,7 +256,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.keynotes_tv.ItemsSource = \
                 [x for x in get_keynotes_tree(self._conn)
                  if clean_filter in x.key.lower()
-                 or clean_filter in x.text.lower()]
+                 or clean_filter in x.text.lower()
+                 or clean_filter in x.owner.lower()]
         else:
             self.keynotes_tv.ItemsSource = get_keynotes_tree(self._conn)
 
