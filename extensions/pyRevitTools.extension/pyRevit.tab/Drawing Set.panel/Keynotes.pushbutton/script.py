@@ -14,10 +14,6 @@ output = script.get_output()
 
 """
 startup:
-open db
-    db module: verifies db
-    if db not ok, inform user
-    db module: upgrade db
 get ketnotes tree
 get locked keynotes (collect locker)
 get unused keynotes (collect info?)
@@ -34,7 +30,7 @@ from collections import namedtuple
 from pyrevit.labs import DeffrelDB as kdb
 
 
-RKeynote = namedtuple('RKeynote', ['key', 'text', 'parent_key'])
+RKeynote = namedtuple('RKeynote', ['key', 'text', 'parent_key', 'locked'])
 
 KEYNOTES_DB = 'keynotesdb'
 KEYNOTES_DB_DESC = "pyRevit Keynotes Manager DB"
@@ -110,15 +106,22 @@ def connect(keynotes_file, username=None):
     return conn
 
 
+def get_locks(conn):
+    return conn.ReadLocks()
+
+
 def get_keynotes_under_edit(conn):
     pass
 
 
 def get_keynotes_tree(conn):
+    db_locks = get_locks(conn)
+    locked_records = [x.LockTargetRecordKey for x in db_locks if x.IsRecordLock]
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
     return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
                      text=x[KEYNOTES_TEXT_FIELD],
-                     parent_key=x[CATEGORY_KEY_FIELD])
+                     parent_key=x[CATEGORY_KEY_FIELD],
+                     locked=x[KEYNOTES_KEY_FIELD] in locked_records)
             for x in keynote_records]
 
 
@@ -186,18 +189,23 @@ def move_keynote(conn, current_parent, new_parent):
 
 
 def import_legacy_keynotes(conn, legacy_keynotes_file):
-    with open(legacy_keynotes_file, 'r') as lkf:
-        for line in lkf.readlines():
-            clean_line = line.strip()
-            if not clean_line.startswith('#'):
-                fields = clean_line.split('\t')
-                if len(fields) == 2 \
-                        or (len(fields) == 3 and not fields[2]):
-                    # add category
-                    add_category(conn, fields[0], fields[1])
-                elif len(fields) == 3:
-                    # add keynote
-                    add_keynote(conn, fields[0], fields[1], fields[2])
+    conn.BEGIN(KEYNOTES_DB)
+    try:
+        with open(legacy_keynotes_file, 'r') as lkf:
+            for line in lkf.readlines():
+                clean_line = line.strip()
+                if not clean_line.startswith('#'):
+                    fields = clean_line.split('\t')
+                    if len(fields) == 2 \
+                            or (len(fields) == 3 and not fields[2]):
+                        # add category
+                        add_category(conn, fields[0], fields[1])
+                    elif len(fields) == 3:
+                        # add keynote
+                        add_keynote(conn, fields[0], fields[1], fields[2])
+    finally:
+        conn.END()
+
 
 def export_legacy_keynotes(target_legacy_keynotes_file):
     pass
@@ -222,10 +230,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # TODO: verify kfile
         self._kfile = revit.query.get_keynote_file(doc=revit.doc)
-        self._conn = connect(self._kfile)
-        # self._keynotes = revit.query.get_available_keynotes(doc=revit.doc)
-        # self._ktree = revit.query.get_available_keynotes_tree(doc=revit.doc)
-        self._update_ktree()
+        self._conn = None
+        try:
+            self._conn = connect(self._kfile)
+        except Exception as ex:
+            forms.alert(str(ex), exitscript=True)
+
+        if self._conn:
+            self._update_ktree()
 
     @property
     def selected_keynote(self):
@@ -263,41 +275,77 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def add_category(self, sender, args):
         self._lastcat = 'S{}'.format(self._text_counter)
-        add_category(self._conn, self._lastcat, 'Some value')
-        self._text_counter += 1
-        self._update_ktree()
+        try:
+            add_category(self._conn, self._lastcat, 'Some value')
+            self._text_counter += 1
+            self._update_ktree()
+        except Exception as ex:
+            forms.alert(str(ex))
 
     def add_keynote(self, sender, args):
         self._last_kn = 'SK{}'.format(self._text_counter)
-        add_keynote(self._conn, self._last_kn, 'Some value', self._lastcat)
-        self._text_counter += 1
-        self._update_ktree()
+        try:
+            add_keynote(self._conn, self._last_kn, 'Some value', self._lastcat)
+            self._text_counter += 1
+            self._update_ktree()
+        except Exception as ex:
+            forms.alert(str(ex))
+
+    def duplicate_keynote(self, sender, args):
+        selected_keynote = self.selected_keynote
+        if selected_keynote:
+            try:
+                add_keynote(self._conn, selected_keynote.key + "-DUP", 'Some value', self._lastcat)
+                self._update_ktree()
+            except Exception as ex:
+                forms.alert(str(ex))
 
     def remove_keynote(self, sender, args):
         selected_keynote = self.selected_keynote
         if selected_keynote:
-            remove_keynote(self._conn, selected_keynote.key)
-            self._update_ktree()
+            try:
+                remove_keynote(self._conn, selected_keynote.key)
+                self._update_ktree()
+            except Exception as ex:
+                forms.alert(str(ex))
 
     def add_child_keynote(self, sender, args):
         # detect selected keynote
-        self._last_kn = 'SK{}'.format(self._text_counter)
-        add_keynote(self._conn, self._last_kn, 'Some value', self._lastcat)
-        self._text_counter += 1
-        self._update_ktree()
+        selected_keynote = self.selected_keynote
+        if selected_keynote:
+            try:
+                add_keynote(self._conn, selected_keynote.key + str(self._text_counter), 'Some value', self._lastcat)
+                self._text_counter += 1
+                self._update_ktree()
+            except Exception as ex:
+                forms.alert(str(ex))
 
     def update_keynote_text(self, sender, args):
         selected_keynote = self.selected_keynote
         if selected_keynote:
-            update_keynote_text(self._conn, selected_keynote.key, '-- New value --')
-            self._update_ktree()
+            try:
+                self._conn.BEGIN(KEYNOTES_DB, KEYNOTES_TABLE, selected_keynote.key)
+                forms.alert("Click OK When finished editing...", ok=True)
+                update_keynote_text(self._conn, selected_keynote.key, '-- New value --')
+            except Exception as ex:
+                forms.alert(str(ex))
+            finally:
+                self._conn.END()
+                self._update_ktree()
 
     def update_keynote_key(self, sender, args):
         # mark_keynote_under_edited(self._conn, self._last_kn)
         selected_keynote = self.selected_keynote
         if selected_keynote:
-            update_keynote_key(self._conn, selected_keynote.key, selected_keynote.key + "-ED")
-            self._update_ktree()
+            try:
+                self._conn.BEGIN(KEYNOTES_DB, KEYNOTES_TABLE, selected_keynote.key)
+                forms.alert("Click OK When finished editing...", ok=True)
+                update_keynote_key(self._conn, selected_keynote.key, selected_keynote.key + "-ED")
+            except Exception as ex:
+                forms.alert(str(ex))
+            finally:
+                self._conn.END()
+                self._update_ktree()
 
     def place_keynote(self, sender, args):
         self.Close()
@@ -308,15 +356,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # maybe allow for merge conflict?
         kfile = forms.pick_file('txt')
         if kfile:
-            import_legacy_keynotes(self._conn, kfile)
-            self._update_ktree()
+            try:
+                import_legacy_keynotes(self._conn, kfile)
+                self._update_ktree()
+            except Exception as ex:
+                forms.alert(str(ex))
 
     def update_model(self, sender, args):
         self.Close()
 
     def window_closed(self, sender, args):
-        with revit.Transaction("Update Keynotes"):
-            update_linked_keynotes(doc=revit.doc)
+        if self._conn:
+            del self._conn
+            with revit.Transaction("Update Keynotes"):
+                update_linked_keynotes(doc=revit.doc)
 
 
 

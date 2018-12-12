@@ -60,6 +60,15 @@
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding locked}" Value="True">
+                                <Setter Property="Background" Value="#bdbdbd" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TreeView.ItemContainerStyle>
             </TreeView>
             <DockPanel Grid.Column="1" Margin="0,5,0,0">
                 <StackPanel DockPanel.Dock="Bottom">
@@ -95,7 +104,7 @@
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip = "Duplicte selected keynote."
-                                    Click="add_keynote"/>
+                                    Click="duplicate_keynote"/>
                             <Button Content="Add Child Keynote"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
