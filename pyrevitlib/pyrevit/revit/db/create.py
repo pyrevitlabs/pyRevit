@@ -140,6 +140,7 @@ def create_3d_view(view_name, isometric=True, doc=None):
 
 def create_revision_sheetset(revisions,
                              name_format='Revision {}',
+                             match_any=True,
                              doc=None):
     doc = doc or HOST_APP.doc
     # get printed printmanager
@@ -165,11 +166,12 @@ def create_revision_sheetset(revisions,
 
     # find revised sheets
     myviewset = DB.ViewSet()
+    check_func = any if match_any else all
     for sheet in sheets:
         revs = sheet.GetAllRevisionIds()
         sheet_revids = [x.IntegerValue for x in revs]
-        if all([x.Id.IntegerValue in sheet_revids
-                for x in revisions]):
+        if check_func([x.Id.IntegerValue in sheet_revids
+                       for x in revisions]):
             myviewset.Insert(sheet)
 
     # needs transaction
