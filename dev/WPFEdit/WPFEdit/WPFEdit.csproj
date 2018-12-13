@@ -117,6 +117,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\EditCategory.xaml">
+      <Link>Tools\KeynoteManager\EditCategory.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\EditKeynote.xaml">
+      <Link>Tools\KeynoteManager\EditKeynote.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\KeynoteManagerWindow.xaml">
       <Link>Tools\KeynoteManager\KeynoteManagerWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
@@ -127,8 +137,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\UpdateKeynote.xaml">
-      <Link>Tools\KeynoteManager\UpdateKeynote.xaml</Link>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\SelectNewKey.xaml">
+      <Link>Tools\KeynoteManager\SelectNewKey.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

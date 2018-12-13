@@ -114,6 +114,19 @@ def get_keynotes_under_edit(conn):
     pass
 
 
+def get_categories(conn):
+    db_locks = get_locks(conn)
+    locked_records = {x.LockTargetRecordKey: x.LockRequester
+                      for x in db_locks if x.IsRecordLock}
+    cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
+    return [RKeynote(key=x[CATEGORY_KEY_FIELD],
+                     text=x[CATEGORY_TITLE_FIELD],
+                     parent_key="",
+                     locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''))
+            for x in cats_records]
+
+
 def get_keynotes_tree(conn):
     db_locks = get_locks(conn)
     locked_records = {x.LockTargetRecordKey: x.LockRequester
@@ -245,21 +258,43 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def selected_keynote(self):
         return self.keynotes_tv.SelectedItem
 
+    @property
+    def search_term(self):
+        return self.search_tb.Text
+
+    @property
+    def selected_category(self):
+        return self.categories_tv.SelectedItem
+
+    # @selected_category.setter
+    # def selected_category(self, value):
+    #     self.categories_tv.SelectedItem = value
+
     def _build_treeview_items(self):
         return []
 
-    def _update_ktree(self, keynote_filter=None):
+    def _update_ktree(self):
         # maybe some coloring on filter?
         # https://stackoverflow.com/questions/5442067/change-color-and-font-for-some-part-of-text-in-wpf-c-sharp
+        self.categories_tv.ItemsSource = get_categories(self._conn)
+        self._update_ktree_knotes()
+
+    def _update_ktree_knotes(self):
+        active_keynotes = get_keynotes_tree(self._conn)
+        if self.selected_category:
+            active_keynotes = [x for x in active_keynotes
+                               if x.parent_key == self.selected_category.key]
+
+        keynote_filter = self.search_term if self.search_term else None
         if keynote_filter:
             clean_filter = keynote_filter.lower()
             self.keynotes_tv.ItemsSource = \
-                [x for x in get_keynotes_tree(self._conn)
+                [x for x in active_keynotes
                  if clean_filter in x.key.lower()
                  or clean_filter in x.text.lower()
                  or clean_filter in x.owner.lower()]
         else:
-            self.keynotes_tv.ItemsSource = get_keynotes_tree(self._conn)
+            self.keynotes_tv.ItemsSource = active_keynotes
 
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
@@ -268,7 +303,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             self.show_element(self.clrsearch_b)
 
-        self._update_ktree(keynote_filter=self.search_tb.Text)
+        self._update_ktree()
 
     def clear_search(self, sender, args):
         """Clear search box."""
@@ -353,6 +388,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def place_keynote(self, sender, args):
         self.Close()
         # figure out how to place a keynote
+
+    def selected_category_changed(self, sender, args):
+        self._update_ktree_knotes()
 
     def import_keynotes(self, sender, args):
         # verify existing keynotes when importing

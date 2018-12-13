@@ -78,14 +78,28 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="160"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="keynotes_tv"
-                      Margin="0,10,10,0"
-                      Grid.Column="0"
-                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                      Padding="0,0,10,0"
-                      PreviewMouseDoubleClick="place_keynote"
-                      ItemTemplate="{StaticResource treeViewItem}"
-                      ItemContainerStyle="{StaticResource treeItemStyle}" />
+            <Grid Grid.Column="0" Margin="0,10,10,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="100"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <TreeView x:Name="categories_tv"
+                          Grid.Row="0"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,10,0"
+                          ItemTemplate="{StaticResource treeViewItem}"
+                          ItemContainerStyle="{StaticResource treeItemStyle}"
+                          SelectedItemChanged="selected_category_changed"/>
+                <GridSplitter Grid.Row="1"  HorizontalAlignment="Stretch" />
+                <TreeView x:Name="keynotes_tv"
+                          Grid.Row="2"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,10,0"
+                          PreviewMouseDoubleClick="place_keynote"
+                          ItemTemplate="{StaticResource treeViewItem}"
+                          ItemContainerStyle="{StaticResource treeItemStyle}" />
+            </Grid>
             <DockPanel Grid.Column="1" Margin="0,5,0,0">
                 <StackPanel DockPanel.Dock="Bottom">
                     <Button Content="Import Keynotes"
@@ -126,16 +140,21 @@
                                     Padding="8,4,8,4"
                                     ToolTip = "Add a new keynote as a child to selected keynote."
                                     Click="add_child_keynote"/>
-                            <Button Content="Edit Keynote Key"
+                            <Button Content="Edit Keynote"
                                     Margin="0,15,0,0"
-                                    Padding="8,4,8,4"
-                                    ToolTip = "Edit selected keynote's key and update model if necessary."
-                                    Click="update_keynote_key"/>
-                            <Button Content="Edit Keynote Text"
-                                    Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip = "Edit selected keynote's text."
                                     Click="update_keynote_text"/>
+                            <Button Content="Move Keynote"
+                                    Margin="0,15,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip = "Edit selected keynote's parent."
+                                    Click="update_keynote_key"/>
+                            <Button Content="Re-Key Keynote"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip = "Edit selected keynote's key and update model if necessary."
+                                    Click="update_keynote_key"/>
                             <Button Content="Merge"
                                     Margin="0,15,0,0"
                                     Padding="8,4,8,4"
