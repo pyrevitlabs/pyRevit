@@ -274,13 +274,13 @@ class EditRecordWindow(forms.WPFWindow):
         if self._rkey:
             self.selectKey.Content = str(self._rkey.key)
             self.selectParent.Content = str(self._rkey.parent_key)
-
             self.recordText.Text = self._rkey.text
-            self.recordText.Focus()
-            self.recordText.SelectAll()
         else:
             self.applyChanges.Content = \
                 'Create {}'.format('Category' if self._cat else 'Keynote')
+        # select text in textbox for easy editing
+        self.recordText.Focus()
+        self.recordText.SelectAll()
 
     def show(self):
         self.ShowDialog()
@@ -410,6 +410,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Clear()
         self.search_tb.Focus()
 
+    def selected_category_changed(self, sender, args):
+        self._update_ktree_knotes()
+
     def add_category(self, sender, args):
         try:
             edit_type, new_rkey = \
@@ -423,27 +426,37 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def edit_category(self, sender, args):
         selected_category = self.selected_category
         if selected_category and selected_category.text != self._allcat.text:
-            try:
-                # start edit
-                begin_edit(self._conn, selected_category.key, category=True)
-                # get updated value
-                edit_type, updated_value = \
-                    EditRecordWindow(self._conn,
-                                     rkey=selected_category,
-                                     category=True).show()
-                # process and apply the updated value
-                if edit_type == 'text':
-                    update_category_title(self._conn,
-                                          selected_category.key,
-                                          updated_value)
-                elif edit_type == 'key':
-                    # TODO: rekey category
-                    forms.alert('Rekeying category...')
-            except Exception as ex:
-                forms.alert(str(ex))
-            finally:
-                end_edit(self._conn)
-                self._update_ktree()
+            if selected_category.locked:
+                forms.alert('Category is locked and is being edited by {}. '
+                            'Wait until their changes are committed. '
+                            'Meanwhile you can use or modify the keynotes '
+                            'under this category.'
+                            .format('\"%s\"' % selected_category.owner
+                                    if selected_category.owner
+                                    else 'and unknown user'))
+            else:
+                try:
+                    # start edit
+                    begin_edit(self._conn,
+                               selected_category.key, category=True)
+                    # get updated value
+                    edit_type, updated_value = \
+                        EditRecordWindow(self._conn,
+                                         rkey=selected_category,
+                                         category=True).show()
+                    # process and apply the updated value
+                    if edit_type == 'text':
+                        update_category_title(self._conn,
+                                              selected_category.key,
+                                              updated_value)
+                    elif edit_type == 'key':
+                        # TODO: rekey category
+                        forms.alert('Rekeying category...')
+                except Exception as ex:
+                    forms.alert(str(ex))
+                finally:
+                    end_edit(self._conn)
+                    self._update_ktree()
 
     def remove_category(self, sender, args):
         selected_category = self.selected_category
@@ -529,10 +542,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def place_keynote(self, sender, args):
         self.Close()
-        # figure out how to place a keynote
-
-    def selected_category_changed(self, sender, args):
-        self._update_ktree_knotes()
+        # TODO: figure out how to place a keynote
 
     def import_keynotes(self, sender, args):
         # verify existing keynotes when importing
