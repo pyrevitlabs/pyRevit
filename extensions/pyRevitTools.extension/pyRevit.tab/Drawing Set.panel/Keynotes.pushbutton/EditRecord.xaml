@@ -1,0 +1,37 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        Width="500" Height="350"
+        MinWidth="500" MinHeight="350"
+        ResizeMode="CanResizeWithGrip"
+        SizeToContent="Height"
+        Title="Edit Keynote"
+        WindowStartupLocation="CenterScreen"
+        HorizontalContentAlignment="Center">
+    <Window.Resources>
+        <Canvas x:Key="dotdotdot" Width="20" Height="20">
+            <Path Canvas.Top="-1" Canvas.Left="-2"
+                  Data="M16,12A2,2 0 0,1 18,10A2,2 0 0,1 20,12A2,2 0 0,1 18,14A2,2 0 0,1 16,12M10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12M4,12A2,2 0 0,1 6,10A2,2 0 0,1 8,12A2,2 0 0,1 6,14A2,2 0 0,1 4,12Z"
+                  Fill="DimGray" />
+        </Canvas>
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0"  Orientation="Horizontal">
+            <Button x:Name="selectKey" Height="24" Padding="10,0,10,0" FontWeight="Bold" Content="{StaticResource dotdotdot}" Click="pick_key"/>
+            <TextBlock x:Name="selectKeyTitle" Text="Keynote Key" Margin="10,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2">
+            <StackPanel x:Name="selectParentRow" Orientation="Horizontal" Margin="0,0,0,10">
+                <Button x:Name="selectParent" Height="24" Padding="10,0,10,0" FontWeight="Bold" Content="{StaticResource dotdotdot}" Click="pick_parent"/>
+                <TextBlock Text="Keynote Parent" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button x:Name="applyChanges" Height="26" Content="Apply Changes" Click="apply_changes"/>
+        </StackPanel>
+        <TextBox x:Name="recordText" Grid.Row="1" Margin="0,10,0,10" FontSize="14" TextWrapping="Wrap" Text="Enter keynote text here..."/>
+    </Grid>
+</Window>
