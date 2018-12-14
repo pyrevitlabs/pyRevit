@@ -118,7 +118,12 @@
                         IsEnabled="False"/>
             </StackPanel>
             <StackPanel>
+                <Button Content="Refresh"
+                        Padding="8,4,8,4"
+                        ToolTip="Reloads keynote file and updates keynotes per changes"
+                        Click="refresh"/>
                 <Button Content="Update Keynotes"
+                        Margin="0,10,0,0"
                         Padding="8,4,8,4"
                         ToolTip="Reloads keynote file and updates keynotes per changes"
                         Click="update_model"/>

@@ -120,7 +120,7 @@ def get_categories(conn):
                       for x in db_locks if x.IsRecordLock}
     cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
     return [RKeynote(key=x[CATEGORY_KEY_FIELD],
-                     text=x[CATEGORY_TITLE_FIELD],
+                     text=x[CATEGORY_TITLE_FIELD] or '',
                      parent_key='',
                      locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
                      owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''))
@@ -133,7 +133,7 @@ def get_keynotes(conn):
                       for x in db_locks if x.IsRecordLock}
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
     return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
-                     text=x[KEYNOTES_TEXT_FIELD],
+                     text=x[KEYNOTES_TEXT_FIELD] or '',
                      parent_key=x[CATEGORY_KEY_FIELD],
                      locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
                      owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''))
@@ -149,16 +149,24 @@ def begin_edit(conn, key, category=False):
 def end_edit(conn):
     conn.END()
 
+
+def reserve_key(conn, key, category=False):
+    if category:
+        conn.CreateRecord(KEYNOTES_DB, CATEGORIES_TABLE,
+                          {CATEGORY_KEY_FIELD: key,
+                           CATEGORY_TITLE_FIELD: None})
+    else:
+        conn.CreateRecord(KEYNOTES_DB, KEYNOTES_TABLE,
+                          {KEYNOTES_KEY_FIELD: key,
+                           KEYNOTES_TEXT_FIELD: None,
+                           CATEGORY_KEY_FIELD: None})
+
 # categories ------------------------------------------------------------------
 
 def add_category(conn, key, text):
     conn.CreateRecord(KEYNOTES_DB, CATEGORIES_TABLE,
                       {CATEGORY_KEY_FIELD: key,
                        CATEGORY_TITLE_FIELD: text})
-
-
-def reserve_category_key(conn, key):
-    add_category(conn, key, RESERVERD_TEXT_FIELD_VALUE)
 
 
 def update_category_title(conn, key, new_title):
@@ -287,15 +295,31 @@ class EditRecordWindow(forms.WPFWindow):
         return self.response
 
     def pick_key(self, sender, args):
-        forms.alert('Picking a new key...')
         # read button content for existing key
         # verify that record is not a temporary record
             # if it is, remove it and release any locks
         # collect existing keys
+        reserved_keys = [x.key for x in get_categories(self._conn)]
+        reserved_keys.extend([x.key for x in get_keynotes(self._conn)])
         # ask for a unique new key
+        new_key = forms.ask_for_unique_string(
+            prompt='Enter Unique Key',
+            title=self.Title,
+            reserved_values=reserved_keys)
         # create empty record with that key
+        try:
+            reserve_key(self._conn, new_key, category=True)
+        except Exception as ex:
+            forms.alert('reserve_key' + str(ex))
+            return
         # place a lock on that key
+        try:
+            begin_edit(self._conn, new_key, category=True)
+        except Exception as ex:
+            forms.alert('begin_edit' + str(ex))
+            return
         # set the key value on the button
+        self.selectKey.Content = new_key
 
     def pick_parent(self, sender, args):
         forms.alert('Picking a new parent...')
@@ -337,10 +361,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._allcat = RKeynote(key='', text='-- ALL CATEGORIES --',
                                 parent_key='', locked=False, owner='')
-        if self._conn:
-            self._update_ktree()
-
-        self.search_tb.Focus()
+        
+        self.refresh(None, None)
 
     @property
     def selected_keynote(self):
@@ -413,13 +435,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def selected_category_changed(self, sender, args):
         self._update_ktree_knotes()
 
+    def refresh(self, sender, args):
+        if self._conn:
+            self._update_ktree()
+        self.search_tb.Focus()
+
     def add_category(self, sender, args):
         try:
             edit_type, new_rkey = \
                 EditRecordWindow(self._conn, category=True).show()
             if edit_type == 'new':
-                add_category(self._conn, new_rkey.key, new_rkey.text)
+                update_category_title(self._conn, new_rkey.key, new_rkey.text)
             self._update_ktree()
+            self._conn.END()
         except Exception as ex:
             forms.alert(str(ex))
 
