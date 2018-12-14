@@ -90,6 +90,9 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\2014\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\2014\helpers.cs">
+      <Link>helpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\2014\scriptoutputhelpers.cs">
       <Link>scriptoutputhelpers.cs</Link>
     </Compile>
@@ -104,9 +107,6 @@
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\executor.cs">
       <Link>executor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\helpers.cs">
-      <Link>helpers.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>

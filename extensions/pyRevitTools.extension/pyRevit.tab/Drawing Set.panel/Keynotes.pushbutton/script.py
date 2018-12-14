@@ -1,9 +1,11 @@
 """Manage project keynotes."""
 #pylint: disable=E0401,W0613,C0111,C0103
 from pyrevit import HOST_APP
-from pyrevit import revit, DB
+from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
+
+from pyrevit.coreutils.loadertypes import UIDocUtils
 
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
@@ -12,16 +14,12 @@ __context__ = ""
 logger = script.get_logger()
 output = script.get_output()
 
-"""
-startup:
-get ketnotes tree
-get locked keynotes (collect locker)
-get unused keynotes (collect info?)
-build and show tree (color code locked and unused keynotes)
 
-
-
-"""
+# TODO: @pkey(cat_key:"") in keynotes table could refer to keynote records
+# as well. this is not a many2one relationship. I need subkeynotes table
+# for keynotes with @pkey(keynote_key:"").
+# keynotes with root parent go to --> keynotes table
+# keynotes with keynote parents go to --> subkeynotes table
 
 # ================================================================ keynotesdb.py
 #pylint: disable=W0703
@@ -31,7 +29,8 @@ from pyrevit.labs import DeffrelDB as kdb
 
 
 RKeynote = namedtuple('RKeynote',
-                      ['key', 'text', 'parent_key', 'locked', 'owner'])
+                      ['key', 'text', 'parent_key',
+                       'locked', 'owner', 'children'])
 
 KEYNOTES_DB = 'keynotesdb'
 KEYNOTES_DB_DESC = 'pyRevit Keynotes Manager DB'
@@ -46,7 +45,8 @@ KEYNOTES_TABLE_DESC = 'Keynotes Table'
 KEYNOTES_KEY_FIELD = 'keynote_key'
 KEYNOTES_TEXT_FIELD = 'keynote_text'
 
-RESERVERD_TEXT_FIELD_VALUE = '-------------- reserved by keynote manager -----------------'
+RESERVERD_TEXT_FIELD_VALUE = \
+    '-------------- reserved by keynote manager -----------------'
 
 
 def _verify_keynotesdb_def(conn):
@@ -123,7 +123,8 @@ def get_categories(conn):
                      text=x[CATEGORY_TITLE_FIELD] or '',
                      parent_key='',
                      locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''))
+                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
+                     children=[])
             for x in cats_records]
 
 
@@ -136,8 +137,23 @@ def get_keynotes(conn):
                      text=x[KEYNOTES_TEXT_FIELD] or '',
                      parent_key=x[CATEGORY_KEY_FIELD],
                      locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''))
+                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
+                     children=[])
             for x in keynote_records]
+
+
+def get_keynotes_tree(conn):
+    keynote_records = get_keynotes(conn)
+    rkey_dict = {x.key: x for x in keynote_records}
+    to_be_removed = []
+    for rkey in keynote_records:
+        parent = rkey_dict.get(rkey.parent_key, None)
+        if parent:
+            parent.children.append(rkey)
+            to_be_removed.append(rkey.key)
+    return [x for x in keynote_records if x.key not in to_be_removed]
+
+
 
 # locking ---------------------------------------------------------------------
 
@@ -152,11 +168,11 @@ def end_edit(conn):
 
 def reserve_key(conn, key, category=False):
     if category:
-        conn.CreateRecord(KEYNOTES_DB, CATEGORIES_TABLE,
+        conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE,
                           {CATEGORY_KEY_FIELD: key,
                            CATEGORY_TITLE_FIELD: None})
     else:
-        conn.CreateRecord(KEYNOTES_DB, KEYNOTES_TABLE,
+        conn.InsertRecord(KEYNOTES_DB, KEYNOTES_TABLE,
                           {KEYNOTES_KEY_FIELD: key,
                            KEYNOTES_TEXT_FIELD: None,
                            CATEGORY_KEY_FIELD: None})
@@ -164,7 +180,7 @@ def reserve_key(conn, key, category=False):
 # categories ------------------------------------------------------------------
 
 def add_category(conn, key, text):
-    conn.CreateRecord(KEYNOTES_DB, CATEGORIES_TABLE,
+    conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE,
                       {CATEGORY_KEY_FIELD: key,
                        CATEGORY_TITLE_FIELD: text})
 
@@ -183,7 +199,7 @@ def add_keynote(conn, key, text, parent=None):
     # TODO: add keynote workflow
     # add record with key and empty text
     # lock the record
-    conn.CreateRecord(
+    conn.InsertRecord(
         KEYNOTES_DB,
         KEYNOTES_TABLE,
         {KEYNOTES_KEY_FIELD: key,
@@ -251,7 +267,6 @@ def import_legacy_keynotes(conn, legacy_keynotes_file):
 
 def export_legacy_keynotes(target_legacy_keynotes_file):
     pass
-# ==============================================================================
 
 
 # ================================================================= revit.update
@@ -259,8 +274,8 @@ def update_linked_keynotes(doc=None):
     doc = doc or HOST_APP.doc
     ktable = DB.KeynoteTable.GetKeynoteTable(doc)
     ktable.Reload(None)
-# ==============================================================================
 
+# =================================================================
 
 class EditRecordWindow(forms.WPFWindow):
     def __init__(self, conn, rkey=None, category=False):
@@ -344,7 +359,8 @@ class EditRecordWindow(forms.WPFWindow):
                                       text=self.recordText.Text,
                                       parent_key=new_parent_key,
                                       locked=False,
-                                      owner=''))
+                                      owner='',
+                                      children=None))
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
@@ -360,8 +376,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             forms.alert(str(ex), exitscript=True)
 
         self._allcat = RKeynote(key='', text='-- ALL CATEGORIES --',
-                                parent_key='', locked=False, owner='')
-        
+                                parent_key='',
+                                locked=False, owner='',
+                                children=None)
+
         self.refresh(None, None)
 
     @property
@@ -394,7 +412,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._update_ktree_knotes()
 
     def _update_ktree_knotes(self):
-        active_keynotes = get_keynotes(self._conn)
+        active_keynotes = get_keynotes_tree(self._conn)
         selected_cat = self.selected_category
         if selected_cat:
             if selected_cat.key == '':
@@ -411,9 +429,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             clean_filter = keynote_filter.lower()
             self.keynotes_tv.ItemsSource = \
                 [x for x in active_keynotes
-                 if clean_filter in x.key.lower()
-                 or clean_filter in x.text.lower()
-                 or clean_filter in x.owner.lower()]
+                 if clean_filter in x.key.lower() + x.text.lower() + x.owner.lower()]
         else:
             self.keynotes_tv.ItemsSource = active_keynotes
 
@@ -570,7 +586,29 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def place_keynote(self, sender, args):
         self.Close()
-        # TODO: figure out how to place a keynote
+        keynotes_cat = \
+            revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
+        if keynotes_cat and self.selected_keynote:
+            knote_key = self.selected_keynote.key
+            def_kn_typeid = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
+            kn_type = revit.doc.GetElement(def_kn_typeid)
+            if kn_type:
+                uidoc_utils = UIDocUtils(HOST_APP.uiapp)
+                # place keynotes and get placed keynote elements
+                try:
+                    # UI.PostableCommand.UserKeynote
+                    # UI.PostableCommand.ElementKeynote
+                    # UI.PostableCommand.MaterialKeynote
+                    uidoc_utils.PostCommandAndUpdateNewElementProperties(
+                        revit.doc,
+                        UI.PostableCommand.UserKeynote,
+                        "Update Keynotes",
+                        DB.BuiltInParameter.KEY_VALUE,
+                        knote_key
+                        )
+                except Exception as ex:
+                    forms.alert(str(ex))
+
 
     def import_keynotes(self, sender, args):
         # verify existing keynotes when importing

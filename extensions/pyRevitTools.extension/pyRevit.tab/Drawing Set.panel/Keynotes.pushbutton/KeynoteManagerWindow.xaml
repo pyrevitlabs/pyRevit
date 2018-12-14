@@ -35,9 +35,10 @@
                     <Setter Property="Background" Value="WhiteSmoke" />
                 </DataTrigger>
             </Style.Triggers>
+            <Setter Property="IsExpanded" Value="True"/>
         </Style>
 
-        <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding Subordinates}">
+        <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding children}">
             <Grid Margin="0,2,0,2" Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}, Path=ActualWidth}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition MinWidth="30" Width="Auto"/>
