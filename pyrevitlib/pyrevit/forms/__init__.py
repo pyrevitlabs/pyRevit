@@ -771,36 +771,54 @@ class GetValueWindow(TemplateUserInputWindow):
         self.value_type = kwargs.get('value_type', 'string')
         value_prompt = kwargs.get('prompt', None)
         value_default = kwargs.get('default', None)
+        self.reserved_values = kwargs.get('reserved_values', [])
 
         # customize window based on type
         if self.value_type == 'string':
-            self.show_element(self.string_panel)
-            self.string_tb.Text = value_default if value_default else ''
-            self.string_tb.Focus()
-            self.string_tb.SelectAll()
-            self.string_prompt.Text = \
+            self.show_element(self.stringPanel_dp)
+            self.stringValue_tb.Text = value_default if value_default else ''
+            self.stringValue_tb.Focus()
+            self.stringValue_tb.SelectAll()
+            self.stringPrompt.Text = \
                 value_prompt if value_prompt else 'Enter string:'
+            if self.reserved_values:
+                self.string_value_changed(None, None)
         elif self.value_type == 'dropdown':
-            self.show_element(self.dropdown_panel)
-            self.dropdown_prompt.Text = \
+            self.show_element(self.dropdownPanel_db)
+            self.dropdownPrompt.Text = \
                 value_prompt if value_prompt else 'Pick one value:'
             self.dropdown_cb.ItemsSource = self._context
             if value_default:
                 self.dropdown_cb.SelectedItem = value_default
         elif self.value_type == 'date':
-            self.show_element(self.date_panel)
-            self.date_prompt.Text = \
+            self.show_element(self.datePanel_dp)
+            self.datePrompt.Text = \
                 value_prompt if value_prompt else 'Pick date:'
+
+    def string_value_changed(self, sender, args):
+        filtered_rvalues = \
+            sorted([x for x in self.reserved_values
+                    if self.stringValue_tb.Text in str(x)],
+                reverse=True)
+        if filtered_rvalues:
+            self.reservedValuesList.ItemsSource = filtered_rvalues
+            self.show_element(self.reservedValuesListPanel)
+            self.okayButton.IsEnabled = False
+        else:
+            self.reservedValuesList.ItemsSource = []
+            self.hide_element(self.reservedValuesListPanel)
+            self.okayButton.IsEnabled = True
+
 
     def select(self, sender, args):    #pylint: disable=W0613
         self.Close()
         if self.value_type == 'string':
-            self.response = self.string_tb.Text
+            self.response = self.stringValue_tb.Text
         elif self.value_type == 'dropdown':
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == 'date':
-            if self.date_picker.SelectedDate:
-                datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+            if self.datePicker.SelectedDate:
+                datestr = self.datePicker.SelectedDate.ToString("MM/dd/yyyy")
                 self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
             else:
                 self.response = None
@@ -2020,6 +2038,17 @@ def ask_for_string(default=None, prompt=None, title=None):
         default=default,
         prompt=prompt,
         title=title
+        )
+
+
+def ask_for_unique_string(reserved_values, default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='string',
+        default=default,
+        prompt=prompt,
+        title=title,
+        reserved_values=reserved_values,
         )
 
 

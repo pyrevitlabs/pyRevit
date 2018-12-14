@@ -169,19 +169,27 @@
         </DataTemplate>
     </Window.Resources>
     <StackPanel>
-        <DockPanel x:Name="string_panel" Margin="10" Visibility="Collapsed">
-            <TextBlock x:Name="string_prompt" Text="Enter String Value:" DockPanel.Dock="Top"/>
-            <TextBox x:Name="string_tb"
+        <DockPanel x:Name="stringPanel_dp" Margin="10" Visibility="Collapsed">
+            <TextBlock x:Name="stringPrompt" Text="Enter String Value:" DockPanel.Dock="Top"/>
+            <Border x:Name="reservedValuesListPanel" DockPanel.Dock="Bottom" Height="100" Margin="0,10,0,0"
+                    Visibility="Collapsed"
+                    BorderThickness="3" BorderBrush="DarkRed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="reservedValuesList" Padding="5" Background="IndianRed" Foreground="White"/>
+                </ScrollViewer>
+            </Border>
+            <TextBox x:Name="stringValue_tb"
                      Height="36"
                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                      FontFamily="Courier New" FontSize="24" FontWeight="Bold"
                      AcceptsReturn="False" AcceptsTab="False"
                      TextWrapping="NoWrap"
                      Margin="0 10 0 0"
-                     Padding="10,0,10,0"/>
+                     Padding="10,0,10,0"
+                     TextChanged="string_value_changed"/>
         </DockPanel>
-        <DockPanel x:Name="dropdown_panel" Margin="10" Visibility="Collapsed">
-            <TextBlock x:Name="dropdown_prompt" Text="Pick One Value:"  DockPanel.Dock="Top"/>
+        <DockPanel x:Name="dropdownPanel_db" Margin="10" Visibility="Collapsed">
+            <TextBlock x:Name="dropdownPrompt" Text="Pick One Value:"  DockPanel.Dock="Top"/>
             <StackPanel DockPanel.Dock="Top">
                 <ComboBox x:Name="dropdown_cb"
                           ItemTemplate="{StaticResource ComboBoxItemTemplate}"
@@ -190,12 +198,14 @@
                           HorizontalContentAlignment="Center"/>
             </StackPanel>
         </DockPanel>
-        <DockPanel x:Name="date_panel" Margin="10" Visibility="Collapsed">
-            <TextBlock x:Name="date_prompt" Text="Pick Date:"  DockPanel.Dock="Top"/>
+        <DockPanel x:Name="datePanel_dp" Margin="10" Visibility="Collapsed">
+            <TextBlock x:Name="datePrompt" Text="Pick Date:"  DockPanel.Dock="Top"/>
             <StackPanel DockPanel.Dock="Top">
-                <DatePicker x:Name="date_picker" Margin="0 10 0 0" Height="36" FontSize="20" Style="{DynamicResource CustomDatePickerStyle}" />
+                <DatePicker x:Name="datePicker"
+                            Margin="0 10 0 0" Height="36" FontSize="20"
+                            Style="{DynamicResource CustomDatePickerStyle}" />
             </StackPanel>
         </DockPanel>
-        <Button Content="OK" Margin="10" Click="select" IsDefault="True" Height="24"/>
+        <Button x:Name="okayButton" Content="OK" Margin="10" Click="select" IsDefault="True" Height="24"/>
     </StackPanel>
 </Window>
