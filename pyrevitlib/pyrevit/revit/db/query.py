@@ -301,9 +301,9 @@ def get_project_parameters(doc=None):
 
 
 def get_project_parameter_id(param_name):
-    for shared_param in get_project_parameters():
-        if shared_param.name == param_name:
-            return shared_param.param_def.Id
+    for project_param in get_project_parameters():
+        if project_param.name == param_name:
+            return project_param.param_id
     raise PyRevitException('Parameter not found: {}'.format(param_name))
 
 
