@@ -2,7 +2,7 @@
 #pylint: disable=E0401,C0111,W0603,C0103
 from collections import namedtuple, defaultdict
 
-from pyrevit import framework
+from pyrevit import framework, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit.coreutils import pyutils
 from pyrevit.coreutils import logger
@@ -22,9 +22,6 @@ _METADATA_DICT = None
 # if not skipped, they'll show up as part of tag elements
 SCOPE_SKIP_CATEGORIES = [
     # all center lines related to parameteric components
-    DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
-    DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
-    DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
     DB.BuiltInCategory.OST_ConduitFittingCenterLine,
     DB.BuiltInCategory.OST_CableTrayFittingCenterLine,
     DB.BuiltInCategory.OST_ConduitCenterLine,
@@ -40,6 +37,15 @@ SCOPE_SKIP_CATEGORIES = [
     DB.BuiltInCategory.OST_CenterLines,
     DB.BuiltInCategory.OST_StairsSketchLandingCenterLines
     ]
+
+if HOST_APP.is_newer_than(2016):
+    SCOPE_SKIP_CATEGORIES.extend(
+        [
+            DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
+            DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
+            DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
+        ]
+    )
 
 
 ApplyTagsConfig = namedtuple('ApplyTagsConfig', ['append', 'circuits'])
@@ -490,7 +496,8 @@ def get_available_tags(elements=None):
             param_value="",
             inverse=True,
             doc=revit.doc
-            )
+            ) \
+        or query.get_all_elements()
     tags = set()
     for element in target_elements:
         tags.update(extract_tags(element))
