@@ -14,13 +14,6 @@ __context__ = ""
 logger = script.get_logger()
 output = script.get_output()
 
-
-# TODO: @pkey(cat_key:"") in keynotes table could refer to keynote records
-# as well. this is not a many2one relationship. I need subkeynotes table
-# for keynotes with @pkey(keynote_key:"").
-# keynotes with root parent go to --> keynotes table
-# keynotes with keynote parents go to --> subkeynotes table
-
 # ================================================================ keynotesdb.py
 #pylint: disable=W0703
 from collections import namedtuple
@@ -44,23 +37,21 @@ KEYNOTES_TABLE = 'keynotes'
 KEYNOTES_TABLE_DESC = 'Keynotes Table'
 KEYNOTES_KEY_FIELD = 'keynote_key'
 KEYNOTES_TEXT_FIELD = 'keynote_text'
+KEYNOTES_PARENTKEY_FIELD = 'parent_key'
 
-RESERVERD_TEXT_FIELD_VALUE = \
-    '-------------- reserved by keynote manager -----------------'
+
+EDIT_MODE_ADD_CATEG = 'add-category'
+EDIT_MODE_EDIT_CATEG = 'edit-category'
+EDIT_MODE_ADD_KEYNOTE = 'add-keynote'
+EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
 
 
 def _verify_keynotesdb_def(conn):
-    keynotesdb_ok = True
-    keynotes_table_ok = True
-    categories_table_ok = True
-
     # verify db
     try:
         conn.ReadDB(KEYNOTES_DB)
-    except Exception:
-        keynotesdb_ok = False
-
-    if not keynotesdb_ok:
+    except Exception as dbex:
+        logger.debug('db exception: %s', dbex)
         dbdef = kdb.DatabaseDefinition()
         dbdef.Description = KEYNOTES_DB_DESC
         conn.CreateDB(KEYNOTES_DB, dbdef)
@@ -68,10 +59,8 @@ def _verify_keynotesdb_def(conn):
     # verify root categories table
     try:
         conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
-    except Exception:
-        categories_table_ok = False
-
-    if not categories_table_ok:
+    except Exception as cattex:
+        logger.debug('category table exception: %s', cattex)
         cat_key = kdb.TextField(CATEGORY_KEY_FIELD)
         cat_title = kdb.TextField(CATEGORY_TITLE_FIELD)
         cat_table_def = kdb.TableDefinition()
@@ -83,15 +72,14 @@ def _verify_keynotesdb_def(conn):
         cat_table_def.Description = CATEGORIES_TABLE_DESC
         conn.CreateTable(KEYNOTES_DB, CATEGORIES_TABLE, cat_table_def)
 
+    # verify keynote table
     try:
         conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
-    except Exception:
-        keynotes_table_ok = False
-
-    if not keynotes_table_ok:
+    except Exception as ktex:
+        logger.debug('keynote table exception: %s', ktex)
         keynote_key = kdb.TextField(KEYNOTES_KEY_FIELD)
         keynote_text = kdb.TextField(KEYNOTES_TEXT_FIELD)
-        keynote_parent_key = kdb.TPrimaryKeyField(CATEGORY_KEY_FIELD)
+        keynote_parent_key = kdb.TPrimaryKeyField(KEYNOTES_PARENTKEY_FIELD)
         keynotes_table_def = kdb.TableDefinition()
         keynotes_table_def.SupportsTags = False
         keynotes_table_def.SupportsHistory = False
@@ -105,7 +93,9 @@ def _verify_keynotesdb_def(conn):
 
 def connect(keynotes_file, username=None):
     conn = kdb.DataBase.Connect(keynotes_file, username or HOST_APP.username)
+    logger.debug('verifying db schemas...')
     _verify_keynotesdb_def(conn)
+    logger.debug('verifying db schemas completed.')
     return conn
 
 # query functions -------------------------------------------------------------
@@ -135,7 +125,7 @@ def get_keynotes(conn):
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
     return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
                      text=x[KEYNOTES_TEXT_FIELD] or '',
-                     parent_key=x[CATEGORY_KEY_FIELD],
+                     parent_key=x[KEYNOTES_PARENTKEY_FIELD],
                      locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
                      owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
                      children=[])
@@ -149,11 +139,18 @@ def get_keynotes_tree(conn):
     for rkey in keynote_records:
         parent = rkey_dict.get(rkey.parent_key, None)
         if parent:
+            logger.debug('adding parent-child: %s --> %s', parent.key, rkey.key)
             parent.children.append(rkey)
+            parent.children.sort()
             to_be_removed.append(rkey.key)
-    return [x for x in keynote_records if x.key not in to_be_removed]
+    return sorted([x for x in keynote_records if x.key not in to_be_removed],
+                  key=lambda x: x.key)
 
 
+def find(conn, key):
+    for record in get_categories(conn) + get_keynotes(conn):
+        if record.key == key:
+            return record
 
 # locking ---------------------------------------------------------------------
 
@@ -167,15 +164,13 @@ def end_edit(conn):
 
 
 def reserve_key(conn, key, category=False):
-    if category:
-        conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE,
-                          {CATEGORY_KEY_FIELD: key,
-                           CATEGORY_TITLE_FIELD: None})
-    else:
-        conn.InsertRecord(KEYNOTES_DB, KEYNOTES_TABLE,
-                          {KEYNOTES_KEY_FIELD: key,
-                           KEYNOTES_TEXT_FIELD: None,
-                           CATEGORY_KEY_FIELD: None})
+    target_table = CATEGORIES_TABLE if category else KEYNOTES_TABLE
+    conn.BEGIN(KEYNOTES_DB, target_table, key)
+
+
+def release_key(conn, key, category=False):
+    target_table = CATEGORIES_TABLE if category else KEYNOTES_TABLE
+    conn.END(KEYNOTES_DB, target_table, key)
 
 # categories ------------------------------------------------------------------
 
@@ -193,9 +188,13 @@ def update_category_title(conn, key, new_title):
 def remove_category(conn, key):
     conn.DropRecord(KEYNOTES_DB, CATEGORIES_TABLE, key)
 
+
+def rekey_category(conn, key, new_key):
+    # TODO: rekey_category
+    pass
 # keynotes --------------------------------------------------------------------
 
-def add_keynote(conn, key, text, parent=None):
+def add_keynote(conn, key, text, parent_key):
     # TODO: add keynote workflow
     # add record with key and empty text
     # lock the record
@@ -204,7 +203,7 @@ def add_keynote(conn, key, text, parent=None):
         KEYNOTES_TABLE,
         {KEYNOTES_KEY_FIELD: key,
          KEYNOTES_TEXT_FIELD: text,
-         CATEGORY_KEY_FIELD: parent}
+         KEYNOTES_PARENTKEY_FIELD: parent_key}
         )
 
 
@@ -242,9 +241,18 @@ def update_keynote_key(conn, key, new_key):
         )
 
 
-def move_keynote(conn, current_parent, new_parent):
-    pass
+def move_keynote(conn, key, new_parent):
+    conn.UpdateRecord(
+        KEYNOTES_DB,
+        KEYNOTES_TABLE,
+        key,
+        {KEYNOTES_PARENTKEY_FIELD: new_parent}
+        )
 
+
+def rekey_keynote(conn, key, new_key):
+    # TODO: rekey_keynote
+    pass
 
 def import_legacy_keynotes(conn, legacy_keynotes_file):
     conn.BEGIN(KEYNOTES_DB)
@@ -278,89 +286,215 @@ def update_linked_keynotes(doc=None):
 # =================================================================
 
 class EditRecordWindow(forms.WPFWindow):
-    def __init__(self, conn, rkey=None, category=False):
+    def __init__(self,
+                 conn, mode,
+                 rkeynote=None,
+                 rkey=None, text=None, pkey=None):
         forms.WPFWindow.__init__(self, 'EditRecord.xaml')
-        self.response = (None, None)
+        self._commited = False
+        self._reserved_key = None
 
         # connection
         self._conn = conn
-        # category or keynote?
-        self._cat = category
-        if self._cat:
-            self.hide_element(self.selectParentRow)
-            self.Title = 'Edit Category'
-            self.selectKeyTitle.Text = 'Category Key'
-
-        # target keynote
+        self._mode = mode
+        self._cat = False
+        self._rkeynote = rkeynote
         self._rkey = rkey
+        self._text = text
+        self._pkey = pkey
 
+        # prepare gui for various edit modes
+        if self._mode == EDIT_MODE_ADD_CATEG:
+            self._cat = True
+            self.hide_element(self.recordParentInput)
+            self.Title = 'Add Category'
+            self.recordKeyTitle.Text = 'Create Category Key'
+            self.applyChanges.Content = 'Add Category'
+
+        elif self._mode == EDIT_MODE_EDIT_CATEG:
+            self._cat = True
+            self.hide_element(self.recordParentInput)
+            self.Title = 'Edit Category'
+            self.recordKeyTitle.Text = 'Change Category Key'
+            self.applyChanges.Content = 'Update Category'
+            if self._rkeynote:
+                if self._rkeynote.key:
+                    try:
+                        begin_edit(self._conn,
+                                   self._rkeynote.key,
+                                   category=True)
+                    except Exception as ex:
+                        forms.alert(str(ex))
+                        return
+                self.active_key = str(self._rkeynote.key)
+                self.active_text = self._rkeynote.text
+
+        elif self._mode == EDIT_MODE_ADD_KEYNOTE:
+            self.show_element(self.recordParentInput)
+            self.Title = 'Add Keynote'
+            self.recordKeyTitle.Text = 'Create Keynote Key'
+            self.applyChanges.Content = 'Add Keynote'
+
+        elif self._mode == EDIT_MODE_EDIT_KEYNOTE:
+            self.show_element(self.recordParentInput)
+            self.Title = 'Edit Keynote'
+            self.recordKeyTitle.Text = 'Change Keynote Key'
+            self.applyChanges.Content = 'Update Keynote'
+            if self._rkeynote:
+                # start edit
+                if self._rkeynote.key:
+                    try:
+                        begin_edit(self._conn,
+                                   self._rkeynote.key,
+                                   category=False)
+                    except Exception as ex:
+                        forms.alert(str(ex))
+                        return
+                self.active_key = rkey or str(self._rkeynote.key)
+                self.active_text = text or self._rkeynote.text
+                self.active_parent_key = pkey or str(self._rkeynote.parent_key)
+
+        # update gui with overrides if any
         if self._rkey:
-            self.selectKey.Content = str(self._rkey.key)
-            self.selectParent.Content = str(self._rkey.parent_key)
-            self.recordText.Text = self._rkey.text
-        else:
-            self.applyChanges.Content = \
-                'Create {}'.format('Category' if self._cat else 'Keynote')
+            self.active_key = self._rkey
+        if self._text:
+            self.active_text = self._text
+        if self._pkey:
+            self.active_parent_key = self._pkey
+
         # select text in textbox for easy editing
         self.recordText.Focus()
         self.recordText.SelectAll()
 
+    @property
+    def active_key(self):
+        return self.recordKey.Content
+
+    @active_key.setter
+    def active_key(self, value):
+        self.recordKey.Content = value
+
+    @property
+    def active_text(self):
+        return self.recordText.Text
+
+    @active_text.setter
+    def active_text(self, value):
+        self.recordText.Text = value
+
+    @property
+    def active_parent_key(self):
+        return self.recordParent.Content
+
+    @active_parent_key.setter
+    def active_parent_key(self, value):
+        self.recordParent.Content = value
+
+    def commit(self):
+        if self._mode == EDIT_MODE_ADD_CATEG:
+            if not self.active_key:
+                forms.alert('Category must have a unique key.')
+                return False
+            elif not self.active_text:
+                forms.alert('Category must have a title.')
+                return False
+            add_category(self._conn, self.active_key, self.active_text)
+
+        elif self._mode == EDIT_MODE_EDIT_CATEG:
+            if not self.active_text:
+                forms.alert('Existing title is removed. '
+                            'Category must have a title.')
+                return False
+            # update category key if changed
+            if self.active_key != self._rkeynote.key:
+                rekey_category(self._conn, self._rkeynote.key, self.active_key)
+            # update category title if changed
+            if self.active_text != self._rkeynote.text:
+                update_category_title(self._conn,
+                                      self.active_key,
+                                      self.active_text)
+            end_edit(self._conn)
+
+        elif self._mode == EDIT_MODE_ADD_KEYNOTE:
+            if not self.active_key:
+                forms.alert('Keynote must have a unique key.')
+                return False
+            elif not self.active_text:
+                forms.alert('Keynote must have text.')
+                return False
+            elif not self.active_parent_key:
+                forms.alert('Keynote must have a parent.')
+                return False
+            add_keynote(self._conn,
+                        self.active_key,
+                        self.active_text,
+                        self.active_parent_key)
+
+        elif self._mode == EDIT_MODE_EDIT_KEYNOTE:
+            if not self.active_text:
+                forms.alert('Existing text is removed. Keynote must have text.')
+                return False
+            # update keynote key if changed
+            if self.active_key != self._rkeynote.key:
+                rekey_keynote(self._conn, self._rkeynote.key, self.active_key)
+            # update keynote title if changed
+            if self.active_text != self._rkeynote.text:
+                update_keynote_text(self._conn,
+                                    self.active_key,
+                                    self.active_text)
+            # update keynote parent
+            if self.active_parent_key != self._rkeynote.parent_key:
+                move_keynote(self._conn,
+                             self.active_key,
+                             self.active_parent_key)
+            end_edit(self._conn)
+
+        return True
+
     def show(self):
         self.ShowDialog()
-        return self.response
 
     def pick_key(self, sender, args):
-        # read button content for existing key
-        # verify that record is not a temporary record
-            # if it is, remove it and release any locks
+        # remove previously reserved
+        if self._reserved_key:
+            release_key(self._conn, self._reserved_key, category=self._cat)
         # collect existing keys
         reserved_keys = [x.key for x in get_categories(self._conn)]
         reserved_keys.extend([x.key for x in get_keynotes(self._conn)])
         # ask for a unique new key
         new_key = forms.ask_for_unique_string(
-            prompt='Enter Unique Key',
+            prompt='Enter a Unique Key',
             title=self.Title,
             reserved_values=reserved_keys)
-        # create empty record with that key
-        try:
-            reserve_key(self._conn, new_key, category=True)
-        except Exception as ex:
-            forms.alert('reserve_key' + str(ex))
-            return
-        # place a lock on that key
-        try:
-            begin_edit(self._conn, new_key, category=True)
-        except Exception as ex:
-            forms.alert('begin_edit' + str(ex))
-            return
-        # set the key value on the button
-        self.selectKey.Content = new_key
+        if new_key:
+            try:
+                reserve_key(self._conn, new_key, category=self._cat)
+                self._reserved_key = new_key
+                # set the key value on the button
+                self.active_key = new_key
+            except Exception as ex:
+                forms.alert(str(ex))
+                return
 
     def pick_parent(self, sender, args):
-        forms.alert('Picking a new parent...')
-        # read all records
+        # TODO: pick_parent
+        # categories = get_categories(self._conn)
+        # keynotes_tree = get_keynotes_tree(self._conn)
+        forms.alert('Pick parent...')
         # remove self from that record if self is not none
         # prompt to select a record
         # apply the record key on the button
 
     def apply_changes(self, sender, args):
-        self.Close()
-        # are we editing an existing record?
-        if self._rkey:
-            self.response = ('nochange', None)
-            if self.recordText.Text != self._rkey.text:
-                self.response = ('text', self.recordText.Text)
-        # or creating a new record?
-        else:
-            new_key = self.selectKey.Content
-            new_parent_key = '' if self._cat else self.selectParent.Content
-            self.response = ('new',
-                             RKeynote(key=new_key,
-                                      text=self.recordText.Text,
-                                      parent_key=new_parent_key,
-                                      locked=False,
-                                      owner='',
-                                      children=None))
+        self._commited = self.commit()
+        if self._commited:
+            self.Close()
+
+    def window_closed(self, sender, args):
+        if not self._commited:
+            if self._reserved_key:
+                release_key(self._conn, self._reserved_key, category=self._cat)
+            end_edit(self._conn)
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
@@ -405,31 +539,33 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _update_ktree(self):
         # maybe some coloring on filter?
         # https://stackoverflow.com/questions/5442067/change-color-and-font-for-some-part-of-text-in-wpf-c-sharp
+        last_idx = 0
+        if self.categories_tv.ItemsSource:
+            last_idx = self.categories_tv.SelectedIndex
+
         categories = [self._allcat]
         categories.extend(get_categories(self._conn))
         self.categories_tv.ItemsSource = categories
-        self.categories_tv.SelectedIndex = 0
+        self.categories_tv.SelectedIndex = last_idx
         self._update_ktree_knotes()
 
     def _update_ktree_knotes(self):
         active_keynotes = get_keynotes_tree(self._conn)
         selected_cat = self.selected_category
         if selected_cat:
-            if selected_cat.key == '':
+            if selected_cat.key:
                 active_keynotes = \
-                    sorted([x for x in active_keynotes], key=lambda x: x.key)
-            else:
-                active_keynotes = \
-                    sorted([x for x in active_keynotes
-                            if x.parent_key == self.selected_category.key],
-                           key=lambda x: x.key)
+                    [x for x in active_keynotes
+                     if x.parent_key == self.selected_category.key]
 
         keynote_filter = self.search_term if self.search_term else None
         if keynote_filter:
             clean_filter = keynote_filter.lower()
             self.keynotes_tv.ItemsSource = \
                 [x for x in active_keynotes
-                 if clean_filter in x.key.lower() + x.text.lower() + x.owner.lower()]
+                 if clean_filter in x.key.lower()
+                 + x.text.lower()
+                 + x.owner.lower()]
         else:
             self.keynotes_tv.ItemsSource = active_keynotes
 
@@ -449,6 +585,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def selected_category_changed(self, sender, args):
+        if self.selected_category != self._allcat:
+            self.catEditButtons.IsEnabled = True
+        else:
+            self.catEditButtons.IsEnabled = False
         self._update_ktree_knotes()
 
     def refresh(self, sender, args):
@@ -458,12 +598,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def add_category(self, sender, args):
         try:
-            edit_type, new_rkey = \
-                EditRecordWindow(self._conn, category=True).show()
-            if edit_type == 'new':
-                update_category_title(self._conn, new_rkey.key, new_rkey.text)
+            EditRecordWindow(self._conn, EDIT_MODE_ADD_CATEG).show()
             self._update_ktree()
-            self._conn.END()
         except Exception as ex:
             forms.alert(str(ex))
 
@@ -480,29 +616,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     else 'and unknown user'))
             else:
                 try:
-                    # start edit
-                    begin_edit(self._conn,
-                               selected_category.key, category=True)
-                    # get updated value
-                    edit_type, updated_value = \
-                        EditRecordWindow(self._conn,
-                                         rkey=selected_category,
-                                         category=True).show()
-                    # process and apply the updated value
-                    if edit_type == 'text':
-                        update_category_title(self._conn,
-                                              selected_category.key,
-                                              updated_value)
-                    elif edit_type == 'key':
-                        # TODO: rekey category
-                        forms.alert('Rekeying category...')
+                    EditRecordWindow(self._conn,
+                                     EDIT_MODE_EDIT_CATEG,
+                                     rkeynote=selected_category).show()
+                    self._update_ktree()
                 except Exception as ex:
                     forms.alert(str(ex))
-                finally:
-                    end_edit(self._conn)
-                    self._update_ktree()
 
     def remove_category(self, sender, args):
+        # TODO: make sure noone owns any sub keynotes
+        # TODO: ask user if they're sure
+        # TODO: ask user which category to move the subkeynotes or delete?
         selected_category = self.selected_category
         if selected_category and selected_category.text != self._allcat.text:
             try:
@@ -513,24 +637,35 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_ktree()
 
     def add_keynote(self, sender, args):
-        self._last_kn = 'SK{}'.format(self._text_counter)
+        parent_key = None
+        if self.selected_keynote:
+            parent_key = self.selected_keynote.parent_key
+        elif self.selected_category:
+            parent_key = self.selected_category.key
         try:
-            add_keynote(self._conn, self._last_kn, 'Some value', self._lastcat)
-            self._text_counter += 1
+            EditRecordWindow(self._conn,
+                             EDIT_MODE_ADD_KEYNOTE,
+                             pkey=parent_key).show()
             self._update_ktree()
         except Exception as ex:
             forms.alert(str(ex))
 
     def duplicate_keynote(self, sender, args):
-        selected_keynote = self.selected_keynote
-        if selected_keynote:
+        if self.selected_keynote:
             try:
-                add_keynote(self._conn, selected_keynote.key + '-DUP', 'Some value', self._lastcat)
-                self._update_ktree()
+                EditRecordWindow(
+                    self._conn,
+                    EDIT_MODE_ADD_KEYNOTE,
+                    text=self.selected_keynote.text,
+                    pkey=self.selected_keynote.parent_key).show()
+                self._update_ktree_knotes()
             except Exception as ex:
                 forms.alert(str(ex))
 
     def remove_keynote(self, sender, args):
+        # TODO: make sure noone owns any sub keynotes
+        # TODO: ask user if they're sure
+        # TODO: ask user which category to move the subkeynotes or delete?
         selected_keynote = self.selected_keynote
         if selected_keynote:
             try:
@@ -539,50 +674,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as ex:
                 forms.alert(str(ex))
 
-    def add_child_keynote(self, sender, args):
-        # detect selected keynote
-        selected_keynote = self.selected_keynote
-        if selected_keynote:
-            try:
-                add_keynote(self._conn, selected_keynote.key + str(self._text_counter), 'Some value', self._lastcat)
-                self._text_counter += 1
-                self._update_ktree()
-            except Exception as ex:
-                forms.alert(str(ex))
-
     def edit_keynote(self, sender, args):
-        selected_keynote = self.selected_keynote
-        if selected_keynote:
+        if self.selected_keynote:
             try:
-                self._conn.BEGIN(KEYNOTES_DB,
-                                 KEYNOTES_TABLE,
-                                 selected_keynote.key)
-                edit_type, updated_value = \
-                    EditRecordWindow(selected_keynote,
-                                      self.all_keynotes).show()
-                if edit_type == 'text':
-                    update_keynote_text(self._conn,
-                                        selected_keynote.key,
-                                        updated_value)
-            except Exception as ex:
-                forms.alert(str(ex))
-            finally:
-                self._conn.END()
+                EditRecordWindow(
+                    self._conn,
+                    EDIT_MODE_EDIT_KEYNOTE,
+                    rkey=self.selected_keynote).show()
                 self._update_ktree_knotes()
-
-    def update_keynote_key(self, sender, args):
-        # mark_keynote_under_edited(self._conn, self._last_kn)
-        selected_keynote = self.selected_keynote
-        if selected_keynote:
-            try:
-                self._conn.BEGIN(KEYNOTES_DB, KEYNOTES_TABLE, selected_keynote.key)
-                forms.alert('Click OK When finished editing...', ok=True)
-                update_keynote_key(self._conn, selected_keynote.key, selected_keynote.key + '-ED')
             except Exception as ex:
                 forms.alert(str(ex))
-            finally:
-                self._conn.END()
-                self._update_ktree()
 
     def place_keynote(self, sender, args):
         self.Close()
@@ -596,6 +697,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 uidoc_utils = UIDocUtils(HOST_APP.uiapp)
                 # place keynotes and get placed keynote elements
                 try:
+                    # TODO: add combobox to select keynote type
                     # UI.PostableCommand.UserKeynote
                     # UI.PostableCommand.ElementKeynote
                     # UI.PostableCommand.MaterialKeynote
@@ -608,7 +710,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         )
                 except Exception as ex:
                     forms.alert(str(ex))
-
 
     def import_keynotes(self, sender, args):
         # verify existing keynotes when importing

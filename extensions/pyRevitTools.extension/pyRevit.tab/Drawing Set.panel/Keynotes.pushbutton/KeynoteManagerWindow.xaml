@@ -11,7 +11,7 @@
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
             <Setter Property="Background" Value="White"/>
-        </Style>
+        </Style> 
 
         <Canvas x:Key="filterIcon">
             <Path Canvas.Top="-28" Canvas.Left="-25"
@@ -103,7 +103,7 @@
                       Padding="0,0,10,0"
                       PreviewMouseDoubleClick="place_keynote"
                       ItemTemplate="{StaticResource treeViewItem}"
-                      ItemContainerStyle="{StaticResource treeItemStyle}" />
+                      ItemContainerStyle="{StaticResource treeItemStyle}"/>
         </DockPanel>
         <DockPanel Grid.Column="1" Margin="0,0,0,0">
             <StackPanel DockPanel.Dock="Bottom">
@@ -135,16 +135,18 @@
                                 Padding="8,4,8,4"
                                 ToolTip = "Add new keynote category"
                                 Click="add_category"/>
-                        <Button Content="Edit"
-                                Margin="0,05,0,0"
-                                Padding="8,4,8,4"
-                                ToolTip = "Edit selected category"
-                                Click="edit_category"/>
-                        <Button Content="Remove"
-                                Margin="0,5,0,0"
-                                Padding="8,4,8,4"
-                                ToolTip="Remove selected category"
-                                Click="remove_category"/>
+                        <StackPanel x:Name="catEditButtons">
+                            <Button Content="Edit"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip = "Edit selected category"
+                                    Click="edit_category"/>
+                            <Button Margin="0,5,0,0"
+                                    Content="Remove"
+                                    Padding="8,4,8,4"
+                                    ToolTip="Remove selected category"
+                                    Click="remove_category"/>
+                        </StackPanel>
                     </StackPanel>
                 </GroupBox>
 
@@ -160,21 +162,18 @@
                                     Padding="8,4,8,4"
                                     ToolTip = "Duplicte selected keynote"
                                     Click="duplicate_keynote"/>
-                        <Button Content="Add Child"
+                        <StackPanel x:Name="keynoteEditButtons">
+                            <Button Content="Edit"
                                     Margin="0,5,0,0"
-                                    Padding="8,4,8,4"
-                                    ToolTip = "Add a new keynote as a child to selected keynote"
-                                    Click="add_child_keynote"/>
-                        <Button Content="Edit"
-                                    Margin="0,15,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip = "Edit selected keynote"
                                     Click="edit_keynote"/>
-                        <Button Content="Remove"
+                            <Button Content="Remove"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip="Remove selected keynote"
                                     Click="remove_keynote"/>
+                        </StackPanel>
                     </StackPanel>
                 </GroupBox>
 

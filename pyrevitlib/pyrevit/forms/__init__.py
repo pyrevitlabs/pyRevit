@@ -799,16 +799,16 @@ class GetValueWindow(TemplateUserInputWindow):
         filtered_rvalues = \
             sorted([x for x in self.reserved_values
                     if self.stringValue_tb.Text in str(x)],
-                reverse=True)
+                   reverse=True)
         if filtered_rvalues:
             self.reservedValuesList.ItemsSource = filtered_rvalues
             self.show_element(self.reservedValuesListPanel)
-            self.okayButton.IsEnabled = False
+            self.okayButton.IsEnabled = \
+                self.stringValue_tb.Text not in filtered_rvalues
         else:
             self.reservedValuesList.ItemsSource = []
             self.hide_element(self.reservedValuesListPanel)
             self.okayButton.IsEnabled = True
-
 
     def select(self, sender, args):    #pylint: disable=W0613
         self.Close()
