@@ -4,9 +4,10 @@ from pyrevit import forms
 from pyrevit.labs import TargetApps
 
 
-rvt_file = forms.pick_file(files_filter='Revit Model (*.rvt)|*.rvt|'
-										'Revit Template (*.rte)|*.rte|'
-                                        'Revit Family (*.rfa)|*.rfa')
+rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
+                                        'Revit Model |*.rvt|'
+                                        'Revit Template |*.rte|'
+                                        'Revit Family |*.rfa')
 if rvt_file:
     mfile = TargetApps.Revit.RevitModelFile(rvt_file)
     print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct.ProductName,
