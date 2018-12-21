@@ -9,6 +9,7 @@ if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
 
 #pylint: disable=W0703,C0302,C0103,C0413
+from pyrevit.extensions import components
 from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
     STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
     PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
@@ -433,6 +434,7 @@ def _produce_ui_stacks(ui_maker_params):
         try:
             parent_ui_panel.close_stack()
             mlogger.debug('Closed stack: %s', stack_cmp.name)
+            return stack_cmp
         except PyRevitException as err:
             mlogger.error('Error creating stack | %s', err)
 
@@ -559,7 +561,9 @@ def _recursively_produce_ui_items(ui_maker_params):
 
         mlogger.debug('UI item created by create func is: %s', ui_item)
 
-        if ui_item and sub_cmp.is_container:
+        if ui_item \
+                and not isinstance(ui_item, components.GenericStack) \
+                and sub_cmp.is_container:
             subcmp_count = _recursively_produce_ui_items(
                 UIMakerParams(ui_item,
                               ui_maker_params.component,
