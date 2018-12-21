@@ -49,7 +49,7 @@
                     </ContentControl.LayoutTransform>
                 </ContentControl>
                 <StackPanel>
-                    <TextBox x:Name="search_tb" Height="24"
+                    <TextBox x:Name="search_tb" Height="25"
                              Padding="5,0,24,0"
                              VerticalContentAlignment="Center"
 							 TextChanged="search_txt_changed"/>
