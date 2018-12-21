@@ -100,7 +100,7 @@ def ensure_text_type(name,
     doc = doc or HOST_APP.doc
     # check if type exists
     for ttype in query.get_types_by_class(DB.TextNoteType, doc=doc):
-        if db.ElementWrapper(ttype).name == name:
+        if query.get_name(ttype) == name:
             return ttype
     # otherwise create it
     return create.create_text_type(

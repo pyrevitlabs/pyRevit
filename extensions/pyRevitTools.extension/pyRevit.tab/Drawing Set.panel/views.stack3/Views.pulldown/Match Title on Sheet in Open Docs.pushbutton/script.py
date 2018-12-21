@@ -15,7 +15,7 @@ def collect_views(input_doc):
 
 # current document views
 curdoc_views = collect_views(revit.doc)
-curdoc_views_dict = {v.ViewName: v for v in curdoc_views}
+curdoc_views_dict = {revit.query.get_name(v): v for v in curdoc_views}
 
 for open_doc in revit.docs:
     if open_doc is not revit.doc \
@@ -23,18 +23,19 @@ for open_doc in revit.docs:
         views = collect_views(open_doc)
         with revit.Transaction('Match Title on Sheets', doc=open_doc):
             for v in views:
-                if v.ViewName in curdoc_views_dict:
+                if revit.query.get_name(v) in curdoc_views_dict:
                     tos_param = v.Parameter[
                         DB.BuiltInParameter.VIEW_DESCRIPTION
                         ]
-                    matching_view = curdoc_views_dict[v.ViewName]
+                    matching_view = curdoc_views_dict[revit.query.get_name(v)]
                     orig_tos_param = matching_view.Parameter[
                         DB.BuiltInParameter.VIEW_DESCRIPTION
                         ]
 
                     if orig_tos_param and tos_param:
                         print('Matching Views: {} / {}'
-                              .format(v.ViewName, matching_view.ViewName))
+                              .format(revit.query.get_name(v),
+                                      revit.query.get_name(matching_view)))
 
                         print('{} = {}'.format(tos_param.AsString(),
                                                orig_tos_param.AsString()))

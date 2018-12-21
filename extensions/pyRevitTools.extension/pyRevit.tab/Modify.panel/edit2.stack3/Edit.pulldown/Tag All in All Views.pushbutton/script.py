@@ -37,7 +37,8 @@ def tag_all_rooms():
                                  output.linkify(el.Id))
                     continue
                 if isinstance(view, (DB.ViewSection, DB.ViewPlan)):
-                    logger.debug('Working on view: %s' % view.ViewName)
+                    logger.debug('Working on view: %s',
+                                 revit.query.get_name(view))
                     room_tag = \
                         revit.doc.Create.NewRoomTag(
                             DB.LinkElementId(el.Id),
@@ -63,7 +64,8 @@ def tag_all_spaces():
                                  output.linkify(el.Id))
                     continue
                 if isinstance(view, (DB.ViewSection, DB.ViewPlan)):
-                    logger.debug('Working on view: %s' % view.ViewName)
+                    logger.debug('Working on view: %s',
+                                 revit.query.get_name(view))
                     space_tag = \
                         revit.doc.Create.NewRoomTag(
                             DB.LinkElementId(el.Id),

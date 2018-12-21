@@ -34,7 +34,7 @@
     <DockPanel Margin="10">
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Text="Select Order Parameter:" />
-            <ComboBox x:Name="orderparams_cb" Height="22" Margin="0,5,0,0" SelectionChanged="selection_changed"/>
+            <ComboBox x:Name="orderparams_cb" Height="24" Margin="0,5,0,0" SelectionChanged="selection_changed"/>
             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
                     List of the sheets (Drag to manually reorder):
             </TextBlock>
@@ -51,7 +51,7 @@
             <Button x:Name="reorder_b"
                     Margin="5,0,0,0"
 				    Grid.Column="2" Grid.Row="0"
-                    Height="25"
+                    Height="24"
                     Content="Re-Order"
                     Click="reorder_items"/>
         </Grid>

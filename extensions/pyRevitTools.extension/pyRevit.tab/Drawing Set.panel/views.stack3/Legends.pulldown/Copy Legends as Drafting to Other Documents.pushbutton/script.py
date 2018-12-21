@@ -33,7 +33,7 @@ if legends:
     for dest_doc in open_docs:
         # get all views and collect names
         all_graphviews = revit.query.get_all_views(doc=dest_doc)
-        all_drafting_names = [x.ViewName
+        all_drafting_names = [revit.query.get_name(x)
                               for x in all_graphviews
                               if x.ViewType == DB.ViewType.DraftingView]
 
@@ -48,7 +48,7 @@ if legends:
 
         # iterate over interfacetypes legend views
         for src_legend in legends:
-            print('\tCopying: {0}'.format(src_legend.ViewName))
+            print('\tCopying: {0}'.format(revit.query.get_name(src_legend)))
             # get legend view elements and exclude non-copyable elements
             elements_to_copy = []
             for el in DB.FilteredElementCollector(revit.doc, src_legend.Id)\
@@ -60,7 +60,8 @@ if legends:
                 else:
                     logger.debug('Skipping element: %s', el.Id)
             if not elements_to_copy:
-                logger.debug('Skipping empty view: %s', src_legend.ViewName)
+                logger.debug('Skipping empty view: %s',
+                             revit.query.get_name(src_legend))
                 continue
 
             # start creating views and copying elements
@@ -86,12 +87,12 @@ if legends:
                         )
 
                 # matching view name and scale
-                new_name = src_legend.ViewName
+                new_name = revit.query.get_name(src_legend)
                 if new_name in all_drafting_names:
                     new_name += ' (Converted from Legend)'
                     logger.warning(
                         'Drafting already exists. Renaming to: "%s"',
                         new_name
                         )
-                dest_view.ViewName = new_name
+                revit.update.set_name(dest_view, new_name)
                 dest_view.Scale = src_legend.Scale

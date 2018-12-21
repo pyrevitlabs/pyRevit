@@ -51,4 +51,4 @@ if selected_option:
             revit.query.get_types_by_class(DB.ElementType, doc=revit.doc)
         selection.set_to([x for x in all_types
                           if selected_option == x.FamilyName
-                          and revit.ElementWrapper(x).name != x.FamilyName])
+                          and revit.query.get_name(x) != x.FamilyName])

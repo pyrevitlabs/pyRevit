@@ -38,7 +38,7 @@ class ReferencingView:
         titleos_param = \
             self.element.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION]
         titleos = titleos_param.AsString()
-        self.name = titleos if titleos else self.element.ViewName
+        self.name = titleos if titleos else revit.query.get_name(self.element)
         self.refs = []
         self._update_refs(all_ref_els)
         # self._update_refs(self.element.GetReferenceCallouts())
@@ -66,7 +66,8 @@ class ReferencingView:
             viewnameparam = element.Parameter[DB.BuiltInParameter.VIEW_NAME]
             if element.OwnerViewId == self.element.Id \
                     or (viewnameparam \
-                        and viewnameparam.AsString() == self.element.ViewName):
+                        and viewnameparam.AsString() ==
+                            revit.query.get_name(self.element)):
                 self.refs.append(element.Name)
 
     def is_referring_to(self, view_name):
@@ -93,11 +94,11 @@ for vp in selection:
         v = revit.doc.GetElement(vp.ViewId)
         title = v.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION].AsString()
         print('\n\nVIEW NAME: {}\n    Referenced by:'
-              .format(title if title else v.ViewName))
+              .format(title if title else revit.query.get_name(v)))
 
         for r_view in all_views:
             if r_view.is_sheeted() \
-                    and r_view.is_referring_to(v.ViewName):
+                    and r_view.is_referring_to(revit.query.get_name(v)):
                 print('\t\t{} : {}/{} : {}'
                       .format(output.linkify(r_view.element.Id),
                               r_view.ref_det,

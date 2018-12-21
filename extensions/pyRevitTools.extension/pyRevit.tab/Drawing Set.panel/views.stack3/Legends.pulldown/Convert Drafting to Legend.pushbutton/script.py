@@ -16,7 +16,7 @@ class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
 
 # get all views and collect names
 all_graphviews = revit.query.get_all_views(doc=revit.doc)
-all_legend_names = [x.ViewName
+all_legend_names = [revit.query.get_name(x)
                     for x in all_graphviews
                     if x.ViewType == DB.ViewType.Legend]
 
@@ -36,7 +36,7 @@ if drafting_views:
 
     # iterate over interfacetypes drafting views
     for src_drafting in drafting_views:
-        logger.debug('Copying %s', src_drafting.ViewName)
+        logger.debug('Copying %s', revit.query.get_name(src_drafting))
 
         # get drafting view elements and exclude non-copyable elements
         view_elements = \
@@ -49,7 +49,8 @@ if drafting_views:
             else:
                 logger.debug('Skipping element: %s', el.Id)
         if not elements_to_copy:
-            logger.debug('Skipping empty view: %s', src_drafting.ViewName)
+            logger.debug('Skipping empty view: %s',
+                         revit.query.get_name(src_drafting))
             continue
 
         # start creating views and copying elements
@@ -76,10 +77,10 @@ if drafting_views:
                     src_drafting.GetElementOverrides(src)
                     )
             # matching view name and scale
-            new_name = src_drafting.ViewName
+            new_name = revit.query.get_name(src_drafting)
             if new_name in all_legend_names:
                 new_name += ' (Converted from Drafting)'
                 logger.warning('Legend already exists. Renaming to: "%s"',
                                new_name)
-            dest_view.ViewName = new_name
+            revit.update.set_name(dest_view, new_name)
             dest_view.Scale = src_drafting.Scale

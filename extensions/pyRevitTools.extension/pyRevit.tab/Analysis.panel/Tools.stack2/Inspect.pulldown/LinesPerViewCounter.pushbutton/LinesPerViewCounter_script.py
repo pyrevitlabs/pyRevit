@@ -49,7 +49,7 @@ for line_count, view_id_int \
                                                       view_id).Creator
 
     try:
-        view_name = revit.doc.GetElement(view_id).ViewName
+        view_name = revit.query.get_name(revit.doc.GetElement(view_id))
     except Exception:
         view_name = "<no view name available>"
 

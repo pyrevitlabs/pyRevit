@@ -31,6 +31,4 @@ if len(selection) > 0:
                             grpTypes.add(g.GroupType.Id)
 
             for gtId in grpTypes:
-                wrapped_gtype = \
-                    revit.ElementWrapper(revit.doc.GetElement(gtId))
-                print(wrapped_gtype.name)
+                print(revit.query.get_name(revit.doc.GetElement(gtId)))

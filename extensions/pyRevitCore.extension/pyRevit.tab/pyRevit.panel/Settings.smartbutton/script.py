@@ -82,6 +82,10 @@ class SettingsWindow(forms.WPFWindow):
                                    '2018': self.revit2018_cb,
                                    '2019': self.revit2019_cb}
 
+        self.set_image_source(self.lognone, 'lognone.png')
+        self.set_image_source(self.logverbose, 'logverbose.png')
+        self.set_image_source(self.logdebug, 'logdebug.png')
+
         self._setup_outputsettings()
         self._setup_usagelogging()
         self._setup_addinfiles()

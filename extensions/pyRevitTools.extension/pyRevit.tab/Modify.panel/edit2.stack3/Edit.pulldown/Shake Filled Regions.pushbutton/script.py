@@ -22,7 +22,7 @@ def shake_filled_regions(view):
                  .WhereElementIsNotElementType()\
                  .ToElements()
 
-    print('Shaking Filled Regions in: {}'.format(view.ViewName))
+    print('Shaking Filled Regions in: {}'.format(revit.query.get_name(view)))
 
     for i, fr in enumerate(fregions):
         with revit.Transaction('Shake Filled Region #{}'.format(i)):

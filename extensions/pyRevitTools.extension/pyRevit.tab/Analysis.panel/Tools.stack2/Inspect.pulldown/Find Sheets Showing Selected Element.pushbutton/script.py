@@ -57,4 +57,4 @@ for sheet in sheet_dict:
     for vpview_tuple in sheet_dict[sheet]:
         print('\t\tViewport {}: {}'
               .format(output.linkify(vpview_tuple.viewport.Id),
-                      vpview_tuple.view.ViewName))
+                      revit.query.get_name(vpview_tuple.view)))

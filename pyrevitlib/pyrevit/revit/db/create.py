@@ -127,7 +127,12 @@ def create_3d_view(view_name, isometric=True, doc=None):
             nview = DB.View3D.CreateIsometric(doc, default_3dview_type)
         else:
             nview = DB.View3D.CreatePerspective(doc, default_3dview_type)
-    nview.ViewName = view_name
+
+    if HOST_APP.is_newer_than('2019', or_equal=True):
+        nview.Name = view_name
+    else:
+        nview.ViewName = view_name
+
     nview.CropBoxActive = False
     nview.CropBoxVisible = False
     if nview.CanToggleBetweenPerspectiveAndIsometric():
@@ -140,6 +145,7 @@ def create_3d_view(view_name, isometric=True, doc=None):
 
 def create_revision_sheetset(revisions,
                              name_format='Revision {}',
+                             match_any=True,
                              doc=None):
     doc = doc or HOST_APP.doc
     # get printed printmanager
@@ -165,11 +171,12 @@ def create_revision_sheetset(revisions,
 
     # find revised sheets
     myviewset = DB.ViewSet()
+    check_func = any if match_any else all
     for sheet in sheets:
         revs = sheet.GetAllRevisionIds()
         sheet_revids = [x.IntegerValue for x in revs]
-        if all([x.Id.IntegerValue in sheet_revids
-                for x in revisions]):
+        if check_func([x.Id.IntegerValue in sheet_revids
+                       for x in revisions]):
             myviewset.Insert(sheet)
 
     # needs transaction
@@ -217,7 +224,7 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
     filledregion_types = DB.FilteredElementCollector(doc) \
                            .OfClass(DB.FilledRegionType)
     for filledregion_type in filledregion_types:
-        if db.ElementWrapper(filledregion_type).name == filledregion_name:
+        if query.get_name(filledregion_type) == filledregion_name:
             raise PyRevitException('Filled Region matching \"{}\" already '
                                    'exists.'.format(filledregion_name))
     source_filledregion = filledregion_types.FirstElement()
