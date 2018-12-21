@@ -1,5 +1,5 @@
 """Helper functions to query info and elements from Revit."""
-
+#pylint: disable=W0703,C0103
 from collections import namedtuple
 
 from pyrevit.coreutils import logger
@@ -8,6 +8,8 @@ from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import DB
 from pyrevit.revit import db
+
+from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
 
 mlogger = logger.get_logger(__name__)
@@ -38,6 +40,49 @@ GRAPHICAL_VIEWTYPES = [
 
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
+
+
+def get_name(element):
+    # grab viewname correctly
+    if isinstance(element, DB.View):
+        if HOST_APP.is_newer_than('2019', or_equal=True):
+            return element.Name
+        else:
+            return element.ViewName
+
+    # have to use the imported Element otherwise
+    # AttributeError occurs
+    return Element.Name.__get__(element)
+
+
+def get_symbol_name(element):
+    return get_name(element.Symbol)
+
+
+def get_family_name(element):
+    return get_name(element.Symbol.Family)
+
+
+def get_param(element, param_name, default=None):
+    if isinstance(element, DB.Element):
+        try:
+            return element.LookupParameter(param_name)
+        except Exception:
+            return default
+
+
+def get_assoc_doc(element):
+    return element.Document
+
+
+def get_mark(element):
+    mparam = element.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
+    return mparam.AsString() if mparam else ''
+
+
+def get_location(element):
+    locp = element.Location.Point
+    return (locp.X, locp.Y, locp.Z)
 
 
 def get_biparam_stringequals_filter(bip_paramvalue_dict):
@@ -445,7 +490,7 @@ def get_all_schedules(doc=None):
 def get_view_by_name(view_name, doc=None):
     doc = doc or HOST_APP.doc
     for view in get_all_views(doc=doc):
-        if view.ViewName == view_name:
+        if get_name(view) == view_name:
             return view
 
 

@@ -1349,7 +1349,8 @@ class ViewOption(TemplateListItem):
     @property
     def name(self):
         """View name."""
-        return '{} ({})'.format(self.item.ViewName, self.item.ViewType)
+        return '{} ({})'.format(revit.query.get_name(self.item),
+                                self.item.ViewType)
 
 
 def select_revisions(title='Select Revision',
@@ -1595,7 +1596,7 @@ def select_titleblocks(title='Select Titleblock',
                     .ToElements()
 
     tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                   revit.ElementWrapper(tb).name): tb.Id
+                                   revit.query.get_name(tb)): tb.Id
                    for tb in titleblocks}
     tblock_dict[no_tb_option] = DB.ElementId.InvalidElementId
     selected_titleblocks = SelectFromList.show(sorted(tblock_dict.keys()),

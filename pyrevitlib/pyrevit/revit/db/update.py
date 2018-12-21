@@ -6,6 +6,17 @@ from pyrevit import DB
 from pyrevit.revit.db import query
 
 
+def set_name(element, new_name):
+    # grab viewname correctly
+    if isinstance(element, DB.View):
+        if HOST_APP.is_newer_than('2019', or_equal=True):
+            element.Name = new_name
+        else:
+            element.ViewName = new_name
+    else:
+        element.Name = new_name
+
+
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
     doc = doc or HOST_APP.doc
     # make sure revisions is a list
