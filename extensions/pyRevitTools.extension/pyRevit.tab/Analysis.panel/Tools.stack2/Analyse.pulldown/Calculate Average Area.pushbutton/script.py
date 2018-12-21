@@ -1,5 +1,9 @@
 #pylint: disable=E0401,C0103
 from pyrevit import revit, DB
+from pyrevit import script
+
+
+output = script.get_output()
 
 
 __context__ = 'selection'
@@ -43,7 +47,13 @@ for el in selection.elements:
                 if area.AreaScheme.Name == el.AreaScheme.Name\
                         and selareaname == areaname:
                     area_param = area.Parameter[DB.BuiltInParameter.ROOM_AREA]
-                    total += area_param.AsDouble()
+                    area_val = area_param.AsDouble()
+                    print('+ Area \"{}\" = {}'.format(
+                        output.linkify(area.Id),
+                        areaname,
+                        revit.units.format_area(area_val)
+                        ))
+                    total += area_val
                     count += 1
             print("TOTAL OF {} AREAS WERE FOUND.".format(count))
             processed_items[DB.Area].append(selareaname)
@@ -56,7 +66,13 @@ for el in selection.elements:
                     room.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
                 if selroomname == roomname:
                     area_param = room.Parameter[DB.BuiltInParameter.ROOM_AREA]
-                    total += area_param.AsDouble()
+                    area_val = area_param.AsDouble()
+                    print('{} Room \"{}\" = {}'.format(
+                        output.linkify(room.Id),
+                        roomname,
+                        revit.units.format_area(area_val)
+                        ))
+                    total += area_val
                     count += 1
             print("TOTAL OF {} ROOMS WERE FOUND.".format(count))
             processed_items[DB.Architecture.Room].append(selroomname)
@@ -69,13 +85,21 @@ for el in selection.elements:
                     space.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
                 if selspacename == spacename:
                     area_param = space.Parameter[DB.BuiltInParameter.ROOM_AREA]
-                    total += area_param.AsDouble()
+                    area_val = area_param.AsDouble()
+                    print('{} Space \"{}\" = {}'.format(
+                        output.linkify(space.Id),
+                        spacename,
+                        revit.units.format_area(area_val)
+                        ))
+                    total += area_val
                     count += 1
             print("TOTAL OF {} SPACES WERE FOUND.".format(count))
             processed_items[DB.Mechanical.Space].append(selspacename)
 
     if count != 0:
         average = total / count
-        print('AVERAGE AREA OF THE SELECTED TYPE IS:'
-              '\n{0} SQFT'
-              '\n{1} ACRE'.format(average, average / 43560))
+        print('\nAVERAGE AREA OF THE SELECTED TYPE IS:'
+              '\n{0}'
+              '\n ======================================='
+              '\n{1} ACRE'.format(revit.units.format_area(average),
+                                  average / 43560))
