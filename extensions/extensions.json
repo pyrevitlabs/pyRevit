@@ -1,33 +1,45 @@
 {
-"extensions":
-    [
-        {
-        "builtin": "False",
-        "default_enabled": "True",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "PyRevitMEP",
-        "description": "MEP extension for PyRevit",
-        "author": "Cyril Waechter",
-        "author_profile": "https://github.com/CyrilWaechter",
-        "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
-        "website": "http://pythoncvc.net/?page_id=123",
-        "image" : "",
-        "dependencies": []
+    "extensions": [{
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "False",
+            "name": "PyRevitPlus",
+            "description": "Extensions for PyRevit",
+            "author": "Gui Talarico",
+            "author_profile": "https://github.com/gtalarico",
+            "url": "https://github.com/gtalarico/pyrevitplus.git",
+            "website": "https://github.com/gtalarico/pyrevitplus",
+            "image": "",
+            "dependencies": []
         },
         {
-        "builtin": "False",
-        "default_enabled": "True",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "pyApex",
-        "description": "Apex Project BIM Utils",
-        "author": "Aleksey Melnikov",
-        "author_profile": "https://github.com/melnikovalex",
-        "url": "https://github.com/apex-project/pyApex.git",
-        "website": "https://github.com/apex-project/pyApex",
-        "image": "",
-        "dependencies": []
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "PyRevitMEP",
+            "description": "MEP extension for PyRevit",
+            "author": "Cyril Waechter",
+            "author_profile": "https://github.com/CyrilWaechter",
+            "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
+            "website": "http://pythoncvc.net/?page_id=123",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "default_enabled": "True",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "pyApex",
+            "description": "Apex Project BIM Utils",
+            "author": "Aleksey Melnikov",
+            "author_profile": "https://github.com/melnikovalex",
+            "url": "https://github.com/apex-project/pyApex.git",
+            "website": "https://github.com/apex-project/pyApex",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
