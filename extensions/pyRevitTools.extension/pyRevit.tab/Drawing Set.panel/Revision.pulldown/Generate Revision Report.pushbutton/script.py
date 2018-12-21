@@ -58,8 +58,7 @@ rev_table_header = "| Number        | Date           | Description  |\n" \
 rev_table_template = "|{number}|{date}|{desc}|\n"
 rev_table = rev_table_header
 for rev in all_revisions:
-    wrev = revit.ElementWrapper(rev)
-    revnum = wrev.safe_get_param('RevisionNumber', rev.SequenceNumber)
+    revnum = revit.query.get_param(rev, 'RevisionNumber', rev.SequenceNumber)
     rev_table += rev_table_template.format(number=revnum,
                                            date=rev.RevisionDate,
                                            desc=rev.Description)

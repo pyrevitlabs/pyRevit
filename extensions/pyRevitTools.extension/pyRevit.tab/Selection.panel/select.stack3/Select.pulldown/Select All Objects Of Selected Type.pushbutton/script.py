@@ -31,7 +31,8 @@ if len(selection) > 0:
         if r.GetTypeId() == TID:
             filteredlist.append(r.Id)
             if vsList:
-                ovname = revit.doc.GetElement(r.OwnerViewId).ViewName
+                ovname = \
+                    revit.query.get_name(revit.doc.GetElement(r.OwnerViewId))
                 if ovname in vsItems:
                     vsItems[ovname].append(r)
                 else:

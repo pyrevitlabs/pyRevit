@@ -15,7 +15,8 @@ views = DB.FilteredElementCollector(revit.doc)\
 
 for v in views:
     if v.IsTemplate:
-        print('\nID: {1}\t{0}'.format(v.ViewName, str(v.Id).ljust(10)))
+        print('\nID: {1}\t{0}'.format(revit.query.get_name(v),
+                                      str(v.Id).ljust(10)))
         filters = v.GetFilters()
         for fl in filters:
             print('\t\t\tID: {0}\t{1}'.format(fl,

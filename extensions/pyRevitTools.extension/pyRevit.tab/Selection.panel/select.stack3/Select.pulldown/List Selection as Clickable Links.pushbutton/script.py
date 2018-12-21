@@ -20,5 +20,5 @@ if len(selection.element_ids) > 0:
     for idx, element in enumerate(selection.elements):
         print('{}: {} {}'.format(idx+1,
                                  output.linkify(element.Id),
-                                 revit.ElementWrapper(element).name
+                                 revit.query.get_name(element)
                                  ))

@@ -27,14 +27,14 @@ def find_unrefed_views(view_list):
                 and refviewport \
                 and refsheet.AsString() != '' \
                 and refviewport.AsString() != '' \
-                or (refprefix + v.ViewName) \
+                or (refprefix + revit.query.get_name(v)) \
                 in view_refs_names:
             continue
         else:
             print('-'*20)
             print('NAME: {0}\nTYPE: {1}\nID: {2}\n'
                   'PLACED ON DETAIL/SHEET: {4} / {3}'
-                  .format(v.ViewName,
+                  .format(revit.query.get_name(v),
                           str(v.ViewType).ljust(20),
                           output.linkify(v.Id),
                           sheetnum.AsString() if sheetnum else '-',

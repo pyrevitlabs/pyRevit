@@ -20,12 +20,12 @@ class ViewPortType:
         self._rvt_type = rvt_element_type
 
     def __str__(self):
-        return revit.ElementWrapper(self._rvt_type).name
+        return revit.query.get_name(self._rvt_type)
 
     def __repr__(self):
         return '<{} Name:{} Id:{}>'\
                .format(self.__class__.__name__,
-                       revit.ElementWrapper(self._rvt_type).name,
+                       revit.query.get_name(self._rvt_type),
                        self._rvt_type.Id.IntegerValue)
 
     def __lt__(self, other):

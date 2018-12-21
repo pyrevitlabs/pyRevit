@@ -20,7 +20,7 @@ selection = revit.get_selection()
 cad_import = selection.first
 cad_trans = cad_import.GetTransform()
 cad_type = cad_import.Document.GetElement(cad_import.GetTypeId())
-cad_name = revit.ElementWrapper(cad_type).name
+cad_name = revit.query.get_name(cad_type)
 
 family_cat = revit.doc.OwnerFamily.FamilyCategory
 

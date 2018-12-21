@@ -84,10 +84,10 @@ if selected_sheets and len(selected_sheets) > 0:
 
                             new_vp.ChangeTypeId(vp.GetTypeId())
                         else:
-                            logger.warning('Skipping {}. This view type '
+                            logger.warning('Skipping %s. This view type '
                                            'can not be placed on '
-                                           'multiple sheets.'
-                                           .format(src_view.ViewName))
+                                           'multiple sheets.',
+                                           revit.query.get_name(src_view))
                     elif isinstance(vp, DB.ScheduleSheetInstance):
                         # check if schedule already exists
                         # and update location

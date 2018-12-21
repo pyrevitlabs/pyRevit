@@ -15,7 +15,7 @@ def make_title(base_point, fr_type):
                        revit.activeview.Id,
                        DB.XYZ(base_point.X, base_point.Y + 1, base_point.Z),
                        1/12.0,
-                       revit.ElementWrapper(fr_type).name,
+                       revit.query.get_name(fr_type),
                        tnote_typeid
                       )
 
@@ -65,5 +65,5 @@ filledregion_types = revit.query.get_types_by_class(DB.FilledRegionType)
 with revit.Transaction('Generate FilledRegion Swatched'):
     for idx, filledregion_type in enumerate(
             sorted(filledregion_types,
-                   key=lambda x: revit.ElementWrapper(x).name)):
+                   key=lambda x: revit.query.get_name(x))):
         make_swatch(idx, filledregion_type)

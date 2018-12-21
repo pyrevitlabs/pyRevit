@@ -22,7 +22,7 @@ viewList = []
 
 
 for v in views:
-    print('Searching {0} of type: {1}'.format(v.ViewName,
+    print('Searching {0} of type: {1}'.format(revit.query.get_name(v),
                                               str(v.ViewType).ljust(25)))
 
     cl_els = DB.FilteredElementCollector(revit.doc, v.Id)\
@@ -41,6 +41,6 @@ for v in views:
 print('\n\nViews Containing the selected objects:')
 
 for v in viewList:
-    print('{0}{1}ID:{2}'.format(v.ViewName.ljust(45),
+    print('{0}{1}ID:{2}'.format(revit.query.get_name(v).ljust(45),
                                 str(v.ViewType).ljust(25),
                                 str(v.Id).ljust(10)))

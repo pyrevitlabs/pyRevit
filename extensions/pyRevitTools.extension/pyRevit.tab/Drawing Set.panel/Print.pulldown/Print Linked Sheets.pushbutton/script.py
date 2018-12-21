@@ -30,7 +30,7 @@ class PrintLinkedSheets(forms.WPFWindow):
     def _get_linked_model_doc(self):
         linked_model = self.linkedmodels_lb.SelectedItem
         for open_doc in revit.docs:
-            if open_doc.Title == revit.ElementWrapper(linked_model).name:
+            if open_doc.Title == revit.query.get_name(linked_model):
                 return open_doc
 
     def _list_sheets(self):

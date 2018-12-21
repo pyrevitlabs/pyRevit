@@ -181,7 +181,7 @@ def create_dest_view(view_type, view_name, view_scale):
                         )
                 new_dest_view = DB.ViewDrafting.Create(doc, view_fam_typeid)
 
-            new_dest_view.ViewName = view_name
+            revit.update.set_name(new_dest_view, view_name)
             new_dest_view.Scale = view_scale
             model_visib_param = new_dest_view.Parameter[
                 DB.BuiltInParameter.VIEW_MODEL_DISPLAY_MODE
@@ -228,7 +228,7 @@ def copy_paste_elements_btwn_views(source_view, destination_view):
                 failure_ops.SetFailuresPreprocessor(
                     ViewConverterFailurePreProcessor(
                         trans_name,
-                        source_view.ViewName))
+                        revit.query.get_name(source_view)))
                 # failure_ops.SetForcedModalHandling(False)
                 t.SetFailureHandlingOptions(failure_ops)
 
@@ -246,7 +246,7 @@ def copy_paste_elements_btwn_views(source_view, destination_view):
                 # matching element graphics overrides and view properties
                 if len(copied_element) != len(elements_to_copy):
                     logger.warning('Some elements were not copied from view: {}'
-                                   .format(source_view.ViewName))
+                                   .format(revit.query.get_name(source_view)))
                 for dest, src in zip(copied_element, elements_to_copy):
                     destination_view.SetElementOverrides(
                         dest,
@@ -256,7 +256,7 @@ def copy_paste_elements_btwn_views(source_view, destination_view):
                 return len(copied_element)
         except Exception as err:
             logger.error('Error occured while copying elements from {} | {}'
-                         .format(source_view.ViewName, err))
+                         .format(revit.query.get_name(source_view), err))
             return 0
     else:
         print('No copyable elements where found.')
@@ -277,19 +277,19 @@ with DB.TransactionGroup(doc, 'Convert View Types') as tg:
         output.print_md('-----\n**{} of {}**'
                         .format(view_count, total_view_count))
         output.print_md('**Converting: {}**'
-                        .format(src_view.ViewName))
+                        .format(revit.query.get_name(src_view)))
         dest_view_successfully_setup = False
         try:
             dest_view = \
                 create_dest_view(dest_view_type,
-                                 src_view.ViewName,
+                                 revit.query.get_name(src_view),
                                  src_view.Scale)
-            print('View created: {}'.format(dest_view.ViewName))
+            print('View created: {}'.format(revit.query.get_name(dest_view)))
             dest_view_successfully_setup = True
         except Exception as err:
             logger.error('Error creating model view for: {}. '
                          'Conversion unsuccessful. | {}'
-                         .format(src_view.ViewName, err))
+                         .format(revit.query.get_name(src_view), err))
 
         if dest_view_successfully_setup:
             print('Copying 2D contents from {} to {}'

@@ -80,7 +80,7 @@ class SmartSortableFamilyType:
 loaded_symbols = set()
 for sym_id in family.GetFamilySymbolIds():
     family_symbol = revit.doc.GetElement(sym_id)
-    family_symbol_name = revit.ElementWrapper(family_symbol).name
+    family_symbol_name = revit.query.get_name(family_symbol)
     sortable_sym = SmartSortableFamilyType(family_symbol_name)
     logger.debug('Loaded Type: {}'.format(sortable_sym))
     loaded_symbols.add(sortable_sym)
@@ -111,7 +111,7 @@ with revit.DryTransaction('Fake load'):
     # get the symbols from the original
     for sym_id in loaded_fam.GetFamilySymbolIds():
         family_symbol = revit.doc.GetElement(sym_id)
-        family_symbol_name = revit.ElementWrapper(family_symbol).name
+        family_symbol_name = revit.query.get_name(family_symbol)
         sortable_sym = SmartSortableFamilyType(family_symbol_name)
         logger.debug('Importable Type: {}'.format(sortable_sym))
         symbol_list.add(sortable_sym)

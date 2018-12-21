@@ -860,7 +860,7 @@ def create_tag_schedule(tag, category, src_schedule):
                                       DB.ScheduleFilterType.Contains,
                                       tag.name)
         newsched.Definition.AddFilter(tagfilter)
-        newsched.ViewName = newsched_name
+        revit.update.set_name(newsched, newsched_name)
         return newsched
 
 

@@ -14,11 +14,13 @@ for revc in revcs:
         continue
     else:
         rev = revit.doc.GetElement(revc.RevisionId)
-        wrev = revit.ElementWrapper(rev)
+        wrev = revit.query.get_name(rev)
         print('REV#: {0}\t\tID: {2}\t\tON VIEW: {1}'
-              .format(wrev.safe_get_param('RevisionNumber',
-                                          rev.SequenceNumber),
-                      parent.ViewName,
-                      revc.Id))
+              .format(
+                  revit.query.get_param(rev,
+                                        'RevisionNumber',
+                                        rev.SequenceNumber),
+                  revit.query.get_name(parent),
+                  revc.Id))
 
 print('\nSEARCH COMPLETED.')
