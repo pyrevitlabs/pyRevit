@@ -9,7 +9,7 @@
     <StackPanel Margin="10" HorizontalAlignment="Stretch">
         <Label FontWeight="Bold">Pattern Name:</Label>
         <ComboBox x:Name="pat_name_cb"
-                      Height="25px"
+                      Height="24"
                       IsEditable="True"
                       StaysOpenOnEdit="True"/>
         <GroupBox Header="Pattern Type:" Margin="0,10,0,0">
@@ -36,18 +36,18 @@
                 <CheckBox x:Name="createfilledregion_cb" Margin="0,5,0,0" IsChecked="False" Content="Create Filled Region" />
                 <CheckBox x:Name="highestres_cb" Margin="0,10,0,0" IsChecked="True" Content="Use Highest Resolution"/>
                 <DockPanel Margin="0,10,0,0">
-                    <TextBlock Text="Multiplier:"  Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <TextBox x:Name="multiplier_tb" Text="1.0" VerticalContentAlignment="Center" Height="20"/>
+                    <TextBlock Text="Scale Multiplier:"  Margin="0,0,10,2" VerticalAlignment="Center"/>
+                    <TextBox x:Name="multiplier_tb" Text="1.0" VerticalContentAlignment="Center" Height="24"/>
                 </DockPanel>
             </StackPanel>
         </GroupBox>
-        <DockPanel Margin="0,10,0,5" Height="25">
+        <DockPanel Margin="0,10,0,5" Height="24">
             <ComboBox x:Name="export_units_cb"
                           DockPanel.Dock="Right"
                           VerticalContentAlignment="Center"
                           Padding="10,0,0,0"
                           Width="60"/>
-            <Button Click="export_pat"
+            <Button Click="export_pat" 
                         Margin="0,0,10,0"
                         Content="Export PAT file"/>
         </DockPanel>

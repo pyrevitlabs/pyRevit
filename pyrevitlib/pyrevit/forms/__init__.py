@@ -134,22 +134,28 @@ class WPFWindow(framework.Windows.Window):
         """Show modal window."""
         return self.ShowDialog()
 
-    def set_image_source(self, element_name, image_file):
+    def set_image_source(self, wpf_element, image_file):
         """Set source file for image element.
 
         Args:
             element_name (str): xaml image element name
             image_file (str): image file path
         """
-        wpfel = getattr(self, element_name)
+        # wpfel = getattr(self, element_name)
         if not op.exists(image_file):
-            wpfel.Source = \
+            wpf_element.Source = \
                 utils.bitmap_from_file(
                     os.path.join(EXEC_PARAMS.command_path,
                                  image_file)
                     )
         else:
-            wpfel.Source = utils.bitmap_from_file(image_file)
+            wpf_element.Source = utils.bitmap_from_file(image_file)
+
+    @property
+    def pyrevit_version(self):
+        return 'pyRevit {}'.format(
+            versionmgr.get_pyrevit_version().get_formatted()
+            )
 
     @staticmethod
     def hide_element(*wpf_elements):

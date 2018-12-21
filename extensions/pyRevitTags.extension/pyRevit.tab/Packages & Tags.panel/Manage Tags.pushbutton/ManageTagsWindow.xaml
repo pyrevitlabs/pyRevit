@@ -76,8 +76,10 @@
                            FontSize="14" DockPanel.Dock="Left"
                            Margin="0,0,10,0"/>
                 <StackPanel>
-                    <TextBox x:Name="search_tb" Height="25px"
-                             TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
+                    <TextBox x:Name="search_tb" Height="24"
+                             Padding="5,0,24,0"
+                             TextChanged="search_txt_changed"
+                             VerticalContentAlignment="Center"/>
                     <Button Style="{StaticResource ClearButton}"
                                 HorizontalAlignment="Right"
                                 x:Name="clrsearch_b" Content="x"

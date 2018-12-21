@@ -25,8 +25,9 @@
                                Filter:
                     </TextBlock>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBox x:Name="search_tb" Height="25px"
-                                 Padding="0,2,0,0"
+                        <TextBox x:Name="search_tb" Height="24"
+                                 Padding="5,0,24,0"
+                                 VerticalContentAlignment="Center"
                                  TextChanged="search_txt_changed"/>
                         <Button Style="{StaticResource ClearButton}"
                                 HorizontalAlignment="Right"
@@ -70,17 +71,23 @@
                             <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
                                 <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
                                     <Label Content="Username: "/>
-                                    <TextBox x:Name="repousername_tb" Width="300" Padding="0,2,0,0"/>
+                                    <TextBox x:Name="repousername_tb"
+                                             Width="300" Padding="5,0,0,0"
+                                             FontFamily="Consolas"
+                                             VerticalContentAlignment="Center"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
                                     <Label Content="Password: "/>
-                                    <TextBox x:Name="repopassword_tb"  Width="200" Padding="0,2,0,0"/>
+                                    <TextBox x:Name="repopassword_tb"
+                                             Width="200" Padding="5,0,0,0"
+                                             FontFamily="Consolas"
+                                             VerticalContentAlignment="Center"/>
                                 </StackPanel>
                             </WrapPanel>
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
-                <Grid Margin="0,15,0,0" IsEnabled="True">
+                <Grid Margin="0,15,0,0" IsEnabled="True" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -91,9 +98,9 @@
                 		<ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                 	<Button Content="Update Package Settings" Click="save_pkg_settings"
-                            Grid.Column="0" Grid.Row="0" Margin="3" />
+                            Grid.Column="0" Grid.Row="0" Margin="3" Height="24"/>
                     <Button x:Name="ext_install_b" Content="Install Package" Click="handle_install_button_popup"
-                            Grid.Column="1" Grid.Row="0" Margin="3"
+                            Grid.Column="1" Grid.Row="0" Margin="3" Height="24"
                             ContextMenuService.IsEnabled="False">
                         <Button.ContextMenu>
                             <ContextMenu >
@@ -101,9 +108,9 @@
                         </Button.ContextMenu>
                     </Button>
                     <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg"
-                            Grid.Column="2" Grid.Row="0" Margin="3" />
+                            Grid.Column="2" Grid.Row="0" Margin="3" Height="24"/>
                 	<Button x:Name="ext_remove_b" Content="Remove Package" Click="remove_ext_pkg"
-                            Grid.Column="3" Grid.Row="0" Margin="3" />
+                            Grid.Column="3" Grid.Row="0" Margin="3" Height="24"/>
                 </Grid>
             </StackPanel>
             <ListView x:Name="extpkgs_lb" SelectionMode="Single" SelectionChanged="update_ext_info">

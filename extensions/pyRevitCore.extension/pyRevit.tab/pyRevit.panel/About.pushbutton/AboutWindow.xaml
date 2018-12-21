@@ -180,7 +180,7 @@
             <SolidColorBrush Color="#fff"/>
         </Border.Background>
         <Border.Effect>
-            <DropShadowEffect Color="#FF2C3E50" BlurRadius="15" Opacity="0.25"/>
+            <DropShadowEffect Color="{DynamicResource pyRevitDarkColor}" BlurRadius="15" Opacity="0.25"/>
         </Border.Effect>
         <Grid Margin="20,20,20,20">
             <Grid.ColumnDefinitions>
@@ -221,7 +221,7 @@
                                 <ScaleTransform ScaleX="0.7"  ScaleY="0.7"/>
                             </ContentControl.LayoutTransform>
                         </ContentControl>
-                        <TextBlock x:Name="pyrevit_version"
+                        <TextBlock x:Name="version"
                                TextAlignment="Center"
                                TextWrapping="Wrap"
                                VerticalAlignment="Top"

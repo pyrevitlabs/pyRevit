@@ -28,6 +28,7 @@
                      </RadioButton>
                 </WrapPanel>
                 <Button Content="Create" Margin="0,10,0,0"
+                        Height="24"
                         Click="create_sheets"/>
             </StackPanel>
             <TextBox x:Name="sheets_tb"

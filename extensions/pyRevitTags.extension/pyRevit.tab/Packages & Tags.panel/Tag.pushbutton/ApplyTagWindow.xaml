@@ -13,7 +13,7 @@
             </StackPanel>
             <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="24"/>
                     <RowDefinition />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
