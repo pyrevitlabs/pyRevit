@@ -307,7 +307,7 @@ class TemplateListItem(object):
 
     def matches(self, filter_str):
         """Check if instance matches the filter string."""
-        return filter_str in self.name.lower()
+        return all(s in self.name.lower() for s in filter_str.split())
 
     @property
     def checkable(self):
