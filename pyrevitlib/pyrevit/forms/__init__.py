@@ -305,9 +305,57 @@ class TemplateListItem(object):
         """Unwrap and return wrapped object."""
         return self.item
 
-    def matches(self, filter_str):
-        """Check if instance matches the filter string."""
-        return all(s in self.name.lower() for s in filter_str.split())
+    def fuzzy_ratio(self, filter_str):
+        """Matching item against the filter and returns a match ratio."""
+        name = self.name
+        # 1.0 for indentical matches
+        if filter_str == name:
+            return 100
+
+        # 98 to 99 reserved (2 scores)
+
+        # 97 for indentical non-case-sensitive matches
+        lower_name = name.lower()
+        lower_filter_str = filter_str.lower()
+        if lower_filter_str == lower_name:
+            return 97
+
+        # 95  to 96 reserved (2 scores)
+
+        # 93 to 94 for inclusion matches
+        if filter_str in name:
+            return 94
+        if lower_filter_str in lower_name:
+            return 93
+
+        # 91  to 92 reserved (2 scores)
+
+        ## 80 to 90 for parts matches
+        name_parts = name.split()
+        filter_parts = filter_str.split()
+        if all(x in name_parts for x in filter_parts):
+            return 90
+
+        # 88 to 89 reserved (2 scores)
+
+        lower_name_parts = [x.lower() for x in name_parts]
+        lower_filter_parts = [x.lower() for x in filter_parts]
+        if all(x in lower_name_parts for x in lower_filter_parts):
+            return 87
+
+        # 85 to 86 reserved (2 scores)
+
+        if all(x in name for x in filter_parts):
+            return 84
+
+        # 82 to 83 reserved (2 scores)
+
+        if all(x in lower_name for x in lower_filter_parts):
+            return 81
+
+        # 80 reserved
+
+        return 0
 
     @property
     def checkable(self):
@@ -514,9 +562,13 @@ class SelectFromList(TemplateUserInputWindow):
             self.checkall_b.Content = 'Check'
             self.uncheckall_b.Content = 'Uncheck'
             self.toggleall_b.Content = 'Toggle'
-            option_filter = option_filter.lower()
+            # get a match score for every item and sort high to low
+            fuzzy_matches = sorted([(x, x.fuzzy_ratio(option_filter))
+                                    for x in self._get_active_ctx()],
+                                   key=lambda x: x[1], reverse=True)
+            # filter out any match with score less than 80
             self.list_lb.ItemsSource = \
-                [x for x in self._get_active_ctx() if x.matches(option_filter)]
+                [x[0] for x in fuzzy_matches if x[1] >= 80]
         else:
             self.checkall_b.Content = 'Check All'
             self.uncheckall_b.Content = 'Uncheck All'
