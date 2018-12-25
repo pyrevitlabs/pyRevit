@@ -213,7 +213,7 @@
                            VerticalAlignment="Top"
                            FontSize="14"
                            LineHeight="20"
-                           Text="python tools for Autodesk Revit�"/>
+                           Text="XX"/>
                 <WrapPanel x:Name="git_panel" HorizontalAlignment="Center">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <ContentControl Content="{StaticResource commitIcon}" Width="24" Height="24" Margin="0,-5,5,0">
