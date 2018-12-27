@@ -21,6 +21,9 @@ output = script.get_output()
 # TODO:
 # manage lock errors
 # manage timeout errors
+# search needs to filter all subkeynotes as well
+# take care of todo items here
+# review and fine tune all functions for beta release
 
 # ================================================================ keynotesdb.py
 #pylint: disable=W0703
