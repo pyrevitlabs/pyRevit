@@ -309,10 +309,12 @@ def export_legacy_keynotes(conn, target_legacy_keynotes_file):
 
 class EditRecordWindow(forms.WPFWindow):
     def __init__(self,
+                 owner,
                  conn, mode,
                  rkeynote=None,
                  rkey=None, text=None, pkey=None):
         forms.WPFWindow.__init__(self, 'EditRecord.xaml')
+        self.Owner = owner
         self._commited = False
         self._reserved_key = None
 
@@ -805,14 +807,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def selected_category_changed(self, sender, args):
-        if self.selected_category:
+        if self.selected_category and not self.selected_category.locked:
             self.catEditButtons.IsEnabled = True
         else:
             self.catEditButtons.IsEnabled = False
         self._update_ktree_knotes()
 
     def selected_keynote_changed(self, sender, args):
-        if self.selected_keynote:
+        if self.selected_keynote and not self.selected_keynote.locked:
             self.keynoteEditButtons.IsEnabled = True
         else:
             self.keynoteEditButtons.IsEnabled = False
@@ -824,7 +826,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def add_category(self, sender, args):
         try:
-            EditRecordWindow(self._conn, EDIT_MODE_ADD_CATEG).show()
+            EditRecordWindow(self, self._conn, EDIT_MODE_ADD_CATEG).show()
             self._update_ktree()
         except Exception as ex:
             forms.alert(str(ex))
@@ -842,7 +844,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     else 'and unknown user'))
             else:
                 try:
-                    EditRecordWindow(self._conn,
+                    EditRecordWindow(self, self._conn,
                                      EDIT_MODE_EDIT_CATEG,
                                      rkeynote=selected_category).show()
                     self._update_ktree()
@@ -875,7 +877,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self.selected_category.key
 
         try:
-            EditRecordWindow(self._conn,
+            EditRecordWindow(self, self._conn,
                              EDIT_MODE_ADD_KEYNOTE,
                              pkey=parent_key).show()
             self._update_ktree_knotes()
@@ -886,7 +888,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selected_keynote = self.selected_keynote
         if selected_keynote:
             try:
-                EditRecordWindow(self._conn,
+                EditRecordWindow(self, self._conn,
                                  EDIT_MODE_ADD_KEYNOTE,
                                  pkey=selected_keynote.key).show()
                 self._update_ktree_knotes()
@@ -897,6 +899,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self.selected_keynote:
             try:
                 EditRecordWindow(
+                    self,
                     self._conn,
                     EDIT_MODE_ADD_KEYNOTE,
                     text=self.selected_keynote.text,
@@ -923,6 +926,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self.selected_keynote:
             try:
                 EditRecordWindow(
+                    self,
                     self._conn,
                     EDIT_MODE_EDIT_KEYNOTE,
                     rkeynote=self.selected_keynote).show()

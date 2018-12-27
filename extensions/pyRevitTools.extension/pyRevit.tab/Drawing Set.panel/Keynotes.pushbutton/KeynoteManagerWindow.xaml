@@ -134,13 +134,13 @@
         </Style>
 
         <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding children}">
-            <Grid Margin="0,2,0,2">
+            <Grid Margin="0,2,0,2" Width="600" MaxWidth="600">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition MinWidth="30" Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
-                <WrapPanel Grid.Column="1" MaxWidth="600">
+                <WrapPanel Grid.Column="1" >
                     <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" />
                     <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="5,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">

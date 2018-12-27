@@ -6,7 +6,7 @@
         ResizeMode="CanResizeWithGrip"
         SizeToContent="Height"
         Title="Edit Keynote"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterOwner"
         HorizontalContentAlignment="Center"
         Closing ="window_closing">
     <Window.Resources>
