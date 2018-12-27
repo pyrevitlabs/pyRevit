@@ -1,4 +1,5 @@
 """Helper functions to update info and elements in Revit."""
+import os.path as op
 
 from pyrevit import HOST_APP
 from pyrevit.framework import List
@@ -91,3 +92,24 @@ def toggle_category_visibility(view, subcat, hidden=None):
 def rename_workset(workset, new_name, doc=None):
     doc = doc or HOST_APP.doc
     DB.WorksetTable.RenameWorkset(doc, workset.Id, new_name)
+
+
+def update_linked_keynotes(doc=None):
+    doc = doc or HOST_APP.doc
+    ktable = DB.KeynoteTable.GetKeynoteTable(doc)
+    ktable.Reload(None)
+
+
+# https://forum.dynamobim.com/t/load-assemblycodetable-keynotetable/23944/2
+def set_keynote_file(keynote_file, doc=None):
+    doc = doc or HOST_APP.doc
+    if op.exists(keynote_file):
+        mpath = \
+            DB.ModelPathUtils.ConvertUserVisiblePathToModelPath(keynote_file)
+        keynote_exres = DB.ExternalResourceReference.CreateLocalResource(
+            doc,
+            DB.ExternalResourceTypes.BuiltInExternalResourceTypes.KeynoteTable,
+            mpath,
+            DB.PathType.Absolute)
+    knote_table = DB.KeynoteTable.GetKeynoteTable(doc)
+    knote_table.LoadFrom(keynote_exres, DB.KeyBasedTreeEntriesLoadResults())
