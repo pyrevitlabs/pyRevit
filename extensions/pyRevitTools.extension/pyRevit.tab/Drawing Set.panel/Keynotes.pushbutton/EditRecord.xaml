@@ -8,31 +8,31 @@
         Title="Edit Keynote"
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
-        Closed="window_closed">
-    <Window.Resources>
-        <Canvas x:Key="dotdotdot" Width="20" Height="20">
-            <Path Canvas.Top="-1" Canvas.Left="-2"
-                  Data="M16,12A2,2 0 0,1 18,10A2,2 0 0,1 20,12A2,2 0 0,1 18,14A2,2 0 0,1 16,12M10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12M4,12A2,2 0 0,1 6,10A2,2 0 0,1 8,12A2,2 0 0,1 6,14A2,2 0 0,1 4,12Z"
-                  Fill="Black" />
-        </Canvas>
-    </Window.Resources>
+        Closing ="window_closing">
     <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="169*"/>
+            <ColumnDefinition Width="303*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0"  Orientation="Horizontal">
-            <Button x:Name="recordKey" Height="24" MinWidth="50" Padding="10,0,10,0" FontWeight="Bold" Content="{StaticResource dotdotdot}" Click="pick_key"/>
+        <StackPanel Grid.Row="0"  Orientation="Horizontal" Grid.ColumnSpan="2">
+            <Button x:Name="recordKey" Height="26" MinWidth="50" Padding="10,0,10,0" FontWeight="Bold"
+                    Content="&#x25CF;&#x25CF;&#x25CF;" Click="pick_key"/>
             <TextBlock x:Name="recordKeyTitle" Text="Keynote Key" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
-        <StackPanel Grid.Row="2">
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
             <StackPanel x:Name="recordParentInput" Orientation="Horizontal" Margin="0,0,0,10">
-                <Button x:Name="recordParent" Height="24" MinWidth="50" Padding="10,0,10,0" FontWeight="Bold" Content="{StaticResource dotdotdot}" Click="pick_parent"/>
+                <Button x:Name="recordParent" Height="26" MinWidth="50" Padding="10,0,10,0" FontWeight="Bold"
+                        Content="&#x25CF;&#x25CF;&#x25CF;" Click="pick_parent"/>
                 <TextBlock x:Name="recordParentTitle" Text="Keynote Parent" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
             <Button x:Name="applyChanges" Height="26" Content="Apply Changes" Click="apply_changes"/>
+            <Button x:Name="cancelChanges" Height="26" Margin="0,10,0,0" Content="Cancel" Click="cancel_changes"/>
         </StackPanel>
-        <TextBox x:Name="recordText" Grid.Row="1" Margin="0,10,0,10" FontSize="14" TextWrapping="Wrap" Text="Enter keynote text here..."/>
+        <TextBox x:Name="recordText" Grid.Row="1" Margin="0,10,0,10" FontSize="14" TextWrapping="Wrap" Text="Enter keynote text here..." Grid.ColumnSpan="2"/>
     </Grid>
 </Window>
