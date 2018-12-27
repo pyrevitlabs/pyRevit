@@ -1,7 +1,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="False"
-        Width="500" Height="350"
+        Width="550" Height="350"
         MinWidth="500" MinHeight="350"
         ResizeMode="CanResizeWithGrip"
         SizeToContent="Height"
@@ -9,6 +9,18 @@
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
         Closing ="window_closing">
+    <Window.Resources>
+        <Canvas x:Key="translateIcon">
+            <Path Canvas.Top="-9" Canvas.Left="-8"
+                  Data="M12.87,15.07L10.33,12.56L10.36,12.53C12.1,10.59 13.34,8.36 14.07,6H17V4H10V2H8V4H1V6H12.17C11.5,7.92 10.44,9.75 9,11.35C8.07,10.32 7.3,9.19 6.69,8H4.69C5.42,9.63 6.42,11.17 7.67,12.56L2.58,17.58L4,19L9,14L12.11,17.11L12.87,15.07M18.5,10H16.5L12,22H14L15.12,19H19.87L21,22H23L18.5,10M15.88,17L17.5,12.67L19.12,17H15.88Z"
+                  Fill="Black">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+    </Window.Resources>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="169*"/>
@@ -27,12 +39,26 @@
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
             <StackPanel x:Name="recordParentInput" Orientation="Horizontal" Margin="0,0,0,10">
                 <Button x:Name="recordParent" Height="26" MinWidth="50" Padding="10,0,10,0" FontWeight="Bold"
+                        IsEnabled="False"
                         Content="&#x25CF;&#x25CF;&#x25CF;" Click="pick_parent"/>
                 <TextBlock x:Name="recordParentTitle" Text="Keynote Parent" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
             <Button x:Name="applyChanges" Height="26" Content="Apply Changes" Click="apply_changes"/>
-            <Button x:Name="cancelChanges" Height="26" Margin="0,10,0,0" Content="Cancel" Click="cancel_changes"/>
+            <Button x:Name="cancelChanges" Height="26" Margin="0,10,0,0" Content="Cancel" Click="cancel_changes" Visibility="Collapsed"/>
         </StackPanel>
-        <TextBox x:Name="recordText" Grid.Row="1" Margin="0,10,0,10" FontSize="14" TextWrapping="Wrap" Text="Enter keynote text here..." Grid.ColumnSpan="2"/>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,10" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition  Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="recordText" Grid.Column="0" FontSize="14" TextWrapping="Wrap" Text="Enter keynote text here..." Margin="0,0,5,0" SpellCheck.IsEnabled="True"/>
+            <StackPanel Grid.Column="1" Width="24">
+                <Button Height="24" Content="TT" FontWeight="Medium" ToolTip="To UPPER" Click="to_upper"/>
+                <Button Height="24" Content="tt" Margin="0,5,0,0" FontWeight="Medium" ToolTip="To lower" Click="to_lower"/>
+                <Button Height="24" Content="Ti" Margin="0,5,0,0" FontWeight="Medium" ToolTip="To Title Case" Click="to_title"/>
+                <Button Height="24" Content="Se" Margin="0,5,0,0" FontWeight="Medium" ToolTip="To Sentence case" Click="to_sentence"/>
+                <Button Height="24" Content="{StaticResource translateIcon}" Margin="0,5,0,0" ToolTip="Translate" Click="translate"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

@@ -1,10 +1,9 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="False"
-        Width="750" Height="750"
-        MinWidth="600" MinHeight="435"
+        Width="850" Height="750"
+        MinWidth="650" MinHeight="435"
         ResizeMode="CanResizeWithGrip"
-        WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
         Title="Manage Keynotes"
         Closed="window_closed">
@@ -65,7 +64,7 @@
 
         <Canvas x:Key="addSubKeynoteIcon" Width="24" Height="24">
             <Path Canvas.Top="1" Canvas.Left="1"
-                  Data="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H7V18H13V20H7L5,20V9H7V11H13V13Z" 
+                  Data="M 9.157464 16 H 12 V 14 H 9.157464 M 20 14 v -4 h -2 v 4 h -4 v 2 h 4 v 4 h 2 v -4 h 4 V 14 M 16 8 H 2 V 6 h 14 m 0 4 H 9.157464 v 2 H 16 Z M 7.1574642 10.842535 2 16 h 5.1574642 z"
                   Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
                 <Path.LayoutTransform>
                     <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
@@ -135,13 +134,13 @@
         </Style>
 
         <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding children}">
-            <Grid Margin="0,2,0,2" Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=TreeView}, Path=ActualWidth}">
+            <Grid Margin="0,2,0,2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition MinWidth="30" Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
-                <WrapPanel Grid.Column="1">
+                <WrapPanel Grid.Column="1" MaxWidth="600">
                     <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" />
                     <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="5,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">
@@ -197,8 +196,8 @@
                       ItemContainerStyle="{StaticResource comboItemStyle}"
                       SelectionChanged="selected_category_changed"/>
             <TreeView x:Name="keynotes_tv" Grid.Row="2" BorderBrush="LightGray" BorderThickness="1,0,1,1"
-                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                      Padding="0,0,10,0"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      Padding="0,0,0,0"
                       PreviewMouseDoubleClick="place_keynote"
                       SelectedItemChanged="selected_keynote_changed"
                       VirtualizingPanel.IsVirtualizing="True"

@@ -5,6 +5,8 @@ import os.path as op
 import shutil
 
 from pyrevit import HOST_APP
+from pyrevit import framework
+from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
@@ -403,7 +405,7 @@ class EditRecordWindow(forms.WPFWindow):
 
     @active_text.setter
     def active_text(self, value):
-        self.recordText.Text = value
+        self.recordText.Text = value.strip()
 
     @property
     def active_parent_key(self):
@@ -515,6 +517,21 @@ class EditRecordWindow(forms.WPFWindow):
         # prompt to select a record
         # apply the record key on the button
 
+    def to_upper(self, sender, args):
+        self.active_text = self.active_text.upper()
+
+    def to_lower(self, sender, args):
+        self.active_text = self.active_text.lower()
+
+    def to_title(self, sender, args):
+        self.active_text = self.active_text.title()
+
+    def to_sentence(self, sender, args):
+        self.active_text = self.active_text.capitalize()
+
+    def translate(self, sender, args):
+        forms.alert("Not yet implemented. Coming soon.")
+
     def apply_changes(self, sender, args):
         logger.debug('Applying changes...')
         self._commited = self.commit()
@@ -599,8 +616,21 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._config = script.get_config()
         self._update_postable_commands()
+        self._update_window_geom()
 
         self.refresh(None, None)
+
+    @property
+    def window_geom(self):
+        return (self.Width, self.Height, self.Top, self.Left)
+
+    @window_geom.setter
+    def window_geom(self, geom_tuple):
+        self.Width, self.Height, self.Top, self.Left = geom_tuple   #pylint: disable=W0201
+
+    @property
+    def target_id(self):
+        return hash(self._kfile)
 
     @property
     def search_term(self):
@@ -639,6 +669,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def current_keynotes(self):
         return self.keynotes_tv.ItemsSource
 
+    @property
+    def keynote_text_with(self):
+        return 200
+
     def get_last_category_key(self):
         last_category_dict = self._config.get_option('last_category', {})
         if last_category_dict and self._kfile in last_category_dict:
@@ -651,7 +685,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             return 0
 
+    def get_last_window_geom(self):
+        last_window_geom_dict = \
+            self._config.get_option('last_window_geom', {})
+        if last_window_geom_dict and self._kfile in last_window_geom_dict:
+            return last_window_geom_dict[self._kfile]
+        else:
+            return self.window_geom
+
     def save_config(self):
+        # save self.window_geom
+        new_window_geom_dict = {}
+        # cleanup removed keynote files
+        for kfile, wgeom_value in self._config.get_option('last_window_geom',
+                                                          {}).items():
+            if op.exists(kfile):
+                new_window_geom_dict[kfile] = wgeom_value
+        new_window_geom_dict[self._kfile] = self.window_geom
+        self._config.set_option('last_window_geom', new_window_geom_dict)
+
         # save self.postable_keynote_command
         new_postcmd_dict = {}
         # cleanup removed keynote files
@@ -685,6 +737,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_postable_commands(self):
         self.postcmd_idx = self.get_last_postcmd_idx()
+
+    def _update_window_geom(self):
+        width, height, top, left = self.get_last_window_geom()
+        if coreutils.is_box_visible_on_screens(left, top, width, height):
+            self.window_geom = (width, height, top, left)
+        else:
+            self.WindowStartupLocation = \
+                framework.Windows.WindowStartupLocation.CenterScreen
 
     def _update_ktree(self):
         categories = [self._allcat]
