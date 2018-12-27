@@ -1257,9 +1257,14 @@ def has_nonprintable(input_str):
     return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])
 
 
+def get_enum_values(enum_type):
+    """Returns enum values."""
+    return framework.Enum.GetValues(enum_type)
+
+
 def get_enum_none(enum_type):
     """Returns the None value in given Enum."""
-    for val in framework.Enum.GetValues(enum_type):
+    for val in get_enum_values(enum_type):
         if str(val) == 'None':
             return val
 
