@@ -1772,7 +1772,7 @@ def select_image(images, title='Select Image', button_name='Select'):
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
           ok=True, cancel=False, yes=False, no=False, retry=False,
-          warn_icon=True, exitscript=False):
+          warn_icon=True, options=None, exitscript=False):
     """Show a task dialog with given message.
 
     Args:
@@ -1783,6 +1783,7 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
+        options(list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
     Returns:
@@ -1824,13 +1825,41 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
     tdlg.MainIcon = \
         UI.TaskDialogIcon.TaskDialogIconWarning \
         if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
+
+    # add command links
+    options = options or []
+    clinks = coreutils.get_enum_values(UI.TaskDialogCommandLinkId)
+    max_clinks = len(clinks)
+    for idx, cmd in enumerate(options):
+        if idx < max_clinks:
+            tdlg.AddCommandLink(clinks[idx], cmd)
     # tdlg.VerificationText = 'verif'
     res = tdlg.Show()
 
+    # positive response
     if res == UI.TaskDialogResult.Ok \
             or res == UI.TaskDialogResult.Yes \
             or res == UI.TaskDialogResult.Retry:
-        return True
+        if not exitscript:
+            return True
+        else:
+            sys.exit()
+    # negative response
+    elif res == coreutils.get_enum_none(UI.TaskDialogResult) \
+            or res == UI.TaskDialogResult.Cancel \
+            or res == UI.TaskDialogResult.No:
+        if not exitscript:
+            return False
+        else:
+            sys.exit()
+    # command link response
+    elif 'CommandLink' in str(res):
+        tdresults = sorted(
+            [x for x in coreutils.get_enum_values(UI.TaskDialogResult)
+             if 'CommandLink' in str(x)]
+            )
+        residx = tdresults.index(res)
+        return options[residx]
     else:
         if not exitscript:
             return False
