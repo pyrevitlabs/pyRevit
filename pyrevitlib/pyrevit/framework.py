@@ -28,6 +28,7 @@ from System import Type
 from System import Uri, Guid
 from System import EventHandler
 from System import Array, IntPtr, Enum
+from System import Convert
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
 from System import DateTime, DateTimeOffset

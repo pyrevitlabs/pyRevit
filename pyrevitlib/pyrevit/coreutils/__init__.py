@@ -1292,6 +1292,22 @@ def format_hex_rgb(rgb_value):
 
 
 def new_uuid():
+    """Create a new UUID (using dotnet Guid.NewGuid)"""
     # RE: https://github.com/eirannejad/pyRevit/issues/413
     # return uuid.uuid1()
     return str(Guid.NewGuid())
+
+
+def is_box_visible_on_screens(left, top, width, height):
+    """Check if given box is visible on any screen."""
+    bounds = \
+        framework.Drawing.Rectangle(
+            framework.Convert.ToInt32(left),
+            framework.Convert.ToInt32(top),
+            framework.Convert.ToInt32(width),
+            framework.Convert.ToInt32(height)
+            )
+    for scr in framework.Forms.Screen.AllScreens:
+        if bounds.IntersectsWith(scr.Bounds):
+            return True
+    return False
