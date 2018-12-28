@@ -1311,3 +1311,56 @@ def is_box_visible_on_screens(left, top, width, height):
         if bounds.IntersectsWith(scr.Bounds):
             return True
     return False
+
+
+def fuzzy_search_ratio(target_string, sfilter):
+    """Match target string against the filter and return a match ratio."""
+    tstring = target_string
+    # 1.0 for indentical matches
+    if sfilter == tstring:
+        return 100
+
+    # 98 to 99 reserved (2 scores)
+
+    # 97 for indentical non-case-sensitive matches
+    lower_tstring = tstring.lower()
+    lower_sfilter_str = sfilter.lower()
+    if lower_sfilter_str == lower_tstring:
+        return 97
+
+    # 95  to 96 reserved (2 scores)
+
+    # 93 to 94 for inclusion matches
+    if sfilter in tstring:
+        return 94
+    if lower_sfilter_str in lower_tstring:
+        return 93
+
+    # 91  to 92 reserved (2 scores)
+
+    ## 80 to 90 for parts matches
+    tstring_parts = tstring.split()
+    sfilter_parts = sfilter.split()
+    if all(x in tstring_parts for x in sfilter_parts):
+        return 90
+
+    # 88 to 89 reserved (2 scores)
+
+    lower_tstring_parts = [x.lower() for x in tstring_parts]
+    lower_sfilter_parts = [x.lower() for x in sfilter_parts]
+    if all(x in lower_tstring_parts for x in lower_sfilter_parts):
+        return 87
+
+    # 85 to 86 reserved (2 scores)
+
+    if all(x in tstring for x in sfilter_parts):
+        return 84
+
+    # 82 to 83 reserved (2 scores)
+
+    if all(x in lower_tstring for x in lower_sfilter_parts):
+        return 81
+
+    # 80 reserved
+
+    return 0
