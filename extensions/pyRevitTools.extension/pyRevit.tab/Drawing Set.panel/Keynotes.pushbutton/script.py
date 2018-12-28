@@ -238,12 +238,17 @@ class EditRecordWindow(forms.WPFWindow):
                 kdb.release_key(self._conn,
                                 self._reserved_key,
                                 category=self._cat)
-                categories = kdb.get_categories(self._conn)
-                keynotes = kdb.get_keynotes(self._conn)
-                locks = kdb.get_locks(self._conn)
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
                 return
+
+        try:
+            categories = kdb.get_categories(self._conn)
+            keynotes = kdb.get_keynotes(self._conn)
+            locks = kdb.get_locks(self._conn)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
 
         # collect existing keys
         reserved_keys = [x.key for x in categories]
@@ -305,11 +310,16 @@ class EditRecordWindow(forms.WPFWindow):
                     kdb.release_key(self._conn,
                                     self._reserved_key,
                                     category=self._cat)
-                    kdb.end_edit(self._conn)
                 except System.TimeoutException as toutex:
                     forms.alert(toutex.Message)
                 except Exception:
                     pass
+            try:
+                kdb.end_edit(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+            except Exception:
+                pass
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
@@ -321,7 +331,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not self._kfile or not op.exists(self._kfile):
             self._kfile = None
             forms.alert("Keynote file is not accessible. "
-                        "I'll ask you to select a keynote file.")
+                        "Please select a keynote file.")
             self._change_kfile()
 
         # if a keynote file is still not set, return
@@ -845,7 +855,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def update_model(self, sender, args):
         self.Close()
 
-    def window_closed(self, sender, args):
+    def window_closing(self, sender, args):
         with revit.Transaction('Update Keynotes'):
             revit.update.update_linked_keynotes(doc=revit.doc)
 
