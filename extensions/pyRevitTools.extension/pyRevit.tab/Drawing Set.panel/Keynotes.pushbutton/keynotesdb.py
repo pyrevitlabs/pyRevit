@@ -1,10 +1,13 @@
 """Module for managing keynotes using DeffrelDB."""
-#pylint: disable=E0401
+#pylint: disable=E0401,W0613
+import codecs
 from collections import namedtuple, defaultdict
 
 from pyrevit import HOST_APP
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
+from pyrevit import framework
+
 from pyrevit.labs import DeffrelDB as dfdb
 
 
@@ -34,7 +37,39 @@ EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
 
 
 
-class RKeynote:
+RKeynoteFilter = namedtuple('RKeynoteFilter', ['name', 'code'])
+
+class RKeynoteFilters(object):
+    """Custom filters for filtering keynotes."""
+
+    UsedOnly = RKeynoteFilter(name="Used Only", code=":used:")
+    UnusedOnly = RKeynoteFilter(name="Unused Only", code=":unused:")
+    LockedOnly = RKeynoteFilter(name="Locked Only", code=":locked:")
+    UnlockedOnly = RKeynoteFilter(name="Unlocked Only", code=":unlocked:")
+
+    @classmethod
+    def get_available_filters(cls):
+        """Get available keynote filters."""
+        return [cls.UsedOnly,
+                cls.UnusedOnly,
+                cls.LockedOnly,
+                cls.UnlockedOnly,]
+
+    @classmethod
+    def remove_filters(cls, source_string):
+        """Get available keynote filters."""
+        cleaned = source_string
+        for code in [x.code for x in cls.get_available_filters()]:
+            cleaned = cleaned.replace(code, '').strip()
+        return cleaned
+
+
+class RKeynote(object):
+    """Object representing a keynote entry in the databaseself.
+
+    This object also has properties for the status of the keynote e.g.
+    locked by another user or being used in the current model.
+    """
     def __init__(self, key, text, parent_key=None,
                  locked=False, owner=None, children=None):
         self.key = key
@@ -46,6 +81,8 @@ class RKeynote:
         self._filtered_children = []
         self._filter = None
 
+        self.used = False
+
     def __str__(self):
         return repr(self)
 
@@ -53,6 +90,7 @@ class RKeynote:
         return '<%s key:%s childs:%s>' % (self.__class__.__name__,
                                           self.key,
                                           len(self.children))
+
     @property
     def children(self):
         if self._filter:
@@ -60,14 +98,51 @@ class RKeynote:
         return self._children
 
     def filter(self, search_term):
-        sterm = self.key +' '+ self.text +' '+ self.owner
         self._filter = search_term.lower()
-        # here is where matching against the string happens
-        self_pass = \
-            coreutils.fuzzy_search_ratio(sterm.lower(), self._filter) > 80
+        self_pass = False
+        if RKeynoteFilters.UsedOnly.code in self._filter:
+            self_pass = self.used
+
+        elif RKeynoteFilters.UnusedOnly.code in self._filter:
+            self_pass = not self.used
+
+        elif RKeynoteFilters.LockedOnly.code in self._filter:
+            self_pass = self.locked
+
+        elif RKeynoteFilters.UnlockedOnly.code in self._filter:
+            self_pass = not self.locked
+
+        cleaned_sfilter = RKeynoteFilters.remove_filters(self._filter)
+        has_smart_filter = cleaned_sfilter != self._filter
+
+        if cleaned_sfilter:
+            sterm = self.key +' '+ self.text +' '+ self.owner
+            # here is where matching against the string happens
+            self_pass_keyword = \
+                coreutils.fuzzy_search_ratio(sterm.lower(),
+                                             cleaned_sfilter) > 80
+            if has_smart_filter:
+                self_pass = self_pass_keyword and self_pass
+            else:
+                self_pass = self_pass_keyword
+
+        # filter children now
         self._filtered_children = \
             [x for x in self._children if x.filter(self._filter)]
+
         return self_pass or self._filtered_children
+
+    def update_used(self, used_keys):
+        if self.key in used_keys:
+            self.used = True
+        for crkey in self._children:
+            crkey.update_used(used_keys)
+
+    def collect_keys(self):
+        keys = {self.key, self.parent_key}
+        for crkey in self.children:
+            keys.update(crkey.collect_keys())
+        return keys
 
 
 def _verify_keynotesdb_def(conn):
@@ -117,7 +192,12 @@ def _verify_keynotesdb_def(conn):
 
 
 def connect(keynotes_file, username=None):
-    conn = dfdb.DataBase.Connect(keynotes_file, username or HOST_APP.username)
+    # need to use UTF-16 (UCS-2 LE / utf_16_le) for Revit compatibility
+    conn = dfdb.DataBase.Connect(
+        keynotes_file,
+        username or HOST_APP.username,
+        sourceEncoding=framework.Encoding.GetEncoding('utf-16')
+        )
     mlogger.debug('verifying db schemas...')
     _verify_keynotesdb_def(conn)
     mlogger.debug('verifying db schemas completed.')
@@ -288,10 +368,13 @@ def rekey_keynote(conn, key, new_key):
     raise NotImplementedError()
 
 
-def import_legacy_keynotes(conn, legacy_keynotes_file, skip_dup=False):
+# import export ---------------------------------------------------------------
+
+
+def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
     conn.BEGIN(KEYNOTES_DB)
     try:
-        with open(legacy_keynotes_file, 'r') as lkf:
+        with codecs.open(src_legacy_keynotes_file, 'r', 'utf_16') as lkf:
             for line in lkf.readlines():
                 clean_line = line.strip()
                 if not clean_line.startswith('#'):
@@ -319,12 +402,27 @@ def import_legacy_keynotes(conn, legacy_keynotes_file, skip_dup=False):
         conn.END()
 
 
-def export_legacy_keynotes(conn, target_legacy_keynotes_file):
+def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):
+    include_keys = include_keys or []
     categories = get_categories(conn)
     keynotes = get_keynotes(conn)
-    with open(target_legacy_keynotes_file, 'w') as lkfile:
-        for cat in categories:
-            lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
-        for knote in keynotes:
-            lkfile.write('{}\t{}\t{}\n'
-                         .format(knote.key, knote.text, knote.parent_key))
+
+    if include_keys:
+        with codecs.open(dest_legacy_keynotes_file, 'w', 'utf_16') as lkfile:
+            for cat in categories:
+                if cat.key in include_keys:
+                    lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
+            for knote in keynotes:
+                if knote.key in include_keys:
+                    lkfile.write('{}\t{}\t{}\n'
+                                 .format(knote.key,
+                                         knote.text,
+                                         knote.parent_key))
+
+    else:
+        with codecs.open(dest_legacy_keynotes_file, 'w', 'utf_16') as lkfile:
+            for cat in categories:
+                lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
+            for knote in keynotes:
+                lkfile.write('{}\t{}\t{}\n'
+                             .format(knote.key, knote.text, knote.parent_key))

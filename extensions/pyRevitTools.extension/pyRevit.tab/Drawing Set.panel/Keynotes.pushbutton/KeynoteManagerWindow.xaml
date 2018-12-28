@@ -5,7 +5,7 @@
         MinWidth="650" MinHeight="435"
         ResizeMode="CanResizeWithGrip"
         HorizontalContentAlignment="Center"
-        Title="Manage Keynotes"
+        Title="Manage Keynotes (BETA - USE FOR TESTING ONLY)"
         Closing="window_closing">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
@@ -13,9 +13,13 @@
         </Style>
 
         <Canvas x:Key="filterIcon">
-            <Path Canvas.Top="-28" Canvas.Left="-25"
+            <Path Canvas.Top="-16" Canvas.Left="-15"
                   Data="F1 M 45.4403,56.9637L 45.4403,55.0463L 52.8201,44.5143L 52.8201,44.4237L 46.13,44.4237L 46.13,41.4774L 57.372,41.4774L 57.372,43.5352L 50.1532,53.9265L 50.1532,54.0174L 57.4869,54.0174L 57.4869,56.9637L 45.4403,56.9637 Z M 34.8333,61.75L 34.8333,42.75L 19,20.5833L 57,20.5833L 41.1667,42.75L 41.1667,58.5833L 34.8333,61.75 Z M 25.903,52.8055L 21.4072,52.8055L 20.289,56.9855L 16.6085,56.9855L 21.4072,41.4556L 26.0661,41.4556L 30.9337,56.9855L 27.1143,56.9855L 25.903,52.8055 Z M 21.9196,50.2801L 25.3905,50.2801L 24.4122,46.9804L 23.9987,45.4806L 23.6201,43.981L 23.5736,43.981L 23.2212,45.4941L 22.8514,47.0194L 21.9196,50.2801 Z "
-                  Fill="DimGray"/>
+                  Fill="Black">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
+                </Path.LayoutTransform>
+            </Path>
         </Canvas>
 
         <Canvas x:Key="addCategoryIcon" Width="24" Height="24">
@@ -114,6 +118,26 @@
             </Path>
         </Canvas>
 
+        <Canvas x:Key="findKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="showKFileIcon" Width="24" Height="24">
+            <Path Canvas.Top="3" Canvas.Left="3"
+                  Data="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
         <Style x:Key="comboItemStyle" TargetType="ComboBoxItem">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding locked}" Value="True">
@@ -125,8 +149,10 @@
 
         <Style x:Key="treeItemStyle" TargetType="TreeViewItem">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding locked}" Value="True">
+                <DataTrigger Binding="{Binding used}" Value="False">
                     <Setter Property="Foreground" Value="DarkGray" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding locked}" Value="True">
                     <Setter Property="Background" Value="WhiteSmoke" />
                 </DataTrigger>
             </Style.Triggers>
@@ -168,11 +194,7 @@
         </Grid.ColumnDefinitions>
         <DockPanel Grid.Column="0" Margin="0,0,10,0">
             <DockPanel DockPanel.Dock="Top">
-                <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
-                    <ContentControl.LayoutTransform>
-                        <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
-                    </ContentControl.LayoutTransform>
-                </ContentControl>
+                <Button Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="0,0,10,0" Click="custom_filter"/>
                 <StackPanel>
                     <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
                              TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
@@ -212,30 +234,49 @@
                         Padding="8,4,8,4"
                         ToolTip = "Import keynotes from Revit standard keynote file"
                         Click="import_keynotes"/>
-                <Button Content="Export Keynotes"
-                        Margin="0,5,0,0"
-                        Padding="8,4,8,4"
-                        ToolTip = "Export keynotes to Revit standard keynote file"
-                        Click="export_keynotes"/>
-            </StackPanel>
-            <StackPanel DockPanel.Dock="Top">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button Content="Export All"
+                            BorderThickness="1,1,0,1"
+                            Grid.Column="0"
+                            Margin="0,5,0,0"
+                            Padding="8,4,8,4"
+                            ToolTip = "Export keynotes to Revit standard keynote file"
+                            Click="export_keynotes"/>
+                    <Button Content="or Visible"
+                            BorderThickness="0,1,1,1"
+                            Grid.Column="1"
+                            Margin="0,5,0,0"
+                            Padding="8,4,8,4"
+                            ToolTip = "Export listed keynotes to Revit standard keynote file"
+                            Click="export_visible_keynotes"/>
+                </Grid>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <Grid Height="26">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="26"/>
                     </Grid.ColumnDefinitions>
                     <Button Content="Refresh"
                             Grid.Column="0"
-                            Margin="0,0,2,0"
                             Padding="8,4,8,4"
                             ToolTip="Reloads keynote file and updates keynotes per changes"
                             Click="refresh"/>
                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                             Grid.Column="1"
-                            Margin="2,0,0,0"
-                            Padding="8,4,8,4"
+                            Margin="5,0,5,0"
+                            Padding="0,4,0,4"
                             ToolTip="Change keynote file."
                             Click="change_keynote_file"/>
+                    <Button Content="{StaticResource showKFileIcon}"
+                            Grid.Column="2"
+                            ToolTip="Show keynote file."
+                            Click="show_keynote_file"/>
                 </Grid>
                 <Button Content="Update Model"
                         Margin="0,10,0,0"
@@ -246,7 +287,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Hidden">
                 <StackPanel>
                     <GroupBox Header="Categories" Margin="0,10,0,0" Padding="5">
-                        <Grid>
+                        <Grid Height="74">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="1*"/>
                                 <ColumnDefinition Width="2*" />
@@ -262,8 +303,8 @@
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions >
-                                    <RowDefinition Height="36" />
-                                    <RowDefinition Height="36" />
+                                    <RowDefinition />
+                                    <RowDefinition />
                                 </Grid.RowDefinitions>
                                 <Button Grid.Column="0" Grid.Row="0"
                                         Margin="2,0,2,2"
@@ -298,21 +339,27 @@
                                     <ColumnDefinition Width="1*"/>
                                     <ColumnDefinition Width="2*" />
                                 </Grid.ColumnDefinitions>
-                                <Button x:Name="keynoteAdd" Grid.Column="0"
-                                        Margin="0,0,2,0"
+                                <Grid.RowDefinitions >
+                                    <RowDefinition Height="78" />
+                                    <RowDefinition Height="78" />
+                                </Grid.RowDefinitions>
+                                <Button x:Name="keynoteAdd" Grid.Column="0" Grid.Row="0"
+                                        Margin="0,0,2,2"
                                         Content="{StaticResource addKeynoteIcon}"
                                         ToolTip="Add a new keynote"
                                         Click="add_keynote"/>
-                                <Grid x:Name="keynoteEditButtons"
-                                      Grid.Column="1"  IsEnabled="False">
+                                <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                                      Height="156"
+                                      IsEnabled="False">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition />
                                         <ColumnDefinition />
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions >
-                                        <RowDefinition Height="36" />
-                                        <RowDefinition Height="36" />
-                                        <RowDefinition Height="36" />
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                        <RowDefinition />
                                     </Grid.RowDefinitions>
                                     <Button Grid.Column="0" Grid.Row="0"
                                             Margin="2,0,2,2"
@@ -336,19 +383,27 @@
                                             Click="duplicate_keynote"/>
                                     <Button Grid.Column="0"  Grid.Row="2"
                                             IsEnabled="False"
-                                            Margin="2,2,2,0"
+                                            Margin="2,2,2,2"
                                             Content="{StaticResource rekeyKeynoteIcon}"
                                             ToolTip="Change key of selected keynote"
                                             Click="rekey_keynote"/>
                                     <Button Grid.Column="1"  Grid.Row="2"
                                             IsEnabled="False"
-                                            Margin="2,2,0,0"
+                                            Margin="2,2,0,2"
                                             Content="{StaticResource historyKeynoteIcon}"
                                             ToolTip="Show keynote change history"
                                             Click="show_keynote_history"/>
+                                    <Button Grid.Column="0" Grid.Row="3"
+                                            Margin="2,2,2,0"
+                                            Content="{StaticResource findKeynoteIcon}"
+                                            ToolTip="Find instances of selected keynote"
+                                            Click="show_keynote"/>
+                                    <Border Grid.Column="1" Grid.Row="3"
+                                            Margin="2,2,0,0"
+                                            BorderThickness="1" BorderBrush="LightGray" />
                                 </Grid>
                             </Grid>
-                            <TextBlock Text="Places:" Margin="0,10,0,0"/>
+                            <TextBlock Text="Double Click to Place:" Margin="0,10,0,0"/>
                             <ComboBox x:Name="keynotetype_cb" Margin="0,5,0,0" SelectedIndex="0" IsEditable="False" />
                         </StackPanel>
                     </GroupBox>

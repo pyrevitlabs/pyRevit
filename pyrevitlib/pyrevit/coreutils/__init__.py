@@ -804,6 +804,17 @@ def open_folder_in_explorer(folder_path):
                      .format(os.path.normpath(folder_path)))
 
 
+def show_entry_in_explorer(entry_path):
+    """Show given entry in Windows Explorer.
+
+    Args:
+        entry_path (str): directory or file path
+    """
+    import subprocess
+    subprocess.Popen(r'explorer /select,"{}"'
+                     .format(os.path.normpath(entry_path)))
+
+
 def fully_remove_dir(dir_path):
     """Remove directory recursively.
 
@@ -1243,6 +1254,16 @@ def correct_revittxt_encoding(filename):
         fcontent = oldf.readlines()
     with codecs.open(filename, 'w', 'utf-8') as newf:
         newf.writelines(fcontent)
+
+
+def check_revittxt_encoding(filename):
+    """Check if given file is in UTF-16 (UCS-2 LE) encoding.
+
+    Args:
+        filename (str): file path
+    """
+    with open(filename, 'rb') as rtfile:
+        return rtfile.read()[:2] == codecs.BOM_UTF16
 
 
 def has_nonprintable(input_str):
