@@ -219,10 +219,24 @@
                         Click="export_keynotes"/>
             </StackPanel>
             <StackPanel DockPanel.Dock="Top">
-                <Button Content="Refresh"
-                        Padding="8,4,8,4"
-                        ToolTip="Reloads keynote file and updates keynotes per changes"
-                        Click="refresh"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button Content="Refresh"
+                            Grid.Column="0"
+                            Margin="0,0,2,0"
+                            Padding="8,4,8,4"
+                            ToolTip="Reloads keynote file and updates keynotes per changes"
+                            Click="refresh"/>
+                    <Button Content="&#x25CF;&#x25CF;&#x25CF;"
+                            Grid.Column="1"
+                            Margin="2,0,0,0"
+                            Padding="8,4,8,4"
+                            ToolTip="Change keynote file."
+                            Click="change_keynote_file"/>
+                </Grid>
                 <Button Content="Update Model"
                         Margin="0,10,0,0"
                         Padding="8,4,8,4"
@@ -262,11 +276,13 @@
                                         ToolTip="Remove selected category"
                                         Click="remove_category"/>
                                 <Button Grid.Column="0" Grid.Row="1"
+                                        IsEnabled="False"
                                         Margin="2,2,2,0"
                                         Content="{StaticResource rekeyCategoryIcon}"
                                         ToolTip="Change key for selected category"
                                         Click="rekey_category"/>
                                 <Button Grid.Column="1" Grid.Row="1"
+                                        IsEnabled="False"
                                         Content="{StaticResource historyCategoryIcon}"
                                         Margin="2,2,0,0"
                                         ToolTip="Show category change history"
@@ -282,7 +298,7 @@
                                     <ColumnDefinition Width="1*"/>
                                     <ColumnDefinition Width="2*" />
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0"
+                                <Button x:Name="keynoteAdd" Grid.Column="0"
                                         Margin="0,0,2,0"
                                         Content="{StaticResource addKeynoteIcon}"
                                         ToolTip="Add a new keynote"
@@ -308,7 +324,7 @@
                                             Content="{StaticResource removeKeynoteIcon}"
                                             ToolTip="Remove selected keynote"
                                             Click="remove_keynote"/>
-                                    <Button Grid.Column="0"  Grid.Row="1"
+                                    <Button x:Name="subkeynoteAdd" Grid.Column="0"  Grid.Row="1"
                                             Margin="2,2,2,2"
                                             Content="{StaticResource addSubKeynoteIcon}"
                                             ToolTip="Add a new keynote as a child to the selected keynote"
@@ -319,11 +335,13 @@
                                             ToolTip="Duplicte selected keynote"
                                             Click="duplicate_keynote"/>
                                     <Button Grid.Column="0"  Grid.Row="2"
+                                            IsEnabled="False"
                                             Margin="2,2,2,0"
                                             Content="{StaticResource rekeyKeynoteIcon}"
                                             ToolTip="Change key of selected keynote"
                                             Click="rekey_keynote"/>
                                     <Button Grid.Column="1"  Grid.Row="2"
+                                            IsEnabled="False"
                                             Margin="2,2,0,0"
                                             Content="{StaticResource historyKeynoteIcon}"
                                             ToolTip="Show keynote change history"
@@ -331,17 +349,14 @@
                                 </Grid>
                             </Grid>
                             <TextBlock Text="Places:" Margin="0,10,0,0"/>
-                            <ComboBox  x:Name="keynotetype_cb" Margin="0,5,0,0" SelectedIndex="0" IsEditable="False">
-                                <ComboBoxItem Content="User Keynotes"/>
-                                <ComboBoxItem Content="Element Keynotes"/>
-                                <ComboBoxItem Content="Material Keynotes"/>
-                            </ComboBox>
+                            <ComboBox x:Name="keynotetype_cb" Margin="0,5,0,0" SelectedIndex="0" IsEditable="False" />
                         </StackPanel>
                     </GroupBox>
 
                     <GroupBox Header="Keynotes History" Margin="0,10,0,0" Padding="5">
                         <StackPanel >
                             <Button Content="Enable History"
+                                    IsEnabled="False"
                                     Margin="0,5,0,0"
                                     Padding="8,4,8,4"
                                     ToolTip="Enable history tracking on keynotes."

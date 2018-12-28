@@ -1,17 +1,23 @@
 """Manage project keynotes."""
-#pylint: disable=E0401,W0613,C0111,C0103
+#pylint: disable=E0401,W0613,C0111,C0103,C0302,W0703
 import os
 import os.path as op
 import shutil
+import math
+from collections import defaultdict
 
 from pyrevit import HOST_APP
 from pyrevit import framework
+from pyrevit.framework import System
 from pyrevit import coreutils
 from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
 
 from pyrevit.coreutils.loadertypes import UIDocUtils
+
+import keynotesdb as kdb
+
 
 __title__ = "Manage\nKeynotes"
 __author__ = "{{author}}"
@@ -21,291 +27,15 @@ logger = script.get_logger()
 output = script.get_output()
 
 # TODO:
-# manage lock errors
-# manage timeout errors
-# search needs to filter all subkeynotes as well
 # take care of todo items here
 # review and fine tune all functions for beta release
 
-# ================================================================ keynotesdb.py
-#pylint: disable=W0703
-from collections import namedtuple, defaultdict
 
-from pyrevit.labs import DeffrelDB as dfdb
+def get_keynote_pcommands():
+    return list(reversed(
+        [x for x in coreutils.get_enum_values(UI.PostableCommand)
+         if str(x).endswith('Keynote')]))
 
-
-RKeynote = namedtuple('RKeynote',
-                      ['key', 'text', 'parent_key',
-                       'locked', 'owner', 'children'])
-
-KEYNOTES_DB = 'keynotesdb'
-KEYNOTES_DB_DESC = 'pyRevit Keynotes Manager DB'
-
-CATEGORIES_TABLE = 'categories'
-CATEGORIES_TABLE_DESC = 'Root Keynotes Table'
-CATEGORY_KEY_FIELD = 'cat_key'
-CATEGORY_TITLE_FIELD = 'cat_title'
-
-KEYNOTES_TABLE = 'keynotes'
-KEYNOTES_TABLE_DESC = 'Keynotes Table'
-KEYNOTES_KEY_FIELD = 'keynote_key'
-KEYNOTES_TEXT_FIELD = 'keynote_text'
-KEYNOTES_PARENTKEY_FIELD = 'parent_key'
-
-
-EDIT_MODE_ADD_CATEG = 'add-category'
-EDIT_MODE_EDIT_CATEG = 'edit-category'
-EDIT_MODE_ADD_KEYNOTE = 'add-keynote'
-EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
-
-
-def _verify_keynotesdb_def(conn):
-    # verify db
-    try:
-        conn.ReadDB(KEYNOTES_DB)
-    except Exception as dbex:
-        logger.debug('Keynotes db read failed | %s', dbex)
-        dbdef = dfdb.DatabaseDefinition()
-        dbdef.Description = KEYNOTES_DB_DESC
-        conn.CreateDB(KEYNOTES_DB, dbdef)
-
-    # verify root categories table
-    try:
-        conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
-    except Exception as cattex:
-        logger.debug('Category table read failed | %s', cattex)
-        cat_key = dfdb.TextField(CATEGORY_KEY_FIELD)
-        cat_title = dfdb.TextField(CATEGORY_TITLE_FIELD)
-        cat_table_def = dfdb.TableDefinition()
-        cat_table_def.SupportsTags = False
-        cat_table_def.SupportsHistory = False
-        cat_table_def.EncapsulateValues = False
-        cat_table_def.SupportsHeaders = False
-        cat_table_def.Fields = [cat_key, cat_title]
-        cat_table_def.Description = CATEGORIES_TABLE_DESC
-        conn.CreateTable(KEYNOTES_DB, CATEGORIES_TABLE, cat_table_def)
-
-
-    # verify keynote table
-    try:
-        conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
-    except Exception as ktex:
-        logger.debug('keynote table read failed | %s', ktex)
-        keynote_key = dfdb.TextField(KEYNOTES_KEY_FIELD)
-        keynote_text = dfdb.TextField(KEYNOTES_TEXT_FIELD)
-        keynote_parent_key = dfdb.TPrimaryKeyField(KEYNOTES_PARENTKEY_FIELD)
-        keynotes_table_def = dfdb.TableDefinition()
-        keynotes_table_def.SupportsTags = False
-        keynotes_table_def.SupportsHistory = False
-        keynotes_table_def.EncapsulateValues = False
-        keynotes_table_def.SupportsHeaders = False
-        keynotes_table_def.Fields = \
-            [keynote_key, keynote_text, keynote_parent_key]
-        keynotes_table_def.Description = KEYNOTES_TABLE_DESC
-        conn.CreateTable(KEYNOTES_DB, KEYNOTES_TABLE, keynotes_table_def)
-
-
-def connect(keynotes_file, username=None):
-    conn = dfdb.DataBase.Connect(keynotes_file, username or HOST_APP.username)
-    logger.debug('verifying db schemas...')
-    _verify_keynotesdb_def(conn)
-    logger.debug('verifying db schemas completed.')
-    return conn
-
-# query functions -------------------------------------------------------------
-
-def get_locks(conn):
-    return conn.ReadLocks()
-
-
-def get_categories(conn):
-    db_locks = get_locks(conn)
-    locked_records = {x.LockTargetRecordKey: x.LockRequester
-                      for x in db_locks if x.IsRecordLock}
-    cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
-    return [RKeynote(key=x[CATEGORY_KEY_FIELD],
-                     text=x[CATEGORY_TITLE_FIELD] or '',
-                     parent_key='',
-                     locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
-                     children=[])
-            for x in cats_records]
-
-
-def get_keynotes(conn):
-    db_locks = get_locks(conn)
-    locked_records = {x.LockTargetRecordKey: x.LockRequester
-                      for x in db_locks if x.IsRecordLock}
-    keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
-    return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
-                     text=x[KEYNOTES_TEXT_FIELD] or '',
-                     parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                     locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
-                     children=[])
-            for x in keynote_records]
-
-
-def get_keynotes_tree(conn):
-    keynote_records = get_keynotes(conn)
-    parents = defaultdict(list)
-    for rkey in keynote_records:
-        parents[rkey.parent_key].append(rkey)
-    roots = []
-    for rkey in keynote_records:
-        if rkey.key in parents:
-            rkey.children.extend(parents[rkey.key])
-        roots.append(rkey)
-    return sorted(roots, key=lambda x: x.key)
-
-
-def find(conn, key):
-    for record in get_categories(conn) + get_keynotes(conn):
-        if record.key == key:
-            return record
-
-# locking ---------------------------------------------------------------------
-
-def begin_edit(conn, key, category=False):
-    target_table = CATEGORIES_TABLE if category else KEYNOTES_TABLE
-    conn.BEGIN(KEYNOTES_DB, target_table, key)
-
-
-def end_edit(conn):
-    conn.END()
-
-
-def reserve_key(conn, key, category=False):
-    target_table = CATEGORIES_TABLE if category else KEYNOTES_TABLE
-    conn.BEGIN(KEYNOTES_DB, target_table, key)
-
-
-def release_key(conn, key, category=False):
-    conn.END()
-
-# categories ------------------------------------------------------------------
-
-def add_category(conn, key, text):
-    conn.InsertRecord(KEYNOTES_DB,
-                      CATEGORIES_TABLE,
-                      key,
-                      {CATEGORY_TITLE_FIELD: text})
-
-
-def update_category_title(conn, key, new_title):
-    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key,
-                      {CATEGORY_TITLE_FIELD: new_title})
-
-
-def remove_category(conn, key):
-    conn.DropRecord(KEYNOTES_DB, CATEGORIES_TABLE, key)
-
-
-def rekey_category(conn, key, new_key):
-    # TODO: rekey_category
-    pass
-# keynotes --------------------------------------------------------------------
-
-def add_keynote(conn, key, text, parent_key):
-    conn.InsertRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_TEXT_FIELD: text,
-         KEYNOTES_PARENTKEY_FIELD: parent_key}
-        )
-
-
-def remove_keynote(conn, key):
-    conn.DropRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key
-        )
-
-
-def mark_category_under_edited(conn, key):
-    conn.BEGIN(KEYNOTES_DB, CATEGORIES_TABLE, key)
-
-
-def mark_keynote_under_edited(conn, key):
-    conn.BEGIN(KEYNOTES_DB, KEYNOTES_TABLE, key)
-
-
-def update_keynote_text(conn, key, text):
-    conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_TEXT_FIELD: text}
-        )
-
-
-def update_keynote_key(conn, key, new_key):
-    conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_KEY_FIELD: new_key}
-        )
-
-
-def move_keynote(conn, key, new_parent):
-    conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_PARENTKEY_FIELD: new_parent}
-        )
-
-
-def rekey_keynote(conn, key, new_key):
-    # TODO: rekey_keynote
-    pass
-
-
-def import_legacy_keynotes(conn, legacy_keynotes_file, skip_dup=False):
-    conn.BEGIN(KEYNOTES_DB)
-    try:
-        with open(legacy_keynotes_file, 'r') as lkf:
-            for line in lkf.readlines():
-                clean_line = line.strip()
-                if not clean_line.startswith('#'):
-                    fields = clean_line.split('\t')
-                    if len(fields) == 2 \
-                            or (len(fields) == 3 and not fields[2]):
-                        # add category
-                        try:
-                            add_category(conn, fields[0], fields[1])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
-                    elif len(fields) == 3:
-                        # add keynote
-                        try:
-                            add_keynote(conn, fields[0], fields[1], fields[2])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
-    finally:
-        conn.END()
-
-
-def export_legacy_keynotes(conn, target_legacy_keynotes_file):
-    categories = get_categories(conn)
-    keynotes = get_keynotes(conn)
-    with open(target_legacy_keynotes_file, 'w') as lkfile:
-        for cat in categories:
-            lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
-        for knote in keynotes:
-            lkfile.write('{}\t{}\t{}\n'
-                         .format(knote.key, knote.text, knote.parent_key))
-
-# =================================================================
 
 class EditRecordWindow(forms.WPFWindow):
     def __init__(self,
@@ -315,6 +45,7 @@ class EditRecordWindow(forms.WPFWindow):
                  rkey=None, text=None, pkey=None):
         forms.WPFWindow.__init__(self, 'EditRecord.xaml')
         self.Owner = owner
+        self._res = None
         self._commited = False
         self._reserved_key = None
 
@@ -328,14 +59,14 @@ class EditRecordWindow(forms.WPFWindow):
         self._pkey = pkey
 
         # prepare gui for various edit modes
-        if self._mode == EDIT_MODE_ADD_CATEG:
+        if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
             self.Title = 'Add Category'
             self.recordKeyTitle.Text = 'Create Category Key'
             self.applyChanges.Content = 'Add Category'
 
-        elif self._mode == EDIT_MODE_EDIT_CATEG:
+        elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             self._cat = True
             self.hide_element(self.recordParentInput)
             self.Title = 'Edit Category'
@@ -344,21 +75,17 @@ class EditRecordWindow(forms.WPFWindow):
             self.recordKey.IsEnabled = False
             if self._rkeynote:
                 if self._rkeynote.key:
-                    try:
-                        begin_edit(self._conn,
+                    kdb.begin_edit(self._conn,
                                    self._rkeynote.key,
                                    category=True)
-                    except Exception as ex:
-                        forms.alert(str(ex))
-                        return
 
-        elif self._mode == EDIT_MODE_ADD_KEYNOTE:
+        elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             self.show_element(self.recordParentInput)
             self.Title = 'Add Keynote'
             self.recordKeyTitle.Text = 'Create Keynote Key'
             self.applyChanges.Content = 'Add Keynote'
 
-        elif self._mode == EDIT_MODE_EDIT_KEYNOTE:
+        elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             self.show_element(self.recordParentInput)
             self.Title = 'Edit Keynote'
             self.recordKeyTitle.Text = 'Keynote Key'
@@ -367,13 +94,9 @@ class EditRecordWindow(forms.WPFWindow):
             if self._rkeynote:
                 # start edit
                 if self._rkeynote.key:
-                    try:
-                        begin_edit(self._conn,
+                    kdb.begin_edit(self._conn,
                                    self._rkeynote.key,
                                    category=False)
-                    except Exception as ex:
-                        forms.alert(str(ex))
-                        return
 
         # update gui with overrides if any
         if self._rkeynote:
@@ -394,7 +117,7 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_key(self):
-        if isinstance(self.recordKey.Content, str):
+        if self.recordKey.Content and u'\u25CF' not in self.recordKey.Content:
             return self.recordKey.Content
 
     @active_key.setter
@@ -418,7 +141,7 @@ class EditRecordWindow(forms.WPFWindow):
         self.recordParent.Content = value
 
     def commit(self):
-        if self._mode == EDIT_MODE_ADD_CATEG:
+        if self._mode == kdb.EDIT_MODE_ADD_CATEG:
             if not self.active_key:
                 forms.alert('Category must have a unique key.')
                 return False
@@ -427,25 +150,37 @@ class EditRecordWindow(forms.WPFWindow):
                 return False
             logger.debug('Adding category: {} {}'
                          .format(self.active_key, self.active_text))
-            add_category(self._conn, self.active_key, self.active_text)
-            end_edit(self._conn)
+            try:
+                self._res = kdb.add_category(self._conn,
+                                             self.active_key,
+                                             self.active_text)
+                kdb.end_edit(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return False
 
-        elif self._mode == EDIT_MODE_EDIT_CATEG:
+        elif self._mode == kdb.EDIT_MODE_EDIT_CATEG:
             if not self.active_text:
                 forms.alert('Existing title is removed. '
                             'Category must have a title.')
                 return False
-            # update category key if changed
-            if self.active_key != self._rkeynote.key:
-                rekey_category(self._conn, self._rkeynote.key, self.active_key)
-            # update category title if changed
-            if self.active_text != self._rkeynote.text:
-                update_category_title(self._conn,
-                                      self.active_key,
-                                      self.active_text)
-            end_edit(self._conn)
+            try:
+                # update category key if changed
+                if self.active_key != self._rkeynote.key:
+                    self._res = kdb.rekey_category(self._conn,
+                                                   self._rkeynote.key,
+                                                   self.active_key)
+                # update category title if changed
+                if self.active_text != self._rkeynote.text:
+                    kdb.update_category_title(self._conn,
+                                              self.active_key,
+                                              self.active_text)
+                kdb.end_edit(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return False
 
-        elif self._mode == EDIT_MODE_ADD_KEYNOTE:
+        elif self._mode == kdb.EDIT_MODE_ADD_KEYNOTE:
             if not self.active_key:
                 forms.alert('Keynote must have a unique key.')
                 return False
@@ -455,46 +190,65 @@ class EditRecordWindow(forms.WPFWindow):
             elif not self.active_parent_key:
                 forms.alert('Keynote must have a parent.')
                 return False
-            add_keynote(self._conn,
-                        self.active_key,
-                        self.active_text,
-                        self.active_parent_key)
-            end_edit(self._conn)
+            try:
+                self._res = kdb.add_keynote(self._conn,
+                                            self.active_key,
+                                            self.active_text,
+                                            self.active_parent_key)
+                kdb.end_edit(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return False
 
-        elif self._mode == EDIT_MODE_EDIT_KEYNOTE:
+        elif self._mode == kdb.EDIT_MODE_EDIT_KEYNOTE:
             if not self.active_text:
                 forms.alert('Existing text is removed. Keynote must have text.')
                 return False
-            # update keynote key if changed
-            if self.active_key != self._rkeynote.key:
-                rekey_keynote(self._conn, self._rkeynote.key, self.active_key)
-            # update keynote title if changed
-            if self.active_text != self._rkeynote.text:
-                update_keynote_text(self._conn,
-                                    self.active_key,
-                                    self.active_text)
-            # update keynote parent
-            if self.active_parent_key != self._rkeynote.parent_key:
-                move_keynote(self._conn,
-                             self.active_key,
-                             self.active_parent_key)
-            end_edit(self._conn)
+            try:
+                # update keynote key if changed
+                if self.active_key != self._rkeynote.key:
+                    self._res = kdb.rekey_keynote(self._conn,
+                                                  self._rkeynote.key,
+                                                  self.active_key)
+                # update keynote title if changed
+                if self.active_text != self._rkeynote.text:
+                    kdb.update_keynote_text(self._conn,
+                                            self.active_key,
+                                            self.active_text)
+                # update keynote parent
+                if self.active_parent_key != self._rkeynote.parent_key:
+                    kdb.move_keynote(self._conn,
+                                     self.active_key,
+                                     self.active_parent_key)
+                kdb.end_edit(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return False
 
         return True
 
     def show(self):
         self.ShowDialog()
+        return self._res
 
     def pick_key(self, sender, args):
         # remove previously reserved
         if self._reserved_key:
-            release_key(self._conn, self._reserved_key, category=self._cat)
+            try:
+                kdb.release_key(self._conn,
+                                self._reserved_key,
+                                category=self._cat)
+                categories = kdb.get_categories(self._conn)
+                keynotes = kdb.get_keynotes(self._conn)
+                locks = kdb.get_locks(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                return
+
         # collect existing keys
-        reserved_keys = [x.key for x in get_categories(self._conn)]
-        reserved_keys.extend([x.key for x in get_keynotes(self._conn)])
-        reserved_keys.extend(
-            [x.LockTargetRecordKey for x in get_locks(self._conn)]
-            )
+        reserved_keys = [x.key for x in categories]
+        reserved_keys.extend([x.key for x in keynotes])
+        reserved_keys.extend([x.LockTargetRecordKey for x in locks])
         # ask for a unique new key
         new_key = forms.ask_for_unique_string(
             prompt='Enter a Unique Key',
@@ -502,13 +256,13 @@ class EditRecordWindow(forms.WPFWindow):
             reserved_values=reserved_keys)
         if new_key:
             try:
-                reserve_key(self._conn, new_key, category=self._cat)
-                self._reserved_key = new_key
-                # set the key value on the button
-                self.active_key = new_key
-            except Exception as ex:
-                forms.alert(str(ex))
+                kdb.reserve_key(self._conn, new_key, category=self._cat)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
                 return
+            self._reserved_key = new_key
+            # set the key value on the button
+            self.active_key = new_key
 
     def pick_parent(self, sender, args):
         # TODO: pick_parent
@@ -547,8 +301,15 @@ class EditRecordWindow(forms.WPFWindow):
     def window_closing(self, sender, args):
         if not self._commited:
             if self._reserved_key:
-                release_key(self._conn, self._reserved_key, category=self._cat)
-            end_edit(self._conn)
+                try:
+                    kdb.release_key(self._conn,
+                                    self._reserved_key,
+                                    category=self._cat)
+                    kdb.end_edit(self._conn)
+                except System.TimeoutException as toutex:
+                    forms.alert(toutex.Message)
+                except Exception:
+                    pass
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
@@ -561,16 +322,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._kfile = None
             forms.alert("Keynote file is not accessible. "
                         "I'll ask you to select a keynote file.")
-            kfile = forms.pick_file('txt')
-            if kfile:
-                logger.debug('Setting keynote file: %s' % kfile)
-                try:
-                    with revit.Transaction("Set Keynote File"):
-                        revit.update.set_keynote_file(kfile, doc=revit.doc)
-                    self._kfile = revit.query.get_keynote_file(doc=revit.doc)
-                except Exception as skex:
-                    forms.alert(str(skex))
-                    return
+            self._change_kfile()
 
         # if a keynote file is still not set, return
         if not self._kfile:
@@ -578,7 +330,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._conn = None
         try:
-            self._conn = connect(self._kfile)
+            self._conn = kdb.connect(self._kfile)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message, exitscript=True)
         except Exception as ex:
             logger.debug('Connection failed | %s' % ex)
             res = forms.alert(
@@ -611,16 +365,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
                             exitscript=True)
 
 
-        self._allcat = RKeynote(key='', text='-- ALL CATEGORIES --',
-                                parent_key='',
-                                locked=False, owner='',
-                                children=None)
+        self._cache = []
+        self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
+                                    parent_key='',
+                                    locked=False, owner='',
+                                    children=None)
 
         self._config = script.get_config()
-        self._update_postable_commands()
         self._update_window_geom()
-
-        self.refresh(None, None)
+        self._update_postable_commands()
+        self._update_last_category()
+        self.search_tb.Focus()
 
     @property
     def window_geom(self):
@@ -641,9 +396,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     @property
     def postable_keynote_command(self):
         # order must match the order in GUI
-        return [UI.PostableCommand.UserKeynote,
-                UI.PostableCommand.ElementKeynote,
-                UI.PostableCommand.MaterialKeynote][self.postcmd_idx]
+        return get_keynote_pcommands()[self.postcmd_idx]
 
     @property
     def postcmd_idx(self):
@@ -651,6 +404,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @postcmd_idx.setter
     def postcmd_idx(self, index):
+        self.keynotetype_cb.ItemsSource = \
+            [str(x).replace('UI.PostableCommand', '')
+             for x in get_keynote_pcommands()]
         self.keynotetype_cb.SelectedIndex = index
 
     @property
@@ -663,9 +419,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if cat and cat != self._allcat:
             return cat
 
+    @selected_category.setter
+    def selected_category(self, cat_key):
+        self._update_ktree(active_catkey=cat_key)
+
+    @property
+    def all_categories(self):
+        try:
+            return kdb.get_categories(self._conn)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return []
+
     @property
     def all_keynotes(self):
-        return get_keynotes(self._conn)
+        try:
+            return kdb.get_keynotes(self._conn)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return []
 
     @property
     def current_keynotes(self):
@@ -731,68 +503,106 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _convert_existing(self):
         # make a copy of exsing
-        temp_kfile = op.join(op.dirname(self._kfile), 'backup.txt')
+        temp_kfile = op.join(op.dirname(self._kfile),
+                             op.basename(self._kfile) + '.bak')
         shutil.copy(self._kfile, temp_kfile)
         os.remove(self._kfile)
-        self._conn = connect(self._kfile)
-        import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
+        try:
+            self._conn = kdb.connect(self._kfile)
+            kdb.import_legacy_keynotes(self._conn, temp_kfile, skip_dup=True)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message, exitscript=True)
 
-    def _update_postable_commands(self):
-        self.postcmd_idx = self.get_last_postcmd_idx()
+    def _change_kfile(self):
+        kfile = forms.pick_file('txt')
+        if kfile:
+            logger.debug('Setting keynote file: %s' % kfile)
+            try:
+                with revit.Transaction("Set Keynote File"):
+                    revit.update.set_keynote_file(kfile, doc=revit.doc)
+                self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+            except Exception as skex:
+                forms.alert(str(skex))
+                return
 
     def _update_window_geom(self):
         width, height, top, left = self.get_last_window_geom()
-        if coreutils.is_box_visible_on_screens(left, top, width, height):
+        if not (math.isnan(self.Top) and math.isnan(self.Left)) \
+                and coreutils.is_box_visible_on_screens(left, top,
+                                                        width, height):
             self.window_geom = (width, height, top, left)
         else:
             self.WindowStartupLocation = \
                 framework.Windows.WindowStartupLocation.CenterScreen
 
-    def _update_ktree(self):
+    def _update_postable_commands(self):
+        self.postcmd_idx = self.get_last_postcmd_idx()
+
+    def _update_last_category(self):
+        self._update_ktree(active_catkey=self.get_last_category_key())
+
+    def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
-        categories.extend(get_categories(self._conn))
+        categories.extend(self.all_categories)
 
         last_idx = 0
-        last_cat_key = self.get_last_category_key()
-        if last_cat_key:
+        if active_catkey:
             cat_keys = [x.key for x in categories]
-            if last_cat_key in cat_keys:
-                last_idx = cat_keys.index(last_cat_key)
+            if active_catkey in cat_keys:
+                last_idx = cat_keys.index(active_catkey)
         else:
             if self.categories_tv.ItemsSource:
                 last_idx = self.categories_tv.SelectedIndex
 
         self.categories_tv.ItemsSource = categories
         self.categories_tv.SelectedIndex = last_idx
-        self._update_ktree_knotes()
 
     def _update_ktree_knotes(self, fast=False):
         keynote_filter = self.search_term if self.search_term else None
         if fast and keynote_filter:
-            active_keynotes = self.keynotes_tv.ItemsSource
+            # fast filtering using already loaded content
+            active_tree = list(self._cache)
         else:
-            active_keynotes = get_keynotes_tree(self._conn)
+            # get the keynote trees (not categories)
+            try:
+                active_tree = kdb.get_keynotes_tree(self._conn)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+                active_tree = []
+
             selected_cat = self.selected_category
+            # if the is a category selected, list its children
             if selected_cat:
                 if selected_cat.key:
-                    active_keynotes = \
-                        [x for x in active_keynotes
-                        if x.parent_key == self.selected_category.key]
+                    active_tree = \
+                        [x for x in active_tree
+                         if x.parent_key == self.selected_category.key]
+            # otherwise list categories as roots witn children
+            else:
+                parents = defaultdict(list)
+                for rkey in active_tree:
+                    parents[rkey.parent_key].append(rkey)
+                categories = self.all_categories
+                for crkey in categories:
+                    if crkey.key in parents:
+                        crkey.children.extend(parents[crkey.key])
+                active_tree = categories
 
+        self._cache = list(active_tree)
         if keynote_filter:
             clean_filter = keynote_filter.lower()
-            filtered_keynotes = \
-                [x for x in active_keynotes
-                 if clean_filter in x.key.lower()
-                 + x.text.lower()
-                 + x.owner.lower()]
+            filtered_keynotes = []
+            for rkey in active_tree:
+                if rkey.filter(clean_filter):
+                    filtered_keynotes.append(rkey)
         else:
-            filtered_keynotes = active_keynotes
+            filtered_keynotes = active_tree
 
         self.keynotes_tv.ItemsSource = filtered_keynotes
 
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
+        logger.debug('New search term: %s', self.search_term)
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)
         else:
@@ -807,13 +617,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def selected_category_changed(self, sender, args):
+        logger.debug('New category selected: %s', self.selected_category)
         if self.selected_category and not self.selected_category.locked:
+            self.keynoteAdd.IsEnabled = True
+            self.subkeynoteAdd.IsEnabled = True
             self.catEditButtons.IsEnabled = True
         else:
+            self.keynoteAdd.IsEnabled = False
+            self.subkeynoteAdd.IsEnabled = False
             self.catEditButtons.IsEnabled = False
         self._update_ktree_knotes()
 
     def selected_keynote_changed(self, sender, args):
+        logger.debug('New keynote selected: %s', self.selected_keynote)
         if self.selected_keynote and not self.selected_keynote.locked:
             self.keynoteEditButtons.IsEnabled = True
         else:
@@ -826,8 +642,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def add_category(self, sender, args):
         try:
-            EditRecordWindow(self, self._conn, EDIT_MODE_ADD_CATEG).show()
-            self._update_ktree()
+            new_cat = \
+                EditRecordWindow(self, self._conn,
+                                 kdb.EDIT_MODE_ADD_CATEG).show()
+            if new_cat:
+                self.selected_category = new_cat.key
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
         except Exception as ex:
             forms.alert(str(ex))
 
@@ -845,11 +666,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             else:
                 try:
                     EditRecordWindow(self, self._conn,
-                                     EDIT_MODE_EDIT_CATEG,
+                                     kdb.EDIT_MODE_EDIT_CATEG,
                                      rkeynote=selected_category).show()
-                    self._update_ktree()
+                except System.TimeoutException as toutex:
+                    forms.alert(toutex.Message)
                 except Exception as ex:
                     forms.alert(str(ex))
+                finally:
+                    self._update_ktree()
 
     def rekey_category(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -863,7 +687,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "Are you sure about deleting %s?" % selected_category.key,
                     yes=True, no=True):
                 try:
-                    remove_category(self._conn, selected_category.key)
+                    kdb.remove_category(self._conn, selected_category.key)
+                except System.TimeoutException as toutex:
+                    forms.alert(toutex.Message)
                 except Exception as ex:
                     forms.alert(str(ex))
                 finally:
@@ -878,22 +704,28 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             EditRecordWindow(self, self._conn,
-                             EDIT_MODE_ADD_KEYNOTE,
+                             kdb.EDIT_MODE_ADD_KEYNOTE,
                              pkey=parent_key).show()
-            self._update_ktree_knotes()
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
         except Exception as ex:
             forms.alert(str(ex))
+        finally:
+            self._update_ktree_knotes()
 
     def add_sub_keynote(self, sender, args):
         selected_keynote = self.selected_keynote
         if selected_keynote:
             try:
                 EditRecordWindow(self, self._conn,
-                                 EDIT_MODE_ADD_KEYNOTE,
+                                 kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=selected_keynote.key).show()
-                self._update_ktree_knotes()
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
             except Exception as ex:
                 forms.alert(str(ex))
+            finally:
+                self._update_ktree_knotes()
 
     def duplicate_keynote(self, sender, args):
         if self.selected_keynote:
@@ -901,12 +733,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(
                     self,
                     self._conn,
-                    EDIT_MODE_ADD_KEYNOTE,
+                    kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=self.selected_keynote.text,
                     pkey=self.selected_keynote.parent_key).show()
-                self._update_ktree_knotes()
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
             except Exception as ex:
                 forms.alert(str(ex))
+            finally:
+                self._update_ktree_knotes()
 
     def remove_keynote(self, sender, args):
         # TODO: make sure noone owns any sub keynotes
@@ -917,10 +752,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "Are you sure about deleting %s?" % selected_keynote.key,
                     yes=True, no=True):
                 try:
-                    remove_keynote(self._conn, selected_keynote.key)
-                    self._update_ktree_knotes()
+                    kdb.remove_keynote(self._conn, selected_keynote.key)
+                except System.TimeoutException as toutex:
+                    forms.alert(toutex.Message)
                 except Exception as ex:
                     forms.alert(str(ex))
+                finally:
+                    self._update_ktree_knotes()
 
     def edit_keynote(self, sender, args):
         if self.selected_keynote:
@@ -928,11 +766,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(
                     self,
                     self._conn,
-                    EDIT_MODE_EDIT_KEYNOTE,
+                    kdb.EDIT_MODE_EDIT_KEYNOTE,
                     rkeynote=self.selected_keynote).show()
-                self._update_ktree_knotes()
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
             except Exception as ex:
                 forms.alert(str(ex))
+            finally:
+                self._update_ktree_knotes()
 
     def rekey_keynote(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -968,6 +809,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def show_keynote_history(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
 
+    def change_keynote_file(self, sender, args):
+        self._change_kfile()
+        self.Close()
+
     def import_keynotes(self, sender, args):
         # verify existing keynotes when importing
         # maybe allow for merge conflict?
@@ -977,34 +822,45 @@ class KeynoteManagerWindow(forms.WPFWindow):
             res = forms.alert("Do you want me to skip duplicates if any?",
                               yes=True, no=True)
             try:
-                import_legacy_keynotes(self._conn,
-                                       kfile,
-                                       skip_dup=res)
-                self._update_ktree()
+                kdb.import_legacy_keynotes(self._conn,
+                                           kfile,
+                                           skip_dup=res)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
             except Exception as ex:
                 logger.debug('Importing legacy keynotes failed | %s' % ex)
                 forms.alert(str(ex))
+            finally:
+                self._update_ktree(active_catkey=self._allcat)
 
     def export_keynotes(self, sender, args):
         kfile = forms.save_file('txt')
         logger.debug('Exporting keynotes from: %s' % kfile)
         if kfile:
-            export_legacy_keynotes(self._conn, kfile)
+            try:
+                kdb.export_legacy_keynotes(self._conn, kfile)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
 
     def update_model(self, sender, args):
         self.Close()
 
     def window_closed(self, sender, args):
+        with revit.Transaction('Update Keynotes'):
+            revit.update.update_linked_keynotes(doc=revit.doc)
+
         try:
             self.save_config()
         except Exception as saveex:
             logger.debug('Saving configuration failed | %s' % saveex)
             forms.alert(str(saveex))
+
         if self._conn:
             # manuall call dispose to release locks
-            self._conn.Dispose()
-            with revit.Transaction('Update Keynotes'):
-                revit.update.update_linked_keynotes(doc=revit.doc)
+            try:
+                self._conn.Dispose()
+            except Exception:
+                pass
 
 
 try:
