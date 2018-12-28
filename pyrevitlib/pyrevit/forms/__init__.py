@@ -1745,48 +1745,58 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         >>> forms.alert('Are you sure?',
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
-    buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
-    if yes:
-        buttons |= UI.TaskDialogCommonButtons.Yes
-    elif ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
-    if no:
-        buttons |= UI.TaskDialogCommonButtons.No
-    if retry:
-        buttons |= UI.TaskDialogCommonButtons.Retry
-
+    # BUILD DIALOG
     cmd_name = EXEC_PARAMS.command_name
     if not title:
         title = cmd_name if cmd_name else 'pyRevit'
-
     tdlg = UI.TaskDialog(title)
-    tdlg.CommonButtons = buttons
+
+    options = options or []
+    # add command links if any
+    if options:
+        clinks = coreutils.get_enum_values(UI.TaskDialogCommandLinkId)
+        max_clinks = len(clinks)
+        for idx, cmd in enumerate(options):
+            if idx < max_clinks:
+                tdlg.AddCommandLink(clinks[idx], cmd)
+    # otherwise add buttons
+    else:
+        buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
+        if yes:
+            buttons |= UI.TaskDialogCommonButtons.Yes
+        elif ok:
+            buttons |= UI.TaskDialogCommonButtons.Ok
+
+        if cancel:
+            buttons |= UI.TaskDialogCommonButtons.Cancel
+        if no:
+            buttons |= UI.TaskDialogCommonButtons.No
+        if retry:
+            buttons |= UI.TaskDialogCommonButtons.Retry
+        tdlg.CommonButtons = buttons
+
+    # set texts
     tdlg.MainInstruction = msg
     tdlg.MainContent = sub_msg
     tdlg.ExpandedContent = expanded
     if footer:
-        footer += '\n'
-    tdlg.FooterText = \
-        footer + \
-        'pyRevit {}'.format(versionmgr.get_pyrevit_version().get_formatted())
+        footer = footer.strip() + '\n'
+    tdlg.FooterText = footer + 'pyRevit {}'.format(
+        versionmgr.get_pyrevit_version().get_formatted()
+        )
     tdlg.TitleAutoPrefix = False
+
+    # set icon
     tdlg.MainIcon = \
         UI.TaskDialogIcon.TaskDialogIconWarning \
         if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
 
-    # add command links
-    options = options or []
-    clinks = coreutils.get_enum_values(UI.TaskDialogCommandLinkId)
-    max_clinks = len(clinks)
-    for idx, cmd in enumerate(options):
-        if idx < max_clinks:
-            tdlg.AddCommandLink(clinks[idx], cmd)
     # tdlg.VerificationText = 'verif'
+
+    # SHOW DIALOG
     res = tdlg.Show()
 
+    # PROCESS REPONSES
     # positive response
     if res == UI.TaskDialogResult.Ok \
             or res == UI.TaskDialogResult.Yes \
