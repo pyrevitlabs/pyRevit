@@ -1337,13 +1337,13 @@ def is_box_visible_on_screens(left, top, width, height):
 def fuzzy_search_ratio(target_string, sfilter):
     """Match target string against the filter and return a match ratio."""
     tstring = target_string
-    # 1.0 for indentical matches
+    # 100 for identical matches
     if sfilter == tstring:
         return 100
 
     # 98 to 99 reserved (2 scores)
 
-    # 97 for indentical non-case-sensitive matches
+    # 97 for identical non-case-sensitive matches
     lower_tstring = tstring.lower()
     lower_sfilter_str = sfilter.lower()
     if lower_sfilter_str == lower_tstring:
