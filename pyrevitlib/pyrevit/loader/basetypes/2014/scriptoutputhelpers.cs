@@ -66,7 +66,19 @@ namespace PyRevitBaseClasses
                             uidoc.ActiveView = view;
 
                             // islolate the element, deselect, and zoom fit
-                            view.IsolateElementsTemporary(elementIds);
+                            // add host elements for tags since tags will not be visible without their host
+                            var elementIdsToIsolate = new List<ElementId>();
+                            foreach (var elid in elementIds) {
+                                var element = doc.GetElement(elid);
+                                if (element.GetType() == typeof(IndependentTag)) {
+                                    var hostId = ((IndependentTag)element).TaggedLocalElementId;
+                                    if (hostId != ElementId.InvalidElementId)
+                                        elementIdsToIsolate.Add(hostId);
+                                }
+                            }
+
+                            elementIdsToIsolate.AddRange(elementIds);
+                            view.IsolateElementsTemporary(elementIdsToIsolate);
                             uidoc.Selection.Elements = SelElementSet.Create();
                             foreach (var uiview in openUIViews)
                                 if (uiview.ViewId == view.Id)
