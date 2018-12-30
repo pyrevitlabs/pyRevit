@@ -31,6 +31,9 @@ if not EXEC_PARAMS.doc_mode:
     # executor.cs
     ScriptExecutor = base_module.ScriptExecutor
 
+    # helpers.cs
+    UIDocUtils = base_module.UIDocUtils
+
     # scriptoutput.cs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
     ScriptOutput = base_module.ScriptOutput

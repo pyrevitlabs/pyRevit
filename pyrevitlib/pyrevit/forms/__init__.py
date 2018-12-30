@@ -305,58 +305,6 @@ class TemplateListItem(object):
         """Unwrap and return wrapped object."""
         return self.item
 
-    def fuzzy_ratio(self, filter_str):
-        """Matching item against the filter and returns a match ratio."""
-        name = self.name
-        # 1.0 for indentical matches
-        if filter_str == name:
-            return 100
-
-        # 98 to 99 reserved (2 scores)
-
-        # 97 for indentical non-case-sensitive matches
-        lower_name = name.lower()
-        lower_filter_str = filter_str.lower()
-        if lower_filter_str == lower_name:
-            return 97
-
-        # 95  to 96 reserved (2 scores)
-
-        # 93 to 94 for inclusion matches
-        if filter_str in name:
-            return 94
-        if lower_filter_str in lower_name:
-            return 93
-
-        # 91  to 92 reserved (2 scores)
-
-        ## 80 to 90 for parts matches
-        name_parts = name.split()
-        filter_parts = filter_str.split()
-        if all(x in name_parts for x in filter_parts):
-            return 90
-
-        # 88 to 89 reserved (2 scores)
-
-        lower_name_parts = [x.lower() for x in name_parts]
-        lower_filter_parts = [x.lower() for x in filter_parts]
-        if all(x in lower_name_parts for x in lower_filter_parts):
-            return 87
-
-        # 85 to 86 reserved (2 scores)
-
-        if all(x in name for x in filter_parts):
-            return 84
-
-        # 82 to 83 reserved (2 scores)
-
-        if all(x in lower_name for x in lower_filter_parts):
-            return 81
-
-        # 80 reserved
-
-        return 0
-
     @property
     def checkable(self):
         """List Item CheckBox Visibility."""
@@ -563,9 +511,12 @@ class SelectFromList(TemplateUserInputWindow):
             self.uncheckall_b.Content = 'Uncheck'
             self.toggleall_b.Content = 'Toggle'
             # get a match score for every item and sort high to low
-            fuzzy_matches = sorted([(x, x.fuzzy_ratio(option_filter))
-                                    for x in self._get_active_ctx()],
-                                   key=lambda x: x[1], reverse=True)
+            fuzzy_matches = sorted(
+                [(x, coreutils.fuzzy_search_ratio(x.name, option_filter))
+                 for x in self._get_active_ctx()],
+                key=lambda x: x[1],
+                reverse=True
+                )
             # filter out any match with score less than 80
             self.list_lb.ItemsSource = \
                 [x[0] for x in fuzzy_matches if x[1] >= 80]
@@ -829,36 +780,54 @@ class GetValueWindow(TemplateUserInputWindow):
         self.value_type = kwargs.get('value_type', 'string')
         value_prompt = kwargs.get('prompt', None)
         value_default = kwargs.get('default', None)
+        self.reserved_values = kwargs.get('reserved_values', [])
 
         # customize window based on type
         if self.value_type == 'string':
-            self.show_element(self.string_panel)
-            self.string_tb.Text = value_default if value_default else ''
-            self.string_tb.Focus()
-            self.string_tb.SelectAll()
-            self.string_prompt.Text = \
+            self.show_element(self.stringPanel_dp)
+            self.stringValue_tb.Text = value_default if value_default else ''
+            self.stringValue_tb.Focus()
+            self.stringValue_tb.SelectAll()
+            self.stringPrompt.Text = \
                 value_prompt if value_prompt else 'Enter string:'
+            if self.reserved_values:
+                self.string_value_changed(None, None)
         elif self.value_type == 'dropdown':
-            self.show_element(self.dropdown_panel)
-            self.dropdown_prompt.Text = \
+            self.show_element(self.dropdownPanel_db)
+            self.dropdownPrompt.Text = \
                 value_prompt if value_prompt else 'Pick one value:'
             self.dropdown_cb.ItemsSource = self._context
             if value_default:
                 self.dropdown_cb.SelectedItem = value_default
         elif self.value_type == 'date':
-            self.show_element(self.date_panel)
-            self.date_prompt.Text = \
+            self.show_element(self.datePanel_dp)
+            self.datePrompt.Text = \
                 value_prompt if value_prompt else 'Pick date:'
+
+    def string_value_changed(self, sender, args):
+        filtered_rvalues = \
+            sorted([x for x in self.reserved_values
+                    if self.stringValue_tb.Text in str(x)],
+                   reverse=True)
+        if filtered_rvalues:
+            self.reservedValuesList.ItemsSource = filtered_rvalues
+            self.show_element(self.reservedValuesListPanel)
+            self.okayButton.IsEnabled = \
+                self.stringValue_tb.Text not in filtered_rvalues
+        else:
+            self.reservedValuesList.ItemsSource = []
+            self.hide_element(self.reservedValuesListPanel)
+            self.okayButton.IsEnabled = True
 
     def select(self, sender, args):    #pylint: disable=W0613
         self.Close()
         if self.value_type == 'string':
-            self.response = self.string_tb.Text
+            self.response = self.stringValue_tb.Text
         elif self.value_type == 'dropdown':
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == 'date':
-            if self.date_picker.SelectedDate:
-                datestr = self.date_picker.SelectedDate.ToString("MM/dd/yyyy")
+            if self.datePicker.SelectedDate:
+                datestr = self.datePicker.SelectedDate.ToString("MM/dd/yyyy")
                 self.response = datetime.datetime.strptime(datestr, r'%m/%d/%Y')
             else:
                 self.response = None
@@ -1754,7 +1723,7 @@ def select_image(images, title='Select Image', button_name='Select'):
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
           ok=True, cancel=False, yes=False, no=False, retry=False,
-          warn_icon=True, exitscript=False):
+          warn_icon=True, options=None, exitscript=False):
     """Show a task dialog with given message.
 
     Args:
@@ -1765,6 +1734,7 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
+        options(list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
     Returns:
@@ -1775,44 +1745,82 @@ def alert(msg, title=None, sub_msg=None, expanded=None, footer='',
         >>> forms.alert('Are you sure?',
         ...              ok=False, yes=True, no=True, exitscript=True)
     """
-    buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
-    if yes:
-        buttons |= UI.TaskDialogCommonButtons.Yes
-    elif ok:
-        buttons |= UI.TaskDialogCommonButtons.Ok
-
-    if cancel:
-        buttons |= UI.TaskDialogCommonButtons.Cancel
-    if no:
-        buttons |= UI.TaskDialogCommonButtons.No
-    if retry:
-        buttons |= UI.TaskDialogCommonButtons.Retry
-
+    # BUILD DIALOG
     cmd_name = EXEC_PARAMS.command_name
     if not title:
         title = cmd_name if cmd_name else 'pyRevit'
-
     tdlg = UI.TaskDialog(title)
-    tdlg.CommonButtons = buttons
+
+    options = options or []
+    # add command links if any
+    if options:
+        clinks = coreutils.get_enum_values(UI.TaskDialogCommandLinkId)
+        max_clinks = len(clinks)
+        for idx, cmd in enumerate(options):
+            if idx < max_clinks:
+                tdlg.AddCommandLink(clinks[idx], cmd)
+    # otherwise add buttons
+    else:
+        buttons = coreutils.get_enum_none(UI.TaskDialogCommonButtons)
+        if yes:
+            buttons |= UI.TaskDialogCommonButtons.Yes
+        elif ok:
+            buttons |= UI.TaskDialogCommonButtons.Ok
+
+        if cancel:
+            buttons |= UI.TaskDialogCommonButtons.Cancel
+        if no:
+            buttons |= UI.TaskDialogCommonButtons.No
+        if retry:
+            buttons |= UI.TaskDialogCommonButtons.Retry
+        tdlg.CommonButtons = buttons
+
+    # set texts
     tdlg.MainInstruction = msg
     tdlg.MainContent = sub_msg
     tdlg.ExpandedContent = expanded
     if footer:
-        footer += '\n'
-    tdlg.FooterText = \
-        footer + \
-        'pyRevit {}'.format(versionmgr.get_pyrevit_version().get_formatted())
+        footer = footer.strip() + '\n'
+    tdlg.FooterText = footer + 'pyRevit {}'.format(
+        versionmgr.get_pyrevit_version().get_formatted()
+        )
     tdlg.TitleAutoPrefix = False
+
+    # set icon
     tdlg.MainIcon = \
         UI.TaskDialogIcon.TaskDialogIconWarning \
         if warn_icon else UI.TaskDialogIcon.TaskDialogIconNone
+
     # tdlg.VerificationText = 'verif'
+
+    # SHOW DIALOG
     res = tdlg.Show()
 
+    # PROCESS REPONSES
+    # positive response
     if res == UI.TaskDialogResult.Ok \
             or res == UI.TaskDialogResult.Yes \
             or res == UI.TaskDialogResult.Retry:
-        return True
+        if not exitscript:
+            return True
+        else:
+            sys.exit()
+    # negative response
+    elif res == coreutils.get_enum_none(UI.TaskDialogResult) \
+            or res == UI.TaskDialogResult.Cancel \
+            or res == UI.TaskDialogResult.No:
+        if not exitscript:
+            return False
+        else:
+            sys.exit()
+    # command link response
+    elif 'CommandLink' in str(res):
+        tdresults = sorted(
+            [x for x in coreutils.get_enum_values(UI.TaskDialogResult)
+             if 'CommandLink' in str(x)]
+            )
+        residx = tdresults.index(res)
+        return options[residx]
     else:
         if not exitscript:
             return False
@@ -2079,6 +2087,17 @@ def ask_for_string(default=None, prompt=None, title=None):
         default=default,
         prompt=prompt,
         title=title
+        )
+
+
+def ask_for_unique_string(reserved_values, default=None, prompt=None, title=None):
+    return GetValueWindow.show(
+        None,
+        value_type='string',
+        default=default,
+        prompt=prompt,
+        title=title,
+        reserved_values=reserved_values,
         )
 
 

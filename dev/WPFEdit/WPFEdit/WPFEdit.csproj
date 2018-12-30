@@ -83,12 +83,12 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Developer Tools.panel\WIP Tools.pulldown\Apply Door Hardware Info.pushbutton\DoorHardwareWindow.xaml">
-      <Link>Tools\DoorHardwareWindow.xaml</Link>
+      <Link>Dev\DoorHardwareWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="..\..\..\extensions\pyRevitDevTools.extension\pyRevitDev.tab\Developer Tools.panel\WIP Tools.pulldown\Create Linked Views.pushbutton\CreateLinkedViews.xaml">
-      <Link>Tools\CreateLinkedViews.xaml</Link>
+      <Link>Dev\CreateLinkedViews.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -114,6 +114,16 @@
     </Page>
     <Page Include="..\..\..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\TagsConfig.panelbutton\TagsConfigsWindow.xaml">
       <Link>Tags\TagsConfigsWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\EditRecord.xaml">
+      <Link>Tools\KeynoteManager\EditRecord.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Keynotes.pushbutton\KeynoteManagerWindow.xaml">
+      <Link>Tools\KeynoteManager\KeynoteManagerWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
