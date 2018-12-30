@@ -179,7 +179,7 @@ def _verify_keynotesdb_def(conn):
         mlogger.debug('keynote table read failed | %s', ktex)
         keynote_key = dfdb.TextField(KEYNOTES_KEY_FIELD)
         keynote_text = dfdb.TextField(KEYNOTES_TEXT_FIELD)
-        keynote_parent_key = dfdb.TPrimaryKeyField(KEYNOTES_PARENTKEY_FIELD)
+        keynote_parent_key = dfdb.TextField(KEYNOTES_PARENTKEY_FIELD)
         keynotes_table_def = dfdb.TableDefinition()
         keynotes_table_def.SupportsTags = False
         keynotes_table_def.SupportsHistory = False
@@ -187,6 +187,11 @@ def _verify_keynotesdb_def(conn):
         keynotes_table_def.SupportsHeaders = False
         keynotes_table_def.Fields = \
             [keynote_key, keynote_text, keynote_parent_key]
+        # wiring the keynotes primary key
+        keynotes_table_def.Wires = [
+            dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, CATEGORY_KEY_FIELD),
+            dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, KEYNOTES_KEY_FIELD)
+        ]
         keynotes_table_def.Description = KEYNOTES_TABLE_DESC
         conn.CreateTable(KEYNOTES_DB, KEYNOTES_TABLE, keynotes_table_def)
 
