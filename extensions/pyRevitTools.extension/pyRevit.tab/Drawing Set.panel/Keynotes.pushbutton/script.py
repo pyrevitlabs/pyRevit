@@ -351,7 +351,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "Existing keynote file needs to be converted to "
                 "a format usable by this tool. The resulting keynote "
                 "file is still readble by Revit and could be shared "
-                "with other projects. Users should be making changes to "
+                "with other projects. Users should NOT be making changes to "
                 "the existing keynote file during the conversion process.\n"
                 "Are you sure you want to convert?",
                 options=["Convert", "Give me more info"])
