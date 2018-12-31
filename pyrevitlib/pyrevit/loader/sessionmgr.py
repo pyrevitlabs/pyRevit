@@ -161,8 +161,14 @@ def _new_session():
         )
 
     # configure extension components for metadata
+    # e.g. liquid templates like {{author}}
     for assm_ext in assembled_exts:
         assm_ext.ext.configure()
+
+    # add names of the created assemblies to the session info
+    sessioninfo.set_loaded_pyrevit_assemblies(
+        [x.assm.name for x in assembled_exts]
+    )
 
     # run startup scripts for this ui extension, if any
     for assm_ext in assembled_exts:
@@ -182,11 +188,6 @@ def _new_session():
                                         default_value=False)
         )
         mlogger.info('UI created for extension: %s', assm_ext.ext.name)
-
-    # add names of the created assemblies to the session info
-    sessioninfo.set_loaded_pyrevit_assemblies(
-        [x.assm.name for x in assembled_exts]
-    )
 
     # re-sort the ui elements
     for assm_ext in assembled_exts:

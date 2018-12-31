@@ -144,23 +144,39 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
         return dir_list
 
-    def get_thirdparty_ext_root_dirs(self):
+    def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
         Returns:
             :obj:`list`: list of strings. External user extension directories.
         """
         dir_list = []
-        # add default ext path
-        dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+        if include_default:
+            # add default ext path
+            dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
-            dir_list.extend([op.expandvars(p)
-                             for p in self.core.userextensions])
+            dir_list.extend([
+                op.expandvars(op.normpath(x.encode('string-escape')))
+                for x in self.core.userextensions
+                ])
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
 
         return dir_list
+
+    def set_thirdparty_ext_root_dirs(self, path_list):
+        """Updates list of external extension directories in config file
+
+        Args:
+            path_list (list[str]): list of external extension paths
+        """
+        try:
+            self.core.userextensions = \
+                [op.normpath(x) for x in path_list]
+        except Exception as write_err:
+            mlogger.error('Error setting list of user extension folders. | %s',
+                          write_err)
 
     def save_changes(self):
         """Save user config into associated config file."""

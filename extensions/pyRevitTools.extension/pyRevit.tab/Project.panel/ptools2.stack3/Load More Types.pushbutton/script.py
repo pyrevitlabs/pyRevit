@@ -15,17 +15,17 @@ selection = revit.get_selection()
 
 
 # get family symbol from selection
-fam_symbol = None
+family = None
 if not selection.is_empty:
     selected_comp = selection.first
     if isinstance(selected_comp, DB.FamilySymbol):
         logger.debug('Getting family from symbol with id: {}'
                      .format(selected_comp.Id))
-        fam_symbol = selected_comp.Family
+        family = selected_comp.Family
     elif isinstance(selected_comp, DB.FamilyInstance):
         logger.debug('Getting family from instance with id: {}'
                      .format(selected_comp.Id))
-        fam_symbol = selected_comp.Symbol.Family
+        family = selected_comp.Symbol.Family
     else:
         forms.alert('System families do not have external '
                     'type definition.')
@@ -38,11 +38,11 @@ else:
     script.exit()
 
 # verify family symbol is ready
-if not fam_symbol:
+if not family:
     logger.error('Can not load family symbol.')
     script.exit()
 else:
-    logger.debug('Family symbol aquired: {}'.format(fam_symbol))
+    logger.debug('Family symbol aquired: {}'.format(family))
 
 
 # define a class for family types so they can be smartly sorted
@@ -78,21 +78,21 @@ class SmartSortableFamilyType:
 
 # collect all symbols already loaded
 loaded_symbols = set()
-for sym_id in fam_symbol.GetFamilySymbolIds():
-    fam_sym = revit.doc.GetElement(sym_id)
-    fam_sym_name = revit.ElementWrapper(fam_sym).name
-    sortable_sym = SmartSortableFamilyType(fam_sym_name)
+for sym_id in family.GetFamilySymbolIds():
+    family_symbol = revit.doc.GetElement(sym_id)
+    family_symbol_name = revit.query.get_name(family_symbol)
+    sortable_sym = SmartSortableFamilyType(family_symbol_name)
     logger.debug('Loaded Type: {}'.format(sortable_sym))
     loaded_symbols.add(sortable_sym)
 
 
 # get family document and verify the file exists
-fam_doc = revit.doc.EditFamily(fam_symbol)
+fam_doc = revit.doc.EditFamily(family)
 fam_doc_path = fam_doc.PathName
 if not op.exists(fam_doc_path):
-    forms.alert('Can not file original family file at\n{}'
+    forms.alert('Can not find original family file at\n{}'
                 .format(fam_doc_path))
-    logger.debug('Can not file original family file at {}'
+    logger.debug('Could not find original family file at {}'
                  .format(fam_doc_path))
     script.exit()
 else:
@@ -103,16 +103,16 @@ else:
 symbol_list = set()
 with revit.DryTransaction('Fake load'):
     # remove existing family so we can load the original
-    revit.doc.Delete(fam_symbol.Id)
+    revit.doc.Delete(family.Id)
     # now load the original
     ret_ref = clr.Reference[DB.Family]()
     revit.doc.LoadFamily(fam_doc_path, ret_ref)
     loaded_fam = ret_ref.Value
     # get the symbols from the original
     for sym_id in loaded_fam.GetFamilySymbolIds():
-        fam_sym = revit.doc.GetElement(sym_id)
-        fam_sym_name = revit.ElementWrapper(fam_sym).name
-        sortable_sym = SmartSortableFamilyType(fam_sym_name)
+        family_symbol = revit.doc.GetElement(sym_id)
+        family_symbol_name = revit.query.get_name(family_symbol)
+        sortable_sym = SmartSortableFamilyType(family_symbol_name)
         logger.debug('Importable Type: {}'.format(sortable_sym))
         symbol_list.add(sortable_sym)
     # okay. we have all the symbols.

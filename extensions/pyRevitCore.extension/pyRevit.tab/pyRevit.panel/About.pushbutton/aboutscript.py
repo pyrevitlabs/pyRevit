@@ -49,7 +49,7 @@ class AboutWindow(forms.WPFWindow):
 
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
-        self.pyrevit_version.Text = nice_version
+        self.version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
         self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
         self.pyrevit_engine.Text = 'Running on IronPython {}'\
@@ -100,6 +100,9 @@ class AboutWindow(forms.WPFWindow):
 
     def openkeybaseprofile(self, sender, args):
         script.open_url(urls.PROFILE_EIN)
+
+    def openlicensepage(self, sender, args):
+        script.open_url(urls.PYREVIT_LICENSE)
 
     def handleclick(self, sender, args):
         self.Close()

@@ -180,7 +180,7 @@
             <SolidColorBrush Color="#fff"/>
         </Border.Background>
         <Border.Effect>
-            <DropShadowEffect Color="#FF2C3E50" BlurRadius="15" Opacity="0.25"/>
+            <DropShadowEffect Color="{DynamicResource pyRevitDarkColor}" BlurRadius="15" Opacity="0.25"/>
         </Border.Effect>
         <Grid Margin="20,20,20,20">
             <Grid.ColumnDefinitions>
@@ -213,7 +213,7 @@
                            VerticalAlignment="Top"
                            FontSize="14"
                            LineHeight="20"
-                           Text="python tools for Autodesk Revit�"/>
+                           Text="XX"/>
                 <WrapPanel x:Name="git_panel" HorizontalAlignment="Center">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <ContentControl Content="{StaticResource commitIcon}" Width="24" Height="24" Margin="0,-5,5,0">
@@ -221,7 +221,7 @@
                                 <ScaleTransform ScaleX="0.7"  ScaleY="0.7"/>
                             </ContentControl.LayoutTransform>
                         </ContentControl>
-                        <TextBlock x:Name="pyrevit_version"
+                        <TextBlock x:Name="version"
                                TextAlignment="Center"
                                TextWrapping="Wrap"
                                VerticalAlignment="Top"
@@ -297,6 +297,8 @@
                             Click="openyoutubechannel"/>
                 </WrapPanel>
                 <WrapPanel HorizontalAlignment="Center">
+                    <Button Content="License" FontSize="14"
+                            Click="openlicensepage"/>
                     <Button Content="Support" FontSize="14"
                             Click="opensupportpage"/>
                     <Button Content="Release Notes" FontSize="14"
@@ -326,7 +328,7 @@
                            Margin="0,5,0,0"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"
-                           Text="2014-2018 copyright message"
+                           Text="2014-2019 copyright message"
                            MouseDown="openkeybaseprofile"/>
             </StackPanel>
         </Grid>

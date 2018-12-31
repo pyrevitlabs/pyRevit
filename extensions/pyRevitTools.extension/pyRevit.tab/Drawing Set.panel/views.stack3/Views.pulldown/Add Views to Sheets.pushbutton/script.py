@@ -32,7 +32,7 @@ else:
                 target_view = revit.query.get_view_by_name(el.Name)
                 if target_view:
                     logger.debug('Target view: {}'
-                                 .format(target_view.ViewName))
+                                 .format(revit.query.get_name(target_view)))
                     selected_views.append(target_view)
     else:
         selected_view = revit.activeview
@@ -52,7 +52,8 @@ if selected_views:
         with revit.Transaction("Add Views to Sheets"):
             for selected_view in selected_views:
                 for sheet in dest_sheets:
-                    logger.debug('Adding: {}'.format(selected_view.ViewName))
+                    logger.debug('Adding: %s',
+                                 revit.query.get_name(selected_view))
                     try:
                         DB.Viewport.Create(revit.doc,
                                            sheet.Id,

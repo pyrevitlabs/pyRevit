@@ -1,11 +1,3 @@
-.wy-nav-content {
-    max-width: none;
-}
-
-.document {
-    max-width: 800px;
-}
-
 a {
     color: #23303d;
 }
@@ -17,6 +9,14 @@ a:active {
 
 a:visited {
     color: #23303d;
+}
+
+.wy-nav-content {
+    max-width: none;
+}
+
+.document {
+    max-width: 800px;
 }
 
 .icon.icon-home {
@@ -116,4 +116,10 @@ a:visited {
 
 .pre {
     font-size: 13px;
+}
+
+h1, h2, .rst-content .toctree-wrapper p.caption, h3, h4, h5, h6, legend {
+    margin-top: 0;
+    font-weight: 700;
+    font-family: "Lato","proxima-nova","Helvetica Neue",Arial,sans-serif
 }

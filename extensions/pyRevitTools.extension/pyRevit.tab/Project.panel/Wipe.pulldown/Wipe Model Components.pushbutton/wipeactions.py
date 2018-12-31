@@ -371,7 +371,7 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
                 and refviewport \
                 and refsheet.AsString() != '' \
                 and refviewport.AsString() != '' \
-                or (refprefix + v.ViewName) in view_refs_names:
+                or (refprefix + revit.query.get_name(v)) in view_refs_names:
             return True
 
     def confirm_removal(v):
@@ -382,9 +382,10 @@ def _purge_all_views(viewclass_to_purge, viewtype_to_purge,
                 return False
             elif v.IsTemplate:
                 return False
-            elif DB.ViewType.ThreeD == v.ViewType and '{3D}' == v.ViewName:
+            elif DB.ViewType.ThreeD == v.ViewType \
+                    and '{3D}' == revit.query.get_name(v):
                 return False
-            elif '<' in v.ViewName:
+            elif '<' in revit.query.get_name(v):
                 return False
             elif v.Id.IntegerValue in open_views:
                 return False
@@ -609,7 +610,7 @@ def remove_all_schedules():
                 return False
             elif v.IsTemplate:
                 return False
-            elif '<' in v.ViewName:
+            elif '<' in revit.query.get_name(v):
                 return False
             elif v.Id.IntegerValue in open_views:
                 return False
@@ -647,7 +648,7 @@ def remove_all_legends():
                 return False
             elif v.IsTemplate:
                 return False
-            elif '<' in v.ViewName:
+            elif '<' in revit.query.get_name(v):
                 return False
             elif v.Id.IntegerValue in open_views:
                 return False

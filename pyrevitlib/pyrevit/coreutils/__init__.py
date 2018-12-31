@@ -804,6 +804,17 @@ def open_folder_in_explorer(folder_path):
                      .format(os.path.normpath(folder_path)))
 
 
+def show_entry_in_explorer(entry_path):
+    """Show given entry in Windows Explorer.
+
+    Args:
+        entry_path (str): directory or file path
+    """
+    import subprocess
+    subprocess.Popen(r'explorer /select,"{}"'
+                     .format(os.path.normpath(entry_path)))
+
+
 def fully_remove_dir(dir_path):
     """Remove directory recursively.
 
@@ -1245,6 +1256,16 @@ def correct_revittxt_encoding(filename):
         newf.writelines(fcontent)
 
 
+def check_revittxt_encoding(filename):
+    """Check if given file is in UTF-16 (UCS-2 LE) encoding.
+
+    Args:
+        filename (str): file path
+    """
+    with open(filename, 'rb') as rtfile:
+        return rtfile.read()[:2] == codecs.BOM_UTF16
+
+
 def has_nonprintable(input_str):
     """Check input string for non-printable characters.
 
@@ -1257,9 +1278,14 @@ def has_nonprintable(input_str):
     return any([x in input_str for x in UNICODE_NONPRINTABLE_CHARS])
 
 
+def get_enum_values(enum_type):
+    """Returns enum values."""
+    return framework.Enum.GetValues(enum_type)
+
+
 def get_enum_none(enum_type):
     """Returns the None value in given Enum."""
-    for val in framework.Enum.GetValues(enum_type):
+    for val in get_enum_values(enum_type):
         if str(val) == 'None':
             return val
 
@@ -1287,6 +1313,75 @@ def format_hex_rgb(rgb_value):
 
 
 def new_uuid():
+    """Create a new UUID (using dotnet Guid.NewGuid)"""
     # RE: https://github.com/eirannejad/pyRevit/issues/413
     # return uuid.uuid1()
     return str(Guid.NewGuid())
+
+
+def is_box_visible_on_screens(left, top, width, height):
+    """Check if given box is visible on any screen."""
+    bounds = \
+        framework.Drawing.Rectangle(
+            framework.Convert.ToInt32(left),
+            framework.Convert.ToInt32(top),
+            framework.Convert.ToInt32(width),
+            framework.Convert.ToInt32(height)
+            )
+    for scr in framework.Forms.Screen.AllScreens:
+        if bounds.IntersectsWith(scr.Bounds):
+            return True
+    return False
+
+
+def fuzzy_search_ratio(target_string, sfilter):
+    """Match target string against the filter and return a match ratio."""
+    tstring = target_string
+    # 100 for identical matches
+    if sfilter == tstring:
+        return 100
+
+    # 98 to 99 reserved (2 scores)
+
+    # 97 for identical non-case-sensitive matches
+    lower_tstring = tstring.lower()
+    lower_sfilter_str = sfilter.lower()
+    if lower_sfilter_str == lower_tstring:
+        return 97
+
+    # 95  to 96 reserved (2 scores)
+
+    # 93 to 94 for inclusion matches
+    if sfilter in tstring:
+        return 94
+    if lower_sfilter_str in lower_tstring:
+        return 93
+
+    # 91  to 92 reserved (2 scores)
+
+    ## 80 to 90 for parts matches
+    tstring_parts = tstring.split()
+    sfilter_parts = sfilter.split()
+    if all(x in tstring_parts for x in sfilter_parts):
+        return 90
+
+    # 88 to 89 reserved (2 scores)
+
+    lower_tstring_parts = [x.lower() for x in tstring_parts]
+    lower_sfilter_parts = [x.lower() for x in sfilter_parts]
+    if all(x in lower_tstring_parts for x in lower_sfilter_parts):
+        return 87
+
+    # 85 to 86 reserved (2 scores)
+
+    if all(x in tstring for x in sfilter_parts):
+        return 84
+
+    # 82 to 83 reserved (2 scores)
+
+    if all(x in lower_tstring for x in lower_sfilter_parts):
+        return 81
+
+    # 80 reserved
+
+    return 0

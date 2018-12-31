@@ -95,10 +95,10 @@ class ReValueWindow(forms.WPFWindow):
         for element in self._target_elements:
             old_value = ''
             if self.selected_param == 'Name':
-                old_value = revit.ElementWrapper(element).name
+                old_value = revit.query.get_name(element)
             elif self.selected_param == 'Family: Name':
                 if hasattr(element, 'Family') and element.Family:
-                    old_value = revit.ElementWrapper(element.Family).name
+                    old_value = revit.query.get_name(element.Family)
             # elif 'Family:' in self.selected_param:
             #     if element.Family:
             #         pname = self.selected_param.replace('Family: ', '')

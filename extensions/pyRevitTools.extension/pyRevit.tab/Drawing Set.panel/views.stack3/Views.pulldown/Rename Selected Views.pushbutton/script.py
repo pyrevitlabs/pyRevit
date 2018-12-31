@@ -4,17 +4,20 @@ from pyrevit import revit, DB
 from pyrevit import forms
 
 
-def change_case(viewlist, upper=True, verbose=False):
+def change_case(view_list, upper=True, verbose=False):
     with revit.Transaction('Viewnames to Upper'):
-        for el in viewlist:
-            if isinstance(el, DB.Viewport):
-                el = revit.doc.GetElement(el.ViewId)
-            orig_name = el.ViewName
-            el.ViewName = orig_name.upper() if upper else orig_name.lower()
+        for view in view_list:
+            if isinstance(view, DB.Viewport):
+                view = revit.doc.GetElement(view.ViewId)
+            orig_name = revit.query.get_name(view)
+            revit.update.set_name(
+                view,
+                orig_name.upper() if upper else orig_name.lower()
+                )
             if verbose:
                 print("VIEW: {0}\n"
                       "\tRENAMED TO:\n"
-                      "\t{1}\n\n".format(orig_name, el.ViewName))
+                      "\t{1}\n\n".format(orig_name, revit.query.get_name(view)))
 
 
 selected_views = forms.select_views()

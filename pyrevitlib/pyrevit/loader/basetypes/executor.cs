@@ -69,7 +69,11 @@ namespace PyRevitBaseClasses
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
                 _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                pyrvtCmd.IronPythonTraceBack = _ipy_err_messages;
+
                 _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+                pyrvtCmd.ClrTraceBack = _dotnet_err_message;
+
                 _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
                 _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
@@ -77,10 +81,10 @@ namespace PyRevitBaseClasses
                 return ExecutionErrorCodes.ExecutionException;
             }
             finally
-            {
+            {   
                 // clean the scope unless the script is requesting clean engine
                 // this is a temporary convention to allow users to keep global references in the scope
-                if(!pyrvtCmd.NeedsCleanEngine)
+                if (!pyrvtCmd.NeedsCleanEngine)
                     CleanupScope(engine, scope);
 
                 engineMgr.CleanupEngine(engine);

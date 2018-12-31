@@ -24,7 +24,7 @@ def duplicate_views(viewlist, with_detailing=True):
                 el.Duplicate(dupop)
             except Exception as duplerr:
                 logger.error('Error duplicating view "{}" | {}'
-                             .format(el.ViewName, duplerr))
+                             .format(revit.query.get_name(el), duplerr))
 
 
 selected_views = forms.select_views(filterfunc=duplicableview)

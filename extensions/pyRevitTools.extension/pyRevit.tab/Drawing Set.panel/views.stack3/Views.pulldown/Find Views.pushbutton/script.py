@@ -33,7 +33,7 @@ def find_views_with_underlay():
                           'UNDERLAY (BASE):{4}\n'
                           'UNDERLAY (TOP):{5}\n'
                           '{0}\n\n'
-                          .format(v.ViewName,
+                          .format(revit.query.get_name(v),
                                   str(v.ViewType).ljust(20),
                                   output.linkify(v.Id),
                                   str(v.IsTemplate).ljust(10),
@@ -46,7 +46,7 @@ def find_views_with_underlay():
                           'ID: {2}\n'
                           'TEMPLATE: {3}\n'
                           'UNDERLAY:{4}\n'
-                          '{0}\n\n'.format(v.ViewName,
+                          '{0}\n\n'.format(revit.query.get_name(v),
                                            str(v.ViewType).ljust(20),
                                            output.linkify(v.Id),
                                            str(v.IsTemplate).ljust(10),
@@ -62,7 +62,7 @@ def find_view_with_template():
         if vt:
             phasep = v.Parameter[DB.BuiltInParameter.VIEW_PHASE]
             print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} {0}'.format(
-                v.ViewName,
+                revit.query.get_name(v),
                 str(v.ViewType).ljust(20),
                 output.linkify(v.Id),
                 str(v.IsTemplate).ljust(10),

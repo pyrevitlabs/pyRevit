@@ -188,7 +188,7 @@ elif selected_switch == 'Viewports':
         print('ID: {1}TYPE: {0}VIEWNAME: {2}'
               .format(v.Name.ljust(30),
                       str(v.Id).ljust(10),
-                      revit.doc.GetElement(v.ViewId).ViewName))
+                      revit.query.get_name(revit.doc.GetElement(v.ViewId))))
 
 elif selected_switch == 'Element Types':
     all_types = \
@@ -203,7 +203,7 @@ elif selected_switch == 'Element Types':
         output.print_md('**{}**'.format(etype_name))
         for et in etypes:
             print('\t{} {}'.format(output.linkify(et.Id),
-                                   revit.ElementWrapper(et).name))
+                                   revit.query.get_name(et)))
 
 
 elif selected_switch == 'Family Symbols':
@@ -211,8 +211,7 @@ elif selected_switch == 'Family Symbols':
     eltype_list = cl.OfClass(DB.ElementType).ToElements()
 
     for et in eltype_list:
-        wrapperd_et = revit.ElementWrapper(et)
-        print(wrapperd_et.name, et.FamilyName)
+        print(revit.query.get_name(et), et.FamilyName)
 
 elif selected_switch == 'Levels':
     levelslist = DB.FilteredElementCollector(revit.doc)\
@@ -342,7 +341,7 @@ elif selected_switch == 'Views':
         if HOST_APP.is_older_than(2016):
             underlayp = v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_ID]
             print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} UNDERLAY:{5} {0}'
-                  .format(v.ViewName,
+                  .format(revit.query.get_name(v),
                           str(v.ViewType).ljust(20),
                           str(v.Id).ljust(10),
                           str(v.IsTemplate).ljust(10),
@@ -356,7 +355,7 @@ elif selected_switch == 'Views':
                 v.Parameter[DB.BuiltInParameter.VIEW_UNDERLAY_BOTTOM_ID]
             print('TYPE: {1} ID: {2} TEMPLATE: {3} PHASE:{4} '
                   'UNDERLAY TOP:{5} UNDERLAY BOTTOM:{6} {0}'
-                  .format(v.ViewName,
+                  .format(revit.query.get_name(v),
                           str(v.ViewType).ljust(20),
                           str(v.Id).ljust(10),
                           str(v.IsTemplate).ljust(10),
@@ -374,7 +373,8 @@ elif selected_switch == 'View Templates':
 
     for v in views:
         if v.IsTemplate:
-            print('ID: {1}		{0}'.format(v.ViewName, str(v.Id).ljust(10)))
+            print('ID: {1}		{0}'.format(revit.query.get_name(v),
+                                            str(v.Id).ljust(10)))
 
 elif selected_switch == 'Worksets':
     cl = DB.FilteredWorksetCollector(revit.doc)
@@ -394,8 +394,7 @@ elif selected_switch == 'Revision Clouds':
     for rev in revs:
         parent = revit.doc.GetElement(rev.OwnerViewId)
         rev = revit.doc.GetElement(rev.RevisionId)
-        wrev = revit.ElementWrapper(rev)
-        revnum = wrev.safe_get_param('RevisionNumber', None)
+        revnum = revit.query.get_param(rev, 'RevisionNumber', None)
 
         if revnum:
             revnumstr = 'REV#: {0}'.format(revnum)
@@ -415,7 +414,7 @@ elif selected_switch == 'Revision Clouds':
                   'ID: {2}\t\t'
                   'ON VIEW: {1}'
                   .format(revnumstr,
-                          parent.ViewName,
+                          revit.query.get_name(parent),
                           rev.Id))
 
 elif selected_switch == 'Selected Line Coordinates':
@@ -464,7 +463,7 @@ elif selected_switch == 'Fill Grids':
         if isinstance(el, DB.FilledRegion):
             frt = revit.doc.GetElement(el.GetTypeId())
             print('\n\n Filled Region Type: {}'
-                  .format(revit.ElementWrapper(frt).name))
+                  .format(revit.query.get_name(frt)))
             fre = revit.doc.GetElement(frt.FillPatternId)
             fp = fre.GetFillPattern()
             for fg in fp.GetFillGrids():

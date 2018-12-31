@@ -1,6 +1,7 @@
 pyrevit cli:
 
 installer:  
+    ☐ Look into adding All-Users options with silent install to the installer
 
 pyrevit:
     ☐ fix log messages in tools

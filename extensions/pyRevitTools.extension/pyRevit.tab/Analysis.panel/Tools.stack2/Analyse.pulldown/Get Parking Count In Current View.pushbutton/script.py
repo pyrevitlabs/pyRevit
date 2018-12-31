@@ -15,8 +15,7 @@ ptypesdic = {}
 
 for pid in parkings:
     ptype = revit.doc.GetElement(revit.doc.GetElement(pid).GetTypeId())
-    wrapped_ptype = revit.ElementWrapper(ptype)
-    ptname = wrapped_ptype.name
+    ptname = revit.query.get_name(ptype)
     if ptname in ptypesdic:
         ptypesdic[ptname] += 1
     else:

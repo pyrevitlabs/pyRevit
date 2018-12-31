@@ -8,6 +8,7 @@ sphinx-rtd-theme = "*"
 pygments = "*"
 sphinx = "*"
 readthedocs-sphinx-ext = "*"
+"doc8" = "*"
 
 [dev-packages]
 

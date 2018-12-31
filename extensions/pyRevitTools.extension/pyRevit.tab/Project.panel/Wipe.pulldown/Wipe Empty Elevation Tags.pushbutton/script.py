@@ -24,7 +24,7 @@ def removeallemptyelevationmarkers():
                 emtype = revit.doc.GetElement(em.GetTypeId())
                 print('ID: {0}\tELEVATION TYPE: {1}'
                       .format(em.Id,
-                              revit.ElementWrapper(emtype).name))
+                              revit.query.get_name(emtype)))
                 try:
                     revit.doc.Delete(em.Id)
                 except Exception as e:

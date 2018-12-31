@@ -1,5 +1,6 @@
 from pyrevit import revit, DB
 from pyrevit import script
+from pyrevit.compat import safe_strtype
 
 
 __doc__ = 'List all views that have been placed on a sheet '\
@@ -31,15 +32,16 @@ def find_sheeted_unrefed_views(view_list):
                     and refsheet.AsString() != '' \
                     and refviewport.AsString() != '' \
                     or (v.ViewType in view_ref_prefixes
-                        and (view_ref_prefixes[v.ViewType] + v.ViewName))\
+                        and (view_ref_prefixes[v.ViewType] +
+                                revit.query.get_name(v)))\
                     in view_refs_names:
                 continue
             else:
                 # print the view sheet and det number
                 print('-'*20)
                 print('NAME: {0}\nDET/SHEET: {1}\nID: {2}'
-                      .format(v.ViewName,
-                              unicode(detnum.AsString()
+                      .format(revit.query.get_name(v),
+                              safe_strtype(detnum.AsString()
                                       + '/'
                                       + sheetnum.AsString()),
                               output.linkify(v.Id)

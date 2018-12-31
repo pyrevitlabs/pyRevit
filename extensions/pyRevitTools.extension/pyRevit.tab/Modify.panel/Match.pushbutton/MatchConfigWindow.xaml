@@ -77,10 +77,10 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <Button Margin="0,0,5,0" Grid.Column="0" Click="check_all" Content="Check All"/>
-                <Button Margin="5,0,0,0" Grid.Column="1" Click="check_none" Content="Check None"/>
+                <Button Margin="0,0,5,0" Grid.Column="0" Click="check_all" Content="Check All" Height="24"/>
+                <Button Margin="5,0,0,0" Grid.Column="1" Click="check_none" Content="Check None" Height="24"/>
             </Grid>
-            <Button Margin="0,5,0,0" Click="save_options" Content="Save Options"/>
+            <Button Margin="0,5,0,0" Click="save_options" Content="Save Options" Height="24"/>
         </StackPanel>
     </StackPanel>
 </Window>

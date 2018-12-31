@@ -22,7 +22,7 @@ usedvtemp = set()
 views = []
 
 for v in viewlist:
-    if v.IsTemplate and 'master' not in v.ViewName.lower():
+    if v.IsTemplate and 'master' not in revit.query.get_name(v).lower():
         vtemp.add(v.Id.IntegerValue)
     else:
         views.append(v)

@@ -150,8 +150,7 @@ def process_sets(element_list):
         else:
             eltype = revit.doc.GetElement(el.GetTypeId())
             if eltype:
-                wrapped_eltype = revit.ElementWrapper(eltype)
-                el_sets[wrapped_eltype.name].append(el)
+                el_sets[revit.query.get_name(eltype)].append(el)
 
     return el_sets
 

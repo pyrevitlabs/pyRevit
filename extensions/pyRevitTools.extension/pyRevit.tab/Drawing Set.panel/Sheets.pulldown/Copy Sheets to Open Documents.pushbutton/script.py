@@ -3,6 +3,7 @@ import sys
 from pyrevit.framework import List
 from pyrevit import forms
 from pyrevit import revit, DB, UI
+from pyrevit.revit import query
 from pyrevit import script
 from Autodesk.Revit.DB import Element as DBElement
 
@@ -90,7 +91,7 @@ def get_default_type(source_doc, type_group):
 def find_matching_view(dest_doc, source_view):
     for v in DB.FilteredElementCollector(dest_doc).OfClass(DB.View):
         if v.ViewType == source_view.ViewType \
-                and v.ViewName == source_view.ViewName:
+                and query.get_name(v) == query.get_name(source_view):
             if source_view.ViewType == DB.ViewType.DrawingSheet:
                 if v.SheetNumber == source_view.SheetNumber:
                     return v
@@ -126,7 +127,7 @@ def get_view_contents(dest_doc, source_view):
                 and not OPTION_SET.op_copy_schedules:
             continue
         elif isinstance(element, DB.Viewport) \
-                or 'ExtentElem' in revit.ElementWrapper(element).name:
+                or 'ExtentElem' in query.get_name(element):
             continue
         elif isinstance(element, DB.Element) \
                 and element.Category \
@@ -144,7 +145,7 @@ def get_view_contents(dest_doc, source_view):
 def ensure_dest_revision(src_rev, all_dest_revs, dest_doc):
     # check to see if revision exists
     for rev in all_dest_revs:
-        if revit.query.compare_revisions(rev, src_rev):
+        if query.compare_revisions(rev, src_rev):
             return rev
 
     # if no matching revisions found, create a new revision and return
@@ -228,7 +229,8 @@ def copy_view(activedoc, source_view, dest_doc):
             with revit.Transaction('Create Sheet', doc=dest_doc):
                 new_view = DB.ViewSheet.Create(dest_doc,
                                                DB.ElementId.InvalidElementId)
-                new_view.ViewName = source_view.ViewName
+                revit.update.set_name(new_view,
+                                      revit.query.get_name(source_view))
                 new_view.SheetNumber = source_view.SheetNumber
         except Exception as sheet_err:
             logger.error('Error creating sheet. | {}'.format(sheet_err))
@@ -243,7 +245,8 @@ def copy_view(activedoc, source_view, dest_doc):
                     get_default_type(dest_doc,
                                      DB.ElementTypeGroup.ViewTypeDrafting)
                 )
-                new_view.ViewName = source_view.ViewName
+                revit.update.set_name(new_view,
+                                      revit.query.get_name(source_view))
                 new_view.Scale = source_view.Scale
         except Exception as sheet_err:
             logger.error('Error creating drafting view. | {}'
@@ -253,7 +256,7 @@ def copy_view(activedoc, source_view, dest_doc):
             logger.debug('Source view is a legend. '
                          'Creating destination legend view.')
 
-            first_legend = revit.query.find_first_legend(dest_doc)
+            first_legend = query.find_first_legend(dest_doc)
             if first_legend:
                 with revit.Transaction('Create Legend View', doc=dest_doc):
                     new_view = \
@@ -262,7 +265,8 @@ def copy_view(activedoc, source_view, dest_doc):
                                 DB.ViewDuplicateOption.Duplicate
                                 )
                             )
-                    new_view.ViewName = source_view.ViewName
+                    revit.update.set_name(new_view,
+                                        revit.query.get_name(source_view))
                     new_view.Scale = source_view.Scale
             else:
                 logger.error('Destination document must have at least one '
@@ -323,7 +327,8 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
         vport = activedoc.GetElement(vport_id)
         vport_view = activedoc.GetElement(vport.ViewId)
 
-        print('\t\tCopying/updating view: {}'.format(vport_view.ViewName))
+        print('\t\tCopying/updating view: {}'
+              .format(revit.query.get_name(vport_view)))
         new_view = copy_view(activedoc, vport_view, dest_doc)
 
         if new_view:
@@ -342,8 +347,8 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
 
 
 def copy_sheet_revisions(activedoc, source_sheet, dest_doc, dest_sheet):
-    all_src_revs = revit.query.get_revisions(doc=activedoc)
-    all_dest_revs = revit.query.get_revisions(doc=dest_doc)
+    all_src_revs = query.get_revisions(doc=activedoc)
+    all_dest_revs = query.get_revisions(doc=dest_doc)
     revisions_to_set = []
 
     with revit.Transaction('Copy and Set Revisions', doc=dest_doc):

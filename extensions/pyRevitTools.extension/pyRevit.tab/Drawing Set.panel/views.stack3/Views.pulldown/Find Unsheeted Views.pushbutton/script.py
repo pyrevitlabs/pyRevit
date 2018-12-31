@@ -65,7 +65,7 @@ for v in dviews:
     if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(revit.query.get_name(v),
                                                    v.ViewType,
                                                    out.linkify(v.Id)))
 
@@ -75,7 +75,7 @@ for v in mviews:
     if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(revit.query.get_name(v),
                                                    v.ViewType,
                                                    out.linkify(v.Id)))
 
@@ -85,7 +85,7 @@ for v in lviews:
     if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(revit.query.get_name(v),
                                                    v.ViewType,
                                                    out.linkify(v.Id)))
 
@@ -95,6 +95,6 @@ for v in scheduleviews:
     if v.Id in all_sheeted_view_ids:
         continue
     else:
-        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(v.ViewName,
+        print('TYPE: {1}\t\tID: {2}\t\t{0}'.format(revit.query.get_name(v),
                                                    v.ViewType,
                                                    out.linkify(v.Id)))

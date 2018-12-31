@@ -15,7 +15,7 @@ if isinstance(el, DB.ElevationMarker):
         v = revit.doc.GetElement(el.GetViewId(i))
         if v:
             print('DETAIL #: {4}\tTYPE: {1}ID: {2}TEMPLATE: {3}  {0}'
-                  .format(v.ViewName.ljust(100),
+                  .format(revit.query.get_name(v).ljust(100),
                           str(v.ViewType).ljust(15),
                           str(v.Id).ljust(10),
                           str(v.IsTemplate).ljust(10),

@@ -156,6 +156,7 @@ class ProjectParameter(BaseWrapper):
         self.param_binding_type = self._determine_binding_type()
 
         self.shared = False
+        self.param_ext_def = None
         self.param_guid = ''
         if param_ext_def:
             self.shared = True
@@ -163,7 +164,8 @@ class ProjectParameter(BaseWrapper):
             self.param_guid = self.param_ext_def.GUID.ToString()
 
         self.name = self.param_def.Name
-        self.param_id = self.param_def.Id
+        # Revit <2017 does not have the Id parameter
+        self.param_id = getattr(self.param_def, 'Id', None)
         self.unit_type = self.param_def.UnitType
         self.param_type = self.param_def.ParameterType
         self.param_group = self.param_def.ParameterGroup

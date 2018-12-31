@@ -29,7 +29,7 @@
             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
                     Select a Sheet Index (Schedule):
             </TextBlock>
-            <ComboBox x:Name="schedules_cb" SelectionChanged="selection_changed">
+            <ComboBox x:Name="schedules_cb" SelectionChanged="selection_changed" Height="24">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -46,11 +46,11 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Margin="0,0,5,0" Orientation="Vertical">
                     <TextBlock Text="Printer:" />
-                    <ComboBox x:Name="printers_cb" Height="22" Margin="0,5,0,0"/>
+                    <ComboBox x:Name="printers_cb" Height="24" Margin="0,5,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Margin="5,0" Orientation="Vertical">
                     <TextBlock Text="Print Setting:" />
-                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0">
+                    <ComboBox x:Name="printsettings_cb" Margin="0,5,0,0" Height="24">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -80,7 +80,7 @@
                     List of the sheets in selected sheet index (Drag to manually reorder):
             </TextBlock>
         </StackPanel>
-        <StatusBar DockPanel.Dock="Bottom" Height="25" Background="#ffb762">
+        <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
                     Kudos to Ryan McCullough for PrintFromIndex
             </TextBlock>

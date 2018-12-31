@@ -1,7 +1,7 @@
 import logging
 
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
-from pyrevit import HOST_APP, HOME_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
 
 from pyrevit import coreutils
@@ -15,7 +15,9 @@ clr.AddReference('OpenMcdf')
 clr.AddReference('MahApps.Metro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
+clr.AddReference('pyRevitLabs.CommonWPF')
 clr.AddReference('pyRevitLabs.Language')
+clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 import Nett
 import NLog
@@ -24,7 +26,9 @@ import OpenMcdf
 import MahApps.Metro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
+from pyRevitLabs import CommonWPF
 from pyRevitLabs import Language
+from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
 
 
@@ -60,21 +64,22 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
 
 
 # activate binding resolver
-if HOST_APP.is_older_than(2019):
-    TargetApps.Revit.PyRevitBindings.ActivateResolver()
+if not EXEC_PARAMS.doc_mode:
+    if HOST_APP.is_older_than(2019):
+        TargetApps.Revit.PyRevitBindings.ActivateResolver()
 
-# configure NLog
-#pylint: disable=W0201
-config = NLog.Config.LoggingConfiguration()
-target = PyRevitOutputTarget()
-target.Name = __name__
-target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
-config.AddTarget(target)
-config.AddRuleForAllLevels(target)
-NLog.LogManager.Configuration = config
+    # configure NLog
+    #pylint: disable=W0201
+    config = NLog.Config.LoggingConfiguration()
+    target = PyRevitOutputTarget()
+    target.Name = __name__
+    target.Layout = "${level:uppercase=true}: [${logger}] ${message}"
+    config.AddTarget(target)
+    config.AddRuleForAllLevels(target)
+    NLog.LogManager.Configuration = config
 
-for rule in NLog.LogManager.Configuration.LoggingRules:
-    rule.EnableLoggingForLevel(NLog.LogLevel.Info)
-    rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
+    for rule in NLog.LogManager.Configuration.LoggingRules:
+        rule.EnableLoggingForLevel(NLog.LogLevel.Info)
+        rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
 
-NLog.LogManager.GetLogger(__name__)
+    NLog.LogManager.GetLogger(__name__)
