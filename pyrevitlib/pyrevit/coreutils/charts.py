@@ -1,7 +1,7 @@
-import os.path as op
+"""Charts engine for output window"""
+#pylint: disable=C0103
 from json import JSONEncoder
 
-from pyrevit import MAIN_LIB_DIR
 from pyrevit.coreutils import timestamp, random_rgba_color
 
 # CHARTS_ENGINE = 'Chart.js'
@@ -17,15 +17,18 @@ DOUGHNUT_CHART = 'doughnut'
 BUBBLE_CHART = 'bubble'
 
 
-CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
+# CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
+CHARTS_JS_PATH = \
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"
 
 
-SCRIPT_TEMPLATE = "var ctx = document.getElementById('{}').getContext('2d');" \
-                  "var chart = new Chart(ctx, {});"
+SCRIPT_TEMPLATE = \
+    "var ctx = document.getElementById('{canvas_id}').getContext('2d');" \
+    "var chart = new Chart(ctx, {canvas_code});"
 
 
 class ChartsDataSetEncode(JSONEncoder):
-    def default(self, dataset_obj):
+    def default(self, dataset_obj): #pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
         for key, value in data_dict.items():
             if key.startswith('_') or value == '' or value == []:
@@ -148,8 +151,9 @@ class PyRevitOutputChart:
         return '<canvas {}></canvas>'.format(attribs)
 
     def _make_charts_script(self, canvas_id):
-        return SCRIPT_TEMPLATE.format(canvas_id,
-                                      ChartsDataSetEncode().encode(self))
+        return SCRIPT_TEMPLATE.format(
+            canvas_id=canvas_id,
+            canvas_code=ChartsDataSetEncode().encode(self))
 
     def randomize_colors(self):
         if self.type in [POLAR_CHART, PIE_CHART, DOUGHNUT_CHART]:
@@ -177,4 +181,4 @@ class PyRevitOutputChart:
         self._output.print_html(canvas_code)
         # make the code
         js_code = self._make_charts_script(canvas_id)
-        self._output.inject_script(js_code)
+        self._output.inject_script(js_code, body=True)

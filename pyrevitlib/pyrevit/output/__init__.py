@@ -145,6 +145,9 @@ class PyRevitOutputWindow(object):
     def _get_head_element(self):
         return self.renderer.Document.GetElementsByTagName('head')[0]
 
+    def _get_body_element(self):
+        return self.renderer.Document.GetElementsByTagName('body')[0]
+
     def self_destruct(self, seconds):
         """Set self-destruct (close window) timer.
 
@@ -180,19 +183,49 @@ class PyRevitOutputWindow(object):
         head_el = self._get_head_element()
         head_el.AppendChild(html_element)
 
-    def inject_script(self, script_code, attribs=None):
-        """Inject script tag into current html head of the output window.
+    def inject_to_body(self, element_tag, element_contents, attribs=None):
+        """Inject html element to current html body of the output window.
+
+        Args:
+            element_tag (str): html tag of the element e.g. 'div'
+            element_contents (str): html code of the element contents
+            attribs (:obj:`dict`): dictionary of attribute names and value
+
+        Example:
+            >>> output = pyrevit.output.get_output()
+            >>> output.inject_to_body('script',
+                                      '',   # no script since it's a link
+                                      {'src': js_script_file_path})
+        """
+        html_element = self.renderer.Document.CreateElement(element_tag)
+        if element_contents:
+            html_element.InnerHtml = element_contents
+
+        if attribs:
+            for attribute, value in attribs.items():
+                html_element.SetAttribute(attribute, value)
+
+        # inject the script into body
+        body_el = self._get_body_element()
+        body_el.AppendChild(html_element)
+
+    def inject_script(self, script_code, attribs=None, body=False):
+        """Inject script tag into current head (or body) of the output window.
 
         Args:
             script_code (str): javascript code
             attribs (:obj:`dict`): dictionary of attribute names and value
+            body (bool, optional): injects script into body instead of head
 
         Example:
             >>> output = pyrevit.output.get_output()
             >>> output.inject_script('',   # no script since it's a link
                                      {'src': js_script_file_path})
         """
-        self.inject_to_head('script', script_code, attribs=attribs)
+        if body:
+            self.inject_to_body('script', script_code, attribs=attribs)
+        else:
+            self.inject_to_head('script', script_code, attribs=attribs)
 
     def add_style(self, style_code, attribs=None):
         """Inject style tag into current html head of the output window.
