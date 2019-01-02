@@ -748,22 +748,32 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         self._update_ktree(active_catkey=self._allcat)
 
     def add_keynote(self, sender, args):
+        # try to get parent key from selected keynote or category
         parent_key = None
         if self.selected_keynote:
             parent_key = self.selected_keynote.parent_key
         elif self.selected_category:
             parent_key = self.selected_category.key
-
-        try:
-            EditRecordWindow(self, self._conn,
-                             kdb.EDIT_MODE_ADD_KEYNOTE,
-                             pkey=parent_key).show()
-        except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
-        except Exception as ex:
-            forms.alert(str(ex))
-        finally:
-            self._update_ktree_knotes()
+        # otherwise ask to select a parent category
+        if not parent_key:
+            cat = forms.SelectFromList.show(self.all_categories,
+                                            title="Select Parent Category",
+                                            name_attr='text',
+                                            owner=self)
+            if cat:
+                parent_key = cat.key
+        # if parent key is available proceed to create keynote
+        if parent_key:
+            try:
+                EditRecordWindow(self, self._conn,
+                                 kdb.EDIT_MODE_ADD_KEYNOTE,
+                                 pkey=parent_key).show()
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+            except Exception as ex:
+                forms.alert(str(ex))
+            finally:
+                self._update_ktree_knotes()
 
     def add_sub_keynote(self, sender, args):
         selected_keynote = self.selected_keynote
