@@ -28,12 +28,14 @@ if not EXEC_PARAMS.doc_mode:
                              'Microsoft', 'Framework', '.NETFramework')
 
     try:
-        FRAMEWORK_DIRS = sorted(os.listdir(DOTNET_SDK_DIR), reverse=True)
+        DOTNET_TARGETPACK_DIRS = sorted(
+            [x for x in os.listdir(DOTNET_SDK_DIR)
+             if x.startswith('v4.') and 'X' not in x], reverse=True)
     except Exception as dotnet_sdk_err:
-        FRAMEWORK_DIRS = []
+        DOTNET_TARGETPACK_DIRS = []
         mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
-    INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = FRAMEWORK_DIRS = None
+    INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = DOTNET_TARGETPACK_DIRS = None
 
 
 # base classes for pyRevit commands --------------------------------------------
@@ -113,7 +115,7 @@ def _get_resource_file(resource_name):
 def _get_framework_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
-    for sdk_folder in FRAMEWORK_DIRS:
+    for sdk_folder in DOTNET_TARGETPACK_DIRS:
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,
                                  make_canonical_name(fw_module,
@@ -133,7 +135,7 @@ def _get_reference_file(ref_name):
         return addin_file
 
     # Then try to find the dll in windows SDK
-    if FRAMEWORK_DIRS:
+    if DOTNET_TARGETPACK_DIRS:
         fw_module_file = _get_framework_module(ref_name)
         if fw_module_file:
             return fw_module_file
