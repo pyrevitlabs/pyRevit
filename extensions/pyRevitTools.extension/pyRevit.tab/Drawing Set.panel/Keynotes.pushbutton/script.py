@@ -396,7 +396,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @window_geom.setter
     def window_geom(self, geom_tuple):
-        self.Width, self.Height, self.Top, self.Left = geom_tuple   #pylint: disable=W0201
+        width, height, top, left = geom_tuple
+        self.Width = self.Width if math.isnan(width) else width #pylint: disable=W0201
+        self.Height = self.Height if math.isnan(height) else height #pylint: disable=W0201
+        self.Top = self.Top if math.isnan(top) else top #pylint: disable=W0201
+        self.Left = self.Left if math.isnan(left) else left #pylint: disable=W0201
 
     @property
     def target_id(self):
@@ -489,7 +493,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if last_window_geom_dict and self._kfile in last_window_geom_dict:
             return last_window_geom_dict[self._kfile]
         else:
-            return self.window_geom
+            return (None, None, None, None)
 
     def save_config(self):
         # save self.window_geom
@@ -551,9 +555,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_window_geom(self):
         width, height, top, left = self.get_last_window_geom()
-        if not (math.isnan(self.Top) and math.isnan(self.Left)) \
-                and coreutils.is_box_visible_on_screens(left, top,
-                                                        width, height):
+        if all([width, height, top, left]) \
+                and coreutils.is_box_visible_on_screens(
+                        left, top, width, height):
             self.window_geom = (width, height, top, left)
         else:
             self.WindowStartupLocation = \

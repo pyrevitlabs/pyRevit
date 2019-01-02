@@ -5,6 +5,7 @@
         MinWidth="650" MinHeight="435"
         ResizeMode="CanResizeWithGrip"
         HorizontalContentAlignment="Center"
+        WindowStartupLocation="Manual"
         Title="Manage Keynotes (BETA - USE FOR TESTING ONLY)"
         Closing="window_closing">
     <Window.Resources>
