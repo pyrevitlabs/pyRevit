@@ -19,7 +19,7 @@ BUBBLE_CHART = 'bubble'
 
 # CHARTS_JS_PATH = op.join(op.dirname(__file__), CHARTS_ENGINE)
 CHARTS_JS_PATH = \
-    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"
 
 
 SCRIPT_TEMPLATE = \
