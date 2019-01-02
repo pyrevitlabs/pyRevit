@@ -236,6 +236,14 @@ class TemplateUserInputWindow(WPFWindow):
         self._context = context
         self.response = None
 
+        # parent window?
+        owner = kwargs.get('owner', None)
+        if owner:
+            # set wpf windows directly
+            self.Owner = owner
+            self.WindowStartupLocation = \
+                framework.Windows.WindowStartupLocation.CenterOwner
+
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
@@ -2080,17 +2088,19 @@ def toast(message, title='pyRevit', appid='pyRevit',
         actions=actions)
 
 
-def ask_for_string(default=None, prompt=None, title=None):
+def ask_for_string(default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         None,
         value_type='string',
         default=default,
         prompt=prompt,
-        title=title
+        title=title,
+        **kwargs
         )
 
 
-def ask_for_unique_string(reserved_values, default=None, prompt=None, title=None):
+def ask_for_unique_string(reserved_values,
+                          default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         None,
         value_type='string',
@@ -2098,26 +2108,29 @@ def ask_for_unique_string(reserved_values, default=None, prompt=None, title=None
         prompt=prompt,
         title=title,
         reserved_values=reserved_values,
+        **kwargs
         )
 
 
-def ask_for_one_item(items, default=None, prompt=None, title=None):
+def ask_for_one_item(items, default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         items,
         value_type='dropdown',
         default=default,
         prompt=prompt,
-        title=title
+        title=title,
+        **kwargs
         )
 
 
-def ask_for_date(default=None, prompt=None, title=None):
+def ask_for_date(default=None, prompt=None, title=None, **kwargs):
     return GetValueWindow.show(
         None,
         value_type='date',
         default=default,
         prompt=prompt,
-        title=title
+        title=title,
+        **kwargs
         )
 
 

@@ -254,7 +254,8 @@ class EditRecordWindow(forms.WPFWindow):
         new_key = forms.ask_for_unique_string(
             prompt='Enter a Unique Key',
             title=self.Title,
-            reserved_values=reserved_keys)
+            reserved_values=reserved_keys,
+            owner=self)
         if new_key:
             try:
                 kdb.reserve_key(self._conn, new_key, category=self._cat)
@@ -663,11 +664,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
         if self.selected_category and not self.selected_category.locked:
-            self.keynoteAdd.IsEnabled = True
             self.subkeynoteAdd.IsEnabled = True
             self.catEditButtons.IsEnabled = True
         else:
-            self.keynoteAdd.IsEnabled = False
             self.subkeynoteAdd.IsEnabled = False
             self.catEditButtons.IsEnabled = False
         self._update_ktree_knotes()
