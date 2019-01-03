@@ -384,25 +384,38 @@ def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
                 clean_line = line.strip()
                 if not clean_line.startswith('#'):
                     fields = clean_line.split('\t')
-                    if len(fields) == 2 \
+                    if len(fields) == 1:
+                        # add category with empty title
+                        if fields[0]:
+                            try:
+                                add_category(conn, fields[0], "")
+                            except Exception as cataddex:
+                                if skip_dup:
+                                    pass
+                                else:
+                                    raise cataddex
+                    elif len(fields) == 2 \
                             or (len(fields) == 3 and not fields[2]):
                         # add category
-                        try:
-                            add_category(conn, fields[0], fields[1])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
+                        if fields[0]:
+                            try:
+                                add_category(conn, fields[0], fields[1])
+                            except Exception as cataddex:
+                                if skip_dup:
+                                    pass
+                                else:
+                                    raise cataddex
                     elif len(fields) == 3:
                         # add keynote
-                        try:
-                            add_keynote(conn, fields[0], fields[1], fields[2])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
+                        if fields[0]:
+                            try:
+                                add_keynote(conn,
+                                            fields[0], fields[1], fields[2])
+                            except Exception as cataddex:
+                                if skip_dup:
+                                    pass
+                                else:
+                                    raise cataddex
     finally:
         conn.END()
 
