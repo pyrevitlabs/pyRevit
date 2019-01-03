@@ -100,6 +100,7 @@ namespace PyRevitBaseClasses {
                 if (baked_helpSource != null && baked_helpSource != "") {
                     MenuItem openHelpSource = new MenuItem();
                     openHelpSource.Header = "Open Help";
+                    openHelpSource.ToolTip = baked_helpSource;
                     openHelpSource.Click += delegate { System.Diagnostics.Process.Start(baked_helpSource); };
                     pyRevitCmdContextMenu.Items.Add(openHelpSource);
                 }
@@ -119,6 +120,7 @@ namespace PyRevitBaseClasses {
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
+                copyScriptPath.ToolTip = _script;
                 copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
@@ -126,14 +128,17 @@ namespace PyRevitBaseClasses {
                 if (baked_alternateScriptSource != null && baked_alternateScriptSource != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
                     copyAltScriptPath.Header = "Copy Alternate Script Path";
+                    copyAltScriptPath.ToolTip = baked_alternateScriptSource;
                     copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_alternateScriptSource); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
                 // menu item to copy bundle path to clipboard
+                var bundlePath = Path.GetDirectoryName(_script);
                 MenuItem copyBundlePath = new MenuItem();
                 copyBundlePath.Header = "Copy Bundle Path";
-                copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(Path.GetDirectoryName(_script)); };
+                copyBundlePath.ToolTip = bundlePath;
+                copyBundlePath.Click += delegate { System.Windows.Forms.Clipboard.SetText(bundlePath); };
                 pyRevitCmdContextMenu.Items.Add(copyBundlePath);
 
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
