@@ -34,22 +34,23 @@ def is_schedule(view):
     return False
 
 
-schedules_to_export = forms.select_views(title='Select Schedules',
-                                         filterfunc=is_schedule)
+if basefolder:
+    schedules_to_export = forms.select_views(title='Select Schedules',
+                                            filterfunc=is_schedule)
 
-if schedules_to_export:
-    vseop = DB.ViewScheduleExportOptions()
-    vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
-    vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
-    vseop.FieldDelimiter = ','
-    vseop.Title = False
-    vseop.HeadersFootersBlanks = False
+    if schedules_to_export:
+        vseop = DB.ViewScheduleExportOptions()
+        vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
+        vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
+        vseop.FieldDelimiter = ','
+        vseop.Title = False
+        vseop.HeadersFootersBlanks = False
 
-    for sched in schedules_to_export:
-        fname = "".join(
-            x for x in revit.query.get_name(sched) if x not in ['*']
-            ) + '.csv'
-        sched.Export(basefolder, fname, vseop)
-        coreutils.correct_revittxt_encoding(op.join(basefolder, fname))
-        print('EXPORTED: {0}\n      TO: {1}\n'
-              .format(revit.query.get_name(sched), fname))
+        for sched in schedules_to_export:
+            fname = "".join(
+                x for x in revit.query.get_name(sched) if x not in ['*']
+                ) + '.csv'
+            sched.Export(basefolder, fname, vseop)
+            coreutils.correct_revittxt_encoding(op.join(basefolder, fname))
+            print('EXPORTED: {0}\n      TO: {1}\n'
+                .format(revit.query.get_name(sched), fname))
