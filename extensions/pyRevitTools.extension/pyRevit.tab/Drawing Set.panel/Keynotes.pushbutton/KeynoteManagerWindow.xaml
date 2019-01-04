@@ -168,8 +168,17 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
                 <WrapPanel Grid.Column="1" >
-                    <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" TextWrapping="Wrap" />
-                    <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="5,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
+                    <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" Padding="0" TextWrapping="Wrap" />
+                    <Border x:Name="usedCount" Background="LightGray" Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="DimGray" FontSize="10">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat=" {0} refs">
+                                    <Binding Path="used_count"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                    <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">
                             <TextBlock.Text>
                                 <MultiBinding StringFormat=" {0} is editing...">
@@ -183,6 +192,9 @@
             <HierarchicalDataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Path=locked}" Value="True">
                     <Setter TargetName="ownerId" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=used}" Value="True">
+                    <Setter TargetName="usedCount" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </HierarchicalDataTemplate.Triggers>
         </HierarchicalDataTemplate>

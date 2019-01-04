@@ -385,10 +385,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     children=None)
 
         self._config = script.get_config()
-        self._used_keys = self.get_used_keynote_elements().keys()
-        self._update_window_geom()
-        self._update_postable_commands()
-        self._update_last_category()
+        self._used_keysdict = self.get_used_keynote_elements()
+        self.load_config()
         self.search_tb.Focus()
 
     @property
@@ -476,26 +474,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             used_keys[key].append(knote.Id)
         return used_keys
 
-    def get_last_category_key(self):
-        last_category_dict = self._config.get_option('last_category', {})
-        if last_category_dict and self._kfile in last_category_dict:
-            return last_category_dict[self._kfile]
-
-    def get_last_postcmd_idx(self):
-        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
-        if last_postcmd_dict and self._kfile in last_postcmd_dict:
-            return last_postcmd_dict[self._kfile]
-        else:
-            return 0
-
-    def get_last_window_geom(self):
-        last_window_geom_dict = \
-            self._config.get_option('last_window_geom', {})
-        if last_window_geom_dict and self._kfile in last_window_geom_dict:
-            return last_window_geom_dict[self._kfile]
-        else:
-            return (None, None, None, None)
-
     def save_config(self):
         # save self.window_geom
         new_window_geom_dict = {}
@@ -528,7 +506,48 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self.selected_category:
             new_category_dict[self._kfile] = self.selected_category.key
         self._config.set_option('last_category', new_category_dict)
+
+        # save self.search_term
+        new_category_dict = {}
+        if self.search_term:
+            new_category_dict[self._kfile] = self.search_term
+        self._config.set_option('last_search_term', new_category_dict)
+
         script.save_config()
+
+    def load_config(self):
+        # load last window geom
+        last_window_geom_dict = \
+            self._config.get_option('last_window_geom', {})
+        if last_window_geom_dict and self._kfile in last_window_geom_dict:
+            width, height, top, left = last_window_geom_dict[self._kfile]
+        else:
+            width, height, top, left = (None, None, None, None)
+        # update window geom
+        if all([width, height, top, left]) \
+                and coreutils.is_box_visible_on_screens(
+                        left, top, width, height):
+            self.window_geom = (width, height, top, left)
+        else:
+            self.WindowStartupLocation = \
+                framework.Windows.WindowStartupLocation.CenterScreen
+
+        # load last postable commands id
+        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
+        if last_postcmd_dict and self._kfile in last_postcmd_dict:
+            self.postcmd_idx = last_postcmd_dict[self._kfile]
+        else:
+            self.postcmd_idx = 0
+
+        # load last category
+        last_category_dict = self._config.get_option('last_category', {})
+        if last_category_dict and self._kfile in last_category_dict:
+            self._update_ktree(active_catkey=last_category_dict[self._kfile])
+
+        # load last search term
+        last_searchterm_dict = self._config.get_option('last_search_term', {})
+        if last_searchterm_dict and self._kfile in last_searchterm_dict:
+            self.search_term = last_searchterm_dict[self._kfile]
 
     def _convert_existing(self):
         # make a copy of exsing
@@ -553,22 +572,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as skex:
                 forms.alert(str(skex))
                 return
-
-    def _update_window_geom(self):
-        width, height, top, left = self.get_last_window_geom()
-        if all([width, height, top, left]) \
-                and coreutils.is_box_visible_on_screens(
-                        left, top, width, height):
-            self.window_geom = (width, height, top, left)
-        else:
-            self.WindowStartupLocation = \
-                framework.Windows.WindowStartupLocation.CenterScreen
-
-    def _update_postable_commands(self):
-        self.postcmd_idx = self.get_last_postcmd_idx()
-
-    def _update_last_category(self):
-        self._update_ktree(active_catkey=self.get_last_category_key())
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -619,7 +622,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # mark used keynotes
         for knote in active_tree:
-            knote.update_used(self._used_keys)
+            knote.update_used(self._used_keysdict)
 
         # filter keynotes
         self._cache = list(active_tree)

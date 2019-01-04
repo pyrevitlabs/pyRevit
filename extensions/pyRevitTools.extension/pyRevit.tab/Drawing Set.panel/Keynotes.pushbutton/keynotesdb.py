@@ -82,6 +82,7 @@ class RKeynote(object):
         self._filter = None
 
         self.used = False
+        self.used_count = 0
 
     def __str__(self):
         return repr(self)
@@ -132,11 +133,12 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keys):
-        if self.key in used_keys:
+    def update_used(self, used_keysdict):
+        if self.key in used_keysdict:
             self.used = True
+            self.used_count = len(used_keysdict[self.key])
         for crkey in self._children:
-            crkey.update_used(used_keys)
+            crkey.update_used(used_keysdict)
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
