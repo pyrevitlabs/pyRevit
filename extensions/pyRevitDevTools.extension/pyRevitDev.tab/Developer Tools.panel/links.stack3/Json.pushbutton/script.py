@@ -6,4 +6,4 @@ from pyrevit import script
 __context__ = 'zerodoc'
 
 
-script.open_url('http://www.jsoneditoronline.org/')
+script.open_url('https://jsoneditoronline.org/')
