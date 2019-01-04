@@ -18,5 +18,8 @@
 - Neil Reilly for the handy introduction and installation [video](https://www.youtube.com/watch?v=71rvCspWNHs).
 - [ThubanPDX](https://github.com/ThubanPDX). For testing and new ideas for tools and scripts.
 - [Markdown module for python](https://pypi.python.org/pypi/Markdown) for the module obviously that helped bringing markdown to pyRevit output so much easier.
-- Everyone that is listed on the pyRevit issue tracker for their contributions and bug reports. You all help me make pyRevit better.
+- Everyone that is listed on the [pyRevit issue tracker](https://github.com/eirannejad/pyRevit/issues) for their contributions and bug reports.
+- Everyone that is listed on the [pyRevit Pull Requests](https://github.com/eirannejad/pyRevit/pulls?q=is%3Apr+is%3Aclosed) for their contributions.
+
+You all help me make pyRevit better every day.
 
