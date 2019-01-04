@@ -223,9 +223,11 @@ class ExtensionsWindow(forms.WPFWindow):
             # Action Button: Toggle (Enable / Disable)
             self.show_element(self.ext_toggle_b)
             if ext_pkg_item.ext_pkg.config.disabled:
-                self.ext_toggle_b.Content = 'Enable Package'
+                self.ext_toggle_b.Content = \
+                    self.ext_toggle_b.Content.replace('Dis', 'En')
             else:
-                self.ext_toggle_b.Content = 'Disable Package'
+                self.ext_toggle_b.Content = \
+                    self.ext_toggle_b.Content.replace('En', 'Dis')
 
         else:
             self.show_element(self.ext_install_b)
@@ -283,6 +285,10 @@ class ExtensionsWindow(forms.WPFWindow):
             self._update_ext_info_panel(self.selected_pkg)
             self._update_ext_action_buttons(self.selected_pkg)
             self._update_ext_settings_panel(self.selected_pkg)
+            if self.selected_pkg.Builtin:
+                self.hide_element(self.extCredentials)
+            else:
+                self.show_element(self.extCredentials)
         else:
             self.hide_element(self.ext_infopanel)
 

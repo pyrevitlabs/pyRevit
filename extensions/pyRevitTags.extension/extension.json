@@ -4,7 +4,7 @@
     "type": "extension",
     "rocket_mode_compatible": "True",
     "name": "pyRevitTags",
-    "description": "Tag Management for Projects",
+    "description": "Tag & Package Management for Projects",
     "author": "Ehsan Iran-Nejad",
     "author_profile": "https://keybase.io/ein",
     "url": "https://github.com/eirannejad/pyRevit.git",
