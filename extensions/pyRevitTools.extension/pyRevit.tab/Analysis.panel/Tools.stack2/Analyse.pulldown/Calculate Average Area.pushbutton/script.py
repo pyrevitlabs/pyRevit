@@ -101,5 +101,7 @@ for el in selection.elements:
         print('\nAVERAGE AREA OF THE SELECTED TYPE IS:'
               '\n{}'
               '\n ======================================='
-              '\n{} ACRE'.format(revit.units.format_area(average),
-                                 average / 43560))
+              '\n{} ACRE'
+              '\n{} HECTARES'.format(revit.units.format_area(average),
+                                     average / 43560,
+                                     average / 107639))
