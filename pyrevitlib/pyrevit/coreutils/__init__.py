@@ -1267,6 +1267,16 @@ def check_revittxt_encoding(filename):
         return rtfile.read()[:2] == codecs.BOM_UTF16
 
 
+def check_utf8bom_encoding(filename):
+    """Check if given file is in UTF-8 encoding.
+
+    Args:
+        filename (str): file path
+    """
+    with open(filename, 'rb') as rtfile:
+        return rtfile.read()[:3] == codecs.BOM_UTF8
+
+
 def has_nonprintable(input_str):
     """Check input string for non-printable characters.
 

@@ -911,24 +911,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # maybe allow for merge conflict?
         kfile = forms.pick_file('txt')
         if kfile:
-            if not coreutils.check_revittxt_encoding(kfile):
-                logger.debug('Incorrect file encoding: %s' % kfile)
-                forms.alert("File must be encoded in UTF-16 (UCS-2 LE)")
-            else:
-                logger.debug('Importing keynotes from: %s' % kfile)
-                res = forms.alert("Do you want me to skip duplicates if any?",
-                                  yes=True, no=True)
-                try:
-                    kdb.import_legacy_keynotes(self._conn,
-                                               kfile,
-                                               skip_dup=res)
-                except System.TimeoutException as toutex:
-                    forms.alert(toutex.Message)
-                except Exception as ex:
-                    logger.debug('Importing legacy keynotes failed | %s' % ex)
-                    forms.alert(str(ex))
-                finally:
-                    self._update_ktree(active_catkey=self._allcat)
+            logger.debug('Importing keynotes from: %s' % kfile)
+            res = forms.alert("Do you want me to skip duplicates if any?",
+                              yes=True, no=True)
+            try:
+                kdb.import_legacy_keynotes(self._conn, kfile, skip_dup=res)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+            except Exception as ex:
+                logger.debug('Importing legacy keynotes failed | %s' % ex)
+                forms.alert(str(ex))
+            finally:
+                self._update_ktree(active_catkey=self._allcat)
+                self._update_ktree_knotes()
 
     def export_keynotes(self, sender, args):
         kfile = forms.save_file('txt')
