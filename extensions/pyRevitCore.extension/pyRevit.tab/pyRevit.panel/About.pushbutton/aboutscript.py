@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+#pylint: disable=E0401,E0602,W0703,W0613,C0103
 import sys
 
 from pyrevit import HOST_APP
-from pyrevit import coreutils
 from pyrevit import versionmgr
 from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
@@ -36,6 +36,7 @@ class AboutWindow(forms.WPFWindow):
         try:
             pyrvt_repo = versionmgr.get_pyrevit_repo()
             self.branch_name = pyrvt_repo.branch
+            self.show_element(self.git_commit)
             self.show_element(self.git_branch)
         except Exception:
             # other wise try to get deployment name
@@ -44,7 +45,7 @@ class AboutWindow(forms.WPFWindow):
                 try:
                     self.deployname = attachment.Clone.GetDeployment().Name
                     self.show_element(self.repo_deploy)
-                except Exception as e:
+                except Exception:
                     pass
 
         self.short_version_info.Text = short_version

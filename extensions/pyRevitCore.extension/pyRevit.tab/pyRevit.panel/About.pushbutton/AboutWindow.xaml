@@ -215,7 +215,7 @@
                            LineHeight="20"
                            Text="XX"/>
                 <WrapPanel x:Name="git_panel" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <StackPanel x:Name="git_commit" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
                         <ContentControl Content="{StaticResource commitIcon}" Width="24" Height="24" Margin="0,-5,5,0">
                             <ContentControl.LayoutTransform>
                                 <ScaleTransform ScaleX="0.7"  ScaleY="0.7"/>
