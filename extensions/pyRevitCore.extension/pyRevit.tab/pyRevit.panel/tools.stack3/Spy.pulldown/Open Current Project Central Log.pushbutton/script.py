@@ -1,13 +1,13 @@
-__doc__ = 'Opens the central log for the current workshared project.'
-
+"""Opens the central log for the current workshared project."""
+#pylint: disable=C0103,E0401
 import os
 import os.path as op
 
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import forms
 
 
-if revit.doc.GetWorksharingCentralModelPath():
+if forms.check_workshared(doc=revit.doc):
     model_path = revit.doc.GetWorksharingCentralModelPath()
     centralPath = \
         DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
@@ -20,5 +20,3 @@ if revit.doc.GetWorksharingCentralModelPath():
         os.system('start notepad++ "{0}"'.format(slogFile))
     else:
         os.system('start notepad "{0}"'.format(slogFile))
-else:
-    forms.alert('Model is not workshared.')
