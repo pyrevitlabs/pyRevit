@@ -82,6 +82,9 @@
     <Compile Include="..\Source\PyRevitLoaderApplication.cs">
       <Link>PyRevitLoaderApplication.cs</Link>
     </Compile>
+    <Compile Include="..\Source\RunnerCommand.cs">
+      <Link>RunnerCommand.cs</Link>
+    </Compile>
     <Compile Include="..\Source\ScriptExecutor.cs">
       <Link>ScriptExecutor.cs</Link>
     </Compile>
