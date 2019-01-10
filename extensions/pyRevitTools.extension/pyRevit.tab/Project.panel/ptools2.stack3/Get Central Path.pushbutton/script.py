@@ -5,4 +5,5 @@ from pyrevit import revit
 from pyrevit import forms
 
 
-forms.check_workshared(doc=revit.doc)
+if forms.check_workshared(doc=revit.doc):
+    print(revit.query.get_central_path(doc=revit.doc))

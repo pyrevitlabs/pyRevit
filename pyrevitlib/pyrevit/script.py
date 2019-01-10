@@ -294,7 +294,7 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     Returns:
         str: full file path
     """
-    proj_info = revit.get_project_info()    #pylint: disable=E1101
+    proj_info = revit.query.get_project_info()
 
     if add_cmd_name:
         script_file_id = '{}_{}_{}'.format(EXEC_PARAMS.command_name,

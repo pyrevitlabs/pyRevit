@@ -254,7 +254,8 @@ class EditRecordWindow(forms.WPFWindow):
         new_key = forms.ask_for_unique_string(
             prompt='Enter a Unique Key',
             title=self.Title,
-            reserved_values=reserved_keys)
+            reserved_values=reserved_keys,
+            owner=self)
         if new_key:
             try:
                 kdb.reserve_key(self._conn, new_key, category=self._cat)
@@ -384,10 +385,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     children=None)
 
         self._config = script.get_config()
-        self._used_keys = self.get_used_keynote_elements().keys()
-        self._update_window_geom()
-        self._update_postable_commands()
-        self._update_last_category()
+        self._used_keysdict = self.get_used_keynote_elements()
+        self.load_config()
         self.search_tb.Focus()
 
     @property
@@ -396,7 +395,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @window_geom.setter
     def window_geom(self, geom_tuple):
-        self.Width, self.Height, self.Top, self.Left = geom_tuple   #pylint: disable=W0201
+        width, height, top, left = geom_tuple
+        self.Width = self.Width if math.isnan(width) else width #pylint: disable=W0201
+        self.Height = self.Height if math.isnan(height) else height #pylint: disable=W0201
+        self.Top = self.Top if math.isnan(top) else top #pylint: disable=W0201
+        self.Left = self.Left if math.isnan(left) else left #pylint: disable=W0201
 
     @property
     def target_id(self):
@@ -471,26 +474,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             used_keys[key].append(knote.Id)
         return used_keys
 
-    def get_last_category_key(self):
-        last_category_dict = self._config.get_option('last_category', {})
-        if last_category_dict and self._kfile in last_category_dict:
-            return last_category_dict[self._kfile]
-
-    def get_last_postcmd_idx(self):
-        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
-        if last_postcmd_dict and self._kfile in last_postcmd_dict:
-            return last_postcmd_dict[self._kfile]
-        else:
-            return 0
-
-    def get_last_window_geom(self):
-        last_window_geom_dict = \
-            self._config.get_option('last_window_geom', {})
-        if last_window_geom_dict and self._kfile in last_window_geom_dict:
-            return last_window_geom_dict[self._kfile]
-        else:
-            return self.window_geom
-
     def save_config(self):
         # save self.window_geom
         new_window_geom_dict = {}
@@ -523,7 +506,48 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self.selected_category:
             new_category_dict[self._kfile] = self.selected_category.key
         self._config.set_option('last_category', new_category_dict)
+
+        # save self.search_term
+        new_category_dict = {}
+        if self.search_term:
+            new_category_dict[self._kfile] = self.search_term
+        self._config.set_option('last_search_term', new_category_dict)
+
         script.save_config()
+
+    def load_config(self):
+        # load last window geom
+        last_window_geom_dict = \
+            self._config.get_option('last_window_geom', {})
+        if last_window_geom_dict and self._kfile in last_window_geom_dict:
+            width, height, top, left = last_window_geom_dict[self._kfile]
+        else:
+            width, height, top, left = (None, None, None, None)
+        # update window geom
+        if all([width, height, top, left]) \
+                and coreutils.is_box_visible_on_screens(
+                        left, top, width, height):
+            self.window_geom = (width, height, top, left)
+        else:
+            self.WindowStartupLocation = \
+                framework.Windows.WindowStartupLocation.CenterScreen
+
+        # load last postable commands id
+        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
+        if last_postcmd_dict and self._kfile in last_postcmd_dict:
+            self.postcmd_idx = last_postcmd_dict[self._kfile]
+        else:
+            self.postcmd_idx = 0
+
+        # load last category
+        last_category_dict = self._config.get_option('last_category', {})
+        if last_category_dict and self._kfile in last_category_dict:
+            self._update_ktree(active_catkey=last_category_dict[self._kfile])
+
+        # load last search term
+        last_searchterm_dict = self._config.get_option('last_search_term', {})
+        if last_searchterm_dict and self._kfile in last_searchterm_dict:
+            self.search_term = last_searchterm_dict[self._kfile]
 
     def _convert_existing(self):
         # make a copy of exsing
@@ -548,22 +572,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as skex:
                 forms.alert(str(skex))
                 return
-
-    def _update_window_geom(self):
-        width, height, top, left = self.get_last_window_geom()
-        if not (math.isnan(self.Top) and math.isnan(self.Left)) \
-                and coreutils.is_box_visible_on_screens(left, top,
-                                                        width, height):
-            self.window_geom = (width, height, top, left)
-        else:
-            self.WindowStartupLocation = \
-                framework.Windows.WindowStartupLocation.CenterScreen
-
-    def _update_postable_commands(self):
-        self.postcmd_idx = self.get_last_postcmd_idx()
-
-    def _update_last_category(self):
-        self._update_ktree(active_catkey=self.get_last_category_key())
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -614,7 +622,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # mark used keynotes
         for knote in active_tree:
-            knote.update_used(self._used_keys)
+            knote.update_used(self._used_keysdict)
 
         # filter keynotes
         self._cache = list(active_tree)
@@ -659,11 +667,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
         if self.selected_category and not self.selected_category.locked:
-            self.keynoteAdd.IsEnabled = True
             self.subkeynoteAdd.IsEnabled = True
             self.catEditButtons.IsEnabled = True
         else:
-            self.keynoteAdd.IsEnabled = False
             self.subkeynoteAdd.IsEnabled = False
             self.catEditButtons.IsEnabled = False
         self._update_ktree_knotes()
@@ -745,22 +751,32 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         self._update_ktree(active_catkey=self._allcat)
 
     def add_keynote(self, sender, args):
+        # try to get parent key from selected keynote or category
         parent_key = None
         if self.selected_keynote:
             parent_key = self.selected_keynote.parent_key
         elif self.selected_category:
             parent_key = self.selected_category.key
-
-        try:
-            EditRecordWindow(self, self._conn,
-                             kdb.EDIT_MODE_ADD_KEYNOTE,
-                             pkey=parent_key).show()
-        except System.TimeoutException as toutex:
-            forms.alert(toutex.Message)
-        except Exception as ex:
-            forms.alert(str(ex))
-        finally:
-            self._update_ktree_knotes()
+        # otherwise ask to select a parent category
+        if not parent_key:
+            cat = forms.SelectFromList.show(self.all_categories,
+                                            title="Select Parent Category",
+                                            name_attr='text',
+                                            owner=self)
+            if cat:
+                parent_key = cat.key
+        # if parent key is available proceed to create keynote
+        if parent_key:
+            try:
+                EditRecordWindow(self, self._conn,
+                                 kdb.EDIT_MODE_ADD_KEYNOTE,
+                                 pkey=parent_key).show()
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+            except Exception as ex:
+                forms.alert(str(ex))
+            finally:
+                self._update_ktree_knotes()
 
     def add_sub_keynote(self, sender, args):
         selected_keynote = self.selected_keynote
@@ -895,24 +911,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # maybe allow for merge conflict?
         kfile = forms.pick_file('txt')
         if kfile:
-            if not coreutils.check_revittxt_encoding(kfile):
-                logger.debug('Incorrect file encoding: %s' % kfile)
-                forms.alert("File must be encoded in UTF-16 (UCS-2 LE)")
-            else:
-                logger.debug('Importing keynotes from: %s' % kfile)
-                res = forms.alert("Do you want me to skip duplicates if any?",
-                                  yes=True, no=True)
-                try:
-                    kdb.import_legacy_keynotes(self._conn,
-                                               kfile,
-                                               skip_dup=res)
-                except System.TimeoutException as toutex:
-                    forms.alert(toutex.Message)
-                except Exception as ex:
-                    logger.debug('Importing legacy keynotes failed | %s' % ex)
-                    forms.alert(str(ex))
-                finally:
-                    self._update_ktree(active_catkey=self._allcat)
+            logger.debug('Importing keynotes from: %s' % kfile)
+            res = forms.alert("Do you want me to skip duplicates if any?",
+                              yes=True, no=True)
+            try:
+                kdb.import_legacy_keynotes(self._conn, kfile, skip_dup=res)
+            except System.TimeoutException as toutex:
+                forms.alert(toutex.Message)
+            except Exception as ex:
+                logger.debug('Importing legacy keynotes failed | %s' % ex)
+                forms.alert(str(ex))
+            finally:
+                self._update_ktree(active_catkey=self._allcat)
+                self._update_ktree_knotes()
 
     def export_keynotes(self, sender, args):
         kfile = forms.save_file('txt')

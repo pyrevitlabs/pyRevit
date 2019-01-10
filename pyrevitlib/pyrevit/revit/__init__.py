@@ -74,6 +74,8 @@ class RevitWrapper(types.ModuleType):
 
     @staticmethod
     def get_project_info():
+        mlogger.deprecate('Method revit.get_project_info() is deprecated. '
+                          'Use revit.query.get_project_info() instead.')
         return query.get_project_info()
 
 

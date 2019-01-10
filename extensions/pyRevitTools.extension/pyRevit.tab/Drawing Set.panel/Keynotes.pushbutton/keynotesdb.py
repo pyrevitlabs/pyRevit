@@ -82,6 +82,7 @@ class RKeynote(object):
         self._filter = None
 
         self.used = False
+        self.used_count = 0
 
     def __str__(self):
         return repr(self)
@@ -132,11 +133,12 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keys):
-        if self.key in used_keys:
+    def update_used(self, used_keysdict):
+        if self.key in used_keysdict:
             self.used = True
+            self.used_count = len(used_keysdict[self.key])
         for crkey in self._children:
-            crkey.update_used(used_keys)
+            crkey.update_used(used_keysdict)
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
@@ -376,35 +378,70 @@ def rekey_keynote(conn, key, new_key):
 # import export ---------------------------------------------------------------
 
 
+def _import_keynotes_from_lines(conn, lines, skip_dup=False):
+    for line in lines:
+        clean_line = line.strip()
+        if not clean_line.startswith('#'):
+            fields = clean_line.split('\t')
+            if len(fields) == 1:
+                # add category with empty title
+                if fields[0]:
+                    try:
+                        add_category(conn, fields[0], "")
+                    except Exception as cataddex:
+                        if skip_dup:
+                            pass
+                        else:
+                            raise cataddex
+            elif len(fields) == 2 \
+                    or (len(fields) == 3 and not fields[2]):
+                # add category
+                if fields[0]:
+                    try:
+                        add_category(conn, fields[0], fields[1])
+                    except Exception as cataddex:
+                        if skip_dup:
+                            pass
+                        else:
+                            raise cataddex
+            elif len(fields) == 3:
+                # add keynote
+                if fields[0]:
+                    try:
+                        add_keynote(conn, fields[0], fields[1], fields[2])
+                    except Exception as cataddex:
+                        if skip_dup:
+                            pass
+                        else:
+                            raise cataddex
+
+
 def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
-    conn.BEGIN(KEYNOTES_DB)
+    knote_lines = None
     try:
-        with codecs.open(src_legacy_keynotes_file, 'r', 'utf_16') as lkf:
-            for line in lkf.readlines():
-                clean_line = line.strip()
-                if not clean_line.startswith('#'):
-                    fields = clean_line.split('\t')
-                    if len(fields) == 2 \
-                            or (len(fields) == 3 and not fields[2]):
-                        # add category
-                        try:
-                            add_category(conn, fields[0], fields[1])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
-                    elif len(fields) == 3:
-                        # add keynote
-                        try:
-                            add_keynote(conn, fields[0], fields[1], fields[2])
-                        except Exception as cataddex:
-                            if skip_dup:
-                                pass
-                            else:
-                                raise cataddex
-    finally:
-        conn.END()
+        mlogger.debug('Attempt opening file with utf-16 encoding...')
+        legacy_kfile = codecs.open(src_legacy_keynotes_file, 'r', 'utf_16')
+        knote_lines = legacy_kfile.readlines()
+    except Exception:
+        mlogger.debug('Failed opening with utf-16 encoding : %s',
+                      src_legacy_keynotes_file)
+        try:
+            mlogger.debug('Attempt opening file with utf-8 encoding...')
+            legacy_kfile = codecs.open(src_legacy_keynotes_file, 'r', 'utf_8')
+            knote_lines = legacy_kfile.readlines()
+        except Exception:
+            mlogger.debug('Failed opening with utf-8 encoding : %s',
+                          src_legacy_keynotes_file)
+            raise Exception('Unknown file encoding. Supported encodings are '
+                            'UTF-8 and UTF-16 (UCS-2 LE)')
+
+    if legacy_kfile:
+        conn.BEGIN(KEYNOTES_DB)
+        try:
+            mlogger.debug('Importing categories and keynotes...')
+            _import_keynotes_from_lines(conn, knote_lines, skip_dup=skip_dup)
+        finally:
+            conn.END()
 
 
 def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):

@@ -32,7 +32,7 @@ console.lock_size()
 
 report_title = 'Revision Report'
 report_date = coreutils.current_date()
-report_project = revit.get_project_info().name
+report_project = revit.query.get_project_info().name
 
 
 # setup element styling

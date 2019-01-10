@@ -11,7 +11,8 @@ import patmaker
 
 __title__ = 'Make\nPattern'
 
-__helpurl__ = '{{docpath}}H7b8hjHbauE'
+__helpurl__ = \
+    '{{docpath}}H7b8hjHbauE&t=8s&list=PLc_1PNcpnV57FWI6G8Cd09umHpSOzvamf'
 
 __doc__ = 'Draw your pattern tile in a detail view using detail lines, '\
           'curves, circles or ellipses, or even filled regions.\n'\

@@ -6,4 +6,4 @@ from pyrevit import script
 __context__ = 'zerodoc'
 
 
-script.open_url('http://requestb.in/')
+script.open_url('https://requestbin.fullcontact.com/')

@@ -9,7 +9,7 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 
-proj_info = revit.get_project_info()
+proj_info = revit.query.get_project_info()
 datafile = script.get_document_data_file("SelList", "pym")
 
 if op.exists(datafile):

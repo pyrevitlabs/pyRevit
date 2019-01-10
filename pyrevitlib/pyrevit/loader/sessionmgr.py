@@ -148,6 +148,10 @@ def _new_session():
     assembled_exts = []
     # get all installed ui extensions
     for ui_ext in get_installed_ui_extensions():
+        # configure extension components for metadata
+        # e.g. liquid templates like {{author}}
+        ui_ext.configure()
+
         # create a dll assembly and get assembly info
         ext_asm_info = create_assembly(ui_ext)
         if not ext_asm_info:
@@ -159,11 +163,6 @@ def _new_session():
         assembled_exts.append(
             AssembledExtension(ext=ui_ext, assm=ext_asm_info)
         )
-
-    # configure extension components for metadata
-    # e.g. liquid templates like {{author}}
-    for assm_ext in assembled_exts:
-        assm_ext.ext.configure()
 
     # add names of the created assemblies to the session info
     sessioninfo.set_loaded_pyrevit_assemblies(

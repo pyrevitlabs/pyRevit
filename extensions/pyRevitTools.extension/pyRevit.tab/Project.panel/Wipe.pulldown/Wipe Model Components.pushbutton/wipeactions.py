@@ -96,6 +96,19 @@ def call_purge():
 def remove_all_constraints():
     """Remove All Constraints"""
 
+    cl = DB.FilteredElementCollector(revit.doc)
+    consts = list(cl.OfCategory(DB.BuiltInCategory.OST_Constraints)
+                    .WhereElementIsNotElementType()
+                    .ToElements())
+
+    print_header('REMOVING ALL CONSTRAINTS')
+    remove_action('Remove All Constraints', 'Constraint', consts)
+
+
+@dependent
+def remove_all_viewspecific_constraints():
+    """Remove All View-Specific Constraints"""
+
     def confirm_removal(cnst):
         return cnst.View is not None
 
@@ -104,8 +117,8 @@ def remove_all_constraints():
                     .WhereElementIsNotElementType()
                     .ToElements())
 
-    print_header('REMOVING ALL CONSTRAINTS')
-    remove_action('Remove All Constraints',
+    print_header('REMOVING ALL VIEW-SPECIFIC CONSTRAINTS')
+    remove_action('Remove All View-Specific Constraints',
                   'Constraint',
                   consts, validity_func=confirm_removal)
 

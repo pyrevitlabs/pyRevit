@@ -840,3 +840,16 @@ def get_available_keynotes_tree(doc=None):
     knotes = get_available_keynotes(doc=doc)
     # TODO: implement knotes tree
     raise NotImplementedError()
+
+
+def is_placed(spatial_element):
+    return isinstance(spatial_element,
+                      (DB.Architecture.Room, DB.Area, DB.Mechanical.Space)) \
+            and spatial_element.Area > 0
+
+
+def get_central_path(doc=None):
+    doc = doc or HOST_APP.doc
+    if doc.IsWorkshared:
+        model_path = doc.GetWorksharingCentralModelPath()
+        return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)

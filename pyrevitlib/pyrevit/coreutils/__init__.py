@@ -16,6 +16,7 @@ import shutil
 import random
 import stat
 import codecs
+import math
 from collections import defaultdict
 
 #pylint: disable=E0401
@@ -1266,6 +1267,16 @@ def check_revittxt_encoding(filename):
         return rtfile.read()[:2] == codecs.BOM_UTF16
 
 
+def check_utf8bom_encoding(filename):
+    """Check if given file is in UTF-8 encoding.
+
+    Args:
+        filename (str): file path
+    """
+    with open(filename, 'rb') as rtfile:
+        return rtfile.read()[:3] == codecs.BOM_UTF8
+
+
 def has_nonprintable(input_str):
     """Check input string for non-printable characters.
 
@@ -1323,10 +1334,10 @@ def is_box_visible_on_screens(left, top, width, height):
     """Check if given box is visible on any screen."""
     bounds = \
         framework.Drawing.Rectangle(
-            framework.Convert.ToInt32(left),
-            framework.Convert.ToInt32(top),
-            framework.Convert.ToInt32(width),
-            framework.Convert.ToInt32(height)
+            framework.Convert.ToInt32(0 if math.isnan(left) else left),
+            framework.Convert.ToInt32(0 if math.isnan(top) else top),
+            framework.Convert.ToInt32(0 if math.isnan(width) else width),
+            framework.Convert.ToInt32(0 if math.isnan(height) else height)
             )
     for scr in framework.Forms.Screen.AllScreens:
         if bounds.IntersectsWith(scr.Bounds):
