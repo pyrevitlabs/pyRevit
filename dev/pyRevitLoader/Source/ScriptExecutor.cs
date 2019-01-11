@@ -44,7 +44,10 @@ namespace PyRevitLoader {
                     var path = engine.GetSearchPaths();
                     foreach (var sysPath in sysPaths)
                         path.Add(sysPath);
+
+                    engine.SetSearchPaths(path);
                 }
+
 
                 // set globals
                 scope.SetVariable("__file__", sourcePath);
@@ -88,9 +91,9 @@ namespace PyRevitLoader {
                     string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
 
                     _ipy_err_messages =
-                        string.Join("\r\n", "IronPython Traceback:", _ipy_err_messages.Replace("\r\n", "\n"));
+                        string.Join("\n", "IronPython Traceback:", _ipy_err_messages.Replace("\r\n", "\n"));
                     _dotnet_err_message =
-                        string.Join("\r\n", "Script Executor Traceback:", _dotnet_err_message.Replace("\r\n", "\n"));
+                        string.Join("\n", "Script Executor Traceback:", _dotnet_err_message.Replace("\r\n", "\n"));
 
                     Message = _ipy_err_messages + "\n\n" + _dotnet_err_message;
 

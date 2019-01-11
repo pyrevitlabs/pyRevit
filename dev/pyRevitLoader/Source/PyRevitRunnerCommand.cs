@@ -6,7 +6,8 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
 using PyRevitLoader;
-
+using System.Reflection;
+using System.IO;
 
 namespace PyRevitRunner {
     [Regeneration(RegenerationOption.Manual)]
@@ -24,21 +25,25 @@ namespace PyRevitRunner {
                 // Processing Journal Data and getting the script path to be executed in IronPython engine
                 IDictionary<string, string> dataMap = commandData.JournalData;
                 ScriptSourceFile = dataMap["ScriptSource"];
-                ModuleSearchPaths = dataMap["SearchPaths"].Split(';');
-                ModelPaths = dataMap["Models"].Split(';');
+                ModuleSearchPaths = new List<string>(dataMap["SearchPaths"].Split(';'));
+                ModelPaths = new List<string>(dataMap["Models"].Split(';'));
                 LogFile = dataMap["LogFile"];
+
+                // add pyrevit library path and script directory path to search paths
+                ModuleSearchPaths.Add(GetPyRevitLibsPath());
+                ModuleSearchPaths.Add(Path.GetDirectoryName(ScriptSourceFile));
 
                 // 2
                 // Executing the script
                 var executor = new ScriptExecutor(Application); // uiControlledApplication);
                 var resultCode = executor.ExecuteScript(
                     ScriptSourceFile,
-                    sysPaths: ModuleSearchPaths,
+                    sysPaths: ModuleSearchPaths.ToArray(),
                     logFilePath: LogFile,
                     variables: new Dictionary<string, object>() {
                         {"__batchexec__",  true },
                         {"__logfile__", LogFile },
-                        {"__models__", new List<string>(ModelPaths) },
+                        {"__models__", ModelPaths },
                     });
 
                 // 3
@@ -49,6 +54,7 @@ namespace PyRevitRunner {
                     return Result.Cancelled;
             }
             catch (Exception ex) {
+                commandData.JournalData.Add("pyRevitRunner Execution Failure", ex.Message);
                 return Result.Cancelled;
             }
         }
@@ -57,10 +63,18 @@ namespace PyRevitRunner {
         public ExternalCommandData CommandData { get; private set; }
 
         public string ScriptSourceFile { get; private set; }
-        public string[] ModuleSearchPaths { get; private set; }
-        public string[] ModelPaths { get; private set; }
+        public List<string> ModuleSearchPaths { get; private set; }
+        public List<string> ModelPaths { get; private set; }
         public string LogFile { get; private set; }
         public bool DebugMode { get; private set; }
+
+        private static string GetPyRevitLibsPath() {
+            var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var engineDir = Path.GetDirectoryName(loaderDir);
+            var binDir = Path.GetDirectoryName(engineDir);
+            var deploymentDir = Path.GetDirectoryName(binDir);
+            return Path.Combine(deploymentDir, "pyrevitlib");
+        }
     }
 
 
