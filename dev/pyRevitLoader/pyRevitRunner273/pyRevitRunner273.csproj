@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{86FCE155-A626-4C0F-8B1B-7C912E5526D4}</ProjectGuid>
+    <ProjectGuid>{27A6711F-EC60-4FB9-8FF0-B33F2B7AF983}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pyRevitLoader</RootNamespace>
-    <AssemblyName>pyRevitLoader</AssemblyName>
+    <RootNamespace>pyRevitRunner</RootNamespace>
+    <AssemblyName>pyRevitRunner</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\bin\engines\277\</OutputPath>
+    <OutputPath>..\..\..\bin\engines\273\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -34,31 +34,31 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="IronPython">
-      <HintPath>..\..\..\bin\engines\277\IronPython.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\IronPython.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Modules">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Modules.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\IronPython.Modules.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.SQLite">
-      <HintPath>..\..\..\bin\engines\277\IronPython.SQLite.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\IronPython.SQLite.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="IronPython.Wpf">
-      <HintPath>..\..\..\bin\engines\277\IronPython.Wpf.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\IronPython.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Dynamic.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\Microsoft.Dynamic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\Microsoft.Scripting.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>..\..\..\bin\engines\277\Microsoft.Scripting.Metadata.dll</HintPath>
+      <HintPath>..\..\..\bin\engines\273\Microsoft.Scripting.Metadata.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RevitAPI">
@@ -79,8 +79,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Source\PyRevitLoaderApplication.cs">
-      <Link>PyRevitLoaderApplication.cs</Link>
+    <Compile Include="..\Source\PyRevitRunnerApplication.cs">
+      <Link>PyRevitRunnerApplication.cs</Link>
+    </Compile>
+    <Compile Include="..\Source\PyRevitRunnerCommand.cs">
+      <Link>PyRevitRunnerCommand.cs</Link>
     </Compile>
     <Compile Include="..\Source\ScriptExecutor.cs">
       <Link>ScriptExecutor.cs</Link>
@@ -88,8 +91,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\Resources\python_277_lib.zip">
-      <Link>Resources\python_277_lib.zip</Link>
+    <EmbeddedResource Include="..\Resources\python_273_lib.zip">
+      <Link>Resources\python_273_lib.zip</Link>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

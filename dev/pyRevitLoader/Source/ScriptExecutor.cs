@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using System.IO;
@@ -13,7 +13,6 @@ using System.Reflection;
 namespace PyRevitLoader {
     // Executes a script
     public class ScriptExecutor {
-        private string _message = null;
         private readonly UIApplication _revit = null;
 
         public ScriptExecutor() {
@@ -23,25 +22,36 @@ namespace PyRevitLoader {
             _revit = uiApplication;
         }
 
-        public string Message {
-            get {
-                return _message;
-            }
-        }
+        public string Message { get; private set; } = null;
 
         public static string EngineVersion {
             get {
-                var assmVersion = Assembly.GetAssembly(typeof(PyRevitLoader.ScriptExecutor)).GetName().Version;
+                var assmVersion = Assembly.GetAssembly(typeof(ScriptExecutor)).GetName().Version;
                 return string.Format("{0}{1}{2}", assmVersion.Minor, assmVersion.Build, assmVersion.Revision);
             }
         }
 
-        public int ExecuteScript(string sourcePath, IEnumerable<string> sysPaths = null, string logFilePath = null) {
+        public Result ExecuteScript(string sourcePath,
+                                    IEnumerable<string> sysPaths = null,
+                                    string logFilePath = null,
+                                    IDictionary <string, object> variables = null) {
             try {
                 var engine = CreateEngine();
                 var scope = SetupEnvironment(engine);
 
+                // Add script directory address to sys search paths
+                if (sysPaths != null) {
+                    var path = engine.GetSearchPaths();
+                    foreach (var sysPath in sysPaths)
+                        path.Add(sysPath);
+                }
+
+                // set globals
                 scope.SetVariable("__file__", sourcePath);
+
+                if (variables != null)
+                    foreach(var keyPair in variables)
+                        scope.SetVariable(keyPair.Key, keyPair.Value);
 
                 //var script = engine.CreateScriptSourceFromString(source, SourceCodeKind.Statements);
                 var script = engine.CreateScriptSourceFromFile(sourcePath, Encoding.UTF8, SourceCodeKind.Statements);
@@ -56,35 +66,39 @@ namespace PyRevitLoader {
                 var command = script.Compile(compiler_options, errors);
                 if (command == null) {
                     // compilation failed, print errors and return
-                    if (logFilePath != null) {
-                        File.WriteAllText(logFilePath,
-                                          string.Join("\r\n", "IronPython Traceback:",
-                                                      string.Join("\r\n", errors.Errors.ToArray())));
-                    }
-                    return (int)Result.Cancelled;
+                    Message =
+                        string.Join("\r\n", "IronPython Traceback:", string.Join("\r\n", errors.Errors.ToArray()));
+                    if (logFilePath != null)
+                        File.WriteAllText(logFilePath, Message);
+
+                    return Result.Cancelled;
                 }
 
 
                 try {
                     script.Execute(scope);
-                    return (int)Result.Succeeded;
+                    return Result.Succeeded;
                 }
                 catch (SystemExitException) {
                     // ok, so the system exited. That was bound to happen...
-                    return (int)Result.Succeeded;
+                    return Result.Succeeded;
                 }
                 catch (Exception exception) {
                     string _dotnet_err_message = exception.ToString();
                     string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
 
-                    // Print all errors to stdout and return cancelled to Revit.
-                    // This is to avoid getting window prompts from Revit.
-                    // Those pop ups are small and errors are hard to read.
-                    _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
-                    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+                    _ipy_err_messages =
+                        string.Join("\r\n", "IronPython Traceback:", _ipy_err_messages.Replace("\r\n", "\n"));
+                    _dotnet_err_message =
+                        string.Join("\r\n", "Script Executor Traceback:", _dotnet_err_message.Replace("\r\n", "\n"));
 
-                    _message = _ipy_err_messages + "\n\n" + _dotnet_err_message;
-                    return (int)Result.Failed;
+                    Message = _ipy_err_messages + "\n\n" + _dotnet_err_message;
+
+                    // execution failed, log errors and return
+                    if (logFilePath != null)
+                        File.WriteAllText(logFilePath, Message);
+
+                    return Result.Failed;
                 }
                 finally {
                     engine.Runtime.Shutdown();
@@ -93,8 +107,8 @@ namespace PyRevitLoader {
 
             }
             catch (Exception ex) {
-                _message = ex.ToString();
-                return (int)Result.Failed;
+                Message = ex.ToString();
+                return Result.Failed;
             }
         }
 
