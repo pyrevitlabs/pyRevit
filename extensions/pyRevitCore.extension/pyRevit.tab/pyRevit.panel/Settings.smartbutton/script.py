@@ -190,7 +190,7 @@ class SettingsWindow(forms.WPFWindow):
         """Gets the installed Revit versions and sets up the ui"""
         installed_revits = \
             {str(x.ProductYear):x
-             for x in Revit.RevitController.ListInstalledRevits()}
+             for x in Revit.RevitProduct.ListInstalledProducts()}
         attachments = \
             {str(x.Product.ProductYear):x
              for x in Revit.PyRevit.GetAttachments()}
