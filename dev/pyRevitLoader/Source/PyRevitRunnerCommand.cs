@@ -26,7 +26,10 @@ namespace PyRevitRunner {
                 IDictionary<string, string> dataMap = commandData.JournalData;
                 ScriptSourceFile = dataMap["ScriptSource"];
                 ModuleSearchPaths = new List<string>(dataMap["SearchPaths"].Split(';'));
-                ModelPaths = new List<string>(dataMap["Models"].Split(';'));
+                ModelPaths = new List<string>();
+                var modelPaths = dataMap["Models"];
+                if (modelPaths != null && modelPaths != string.Empty)
+                    ModelPaths.AddRange(modelPaths.Split(';'));
                 LogFile = dataMap["LogFile"];
 
                 // add pyrevit library path and script directory path to search paths
