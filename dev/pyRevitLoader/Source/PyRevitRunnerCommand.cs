@@ -34,11 +34,12 @@ namespace PyRevitRunner {
 
                 // add pyrevit library path and script directory path to search paths
                 ModuleSearchPaths.Add(GetPyRevitLibsPath());
+                ModuleSearchPaths.Add(GetSitePkgsPath());
                 ModuleSearchPaths.Add(Path.GetDirectoryName(ScriptSourceFile));
 
                 // 2
                 // Executing the script
-                var executor = new ScriptExecutor(Application); // uiControlledApplication);
+                var executor = new ScriptExecutor(Application, fullFrame: true); // uiControlledApplication);
                 var resultCode = executor.ExecuteScript(
                     ScriptSourceFile,
                     sysPaths: ModuleSearchPaths.ToArray(),
@@ -71,13 +72,15 @@ namespace PyRevitRunner {
         public string LogFile { get; private set; }
         public bool DebugMode { get; private set; }
 
-        private static string GetPyRevitLibsPath() {
+        private static string GetDeployPath() {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var engineDir = Path.GetDirectoryName(loaderDir);
             var binDir = Path.GetDirectoryName(engineDir);
-            var deploymentDir = Path.GetDirectoryName(binDir);
-            return Path.Combine(deploymentDir, "pyrevitlib");
+            return Path.GetDirectoryName(binDir);
         }
+
+        private static string GetPyRevitLibsPath() => Path.Combine(GetDeployPath(), "pyrevitlib");
+        private static string GetSitePkgsPath() => Path.Combine(GetDeployPath(), "site-packages");
     }
 
 

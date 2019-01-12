@@ -13,13 +13,15 @@ using System.Reflection;
 namespace PyRevitLoader {
     // Executes a script
     public class ScriptExecutor {
+        private bool _fullframe = false;
         private readonly UIApplication _revit = null;
 
         public ScriptExecutor() {
         }
 
-        public ScriptExecutor(UIApplication uiApplication) {
+        public ScriptExecutor(UIApplication uiApplication, bool fullFrame = false) {
             _revit = uiApplication;
+            _fullframe = fullFrame;
         }
 
         public string Message { get; private set; } = null;
@@ -116,9 +118,17 @@ namespace PyRevitLoader {
         }
 
         public ScriptEngine CreateEngine() {
-            var engine = IronPython.Hosting.Python.CreateEngine(new Dictionary<string, object>() {
-                { "LightweightScopes", true}
-            });
+            var flags = new Dictionary<string, object>();
+
+            // default flags
+            flags["LightweightScopes"] = true;
+
+            if (_fullframe) {
+                flags["Frames"] = true;
+                flags["FullFrames"] = true;
+            }
+
+            var engine = IronPython.Hosting.Python.CreateEngine(flags);
 
             return engine;
         }
