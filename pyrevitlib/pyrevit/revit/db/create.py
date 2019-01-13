@@ -119,7 +119,7 @@ def create_sheet(sheet_num, sheet_name,
 
 def create_3d_view(view_name, isometric=True, doc=None):
     doc = doc or HOST_APP.doc
-    nview = query.get_view_by_name(view_name)
+    nview = query.get_view_by_name(view_name, doc=doc)
     if not nview:
         default_3dview_type = \
             doc.GetDefaultElementTypeId(DB.ElementTypeGroup.ViewType3D)
