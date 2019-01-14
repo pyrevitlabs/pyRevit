@@ -36,7 +36,7 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string helpUrl = "https://github.com/eirannejad/pyRevitLabs/blob/{0}/README_CLI.md";
+        private const string helpUrl = "https://github.com/eirannejad/pyRevit/blob/{0}/README_CLI.md";
         private const string updaterExecutive = "pyRevitUpdater.exe";
         private const string usage = @"pyrevit command line tool
 
