@@ -138,10 +138,9 @@ class WPFWindow(framework.Windows.Window):
         """Set source file for image element.
 
         Args:
-            element_name (str): xaml image element name
+            element_name (System.Windows.Controls.Image): xaml image element
             image_file (str): image file path
         """
-        # wpfel = getattr(self, element_name)
         if not op.exists(image_file):
             wpf_element.Source = \
                 utils.bitmap_from_file(
