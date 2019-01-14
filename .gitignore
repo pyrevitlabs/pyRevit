@@ -14,7 +14,7 @@ extensions/*
 **/.suo
 **/obj
 **/packages
-**/pyRevitLoader/bin
+**/dev/**/bin
 
 # ignore sphinx build files
 docs/_*
@@ -34,3 +34,5 @@ __py*
 # Release files
 release/pyRevit-cache
 release/pyRevit-SetupFiles
+release/pyRevit\ CLI-cache
+release/pyRevit\ CLI-SetupFiles
