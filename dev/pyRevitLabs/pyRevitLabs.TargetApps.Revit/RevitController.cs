@@ -30,13 +30,6 @@ namespace pyRevitLabs.TargetApps.Revit {
     public class RevitModelFile {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static Regex IsWorksharedFinder = new Regex(@"Worksharing: (?<workshared>.+?)");
-        private static Regex LastSavedPathFinder = new Regex(@"Last Save Path: (?<path>.+?)");
-        private static Regex CentralPathFinder = new Regex(@"Central Model Path: (?<path>.+?)");
-        private static Regex OpenWorksetFinder = new Regex(@"Open Workset Default: (?<type>\d+)");
-        private static Regex DocumentIncrementFinder = new Regex(@"Unique Document Increments: (?<type>\d+)");
-
-
         public RevitModelFile(string filePath) {
             FilePath = filePath.NormalizeAsPath();
 
@@ -188,7 +181,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         private void ProcessPartAtom(string rawPartAtom) {
-            logger.Debug("Parsing PartAtom Data:\n{0}", rawPartAtom);
+            logger.Debug("Parsing PartAtom Data: \"{0}\"", rawPartAtom);
             var doc = new XmlDocument();
             try {
                 doc.LoadXml(rawPartAtom);
