@@ -30,11 +30,11 @@ namespace pyRevitLabs.TargetApps.Revit {
     public class RevitModelFile {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static Regex IsWorksharedFinder = new Regex(@".*Worksharing: (?<workshared>.+?)( U|$)");
-        private static Regex LastSavedPathFinder = new Regex(@".*Last Save Path: (?<path>.+?)( O|$)");
-        private static Regex CentralPathFinder = new Regex(@".*Central Model Path: (?<path>.+?)( R|$)");
-        private static Regex OpenWorksetFinder = new Regex(@".*Open Workset Default: (?<type>\d+)( P|$)");
-        private static Regex DocumentIncrementFinder = new Regex(@".*Unique Document Increments: (?<type>\d+)( M|$)");
+        private static Regex IsWorksharedFinder = new Regex(@"Worksharing: (?<workshared>.+?)");
+        private static Regex LastSavedPathFinder = new Regex(@"Last Save Path: (?<path>.+?)");
+        private static Regex CentralPathFinder = new Regex(@"Central Model Path: (?<path>.+?)");
+        private static Regex OpenWorksetFinder = new Regex(@"Open Workset Default: (?<type>\d+)");
+        private static Regex DocumentIncrementFinder = new Regex(@"Unique Document Increments: (?<type>\d+)");
 
 
         public RevitModelFile(string filePath) {
@@ -42,15 +42,43 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // extract basic info and prepare string
             // throws exception if stream doesn't exist
-            var rawBasicInfoData = CommonUtils.GetStructuredStorageStream(FilePath,		"BasicFileInfo");
-            if (rawBasicInfoData != null)
-                ProcessBasicFileInfo(Encoding.Unicode.GetString(rawBasicInfoData));
+            var rawBasicInfoData = CommonUtils.GetStructuredStorageStream(FilePath, "BasicFileInfo");
+
+            // dump stream data
+            logger.Debug("Stream Dump in HEX: \"{0}\"", BitConverter.ToString(rawBasicInfoData));
+            logger.Debug("Stream Dump in ASCII: \"{0}\"", Encoding.ASCII.GetString(rawBasicInfoData));
+
+            if (rawBasicInfoData != null) {
+                int index = 0;
+                var boundIndices = new List<int>();
+                // find the utf-16 string between two ascii \r\n
+                while (index < rawBasicInfoData.Length) {
+                    if (rawBasicInfoData[index] == 0x0D && rawBasicInfoData[index + 1] == 0x0A)
+                        boundIndices.Add(index);
+                    index++;
+                }
+                //cleanup array
+                int lastBoundIndex = boundIndices.Count - 1;
+                // take the string between the last two ascii \r\n
+                var baseInfoString = Encoding.GetEncoding("UTF-16").GetString(
+                    rawBasicInfoData.Skip(boundIndices[lastBoundIndex - 1] + 2)
+                                    .Take(boundIndices[lastBoundIndex] - boundIndices[lastBoundIndex-1] - 2)
+                                    .ToArray()
+                    );
+
+                // dump the extracted string for debugging
+                logger.Debug("Extracted BasicFileInfo Text: \"{0}\"", baseInfoString);
+
+                ProcessBasicFileInfo(
+                    baseInfoString.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
+                    );
+            }
             else
                 throw new pyRevitException(string.Format("Target is not a valid Revit model \"{0}\"", filePath));
 
             // extract partatom (Revit Family Files) and prepare string
             // throws exception if stream doesn't exist
-            var rawPartAtomData = CommonUtils.GetStructuredStorageStream(FilePath,		"PartAtom");
+            var rawPartAtomData = CommonUtils.GetStructuredStorageStream(FilePath, "PartAtom");
             if (rawPartAtomData != null) {
                 IsFamily = true;
                 ProcessPartAtom(Encoding.ASCII.GetString(rawPartAtomData));
@@ -65,84 +93,97 @@ namespace pyRevitLabs.TargetApps.Revit {
             catch { return false; }
         }
 
-        private void ProcessBasicFileInfo(string rawBasicInfo) {
-            bool workSharedFound = false;
-            bool lastPathFound = false;
-            bool centralPathFound = false;
-            bool openWorksetFound = false;
-            bool documentIncrementFound = false;
-            bool guidFound = false;
-            foreach (string line in rawBasicInfo.Split(new string[] { "\0",		"\r\n" },
-                                                    StringSplitOptions.RemoveEmptyEntries)) {
-                // find build number
+        private Regex buildFieldRegex(string fieldName, string captureId) {
+            return new Regex(string.Format(@"{0}(?<{1}>.*$)", fieldName, captureId));
+        }
+
+        private void ProcessBasicFileInfo(IEnumerable<string> basicInfoDataLines) {
+            foreach (string line in basicInfoDataLines) {
                 logger.Debug("Parsing info from BasicFileInfo: \"{0}\"", line);
-                var revitProduct = RevitProduct.LookupRevitProduct(line);
-                if (revitProduct != null)
-                    RevitProduct = revitProduct;
-
-                // find workshared
-                if (!workSharedFound) {
-                    var match = IsWorksharedFinder.Match(line);
-                    if (match.Success) {
-                        var workshared = match.Groups["workshared"].Value;
-                        logger.Debug("IsWorkshared: {0}", workshared);
-                        if (!workshared.Contains("Not"))
-                            IsWorkshared = true;
-                        workSharedFound = true;
-                    }
+                // Worksharing: Not enabled
+                var match = buildFieldRegex("Worksharing: ", "workshared").Match(line);
+                if (match.Success) {
+                    var workshared = match.Groups["workshared"].Value;
+                    logger.Debug("IsWorkshared: {0}", workshared);
+                    if (!workshared.Contains("Not"))
+                        IsWorkshared = true;
                 }
 
-                // find last saved path
-                if (!lastPathFound) {
-                    var match = LastSavedPathFinder.Match(line);
-                    if (match.Success) {
-                        var path = match.Groups["path"].Value;
-                        logger.Debug("Last Saved Path: {0}", path);
-                        LastSavedPath = path;
-                        lastPathFound = true;
-                    }
+                // Username: 
+
+                // Central Model Path: 
+                match = buildFieldRegex("Central Model Path: ", "centralpath").Match(line);
+                if (match.Success) {
+                    var path = match.Groups["centralpath"].Value;
+                    logger.Debug("Central Model Path: {0}", path);
+                    CentralModelPath = path;
                 }
 
-                // find central model path
-                if (!centralPathFound) {
-                    var match = CentralPathFinder.Match(line);
-                    if (match.Success) {
-                        var path = match.Groups["path"].Value;
-                        logger.Debug("Central Model Path: {0}", path);
-                        CentralModelPath = path;
-                        centralPathFound = true;
-                    }
+                // Format: 2019
+
+                // Build: 20180806_1515(x64)
+                match = buildFieldRegex("Build: ", "build").Match(line);
+                if (match.Success) {
+                    var revitProduct = RevitProduct.LookupRevitProduct(line);
+                    if (revitProduct != null)
+                        RevitProduct = revitProduct;
                 }
 
-                // find central model path
-                if (!openWorksetFound) {
-                    var match = OpenWorksetFinder.Match(line);
-                    if (match.Success) {
-                        var owconfig = match.Groups["type"].Value;
-                        logger.Debug("Open Workset Default: {0}", owconfig);
-                        OpenWorksetConfig = (RevitModelFileOpenWorksetConfig)Enum.ToObject(typeof(RevitModelFileOpenWorksetConfig), int.Parse(owconfig));
-                        openWorksetFound = true;
-                    }
+                // Last Save Path: C:\Users\eirannejad\Desktop\Project1.rvt
+                match = buildFieldRegex("Last Save Path: ", "lastpath").Match(line);
+                if (match.Success) {
+                    var path = match.Groups["lastpath"].Value;
+                    logger.Debug("Last Saved Path: {0}", path);
+                    LastSavedPath = path;
                 }
 
-                // find central model path
-                if (!documentIncrementFound) {
-                    var match = DocumentIncrementFinder.Match(line);
-                    if (match.Success) {
-                        var docincrement = match.Groups["type"].Value;
-                        logger.Debug("Unique Document Increments: {0}", docincrement);
-                        DocumentIncrement = int.Parse(docincrement);
-                        documentIncrementFound = true;
-                    }
+                // Open Workset Default: 3
+                match = buildFieldRegex("Open Workset Default: ", "openws").Match(line);
+                if (match.Success) {
+                    var owconfig = match.Groups["openws"].Value;
+                    logger.Debug("Open Workset Default: {0}", owconfig);
+                    OpenWorksetConfig = (RevitModelFileOpenWorksetConfig)Enum.ToObject(
+                        typeof(RevitModelFileOpenWorksetConfig), int.Parse(owconfig)
+                        );
                 }
 
-                // find document guid
-                if (!guidFound && line.Contains("Unique Document GUID: ")) {
+                // Project Spark File: 0
+
+                // Central Model Identity: 00000000-0000-0000-0000-000000000000
+
+                // Locale when saved: ENU
+
+                // All Local Changes Saved To Central: 0
+
+                // Central model's version number corresponding to the last reload latest: 4
+
+                // Central model's episode GUID corresponding to the last reload latest: 2ecc6fa1-2960-4473-9fd9-0abce22022fc
+                if (line.Contains("Central model's episode GUID corresponding to the last reload latest: ")) {
+                    var guid = line.ExtractGuid();
+                    logger.Debug("Extracted Last Reload Latest GUID: {0}", guid);
+                    LastReloadLatestUniqueId = guid;
+                }
+
+                // Unique Document GUID: 2ecc6fa1-2960-4473-9fd9-0abce22022fc
+                if (line.Contains("Unique Document GUID: ")) {
                     var guid = line.ExtractGuid();
                     logger.Debug("Extracted GUID: {0}", guid);
                     UniqueId = guid;
-                    guidFound = true;
                 }
+
+                // Unique Document Increments: 4
+                match = buildFieldRegex("Unique Document Increments: ", "increment").Match(line);
+                if (match.Success) {
+                    var docincrement = match.Groups["increment"].Value;
+                    logger.Debug("Unique Document Increments: {0}", docincrement);
+                    DocumentIncrement = int.Parse(docincrement);
+                }
+
+                // Model Identity: 00000000-0000-0000-0000-000000000000
+
+                // IsSingleUserCloudModel: 慆獬e
+
+                // Author: Autodesk Revit
             }
         }
 
@@ -183,6 +224,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public int DocumentIncrement { get; private set; } = 0;
 
         public Guid UniqueId { get; private set; } = new Guid();
+
+        public Guid LastReloadLatestUniqueId { get; private set; } = new Guid();
 
         public RevitProduct RevitProduct { get; private set; } = null;
 
@@ -322,13 +365,13 @@ namespace pyRevitLabs.TargetApps.Revit {
             {"20160606_1515", ("17.0.476.0",	"2017 Service Pack 1")},
             {"20160720_1515", ("17.0.501.0",	"2017 Service Pack 2")},
             {"20161205_1400", ("17.0.503.0",	"2017.0.3")},
-            {"20181011_1545", ("17.0.511.0",	"2017.0.4")}, // https://github.com/eirannejad/pyRevit/issues/456
             {"20161006_0315", ("17.0.1081.0",	"2017.1")},
             {"20161117_1200", ("17.0.1099.0",	"2017.1.1")},
             {"20170118_1100", ("17.0.1117.0",	"2017.2")},
             {"20170419_0315", ("17.0.1128.0",	"2017.2.1")},
             {"20170816_0615", ("17.0.1146.0",	"2017.2.2")},
             {"20171027_0315", ("17.0.1150.0",	"2017.2.3")},
+            {"20181011_1545", ("17.0.511.0",	"2017.0.4")}, // https://github.com/eirannejad/pyRevit/issues/456
             {"20181011_1645", ("17.0.1158.0",	"2017.2.4")},
 
             // 2018
@@ -345,7 +388,8 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // 2019
             {"20180216_1515", ("19.0.0.405",	"2019 First Customer Ship")},
-            {"20180328_1800", ("19.0.1.1",		"2019 Update for Trial Build")},
+            {"20180328_1600", ("19.0.1.1",      "2019 Update for Trial Build")},
+            //{"20180328_1800", ("19.0.1.1",	"2019 Update for Trial Build")}, // listed incorrectly with _1800 on https://knowledge.autodesk.com/support/revit-products/learn-explore/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html
             {"20180518_1600", ("19.0.10.18",	"2019.0.1")},
             {"20180927_2315", ("19.0.20.1",		"2019.0.2")},
             {"20180806_1515", ("19.1.0.112",	"2019.1")},
