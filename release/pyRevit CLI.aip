@@ -22,10 +22,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyRevit2.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyRevitCLI.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{1FCF285E-8920-4D98-B189-3D381C2A550C} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{694A4B25-380A-48BF-BCC5-0D9581E74D49} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="0.3.0" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.4.0" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -52,7 +52,7 @@
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{3190529D-D936-44C2-A4AE-B624BACECE6C}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{3D04C16A-3AA0-4AC7-BA28-3C3742638206}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{ED98A64F-BD1E-4B58-B43B-B983C4FF59D4}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="Colorful.Console.dll" ComponentId="{0E2C12E3-BEE9-421D-B2F9-C084E247EBA5}" Directory_="APPDIR" Attributes="0" KeyPath="Colorful.Console.dll"/>
     <ROW Component="ControlzEx.dll" ComponentId="{746030B0-35BD-40A5-8F8E-905A936647F5}" Directory_="APPDIR" Attributes="0" KeyPath="ControlzEx.dll"/>
@@ -62,19 +62,19 @@
     <ROW Component="LibGit2Sharp.dll.config" ComponentId="{274FCC3B-C743-4F5E-ADAA-8833112FE041}" Directory_="APPDIR" Attributes="0" KeyPath="LibGit2Sharp.dll.config" Type="0"/>
     <ROW Component="MadMilkman.Ini.dll" ComponentId="{B4E7C2C3-B2E9-4C0E-AE36-FD839F9A1F7C}" Directory_="APPDIR" Attributes="0" KeyPath="MadMilkman.Ini.dll"/>
     <ROW Component="MahApps.Metro.dll" ComponentId="{44B8FD0A-BCBC-47A1-9159-8BE4258F4C21}" Directory_="APPDIR" Attributes="0" KeyPath="MahApps.Metro.dll"/>
-    <ROW Component="MathNet.Numerics.dll" ComponentId="{93A8CB57-2208-4DAE-808E-76F24320E82B}" Directory_="APPDIR" Attributes="0" KeyPath="MathNet.Numerics.dll"/>
-    <ROW Component="Microsoft.CSharp.dll" ComponentId="{20353A3B-48B8-4446-A4B3-11D702008EA1}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.CSharp.dll"/>
-    <ROW Component="Microsoft.Scripting.AspNet.dll" ComponentId="{36E12BC0-88C7-4B82-B36B-D606628D1976}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Scripting.AspNet.dll"/>
+    <ROW Component="MathNet.Numerics.dll" ComponentId="{4DB2490B-CDBC-4961-9572-38FF0E3C7E89}" Directory_="APPDIR" Attributes="0" KeyPath="MathNet.Numerics.dll"/>
+    <ROW Component="Microsoft.CSharp.dll" ComponentId="{EF8EAD34-8582-4FFD-9568-FA9B7536F2DE}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.CSharp.dll"/>
+    <ROW Component="Microsoft.Scripting.AspNet.dll" ComponentId="{10ABF6C0-9E51-4526-9A67-E1EFFF362F04}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Scripting.AspNet.dll"/>
     <ROW Component="NETCoreRuntime2.0.7x64.aip" ComponentId="{2076D19C-DF50-4869-A86D-38CEF92EF280}" Directory_="NETCoreRuntime2.0.7x64_Dir" Attributes="0" KeyPath="NETCoreRuntime2.0.7x64.aip" Type="0"/>
     <ROW Component="NETFramework4.7.1webinstaller.aip" ComponentId="{67401655-36E6-498D-B713-0E4AD58E2BDC}" Directory_="NETFramework4.7.1webinstaller_Dir" Attributes="0" KeyPath="NETFramework4.7.1webinstaller.aip" Type="0"/>
     <ROW Component="NLog.dll" ComponentId="{34851495-1866-499B-9BC5-3D848319965A}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
     <ROW Component="Nett.dll" ComponentId="{614741B2-7619-48FE-A227-35F9AFD1FEFD}" Directory_="APPDIR" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{E55792FF-5EC6-4729-92BA-EC2A73CBB3C4}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{A809334E-CD23-41B4-A3FD-2782A4DB17BD}" Directory_="APPDIR" Attributes="0" KeyPath="OpenMcdf.dll"/>
-    <ROW Component="PresentationCore.dll" ComponentId="{BB49A67F-1DBE-4970-8E5F-68B00DDC6C65}" Directory_="APPDIR" Attributes="0" KeyPath="PresentationCore.dll"/>
-    <ROW Component="PresentationFramework.dll" ComponentId="{6F8BFA45-05B5-41DA-84DD-82F554BC175F}" Directory_="APPDIR" Attributes="0" KeyPath="PresentationFramework.dll"/>
+    <ROW Component="PresentationCore.dll" ComponentId="{4092C83C-5A04-4AD7-A8D3-14FA329AB97F}" Directory_="APPDIR" Attributes="0" KeyPath="PresentationCore.dll"/>
+    <ROW Component="PresentationFramework.dll" ComponentId="{31378257-A9A0-412E-A207-74AA1790185E}" Directory_="APPDIR" Attributes="0" KeyPath="PresentationFramework.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
-    <ROW Component="System.Core.dll" ComponentId="{66378559-7A42-4BDF-8B99-E1D9B1DF04E9}" Directory_="APPDIR" Attributes="0" KeyPath="System.Core.dll"/>
+    <ROW Component="System.Core.dll" ComponentId="{BF67CB66-4F58-48F4-B91C-C07A83F88A41}" Directory_="APPDIR" Attributes="0" KeyPath="System.Core.dll"/>
     <ROW Component="System.Data.Common.dll" ComponentId="{0D609117-2239-4FE4-B37A-AC823670C1D8}" Directory_="APPDIR" Attributes="0" KeyPath="System.Data.Common.dll"/>
     <ROW Component="System.Diagnostics.StackTrace.dll" ComponentId="{188FD764-0A1F-47B9-8544-D14F8F78AD7E}" Directory_="APPDIR" Attributes="0" KeyPath="System.Diagnostics.StackTrace.dll"/>
     <ROW Component="System.Diagnostics.Tracing.dll" ComponentId="{C31DA223-AE06-49ED-AA39-E8998A4A75AF}" Directory_="APPDIR" Attributes="0" KeyPath="System.Diagnostics.Tracing.dll"/>
@@ -107,39 +107,33 @@
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{A9CA691C-CE20-4F1A-89EC-C6FC17BF5CFB}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
     <ROW Component="pyRevitUpdater.exe" ComponentId="{11773445-9BAA-46B7-AC27-E5531A0E4221}" Directory_="APPDIR" Attributes="256" KeyPath="pyRevitUpdater.exe"/>
     <ROW Component="pyrevit.exe" ComponentId="{65B737C7-06F2-485E-9C00-7B41E5C84B87}" Directory_="APPDIR" Attributes="0" KeyPath="pyrevit.exe"/>
-    <ROW Component="toast64.exe" ComponentId="{1B09AD0A-78EE-4724-85E0-D079BFE81A93}" Directory_="APPDIR" Attributes="256" KeyPath="toast64.exe"/>
+    <ROW Component="toast64.exe" ComponentId="{F633BC90-3D88-473D-8144-3C7AFA07B321}" Directory_="APPDIR" Attributes="256" KeyPath="toast64.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
     <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="0" Level="1" Directory_="APPDIR" Attributes="0" Components="AI_CustomARPName AI_ExePath Colorful.Console.dll ControlzEx.dll DocoptNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll LibGit2Sharp.dll.config MadMilkman.Ini.dll MahApps.Metro.dll MathNet.Numerics.dll Microsoft.CSharp.dll Microsoft.Scripting.AspNet.dll NETCoreRuntime2.0.7x64.aip NETFramework4.7.1webinstaller.aip NLog.dll Nett.dll Newtonsoft.Json.dll OpenMcdf.dll PresentationCore.dll PresentationFramework.dll ProductInformation System.Core.dll System.Data.Common.dll System.Diagnostics.StackTrace.dll System.Diagnostics.Tracing.dll System.Drawing.dll System.Globalization.Extensions.dll System.IO.Compression.dll System.Net.Http.dll System.Net.Sockets.dll System.Runtime.Serialization.Primitives.dll System.Security.Cryptography.Algorithms.dll System.Security.SecureString.dll System.Threading.Overlapped.dll System.Web.Extensions.dll System.Web.dll System.Windows.Forms.dll System.Windows.Interactivity.dll System.Windows.dll System.Xaml.dll System.Xml.XPath.XDocument.dll System.dll WPG.dll WindowsBase.dll WindowsFormsIntegration.dll git24aecb64.dll pyRevitLabs.Common.dll pyRevitLabs.CommonCLI.dll pyRevitLabs.CommonWPF.dll pyRevitLabs.DeffrelDB.dll pyRevitLabs.Language.dll pyRevitLabs.TargetApps.Revit.dll pyRevitUpdater.exe pyrevit.exe toast64.exe"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="Colorful.Console.dll" Component_="Colorful.Console.dll" FileName="COLORF~1.DLL|Colorful.Console.dll" Attributes="0" SourcePath="..\bin\Colorful.Console.dll" SelfReg="false" NextFile="LibGit2Sharp.pdb"/>
-    <ROW File="ControlzEx.dll" Component_="ControlzEx.dll" FileName="CONTRO~1.DLL|ControlzEx.dll" Attributes="0" SourcePath="..\bin\ControlzEx.dll" SelfReg="false" NextFile="ControlzEx.pdb"/>
-    <ROW File="ControlzEx.pdb" Component_="ControlzEx.dll" FileName="CONTRO~1.PDB|ControlzEx.pdb" Attributes="0" SourcePath="..\bin\ControlzEx.pdb" SelfReg="false" NextFile="MahApps.Metro.dll"/>
+    <ROW File="Colorful.Console.dll" Component_="Colorful.Console.dll" FileName="COLORF~1.DLL|Colorful.Console.dll" Attributes="0" SourcePath="..\bin\Colorful.Console.dll" SelfReg="false" NextFile="NETFramework4.7.1webinstaller.aip"/>
+    <ROW File="ControlzEx.dll" Component_="ControlzEx.dll" FileName="CONTRO~1.DLL|ControlzEx.dll" Attributes="0" SourcePath="..\bin\ControlzEx.dll" SelfReg="false" NextFile="MahApps.Metro.dll"/>
     <ROW File="DocoptNet.dll" Component_="DocoptNet.dll" FileName="DOCOPT~1.DLL|DocoptNet.dll" Attributes="0" SourcePath="..\bin\DocoptNet.dll" SelfReg="false" NextFile="System.Runtime.Serialization.Primitives.dll"/>
-    <ROW File="DocoptNet.pdb" Component_="DocoptNet.dll" FileName="DOCOPT~1.PDB|DocoptNet.pdb" Attributes="0" SourcePath="..\bin\DocoptNet.pdb" SelfReg="false" NextFile="MathNet.Numerics.dll"/>
     <ROW File="DotNetVersionFinder.dll" Component_="DotNetVersionFinder.dll" FileName="DOTNET~1.DLL|DotNetVersionFinder.dll" Attributes="0" SourcePath="..\bin\DotNetVersionFinder.dll" SelfReg="false" NextFile="git24aecb64.dll"/>
     <ROW File="LibGit2Sharp.dll" Component_="LibGit2Sharp.dll" FileName="LIBGIT~1.DLL|LibGit2Sharp.dll" Attributes="0" SourcePath="..\bin\LibGit2Sharp.dll" SelfReg="false" NextFile="MadMilkman.Ini.dll"/>
     <ROW File="LibGit2Sharp.dll.config" Component_="LibGit2Sharp.dll.config" FileName="LIBGIT~1.CON|LibGit2Sharp.dll.config" Attributes="0" SourcePath="..\bin\LibGit2Sharp.dll.config" SelfReg="false" NextFile="System.Xml.XPath.XDocument.dll"/>
-    <ROW File="LibGit2Sharp.pdb" Component_="LibGit2Sharp.dll" FileName="LIBGIT~1.PDB|LibGit2Sharp.pdb" Attributes="0" SourcePath="..\bin\LibGit2Sharp.pdb" SelfReg="false" NextFile="NETFramework4.7.1webinstaller.aip"/>
     <ROW File="MadMilkman.Ini.dll" Component_="MadMilkman.Ini.dll" FileName="MADMIL~1.DLL|MadMilkman.Ini.dll" Attributes="0" SourcePath="..\bin\MadMilkman.Ini.dll" SelfReg="false" NextFile="OpenMcdf.dll"/>
-    <ROW File="MahApps.Metro.dll" Component_="MahApps.Metro.dll" FileName="MAHAPP~1.DLL|MahApps.Metro.dll" Attributes="0" SourcePath="..\bin\MahApps.Metro.dll" SelfReg="false" NextFile="MahApps.Metro.pdb"/>
-    <ROW File="MahApps.Metro.pdb" Component_="MahApps.Metro.dll" FileName="MAHAPP~1.PDB|MahApps.Metro.pdb" Attributes="0" SourcePath="..\bin\MahApps.Metro.pdb" SelfReg="false" NextFile="System.Windows.Interactivity.dll"/>
+    <ROW File="MahApps.Metro.dll" Component_="MahApps.Metro.dll" FileName="MAHAPP~1.DLL|MahApps.Metro.dll" Attributes="0" SourcePath="..\bin\MahApps.Metro.dll" SelfReg="false" NextFile="System.Windows.Interactivity.dll"/>
     <ROW File="MathNet.Numerics.dll" Component_="MathNet.Numerics.dll" FileName="MATHNE~1.DLL|MathNet.Numerics.dll" Attributes="0" SourcePath="..\bin\MathNet.Numerics.dll" SelfReg="false" NextFile="Microsoft.CSharp.dll"/>
     <ROW File="Microsoft.CSharp.dll" Component_="Microsoft.CSharp.dll" FileName="MICROS~1.DLL|Microsoft.CSharp.dll" Attributes="0" SourcePath="..\bin\Microsoft.CSharp.dll" SelfReg="false" NextFile="Microsoft.Scripting.AspNet.dll"/>
-    <ROW File="Microsoft.Scripting.AspNet.dll" Component_="Microsoft.Scripting.AspNet.dll" FileName="MICROS~2.DLL|Microsoft.Scripting.AspNet.dll" Attributes="0" SourcePath="..\bin\Microsoft.Scripting.AspNet.dll" SelfReg="false" NextFile="Nett.pdb"/>
+    <ROW File="Microsoft.Scripting.AspNet.dll" Component_="Microsoft.Scripting.AspNet.dll" FileName="MICROS~2.DLL|Microsoft.Scripting.AspNet.dll" Attributes="0" SourcePath="..\bin\Microsoft.Scripting.AspNet.dll" SelfReg="false" NextFile="PresentationCore.dll"/>
     <ROW File="NETCoreRuntime2.0.7x64.aip" Component_="NETCoreRuntime2.0.7x64.aip" FileName="NETCOR~1.AIP|.NET Core Runtime 2.0.7 x64.aip" Attributes="2" SourcePath=".NET Core Runtime 2.0.7 x64\.NET Core Runtime 2.0.7 x64.aip" SelfReg="false" NextFile="pyRevit.ico"/>
     <ROW File="NETFramework4.7.1webinstaller.aip" Component_="NETFramework4.7.1webinstaller.aip" FileName="NETFRA~1.AIP|.NET Framework 4.7.1 (web installer).aip" Attributes="2" SourcePath=".NET Framework 4.7.1 (web installer)\.NET Framework 4.7.1 (web installer).aip" SelfReg="false" NextFile="NETCoreRuntime2.0.7x64.aip"/>
     <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\bin\NLog.dll" SelfReg="false" NextFile="System.Security.SecureString.dll"/>
-    <ROW File="Nett.dll" Component_="Nett.dll" FileName="Nett.dll" Attributes="0" SourcePath="..\bin\Nett.dll" SelfReg="false" NextFile="pyRevitLabs.Language.pdb"/>
-    <ROW File="Nett.pdb" Component_="Nett.dll" FileName="Nett.pdb" Attributes="0" SourcePath="..\bin\Nett.pdb" SelfReg="false" NextFile="outputwindow_icon.png"/>
+    <ROW File="Nett.dll" Component_="Nett.dll" FileName="Nett.dll" Attributes="0" SourcePath="..\bin\Nett.dll" SelfReg="false" NextFile="Colorful.Console.dll"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\bin\Newtonsoft.Json.dll" SelfReg="false" NextFile="System.Globalization.Extensions.dll"/>
-    <ROW File="Newtonsoft.Json.pdb" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.PDB|Newtonsoft.Json.pdb" Attributes="0" SourcePath="..\bin\Newtonsoft.Json.pdb" SelfReg="false" NextFile="pyRevitLabs.DeffrelDB.dll"/>
     <ROW File="OpenMcdf.dll" Component_="OpenMcdf.dll" FileName="OpenMcdf.dll" Attributes="0" SourcePath="..\bin\OpenMcdf.dll" SelfReg="false" NextFile="System.Security.Cryptography.Algorithms.dll"/>
     <ROW File="PresentationCore.dll" Component_="PresentationCore.dll" FileName="PRESEN~1.DLL|PresentationCore.dll" Attributes="0" SourcePath="..\bin\PresentationCore.dll" SelfReg="false" NextFile="PresentationFramework.dll"/>
-    <ROW File="PresentationFramework.dll" Component_="PresentationFramework.dll" FileName="PRESEN~2.DLL|PresentationFramework.dll" Attributes="0" SourcePath="..\bin\PresentationFramework.dll" SelfReg="false" NextFile="pyRevitLabs.CommonWPF.dll"/>
-    <ROW File="System.Core.dll" Component_="System.Core.dll" FileName="SYSTE~14.DLL|System.Core.dll" Attributes="0" SourcePath="..\bin\System.Core.dll" SelfReg="false" NextFile="System.dll"/>
+    <ROW File="PresentationFramework.dll" Component_="PresentationFramework.dll" FileName="PRESEN~2.DLL|PresentationFramework.dll" Attributes="0" SourcePath="..\bin\PresentationFramework.dll" SelfReg="false" NextFile="System.Core.dll"/>
+    <ROW File="System.Core.dll" Component_="System.Core.dll" FileName="SYSTE~14.DLL|System.Core.dll" Attributes="0" SourcePath="..\bin\System.Core.dll" SelfReg="false" NextFile="toast64.exe"/>
     <ROW File="System.Data.Common.dll" Component_="System.Data.Common.dll" FileName="SYSTEM~7.DLL|System.Data.Common.dll" Attributes="0" SourcePath="..\bin\System.Data.Common.dll" SelfReg="false" NextFile="System.Diagnostics.Tracing.dll"/>
     <ROW File="System.Diagnostics.StackTrace.dll" Component_="System.Diagnostics.StackTrace.dll" FileName="SYSTE~12.DLL|System.Diagnostics.StackTrace.dll" Attributes="0" SourcePath="..\bin\System.Diagnostics.StackTrace.dll" SelfReg="false" NextFile="pyrevit.exe.config"/>
     <ROW File="System.Diagnostics.Tracing.dll" Component_="System.Diagnostics.Tracing.dll" FileName="SYSTEM~8.DLL|System.Diagnostics.Tracing.dll" Attributes="0" SourcePath="..\bin\System.Diagnostics.Tracing.dll" SelfReg="false" NextFile="pyRevitLabs.Common.dll.config"/>
@@ -157,37 +151,28 @@
     <ROW File="System.Windows.Forms.dll" Component_="System.Windows.Forms.dll" FileName="SYSTE~19.DLL|System.Windows.Forms.dll" Attributes="0" SourcePath="..\bin\System.Windows.Forms.dll" SelfReg="false" NextFile="System.Xaml.dll"/>
     <ROW File="System.Windows.Interactivity.dll" Component_="System.Windows.Interactivity.dll" FileName="SYSTE~13.DLL|System.Windows.Interactivity.dll" Attributes="0" SourcePath="..\bin\System.Windows.Interactivity.dll" SelfReg="false" NextFile="DotNetVersionFinder.dll"/>
     <ROW File="System.Windows.dll" Component_="System.Windows.dll" FileName="SYSTE~18.DLL|System.Windows.dll" Attributes="0" SourcePath="..\bin\System.Windows.dll" SelfReg="false" NextFile="System.Windows.Forms.dll"/>
-    <ROW File="System.Xaml.dll" Component_="System.Xaml.dll" FileName="SYSTE~20.DLL|System.Xaml.dll" Attributes="0" SourcePath="..\bin\System.Xaml.dll" SelfReg="false" NextFile="toast64.exe"/>
+    <ROW File="System.Xaml.dll" Component_="System.Xaml.dll" FileName="SYSTE~20.DLL|System.Xaml.dll" Attributes="0" SourcePath="..\bin\System.Xaml.dll" SelfReg="false" NextFile="WindowsBase.dll"/>
     <ROW File="System.Xml.XPath.XDocument.dll" Component_="System.Xml.XPath.XDocument.dll" FileName="SYSTEM~1.DLL|System.Xml.XPath.XDocument.dll" Attributes="0" SourcePath="..\bin\System.Xml.XPath.XDocument.dll" SelfReg="false" NextFile="System.Net.Sockets.dll"/>
     <ROW File="System.dll" Component_="System.dll" FileName="System.dll" Attributes="0" SourcePath="..\bin\System.dll" SelfReg="false" NextFile="System.Drawing.dll"/>
-    <ROW File="WPG.dll" Component_="WPG.dll" FileName="WPG.dll" Attributes="0" SourcePath="..\bin\WPG.dll" SelfReg="false"/>
+    <ROW File="WPG.dll" Component_="WPG.dll" FileName="WPG.dll" Attributes="0" SourcePath="..\bin\WPG.dll" SelfReg="false" NextFile="MathNet.Numerics.dll"/>
     <ROW File="WindowsBase.dll" Component_="WindowsBase.dll" FileName="WINDOW~1.DLL|WindowsBase.dll" Attributes="0" SourcePath="..\bin\WindowsBase.dll" SelfReg="false" NextFile="WindowsFormsIntegration.dll"/>
-    <ROW File="WindowsFormsIntegration.dll" Component_="WindowsFormsIntegration.dll" FileName="WINDOW~2.DLL|WindowsFormsIntegration.dll" Attributes="0" SourcePath="..\bin\WindowsFormsIntegration.dll" SelfReg="false" NextFile="window_icon.png"/>
-    <ROW File="git24aecb64.dll" Component_="git24aecb64.dll" FileName="GIT2-4~1.DLL|git2-4aecb64.dll" Attributes="0" SourcePath="..\bin\git2-4aecb64.dll" SelfReg="false" NextFile="git24aecb64.pdb"/>
-    <ROW File="git24aecb64.pdb" Component_="git24aecb64.dll" FileName="GIT2-4~1.PDB|git2-4aecb64.pdb" Attributes="0" SourcePath="..\bin\git2-4aecb64.pdb" SelfReg="false" NextFile="Newtonsoft.Json.pdb"/>
-    <ROW File="outputwindow_icon.png" Component_="LibGit2Sharp.dll.config" FileName="OUTPUT~1.PNG|outputwindow_icon.png" Attributes="0" SourcePath="..\bin\outputwindow_icon.png" SelfReg="false" NextFile="PresentationCore.dll"/>
+    <ROW File="WindowsFormsIntegration.dll" Component_="WindowsFormsIntegration.dll" FileName="WINDOW~2.DLL|WindowsFormsIntegration.dll" Attributes="0" SourcePath="..\bin\WindowsFormsIntegration.dll" SelfReg="false" NextFile="WPG.dll"/>
+    <ROW File="git24aecb64.dll" Component_="git24aecb64.dll" FileName="GIT2-4~1.DLL|git2-4aecb64.dll" Attributes="0" SourcePath="..\bin\git2-4aecb64.dll" SelfReg="false" NextFile="pyRevitLabs.DeffrelDB.dll"/>
     <ROW File="pyRevit.ico" Component_="LibGit2Sharp.dll.config" FileName="pyRevit.ico" Attributes="0" SourcePath="..\bin\pyRevit.ico" SelfReg="false" NextFile="pyRevitCLI.ico"/>
-    <ROW File="pyRevitCLI.ico" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.ICO|pyRevit CLI.ico" Attributes="0" SourcePath="..\bin\pyRevit CLI.ico" SelfReg="false" NextFile="pyRevitLabs.CommonCLI.pdb"/>
+    <ROW File="pyRevitCLI.ico" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.ICO|pyRevit CLI.ico" Attributes="0" SourcePath="..\bin\pyRevit CLI.ico" SelfReg="false" NextFile="pyRevitUpdater.exe"/>
     <ROW File="pyRevitLabs.Common.dll" Component_="pyRevitLabs.Common.dll" FileName="PYREVI~4.DLL|pyRevitLabs.Common.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Common.dll" SelfReg="false" NextFile="LibGit2Sharp.dll"/>
     <ROW File="pyRevitLabs.Common.dll.config" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~2.CON|pyRevitLabs.Common.dll.config" Attributes="0" SourcePath="..\bin\pyRevitLabs.Common.dll.config" SelfReg="false" NextFile="Newtonsoft.Json.dll"/>
-    <ROW File="pyRevitLabs.Common.pdb" Component_="pyRevitLabs.Common.dll" FileName="PYREVI~4.PDB|pyRevitLabs.Common.pdb" Attributes="0" SourcePath="..\bin\pyRevitLabs.Common.pdb" SelfReg="false" NextFile="ControlzEx.dll"/>
     <ROW File="pyRevitLabs.CommonCLI.dll" Component_="pyRevitLabs.CommonCLI.dll" FileName="PYREVI~1.DLL|pyRevitLabs.CommonCLI.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.CommonCLI.dll" SelfReg="false" NextFile="pyRevitLabs.TargetApps.Revit.dll"/>
-    <ROW File="pyRevitLabs.CommonCLI.pdb" Component_="pyRevitLabs.CommonCLI.dll" FileName="PYREVI~2.PDB|pyRevitLabs.CommonCLI.pdb" Attributes="0" SourcePath="..\bin\pyRevitLabs.CommonCLI.pdb" SelfReg="false" NextFile="pyRevitUpdater.exe"/>
-    <ROW File="pyRevitLabs.CommonWPF.dll" Component_="pyRevitLabs.CommonWPF.dll" FileName="PYREVI~6.DLL|pyRevitLabs.CommonWPF.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.CommonWPF.dll" SelfReg="false" NextFile="pyRevitLabs.CommonWPF.pdb"/>
-    <ROW File="pyRevitLabs.CommonWPF.pdb" Component_="pyRevitLabs.CommonWPF.dll" FileName="PYREVI~3.PDB|pyRevitLabs.CommonWPF.pdb" Attributes="0" SourcePath="..\bin\pyRevitLabs.CommonWPF.pdb" SelfReg="false" NextFile="pyRevitLabs.TargetApps.Revit.dll.config"/>
+    <ROW File="pyRevitLabs.CommonWPF.dll" Component_="pyRevitLabs.CommonWPF.dll" FileName="PYREVI~6.DLL|pyRevitLabs.CommonWPF.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.CommonWPF.dll" SelfReg="false" NextFile="pyRevitLabs.TargetApps.Revit.dll.config"/>
     <ROW File="pyRevitLabs.DeffrelDB.dll" Component_="pyRevitLabs.DeffrelDB.dll" FileName="PYREVI~5.DLL|pyRevitLabs.DeffrelDB.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.DeffrelDB.dll" SelfReg="false" NextFile="pyrevit.manifest"/>
     <ROW File="pyRevitLabs.Language.dll" Component_="pyRevitLabs.Language.dll" FileName="PYREVI~3.DLL|pyRevitLabs.Language.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Language.dll" SelfReg="false" NextFile="System.Data.Common.dll"/>
-    <ROW File="pyRevitLabs.Language.pdb" Component_="pyRevitLabs.Language.dll" FileName="PYREVI~1.PDB|pyRevitLabs.Language.pdb" Attributes="0" SourcePath="..\bin\pyRevitLabs.Language.pdb" SelfReg="false" NextFile="Colorful.Console.dll"/>
     <ROW File="pyRevitLabs.TargetApps.Revit.dll" Component_="pyRevitLabs.TargetApps.Revit.dll" FileName="PYREVI~2.DLL|pyRevitLabs.TargetApps.Revit.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.dll" SelfReg="false" NextFile="pyRevitLabs.Language.dll"/>
-    <ROW File="pyRevitLabs.TargetApps.Revit.dll.config" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.CON|pyRevitLabs.TargetApps.Revit.dll.config" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.dll.config" SelfReg="false" NextFile="pyRevitLabs.TargetApps.Revit.pdb"/>
-    <ROW File="pyRevitLabs.TargetApps.Revit.pdb" Component_="pyRevitLabs.TargetApps.Revit.dll" FileName="PYREVI~5.PDB|pyRevitLabs.TargetApps.Revit.pdb" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.pdb" SelfReg="false" NextFile="System.Core.dll"/>
-    <ROW File="pyRevitUpdater.exe" Component_="pyRevitUpdater.exe" FileName="PYREVI~1.EXE|pyRevitUpdater.exe" Attributes="0" SourcePath="..\bin\pyRevitUpdater.exe" SelfReg="false" NextFile="pyRevitLabs.Common.pdb" DigSign="true"/>
+    <ROW File="pyRevitLabs.TargetApps.Revit.dll.config" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.CON|pyRevitLabs.TargetApps.Revit.dll.config" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.dll.config" SelfReg="false" NextFile="System.dll"/>
+    <ROW File="pyRevitUpdater.exe" Component_="pyRevitUpdater.exe" FileName="PYREVI~1.EXE|pyRevitUpdater.exe" Attributes="0" SourcePath="..\bin\pyRevitUpdater.exe" SelfReg="false" NextFile="ControlzEx.dll" DigSign="true"/>
     <ROW File="pyrevit.exe" Component_="pyrevit.exe" FileName="pyrevit.exe" Attributes="0" SourcePath="..\bin\pyrevit.exe" SelfReg="false" NextFile="System.IO.Compression.dll" DigSign="true"/>
-    <ROW File="pyrevit.exe.config" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~3.CON|pyrevit.exe.config" Attributes="0" SourcePath="..\bin\pyrevit.exe.config" SelfReg="false" NextFile="pyrevit.pdb"/>
-    <ROW File="pyrevit.manifest" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.MAN|pyrevit.manifest" Attributes="0" SourcePath="..\bin\pyrevit.manifest" SelfReg="false" NextFile="DocoptNet.pdb"/>
-    <ROW File="pyrevit.pdb" Component_="pyrevit.exe" FileName="pyrevit.pdb" Attributes="0" SourcePath="..\bin\pyrevit.pdb" SelfReg="false" NextFile="Nett.dll"/>
-    <ROW File="toast64.exe" Component_="toast64.exe" FileName="toast64.exe" Attributes="0" SourcePath="..\bin\toast64.exe" SelfReg="false" NextFile="WindowsBase.dll" DigSign="true"/>
-    <ROW File="window_icon.png" Component_="LibGit2Sharp.dll.config" FileName="WINDOW~1.PNG|window_icon.png" Attributes="0" SourcePath="..\bin\window_icon.png" SelfReg="false" NextFile="WPG.dll"/>
+    <ROW File="pyrevit.exe.config" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~3.CON|pyrevit.exe.config" Attributes="0" SourcePath="..\bin\pyrevit.exe.config" SelfReg="false" NextFile="Nett.dll"/>
+    <ROW File="pyrevit.manifest" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.MAN|pyrevit.manifest" Attributes="0" SourcePath="..\bin\pyrevit.manifest" SelfReg="false" NextFile="pyRevitLabs.CommonWPF.dll"/>
+    <ROW File="toast64.exe" Component_="toast64.exe" FileName="toast64.exe" Attributes="0" SourcePath="..\bin\toast64.exe" SelfReg="false" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder]\[|ProductName]\prerequisites"/>
@@ -405,6 +390,6 @@
     <ROW SearchKey="F0010743E2808FF669B5E11421Micro" Prereq="F0010743E2808FF669B5E11421" SearchType="12" SearchString="HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App" VerMin="2.0.7" Order="1" Property="PreReqSearch_B0F9A029CA4177BAFD09E9"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.SynchronizedFolderComponent">
-    <ROW Directory_="APPDIR" SourcePath="..\bin" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store" ExcludeFlags="6" ExcludeSubFolders="true"/>
+    <ROW Directory_="APPDIR" SourcePath="..\bin" Feature="MainFeature" ExcludePattern="*~|#*#|%*%|._|CVS|.cvsignore|SCCS|vssver.scc|mssccprj.scc|vssver2.scc|.svn|.DS_Store|*.pdb|*.png" ExcludeFlags="6" ExcludeSubFolders="true"/>
   </COMPONENT>
 </DOCUMENT>
