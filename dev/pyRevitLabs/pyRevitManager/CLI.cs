@@ -36,7 +36,7 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string helpUrl = "https://github.com/eirannejad/pyRevit/blob/{0}/README_CLI.md";
+        private const string helpUrl = "https://github.com/eirannejad/pyRevit/blob/cli-v{0}/README_CLI.md";
         private const string updaterExecutive = "pyRevitUpdater.exe";
         private const string usage = @"pyrevit command line tool
 
@@ -225,7 +225,7 @@ namespace pyRevitManager.Views {
             if (VerifyCommand(activeKeys, "help"))
                 CommonUtils.OpenUrl(
                     string.Format(helpUrl,
-                                  string.Format("v{0}.{1}.{2}",
+                                  string.Format("{0}.{1}.{2}",
                                                 CLIVersion.Major, CLIVersion.Minor, CLIVersion.Build)),
                     errMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
