@@ -2,7 +2,7 @@
 <Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
   <Costura>
     <Unmanaged64Assemblies>
-      git2-6311e88
+      git2-4aecb64
     </Unmanaged64Assemblies>
   </Costura>
 </Weavers>
