@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Management;
 using System.Security.Principal;
+using System.IO;
 
 using DotNetVersionFinder;
 
@@ -18,6 +19,14 @@ namespace pyRevitLabs.Common {
 
         public static Version GetInstalledDotNetVersion() {
             return DotNetVersion.Find();
+        }
+
+        public static List<string> GetInstalledDotnetTargetPacks() {
+            var targetPackPaths = new List<string>();
+            var frameworkPath = @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework";
+            foreach (string path in Directory.GetDirectories(frameworkPath))
+                targetPackPaths.Add(path);
+            return targetPackPaths;
         }
 
         public static string GetLoggedInUserName() {
