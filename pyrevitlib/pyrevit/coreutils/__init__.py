@@ -1294,6 +1294,13 @@ def get_enum_values(enum_type):
     return framework.Enum.GetValues(enum_type)
 
 
+def get_enum_value(enum_type, value_string):
+    """Return enum value matching given value string (case insensitive)"""
+    for ftype in get_enum_values(enum_type):
+        if str(ftype).lower() == value_string.lower():
+            return ftype
+
+
 def get_enum_none(enum_type):
     """Returns the None value in given Enum."""
     for val in get_enum_values(enum_type):
