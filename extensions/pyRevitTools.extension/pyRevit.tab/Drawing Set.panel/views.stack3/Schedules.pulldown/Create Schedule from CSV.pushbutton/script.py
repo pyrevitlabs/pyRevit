@@ -76,7 +76,31 @@ def ensure_parameters(category, parameter_defs, doc=None):
         parameter_defs (list[tuple]): list of (name, type) tuples
     """
     doc = doc or revit.doc
-    print(category, parameter_defs)
+    builtincat = revit.query.get_builtincategory(category.Id)
+    params_ensured = True
+    with revit.Transaction("Ensure CSV Fields"):
+        for param_def in parameter_defs:
+            if not revit.query.model_has_parameter(param_def[0]):
+                logger.critical(
+                    "Missing project parameter.\n"
+                    "Name: \"%s\"\n"
+                    "Type: %s\n"
+                    "Category %s",
+                    param_def[0], param_def[1], category.Name)
+                params_ensured = False
+                # FIXME: API does not allow creating project parameters
+                # revit.create.create_project_parameter(
+                #     param_name=param_def[0],
+                #     param_type=param_def[1],
+                #     category_list=[builtincat],
+                #     builtin_param_group=DB.BuiltInParameterGroup.PG_DATA,
+                #     doc=revit.doc
+                #     )
+    if not params_ensured:
+        logger.critical("Revit API does not allow creation of "
+        "Project Parameters. Please create the missing parameters "
+        "manually before importing the data from CSV file.")
+    return params_ensured
 
 
 def read_csv_typed_data(csv_file):
@@ -96,7 +120,7 @@ def read_csv_typed_data(csv_file):
             parts_count = len(parts)
             if parts_count == 1:
                 if parts[0]:
-                    field_defs.append((parts[0], str))
+                    field_defs.append((parts[0], DB.ParameterType.Text))
             elif parts_count == 2:
                 field_defs.append((parts[0],
                                    coreutils.get_enum_value(DB.ParameterType,
@@ -125,12 +149,14 @@ if __name__ == '__main__':
             with revit.Transaction('Create Schedule from CSV'):
                 # make sure field parameters exist
                 # creates project params if not
-                ensure_parameters(key_sched_cat, param_defs)
-                # create the schedule and fill with data now
-                create_key_schedule(
-                    category=key_sched_cat,
-                    key_name="# Test",
-                    sched_name="# Abbrev",
-                    fields=param_names,
-                    records=param_data,
-                    doc=revit.doc)
+                # skip the first on since it is "Key Name" and only applies
+                # to elements inside a key schedule
+                if ensure_parameters(key_sched_cat, param_defs[1:]):
+                    # create the schedule and fill with data now
+                    create_key_schedule(
+                        category=key_sched_cat,
+                        key_name="# Test",
+                        sched_name="# Abbrev",
+                        fields=param_names,
+                        records=param_data,
+                        doc=revit.doc)
