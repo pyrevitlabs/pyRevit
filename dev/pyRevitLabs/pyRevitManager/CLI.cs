@@ -649,10 +649,7 @@ namespace pyRevitManager.Views {
                     arguments["ui"].IsTrue ?
                         PyRevitExtensionTypes.UIExtension : PyRevitExtensionTypes.LibraryExtension;
 
-                if (repoUrl.IsValidHttpUrl())
-                    PyRevit.InstallExtension(extName, extType, repoUrl, destPath, branchName);
-                else
-                    logger.Error(string.Format("Repo url is not a valid http url \"{0}\"", repoUrl));
+                PyRevit.InstallExtension(extName, extType, repoUrl, destPath, branchName);
             }
 
             // =======================================================================================================
