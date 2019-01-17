@@ -4,6 +4,9 @@ from pyrevit import forms
 from pyrevit.labs import TargetApps
 
 
+__context__ = 'zerodoc'
+
+
 rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
                                         'Revit Model |*.rvt|'
                                         'Revit Template |*.rte|'
