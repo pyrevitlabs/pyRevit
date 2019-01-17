@@ -895,3 +895,11 @@ def get_central_path(doc=None):
     if doc.IsWorkshared:
         model_path = doc.GetWorksharingCentralModelPath()
         return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
+
+
+def is_metric(doc):
+    return doc.DisplayUnitSystem == DB.DisplayUnit.METRIC
+
+
+def is_imperial(doc):
+    return doc.DisplayUnitSystem == DB.DisplayUnit.IMPERIAL
