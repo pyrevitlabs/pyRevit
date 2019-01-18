@@ -52,12 +52,31 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
                 //cleanup array
                 int lastBoundIndex = boundIndices.Count - 1;
-                // take the string between the last two ascii \r\n
-                var baseInfoString = Encoding.GetEncoding("UTF-16").GetString(
+                var utf16Stream = 
                     rawBasicInfoData.Skip(boundIndices[lastBoundIndex - 1] + 2)
-                                    .Take(boundIndices[lastBoundIndex] - boundIndices[lastBoundIndex-1] - 2)
-                                    .ToArray()
+                                    .Take(boundIndices[lastBoundIndex] - boundIndices[lastBoundIndex - 1] - 2)
+                                    .ToArray();
+                // fix ASCII value reprs
+                // replace False with UTF-16 LE False
+                utf16Stream = CommonUtils.ReplaceBytes(
+                    utf16Stream,
+                    //           F     a     l     s     e     null
+                    new byte[] { 0x46, 0x61, 0x6C, 0x73, 0x65, 0x00 },
+                    //           F           a           l           s           e
+                    new byte[] { 0x46, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x73, 0x00, 0x65, 0x00}
                     );
+                
+                // replace True with UTF-16 LE True
+                utf16Stream = CommonUtils.ReplaceBytes(
+                    utf16Stream,
+                    //           T     r     u     e     null
+                    new byte[] { 0x54, 0x72, 0x75, 0x65, 0x00 },
+                    //           T           r           u           e
+                    new byte[] { 0x54, 0x00, 0x72, 0x00, 0x75, 0x00, 0x65, 0x00}
+                    );
+
+                // take the string between the last two ascii \r\n
+                var baseInfoString = Encoding.GetEncoding("UTF-16").GetString(utf16Stream);
 
                 // dump the extracted string for debugging
                 logger.Debug("Extracted BasicFileInfo Text: \"{0}\"", baseInfoString);
