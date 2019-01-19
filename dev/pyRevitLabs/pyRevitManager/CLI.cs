@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using System.IO;
 using System.Diagnostics;
@@ -27,6 +26,7 @@ using Console = Colorful.Console;
 
 
 namespace pyRevitManager.Views {
+
     public enum pyRevitManagerLogLevel {
         Quiet,
         InfoMessages,
@@ -36,7 +36,6 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string helpUrl = "https://github.com/eirannejad/pyRevit/blob/cli-v{0}/README_CLI.md";
         private const string updaterExecutive = "pyRevitUpdater.exe";
         private const string usage = @"pyrevit command line tool
 
@@ -176,7 +175,7 @@ namespace pyRevitManager.Views {
             var arguments = new Docopt().Apply(
                 usage,
                 argsList,
-                version: string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()),
+                //version: string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()),
                 exit: true,
                 help: true
             );
@@ -220,13 +219,36 @@ namespace pyRevitManager.Views {
         private static void ExecuteCommand(IDictionary<string, ValueObject> arguments,
                                            IEnumerable<string> activeKeys) {
             // =======================================================================================================
+            // $ pyrevit (-V|--version)
+            // =======================================================================================================
+            if (arguments["--version"].IsTrue) {
+                Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()));
+                if (CommonUtils.CheckInternetConnection()) {
+                    var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
+                    if (latestVersion != null) {
+                        logger.Debug("Latest release: {0}", latestVersion);
+                        if (CLIVersion < latestVersion) {
+                            Console.WriteLine(
+                                string.Format(
+                                    "Newer v{0} is available.\nGo to {1} to download the installer.",
+                                    latestVersion,
+                                    PyRevitConsts.ReleasesUrl)
+                                );
+                        }
+                        else
+                            Console.WriteLine("You have the latest version.");
+                    }
+                    else
+                        logger.Debug("Failed getting latest release list OR no CLI releases.");
+                }
+            }
+
+            // =======================================================================================================
             // $ pyrevit help
             // =======================================================================================================
-            if (VerifyCommand(activeKeys, "help"))
+            else if (VerifyCommand(activeKeys, "help"))
                 CommonUtils.OpenUrl(
-                    string.Format(helpUrl,
-                                  string.Format("{0}.{1}.{2}",
-                                                CLIVersion.Major, CLIVersion.Minor, CLIVersion.Build)),
+                    string.Format(PyRevitConsts.CLIHelpUrl, CLIVersion.ToString()),
                     errMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
 
@@ -1410,7 +1432,6 @@ namespace pyRevitManager.Views {
         private static string GetProcessFileName() {
             return Process.GetCurrentProcess().MainModule.FileName;
         }
-
 
         private static string GetProcessPath() {
             return Path.GetDirectoryName(GetProcessFileName());
