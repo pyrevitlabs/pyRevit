@@ -18,8 +18,12 @@ using DocoptNet;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Newtonsoft.Json;
 
 using Console = Colorful.Console;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 
 // TODO: pyrevit.exe should change it's config location based on its install location %appdata% vs everything else
@@ -176,7 +180,7 @@ namespace pyRevitManager.Views {
             var arguments = new Docopt().Apply(
                 usage,
                 argsList,
-                version: string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()),
+                //version: string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()),
                 exit: true,
                 help: true
             );
@@ -220,9 +224,29 @@ namespace pyRevitManager.Views {
         private static void ExecuteCommand(IDictionary<string, ValueObject> arguments,
                                            IEnumerable<string> activeKeys) {
             // =======================================================================================================
+            // $ pyrevit (-V|--version)
+            // =======================================================================================================
+            if (arguments["--version"].IsTrue) {
+                Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()));
+                if (CommonUtils.CheckInternetConnection()) {
+                    var latestVersion = GetLatestVersion();
+                    if (CLIVersion != latestVersion) {
+                        Console.WriteLine(
+                            string.Format(
+                                "A newer version {0} is available.\nGo to {1} to download the installer.",
+                                latestVersion,
+                                PyRevitConsts.ReleasesUrl)
+                            );
+                    }
+                    else
+                        Console.WriteLine("You have the latest version.");
+                }
+            }
+
+            // =======================================================================================================
             // $ pyrevit help
             // =======================================================================================================
-            if (VerifyCommand(activeKeys, "help"))
+            else if (VerifyCommand(activeKeys, "help"))
                 CommonUtils.OpenUrl(
                     string.Format(helpUrl,
                                   string.Format("{0}.{1}.{2}",
@@ -1411,6 +1435,21 @@ namespace pyRevitManager.Views {
             return Process.GetCurrentProcess().MainModule.FileName;
         }
 
+        private static Version GetLatestVersion() {
+            // https://developer.github.com/v3/repos/releases/
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            HttpResponseMessage response = client.GetAsync(new Uri(PyRevitConsts.APIReleasesUrl)).Result;
+
+            //Dictionary<string, string> ValueList;
+            //using (var sr = new StreamReader(response.GetResponseStream())) {
+            //    ValueList = JsonConvert.DeserializeObject<Dictionary<string, string>>(sr.ReadToEnd());
+            //}
+
+            //Console.WriteLine(ValueList.Keys.Count);
+            var latestVer = new Version("0.6.0");
+            return latestVer;
+        }
 
         private static string GetProcessPath() {
             return Path.GetDirectoryName(GetProcessFileName());

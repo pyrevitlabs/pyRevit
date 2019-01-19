@@ -25,8 +25,12 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string SourceRepoUrl = @"https://github.com/eirannejad/pyRevit";
         public const string YoutubeUrl = @"https://www.youtube.com/pyrevit";
         public const string SupportRepoUrl = @"https://www.patreon.com/pyrevit";
+        public const string ReleasesUrl = @"https://github.com/eirannejad/pyRevit/releases";
 
-        // repo info
+        // api urls
+        public const string APIReleasesUrl = @"https://api.github.com/repos/eirannejad/pyrevit/releases";
+
+            // repo info
         public const string DefaultCloneInstallName = "pyRevit";
         public const string DefaultCopyInstallName = "pyRevitCopy";
         public const string DefaultCloneRemoteName = "origin";
