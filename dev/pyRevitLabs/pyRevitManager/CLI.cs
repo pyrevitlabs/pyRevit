@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using System.IO;
 using System.Diagnostics;
@@ -18,12 +17,8 @@ using DocoptNet;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
-using Newtonsoft.Json;
 
 using Console = Colorful.Console;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 
 // TODO: pyrevit.exe should change it's config location based on its install location %appdata% vs everything else
@@ -31,6 +26,7 @@ using System.Net.Http.Headers;
 
 
 namespace pyRevitManager.Views {
+
     public enum pyRevitManagerLogLevel {
         Quiet,
         InfoMessages,
@@ -40,7 +36,6 @@ namespace pyRevitManager.Views {
     class pyRevitCLI {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const string helpUrl = "https://github.com/eirannejad/pyRevit/blob/cli-v{0}/README_CLI.md";
         private const string updaterExecutive = "pyRevitUpdater.exe";
         private const string usage = @"pyrevit command line tool
 
@@ -229,17 +224,22 @@ namespace pyRevitManager.Views {
             if (arguments["--version"].IsTrue) {
                 Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()));
                 if (CommonUtils.CheckInternetConnection()) {
-                    var latestVersion = GetLatestVersion();
-                    if (CLIVersion != latestVersion) {
-                        Console.WriteLine(
-                            string.Format(
-                                "A newer version {0} is available.\nGo to {1} to download the installer.",
-                                latestVersion,
-                                PyRevitConsts.ReleasesUrl)
-                            );
+                    var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
+                    if (latestVersion != null) {
+                        logger.Debug("Latest release: {0}", latestVersion);
+                        if (CLIVersion < latestVersion) {
+                            Console.WriteLine(
+                                string.Format(
+                                    "Newer v{0} is available.\nGo to {1} to download the installer.",
+                                    latestVersion,
+                                    PyRevitConsts.ReleasesUrl)
+                                );
+                        }
+                        else
+                            Console.WriteLine("You have the latest version.");
                     }
                     else
-                        Console.WriteLine("You have the latest version.");
+                        logger.Debug("Failed getting latest release list OR no CLI releases.");
                 }
             }
 
@@ -248,9 +248,7 @@ namespace pyRevitManager.Views {
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "help"))
                 CommonUtils.OpenUrl(
-                    string.Format(helpUrl,
-                                  string.Format("{0}.{1}.{2}",
-                                                CLIVersion.Major, CLIVersion.Minor, CLIVersion.Build)),
+                    string.Format(PyRevitConsts.CLIHelpUrl, CLIVersion.ToString()),
                     errMsg: "Can not open online help page. Try `pyrevit --help` instead"
                     );
 
@@ -1433,22 +1431,6 @@ namespace pyRevitManager.Views {
 
         private static string GetProcessFileName() {
             return Process.GetCurrentProcess().MainModule.FileName;
-        }
-
-        private static Version GetLatestVersion() {
-            // https://developer.github.com/v3/repos/releases/
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            HttpResponseMessage response = client.GetAsync(new Uri(PyRevitConsts.APIReleasesUrl)).Result;
-
-            //Dictionary<string, string> ValueList;
-            //using (var sr = new StreamReader(response.GetResponseStream())) {
-            //    ValueList = JsonConvert.DeserializeObject<Dictionary<string, string>>(sr.ReadToEnd());
-            //}
-
-            //Console.WriteLine(ValueList.Keys.Count);
-            var latestVer = new Version("0.6.0");
-            return latestVer;
         }
 
         private static string GetProcessPath() {
