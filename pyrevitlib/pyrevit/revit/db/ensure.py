@@ -17,9 +17,9 @@ def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
                        load_param=True, allow_vary_betwen_groups=False,
                        doc=None):
     doc = doc or HOST_APP.doc
-    if query.model_has_sharedparam(sparam_name, doc=doc):
+    if query.model_has_parameter(sparam_name, doc=doc):
         if allow_vary_betwen_groups:
-            param = query.get_model_sharedparam(sparam_name, doc=doc)
+            param = query.get_project_parameter(sparam_name, doc=doc)
             if isinstance(param.param_def, DB.InternalDefinition) \
                     and not param.param_def.VariesAcrossGroups:
                 param.param_def.SetAllowVaryBetweenGroups(doc, True)

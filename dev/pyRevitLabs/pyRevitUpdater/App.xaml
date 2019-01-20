@@ -1,0 +1,9 @@
+﻿<Application x:Class="pyRevitUpdater.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:pyRevitUpdater"
+             Startup="ApplicationStartup">
+    <Application.Resources>
+         
+    </Application.Resources>
+</Application>

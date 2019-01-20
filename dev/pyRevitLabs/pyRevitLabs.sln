@@ -1,0 +1,100 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Common", "pyRevitLabs.Common\pyRevitLabs.Common.csproj", "{C5A03112-6EE1-415F-B53D-5D732D9F47AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.CommonWPF", "pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj", "{15E9A99D-11E3-4D46-B333-79A10427F682}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.CommonCLI", "pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj", "{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.Revit", "pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj", "{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.Navisworks", "pyRevitLabs.TargetApps.Navisworks\pyRevitLabs.TargetApps.Navisworks.csproj", "{57323698-75AF-4345-827D-2E625A56CBF2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.TargetApps.AutoCAD", "pyRevitLabs.TargetApps.AutoCAD\pyRevitLabs.TargetApps.AutoCAD.csproj", "{0C382E44-C594-4F08-9469-20C0D25BA581}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitManager", "pyRevitManager\pyRevitManager.csproj", "{9561311E-A02A-4D5F-BD22-64258941BF2E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD} = {C5A03112-6EE1-415F-B53D-5D732D9F47AD}
+		{9130B926-BBD8-41C8-A77C-E2C0002EEB1B} = {9130B926-BBD8-41C8-A77C-E2C0002EEB1B}
+		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B} = {ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}
+		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5} = {614720BA-C0E3-4199-9A5E-D2468FFCBFE5}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Language", "pyRevitLabs.Language\pyRevitLabs.Language.csproj", "{269FE01F-093A-4774-8017-FEFC2342ABF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitUpdater", "pyRevitUpdater\pyRevitUpdater.csproj", "{9130B926-BBD8-41C8-A77C-E2C0002EEB1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.DeffrelDB", "pyRevitLabs.DeffrelDB\pyRevitLabs.DeffrelDB.csproj", "{4672A022-5855-4C70-B81E-9E1109BD7B6D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A03112-6EE1-415F-B53D-5D732D9F47AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15E9A99D-11E3-4D46-B333-79A10427F682}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15E9A99D-11E3-4D46-B333-79A10427F682}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15E9A99D-11E3-4D46-B333-79A10427F682}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15E9A99D-11E3-4D46-B333-79A10427F682}.Release|Any CPU.Build.0 = Release|Any CPU
+		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{614720BA-C0E3-4199-9A5E-D2468FFCBFE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED0FB7A2-E4A8-4490-A020-73140BFBCE0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57323698-75AF-4345-827D-2E625A56CBF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57323698-75AF-4345-827D-2E625A56CBF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57323698-75AF-4345-827D-2E625A56CBF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57323698-75AF-4345-827D-2E625A56CBF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C382E44-C594-4F08-9469-20C0D25BA581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C382E44-C594-4F08-9469-20C0D25BA581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C382E44-C594-4F08-9469-20C0D25BA581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C382E44-C594-4F08-9469-20C0D25BA581}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9561311E-A02A-4D5F-BD22-64258941BF2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9561311E-A02A-4D5F-BD22-64258941BF2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9561311E-A02A-4D5F-BD22-64258941BF2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9561311E-A02A-4D5F-BD22-64258941BF2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{269FE01F-093A-4774-8017-FEFC2342ABF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{269FE01F-093A-4774-8017-FEFC2342ABF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{269FE01F-093A-4774-8017-FEFC2342ABF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{269FE01F-093A-4774-8017-FEFC2342ABF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9130B926-BBD8-41C8-A77C-E2C0002EEB1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9130B926-BBD8-41C8-A77C-E2C0002EEB1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9130B926-BBD8-41C8-A77C-E2C0002EEB1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9130B926-BBD8-41C8-A77C-E2C0002EEB1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}
+	EndGlobalSection
+EndGlobal

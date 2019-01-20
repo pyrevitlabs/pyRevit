@@ -83,6 +83,7 @@ class MakePatternWindow(forms.WPFWindow):
 
         self.setup_patnames()
         self.setup_export_units()
+        self.setup_view_scale()
 
     @property
     def is_detail_pat(self):
@@ -129,6 +130,9 @@ class MakePatternWindow(forms.WPFWindow):
     @staticmethod
     def round_coord(coord):
         return round(coord, PICK_COORD_RESOLUTION)
+
+    def get_view_direction(self):
+        return revit.activeview.ViewDirection
 
     def update_fillgrid(self, rvt_fillgrid, scale):
         ext_origin = rvt_fillgrid.Origin
@@ -202,28 +206,68 @@ class MakePatternWindow(forms.WPFWindow):
         else:
             self.export_units_cb.SelectedIndex = 0
 
+    def setup_view_scale(self):
+        biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_IMPERIAL
+        if revit.query.is_metric(revit.doc):
+            biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_METRIC
+        self.viewscale_tb.Text = \
+            revit.activeview.Parameter[biparam].AsValueString()
+
     def pick_domain(self):
         # ask user for origin and max domain points
         with forms.WarningBar(title='Pick origin point (bottom-left '
                                     'corner of the pattern area):'):
+            if not revit.activeview.SketchPlane:
+                view = revit.activeview
+                base_plane = \
+                    DB.Plane.CreateByNormalAndOrigin(view.ViewDirection,
+                                                     view.Origin)
+                with revit.Transaction('Set Selection Plane'):
+                    pick_plane = DB.SketchPlane.Create(revit.doc, base_plane)
+                    view.SketchPlane = pick_plane
             pat_bottomleft = revit.pick_point()
         if pat_bottomleft:
             with forms.WarningBar(title='Pick top-right corner '
                                         'of the pattern area:'):
                 pat_topright = revit.pick_point()
             if pat_topright:
-                return (MakePatternWindow.round_coord(pat_bottomleft.X),
-                        MakePatternWindow.round_coord(pat_bottomleft.Y)), \
-                       (MakePatternWindow.round_coord(pat_topright.X),
-                        MakePatternWindow.round_coord(pat_topright.Y))
+                return self.make_pattern_line(pat_bottomleft, pat_topright)
 
         return False
 
     def make_pattern_line(self, start_xyz, end_xyz):
-        return (MakePatternWindow.round_coord(start_xyz.X),
-                MakePatternWindow.round_coord(start_xyz.Y)), \
-               (MakePatternWindow.round_coord(end_xyz.X),
-                MakePatternWindow.round_coord(end_xyz.Y))
+        # decide which dimensions to grab based on view direction
+        vdir = self.get_view_direction()
+        if vdir.Z == 1.0:
+            return (MakePatternWindow.round_coord(start_xyz.X),
+                    MakePatternWindow.round_coord(start_xyz.Y)), \
+                   (MakePatternWindow.round_coord(end_xyz.X),
+                    MakePatternWindow.round_coord(end_xyz.Y))
+        elif vdir.Z == -1.0:
+            return (MakePatternWindow.round_coord(-start_xyz.X),
+                    MakePatternWindow.round_coord(start_xyz.Y)), \
+                   (MakePatternWindow.round_coord(-end_xyz.X),
+                    MakePatternWindow.round_coord(end_xyz.Y))
+        elif vdir.X == 1.0:
+            return (MakePatternWindow.round_coord(start_xyz.Y),
+                    MakePatternWindow.round_coord(start_xyz.Z)), \
+                   (MakePatternWindow.round_coord(end_xyz.Y),
+                    MakePatternWindow.round_coord(end_xyz.Z))
+        elif vdir.X == -1.0:
+            return (MakePatternWindow.round_coord(-start_xyz.Y),
+                    MakePatternWindow.round_coord(start_xyz.Z)), \
+                   (MakePatternWindow.round_coord(-end_xyz.Y),
+                    MakePatternWindow.round_coord(end_xyz.Z))
+        elif vdir.Y == 1.0:
+            return (MakePatternWindow.round_coord(-start_xyz.X),
+                    MakePatternWindow.round_coord(start_xyz.Z)), \
+                   (MakePatternWindow.round_coord(-end_xyz.X),
+                    MakePatternWindow.round_coord(end_xyz.Z))
+        elif vdir.Y == -1.0:
+            return (MakePatternWindow.round_coord(start_xyz.X),
+                    MakePatternWindow.round_coord(start_xyz.Z)), \
+                   (MakePatternWindow.round_coord(end_xyz.X),
+                    MakePatternWindow.round_coord(end_xyz.Z))
 
     def export_pattern(self, export_dir):
         patname = self.pat_name_cb.SelectedItem
@@ -341,5 +385,6 @@ class MakePatternWindow(forms.WPFWindow):
             self.Close()
 
 
-MakePatternWindow('MakePatternWindow.xaml',
-                  selection.elements).show(modal=True)
+if __name__ == '__main__':
+    MakePatternWindow('MakePatternWindow.xaml',
+                      selection.elements).show(modal=True)

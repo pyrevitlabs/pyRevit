@@ -110,6 +110,12 @@ def get_all_elements(doc=None):
              .ToElements()
 
 
+def get_all_view_elements(doc, view):
+    return DB.FilteredElementCollector(doc, view.Id)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+
+
 def get_param_value(targetparam):
     if targetparam.StorageType == DB.StorageType.Double:
         value = targetparam.AsDouble()
@@ -242,6 +248,12 @@ def get_family(family_name, doc=None):
           .WhereElementIsElementType()\
           .ToElements()
     return famsyms
+
+
+def get_noteblock_families(doc=None):
+    doc = doc or HOST_APP.doc
+    return [doc.GetElement(x)
+            for x in DB.ViewSchedule.GetValidFamiliesForNoteBlock(doc)]
 
 
 def get_elements_by_family(family_name, doc=None):
@@ -520,6 +532,36 @@ def get_doc_categories(doc=None):
     for cat in cats:
         all_cats.extend([x for x in cat.SubCategories])
     return all_cats
+
+
+def get_schedule_categories():
+    all_cats = get_doc_categories()
+    cats = []
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForSchedule():
+        for cat in all_cats:
+            if cat.Id.IntegerValue == cat_id.IntegerValue:
+                cats.append(cat)
+    return cats
+
+
+def get_key_schedule_categories():
+    all_cats = get_doc_categories()
+    cats = []
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForKeySchedule():
+        for cat in all_cats:
+            if cat.Id.IntegerValue == cat_id.IntegerValue:
+                cats.append(cat)
+    return cats
+
+
+def get_takeoff_categories():
+    all_cats = get_doc_categories()
+    cats = []
+    for cat_id in DB.ViewSchedule.GetValidCategoriesForMaterialTakeoff():
+        for cat in all_cats:
+            if cat.Id.IntegerValue == cat_id.IntegerValue:
+                cats.append(cat)
+    return cats
 
 
 def get_category(cat_name_or_builtin, doc=None):
@@ -853,3 +895,11 @@ def get_central_path(doc=None):
     if doc.IsWorkshared:
         model_path = doc.GetWorksharingCentralModelPath()
         return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
+
+
+def is_metric(doc):
+    return doc.DisplayUnitSystem == DB.DisplayUnit.METRIC
+
+
+def is_imperial(doc):
+    return doc.DisplayUnitSystem == DB.DisplayUnit.IMPERIAL

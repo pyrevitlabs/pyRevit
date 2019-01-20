@@ -2,6 +2,7 @@ from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework
 from pyrevit.framework import clr
 from pyrevit import coreutils
+from pyrevit.coreutils import appdata
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit import db
@@ -28,19 +29,14 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
         return True
 
 
-def create_shared_param(param_id_or_name, category_list, builtin_param_group,
-                        type_param=False, allow_vary_betwen_groups=False,  #pylint: disable=W0613
-                        doc=None):
+def create_param_from_definition(param_def,
+                                 category_list,
+                                 builtin_param_group,
+                                 type_param=False,
+                                 allow_vary_betwen_groups=False,
+                                 doc=None):
     doc = doc or HOST_APP.doc
-    msp_list = query.get_defined_sharedparams()
-    param_def = None
-    for msp in msp_list:
-        if msp == param_id_or_name:
-            param_def = msp.param_def
-
-    if not param_def:
-        raise PyRevitException('Can not find shared parameter.')
-
+    # verify and create category set
     if category_list:
         category_set = query.get_category_set(category_list, doc=doc)
     else:
@@ -49,6 +45,7 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
     if not category_set:
         raise PyRevitException('Can not create category set.')
 
+    # create binding
     if type_param:
         new_binding = \
             HOST_APP.app.Create.NewTypeBinding(category_set)
@@ -56,10 +53,76 @@ def create_shared_param(param_id_or_name, category_list, builtin_param_group,
         new_binding = \
             HOST_APP.app.Create.NewInstanceBinding(category_set)
 
+    # FIXME: set allow_vary_betwen_groups
+    # param_def.SetAllowVaryBetweenGroups(doc, allow_vary_betwen_groups)
+    # insert the binding
     doc.ParameterBindings.Insert(param_def,
                                  new_binding,
                                  builtin_param_group)
     return True
+
+
+def create_shared_param(param_id_or_name,
+                        category_list,
+                        builtin_param_group,
+                        type_param=False,
+                        allow_vary_betwen_groups=False,
+                        doc=None):
+    doc = doc or HOST_APP.doc
+    # get define shared parameters
+    # this is where we grab the ExternalDefinition for the parameter
+    msp_list = query.get_defined_sharedparams()
+    param_def = None
+    for msp in msp_list:
+        if msp == param_id_or_name:
+            param_def = msp.param_def
+    if not param_def:
+        raise PyRevitException('Can not find shared parameter.')
+
+    # now create the binding for this definition
+    return create_param_from_definition(
+        param_def,
+        category_list,
+        builtin_param_group=builtin_param_group,
+        type_param=type_param,
+        allow_vary_betwen_groups=allow_vary_betwen_groups,
+        doc=doc)
+
+
+
+# def create_project_parameter(param_name,
+#                              param_type,
+#                              category_list,
+#                              builtin_param_group,
+#                              type_param=False,
+#                              allow_vary_betwen_groups=False,
+#                              doc=None):
+#     doc = doc or HOST_APP.doc
+#     # setup the stupid hacky way to create the project parameter
+#     # https://forums.autodesk.com/t5/revit-api-forum/create-project-parameter-not-shared-parameter/td-p/5150182
+#     # record the existing shared param file
+#     existing_spfile = HOST_APP.app.SharedParametersFilename
+#     # go thru creating a temp param file, creating the ext definition
+#     temp_spfile = appdata.get_instance_data_file('newpparam')
+#     coreutils.touch(temp_spfile)
+#     HOST_APP.app.SharedParametersFilename = temp_spfile
+#     # create param definition
+#     edco = DB.ExternalDefinitionCreationOptions(param_name, param_type)
+#     temp_groups = HOST_APP.app.OpenSharedParameterFile().Groups
+#     temp_group = temp_groups.Create("ProjectParams")
+#     param_def = temp_group.Definitions.Create(edco)
+#     # reset shared param file to original
+#     HOST_APP.app.SharedParametersFilename = existing_spfile
+#     appdata.garbage_data_file(temp_spfile)
+
+#     # now create the binding for this definition
+#     return create_param_from_definition(
+#         param_def,
+#         category_list,
+#         builtin_param_group=builtin_param_group,
+#         type_param=type_param,
+#         allow_vary_betwen_groups=allow_vary_betwen_groups,
+#         doc=doc)
 
 
 def create_new_project(template=None, imperial=True):
@@ -119,7 +182,7 @@ def create_sheet(sheet_num, sheet_name,
 
 def create_3d_view(view_name, isometric=True, doc=None):
     doc = doc or HOST_APP.doc
-    nview = query.get_view_by_name(view_name)
+    nview = query.get_view_by_name(view_name, doc=doc)
     if not nview:
         default_3dview_type = \
             doc.GetDefaultElementTypeId(DB.ElementTypeGroup.ViewType3D)
