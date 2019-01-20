@@ -1,11 +1,11 @@
 # pyRevit Command Line Tool Help
 
-##### Version 0.3.0
+##### Version 0.6.0.0
 
 `pyrevit` is the command line tool, developed specifically to install and configure pyRevit in your production/development environment. Each section below showcases a specific set of functionality of the command line tool.
 
 - [pyRevit Command Line Tool Help](#pyrevit-command-line-tool-help)
-        - [Version 0.3.0](#version-030)
+        - [Version 0.6.0.0](#version-0600)
   - [Getting Help](#getting-help)
     - [pyrevit CLI version](#pyrevit-cli-version)
     - [pyRevit Online Resources](#pyrevit-online-resources)
@@ -469,7 +469,8 @@ Active User: LEO-W10\LeoW10
 Adming Access: Yes
 %APPDATA%: "C:\Users\LeoW10\AppData\Roaming"
 Latest Installed .Net Framework: "4.7.2"
-pyRevit CLI 0.2.18.0
+Installed .Net Target Packs: v3.5 v4.0 v4.5 v4.5.1 v4.5.2 v4.6 v4.6.1 v4.7.1 v4.X
+pyRevit CLI 0.6.0.0
 ```
 
 ## Configuring pyRevit
