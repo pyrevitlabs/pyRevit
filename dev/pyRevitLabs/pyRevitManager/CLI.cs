@@ -22,7 +22,8 @@ using Console = Colorful.Console;
 
 
 // TODO: pyrevit.exe should change it's config location based on its install location %appdata% vs everything else
-// TODO: when pyrevit loads but clone can not be determined, it's possible that the attachment has been made by another user and that clone is not registered with this user
+// when pyrevit loads but clone can not be determined (because config is somewhere else?),
+// it's possible that the attachment has been made by another user and that clone is not registered with this user
 
 
 namespace pyRevitManager.Views {
@@ -65,8 +66,8 @@ namespace pyRevitManager.Views {
         pyrevit attached
         pyrevit switch <clone_name>
         pyrevit detach (--all | <revit_year>) [--log=<log_file>]
-        pyrevit extend <extension_name> <dest_path> [--branch=<branch_name>] [--log=<log_file>]
-        pyrevit extend (ui | lib) <extension_name> <repo_url> <dest_path> [--branch=<branch_name>] [--log=<log_file>]
+        pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
+        pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
         pyrevit extensions
         pyrevit extensions search <search_pattern>
         pyrevit extensions (info | help | open) <extension_name>
@@ -633,10 +634,10 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
-            // $ pyrevit extend <extension_name> <dest_path> [--branch=<branch_name>]
+            // $ pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "extend")) {
-                string destPath = TryGetValue(arguments, "<dest_path>");
+                string destPath = TryGetValue(arguments, "--dest");
                 string extName = TryGetValue(arguments, "<extension_name>");
                 string branchName = TryGetValue(arguments, "--branch");
 
@@ -658,11 +659,11 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
-            // $ pyrevit extend (ui | lib) <extension_name> <repo_url> <dest_path> [--branch=<branch_name>]
+            // $ pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "extend", "ui")
                         || VerifyCommand(activeKeys, "extend", "lib")) {
-                string destPath = TryGetValue(arguments, "<dest_path>");
+                string destPath = TryGetValue(arguments, "--dest");
                 string extName = TryGetValue(arguments, "<extension_name>");
                 string repoUrl = TryGetValue(arguments, "<repo_url>");
                 string branchName = TryGetValue(arguments, "--branch");
@@ -1519,6 +1520,8 @@ namespace pyRevitManager.Views {
         }
 
         private static void PrintExtensionSearchPaths() {
+            PrintHeader("Default Extension Search Path");
+            Console.WriteLine(PyRevit.pyRevitDefaultExtensionsPath);
             PrintHeader("Extension Search Paths");
             foreach (var searchPath in PyRevit.GetRegisteredExtensionSearchPaths())
                 Console.WriteLine(searchPath);

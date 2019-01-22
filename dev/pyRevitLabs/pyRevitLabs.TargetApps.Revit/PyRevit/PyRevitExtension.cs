@@ -44,6 +44,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public bool BuiltIn { get { return bool.Parse(_jsonObj.builtin); } }
+
         public bool RocketModeCompatible { get { return bool.Parse(_jsonObj.rocket_mode_compatible); } }
 
         public string Name {
@@ -62,6 +63,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string AuthorProfile { get { return _jsonObj != null ? _jsonObj.author_url : ""; } }
 
         public string Url { get { return _jsonObj != null ? _jsonObj.url : ""; } }
+
         public string Origin { get { return GetOrigin(InstallPath); } }
 
         public string Website { get { return _jsonObj != null ? _jsonObj.website : ""; } }

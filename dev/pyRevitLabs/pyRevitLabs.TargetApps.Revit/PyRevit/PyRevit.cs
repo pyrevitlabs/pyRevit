@@ -21,27 +21,22 @@ namespace pyRevitLabs.TargetApps.Revit {
         // STANDARD PATHS ============================================================================================
         // pyRevit %appdata% path
         // @reviewed
-        public static string pyRevitAppDataPath {
-            get {
-                return Path.Combine(
-                    Environment.GetFolderPath(
-                        Environment.SpecialFolder.ApplicationData),
-                        PyRevitConsts.AppdataDirName
-                    );
-            }
-        }
+        public static string pyRevitAppDataPath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                          PyRevitConsts.AppdataDirName);
 
         // pyRevit %programdata% path
         // @reviewed
-        public static string pyRevitProgramDataPath {
-            get {
-                return Path.Combine(
-                    Environment.GetFolderPath(
-                        Environment.SpecialFolder.CommonApplicationData),
-                        PyRevitConsts.AppdataDirName
-                    );
-            }
-        }
+        public static string pyRevitProgramDataPath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                          PyRevitConsts.AppdataDirName);
+
+        // pyRevit default extensions path
+        // @reviewed
+        public static string pyRevitDefaultExtensionsPath => 
+            Path.Combine(pyRevitAppDataPath, PyRevitConsts.ExtensionsDefaultDirName);
 
         // pyRevit config file path
         // @reviewed
@@ -750,7 +745,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         // installs extension from repo url
         // @handled @logs
         public static void InstallExtension(string extensionName, PyRevitExtensionTypes extensionType,
-                                            string repoPath, string destPath, string branchName) {
+                                            string repoPath, string destPath = null, string branchName = null) {
             // make sure extension is not installed already
             var existExt = GetInstalledExtension(extensionName);
             if (existExt != null)
@@ -761,6 +756,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             // Name.extension for UI Extensions
             // Name.lib for Library Extensions
             string extDestDirName = PyRevitExtension.MakeConfigName(extensionName, extensionType);
+
+            // determine destination
+            destPath = destPath ?? pyRevitDefaultExtensionsPath;
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
             // determine branch name
@@ -799,13 +797,9 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // installs extension
         // @handled @logs
-        public static void InstallExtension(PyRevitExtension ext, string destPath, string branchName) {
+        public static void InstallExtension(PyRevitExtension ext, string destPath = null, string branchName = null) {
             logger.Debug("Installing extension \"{0}\"", ext.Name);
-            if (CommonUtils.VerifyPath(destPath)) {
-                InstallExtension(ext.Name, ext.Type, ext.Url, destPath, branchName);
-            }
-            else
-                throw new pyRevitResourceMissingException(destPath);
+            InstallExtension(ext.Name, ext.Type, ext.Url, destPath, branchName);
         }
 
         // uninstalls an extension by repo

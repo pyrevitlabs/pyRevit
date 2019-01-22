@@ -95,6 +95,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ExtensionJsonDisabledKey = "disabled";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
+        public const string ExtensionsDefaultDirName = "Extensions";
 
 
         public static string GetZipPackageUrl(string branchName) {
