@@ -1403,3 +1403,9 @@ def fuzzy_search_ratio(target_string, sfilter):
     # 80 reserved
 
     return 0
+
+
+def get_exe_version(exepath):
+    """Extract Product Version value from EXE file."""
+    version_info = framework.Diagnostics.FileVersionInfo.GetVersionInfo(exepath)
+    return version_info.ProductVersion

@@ -1,5 +1,9 @@
-from pyrevit import HOME_DIR, VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
+import os.path as op
+
+from pyrevit import HOME_DIR, BIN_DIR
+from pyrevit import VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA
 from pyrevit.compat import safe_strtype
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import git
@@ -66,3 +70,7 @@ def get_pyrevit_version():
                                 pyrvt_ver.get_formatted())
 
     return pyrvt_ver
+
+
+def get_pyrevit_cli_version():
+    return coreutils.get_exe_version(op.join(BIN_DIR, 'pyrevit.exe'))
