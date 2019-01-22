@@ -341,10 +341,10 @@ def _produce_ui_pulldown(ui_maker_params):
 
     mlogger.debug('Producing pulldown button: %s', pulldown)
     try:
-        parent_ribbon_panel.create_pulldown_button(pulldown.name,
+        parent_ribbon_panel.create_pulldown_button(pulldown.ui_title,
                                                    pulldown.icon_file,
                                                    update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(pulldown.name)
+        return parent_ribbon_panel.ribbon_item(pulldown.ui_title)
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -361,10 +361,10 @@ def _produce_ui_split(ui_maker_params):
 
     mlogger.debug('Producing split button: %s}', split)
     try:
-        parent_ribbon_panel.create_split_button(split.name,
+        parent_ribbon_panel.create_split_button(split.ui_title,
                                                 split.icon_file,
                                                 update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(split.name)
+        return parent_ribbon_panel.ribbon_item(split.ui_title)
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -381,10 +381,10 @@ def _produce_ui_splitpush(ui_maker_params):
 
     mlogger.debug('Producing splitpush button: %s', splitpush)
     try:
-        parent_ribbon_panel.create_splitpush_button(splitpush.name,
+        parent_ribbon_panel.create_splitpush_button(splitpush.ui_title,
                                                     splitpush.icon_file,
                                                     update_if_exists=True)
-        return parent_ribbon_panel.ribbon_item(splitpush.name)
+        return parent_ribbon_panel.ribbon_item(splitpush.ui_title)
     except PyRevitException as err:
         mlogger.error('UI error: %s', err.msg)
         return None
@@ -594,6 +594,8 @@ def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
 
 
 def sort_pyrevit_ui(ui_ext):
+    # only works on panels so far
+    # re-ordering of ui components deeper than panels have not been implemented
     layout_directives = []
     for item in ui_ext:
         layout_directives.extend(item.get_layout_directives())
