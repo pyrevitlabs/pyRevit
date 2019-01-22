@@ -71,6 +71,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Canvas x:Key="engineIcon">
+            <Path Canvas.Top="-5" Canvas.Left="0"
+                  Data="M8,10H16V18H11L9,16H7V11M7,4V6H10V8H7L5,10V13H3V10H1V18H3V15H5V18H8L10,20H18V16H20V19H23V9H20V12H18V8H12V6H15V4H7Z"
+                  Fill="{DynamicResource pyRevitDarkBrush}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="1.7" ScaleY="1.7" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
     </Window.Resources>
     <DockPanel>
         <Grid Background="{DynamicResource pyRevitDarkBrush}" DockPanel.Dock="Bottom">
@@ -107,8 +117,16 @@
                         <GroupBox Header="Engine" Margin="0,10,0,0">
                             <StackPanel>
                                 <DockPanel Margin="10,10,0,10" >
-                                    <TextBlock Margin="0,0,20,0" VerticalAlignment="Center">Active Engine:</TextBlock>
-                                    <ComboBox x:Name="availableEngines" Margin="0,0,10,0" DisplayMemberPath="name" Height="24"
+                                    <ContentControl Content="{StaticResource engineIcon}"
+                                                    Width="32" Height="32" VerticalAlignment="Center"
+                                                    DockPanel.Dock="Left">
+                                        <ContentControl.LayoutTransform>
+                                            <ScaleTransform ScaleX="1"  ScaleY="1"/>
+                                        </ContentControl.LayoutTransform>
+                                    </ContentControl>
+                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left">Active Engine:</TextBlock>
+                                    <ComboBox x:Name="availableEngines" Margin="0,0,10,0"
+                                              DisplayMemberPath="name" Height="24"
                                               VerticalContentAlignment="Center"/>
                                 </DockPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">Save settings after changing the engine and then restart Revit.</TextBlock>
