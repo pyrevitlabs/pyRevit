@@ -75,7 +75,8 @@ class PyRevitConfigSectionParser(object):
             try:
                 return self._parser.set(self._section_name,
                                         param_name,
-                                        json.dumps(value))
+                                        json.dumps(value,
+                                                   separators=(',', ':')))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))
