@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.compat
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/compat.py

@@ -17,7 +17,6 @@
     :members:
 
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/__init__.py

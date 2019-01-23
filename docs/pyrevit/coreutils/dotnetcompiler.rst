@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.dotnetcompiler
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/dotnetcompiler.py

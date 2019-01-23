@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.revit.units
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/revit/units.py

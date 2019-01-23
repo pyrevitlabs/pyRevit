@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.revit.geom
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/revit/geom.py

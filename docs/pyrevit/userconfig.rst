@@ -6,7 +6,6 @@
 .. automodule:: pyrevit.userconfig
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/userconfig.py

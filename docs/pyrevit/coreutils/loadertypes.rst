@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.loadertypes
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/loadertypes.py

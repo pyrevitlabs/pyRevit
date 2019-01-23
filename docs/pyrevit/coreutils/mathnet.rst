@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.mathnet
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/mathnet.py

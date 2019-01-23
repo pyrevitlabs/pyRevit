@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.revit.serverutils
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/revit/serverutils.py

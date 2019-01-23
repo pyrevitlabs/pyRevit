@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.configparser
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/configparser.py
