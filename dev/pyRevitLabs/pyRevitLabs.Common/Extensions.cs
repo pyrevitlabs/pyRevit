@@ -261,6 +261,10 @@ namespace pyRevitLabs.Common.Extensions {
             return JsonConvert.SerializeObject(sourceValue);
         }
 
+        public static string ConvertToTomlString(this string sourceValue) {
+            return JsonConvert.SerializeObject(sourceValue);
+        }
+
         public static string ConvertToTomlListString(this IEnumerable<string> sourceValues) {
             //var quotedValues = new List<string>();
             //foreach (var value in sourceValues)

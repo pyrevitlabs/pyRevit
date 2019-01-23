@@ -1390,7 +1390,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         // sets config key value as string
         // @handled @logs
         private static void SetKeyValue(string sectionName, string keyName, string stringValue) {
-            UpdateKeyValue(sectionName, keyName, stringValue);
+            UpdateKeyValue(sectionName, keyName, stringValue.ConvertToTomlString());
         }
 
         // sets config key value as string list
