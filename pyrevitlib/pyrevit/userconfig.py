@@ -340,6 +340,7 @@ if not EXEC_PARAMS.doc_mode:
         user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
                                     config_type=CONFIG_TYPE)
         upgrade.upgrade_user_config(user_config)
+        user_config.save_changes()
     except Exception as cfg_err:
         mlogger.debug('Can not read confing file at: %s | %s',
                       CONFIG_FILE, cfg_err)

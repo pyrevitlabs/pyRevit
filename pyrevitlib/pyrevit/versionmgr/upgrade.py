@@ -95,7 +95,11 @@ def upgrade_user_config(user_config):   #pylint: disable=W0613
     # _startuplogtimeout_config_upgrade(user_config)
     # _rocketmode_config_upgrade(user_config)
     # _autoupdate_config_upgrade(user_config)
-    pass
+
+    # upgrade value formats
+    for section in user_config:
+        for option in section:
+            setattr(section, option, getattr(section, option))
 
 
 def upgrade_existing_pyrevit():

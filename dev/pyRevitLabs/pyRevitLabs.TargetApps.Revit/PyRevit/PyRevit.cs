@@ -939,7 +939,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         public static List<string> GetRegisteredExtensionLookupSources() {
             var sources = GetKeyValueAsList(PyRevitConsts.EnvConfigsSectionName,
-                                             PyRevitConsts.EnvConfigsExtensionLookupSourcesKey);
+                                            PyRevitConsts.EnvConfigsExtensionLookupSourcesKey,
+                                            throwNotSetException: false);
             var normSources = new List<string>();
             foreach (var src in sources) {
                 var normSrc = src.NormalizeAsPath();
@@ -1329,10 +1330,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         private static List<string> GetKeyValueAsList(string sectionName,
                                                       string keyName,
-                                                      IEnumerable<string> defaultValue = null,
                                                       bool throwNotSetException = true) {
             logger.Debug("Try getting config as list \"{0}:{1}\"", sectionName, keyName);
-            var stringValue = GetKeyValue(sectionName, keyName, "", throwNotSetException: throwNotSetException);
+            var stringValue = GetKeyValue(sectionName, keyName, "[]", throwNotSetException: throwNotSetException);
+
             return stringValue.ConvertFromTomlListString();
         }
 

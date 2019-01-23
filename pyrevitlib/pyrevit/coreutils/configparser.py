@@ -9,8 +9,8 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 
 #pylint: disable=W0703,C0302
-KEY_VALUE_TRUE = "true"
-KEY_VALUE_FALSE = "false"
+KEY_VALUE_TRUE = "True"
+KEY_VALUE_FALSE = "False"
 
 
 class PyRevitConfigSectionParser(object):
@@ -35,7 +35,30 @@ class PyRevitConfigSectionParser(object):
         try:
             value = self._parser.get(self._section_name, param_name)
             try:
-                return json.loads(value)  #pylint: disable=W0123
+                try:
+                    return json.loads(value)  #pylint: disable=W0123
+                except Exception:
+                    # try fix legacy formats
+                    # cleanup python style true, false values
+                    if value == KEY_VALUE_TRUE:
+                        value = json.dumps(True)
+                    elif value == KEY_VALUE_FALSE:
+                        value = json.dumps(False)
+                    # cleanup string representations
+                    value = value.replace('\'', '"').encode('string-escape')
+                    # try parsing again
+                    try:
+                        return json.loads(value)  #pylint: disable=W0123
+                    except Exception:
+                        # if failed again then the value is a string
+                        # but is not encapsulated in quotes
+                        # e.g. option = C:\Users\Desktop
+                        value = value.strip()
+                        if not value.startswith('(') \
+                                or not value.startswith('[') \
+                                or not value.startswith('{'):
+                            value = "\"%s\"" % value
+                        return json.loads(value)  #pylint: disable=W0123
             except Exception:
                 return value
         except (NoOptionError, NoSectionError):

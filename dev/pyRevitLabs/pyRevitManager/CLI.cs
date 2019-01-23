@@ -1563,10 +1563,15 @@ namespace pyRevitManager.Views {
                                             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
             Console.WriteLine(string.Format("Latest Installed .Net Framework: \"{0}\"",
                                             UserEnv.GetInstalledDotNetVersion()));
-            string targetPacks = "";
-            foreach (string targetPackagePath in UserEnv.GetInstalledDotnetTargetPacks())
-                targetPacks += string.Format("{0} ", Path.GetFileName(targetPackagePath));
-            Console.WriteLine(string.Format("Installed .Net Target Packs: {0}", targetPacks));
+            try {
+                string targetPacks = "";
+                foreach (string targetPackagePath in UserEnv.GetInstalledDotnetTargetPacks())
+                    targetPacks += string.Format("{0} ", Path.GetFileName(targetPackagePath));
+                Console.WriteLine(string.Format("Installed .Net Target Packs: {0}", targetPacks));
+            }
+            catch {
+                Console.WriteLine("No .Net Target Packs are installed.");
+            }
             Console.WriteLine(string.Format("pyRevit CLI {0}",
                                             Assembly.GetExecutingAssembly().GetName().Version.ToString()));
         }

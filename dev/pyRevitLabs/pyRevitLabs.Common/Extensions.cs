@@ -163,31 +163,41 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static List<string> ConvertFromTomlListString(this string tomlListString) {
-            //var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
-            //var quotedValues = new List<string>(cleanedValue.Split(','));
-            //var results = new List<string>();
-            //var valueFinder = new Regex(@"'(?<value>.+)'");
-            //foreach(var value in quotedValues) {
-            //    var m = valueFinder.Match(value);
-            //    if (m.Success)
-            //        results.Add(m.Groups["value"].Value);
-            //}
-            //return results;
-            return JsonConvert.DeserializeObject<List<string>>(tomlListString);
+            try {
+                return JsonConvert.DeserializeObject<List<string>>(tomlListString);
+            }
+            catch {
+                // try parsing using legacy method
+                var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
+                var quotedValues = new List<string>(cleanedValue.Split(','));
+                var results = new List<string>();
+                var valueFinder = new Regex(@"'(?<value>.+)'");
+                foreach (var value in quotedValues) {
+                    var m = valueFinder.Match(value);
+                    if (m.Success)
+                        results.Add(m.Groups["value"].Value);
+                }
+                return results;
+            }
         }
 
         public static Dictionary<string, string> ConvertFromTomlDictString(this string tomlDictString) {
-            //var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
-            //var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
-            //var results = new Dictionary<string, string>();
-            //var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
-            //foreach (var keyValueString in quotedKeyValuePairs) {
-            //    var m = valueFinder.Match(keyValueString);
-            //    if (m.Success)
-            //        results[m.Groups["key"].Value] = m.Groups["value"].Value;
-            //}
-            //return results;
-            return JsonConvert.DeserializeObject<Dictionary<string, string>>(tomlDictString);
+            try {
+                return JsonConvert.DeserializeObject<Dictionary<string, string>>(tomlDictString);
+            }
+            catch {
+                // try parsing using legacy method
+                var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
+                var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
+                var results = new Dictionary<string, string>();
+                var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
+                foreach (var keyValueString in quotedKeyValuePairs) {
+                    var m = valueFinder.Match(keyValueString);
+                    if (m.Success)
+                        results[m.Groups["key"].Value] = m.Groups["value"].Value;
+                }
+                return results;
+            }
         }
 
         public static Guid ExtractGuid(this string inputString) {
