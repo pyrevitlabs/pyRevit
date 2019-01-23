@@ -1377,14 +1377,14 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // sets config key value as bool
         // @handled @logs
-        private static void SetKeyValue(string sectionName, string keyName, bool boolVaue) {
-            UpdateKeyValue(sectionName, keyName, boolVaue.ToString());
+        private static void SetKeyValue(string sectionName, string keyName, bool boolValue) {
+            UpdateKeyValue(sectionName, keyName, boolValue.ConvertToTomlBoolString());
         }
 
         // sets config key value as int
         // @handled @logs
         private static void SetKeyValue(string sectionName, string keyName, int intValue) {
-            UpdateKeyValue(sectionName, keyName, intValue.ToString());
+            UpdateKeyValue(sectionName, keyName, intValue.ConvertToTomlIntString());
         }
 
         // sets config key value as string
