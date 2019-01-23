@@ -254,30 +254,31 @@ class SettingsWindow(forms.WPFWindow):
                 Revit.PyRevitAttachmentType.AllUsers
 
             # notify use to restart if engine has changed
-            new_engine = self.availableEngines.SelectedItem.engine.Version
-            if not self.is_same_version_as_running(new_engine):
-                forms.alert('Active engine has changed. '
-                            'Restart Revit for this change to take effect.')
-            # configure the engine on this version
-            Revit.PyRevit.Attach(
-                int(HOST_APP.version),
-                attachment.Clone,
-                new_engine,
-                all_users
-                )
+            if self.availableEngines.SelectedItem:
+                new_engine = self.availableEngines.SelectedItem.engine.Version
+                if not self.is_same_version_as_running(new_engine):
+                    forms.alert('Active engine has changed. '
+                                'Restart Revit for this change to take effect.')
+                # configure the engine on this version
+                Revit.PyRevit.Attach(
+                    int(HOST_APP.version),
+                    attachment.Clone,
+                    new_engine,
+                    all_users
+                    )
 
-            # now setup the attachments for other versions
-            for rvt_ver, checkbox in self._addinfiles_cboxes.items():
-                if checkbox.IsEnabled:
-                    if checkbox.IsChecked:
-                        Revit.PyRevit.Attach(
-                            int(rvt_ver),
-                            attachment.Clone,
-                            self.availableEngines.SelectedItem.engine.Version,
-                            all_users
-                            )
-                    else:
-                        Revit.PyRevit.Detach(int(rvt_ver))
+                # now setup the attachments for other versions
+                for rvt_ver, checkbox in self._addinfiles_cboxes.items():
+                    if checkbox.IsEnabled:
+                        if checkbox.IsChecked:
+                            Revit.PyRevit.Attach(
+                                int(rvt_ver),
+                                attachment.Clone,
+                                new_engine,
+                                all_users
+                                )
+                        else:
+                            Revit.PyRevit.Detach(int(rvt_ver))
         else:
             logger.error('Error determining current attached clone.')
 
@@ -381,7 +382,7 @@ class SettingsWindow(forms.WPFWindow):
             user_config.core.minhostdrivefreespace = 0
 
         user_config.core.loadbeta = self.loadbetatools_cb.IsChecked
-        user_config.core.startuplogtimeout = self.startup_log_timeout.Text
+        user_config.core.startuplogtimeout = int(self.startup_log_timeout.Text)
         user_config.core.rocketmode = self.rocketmode_cb.IsChecked
 
         # set extension folders from the list, after cleanup empty items

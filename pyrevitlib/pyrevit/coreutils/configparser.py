@@ -1,5 +1,6 @@
 """Base module for pyRevit config parsing."""
 import ast
+import json
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
@@ -34,16 +35,7 @@ class PyRevitConfigSectionParser(object):
         try:
             value = self._parser.get(self._section_name, param_name)
             try:
-                # cleanup true, false values to eval statement
-                if value.lower() == KEY_VALUE_TRUE:
-                    value = 'True'
-                elif value.lower() == KEY_VALUE_FALSE:
-                    value = 'False'
-
-                if value.isdecimal():
-                    value = int(value)
-
-                return ast.literal_eval(value)  #pylint: disable=W0123
+                return json.loads(value)  #pylint: disable=W0123
             except Exception:
                 return value
         except (NoOptionError, NoSectionError):
@@ -59,7 +51,8 @@ class PyRevitConfigSectionParser(object):
             # if not used by this object, then set a config section
             try:
                 return self._parser.set(self._section_name,
-                                        param_name, safe_strtype(value))
+                                        param_name,
+                                        json.dumps(value))
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))
@@ -169,7 +162,7 @@ class PyRevitConfigParser(object):
 
     def get_section(self, section_name):
         """Get section with given name.
-        
+
         Raises:
             AttributeError: if section is missing
         """

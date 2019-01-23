@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
+using Newtonsoft.Json;
+
 namespace pyRevitLabs.Common.Extensions {
     public static class ConstHelper {
         /// <summary>
@@ -161,29 +163,31 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static List<string> ConvertFromTomlListString(this string tomlListString) {
-            var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
-            var quotedValues = new List<string>(cleanedValue.Split(','));
-            var results = new List<string>();
-            var valueFinder = new Regex(@"'(?<value>.+)'");
-            foreach(var value in quotedValues) {
-                var m = valueFinder.Match(value);
-                if (m.Success)
-                    results.Add(m.Groups["value"].Value);
-            }
-            return results;
+            //var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
+            //var quotedValues = new List<string>(cleanedValue.Split(','));
+            //var results = new List<string>();
+            //var valueFinder = new Regex(@"'(?<value>.+)'");
+            //foreach(var value in quotedValues) {
+            //    var m = valueFinder.Match(value);
+            //    if (m.Success)
+            //        results.Add(m.Groups["value"].Value);
+            //}
+            //return results;
+            return JsonConvert.DeserializeObject<List<string>>(tomlListString);
         }
 
         public static Dictionary<string, string> ConvertFromTomlDictString(this string tomlDictString) {
-            var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
-            var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
-            var results = new Dictionary<string, string>();
-            var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
-            foreach (var keyValueString in quotedKeyValuePairs) {
-                var m = valueFinder.Match(keyValueString);
-                if (m.Success)
-                    results[m.Groups["key"].Value] = m.Groups["value"].Value;
-            }
-            return results;
+            //var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
+            //var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
+            //var results = new Dictionary<string, string>();
+            //var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
+            //foreach (var keyValueString in quotedKeyValuePairs) {
+            //    var m = valueFinder.Match(keyValueString);
+            //    if (m.Success)
+            //        results[m.Groups["key"].Value] = m.Groups["value"].Value;
+            //}
+            //return results;
+            return JsonConvert.DeserializeObject<Dictionary<string, string>>(tomlDictString);
         }
 
         public static Guid ExtractGuid(this string inputString) {
@@ -277,22 +281,24 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static string ConvertToTomlListString(this IEnumerable<string> sourceValues) {
-            var quotedValues = new List<string>();
-            foreach (var value in sourceValues)
-                quotedValues.Add(string.Format("'{0}'", value));
-            return "[" + string.Join(",", quotedValues) + "]";
+            //var quotedValues = new List<string>();
+            //foreach (var value in sourceValues)
+            //    quotedValues.Add(string.Format("'{0}'", value));
+            //return "[" + string.Join(",", quotedValues) + "]";
+            return JsonConvert.SerializeObject(sourceValues);
         }
     }
 
     public static class StringDictionaryExtensions {
         public static string ConvertToTomlDictString(this IDictionary<string, string> sourceValues) {
-            var quotedValues = new List<string>();
-            foreach (var keyValuePair in sourceValues) {
-                string quotedKey = string.Format("'{0}'", keyValuePair.Key);
-                string quotedValue = string.Format("'{0}'", keyValuePair.Value);
-                quotedValues.Add(string.Format("{0}:{1}", quotedKey, quotedValue));
-            }
-            return "{" + string.Join(",", quotedValues) + "}";
+            //var quotedValues = new List<string>();
+            //foreach (var keyValuePair in sourceValues) {
+            //    string quotedKey = string.Format("'{0}'", keyValuePair.Key);
+            //    string quotedValue = string.Format("'{0}'", keyValuePair.Value);
+            //    quotedValues.Add(string.Format("{0}:{1}", quotedKey, quotedValue));
+            //}
+            //return "{" + string.Join(",", quotedValues) + "}";
+            return JsonConvert.SerializeObject(sourceValues);
         }
     }
 }
