@@ -1,5 +1,4 @@
 import logging
-
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
@@ -37,7 +36,9 @@ mlogger = logger.get_logger(__name__)
 
 # setup logger
 class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
+    """NLog target to direct log messages to pyRevit output window."""
     def Write(self, asyncLogEvent):
+        """Write event handler."""
         try:
             event = asyncLogEvent.LogEvent
             level = self.convert_level(event.Level)
@@ -47,6 +48,7 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
             print(e)
 
     def convert_level(self, nlog_level):
+        """Convert Nlog levels to pything logging levels."""
         if nlog_level == NLog.LogLevel.Fatal:
             return logging.CRITICAL
         elif nlog_level == NLog.LogLevel.Error:

@@ -1353,7 +1353,15 @@ def is_box_visible_on_screens(left, top, width, height):
 
 
 def fuzzy_search_ratio(target_string, sfilter):
-    """Match target string against the filter and return a match ratio."""
+    """Match target string against the filter and return a match ratio.
+    
+    Args:
+        target_string (str): target string
+        sfilter (str): search term
+
+    Returns:
+        int: integer between 0 to 100, with 100 being the exact match
+    """
     tstring = target_string
     # 100 for identical matches
     if sfilter == tstring:

@@ -78,11 +78,7 @@ from pyrevit import BIN_DIR
 
 
 def get_type(fw_object):
-    """Return CLR type of an object.
-
-    Args:
-        fw_object: Dotnet Framework Object Instance
-    """
+    """Return CLR type of an object."""
     return clr.GetClrType(fw_object)
 
 

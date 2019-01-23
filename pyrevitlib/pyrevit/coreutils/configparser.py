@@ -13,6 +13,7 @@ KEY_VALUE_FALSE = "false"
 
 
 class PyRevitConfigSectionParser(object):
+    """Config section parser object. Handle section options."""
     def __init__(self, config_parser, section_name):
         self._parser = config_parser
         self._section_name = section_name
@@ -50,10 +51,12 @@ class PyRevitConfigSectionParser(object):
                                  .format(param_name))
 
     def __setattr__(self, param_name, value):
+        # check agaist used attribute names
         if param_name in ['_parser', '_section_name']:
             super(PyRevitConfigSectionParser, self).__setattr__(param_name,
                                                                 value)
         else:
+            # if not used by this object, then set a config section
             try:
                 return self._parser.set(self._section_name,
                                         param_name, safe_strtype(value))
@@ -63,16 +66,20 @@ class PyRevitConfigSectionParser(object):
 
     @property
     def header(self):
+        """Section header."""
         return self._section_name
 
     @property
     def subheader(self):
+        """Section sub-header e.g. Section.SubSection"""
         return coreutils.get_canonical_parts(self.header)[-1]
 
     def has_option(self, option_name):
+        """Check if section contains given option."""
         return self._parser.has_option(self._section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
+        """Get option value or return default."""
         try:
             return self.__getattr__(op_name)
         except Exception as opt_get_err:
@@ -83,20 +90,25 @@ class PyRevitConfigSectionParser(object):
                 raise opt_get_err
 
     def set_option(self, op_name, value):
+        """Set value of given option."""
         self.__setattr__(op_name, value)
 
     def remove_option(self, option_name):
+        """Remove given option from section."""
         return self._parser.remove_option(self._section_name, option_name)
 
     def has_subsection(self, section_name):
+        """Check if section has any subsections."""
         return True if self.get_subsection(section_name) else False
 
     def add_subsection(self, section_name):
+        """Add subsection to section."""
         return self._parser.add_section(
             coreutils.make_canonical_name(self._section_name, section_name)
         )
 
     def get_subsections(self):
+        """Get all subsections."""
         subsections = []
         for section_name in self._parser.sections():
             if section_name.startswith(self._section_name + '.'):
@@ -105,12 +117,14 @@ class PyRevitConfigSectionParser(object):
         return subsections
 
     def get_subsection(self, section_name):
+        """Get subsection with given name."""
         for subsection in self.get_subsections():
             if subsection.subheader == section_name:
                 return subsection
 
 
 class PyRevitConfigParser(object):
+    """Config parser object. Handle config sections and io."""
     def __init__(self, cfg_file_path=None):
         self._cfg_file_path = cfg_file_path
         self._parser = ConfigParser.ConfigParser()
@@ -128,17 +142,20 @@ class PyRevitConfigParser(object):
 
     def __getattr__(self, section_name):
         if self._parser.has_section(section_name):
+            # build a section parser object and return
             return PyRevitConfigSectionParser(self._parser, section_name)
         else:
             raise AttributeError('Section does not exist in config file.')
 
     def get_config_file_hash(self):
+        """Get calculated unique hash for this config."""
         with open(self._cfg_file_path, 'r') as cfg_file:
             cfg_hash = coreutils.get_str_hash(cfg_file.read())
 
         return cfg_hash
 
     def has_section(self, section_name):
+        """Check if config contains given section."""
         try:
             self.get_section(section_name)
             return True
@@ -146,10 +163,16 @@ class PyRevitConfigParser(object):
             return False
 
     def add_section(self, section_name):
+        """Add section with given name to config."""
         self._parser.add_section(section_name)
         return PyRevitConfigSectionParser(self._parser, section_name)
 
     def get_section(self, section_name):
+        """Get section with given name.
+        
+        Raises:
+            AttributeError: if section is missing
+        """
         # check is section with full name is available
         if self._parser.has_section(section_name):
             return PyRevitConfigSectionParser(self._parser, section_name)
@@ -168,12 +191,14 @@ class PyRevitConfigParser(object):
         raise AttributeError('Section does not exist in config file.')
 
     def remove_section(self, section_name):
+        """Remove section from config."""
         cfg_section = self.get_section(section_name)
         for cfg_subsection in cfg_section.get_subsections():
             self._parser.remove_section(cfg_subsection.header)
         self._parser.remove_section(cfg_section.header)
 
     def reload(self, cfg_file_path=None):
+        """Reload config from original or given file."""
         try:
             with open(cfg_file_path or self._cfg_file_path, 'r') as cfg_file:
                 self._parser.readfp(cfg_file)
@@ -181,6 +206,7 @@ class PyRevitConfigParser(object):
             raise PyRevitIOError()
 
     def save(self, cfg_file_path=None):
+        """Save config to original or given file."""
         try:
             with open(cfg_file_path or self._cfg_file_path, 'w') as cfg_file:
                 self._parser.write(cfg_file)

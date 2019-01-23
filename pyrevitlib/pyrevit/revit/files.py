@@ -1,3 +1,4 @@
+"""Helper functions for working with revit files."""
 import os
 import os.path as op
 import re
@@ -10,6 +11,7 @@ mlogger = get_logger(__name__)
 
 
 def cleanup_backups(main_revitfile):
+    """Remove all incremental saves of the given Revit file."""
     file_dir = op.dirname(main_revitfile)
     fname, fext = op.splitext(op.basename(main_revitfile))
     backup_fname = re.compile(r'{}\.\d\d\d\d\.{}'.format(fname,
