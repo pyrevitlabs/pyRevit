@@ -112,7 +112,7 @@ class SettingsWindow(forms.WPFWindow):
             self.asciicache_rb.IsChecked = True
 
         req_build = user_config.core.get_option('requiredhostbuild',
-                                                default_value=0)
+                                                default_value="")
         self.requiredhostbuild_tb.Text = str(req_build)
 
         min_freespace = user_config.core.get_option('minhostdrivefreespace',

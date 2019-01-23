@@ -286,7 +286,7 @@
                         <TextBlock TextWrapping="WrapWithOverflow">
                             You can set the required host build number.
                             pyRevit will show a warning if it's being run
-                            on a host with different build number. Set to 0
+                            on a host with different build number. Set to empty
                             to disable
                         </TextBlock>
                         <DockPanel Margin="0,10,0,10">
