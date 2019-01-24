@@ -226,7 +226,7 @@ namespace pyRevitManager.Views {
             // =======================================================================================================
             // $ pyrevit (-V|--version)
             // =======================================================================================================
-            if (arguments["--version"].IsTrue) {
+            if (arguments["--version"].IsTrue || arguments["-V"].IsTrue) {
                 Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, CLIVersion.ToString()));
                 if (CommonUtils.CheckInternetConnection()) {
                     var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
@@ -921,7 +921,7 @@ namespace pyRevitManager.Views {
 
                 if (arguments["--help"].IsTrue)
                     PrintSubHelpAndExit(new List<string>() { "revits" },
-                                        "Manage installed Revits");
+                                        "Manage installed and running Revits");
 
 
                 if (arguments["--installed"].IsTrue)
@@ -1160,14 +1160,17 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
+            // $ pyrevit caches --help
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "caches") && arguments["--help"].IsTrue) {
+                PrintSubHelpAndExit(new List<string>() { "caches" },
+                                    "Manage pyRevit caches");
+            }
+
+            // =======================================================================================================
             // $ pyrevit caches clear (--all | <revit_year>)
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "caches", "clear")) {
-
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "caches" },
-                                        "Manage pyRevit caches");
-
                 if (arguments["--all"].IsTrue)
                     PyRevit.ClearAllCaches();
                 else if (arguments["<revit_year>"] != null) {
@@ -1415,14 +1418,16 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
+            // $ pyrevit cli --help
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "cli") && arguments["--help"].IsTrue) {
+                PrintSubHelpAndExit(new List<string>() { "cli" },
+                                    "Manage this utility");
+            }
+            // =======================================================================================================
             // $ pyrevit cli addshortcut <shortcut_name> <shortcut_args> [--desc=<shortcut_description>] [--allusers]
             // =======================================================================================================
             else if (VerifyCommand(activeKeys, "cli", "addshortcut")) {
-
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "cli" },
-                                        "Manage this utility");
-
                 var shortcutName = TryGetValue(arguments, "<shortcut_name>");
                 var shortcutArgs = TryGetValue(arguments, "<shortcut_args>");
                 var shortcutDesc = TryGetValue(arguments, "--desc");
@@ -1445,7 +1450,7 @@ namespace pyRevitManager.Views {
             // =======================================================================================================
             // $ pyrevit (-h|--help)
             // =======================================================================================================
-            else if (arguments["--help"].IsTrue) {
+            else if (arguments["--help"].IsTrue || arguments["-h"].IsTrue) {
                 Console.WriteLine(FullHelp);
             }
         }
@@ -1615,10 +1620,13 @@ namespace pyRevitManager.Views {
                 if (hline.Contains("Usage:"))
                     Console.WriteLine(hline);
                 else
-                    foreach(var kword in keywords)
-                        if (hline.Contains("pyrevit " + kword + " ") || hline.EndsWith(" " + kword))
-                            Console.WriteLine(hline.Replace("pyrevit ", ""));
-            Console.WriteLine(helpOptions);
+                    foreach(var kword in keywords) {
+                        if ((hline.Contains("pyrevit " + kword + " ") || hline.EndsWith(" " + kword))
+                            && !hline.Contains("pyrevit " + kword + " --help"))
+                            Console.WriteLine(hline);
+                    }
+            //Console.WriteLine(helpOptions);
+            Console.WriteLine();
             Environment.Exit(0);
         }
 
