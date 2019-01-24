@@ -21,6 +21,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
     // pyrevit bundle types
     public enum PyRevitBundleTypes {
+        Unknown,
         Tab,
         Panel,
         LinkButton,
