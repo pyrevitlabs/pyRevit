@@ -1,4 +1,5 @@
 import os.path as op
+import re
 from math import sqrt, pi, sin, cos, degrees
 
 from pyrevit import PyRevitException
@@ -16,7 +17,7 @@ PI = pi
 HALF_PI = PI/2.0
 ZERO_TOL = 5e-06
 
-COORD_RESOLUTION = 8
+COORD_RESOLUTION = 16
 
 # 0.5 < MODEL < 848.5 inches, source: http://hatchkit.com.au/faq.php#Tip7
 MAX_MODEL_DOMAIN = 100.0
@@ -43,10 +44,20 @@ PAT_FILE_TEMPLATE = \
     ";%TYPE={type}\n"
 
 
+def round_vector(length):
+    length = length if abs(length) > ZERO_TOL else 0.0
+    return round(length, COORD_RESOLUTION)
+
+
+def flatten_zeros(length):
+    length_str = ('{:.' + str(COORD_RESOLUTION) + 'f}').format(length)
+    return re.sub(r'\.0+$', '.0', length_str)
+
+
 class _PatternPoint:
     def __init__(self, u_point, v_point):
-        self.u = round(u_point, COORD_RESOLUTION)
-        self.v = round(v_point, COORD_RESOLUTION)
+        self.u = round_vector(u_point)
+        self.v = round_vector(v_point)
 
     def __repr__(self):
         return '<_PatternPoint U:{0:.20f} V:{1:.20f}>'.format(self.u, self.v)
@@ -220,10 +231,11 @@ class _PatternSafeGrid:
     @property
     def offset(self):
         if self._angle == 0.0:
-            return self._domain_v * self._offset_direction
+            total_offset = self._domain_v * self._offset_direction
         else:
-            return abs(self._domain_u * sin(self._angle)
-                       / self._v_tiles) * self._offset_direction
+            total_offset = abs(self._domain_u * sin(self._angle)
+                               / self._v_tiles) * self._offset_direction
+        return total_offset
 
     @property
     def shift(self):
@@ -619,12 +631,15 @@ class _RevitPattern:
                                      type=pat_type)
 
         for pat_grid in self._pattern_grids:
+            # angle, u, v, shift, offset, segments....
             grid_desc = \
-                PAT_SEPARATOR.join([str(degrees(pat_grid.angle)),
-                                    str(pat_grid.origin.u * self._scale),
-                                    str(pat_grid.origin.v * self._scale),
-                                    str(pat_grid.shift * self._scale),
-                                    str(pat_grid.offset * self._scale)])
+                PAT_SEPARATOR.join([
+                    flatten_zeros(
+                        degrees(pat_grid.angle)),
+                    flatten_zeros(pat_grid.origin.u * self._scale),
+                    flatten_zeros(pat_grid.origin.v * self._scale),
+                    flatten_zeros(pat_grid.shift * self._scale),
+                    flatten_zeros(pat_grid.offset * self._scale)])
             grid_desc += PAT_SEPARATOR
             if pat_grid.segments:
                 scaled_segments = []
@@ -633,8 +648,9 @@ class _RevitPattern:
                         seg *= -1
                     scaled_segments.append(seg * self._scale)
 
-                grid_desc += PAT_SEPARATOR.join([str(seg_l)
-                                                 for seg_l in scaled_segments])
+                grid_desc += PAT_SEPARATOR.join(
+                    [flatten_zeros(x) for x in scaled_segments]
+                    )
 
             pattern_desc += grid_desc + '\n'
 
