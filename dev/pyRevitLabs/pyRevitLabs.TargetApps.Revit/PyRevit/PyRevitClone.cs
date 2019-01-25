@@ -51,11 +51,11 @@ namespace pyRevitLabs.TargetApps.Revit {
         public override string ToString() {
             if (IsRepoDeploy)
                 return string.Format(
-                    "Name: \"{0}\" | Branch: \"{1}\" | Version: \"{2}\" | Path: \"{3}\"",
+                    "{0} | Branch: \"{1}\" | Version: \"{2}\" | Path: \"{3}\"",
                     Name, Branch, string.Format("{0}:{1}", ModuleVersion, Commit), ClonePath);
             else {
                 return string.Format(
-                    "Name: \"{0}\" | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
+                    "{0} | Deploy: \"{1}\" | Branch: \"{2}\" | Version: \"{3}\" | Path: \"{4}\"",
                     Name, Deployment.Name, Branch, ModuleVersion, ClonePath);
             }
         }
