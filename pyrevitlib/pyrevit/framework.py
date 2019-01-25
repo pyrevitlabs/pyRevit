@@ -73,6 +73,13 @@ from Microsoft.CSharp import CSharpCodeProvider
 clr.AddReference('IronPython.Wpf')
 import wpf
 
+try:
+    # clr.AddReference('Microsoft.WindowsAPICodePack')
+    clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
+    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs
+except Exception:
+    CPDialogs = None
+
 
 from pyrevit import BIN_DIR
 
