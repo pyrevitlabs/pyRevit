@@ -842,7 +842,7 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Myfile-(3).txt')
         "Myfile3.txt"
     """
-    return re.sub(r'[^\w_.)( -]', '', file_name)
+    return re.sub(r'[^\w_.)( -#]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
