@@ -467,17 +467,26 @@ namespace pyRevitManager.Views {
                 if (cloneName != null) {
                     var clone = PyRevit.GetRegisteredClone(cloneName);
                     if (clone != null) {
+                        // get version for git clones
                         if (clone.IsRepoDeploy) {
                             if (tagName != null) {
                                 clone.SetTag(tagName);
                             }
                             else {
-                                logger.Error("Version finder not yet implemented");
+                                logger.Error("Version finder not yet implemented for git clones.");
                                 // TODO: grab version from repo (last tag?)
                             }
                         }
-                        else
-                            ReportCloneAsNoGit(clone);
+                        // get version for other clones
+                        else {
+                            if (tagName != null) {
+                                logger.Error("Version setter not yet implemented for clones.");
+                                // TODO: set version for archive clones?
+                            }
+                            else {
+                                Console.WriteLine(clone.ModuleVersion);
+                            }
+                        }
                     }
                 }
             }

@@ -35,13 +35,24 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string CLIReleasePrefix = "cli-v";
         public const string APIReleasesUrl = @"https://api.github.com/repos/eirannejad/pyrevit/releases";
 
-            // repo info
+        // repo info
+        public const string DefaultGitDirName = ".git";
         public const string DefaultCloneInstallName = "pyRevit";
         public const string DefaultCopyInstallName = "pyRevitCopy";
         public const string DefaultCloneRemoteName = "origin";
         public const string DefaultExtensionRemoteName = "origin";
         public const string OriginalRepoDefaultBranch = "master";
         public const string ExtensionRepoDefaultBranch = "master";
+
+        // directories and files
+        public const string PyReviBinDirName = "bin";
+        public const string PyReviBinEnginesDirName = "engines";
+        public const string PyRevitLibDirName = "pyrevitlib";
+        public const string PyRevitModuleDirName = "pyrevit";
+        public const string PyRevitModuleLoaderDirName = "loader";
+        public const string PyRevitModuleAddinDirName = "addin";
+        public const string PyRevitVersionFilename = "version";
+
         public const string PyRevitfileFilename = "PyRevitfile";
 
         // archive clones
