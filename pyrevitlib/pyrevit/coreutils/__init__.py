@@ -312,7 +312,7 @@ def get_revit_instance_count():
     return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
-def run_process(proc, cwd=''):
+def run_process(proc, cwd='C:'):
     """Run shell process silently.
 
     Args:
