@@ -9,7 +9,7 @@ from Autodesk.Revit.DB import Element   #pylint: disable=E0401
 
 #pylint: disable=W0703,C0302,C0103
 __all__ = ('BaseWrapper', 'ElementWrapper',
-           'ExternalRef', 'ProjectParameter', 'CurrentProjectInfo',
+           'ExternalRef', 'ProjectParameter', 'ProjectInfo',
            'XYZPoint')
 
 
@@ -187,24 +187,29 @@ class ProjectParameter(BaseWrapper):
             return 'Type'
 
 
-class CurrentProjectInfo(BaseWrapper):
-    def __init__(self):
-        super(CurrentProjectInfo, self).__init__()
+class ProjectInfo(BaseWrapper):
+    def __init__(self, doc):
+        super(ProjectInfo, self).__init__()
+        self._doc = doc
 
     @property
     def name(self):
-        if not HOST_APP.doc.IsFamilyDocument:
-            return HOST_APP.doc.ProjectInformation.Name
+        if not self._doc.IsFamilyDocument:
+            return self._doc.ProjectInformation.Name
         else:
             return ''
 
     @property
     def location(self):
-        return HOST_APP.doc.PathName
+        return op.dirname(self._doc.PathName)
+
+    @property
+    def path(self):
+        return self._doc.PathName
 
     @property
     def filename(self):
-        return op.splitext(op.basename(self.location))[0]
+        return op.splitext(op.basename(self.path))[0]
 
 
 class XYZPoint(BaseWrapper):
