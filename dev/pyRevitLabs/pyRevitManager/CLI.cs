@@ -99,10 +99,8 @@ namespace pyRevitManager.Views {
         pyrevit run <script_file> [--revit=<revit_year>] [--purge]
         pyrevit run <script_file> <model_file> [--revit=<revit_year>] [--purge]
         pyrevit init --help
-        pyrevit init (ui | lib) <extension_name>
-        pyrevit init (tab | panel | pull | split | push | smart | command) <bundle_name>
-        pyrevit init templates
-        pyrevit init templates (add | forget) <init_templates_path>
+        pyrevit init (ui | lib) <extension_name> [--usetemplate] [--templates=<templates_path>]
+        pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
         pyrevit caches --help
         pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
         pyrevit config --help
@@ -1153,19 +1151,58 @@ namespace pyRevitManager.Views {
             }
 
             // =======================================================================================================
-            // $ pyrevit init (ui | lib) <extension_name>
-            // $ pyrevit init (tab | panel | pull | split | push | smart | command) <bundle_name>
-            // $ pyrevit init templates
-            // $ pyrevit init templates (add | forget) <init_templates_path>
+            // $ pyrevit init --help
             // =======================================================================================================
-            else if (arguments["init"].IsTrue) {
+            else if (VerifyCommand(activeKeys, "init") && arguments["--help"].IsTrue) {
+                PrintSubHelpAndExit(new List<string>() { "init" },
+                                    "Init pyRevit bundles");
+            }
 
-                if (arguments["--help"].IsTrue)
-                    PrintSubHelpAndExit(new List<string>() { "init" },
-                                        "Init pyRevit bundles");
 
-                // TODO: implement init and templates
-                logger.Error("Init feature is not implemented yet");
+            // =======================================================================================================
+            //  $ pyrevit init (ui | lib) <extension_name> [--usetemplate] [--templates=<templates_path>]
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "init", "ui") || VerifyCommand(activeKeys, "init", "lib")) {
+
+                var extType =
+                    arguments["ui"].IsTrue ?
+                        PyRevitExtensionTypes.UIExtension : PyRevitExtensionTypes.LibraryExtension;
+
+                var extDirPostfix = PyRevitConsts.GetExtensionDirExt(extType);
+
+                var extensionName = TryGetValue(arguments, "<extension_name>");
+                var templatesDir = TryGetValue(arguments, "--templates");
+                if (extensionName != null) {
+                    var pwd = Directory.GetCurrentDirectory();
+
+                    if (CommonUtils.ConfirmFileNameIsUnique(pwd, extensionName)) {
+                        var extDir = Path.Combine(
+                            pwd,
+                            string.Format("{0}{1}", extensionName, extDirPostfix)
+                            );
+
+                        var extTemplateDir = GetExtensionTemplate(extType, templatesDir: templatesDir);
+                        if (arguments["--usetemplate"].IsTrue && extTemplateDir != null) {
+                            CommonUtils.CopyDirectory(extTemplateDir, extDir);
+                            Console.WriteLine(
+                                string.Format("Extension directory created from template: \"{0}\"", extDir)
+                                );
+                        }
+                        else {
+                            if (!Directory.Exists(extDir)) {
+                                var dinfo = Directory.CreateDirectory(extDir);
+                                Console.WriteLine(string.Format("{0} directory created: \"{1}\"", extType, extDir));
+                            }
+                            else
+                                throw new pyRevitException("Directory already exists.");
+                        }
+
+                    }
+                    else
+                        throw new pyRevitException(
+                            string.Format("Another extension with name \"{0}\" already exists.", extensionName)
+                            );
+                }
             }
 
             // =======================================================================================================
@@ -1174,6 +1211,86 @@ namespace pyRevitManager.Views {
             else if (VerifyCommand(activeKeys, "caches") && arguments["--help"].IsTrue) {
                 PrintSubHelpAndExit(new List<string>() { "caches" },
                                     "Manage pyRevit caches");
+            }
+
+            // =======================================================================================================
+            // $ pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "init", "tab")
+                        || VerifyCommand(activeKeys, "init", "panel")
+                        || VerifyCommand(activeKeys, "init", "panelopt")
+                        || VerifyCommand(activeKeys, "init", "pull")
+                        || VerifyCommand(activeKeys, "init", "split")
+                        || VerifyCommand(activeKeys, "init", "splitpush")
+                        || VerifyCommand(activeKeys, "init", "push")
+                        || VerifyCommand(activeKeys, "init", "smart")
+                        || VerifyCommand(activeKeys, "init", "command")) {
+
+                // determine bundle
+                PyRevitBundleTypes bundleType = PyRevitBundleTypes.Unknown;
+
+                if (arguments["tab"].IsTrue)
+                    bundleType = PyRevitBundleTypes.Tab;
+                else if (arguments["panel"].IsTrue)
+                    bundleType = PyRevitBundleTypes.Panel;
+                else if (arguments["panelopt"].IsTrue)
+                    bundleType = PyRevitBundleTypes.PanelButton;
+                else if (arguments["pull"].IsTrue)
+                    bundleType = PyRevitBundleTypes.PullDown;
+                else if (arguments["split"].IsTrue)
+                    bundleType = PyRevitBundleTypes.SplitButton;
+                else if (arguments["splitpush"].IsTrue)
+                    bundleType = PyRevitBundleTypes.SplitPushButton;
+                else if (arguments["push"].IsTrue)
+                    bundleType = PyRevitBundleTypes.PushButton;
+                else if (arguments["smart"].IsTrue)
+                    bundleType = PyRevitBundleTypes.SmartButton;
+                else if (arguments["command"].IsTrue)
+                    bundleType = PyRevitBundleTypes.NoButton;
+
+                if (bundleType != PyRevitBundleTypes.Unknown) {
+                    var bundleName = TryGetValue(arguments, "<bundle_name>");
+                    var templatesDir = TryGetValue(arguments, "--templates");
+                    if (bundleName != null) {
+                        var pwd = Directory.GetCurrentDirectory();
+
+                        if (CommonUtils.ConfirmFileNameIsUnique(pwd, bundleName)) {
+                            var bundleDir = Path.Combine(
+                                pwd,
+                                string.Format("{0}{1}", bundleName, PyRevitConsts.GetBundleDirExt(bundleType))
+                                );
+
+                            var bundleTempDir = GetBundleTemplate(bundleType, templatesDir: templatesDir);
+                            if (arguments["--usetemplate"].IsTrue && bundleTempDir != null) {
+                                CommonUtils.CopyDirectory(bundleTempDir, bundleDir);
+                                Console.WriteLine(
+                                    string.Format("Bundle directory created from template: \"{0}\"", bundleDir)
+                                    );
+                            }
+                            else {
+                                if (!Directory.Exists(bundleDir)) {
+                                    var dinfo = Directory.CreateDirectory(bundleDir);
+                                    Console.WriteLine(string.Format("Bundle directory created: \"{0}\"", bundleDir));
+                                }
+                                else
+                                    throw new pyRevitException("Directory already exists.");
+                            }
+
+                        }
+                        else
+                            throw new pyRevitException(
+                                string.Format("Another bundle with name \"{0}\" already exists.", bundleName)
+                                );
+                    }
+                }
+            }
+
+            // =======================================================================================================
+            // $ pyrevit init templates
+            // $ pyrevit init templates (add | forget) <init_templates_path>
+            // =======================================================================================================
+            else if (VerifyCommand(activeKeys, "init", "templates")) {
+                Console.WriteLine(Directory.GetCurrentDirectory());
             }
 
             // =======================================================================================================
@@ -1618,6 +1735,41 @@ namespace pyRevitManager.Views {
             Environment.Exit(0);
         }
 
+        // extensions and bundles
+        private static string GetExtensionTemplate(PyRevitExtensionTypes extType, string templatesDir = null) {
+            templatesDir = templatesDir != null ? templatesDir : Path.Combine(GetProcessPath(), "templates");
+            if (CommonUtils.VerifyPath(templatesDir)) {
+                var extTempPath =
+                    Path.Combine(templatesDir, "template" + PyRevitConsts.GetExtensionDirExt(extType));
+                if (CommonUtils.VerifyPath(extTempPath))
+                    return extTempPath;
+            }
+            else
+                throw new pyRevitException(
+                    string.Format("Templates directory does not exist at \"{0}\"", templatesDir)
+                    );
+
+
+            return null;
+        }
+
+        private static string GetBundleTemplate(PyRevitBundleTypes bundleType, string templatesDir = null) {
+            templatesDir = templatesDir != null ? templatesDir : Path.Combine(GetProcessPath(), "templates");
+            if (CommonUtils.VerifyPath(templatesDir)) {
+                var bundleTempPath =
+                    Path.Combine(templatesDir, "template" + PyRevitConsts.GetBundleDirExt(bundleType));
+                if (CommonUtils.VerifyPath(bundleTempPath))
+                    return bundleTempPath;
+            }
+            else
+                throw new pyRevitException(
+                    string.Format("Templates directory does not exist at \"{0}\"", templatesDir)
+                    );
+
+            return null;
+        }
+
+        // print functions
         private static void PrintHeader(string header) {
             Console.WriteLine(string.Format("==> {0}", header), Color.Green);
         }

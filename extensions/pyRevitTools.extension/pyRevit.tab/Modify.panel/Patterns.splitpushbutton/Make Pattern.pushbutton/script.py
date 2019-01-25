@@ -65,7 +65,7 @@ metric_units = [DB.DisplayUnitType.DUT_METERS,
 readonly_patterns = ['solid fill']
 
 
-PICK_COORD_RESOLUTION = 8
+PICK_COORD_RESOLUTION = 16
 
 
 class MakePatternWindow(forms.WPFWindow):
@@ -129,7 +129,8 @@ class MakePatternWindow(forms.WPFWindow):
 
     @staticmethod
     def round_coord(coord):
-        return round(coord, PICK_COORD_RESOLUTION)
+        return coord
+        # return round(coord, PICK_COORD_RESOLUTION)
 
     def get_view_direction(self):
         return revit.activeview.ViewDirection
@@ -217,8 +218,9 @@ class MakePatternWindow(forms.WPFWindow):
         # ask user for origin and max domain points
         with forms.WarningBar(title='Pick origin point (bottom-left '
                                     'corner of the pattern area):'):
-            if not revit.activeview.SketchPlane:
-                view = revit.activeview
+            view = revit.activeview
+            if not view.SketchPlane \
+                    and not isinstance(view, DB.ViewDrafting):
                 base_plane = \
                     DB.Plane.CreateByNormalAndOrigin(view.ViewDirection,
                                                      view.Origin)
