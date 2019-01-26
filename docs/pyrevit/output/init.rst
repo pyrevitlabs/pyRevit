@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.output
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/output/__init__.py

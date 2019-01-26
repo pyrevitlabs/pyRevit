@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.output.linkmaker
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/output/linkmaker.py

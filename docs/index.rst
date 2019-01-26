@@ -10,26 +10,28 @@ I suggest reading this section completely as it provides 99% of what you will
 need to know for developing scripts in pyRevit environment. Other sections dive
 deeper into pyRevit inner workings.
 
+* :doc:`articles/firstcommand`
 * :doc:`articles/scriptanatomy`
 * :doc:`articles/outputfeatures`
 * :doc:`articles/commandbutton`
 * :doc:`articles/creatingexts`
 * :doc:`articles/config`
 * :doc:`articles/usagelogger`
-* :doc:`articles/installer`
+* :doc:`articles/cli`
 
 ..  toctree::
     :maxdepth: 2
     :hidden:
     :caption: Getting Started
 
+    articles/firstcommand.rst
     articles/scriptanatomy.rst
     articles/outputfeatures.rst
     articles/commandbutton.rst
     articles/creatingexts.rst
     articles/config.rst
     articles/usagelogger.rst
-    articles/installer.rst
+    articles/cli.rst
 
 **pyRevit Core**
 
@@ -55,6 +57,7 @@ deeper into pyRevit inner workings.
 * :doc:`pyrevit/userconfig`
 * :doc:`pyrevit/coreutils`
 * :doc:`pyrevit/output`
+* :doc:`pyrevit/revit`
 
 ..  toctree::
     :maxdepth: 2
@@ -70,3 +73,4 @@ deeper into pyRevit inner workings.
     pyrevit/userconfig.rst
     pyrevit/coreutils.rst
     pyrevit/output.rst
+    pyrevit/revit.rst

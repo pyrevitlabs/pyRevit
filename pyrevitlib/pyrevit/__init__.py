@@ -16,6 +16,8 @@ import os
 import os.path as op
 from collections import namedtuple
 import traceback
+import re
+
 import clr  #pylint: disable=E0401
 
 
@@ -36,9 +38,15 @@ except ImportError:
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
-VERSION_MAJOR = 4
-VERSION_MINOR = 6
-BUILD_METADATA = '.12'
+
+# extract version from version file
+VERSION_STRING = '0.0.'
+with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
+    VERSION_STRING = version_file.read()
+VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA = \
+    re.findall(r'(\d+).(\d+)(.+)', VERSION_STRING)[0]
+VERSION_MAJOR = int(VERSION_MAJOR)
+VERSION_MINOR = int(VERSION_MINOR)
 
 # -----------------------------------------------------------------------------
 # config environment paths

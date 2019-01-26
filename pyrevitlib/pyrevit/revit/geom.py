@@ -18,8 +18,8 @@ def convert_point_coord_system(rvt_point, rvt_transform):
     return rvt_transform.OfVector(rvt_transform.Origin - rvt_point)
 
 
-def convert_point_to_metric(point):
+def convert_point_to_metric(rvt_point):
     """Convert given point coordinates to metric."""
-    return DB.XYZ(point.X * 0.3048,
-                  point.Y * 0.3048,
-                  point.Z * 0.3048)
+    return DB.XYZ(rvt_point.X * 0.3048,
+                  rvt_point.Y * 0.3048,
+                  rvt_point.Z * 0.3048)

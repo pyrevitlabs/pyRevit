@@ -173,15 +173,29 @@ class GenericUIContainer(GenericUIComponent):
             mlogger.debug('Container does not have layout file defined: %s',
                           self)
 
+    def _apply_layout_directive(self, layout_directives, component):
+        # grab the first matching directive
+        matching_ldir = \
+            next((x for x in layout_directives if x.item == component.name),
+                 None)
+        # if matching directive found, process the directive
+        if matching_ldir:
+            if matching_ldir.type == 'title':
+                component.ui_title = matching_ldir.target
+
     def _get_components_per_layout(self):
         # if item is not listed in layout, it will not be created
         if self.layout_items and self._sub_components:
             mlogger.debug('Reordering components per layout file...')
+            layout_directives = self.get_layout_directives()
             layout_index = 0
             _processed_cmps = []
             for layout_item in self.layout_items:
                 for cmp_index, component in enumerate(self._sub_components):     #pylint: disable=W0612
                     if component.name == layout_item:
+                        # apply directives before adding to list
+                        self._apply_layout_directive(layout_directives,
+                                                     component)
                         _processed_cmps.append(component)
                         layout_index += 1
                         break
@@ -251,14 +265,20 @@ class GenericUIContainer(GenericUIComponent):
         if self.layout:
             for item_def in self.layout:
                 for dir_defs in re.findall(r'(.+)\[(.+):(.*)\]', item_def):
-                    source_item, directive, target_name = dir_defs
+                    source_item, directive, target_value = dir_defs
                     directive = directive.lower().strip()
-                    target_name = target_name.strip()
+                    target_value = target_value.strip()
+                    # process any escape characters in target value
+                    # https://stackoverflow.com/a/4020824/2350244
+                    # decode('string_escape') for python 2
+                    target_value = \
+                        target_value.encode('utf-8').decode('string_escape')
+                    # create directive obj
                     layout_directives.append(
                         LayoutDirective(
                             type=directive,
                             item=source_item,
-                            target=target_name
+                            target=target_value
                         ))
         return layout_directives
 

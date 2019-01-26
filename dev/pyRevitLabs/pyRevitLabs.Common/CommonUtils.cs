@@ -58,6 +58,7 @@ namespace pyRevitLabs.Common {
         // helper for copying a directory recursively
         // @handled @logs
         public static void CopyDirectory(string sourceDir, string destDir) {
+            ConfirmPath(destDir);
             logger.Debug("Copying \"{0}\" to \"{1}\"", sourceDir, destDir);
             try {
                 // create all of the directories
@@ -89,6 +90,18 @@ namespace pyRevitLabs.Common {
                 var file = System.IO.File.CreateText(filepath);
                 file.Close();
             }
+        }
+
+        public static bool ConfirmFileNameIsUnique(string targetDir, string fileName) {
+            foreach (var subdir in Directory.GetDirectories(targetDir))
+                if (Path.GetFileNameWithoutExtension(subdir).ToLower() == fileName.ToLower())
+                    return false;
+
+            foreach (var subFile in Directory.GetFiles(targetDir))
+                if (Path.GetFileNameWithoutExtension(subFile).ToLower() == fileName.ToLower())
+                    return false;
+
+            return true;
         }
 
         public static string DownloadFile(string url, string destPath)

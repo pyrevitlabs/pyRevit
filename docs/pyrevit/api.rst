@@ -3,7 +3,6 @@
 
 .. automodule:: pyrevit.api
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/api.py

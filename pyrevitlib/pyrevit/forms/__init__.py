@@ -24,6 +24,7 @@ from pyrevit.framework import Threading
 from pyrevit.framework import Interop
 from pyrevit.framework import Input
 from pyrevit.framework import wpf, Forms, Controls, Media
+from pyrevit.framework import CPDialogs
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
 from pyrevit.forms import utils
@@ -1871,11 +1872,20 @@ def pick_folder(title=None):
     Returns:
         str: folder path
     """
-    fb_dlg = Forms.FolderBrowserDialog()
-    if title:
-        fb_dlg.Description = title
-    if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
-        return fb_dlg.SelectedPath
+    if CPDialogs:
+        fb_dlg = CPDialogs.CommonOpenFileDialog()
+        fb_dlg.IsFolderPicker = True
+        if title:
+            fb_dlg.Description = title
+        if fb_dlg.ShowDialog() == CPDialogs.CommonFileDialogResult.Ok:
+            return fb_dlg.FileName
+    else:
+        fb_dlg = Forms.FolderBrowserDialog()
+        if title:
+            fb_dlg.Description = title
+        if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
+            return fb_dlg.SelectedPath
+
 
 
 def pick_file(file_ext='', files_filter='', init_dir='',

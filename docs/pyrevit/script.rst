@@ -6,7 +6,6 @@ See :ref:`scriptmodule`
 .. automodule:: pyrevit.script
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/script.py

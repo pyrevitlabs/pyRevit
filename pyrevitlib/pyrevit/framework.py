@@ -73,16 +73,19 @@ from Microsoft.CSharp import CSharpCodeProvider
 clr.AddReference('IronPython.Wpf')
 import wpf
 
+try:
+    # clr.AddReference('Microsoft.WindowsAPICodePack')
+    clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
+    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs
+except Exception:
+    CPDialogs = None
+
 
 from pyrevit import BIN_DIR
 
 
 def get_type(fw_object):
-    """Return CLR type of an object.
-
-    Args:
-        fw_object: Dotnet Framework Object Instance
-    """
+    """Return CLR type of an object."""
     return clr.GetClrType(fw_object)
 
 

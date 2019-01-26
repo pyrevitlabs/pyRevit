@@ -3,20 +3,43 @@
 Shift-Click:
 Rename files on Desktop
 """
+#pylint: disable=C0103,E0401
 
-
-import os
 import os.path as op
 
 from pyrevit import forms
 from pyrevit import coreutils
 from pyrevit import revit, DB
+from pyrevit import script
 
 
+logger = script.get_logger()
+output = script.get_output()
+
+
+open_exported = False
+basefolder = ''
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
-if __shiftclick__:
-    basefolder = op.expandvars('%userprofile%\\desktop')
+if __shiftclick__:  #pylint: disable=E0602
+    destopt, switches = forms.CommandSwitchWindow.show(
+        ["My Desktop", "Where Revit Model Is", "My Downloads"],
+        switches=["Open CSV File"],
+        message="Select destination:")
+    if destopt == "My Desktop":
+        basefolder = op.expandvars('%userprofile%\\desktop')
+    if destopt == "My Downloads":
+        basefolder = op.expandvars('%userprofile%\\downloads')
+    elif destopt == "Where Revit Model Is":
+        central_path = revit.query.get_central_path()
+        if central_path:
+            basefolder = op.dirname(central_path)
+        else:
+            basefolder = revit.query.get_project_info().location
+            if not basefolder:
+                forms.alert("Project has not been saved yet.", exitscript=True)
+
+    open_exported = switches["Open CSV File"]
 else:
     basefolder = forms.pick_folder()
 
@@ -35,8 +58,9 @@ def is_schedule(view):
 
 
 if basefolder:
-    schedules_to_export = forms.select_views(title='Select Schedules',
-                                            filterfunc=is_schedule)
+    logger.debug(basefolder)
+    schedules_to_export = forms.select_views(title="Select Schedules",
+                                             filterfunc=is_schedule)
 
     if schedules_to_export:
         vseop = DB.ViewScheduleExportOptions()
@@ -47,10 +71,13 @@ if basefolder:
         vseop.HeadersFootersBlanks = False
 
         for sched in schedules_to_export:
-            fname = "".join(
-                x for x in revit.query.get_name(sched) if x not in ['*']
-                ) + '.csv'
+            fname = \
+                coreutils.cleanup_filename(revit.query.get_name(sched)) + '.csv'
             sched.Export(basefolder, fname, vseop)
-            coreutils.correct_revittxt_encoding(op.join(basefolder, fname))
-            print('EXPORTED: {0}\n      TO: {1}\n'
-                .format(revit.query.get_name(sched), fname))
+            exported = op.join(basefolder, fname)
+            coreutils.correct_revittxt_encoding(exported)
+            output.print_md("**EXPORTED:** {0}"
+                            .format(revit.query.get_name(sched)))
+            print(exported)
+            if open_exported:
+                coreutils.run_process('"%s"' % exported)

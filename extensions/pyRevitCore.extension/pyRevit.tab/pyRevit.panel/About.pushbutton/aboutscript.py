@@ -48,6 +48,11 @@ class AboutWindow(forms.WPFWindow):
                 except Exception:
                     pass
 
+        # get cli version
+        pyrvt_cli_version = 'v' + versionmgr.get_pyrevit_cli_version()
+        self.show_element(self.cli_info)
+        self.cliversion.Text = pyrvt_cli_version
+
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.version.Text = nice_version

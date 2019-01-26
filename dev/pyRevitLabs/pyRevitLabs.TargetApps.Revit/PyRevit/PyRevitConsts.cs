@@ -35,13 +35,24 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string CLIReleasePrefix = "cli-v";
         public const string APIReleasesUrl = @"https://api.github.com/repos/eirannejad/pyrevit/releases";
 
-            // repo info
+        // repo info
+        public const string DefaultGitDirName = ".git";
         public const string DefaultCloneInstallName = "pyRevit";
         public const string DefaultCopyInstallName = "pyRevitCopy";
         public const string DefaultCloneRemoteName = "origin";
         public const string DefaultExtensionRemoteName = "origin";
         public const string OriginalRepoDefaultBranch = "master";
         public const string ExtensionRepoDefaultBranch = "master";
+
+        // directories and files
+        public const string PyReviBinDirName = "bin";
+        public const string PyReviBinEnginesDirName = "engines";
+        public const string PyRevitLibDirName = "pyrevitlib";
+        public const string PyRevitModuleDirName = "pyrevit";
+        public const string PyRevitModuleLoaderDirName = "loader";
+        public const string PyRevitModuleAddinDirName = "addin";
+        public const string PyRevitVersionFilename = "version";
+
         public const string PyRevitfileFilename = "PyRevitfile";
 
         // archive clones
@@ -92,9 +103,24 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string EnvConfigsTemplateSourcesKey = "templates";
         public const string EnvConfigsExtensionDBFileName = "PyRevitExtensionsDB.json";
         // extensions
+        public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionJsonDisabledKey = "disabled";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
+        // bundles
+        public const string BundleTabPostfix = ".tab";
+        public const string BundlePanelPostfix = ".panel";
+        public const string BundleLinkButtonPostfix = ".linkbutton";
+        public const string BundlePushButtonPostfix = ".pushbutton";
+        public const string BundleToggleButtonPostfix = ".toggle";
+        public const string BundleSmartButtonPostfix = ".smartbutton";
+        public const string BundlePulldownButtonPostfix = ".pulldown";
+        public const string BundleStack3Postfix = ".stack3";
+        public const string BundleStack2Postfix = ".stack2";
+        public const string BundleSplitButtonPostfix = ".splitbutton";
+        public const string BundleSplitPushButtonPostfix = ".splitpushbutton";
+        public const string BundlePanelButtonPostfix = ".panelbutton";
+        public const string BundleNoButtonPostfix = ".nobutton";
 
 
         public static string GetZipPackageUrl(string branchName) {
@@ -107,6 +133,29 @@ namespace pyRevitLabs.TargetApps.Revit {
                 DefaultCloneInstallName,
                 branchName.Replace("/", "-")
                 );
+        }
+
+        public static string GetExtensionDirExt(PyRevitExtensionTypes extType) {
+            return extType == PyRevitExtensionTypes.UIExtension ? ExtensionUIPostfix : ExtensionLibraryPostfix;
+        }
+
+        public static string GetBundleDirExt(PyRevitBundleTypes bundleType) {
+            switch (bundleType) {
+                case PyRevitBundleTypes.Tab:                return BundleTabPostfix;
+                case PyRevitBundleTypes.Panel:              return BundlePanelPostfix;
+                case PyRevitBundleTypes.LinkButton:         return BundleLinkButtonPostfix;
+                case PyRevitBundleTypes.PushButton:         return BundlePushButtonPostfix;
+                case PyRevitBundleTypes.ToggleButton:       return BundleToggleButtonPostfix;
+                case PyRevitBundleTypes.SmartButton:        return BundleSmartButtonPostfix;
+                case PyRevitBundleTypes.PullDown:           return BundlePulldownButtonPostfix;
+                case PyRevitBundleTypes.Stack3:             return BundleStack3Postfix;
+                case PyRevitBundleTypes.Stack2:             return BundleStack2Postfix;
+                case PyRevitBundleTypes.SplitButton:        return BundleSplitButtonPostfix;
+                case PyRevitBundleTypes.SplitPushButton:    return BundleSplitPushButtonPostfix;
+                case PyRevitBundleTypes.PanelButton:        return BundlePanelButtonPostfix;
+                case PyRevitBundleTypes.NoButton:           return BundleNoButtonPostfix;
+                default: return null;
+            }
         }
     }
 }

@@ -84,9 +84,9 @@ namespace PyRevitBaseClasses
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(_usageLogServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
+            httpWebRequest.UserAgent = "pyrevit";
 
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-            {
+            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
                 string json = MakeJSONLogEntry(logEntry);
 
                 streamWriter.Write(json);
@@ -95,8 +95,7 @@ namespace PyRevitBaseClasses
             }
 
             var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream())) {
                 var result = streamReader.ReadToEnd();
             }
         }

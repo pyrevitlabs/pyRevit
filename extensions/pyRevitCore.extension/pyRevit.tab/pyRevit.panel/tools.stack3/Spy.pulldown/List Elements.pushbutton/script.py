@@ -42,7 +42,8 @@ switches = ['Graphic Styles',
             'Worksets',
             'Fill Grids',
             'Connected Circuits',
-            'Point Cloud Instances'
+            'Point Cloud Instances',
+            'External Services'
             ]
 
 selected_switch = \
@@ -496,3 +497,28 @@ elif selected_switch == 'Sheets with Hidden Characters':
                             .format(sheet.SheetNumber,
                                     repr(sheetnum),
                                     sheetnum_repr))
+
+elif selected_switch == 'External Services':
+    BExtSer = DB.ExternalService.ExternalServices.BuiltInExternalServices
+    props = [x for x in dir(BExtSer) if 'Service' in x]
+    bisrvids = {x: getattr(BExtSer, x).Guid for x in props}
+    output.print_md('## Builtin Services')
+    for bisrv, bisrvid in bisrvids.items():
+        print('{} | {}'.format(bisrvid, bisrv))
+
+    output.print_md('## Registered External Services')
+    for esvc in DB.ExternalService.ExternalServiceRegistry.GetServices():
+        output.insert_divider()
+        output.print_md('{} | **{}**\n\n{} (by {}) (Builtin: {})'.format(
+            esvc.ServiceId.Guid,
+            esvc.Name,
+            esvc.Description,
+            esvc.VendorId,
+            esvc.ServiceId.Guid in bisrvids))
+        for sid in esvc.GetRegisteredServerIds():
+            server = esvc.GetServer(sid)
+            print('{} | {} ({}) (Builtin: {})'.format(
+                sid,
+                server.GetName(),
+                server.GetDescription(),
+                sid in bisrvids))

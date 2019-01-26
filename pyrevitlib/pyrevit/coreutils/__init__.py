@@ -312,7 +312,7 @@ def get_revit_instance_count():
     return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
-def run_process(proc, cwd=''):
+def run_process(proc, cwd='C:'):
     """Run shell process silently.
 
     Args:
@@ -842,7 +842,7 @@ def cleanup_filename(file_name):
         >>> cleanup_filename('Myfile-(3).txt')
         "Myfile3.txt"
     """
-    return re.sub(r'[^\w_.)( -]', '', file_name)
+    return re.sub(r'[^\w_.)( -#]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
@@ -1353,7 +1353,15 @@ def is_box_visible_on_screens(left, top, width, height):
 
 
 def fuzzy_search_ratio(target_string, sfilter):
-    """Match target string against the filter and return a match ratio."""
+    """Match target string against the filter and return a match ratio.
+    
+    Args:
+        target_string (str): target string
+        sfilter (str): search term
+
+    Returns:
+        int: integer between 0 to 100, with 100 being the exact match
+    """
     tstring = target_string
     # 100 for identical matches
     if sfilter == tstring:
@@ -1403,3 +1411,9 @@ def fuzzy_search_ratio(target_string, sfilter):
     # 80 reserved
 
     return 0
+
+
+def get_exe_version(exepath):
+    """Extract Product Version value from EXE file."""
+    version_info = framework.Diagnostics.FileVersionInfo.GetVersionInfo(exepath)
+    return version_info.ProductVersion

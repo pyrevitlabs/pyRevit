@@ -13,3 +13,6 @@ Misc Helper functions for pyRevit.
    coreutils/pyutils.rst
    coreutils/mathnet.rst
    coreutils/moduleutils.rst
+   coreutils/configparser.rst
+   coreutils/dotnetcompiler.rst
+   coreutils/loadertypes.rst

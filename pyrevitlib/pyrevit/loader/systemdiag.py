@@ -13,7 +13,7 @@ mlogger = get_logger(__name__)
 def check_min_host_version():
     # get required version and build from user config
     req_build = user_config.core.get_option('requiredhostbuild',
-                                            default_value=0)
+                                            default_value="")
 
     if req_build:
         if HOST_APP.build != req_build:

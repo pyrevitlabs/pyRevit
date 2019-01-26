@@ -12,7 +12,6 @@
     :members:
     :private-members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/forms/__init__.py

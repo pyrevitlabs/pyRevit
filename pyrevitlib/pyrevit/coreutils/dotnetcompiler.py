@@ -15,7 +15,6 @@ def _compile_dotnet(code_provider,
                     reference_list=None,
                     resource_list=None,
                     ):
-
     mlogger.debug('Compiling source files to: %s', full_output_file_addr)
     mlogger.debug('References assemblies are: %s', reference_list)
 
@@ -62,7 +61,21 @@ def _compile_dotnet(code_provider,
 def compile_csharp(sourcefiles_list,
                    full_output_file_addr=None,
                    reference_list=None, resource_list=None):
+    """Compile list of c-sharp source files to assembly.
 
+    if full_output_file_addr is provided, the generated dll will be written
+    to that file, otherwise the assembly will be generated in memory.
+
+    Args:
+        sourcefiles_list (list[str]): list of source c-sharp files
+        full_output_file_addr (str): full path of output dll
+        reference_list (list[str]): list of reference assemblies
+        resource_list (list[str]): list of resources to be included
+    
+    Returns:
+        str or System.Reflection.Assembly:
+            path to assembly if dll path provided, otherwise generated assembly
+    """
     mlogger.debug('Getting csharp provider.')
 
     cleanedup_source_list = \

@@ -54,8 +54,10 @@ a:visited {
     display: inline-block;
     margin: 6px 0;
     font-size: 90%;
+    font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",Courier,monospace;
     line-height: normal;
-    background: #23303d;
+    background: #f0f0f0;
+    border-left: solid 6px #ccc;
     color: #f39c12;
     border-top: solid 0px;
     padding: 6px;
@@ -67,7 +69,7 @@ a:visited {
 }
 
 .rst-content dl:not(.docutils) dt code.descname {
-    color: white;
+    color: #23303d;
 }
 
 .rst-content dl.method dt code.descname,

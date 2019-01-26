@@ -21,27 +21,22 @@ namespace pyRevitLabs.TargetApps.Revit {
         // STANDARD PATHS ============================================================================================
         // pyRevit %appdata% path
         // @reviewed
-        public static string pyRevitAppDataPath {
-            get {
-                return Path.Combine(
-                    Environment.GetFolderPath(
-                        Environment.SpecialFolder.ApplicationData),
-                        PyRevitConsts.AppdataDirName
-                    );
-            }
-        }
+        public static string pyRevitAppDataPath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                          PyRevitConsts.AppdataDirName);
 
         // pyRevit %programdata% path
         // @reviewed
-        public static string pyRevitProgramDataPath {
-            get {
-                return Path.Combine(
-                    Environment.GetFolderPath(
-                        Environment.SpecialFolder.CommonApplicationData),
-                        PyRevitConsts.AppdataDirName
-                    );
-            }
-        }
+        public static string pyRevitProgramDataPath =>
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                          PyRevitConsts.AppdataDirName);
+
+        // pyRevit default extensions path
+        // @reviewed
+        public static string pyRevitDefaultExtensionsPath => 
+            Path.Combine(pyRevitAppDataPath, PyRevitConsts.ExtensionsDefaultDirName);
 
         // pyRevit config file path
         // @reviewed
@@ -750,7 +745,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         // installs extension from repo url
         // @handled @logs
         public static void InstallExtension(string extensionName, PyRevitExtensionTypes extensionType,
-                                            string repoPath, string destPath, string branchName) {
+                                            string repoPath, string destPath = null, string branchName = null) {
             // make sure extension is not installed already
             var existExt = GetInstalledExtension(extensionName);
             if (existExt != null)
@@ -761,6 +756,9 @@ namespace pyRevitLabs.TargetApps.Revit {
             // Name.extension for UI Extensions
             // Name.lib for Library Extensions
             string extDestDirName = PyRevitExtension.MakeConfigName(extensionName, extensionType);
+
+            // determine destination
+            destPath = destPath ?? pyRevitDefaultExtensionsPath;
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
             // determine branch name
@@ -799,13 +797,9 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // installs extension
         // @handled @logs
-        public static void InstallExtension(PyRevitExtension ext, string destPath, string branchName) {
+        public static void InstallExtension(PyRevitExtension ext, string destPath = null, string branchName = null) {
             logger.Debug("Installing extension \"{0}\"", ext.Name);
-            if (CommonUtils.VerifyPath(destPath)) {
-                InstallExtension(ext.Name, ext.Type, ext.Url, destPath, branchName);
-            }
-            else
-                throw new pyRevitResourceMissingException(destPath);
+            InstallExtension(ext.Name, ext.Type, ext.Url, destPath, branchName);
         }
 
         // uninstalls an extension by repo
@@ -945,7 +939,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         public static List<string> GetRegisteredExtensionLookupSources() {
             var sources = GetKeyValueAsList(PyRevitConsts.EnvConfigsSectionName,
-                                             PyRevitConsts.EnvConfigsExtensionLookupSourcesKey);
+                                            PyRevitConsts.EnvConfigsExtensionLookupSourcesKey,
+                                            throwNotSetException: false);
             var normSources = new List<string>();
             foreach (var src in sources) {
                 var normSrc = src.NormalizeAsPath();
@@ -1335,10 +1330,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         private static List<string> GetKeyValueAsList(string sectionName,
                                                       string keyName,
-                                                      IEnumerable<string> defaultValue = null,
                                                       bool throwNotSetException = true) {
             logger.Debug("Try getting config as list \"{0}:{1}\"", sectionName, keyName);
-            var stringValue = GetKeyValue(sectionName, keyName, "", throwNotSetException: throwNotSetException);
+            var stringValue = GetKeyValue(sectionName, keyName, "[]", throwNotSetException: throwNotSetException);
+
             return stringValue.ConvertFromTomlListString();
         }
 
@@ -1382,20 +1377,20 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // sets config key value as bool
         // @handled @logs
-        private static void SetKeyValue(string sectionName, string keyName, bool boolVaue) {
-            UpdateKeyValue(sectionName, keyName, boolVaue.ToString());
+        private static void SetKeyValue(string sectionName, string keyName, bool boolValue) {
+            UpdateKeyValue(sectionName, keyName, boolValue.ConvertToTomlBoolString());
         }
 
         // sets config key value as int
         // @handled @logs
         private static void SetKeyValue(string sectionName, string keyName, int intValue) {
-            UpdateKeyValue(sectionName, keyName, intValue.ToString());
+            UpdateKeyValue(sectionName, keyName, intValue.ConvertToTomlIntString());
         }
 
         // sets config key value as string
         // @handled @logs
         private static void SetKeyValue(string sectionName, string keyName, string stringValue) {
-            UpdateKeyValue(sectionName, keyName, stringValue);
+            UpdateKeyValue(sectionName, keyName, stringValue.ConvertToTomlString());
         }
 
         // sets config key value as string list

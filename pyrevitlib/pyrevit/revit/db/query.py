@@ -375,8 +375,8 @@ def model_has_parameter(param_id_or_name, doc=None):
     return get_project_parameter(param_id_or_name, doc=doc)
 
 
-def get_project_info():
-    return db.CurrentProjectInfo()
+def get_project_info(doc=None):
+    return db.ProjectInfo(doc or HOST_APP.doc)
 
 
 def get_revisions(doc=None):

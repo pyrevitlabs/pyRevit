@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.framework
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../pyrevitlib/pyrevit/framework.py

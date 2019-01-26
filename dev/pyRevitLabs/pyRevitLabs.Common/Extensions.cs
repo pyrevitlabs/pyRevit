@@ -7,15 +7,17 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
+using Newtonsoft.Json;
+
 namespace pyRevitLabs.Common.Extensions {
-    public static class ConstHelper {
+    public static class CharExtensions {
         /// <summary>
         /// Remaps international characters to ascii compatible ones
         /// based of: https://meta.stackexchange.com/questions/7435/non-us-ascii-characters-dropped-from-full-profile-url/7696#7696
         /// </summary>
         /// <param name="c">Charcter to remap</param>
         /// <returns>Remapped character</returns>
-        public static string RemapInternationalCharToAscii(char c) {
+        public static string RemapInternationalCharToAscii(this char c) {
             string s = c.ToString().ToLowerInvariant();
             if ("àåáâäãåą".Contains(s)) {
                 return "a";
@@ -77,37 +79,6 @@ namespace pyRevitLabs.Common.Extensions {
         }
     }
 
-    public static class FileSizeExtension {
-        public static string CleanupSize(this float bytes) {
-            var sizes = new List<String> { "Bytes", "KB", "MB", "GB", "TB" };
-
-            if (bytes == 0)
-                return "0 Byte";
-
-            var i = (int)Math.Floor(Math.Log(bytes) / Math.Log(1024));
-            if (i >= 0 && i <= sizes.Count)
-                return Math.Round(bytes / Math.Pow(1024, i), 2) + " " + sizes[i];
-            else
-                return bytes + " Bytes";
-        }
-
-        public static string CleanupSize(this long bytes) {
-            return CleanupSize((float)bytes);
-        }
-
-        public static string CleanupSize(this int bytes) {
-            return CleanupSize((float)bytes);
-        }
-    }
-
-    public static class InputExtensions {
-        public static int LimitToRange(this int value, int inclusiveMinimum, int inclusiveMaximum) {
-            if (value < inclusiveMinimum) { return inclusiveMinimum; }
-            if (value > inclusiveMaximum) { return inclusiveMaximum; }
-            return value;
-        }
-    }
-
     public static class StringExtensions {
         private static Regex DriveLetterFinder = new Regex(@"^(?<drive>[A-Za-z]):");
         private static Regex GuidFinder = new Regex(@".*(?<guid>[0-9A-Fa-f]{8}[-]" +
@@ -154,36 +125,6 @@ namespace pyRevitLabs.Common.Extensions {
             if (!version.Contains("."))
                 version = version + ".0";
             return new Version(version);
-        }
-
-        public static List<string> ConvertFromCommaSeparatedString(this string commaSeparatedValue) {
-            return new List<string>(commaSeparatedValue.Split(','));
-        }
-
-        public static List<string> ConvertFromTomlListString(this string tomlListString) {
-            var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
-            var quotedValues = new List<string>(cleanedValue.Split(','));
-            var results = new List<string>();
-            var valueFinder = new Regex(@"'(?<value>.+)'");
-            foreach(var value in quotedValues) {
-                var m = valueFinder.Match(value);
-                if (m.Success)
-                    results.Add(m.Groups["value"].Value);
-            }
-            return results;
-        }
-
-        public static Dictionary<string, string> ConvertFromTomlDictString(this string tomlDictString) {
-            var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
-            var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
-            var results = new Dictionary<string, string>();
-            var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
-            foreach (var keyValueString in quotedKeyValuePairs) {
-                var m = valueFinder.Match(keyValueString);
-                if (m.Success)
-                    results[m.Groups["key"].Value] = m.Groups["value"].Value;
-            }
-            return results;
         }
 
         public static Guid ExtractGuid(this string inputString) {
@@ -237,7 +178,7 @@ namespace pyRevitLabs.Common.Extensions {
                         if (c < 128)
                             stringBuilder.Append(c);
                         else
-                            stringBuilder.Append(ConstHelper.RemapInternationalCharToAscii(c));
+                            stringBuilder.Append(c.RemapInternationalCharToAscii());
                         prevdash = false;
                         trueLength = stringBuilder.Length;
                         break;
@@ -263,6 +204,15 @@ namespace pyRevitLabs.Common.Extensions {
             // Remove any excess character to meet maxlength criteria
             return maxLength <= 0 || result.Length <= maxLength ? result : result.Substring(0, maxLength);
         }
+
+        // comma separated strings
+        public static string ConvertToCommaSeparatedString(this IEnumerable<string> sourceValues) {
+            return string.Join(",", sourceValues);
+        }
+
+        public static List<string> ConvertFromCommaSeparatedString(this string commaSeparatedValue) {
+            return new List<string>(commaSeparatedValue.Split(','));
+        }
     }
 
     public static class DateTimeExtensions {
@@ -271,28 +221,105 @@ namespace pyRevitLabs.Common.Extensions {
         }
     }
 
-    public static class StringEnumerableExtensions {
-        public static string ConvertToCommaSeparatedString(this IEnumerable<string> sourceValues) {
-            return string.Join(",", sourceValues);
+    public static class FileSizeExtension {
+        public static string CleanupSize(this float bytes) {
+            var sizes = new List<String> { "Bytes", "KB", "MB", "GB", "TB" };
+
+            if (bytes == 0)
+                return "0 Byte";
+
+            var i = (int)Math.Floor(Math.Log(bytes) / Math.Log(1024));
+            if (i >= 0 && i <= sizes.Count)
+                return Math.Round(bytes / Math.Pow(1024, i), 2) + " " + sizes[i];
+            else
+                return bytes + " Bytes";
         }
 
-        public static string ConvertToTomlListString(this IEnumerable<string> sourceValues) {
-            var quotedValues = new List<string>();
-            foreach (var value in sourceValues)
-                quotedValues.Add(string.Format("'{0}'", value));
-            return "[" + string.Join(",", quotedValues) + "]";
+        public static string CleanupSize(this long bytes) {
+            return CleanupSize((float)bytes);
+        }
+
+        public static string CleanupSize(this int bytes) {
+            return CleanupSize((float)bytes);
         }
     }
 
-    public static class StringDictionaryExtensions {
+    public static class InputExtensions {
+        public static int LimitToRange(this int value, int inclusiveMinimum, int inclusiveMaximum) {
+            if (value < inclusiveMinimum) { return inclusiveMinimum; }
+            if (value > inclusiveMaximum) { return inclusiveMaximum; }
+            return value;
+        }
+    }
+
+    public static class TOMLFormattingExtensions {
+        public static string ConvertToTomlBoolString(this bool sourceValue) {
+            return JsonConvert.SerializeObject(sourceValue);
+        }
+
+        public static string ConvertToTomlIntString(this int sourceValue) {
+            return JsonConvert.SerializeObject(sourceValue);
+        }
+
+        public static string ConvertToTomlString(this string sourceValue) {
+            return JsonConvert.SerializeObject(sourceValue);
+        }
+
+        public static string ConvertToTomlListString(this IEnumerable<string> sourceValues) {
+            //var quotedValues = new List<string>();
+            //foreach (var value in sourceValues)
+            //    quotedValues.Add(string.Format("'{0}'", value));
+            //return "[" + string.Join(",", quotedValues) + "]";
+            return JsonConvert.SerializeObject(sourceValues);
+        }
+
         public static string ConvertToTomlDictString(this IDictionary<string, string> sourceValues) {
-            var quotedValues = new List<string>();
-            foreach (var keyValuePair in sourceValues) {
-                string quotedKey = string.Format("'{0}'", keyValuePair.Key);
-                string quotedValue = string.Format("'{0}'", keyValuePair.Value);
-                quotedValues.Add(string.Format("{0}:{1}", quotedKey, quotedValue));
+            //var quotedValues = new List<string>();
+            //foreach (var keyValuePair in sourceValues) {
+            //    string quotedKey = string.Format("'{0}'", keyValuePair.Key);
+            //    string quotedValue = string.Format("'{0}'", keyValuePair.Value);
+            //    quotedValues.Add(string.Format("{0}:{1}", quotedKey, quotedValue));
+            //}
+            //return "{" + string.Join(",", quotedValues) + "}";
+            return JsonConvert.SerializeObject(sourceValues);
+        }
+
+        public static List<string> ConvertFromTomlListString(this string tomlListString) {
+            try {
+                return JsonConvert.DeserializeObject<List<string>>(tomlListString);
             }
-            return "{" + string.Join(",", quotedValues) + "}";
+            catch {
+                // try parsing using legacy method
+                var cleanedValue = tomlListString.Replace("[", "").Replace("]", "");
+                var quotedValues = new List<string>(cleanedValue.Split(','));
+                var results = new List<string>();
+                var valueFinder = new Regex(@"'(?<value>.+)'");
+                foreach (var value in quotedValues) {
+                    var m = valueFinder.Match(value);
+                    if (m.Success)
+                        results.Add(m.Groups["value"].Value);
+                }
+                return results;
+            }
+        }
+
+        public static Dictionary<string, string> ConvertFromTomlDictString(this string tomlDictString) {
+            try {
+                return JsonConvert.DeserializeObject<Dictionary<string, string>>(tomlDictString);
+            }
+            catch {
+                // try parsing using legacy method
+                var cleanedValue = tomlDictString.Replace("{", "").Replace("}", "");
+                var quotedKeyValuePairs = new List<string>(cleanedValue.Split(','));
+                var results = new Dictionary<string, string>();
+                var valueFinder = new Regex(@"'(?<key>.+)'\s*:\s*'(?<value>.+)'");
+                foreach (var keyValueString in quotedKeyValuePairs) {
+                    var m = valueFinder.Match(keyValueString);
+                    if (m.Success)
+                        results[m.Groups["key"].Value] = m.Groups["value"].Value;
+                }
+                return results;
+            }
         }
     }
 }

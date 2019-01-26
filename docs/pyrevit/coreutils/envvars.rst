@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.envvars
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/envvars.py

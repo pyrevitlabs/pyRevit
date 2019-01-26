@@ -4,7 +4,6 @@
 .. automodule:: pyrevit.coreutils.appdata
     :members:
 
-Implementation
-**************
+**Implementation**
 
 .. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/appdata.py

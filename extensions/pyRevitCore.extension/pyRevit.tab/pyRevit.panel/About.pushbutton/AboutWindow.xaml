@@ -160,6 +160,11 @@
                 </Path.LayoutTransform>
             </Path>
         </Canvas>
+        <Canvas x:Key="shellIcon">
+            <Path Canvas.Top="-1" Canvas.Left="0"
+                  Data="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z"
+                  Fill="{StaticResource AboutWindowTextColor}" />
+        </Canvas>
         <Canvas x:Key="branchIcon">
             <Path Data="M13,14C9.64,14 8.54,15.35 8.18,16.24C9.25,16.7 10,17.76 10,19A3,3 0 0,1 7,22A3,3 0 0,1 4,19C4,17.69 4.83,16.58 6,16.17V7.83C4.83,7.42 4,6.31 4,5A3,3 0 0,1 7,2A3,3 0 0,1 10,5C10,6.31 9.17,7.42 8,7.83V13.12C8.88,12.47 10.16,12 12,12C14.67,12 15.56,10.66 15.85,9.77C14.77,9.32 14,8.25 14,7A3,3 0 0,1 17,4A3,3 0 0,1 20,7C20,8.34 19.12,9.5 17.91,9.86C17.65,11.29 16.68,14 13,14M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M17,6A1,1 0 0,0 16,7A1,1 0 0,0 17,8A1,1 0 0,0 18,7A1,1 0 0,0 17,6Z"
                   Fill="{StaticResource AboutWindowTextColor}" />
@@ -218,7 +223,7 @@
                            FontSize="14"
                            LineHeight="20"
                            Text="XX"/>
-                <WrapPanel x:Name="git_panel" HorizontalAlignment="Center">
+                <WrapPanel x:Name="version_info" HorizontalAlignment="Center">
                     <StackPanel x:Name="git_commit" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
                         <ContentControl Content="{StaticResource commitIcon}" Width="24" Height="24" Margin="0,-5,5,0">
                             <ContentControl.LayoutTransform>
@@ -233,6 +238,20 @@
                                LineHeight="20"
                                Text="vX.X-beta:b5f6ea"
                                MouseDown="opengithubcommits"/>
+                    </StackPanel>
+                    <StackPanel x:Name="cli_info" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <ContentControl Content="{StaticResource shellIcon}" Width="24" Height="24" Margin="15,-5,5,0">
+                            <ContentControl.LayoutTransform>
+                                <ScaleTransform ScaleX="0.7"  ScaleY="0.7"/>
+                            </ContentControl.LayoutTransform>
+                        </ContentControl>
+                        <TextBlock x:Name="cliversion"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Top"
+                               FontSize="14"
+                               LineHeight="20"
+                               Text="vX.X.X"/>
                     </StackPanel>
                     <StackPanel x:Name="git_branch" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
                         <ContentControl Content="{StaticResource branchIcon}" Width="25" Height="25" Margin="15,-5,5,0">
