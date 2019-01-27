@@ -1,4 +1,4 @@
-"""Import selected csv file as a schedule."""
+"""Import existing CSV file as a schedule."""
 #pylint: disable=C0103,E0401,W0703
 
 import csv

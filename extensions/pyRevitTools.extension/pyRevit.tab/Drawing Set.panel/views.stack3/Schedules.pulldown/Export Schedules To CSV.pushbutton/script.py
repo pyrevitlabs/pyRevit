@@ -1,7 +1,7 @@
-"""Exports selected schedules to TXT files on user desktop.
+"""Exports selected schedules to CSV files.
 
 Shift-Click:
-Rename files on Desktop
+Pick from default output locations.
 """
 #pylint: disable=C0103,E0401
 
