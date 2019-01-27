@@ -1,11 +1,11 @@
 # pyRevit Command Line Tool Help
 
-##### Version 0.6.0.0
+##### Version 0.9.0.0
 
 `pyrevit` is the command line tool, developed specifically to install and configure pyRevit in your production/development environment. Each section below showcases a specific set of functionality of the command line tool.
 
 - [pyRevit Command Line Tool Help](#pyrevit-command-line-tool-help)
-        - [Version 0.6.0.0](#version-0600)
+        - [Version 0.9.0.0](#version-0900)
   - [Getting Help](#getting-help)
     - [pyrevit CLI version](#pyrevit-cli-version)
     - [pyRevit Online Resources](#pyrevit-online-resources)
@@ -28,6 +28,8 @@
     - [Configuring Your Own Options](#configuring-your-own-options)
     - [Using Config as Seed](#using-config-as-seed)
   - [Extra Revit-Related Functionality](#extra-revit-related-functionality)
+  - [Creating pyRevit extension bundles](#creating-pyrevit-extension-bundles)
+    - [Creating your own bundle templates](#creating-your-own-bundle-templates)
   - [CLI Execution of Python Scripts](#cli-execution-of-python-scripts)
     - [Running a Script on Revit Models](#running-a-script-on-revit-models)
   - [Clear pyRevit Cache Files](#clear-pyrevit-cache-files)
@@ -46,6 +48,32 @@ $ pyrevit help          # will take you to this page
 
 $ pyrevit --help        # OR
 $ pyrevit -h            # will print help to console
+```
+
+You can also list the help for any of the pyrevit cli commands:
+
+``` powershell
+pyrevit COMMAND --help
+
+$ pyrevit clones --help
+
+Manage pyRevit clones
+
+    Usage:
+        pyrevit clones [--help]
+        pyrevit clones (info | open) <clone_name>
+        pyrevit clones add <clone_name> <clone_path> [--log=<log_file>]
+        pyrevit clones forget (--all | <clone_name>) [--log=<log_file>]
+        pyrevit clones rename <clone_name> <clone_new_name> [--log=<log_file>]
+        pyrevit clones delete [(--all | <clone_name>)] [--clearconfigs] [--log=<log_file>]
+        pyrevit clones branch <clone_name> [<branch_name>] [--log=<log_file>]
+        pyrevit clones version <clone_name> [<tag_name>] [--log=<log_file>]
+        pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
+        pyrevit clones origin <clone_name> --reset [--log=<log_file>]
+        pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
+        pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [--gui]
+        pyrevit clones deployments <clone_name>
+        pyrevit clones engines <clone_name>
 ```
 
 ### pyrevit CLI version
@@ -315,18 +343,18 @@ $ pyrevit extensions info apex      # get info on extension with apex in name
 ### Installing Extensions
 
 ``` powershell
-pyrevit extend <extension_name> <dest_path> [--branch=<branch_name>] [--log=<log_file>]
+pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 
 $ pyrevit extend pyApex "C:\pyRevit\Extensions"     # install pyApex extension
 ```
 
-- `<dest_path>`: The destination directory will be added to pyRevit extensions search paths automatically and will be loaded on the next pyRevit reload.
-- `--branch`: Specific branch of the extension repo to be installed
+- `--dest`: This is optional. If not provided, pyRevit attempts to install extension at the defautl third-party extension folder (usually `%appdata%/pyRevit/Extensions`). The destination directory will be added to pyRevit extensions search paths automatically and will be loaded on the next pyRevit reload. 
+- `--branch`: Optional. Specific branch of the extension repo to be installed. Defaults to `master` branch if not provided.
 
 To installing your own extensions, you'll need to specify what type if extension you're installing (ui or lib) and provide the url:
 
 ``` powershell
-pyrevit extend (ui | lib) <extension_name> <repo_url> <dest_path> [--branch=<branch_name>] [--log=<log_file>]
+pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
 
 $ pyrevit extend ui MyExtension "https://www.github.com/my-extension.git" "C:\pyRevit\Extensions" 
 ```
@@ -420,31 +448,35 @@ Use `env` command to get info about the current `pyrevit` environment:
 $ pyrevit env
 
 ==> Registered Clones (full git repos)
-Name: "dev" | Path: "...\pyRevit"
+dev | Branch: "hotfix/clihelp" | Version: "4.6.13:e9da94781a34ecb002ad634fa95b6a075726913c" | Path: "C:\Users\LeoW10\Desktop\gits\pyRevit"
 
 ==> Registered Clones (deployed from archive)
-Name: "master" | Deploy: "basepublic" | Path: "C:\Program Files\pyRevit-Master"
-Name: "core" | Deploy: "core" | Path: "C:\tmp\core"
-Name: "base" | Deploy: "base" | Path: "C:\tmp\base"
+release | Deploy: "basepublic" | Branch: "develop" | Version: "4.6.13" | Path: "C:\tmp\public"
+crazy | Deploy: "core" | Branch: "develop" | Version: "Unknown" | Path: "C:\tmp\CrazyUser.??\core"
+base | Deploy: "base" | Branch: "develop" | Version: "4.6.13" | Path: "C:\tmp\base"
+core | Deploy: "core" | Branch: "develop" | Version: "Unknown" | Path: "C:\tmp\core"
 
 ==> Attachments
 Autodesk Revit 2013 First Customer Ship | Clone: "dev" | Engine: "277"
-Autodesk Revit 2014 First Customer Ship | Clone: "dev" | Engine: "277"
+Autodesk Revit 2014 First Customer Ship | Clone: "release" | Engine: "277"
 Autodesk Revit 2015 First Customer Ship | Clone: "dev" | Engine: "277"
 Autodesk Revit 2016 First Customer Ship | Clone: "dev" | Engine: "277"
 Autodesk Revit 2017 First Customer Ship | Clone: "dev" | Engine: "277"
 Autodesk Revit 2018.3.1 | Clone: "dev" | Engine: "277"
-Autodesk Revit 2019 First Customer Ship | Clone: "dev" | Engine: "277"
+Autodesk Revit 2019.2 (Update) | Clone: "dev" | Engine: "277"
 
 ==> Installed UI Extensions
 Name: "pyApex" | Repo: "" | Installed: "C:\tmp\exts\pyApex.extension"
 
 ==> Installed Library Extensions
 
+==> Default Extension Search Path
+C:\Users\LeoW10\AppData\Roaming\pyRevit\Extensions
+
 ==> Extension Search Paths
-C:\Program Files
 C:\tmp\exts
-...
+C:\Users\LeoW10\Desktop\gits
+C:\Users\LeoW10\AppData\Roaming\pyRevit\Extensions
 
 ==> Extension Sources - Default
 https://github.com/eirannejad/pyRevit/raw/master/extensions/extensions.json
@@ -458,7 +490,7 @@ Autodesk Revit 2015 First Customer Ship | Version: 15.0.136.0 | Language: 1033 |
 Autodesk Revit 2016 First Customer Ship | Version: 16.0.428.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2016\"
 Autodesk Revit 2017 First Customer Ship | Version: 17.0.416.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2017\"
 Autodesk Revit 2018.3.1 | Version: 18.3.1.2 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2018\"
-Autodesk Revit 2019 First Customer Ship | Version: 19.0.0.405 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019\"
+Autodesk Revit 2019.2 (Update) | Version: 19.2.0.65 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019\"
 
 ==> Running Revit Instances
 
@@ -470,7 +502,7 @@ Adming Access: Yes
 %APPDATA%: "C:\Users\LeoW10\AppData\Roaming"
 Latest Installed .Net Framework: "4.7.2"
 Installed .Net Target Packs: v3.5 v4.0 v4.5 v4.5.1 v4.5.2 v4.6 v4.6.1 v4.7.1 v4.X
-pyRevit CLI 0.6.0.0
+pyRevit CLI 0.9.0.0
 ```
 
 ## Configuring pyRevit
@@ -600,6 +632,50 @@ Document Increment: 2
 - `file_or_dir_path`: could be a file or directory
 - `--csv=`: Write output to specified CSV file
 
+
+## Creating pyRevit extension bundles
+
+You can use the `pyrevit init` commnd to quickly create pyRevit bundles based on pre-defined templates or your own templates:
+
+``` powershell
+Init pyRevit bundles
+
+    Usage:
+        pyrevit init (ui | lib) <extension_name> [--usetemplate] [--templates=<templates_path>]
+        pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
+
+# creates MyExtension.extension inside the current directory
+$ pyrevit init ui "MyExtension"
+
+# creates MyCommands.pulldown inside the current directory,
+# using a predfined template
+$ pyrevit init pull "MyCommands" --usetemplate
+
+```
+
+ - `--usetemplate`: Use pre-defined template to create the given bundle. This basically copies all the contents of the template bundle into the new bundle.
+ - `--templates`: Templates directory. Optional. If empty, the default pyrevit templates `bin/templates` directory will be used.
+
+### Creating your own bundle templates
+
+Create a parent tempalte directory and create a series of subfolders for each template type. All bundle names should be `template` as shown below:
+
+```
+my-templates/
+├── template.extension/
+├── template.tab/
+├── template.panel/
+|   └── _layout
+├── template.pulldown/
+|   ├── icon.png
+|   └── _layout
+└── template.pushbutton/
+    ├── window.xaml
+    ├── script.py
+    └── icon.png
+```
+
+The pass the `my-templates/` full path to the `--templates` option of the `init` command. Make sure to `--usetemplate` as well. pyrevit will use these templates to create your requested bundles.
 
 ## CLI Execution of Python Scripts
 
