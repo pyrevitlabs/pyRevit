@@ -3,6 +3,7 @@
 
 import csv
 import codecs
+import os.path as op
 
 from pyrevit import forms
 from pyrevit import coreutils
@@ -133,6 +134,7 @@ if __name__ == '__main__':
     # ask user for source CSV file
     source_file = forms.pick_file(file_ext='csv')
     if source_file:
+        fname = op.splitext(op.basename(source_file))[0]
         # as user for target key schedule category
         key_sched_cat = forms.SelectFromList.show(
             revit.query.get_key_schedule_categories(),
@@ -155,8 +157,8 @@ if __name__ == '__main__':
                     # create the schedule and fill with data now
                     create_key_schedule(
                         category=key_sched_cat,
-                        key_name="# Test",
-                        sched_name="# Abbrev",
+                        key_name=fname,
+                        sched_name=fname,
                         fields=param_names,
                         records=param_data,
                         doc=revit.doc)
