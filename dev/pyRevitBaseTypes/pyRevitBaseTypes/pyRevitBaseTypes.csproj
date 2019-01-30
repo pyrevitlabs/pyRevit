@@ -113,6 +113,9 @@
     <Reference Include="pyRevitLoader">
       <HintPath>..\..\..\bin\engines\278\pyRevitLoader.dll</HintPath>
     </Reference>
+    <Reference Include="Python.Runtime">
+      <HintPath>..\..\..\bin\Python.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>
     </Reference>

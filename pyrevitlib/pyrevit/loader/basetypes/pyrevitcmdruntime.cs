@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
-
 
 namespace PyRevitBaseClasses {
     public class PyRevitCommandRuntime : IDisposable {
@@ -114,6 +115,19 @@ namespace PyRevitBaseClasses {
         public string AlternateScriptSourceFile {
             get {
                 return _alternateScriptSource;
+            }
+        }
+
+        public bool IsPython3 {
+            get {
+                string line1 = "";
+                using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
+                    line1 = reader.ReadLine();
+                }
+
+                if (line1.Contains("python3"))
+                    return true;
+                return false;
             }
         }
 

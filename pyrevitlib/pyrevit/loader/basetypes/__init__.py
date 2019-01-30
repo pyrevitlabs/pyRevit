@@ -161,7 +161,7 @@ def _get_references():
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-                'MahApps.Metro']
+                'MahApps.Metro', 'Python.Runtime']
 
     return [_get_reference_file(ref_name) for ref_name in ref_list]
 
