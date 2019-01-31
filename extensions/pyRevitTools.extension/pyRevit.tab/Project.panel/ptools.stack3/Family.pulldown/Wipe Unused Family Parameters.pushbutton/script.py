@@ -1,3 +1,4 @@
+#pylint: disable=E0401
 from pyrevit import revit, DB, UI
 from pyrevit import script
 from pyrevit import forms
