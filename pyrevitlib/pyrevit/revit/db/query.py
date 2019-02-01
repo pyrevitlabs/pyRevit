@@ -41,14 +41,28 @@ GRAPHICAL_VIEWTYPES = [
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
+SheetRefInfo = namedtuple('SheetRefInfo',
+                          ['sheet_num', 'sheet_name', 'detail_num',
+                           'ref_viewid'])
 
-def get_name(element):
+
+def get_name(element, title_on_sheet=False):
     # grab viewname correctly
     if isinstance(element, DB.View):
-        if HOST_APP.is_newer_than('2019', or_equal=True):
-            return element.Name
+        view_name = None
+        if title_on_sheet:
+            titleos_param = \
+                element.Parameter[DB.BuiltInParameter.VIEW_DESCRIPTION]
+            view_name = titleos_param.AsString()
+
+        # if view name could bot be extracted from title_on_sheet
+        if view_name:
+            return view_name
         else:
-            return element.ViewName
+            if HOST_APP.is_newer_than('2019', or_equal=True):
+                return element.Name
+            else:
+                return element.ViewName
 
     # have to use the imported Element otherwise
     # AttributeError occurs
@@ -110,8 +124,8 @@ def get_all_elements(doc=None):
              .ToElements()
 
 
-def get_all_view_elements(doc, view):
-    return DB.FilteredElementCollector(doc, view.Id)\
+def get_all_elements_in_view(view):
+    return DB.FilteredElementCollector(view.Document, view.Id)\
              .WhereElementIsNotElementType()\
              .ToElements()
 
@@ -474,12 +488,15 @@ def compare_revisions(src_rev, dest_rev, case_sensitive=False):
                                             case_sensitive=case_sensitive))
 
 
-def get_all_views(doc=None, include_nongraphical=False):
+def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     doc = doc or HOST_APP.doc
     all_views = DB.FilteredElementCollector(doc) \
                   .OfClass(DB.View) \
                   .WhereElementIsNotElementType() \
                   .ToElements()
+
+    if view_types:
+        all_views = [x for x in all_views if x.ViewType in view_types]
 
     if not include_nongraphical:
         return [x for x in all_views
@@ -488,6 +505,32 @@ def get_all_views(doc=None, include_nongraphical=False):
                 and not x.ViewSpecific]
 
     return all_views
+
+
+def get_sheet_by_number(sheet_num, doc=None):
+    doc = doc or HOST_APP.doc
+    return next((x for x in get_sheets(doc=doc)
+                 if x.SheetNumber == sheet_num), None)
+
+
+def get_viewport_by_number(sheet_num, detail_num, doc=None):
+    doc = doc or HOST_APP.doc
+    sheet = get_sheet_by_number(sheet_num, doc=doc)
+    if sheet:
+        vps = [doc.GetElement(x) for x in sheet.GetAllViewports()]
+        for vp in vps:
+            det_num = vp.Parameter[
+                DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+                ].AsString()
+            if det_num == detail_num:
+                return vp
+
+
+def get_view_by_sheetref(sheet_num, detail_num, doc=None):
+    doc = doc or HOST_APP.doc
+    vport = get_viewport_by_number(sheet_num, detail_num, doc=doc)
+    if vport:
+        return vport.ViewId
 
 
 def get_all_schedules(doc=None):
@@ -504,6 +547,31 @@ def get_view_by_name(view_name, doc=None):
     for view in get_all_views(doc=doc):
         if get_name(view) == view_name:
             return view
+
+
+def get_all_referencing_elements(doc=None):
+    doc = doc or HOST_APP.doc
+    all_referencing_elements = []
+    for el in DB.FilteredElementCollector(doc)\
+                .WhereElementIsNotElementType()\
+                .ToElements():
+        if el.Category \
+                and isinstance(el, DB.Element) \
+                and str(el.Category.Name).startswith('View'):
+            all_referencing_elements.append(el.Id)
+    return all_referencing_elements
+
+
+def get_all_referencing_elements_in_view(view):
+    all_referencing_elements_in_view = []
+    for el in DB.FilteredElementCollector(view.Document, view.Id)\
+                .WhereElementIsNotElementType()\
+                .ToElements():
+        if el.Category \
+                and isinstance(el, DB.Element) \
+                and str(el.Category.Name).startswith('View'):
+            all_referencing_elements_in_view.append(el.Id)
+    return all_referencing_elements_in_view
 
 
 def get_schedules_on_sheet(viewsheet, doc=None):
@@ -897,9 +965,116 @@ def get_central_path(doc=None):
         return DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
 
 
-def is_metric(doc):
+def is_metric(doc=None):
+    doc = doc or HOST_APP.doc
     return doc.DisplayUnitSystem == DB.DisplayUnit.METRIC
 
 
-def is_imperial(doc):
+def is_imperial(doc=None):
+    doc = doc or HOST_APP.doc
     return doc.DisplayUnitSystem == DB.DisplayUnit.IMPERIAL
+
+
+def get_view_sheetrefinfo(view):
+    # grab sheet number and name
+    # this looks at 'Sheet Number' and 'Sheet Name' parameters of a view
+    # if these parameters have value, it means view is placed on a sheet
+    sheet_num = \
+        view.Parameter[DB.BuiltInParameter.VIEWPORT_SHEET_NUMBER].AsString()
+    sheet_name = \
+        view.Parameter[DB.BuiltInParameter.VIEWPORT_SHEET_NAME].AsString()
+    # grab detail number as well
+    detail_num = \
+        view.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER].AsString()
+
+    if sheet_num:
+        return SheetRefInfo(
+            sheet_num=sheet_num,
+            sheet_name=sheet_name,
+            detail_num=detail_num,
+            ref_viewid=None
+            )
+
+    # if not, check 'Referencing Sheet' and 'Referencing Detail' parameters
+    # these show that the view is referened by another on that sheet
+    ref_sheet_num = \
+        view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_SHEET].AsString()
+    ref_sheet = get_sheet_by_number(ref_sheet_num)
+    ref_sheet_name = get_name(ref_sheet) if ref_sheet else ''
+    # grab referring detail number as well
+    ref_detail_num = \
+        view.Parameter[DB.BuiltInParameter.VIEW_REFERENCING_DETAIL].AsString()
+
+    if ref_sheet_num:
+        return SheetRefInfo(
+            sheet_num=ref_sheet_num,
+            sheet_name=ref_sheet_name,
+            detail_num=ref_detail_num,
+            ref_viewid=get_view_by_sheetref(ref_sheet_num, ref_detail_num)
+            )
+
+
+def get_all_sheeted_views(doc=None, sheets=None):
+    doc = doc or HOST_APP.doc
+    sheets = sheets or get_sheets(doc=doc)
+    all_sheeted_view_ids = set()
+    for sht in sheets:
+        vp_ids = [doc.GetElement(x).ViewId for x in sht.GetAllViewports()]
+        all_sheeted_view_ids.update(vp_ids)
+    return all_sheeted_view_ids
+
+
+def is_view_sheeted(view):
+    return view.Id in get_all_sheeted_views(doc=view.Document)
+
+
+def can_refer_other_views(source_view):
+    return isinstance(source_view,
+                      (DB.ViewDrafting, DB.ViewPlan, DB.ViewSection))
+
+
+def is_referring_to(source_view, target_view):
+    # if view can be referring
+    doc = source_view.Document
+    target_viewname = get_name(target_view)
+
+    if can_refer_other_views(source_view):
+        for ref_elid in get_all_referencing_elements_in_view(source_view):
+            viewref_el = doc.GetElement(ref_elid)
+            targetview_param = \
+                    viewref_el.Parameter[
+                        DB.BuiltInParameter.REFERENCE_VIEWER_TARGET_VIEW
+                        ]
+            if targetview_param:
+                tvp_view = doc.GetElement(targetview_param.AsElementId())
+                if tvp_view and get_name(tvp_view) == target_viewname:
+                    return True
+            else:
+                viewref_name = get_name(viewref_el)
+                if viewref_name == target_viewname:
+                    return True
+
+
+def yield_referring_views(target_view, all_views=None):
+    all_views = all_views or get_all_views(doc=target_view.Document)
+    for view in all_views:
+        if is_referring_to(view, target_view):
+            yield view.Id
+
+
+def yield_referenced_views(doc=None, all_views=None):
+    doc = doc or HOST_APP.doc
+    all_views = all_views or get_all_views(doc=doc)
+    for view in all_views:
+        # if it has any referring views, yield
+        if next(yield_referring_views(view), None):
+            yield view.Id
+
+
+def yield_unreferenced_views(doc=None, all_views=None):
+    doc = doc or HOST_APP.doc
+    all_views = all_views or get_all_views(doc=doc)
+    for view in all_views:
+        # if it has NO referring views, yield
+        if len(list(yield_referring_views(view))) == 0:
+            yield view.Id
