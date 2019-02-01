@@ -12,6 +12,8 @@ from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit import script
 
+from pyrevit.userconfig import user_config
+
 
 logger = script.get_logger()
 output = script.get_output()
@@ -66,7 +68,7 @@ if basefolder:
         vseop = DB.ViewScheduleExportOptions()
         vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
         vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
-        vseop.FieldDelimiter = ','
+        vseop.FieldDelimiter = user_config.get_list_separator()
         vseop.Title = False
         vseop.HeadersFootersBlanks = False
 
