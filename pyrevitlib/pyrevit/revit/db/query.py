@@ -507,6 +507,11 @@ def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     return all_views
 
 
+def get_all_view_templates(doc=None, view_types=None):
+    return [x for x in get_all_views(doc=doc, view_types=view_types)
+            if x.IsTemplate]
+
+
 def get_sheet_by_number(sheet_num, doc=None):
     doc = doc or HOST_APP.doc
     return next((x for x in get_sheets(doc=doc)
