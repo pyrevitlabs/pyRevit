@@ -68,18 +68,30 @@ if basefolder:
         vseop = DB.ViewScheduleExportOptions()
         vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
         vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
-        vseop.FieldDelimiter = user_config.get_list_separator()
-        vseop.Title = False
-        vseop.HeadersFootersBlanks = False
 
-        for sched in schedules_to_export:
-            fname = \
-                coreutils.cleanup_filename(revit.query.get_name(sched)) + '.csv'
-            sched.Export(basefolder, fname, vseop)
-            exported = op.join(basefolder, fname)
-            coreutils.correct_revittxt_encoding(exported)
-            output.print_md("**EXPORTED:** {0}"
-                            .format(revit.query.get_name(sched)))
-            print(exported)
-            if open_exported:
-                coreutils.run_process('"%s"' % exported)
+        # determine which separator to use
+        csv_sp = ','
+        regional_sep = user_config.get_list_separator()
+        if regional_sep != ',':
+            if forms.alert("Regional settings list separator is \"{}\"\n"
+                           "Do you want to use this instead of comma?"
+                           .format(regional_sep), yes=True, no=True):
+                csv_sp = regional_sep
+
+        if csv_sp:
+            vseop.FieldDelimiter = csv_sp
+            vseop.Title = False
+            vseop.HeadersFootersBlanks = False
+
+            for sched in schedules_to_export:
+                fname = \
+                    coreutils.cleanup_filename(revit.query.get_name(sched)) \
+                    + '.csv'
+                sched.Export(basefolder, fname, vseop)
+                exported = op.join(basefolder, fname)
+                coreutils.correct_revittxt_encoding(exported)
+                output.print_md("**EXPORTED:** {0}"
+                                .format(revit.query.get_name(sched)))
+                print(exported)
+                if open_exported:
+                    coreutils.run_process('"%s"' % exported)
