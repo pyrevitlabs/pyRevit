@@ -12,7 +12,7 @@ class ViewTemplateToPurge(forms.TemplateListItem):
 
 
 viewlist = DB.FilteredElementCollector(revit.doc)\
-             .OfCategory(DB.BuiltInCategory.OST_Views)\
+             .OfClass(DB.View)\
              .WhereElementIsNotElementType()\
              .ToElements()
 
