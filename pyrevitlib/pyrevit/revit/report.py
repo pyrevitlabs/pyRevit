@@ -26,3 +26,10 @@ def print_sheet(sht, prefix='', print_id=True):
     if print_id:
         outstr = PyRevitOutputWindow.linkify(sht.Id) + '\t' + outstr
     print(prefix + outstr)
+
+
+def print_view(view, prefix='', print_id=True):
+    outstr = query.get_name(view)
+    if print_id:
+        outstr = PyRevitOutputWindow.linkify(view.Id) + '\t' + outstr
+    print(prefix + outstr)

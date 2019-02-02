@@ -1,6 +1,5 @@
 """Activates selection tool that picks only Detail 2D elements."""
-
-from pyrevit.framework import List
+#pylint: disable=import-error,invalid-name,unused-argument,broad-except,missing-docstring
 from pyrevit import revit, DB, UI
 
 
@@ -11,16 +10,11 @@ class MassSelectionFilter(UI.Selection.ISelectionFilter):
     # standard API override function
     def AllowElement(self, element):
         # only allow view-specific (detail) elements
+        # that are not part of a group
         if element.ViewSpecific:
-            # but if it is part of a group, don't select them,
-            # unless it is a nested group object
-            if not isinstance(element, DB.Group) \
-                    and element.GroupId != element.GroupId.InvalidElementId:
-                return False
-            else:
+            if element.GroupId == element.GroupId.InvalidElementId:
                 return True
-        else:
-            return False
+        return False
 
     # standard API override function
     def AllowReference(self, refer, point):

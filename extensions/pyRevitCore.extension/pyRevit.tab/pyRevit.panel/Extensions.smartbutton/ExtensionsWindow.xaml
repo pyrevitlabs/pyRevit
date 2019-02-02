@@ -46,25 +46,27 @@
             </DockPanel>
         </Grid>
         <StackPanel x:Name="ext_infopanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
-            <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
-            <TextBlock Margin="5,0,0,0" FontSize="14" >
+            <StackPanel x:Name="ext_infostack">
+                <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
+                <TextBlock Margin="5,0,0,0" FontSize="14" >
                     <Run x:Name="ext_desc_l"/>
                     <Hyperlink x:Name="ext_gitlink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_gitlink_t"/>
                     </Hyperlink>
                 </TextBlock>
-            <TextBlock Margin="5,0,0,0" FontSize="14" > Developed by:
+                <TextBlock Margin="5,0,0,0" FontSize="14" > Developed by:
                     <Hyperlink x:Name="ext_authorlink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_author_t"/>
                     </Hyperlink>
                 </TextBlock>
-            <TextBlock Margin="5,0,0,0" FontSize="14" > Repository:
+                <TextBlock Margin="5,0,0,0" FontSize="14" > Repository:
                     <Hyperlink x:Name="ext_repolink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_repolink_t"/>
                     </Hyperlink>
                 </TextBlock>
-            <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
-            <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
+                <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
+                <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
+            </StackPanel>
             <GroupBox x:Name="extCredentials" Header="Extension Package Settings:" Margin="0,10,0,0">
                 <StackPanel>
                     <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,0" IsChecked="False"
@@ -101,7 +103,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button Content="Update Extension Settings" Click="save_pkg_settings"
+                <Button x:Name="ext_update_b" Content="Update Extension Settings" Click="save_pkg_settings"
                             Grid.Column="0" Grid.Row="0" Margin="3" />
                 <Button x:Name="ext_install_b" Content="Install Extension" Click="handle_install_button_popup"
                             Grid.Column="1" Grid.Row="0" Margin="3"
@@ -117,7 +119,7 @@
                             Grid.Column="3" Grid.Row="0" Margin="3" />
             </Grid>
         </StackPanel>
-        <ListView x:Name="extpkgs_lb" SelectionMode="Single" SelectionChanged="update_ext_info">
+        <ListView x:Name="extpkgs_lb" SelectionMode="Extended" SelectionChanged="update_ext_info">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>

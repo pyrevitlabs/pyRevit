@@ -34,18 +34,23 @@ Example:
 #pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
+import _winreg as wr
 
 from pyrevit import EXEC_PARAMS, HOME_DIR
+from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 
 from pyrevit.labs import TargetApps
 
-from pyrevit.coreutils import touch
+from pyrevit import coreutils
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
+
+
+DEFAULT_CSV_SEPARATOR = ','
 
 
 mlogger = logger.get_logger(__name__)
@@ -140,7 +145,8 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
         """
         dir_list = []
-        dir_list.append(EXTENSIONS_DEFAULT_DIR)
+        if op.exists(EXTENSIONS_DEFAULT_DIR):
+            dir_list.append(EXTENSIONS_DEFAULT_DIR)
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
         return dir_list
 
@@ -163,7 +169,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
 
-        return dir_list
+        return [x for x in dir_list if op.exists(x)]
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file
@@ -171,6 +177,8 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Args:
             path_list (list[str]): list of external extension paths
         """
+        if not op.exists(path_list):
+            raise PyRevitException("Path does not exist.")
         try:
             self.core.userextensions = \
                 [op.normpath(x) for x in path_list]
@@ -192,6 +200,18 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         else:
             mlogger.debug('Config is in admin mode. Skipping save.')
 
+    @staticmethod
+    def get_list_separator():
+        """Get list separator defined in user os regional settings."""
+        intkey = coreutils.get_reg_key(wr.HKEY_CURRENT_USER,
+                                       r'Control Panel\International')
+        if intkey:
+            try:
+                return wr.QueryValueEx(intkey, 'sList')[0]
+            except Exception:
+                return DEFAULT_CSV_SEPARATOR
+
+
 
 def find_config_file(target_path):
     """Find config file in target path."""
@@ -211,7 +231,7 @@ def verify_configs(config_file_path=None):
     """
     if config_file_path:
         mlogger.debug('Creating default config file at: %s', config_file_path)
-        touch(config_file_path)
+        coreutils.touch(config_file_path)
 
     try:
         parser = PyRevitConfig(cfg_file_path=config_file_path)
