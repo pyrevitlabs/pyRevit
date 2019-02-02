@@ -30,9 +30,10 @@ if not selection.is_empty:
             if isinstance(el, DB.FamilyInstance):
                 family_name = revit.query.get_family_name(el)
                 symbol_name = revit.query.get_symbol_name(el)
-                print("ID: {}\t\tTYPE: {} --> {}:{}"
+                print("ID: {}\t\tTYPE: {} ({}) --> {}:{}"
                       .format(elid_link,
                               el.GetType().Name,
+                              el.Category.Name,
                               family_name,
                               symbol_name))
             else:
