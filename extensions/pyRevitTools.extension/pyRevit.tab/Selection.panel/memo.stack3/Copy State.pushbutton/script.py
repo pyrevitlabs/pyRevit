@@ -11,7 +11,7 @@ from pyrevit import script
 
 __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
-          ' Zoom state. Run it how see how it works.'
+          ' Zoom state. Run it and see how it works.'
 
 __author__ = 'Gui Talarico\n'\
              'Ehsan Iran-Nejad'
