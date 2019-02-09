@@ -330,6 +330,11 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for removing all extension folders"""
         self.extfolders_lb.ItemsSource = []
 
+    def openextfolder(self, sender, args):
+        selected_path = self.extfolders_lb.SelectedItem
+        if selected_path:
+            script.show_file_in_explorer(selected_path)
+
     def pick_usagelog_folder(self, sender, args):
         """Callback method for picking destination folder for usage log files"""
         new_path = forms.pick_folder()
