@@ -27,10 +27,10 @@
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyRevit1.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
     <ROW Property="MsiLogging" MultiBuildValue="DefaultBuild:vp"/>
-    <ROW Property="ProductCode" Value="1033:{2FE2F748-8EF1-4012-9CEE-5A8AA9BF1114} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{67AA2183-02A8-4851-9653-1BEA54E0F9A1} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit"/>
-    <ROW Property="ProductVersion" Value="4.6.14" Type="32"/>
+    <ROW Property="ProductVersion" Value="4.6.15" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CF0C9661-A782-4D2E-A850-C29B657B57AB}"/>
@@ -433,7 +433,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
     <ROW Component="ACT" ComponentId="{1C2437CB-91AB-4EEF-B858-DCFDF94CC556}" Directory_="Australia_Dir" Attributes="0" KeyPath="ACT" Type="0"/>
-    <ROW Component="AI_CustomARPName" ComponentId="{41B72E6A-C5CB-428C-A7D0-5DD1FA79E7A3}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{2E111FD6-38FB-4F43-9223-DBD2CDDC2343}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_DisableModify" ComponentId="{C77D802D-6409-4BD6-9303-97390842F7D5}" Directory_="APPDIR" Attributes="260" KeyPath="NoModify" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{505F96D2-054E-4761-AE20-B27603EF0AAB}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="Abidjan" ComponentId="{E25482B2-113F-4CD0-9DB0-FA9EAE110FC6}" Directory_="Africa_Dir" Attributes="0" KeyPath="Abidjan" Type="0"/>
@@ -1755,7 +1755,7 @@
     <ROW File="_layout_48" Component_="_layout_30" FileName="_layout" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\_layout" SelfReg="false" NextFile="extension.json_4"/>
     <ROW File="_layout_5" Component_="_layout_5" FileName="_layout" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\_layout" SelfReg="false" NextFile="_layout_6"/>
     <ROW File="_layout_6" Component_="_layout_6" FileName="_layout" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\_layout" SelfReg="false" NextFile="baseclasses.cs_1"/>
-    <ROW File="_layout_7" Component_="_layout_7" FileName="_layout" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\_layout" SelfReg="false"/>
+    <ROW File="_layout_7" Component_="_layout_7" FileName="_layout" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\_layout" SelfReg="false" NextFile="tooltip.mp4_1"/>
     <ROW File="_logging.py" Component_="cacert.pem" FileName="_logging.py" Attributes="0" SourcePath="..\site-packages\websocket\_logging.py" SelfReg="false" NextFile="_socket.py"/>
     <ROW File="_py2.py" Component_="abc.py" FileName="_py2.py" Attributes="0" SourcePath="..\site-packages\importlib_resources\_py2.py" SelfReg="false" NextFile="_py3.py"/>
     <ROW File="_py3.py" Component_="abc.py" FileName="_py3.py" Attributes="0" SourcePath="..\site-packages\importlib_resources\_py3.py" SelfReg="false" NextFile="__init__.py_139"/>
@@ -5530,6 +5530,8 @@
     <ROW File="toc.py" Component_="abbr.py" FileName="toc.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\coreutils\markdown\extensions\toc.py" SelfReg="false" NextFile="wikilinks.py"/>
     <ROW File="tooltests.py" Component_="outputtests.py" FileName="TOOLTE~1.PY|tooltests.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\unittests\tooltests.py" SelfReg="false" NextFile="_testrunner.py"/>
     <ROW File="tooltip.mp4" Component_="icon.png_224" FileName="tooltip.mp4" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\tooltip.mp4" SelfReg="false" NextFile="icon.png_2"/>
+    <ROW File="tooltip.mp4_1" Component_="icon.png_44" FileName="tooltip.mp4" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match Paint.pushbutton\tooltip.mp4" SelfReg="false" NextFile="tooltip.mp4_2"/>
+    <ROW File="tooltip.mp4_2" Component_="config.py" FileName="tooltip.mp4" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match.pushbutton\tooltip.mp4" SelfReg="false"/>
     <ROW File="tooltip.swf_4" Component_="icon.png_224" FileName="tooltip.swf" Attributes="0" SourcePath="..\extensions\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Set Crop Region To Selected Shape.pushbutton\tooltip.swf" SelfReg="false" NextFile="script.py_308"/>
     <ROW File="topological.py" Component_="compat.py" FileName="TOPOLO~1.PY|topological.py" Attributes="0" SourcePath="..\site-packages\sqlalchemy\util\topological.py" SelfReg="false" NextFile="_collections.py_3"/>
     <ROW File="totalvolume_script.py" Component_="icon.png_323" FileName="TOTALV~1.PY|total volume_script.py" Attributes="0" SourcePath="..\extensions\pyRevitTutor.extension\pyRevitTutor.tab\Sessions.panel\Session 2.pushbutton\total volume_script.py" SelfReg="false" NextFile="firsttransaction_script.py"/>
