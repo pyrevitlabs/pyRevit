@@ -290,6 +290,23 @@ def remove_all_reference_planes():
 
 
 @notdependent
+def remove_all_unnamed_reference_planes():
+    """Remove All Reference Planes (Unnamed Only)"""
+
+    cl = DB.FilteredElementCollector(revit.doc)
+    refplanes = cl.OfCategory(DB.BuiltInCategory.OST_CLines)\
+                  .WhereElementIsNotElementType()\
+                  .ToElements()
+    unnamed_refplanes = [
+        x for x in refplanes
+        if not x.Parameter[DB.BuiltInParameter.DATUM_TEXT].AsString()
+        ]
+    print_header('REMOVING REFERENCE PLANES')
+    remove_action('Remove All Reference Planes', 'Reference Plane',
+                  unnamed_refplanes)
+
+
+@notdependent
 def remove_all_materials():
     """Remove All Materials"""
 

@@ -52,7 +52,7 @@ def create_key_schedule(category, key_name, sched_name,
         # iterate over elements and records
         # FIXME: collect new elements only
         for keysched_el, record_data in zip(
-                revit.query.get_all_view_elements(doc, new_key_sched),
+                revit.query.get_all_elements_in_view(new_key_sched),
                 records):
             logger.debug('Processing record: %s', record_data)
             for idx, field_name in enumerate(fields):

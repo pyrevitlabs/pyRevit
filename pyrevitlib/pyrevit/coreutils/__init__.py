@@ -18,6 +18,7 @@ import stat
 import codecs
 import math
 from collections import defaultdict
+import _winreg as wr
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
@@ -1417,3 +1418,23 @@ def get_exe_version(exepath):
     """Extract Product Version value from EXE file."""
     version_info = framework.Diagnostics.FileVersionInfo.GetVersionInfo(exepath)
     return version_info.ProductVersion
+
+
+def get_reg_key(key, subkey):
+    """Get value of the given Windows registry key and subkey.
+
+    Args:
+        key (PyHKEY): parent registry key
+        subkey (str): subkey path
+
+    Returns:
+        PyHKEY: registry key if found, None if not found
+
+    Example:
+        >>> get_reg_key(wr.HKEY_CURRENT_USER, 'Control Panel/International')
+        ... <PyHKEY at 0x...>
+    """
+    try:
+        return wr.OpenKey(key, subkey, 0, wr.KEY_READ)
+    except Exception:
+        return None
