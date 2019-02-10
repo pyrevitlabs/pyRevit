@@ -64,7 +64,11 @@ SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
+    # get and load the active Cpython engine
     CPYTHON_ENGINE = user_config.get_active_cpython_engine()
+    CPYTHON_ENGINE_ASSM = CPYTHON_ENGINE.AssemblyPath
+    load_asm_file(CPYTHON_ENGINE_ASSM)
+
     # create a hash for the loader assembly
     # this hash is calculated based on:
     # - basetypes csharp files
@@ -175,9 +179,7 @@ def _get_references():
 
     # add cpython engine dll to references
     # _get_reference_file('engines/372/Python.Runtime')
-    cpython_assmfile = CPYTHON_ENGINE.AssemblyPath
-    load_asm_file(cpython_assmfile)
-    refs.append(cpython_assmfile)
+    refs.append(CPYTHON_ENGINE_ASSM)
 
     return refs
 
