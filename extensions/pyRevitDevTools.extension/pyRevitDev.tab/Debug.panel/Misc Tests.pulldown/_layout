@@ -1,8 +1,7 @@
 Test RPW
 Test Rhino3dmIO
 Test RevitServer
-Test IronPython Compile
-Test CPython35
 ---
-Test cpy27 Engine
-Test cpy35 Engine
+Test IronPython Compile
+Test CPython Command
+Test CPython Engine
