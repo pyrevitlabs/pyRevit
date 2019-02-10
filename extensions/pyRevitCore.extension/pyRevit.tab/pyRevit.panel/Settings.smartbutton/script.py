@@ -125,7 +125,7 @@ class SettingsWindow(forms.WPFWindow):
         self.rocketmode_cb.IsChecked = user_config.core.rocketmode
 
     def _setup_engines(self):
-        attachment = self.get_current_attachment()
+        attachment = user_config.get_current_attachment()
         if attachment and attachment.Clone:
             engine_cfgs = \
                 [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
@@ -229,11 +229,6 @@ class SettingsWindow(forms.WPFWindow):
                     checkbox.IsChecked = False
 
     @staticmethod
-    def get_current_attachment():
-        hostver = int(HOST_APP.version)
-        return Revit.PyRevit.GetAttached(hostver)
-
-    @staticmethod
     def update_usagelogging():
         """Updates the usage logging system per changes.
 
@@ -248,7 +243,7 @@ class SettingsWindow(forms.WPFWindow):
     def update_addinfiles(self):
         """Enables/Disables the adding files for different Revit versions."""
         # update active engine
-        attachment = self.get_current_attachment()
+        attachment = user_config.get_current_attachment()
         if attachment:
             all_users = attachment.AttachmentType == \
                 Revit.PyRevitAttachmentType.AllUsers

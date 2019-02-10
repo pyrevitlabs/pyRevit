@@ -120,14 +120,9 @@ namespace PyRevitBaseClasses {
 
         public bool IsPython3 {
             get {
-                string line1 = "";
                 using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
-                    line1 = reader.ReadLine();
+                    return reader.ReadLine().Contains("python3");
                 }
-
-                if (line1.Contains("python3"))
-                    return true;
-                return false;
             }
         }
 

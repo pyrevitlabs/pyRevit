@@ -218,7 +218,7 @@ namespace PyRevitBaseClasses {
                 using (Py.GIL()) {
                     // initialize
                     if (!PythonEngine.IsInitialized)
-                        PythonEngine.Initialize(setSysArgv: false);
+                        PythonEngine.Initialize();
 
                     // set output stream
                     dynamic sys = PythonEngine.ImportModule("sys");
@@ -231,8 +231,9 @@ namespace PyRevitBaseClasses {
                     var scriptContents = File.ReadAllText(pyrvtCmdRuntime.ScriptSourceFile);
                     PythonEngine.Exec(scriptContents);
 
-                    // shutdown now
-                    //PythonEngine.Shutdown();
+                    // shutdown halts and breaks Revit
+                    // let's not do that!
+                    // PythonEngine.Shutdown();
 
                     return Result.Succeeded;
                 }
