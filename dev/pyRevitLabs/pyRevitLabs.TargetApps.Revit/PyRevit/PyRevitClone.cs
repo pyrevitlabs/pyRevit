@@ -223,7 +223,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                     engines.Add(
                         new PyRevitEngine(
                             engineVer: infoTable["version"].Get<int>(),
+                            runtime: infoTable["runtime"].Get<bool>(),
                             enginePath: Path.Combine(clonePath, infoTable["path"].Get<string>()),
+                            assemblyName: infoTable["assembly"].Get<string>(),
                             kernelName: infoTable["kernel"].Get<string>(),
                             engineDescription: infoTable["description"].Get<string>(),
                             compatibleProducts: new List<string>(((TomlArray)infoTable["compatproducts"]).To<string>())
@@ -368,19 +370,26 @@ namespace pyRevitLabs.TargetApps.Revit {
             // engines are stored in directory named XXX based on engine version (e.g. 273)
             // return latest if zero
             if (engineVer == 000) {
-                PyRevitEngine latestEnginerVer = new PyRevitEngine(000, null);
+                PyRevitEngine latestEngine = null;
 
+                // FindEngines will throw an error if engine directory is missing
                 foreach (var engine in FindEngines(enginesDir)) {
-                    if (engine.Version > latestEnginerVer.Version)
-                        latestEnginerVer = engine;
+                    if (engine.Version > engineVer)
+                        latestEngine = engine;
                 }
 
-                logger.Debug("Latest engine path \"{0}\"", latestEnginerVer.Path ?? "NULL");
-                return latestEnginerVer;
+                if (latestEngine != null && latestEngine.Version != engineVer) {
+                    logger.Debug("Latest engine path \"{0}\"", latestEngine.Path ?? "NULL");
+                    return latestEngine;
+                }
+                else
+                    throw new pyRevitException(
+                        string.Format("Error determining latest engine from \"{0}\"", enginesDir)
+                        );
             }
             else {
                 foreach (var engine in FindEngines(enginesDir)) {
-                    if (engineVer == engine.Version) {
+                    if (engine.Version == engineVer) {
                         logger.Debug("Engine path \"{0}\"", engine.Path ?? "NULL");
                         return engine;
                     }
@@ -403,7 +412,15 @@ namespace pyRevitLabs.TargetApps.Revit {
                     if (engineFinder.IsMatch(engineDirName)) {
                         var engineVer = int.Parse(engineDirName);
                         logger.Debug("Engine found \"{0}\":\"{1}\"", engineDirName, engineDir);
-                        engines.Add(new PyRevitEngine(engineVer, engineDir));
+
+                        // this method is for legacy repos. since engine configuration file is not available in
+                        // legacy repos, it needs to decide whether an engine could be used for runtime or not
+                        // assumes anything Python 3 and above is not runtime
+                        bool runtime = true;
+                        if (engineVer >= 300)
+                            runtime = false;
+
+                        engines.Add(new PyRevitEngine(engineVer, runtime, engineDir));
                     }
                 }
 
