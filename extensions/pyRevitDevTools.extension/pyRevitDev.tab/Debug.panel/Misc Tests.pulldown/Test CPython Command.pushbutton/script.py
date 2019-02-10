@@ -5,11 +5,11 @@
 import sys
 print('\n'.join(sys.path))
 
-# try:
-#     import numpy as np
-#     print(repr(np.arange(15).reshape(3, 5)))
-# except Exception as ex:
-#     print('numpy load error: {}'.format(ex))
+try:
+    import numpy as np
+    print(repr(np.arange(15).reshape(3, 5)))
+except Exception as ex:
+    print('numpy load error: {}'.format(ex))
 
 
 import clr

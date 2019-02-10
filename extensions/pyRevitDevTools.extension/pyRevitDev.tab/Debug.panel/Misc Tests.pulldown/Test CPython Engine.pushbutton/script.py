@@ -51,5 +51,6 @@ except Exception as e:
     print(e)
 finally:
     # somehow shutting down thru ironpython doesn't crash revit
-    pe.Shutdown()
+    # button shutting it down mid session with break the next runs
+    # pe.Shutdown()
     pass
