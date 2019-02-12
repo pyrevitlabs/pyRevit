@@ -1,12 +1,14 @@
 #! python3
 # pylint: skip-file
 
+# set PYTHONPATH to ....\Lib\site-packages correctly
+
 def print_html(output_str):
     print(output_str.replace('<', '&clt;').replace('>', '&cgt;'))
 
-# PYTHONPATH = C:\Program Files\Python35\Lib\site-packages
-print("\n## sys.path:")
 import sys
+print(sys.version)
+print("\n## sys.path:")
 print('\n'.join(sys.path))
 
 # test numpy
