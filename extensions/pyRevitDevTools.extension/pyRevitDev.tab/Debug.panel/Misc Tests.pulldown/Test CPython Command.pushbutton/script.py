@@ -1,43 +1,40 @@
 #! python3
 # pylint: skip-file
 
-# PYTHONPATH = C:\Program Files\Python35\Lib\site-packages
-import sys
-print('\n'.join(sys.path))
-
-
 def print_html(output_str):
     print(output_str.replace('<', '&clt;').replace('>', '&cgt;'))
 
+# PYTHONPATH = C:\Program Files\Python35\Lib\site-packages
+print("\n## sys.path:")
+import sys
+print('\n'.join(sys.path))
 
-# trst numpy
+# test numpy
 try:
     import numpy as np
+    print("\n## numpy array:")
     print(repr(np.arange(15).reshape(3, 5)))
 except Exception as ex:
     print('numpy load error: {}'.format(ex))
 
-# trst pandas
+# test pandas
 try:
     import pandas as pd
 
     df_dict = {'key 1': 1, 'key 2': 2, 'key 3': 3}
     df = pd.DataFrame([df_dict])
 
-    print("pandas dataframe:")
-    print(print_html(df.to_html()))
+    print("\n## pandas DataFrame:")
+    print_html(df.to_html().replace('\n', ''))
 except Exception as ex:
-    print('pandas load error: {}'.format(ex))
+    print(f'pandas load error: {ex}')
 
-
-
-def print_html(output_str):
-	print(output_str.replace('<', '&clt;').replace('>', '&cgt;'))
 
 import clr
 # clr.AddReference('Autodesk.Revit.DB')
 import Autodesk.Revit.DB as DB
 
+print('\n## UIApplication:')
 __revit__ = sys.host
 print(__revit__)
 
@@ -46,5 +43,6 @@ cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
        .WhereElementIsNotElementType()\
        .ToElements()
 
+print('\n## list of DB.Walls:')
 for wall in cl:
-    print(wall)
+    print(f'{wall} id:{wall.Id.IntegerValue}')
