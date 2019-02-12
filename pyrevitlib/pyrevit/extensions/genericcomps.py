@@ -414,7 +414,7 @@ class GenericUICommand(GenericUIComponent):
             # panel buttons should be active always
             if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                 self.cmd_context = script_content.extract_param(
-                    exts.COMMAND_CONTEXT_PARAM)  # type: str
+                    exts.COMMAND_CONTEXT_PARAM)  # type: str or list
                 if isinstance(self.cmd_context, list):
                     self.cmd_context = ';'.join(self.cmd_context)
             else:

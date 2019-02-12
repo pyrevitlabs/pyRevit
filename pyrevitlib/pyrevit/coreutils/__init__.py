@@ -91,16 +91,19 @@ class ScriptFileParser:
         Args:
             file_address (str): python script file path
         """
+        self.ast_tree = None
         self.file_addr = file_address
         with open(file_address, 'r') as source_file:
-            self.ast_tree = ast.parse(source_file.read())
+            contents = source_file.read()
+            if contents and not '#! python3' in contents:
+                self.ast_tree = ast.parse(contents)
 
     def get_docstring(self):
         """Get global docstring."""
-        doc_str = ast.get_docstring(self.ast_tree)
-        if doc_str:
-            return doc_str.decode('utf-8')
-        return None
+        if self.ast_tree:
+            doc_str = ast.get_docstring(self.ast_tree)
+            if doc_str:
+                return doc_str.decode('utf-8')
 
     def extract_param(self, param_name, default_value=None):
         """Find variable and extract its value.
@@ -113,20 +116,21 @@ class ScriptFileParser:
         Returns:
             any: value of the variable or :obj:`None`
         """
-        try:
-            for child in ast.iter_child_nodes(self.ast_tree):
-                if hasattr(child, 'targets'):
-                    for target in child.targets:
-                        if hasattr(target, 'id') and target.id == param_name:
-                            param_value = ast.literal_eval(child.value)
-                            if isinstance(param_value, str):
-                                param_value = param_value.decode('utf-8')
-                            return param_value
-        except Exception as err:
-            raise PyRevitException('Error parsing parameter: {} '
-                                   'in script file for : {} | {}'
-                                   .format(param_name, self.file_addr, err))
-
+        if self.ast_tree:
+            try:
+                for child in ast.iter_child_nodes(self.ast_tree):
+                    if hasattr(child, 'targets'):
+                        for target in child.targets:
+                            if hasattr(target, 'id') \
+                                    and target.id == param_name:
+                                param_value = ast.literal_eval(child.value)
+                                if isinstance(param_value, str):
+                                    param_value = param_value.decode('utf-8')
+                                return param_value
+            except Exception as err:
+                raise PyRevitException('Error parsing parameter: {} '
+                                       'in script file for : {} | {}'
+                                       .format(param_name, self.file_addr, err))
         return default_value
 
 
