@@ -3,6 +3,7 @@
         Title="MainWindow"
         Foreground="#000"
         Height="325" Width="690" Margin="0"
+        SizeToContent="Width"
         ShowInTaskbar="False"
         BorderThickness="0"
         Background="{x:Null}"
