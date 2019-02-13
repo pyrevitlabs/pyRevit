@@ -186,11 +186,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetDir)lib\win32\x64\git2-8e0b172.dll" "$(TargetDir)git2-8e0b172.dll"
+    <PostBuildEvent>copy "$(TargetDir)lib\win32\x64\git2-4aecb64.dll" "$(TargetDir)git2-4aecb64.dll"
 rd /S /Q "$(TargetDir)lib"
 REM del /Q "$(TargetDir)*.pdb"
 REM del /Q "$(TargetDir)*.config"
 REM del /Q "$(TargetDir)*.xml"
-signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
+REM signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
