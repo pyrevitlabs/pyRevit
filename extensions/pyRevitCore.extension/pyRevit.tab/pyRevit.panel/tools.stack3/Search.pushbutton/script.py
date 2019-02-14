@@ -160,7 +160,7 @@ matched_cmdname, matched_cmdargs, switches = \
                                       NP_SWITCH,
                                       CONFIG_SWITCH,
                                       ALT_FLAG],
-                            search_tip='pyRevit Search')
+                            search_tip='type to search')
 
 logger.debug('matched command: {}'.format(matched_cmdname))
 logger.debug('arguments: {}'.format(matched_cmdargs))
