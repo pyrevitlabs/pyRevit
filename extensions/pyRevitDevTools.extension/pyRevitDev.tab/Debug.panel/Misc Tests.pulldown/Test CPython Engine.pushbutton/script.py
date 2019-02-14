@@ -9,8 +9,10 @@ import clr
 # add path of active python.runtime.dll to the sys.path
 from pyrevit.userconfig import user_config
 sys.path.append(op.dirname(user_config.get_active_cpython_engine().AssemblyPath))
+print('\n'.join(sys.path))
 # now load the cpython assembly
-clr.AddReference('Python.Runtime')
+# clr.AddReference('Python.Runtime')
+clr.AddReferenceToFile('Python.Runtime.dll')
 import Python as py
 
 TEST_CODE = """import sys
