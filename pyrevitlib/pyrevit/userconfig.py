@@ -34,18 +34,23 @@ Example:
 #pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
+import _winreg as wr    #pylint: disable=import-error
 
-from pyrevit import EXEC_PARAMS, HOME_DIR
+from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
+from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 
 from pyrevit.labs import TargetApps
 
-from pyrevit.coreutils import touch
+from pyrevit import coreutils
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
+
+
+DEFAULT_CSV_SEPARATOR = ','
 
 
 mlogger = logger.get_logger(__name__)
@@ -140,7 +145,8 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
         """
         dir_list = []
-        dir_list.append(EXTENSIONS_DEFAULT_DIR)
+        if op.exists(EXTENSIONS_DEFAULT_DIR):
+            dir_list.append(EXTENSIONS_DEFAULT_DIR)
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
         return dir_list
 
@@ -163,7 +169,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
 
-        return dir_list
+        return [x for x in dir_list if op.exists(x)]
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file
@@ -171,12 +177,44 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Args:
             path_list (list[str]): list of external extension paths
         """
+        for ext_path in path_list:
+            if not op.exists(ext_path):
+                raise PyRevitException("Path \"%s\" does not exist." % ext_path)
+
         try:
             self.core.userextensions = \
                 [op.normpath(x) for x in path_list]
         except Exception as write_err:
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
+
+    def get_active_cpython_engine(self):
+        """Return active cpython engine."""
+        # find attached clone
+        attachment = self.get_current_attachment()
+        if attachment and attachment.Clone:
+            # get all cpython engines
+            cpy_engines_dict = \
+                {x.Version: x for x in attachment.Clone.GetEngines()
+                 if 'cpython' in x.KernelName.lower()}
+            # find latest cpython engine
+            latest_cpyengine = \
+                max(cpy_engines_dict.values(), key=lambda x: x.Version)
+
+            # grab cpython engine configured to be used by user
+            consts = TargetApps.Revit.PyRevitConsts
+            cpyengine_cfg = \
+                self.core.get_option(consts.ConfigsCPythonEngine, 0)
+            try:
+                cpyengine_ver = int(cpyengine_cfg)
+            except Exception:
+                cpyengine_ver = 000
+
+            # grab the engine by version or default to latest
+            cpyengine = \
+                cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
+            # return full dll assembly path
+            return cpyengine
 
     def save_changes(self):
         """Save user config into associated config file."""
@@ -191,6 +229,23 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             self._update_env()
         else:
             mlogger.debug('Config is in admin mode. Skipping save.')
+
+    @staticmethod
+    def get_list_separator():
+        """Get list separator defined in user os regional settings."""
+        intkey = coreutils.get_reg_key(wr.HKEY_CURRENT_USER,
+                                       r'Control Panel\International')
+        if intkey:
+            try:
+                return wr.QueryValueEx(intkey, 'sList')[0]
+            except Exception:
+                return DEFAULT_CSV_SEPARATOR
+
+    @staticmethod
+    def get_current_attachment():
+        """Return current pyRevit attachment."""
+        hostver = int(HOST_APP.version)
+        return TargetApps.Revit.PyRevit.GetAttached(hostver)
 
 
 def find_config_file(target_path):
@@ -211,7 +266,7 @@ def verify_configs(config_file_path=None):
     """
     if config_file_path:
         mlogger.debug('Creating default config file at: %s', config_file_path)
-        touch(config_file_path)
+        coreutils.touch(config_file_path)
 
     try:
         parser = PyRevitConfig(cfg_file_path=config_file_path)
@@ -253,6 +308,9 @@ def verify_configs(config_file_path=None):
     # compilevb
     if not parser.core.has_option(consts.ConfigsCompileVBKey):
         parser.core.set_option(consts.ConfigsCompileVBKey, True)
+
+    # cpyengine: does not need to set a default for this
+
     # loadbeta
     if not parser.core.has_option(consts.ConfigsLoadBetaKey):
         parser.core.set_option(consts.ConfigsLoadBetaKey, False)

@@ -115,7 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Costura.Fody">
-      <Version>3.3.1</Version>
+      <Version>3.3.2</Version>
     </PackageReference>
     <PackageReference Include="Expression.Blend.Sdk">
       <Version>1.0.2</Version>

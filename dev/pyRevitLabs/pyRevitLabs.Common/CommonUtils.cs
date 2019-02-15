@@ -12,8 +12,7 @@ using IWshRuntimeLibrary;
 using NLog;
 
 namespace pyRevitLabs.Common {
-    public static class CommonUtils
-    {
+    public static class CommonUtils {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         [DllImport("ole32.dll")] private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
@@ -28,8 +27,7 @@ namespace pyRevitLabs.Common {
 
         // helper for deleting directories recursively
         // @handled @logs
-        public static void DeleteDirectory(string targetDir, bool verbose = true)
-        {
+        public static void DeleteDirectory(string targetDir, bool verbose = true) {
             if (CommonUtils.VerifyPath(targetDir)) {
                 if (verbose)
                     logger.Debug("Recursive deleting directory \"{0}\"", targetDir);
@@ -78,13 +76,11 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static void ConfirmPath(string path)
-        {
+        public static void ConfirmPath(string path) {
             Directory.CreateDirectory(path);
         }
 
-        public static void ConfirmFile(string filepath)
-        {
+        public static void ConfirmFile(string filepath) {
             ConfirmPath(Path.GetDirectoryName(filepath));
             if (!System.IO.File.Exists(filepath)) {
                 var file = System.IO.File.CreateText(filepath);
@@ -104,8 +100,7 @@ namespace pyRevitLabs.Common {
             return true;
         }
 
-        public static string DownloadFile(string url, string destPath)
-        {
+        public static string DownloadFile(string url, string destPath) {
             if (CheckInternetConnection()) {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 using (var client = new WebClient()) {
@@ -118,8 +113,7 @@ namespace pyRevitLabs.Common {
             return destPath;
         }
 
-        public static bool CheckInternetConnection()
-        {
+        public static bool CheckInternetConnection() {
             try {
                 using (var client = new WebClient())
                 using (client.OpenRead("http://clients3.google.com/generate_204")) {
@@ -131,8 +125,7 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static byte[] GetStructuredStorageStream(string filePath, string streamName)
-        {
+        public static byte[] GetStructuredStorageStream(string filePath, string streamName) {
             logger.Debug(string.Format("Attempting to read \"{0}\" stream from structured storage file at \"{1}\"",
                                        streamName, filePath));
             int res = StgIsStorageFile(filePath);
@@ -152,15 +145,31 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        public static void OpenUrl(string url, string errMsg = null) {
+        public static void OpenUrl(string url, string logErrMsg = null) {
             if (CheckInternetConnection())
                 Process.Start(url);
             else {
-                if (errMsg == null)
-                    errMsg = string.Format("Error opening url \"{0}\"", url);
+                if (logErrMsg == null)
+                    logErrMsg = string.Format("Error opening url \"{0}\"", url);
 
-                logger.Error(string.Format("{0}. No internet connection detected.", errMsg));
+                logger.Error(string.Format("{0}. No internet connection detected.", logErrMsg));
             }
+        }
+
+        public static bool VerifyUrl(string url) {
+            if (CheckInternetConnection()) {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                try {
+                    var response = request.GetResponse();
+                }
+                catch (Exception ex) {
+                    logger.Debug(ex);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static void SetFileSecurity(string filePath, string userNameWithDoman) {
@@ -174,7 +183,7 @@ namespace pyRevitLabs.Common {
             fs.SetAccessRuleProtection(true, false);
 
             //get any special user access
-            AuthorizationRuleCollection rules = 
+            AuthorizationRuleCollection rules =
                 fs.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
 
             //remove any special access

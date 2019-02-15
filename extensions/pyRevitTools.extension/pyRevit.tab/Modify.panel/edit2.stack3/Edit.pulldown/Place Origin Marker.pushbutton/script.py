@@ -1,4 +1,4 @@
-"""Tag all chosen element types in all views."""
+"""Place a cross marker at the true 0,0,0 origin."""
 #pylint: disable=C0103,E0401,C0111,W0703
 from pyrevit import revit, DB
 from pyrevit import forms

@@ -253,11 +253,17 @@ namespace pyRevitManager.Views {
                 if (arguments["--help"].IsTrue)
                     PrintSubHelpAndExit(new List<string>() { "help" },
                                         "Open help in default browser");
-
-                CommonUtils.OpenUrl(
-                    string.Format(PyRevitConsts.CLIHelpUrl, CLIVersion.ToString()),
-                    errMsg: "Can not open online help page. Try `pyrevit --help` instead"
-                    );
+                string helpUrl = string.Format(PyRevitConsts.CLIHelpUrl, CLIVersion.ToString());
+                if (CommonUtils.VerifyUrl(helpUrl)) {
+                    CommonUtils.OpenUrl(
+                        helpUrl,
+                        logErrMsg: "Can not open online help page. Try `pyrevit --help` instead"
+                        );
+                }
+                else
+                    throw new pyRevitException(
+                        string.Format("Help page is not reachable for version {0}", CLIVersion.ToString())
+                        );
             }
 
             // =======================================================================================================

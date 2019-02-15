@@ -1,8 +1,9 @@
-"""Import selected csv file as a schedule."""
+"""Import existing CSV file as a schedule."""
 #pylint: disable=C0103,E0401,W0703
 
 import csv
 import codecs
+import os.path as op
 
 from pyrevit import forms
 from pyrevit import coreutils
@@ -51,7 +52,7 @@ def create_key_schedule(category, key_name, sched_name,
         # iterate over elements and records
         # FIXME: collect new elements only
         for keysched_el, record_data in zip(
-                revit.query.get_all_view_elements(doc, new_key_sched),
+                revit.query.get_all_elements_in_view(new_key_sched),
                 records):
             logger.debug('Processing record: %s', record_data)
             for idx, field_name in enumerate(fields):
@@ -133,6 +134,7 @@ if __name__ == '__main__':
     # ask user for source CSV file
     source_file = forms.pick_file(file_ext='csv')
     if source_file:
+        fname = op.splitext(op.basename(source_file))[0]
         # as user for target key schedule category
         key_sched_cat = forms.SelectFromList.show(
             revit.query.get_key_schedule_categories(),
@@ -155,8 +157,8 @@ if __name__ == '__main__':
                     # create the schedule and fill with data now
                     create_key_schedule(
                         category=key_sched_cat,
-                        key_name="# Test",
-                        sched_name="# Abbrev",
+                        key_name=fname,
+                        sched_name=fname,
                         fields=param_names,
                         records=param_data,
                         doc=revit.doc)

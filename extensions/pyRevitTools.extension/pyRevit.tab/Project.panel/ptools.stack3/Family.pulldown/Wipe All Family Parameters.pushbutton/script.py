@@ -1,3 +1,4 @@
+#pylint: disable=E0401
 from pyrevit import revit, DB, UI
 from pyrevit import script
 from pyrevit import forms
@@ -12,9 +13,6 @@ logger = script.get_logger()
 res = \
     forms.alert('Make sure your models are saved and synced. '
                 'Hit OK to continue...', cancel=True)
-
-if not res == UI.TaskDialogResult.Ok:
-    script.exit()
 
 if revit.doc.IsFamilyDocument:
     params = revit.doc.FamilyManager.GetParameters()
@@ -32,7 +30,7 @@ if revit.doc.IsFamilyDocument:
 
     print('STARTING CLEANUP...')
 
-    with rvit.Transaction('Remove all family parameters'):
+    with revit.Transaction('Remove all family parameters'):
         for param in params:
             try:
                 print('\nREMOVING FAMILY PARAMETER:\nID: {0}\tNAME: {1}'

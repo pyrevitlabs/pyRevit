@@ -10,7 +10,7 @@ Each pyRevit command bundle can contain two scripts:
 
     ``*script.py`` is the main script.
 
-    ``*config.py`` is the Alternale/Config script.
+    ``*config.py`` is the Alternate/Config script.
 
 SHIFT-clicking on a ui button will run the alternate/config script.
 This alternate script is generally used to configure the main tool.

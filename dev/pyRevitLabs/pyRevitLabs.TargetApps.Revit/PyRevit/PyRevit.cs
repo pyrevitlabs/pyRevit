@@ -462,16 +462,20 @@ namespace pyRevitLabs.TargetApps.Revit {
             // make the addin manifest file
             var engine = clone.GetEngine(engineVer);
 
-            logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}",
-                                        clone.Name, clone.ClonePath, revitYear));
-            Addons.CreateManifestFile(revitYear,
-                                      PyRevitConsts.AddinFileName,
-                                      PyRevitConsts.AddinName,
-                                      engine.LoaderPath,
-                                      PyRevitConsts.AddinId,
-                                      PyRevitConsts.AddinClassName,
-                                      PyRevitConsts.VendorId,
-                                      allusers: allUsers);
+            if (engine.Runtime) {
+                logger.Debug(string.Format("Attaching Clone \"{0}\" @ \"{1}\" to Revit {2}",
+                                            clone.Name, clone.ClonePath, revitYear));
+                Addons.CreateManifestFile(revitYear,
+                                          PyRevitConsts.AddinFileName,
+                                          PyRevitConsts.AddinName,
+                                          engine.AssemblyPath,
+                                          PyRevitConsts.AddinId,
+                                          PyRevitConsts.AddinClassName,
+                                          PyRevitConsts.VendorId,
+                                          allusers: allUsers);
+            }
+            else
+                throw new pyRevitException(string.Format("Engine \"{0}\" can not be used as runtime.", engineVer));
         }
 
         // attach clone to all installed revit versions
