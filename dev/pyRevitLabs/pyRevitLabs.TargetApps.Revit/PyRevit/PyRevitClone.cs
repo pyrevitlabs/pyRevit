@@ -48,6 +48,8 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public string ClonePath { get; private set; }
 
+        public string ExtensionsPath => GetExtensionsPath(ClonePath);
+
         public override string ToString() {
             if (IsRepoDeploy)
                 return string.Format(
@@ -136,6 +138,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static bool IsDeployedWithRepo(string clonePath) {
             return CommonUtils.VerifyPath(Path.Combine(clonePath, PyRevitConsts.DefaultGitDirName));
         }
+
+        // get extensions path
+        public static string GetExtensionsPath(string clonePath) =>
+            Path.Combine(clonePath, PyRevitConsts.PyRevitExtensionsDirName).NormalizeAsPath();
 
         // get pyrevitlib path
         public static string GetPyRevitLibPath(string clonePath) =>
@@ -436,8 +442,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         private static string FindEnginesDirectory(string clonePath) {
             // determine repo version based on directory availability
             string enginesDir = Path.Combine(clonePath,
-                                             PyRevitConsts.PyReviBinDirName,
-                                             PyRevitConsts.PyReviBinEnginesDirName);
+                                             PyRevitConsts.PyRevitBinDirName,
+                                             PyRevitConsts.PyRevitBinEnginesDirName);
             if (!CommonUtils.VerifyPath(enginesDir)) {
                 enginesDir = Path.Combine(clonePath,
                                           PyRevitConsts.PyRevitLibDirName,
@@ -449,6 +455,13 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
 
             return enginesDir;
+        }
+
+        // get list of builtin extensions
+        // @handled @logs
+        public static List<PyRevitExtension> GetExtensions(string clonePath) {
+            VerifyCloneValidity(clonePath);
+            return PyRevitExtension.FindExtensions(PyRevitClone.GetExtensionsPath(clonePath));
         }
 
         // instance methods ==========================================================================================
@@ -476,6 +489,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public void SetOrigin(string originUrl) => SetOrigin(ClonePath, originUrl);
 
         public PyRevitCloneFromArchiveArgs DeploymentArgs => ReadDeploymentArgs(ClonePath);
+
+        public List<PyRevitExtension> GetExtensions() => GetExtensions(ClonePath);
 
         // private 
         private static PyRevitCloneFromArchiveArgs ReadDeploymentArgs(string clonePath) {

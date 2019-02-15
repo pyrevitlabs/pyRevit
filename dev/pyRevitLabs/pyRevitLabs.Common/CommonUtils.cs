@@ -25,6 +25,11 @@ namespace pyRevitLabs.Common {
             return Directory.Exists(path);
         }
 
+        public static bool VerifyPythonScript(string path) {
+            return VerifyFile(path) && path.ToLower().EndsWith(".py");
+        }
+
+
         // helper for deleting directories recursively
         // @handled @logs
         public static void DeleteDirectory(string targetDir, bool verbose = true) {
