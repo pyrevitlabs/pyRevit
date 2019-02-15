@@ -75,6 +75,15 @@ namespace pyRevitLabs.TargetApps.Revit {
             var extDefFile = GetExtensionDefFilePath(InstallPath);
             if (CommonUtils.VerifyFile(extDefFile))
                 Definition = new PyRevitExtensionDefinition(extDefFile);
+            else {
+                // if def file is not found try to grab the definitions from registered extensions
+                try {
+                    Definition = PyRevit.FindRegisteredExtension(Name);
+                }
+                catch {
+                    // let Definition be null if extension is not registered
+                }
+            }
         }
 
         public string InstallPath { get; private set; }
