@@ -1938,6 +1938,17 @@ namespace pyRevitManager.Views {
             catch {
                 Console.WriteLine("No .Net Target Packs are installed.");
             }
+
+            try {
+                string targetPacks = "";
+                foreach (string targetPackagePath in UserEnv.GetInstalledDotnetCoreTargetPacks())
+                    targetPacks += string.Format("v{0} ", Path.GetFileName(targetPackagePath));
+                Console.WriteLine(string.Format("Installed .Net-Core Target Packs: {0}", targetPacks));
+            }
+            catch {
+                Console.WriteLine("No .Ne-Core Target Packs are installed.");
+            }
+
             Console.WriteLine(string.Format("pyRevit CLI {0}",
                                             Assembly.GetExecutingAssembly().GetName().Version.ToString()));
         }

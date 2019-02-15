@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,7 +26,17 @@ namespace pyRevitLabs.Common {
             var targetPackPaths = new List<string>();
             var frameworkPath = @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework";
             foreach (string path in Directory.GetDirectories(frameworkPath))
-                targetPackPaths.Add(path);
+                if (Regex.Match(Path.GetFileName(path), @"\d\..+").Success)
+                    targetPackPaths.Add(path);
+            return targetPackPaths;
+        }
+
+        public static List<string> GetInstalledDotnetCoreTargetPacks() {
+            var targetPackPaths = new List<string>();
+            var frameworkPath = @"C:\Program Files\dotnet\sdk";
+            foreach (string path in Directory.GetDirectories(frameworkPath))
+                if (Regex.Match(Path.GetFileName(path), @"\d\..+").Success)
+                    targetPackPaths.Add(path);
             return targetPackPaths;
         }
 
