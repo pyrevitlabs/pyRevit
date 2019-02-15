@@ -37,6 +37,8 @@ class PyRevitPluginRemoveException(PyRevitException):
 PLUGIN_EXT_DEF_MANIFEST_NAME = 'extensions'
 PLUGIN_EXT_DEF_FILE = PLUGIN_EXT_DEF_MANIFEST_NAME + exts.JSON_FILE_FORMAT
 
+EXTENSION_POSTFIXES = [x.POSTFIX for x in exts.ExtensionTypes.get_ext_types()]
+
 
 class DependencyGraph:
     def __init__(self, extpkg_list):
@@ -108,9 +110,10 @@ class ExtensionPackage:
         self.update_info(info_dict, def_file_path=def_file_path)
 
     def update_info(self, info_dict, def_file_path=None):
-        ext_type = info_dict.get('type', None)
-        if ext_type == exts.ExtensionTypes.LIB_EXTENSION.ID:
-            self.type = exts.ExtensionTypes.LIB_EXTENSION
+        ext_def_type = info_dict.get('type', None)
+        for ext_type in exts.ExtensionTypes.get_ext_types():
+            if ext_def_type == ext_type.ID:
+                self.type = ext_type
 
         self.builtin = \
             safe_strtype(info_dict.get('builtin',
@@ -184,6 +187,11 @@ class ExtensionPackage:
     def __repr__(self):
         return '<ExtensionPackage object. name:\'{}\' url:\'{}\' auth:{}>'\
             .format(self.name, self.url, self.authusers)
+
+    @property
+    def is_cli_ext(self):
+        """Check if this is a pyRevit CLI extension."""
+        return exts.ExtensionTypes.is_cli_ext(self.type)
 
     @property
     def ext_dirname(self):
@@ -402,9 +410,8 @@ def _find_internal_extpkgs(ext_dir):
     internal_extpkg_def_files = []
     mlogger.debug('Looking for internal package defs under %s', ext_dir)
     for subfolder in os.listdir(ext_dir):
-        if subfolder.endswith(exts.ExtensionTypes.UI_EXTENSION.POSTFIX) \
-                or subfolder.endswith(exts.ExtensionTypes.LIB_EXTENSION.POSTFIX):
-            mlogger.debug('Found extension foldere %s', subfolder)
+        if any([subfolder.endswith(x) for x in EXTENSION_POSTFIXES]):
+            mlogger.debug('Found extension folder %s', subfolder)
             int_extpkg_deffile = \
                 op.join(ext_dir, subfolder, exts.EXT_MANIFEST_FILE)
             mlogger.debug('Looking for %s', int_extpkg_deffile)

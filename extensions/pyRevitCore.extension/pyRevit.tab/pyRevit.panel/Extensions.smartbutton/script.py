@@ -48,6 +48,9 @@ class ExtensionPackageListItem:
         elif self.ext_pkg.type == \
                 exts.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
+        elif self.ext_pkg.type == \
+                exts.ExtensionTypes.RUN_EXTENSION:
+            self.Type = 'CLI Run Commands'
 
         # setting up other list data
         self.Builtin = self.ext_pkg.builtin
@@ -153,7 +156,8 @@ class ExtensionsWindow(forms.WPFWindow):
 
         self._exts_list = []
         for plugin_ext in ext_pkgs_list:
-            self._exts_list.append(ExtensionPackageListItem(plugin_ext))
+            if not plugin_ext.is_cli_ext:
+                self._exts_list.append(ExtensionPackageListItem(plugin_ext))
 
         self.extpkgs_lb.ItemsSource = \
             sorted(self._exts_list, key=lambda x: x.Builtin, reverse=True)
@@ -269,7 +273,6 @@ class ExtensionsWindow(forms.WPFWindow):
                 self._update_toggle_button(enable=False, multiple=True)
                 return
             self.hide_element(self.ext_toggle_b)
-
 
     def _update_ext_settings_panel(self, ext_pkg_item):
         """Updates the package settings panel based on the provided
