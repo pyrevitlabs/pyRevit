@@ -1,0 +1,6 @@
+﻿
+VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+ 
+Calculated using: checksum -t sha256 on the exe installer

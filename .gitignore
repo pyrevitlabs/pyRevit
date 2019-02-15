@@ -37,3 +37,4 @@ release/pyRevit-cache
 release/pyRevit-SetupFiles
 release/pyRevit\ CLI-cache
 release/pyRevit\ CLI-SetupFiles
+release/pyrevit-cli/*.nupkg
