@@ -223,8 +223,22 @@ namespace PyRevitBaseClasses {
                 else {
                     // Stating a new output window
                     var newOutput = new ScriptOutput(DebugMode, UIApp);
-                    newOutput.OutputTitle = _cmdName;              // Set output window title to command name
-                    newOutput.OutputId = _cmdUniqueName;     // Set window identity to the command unique identifier
+
+                    // Set output window title to command name
+                    newOutput.OutputTitle = _cmdName;
+
+                    // Set window identity to the command unique identifier
+                    newOutput.OutputId = _cmdUniqueName;
+
+                    // set window app version header
+                    var envDict = new EnvDictionary();
+                    newOutput.AppVersion = string.Format(
+                        "{0}:{1}:{2}",
+                        envDict.pyRevitVersion,
+                        IsPython3 ? envDict.pyRevitCpyVersion : envDict.pyRevitIpyVersion,
+                        envDict.RevitVersion
+                        );
+
                     _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
                     return newOutput;
                 }

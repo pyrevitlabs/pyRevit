@@ -23,6 +23,10 @@ PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
 PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
 PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
 
+PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
+PYREVIT_IPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_IPYVERSION'
+PYREVIT_CSPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CPYVERSION'
+
 
 def set_session_uuid(uuid_str):
     envvars.set_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR, uuid_str)
@@ -33,6 +37,21 @@ def get_session_uuid():
 
 
 def new_session_uuid():
+    # set app version env var
+    envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR, HOST_APP.subversion)
+
+    # set ironpython engine version env var
+    attachment = user_config.get_current_attachment()
+    if attachment and attachment.Clone:
+        envvars.set_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR,
+                                    attachment.Engine.Version)
+
+    # set cpython engine version env var
+    cpyengine = user_config.get_active_cpython_engine()
+    if cpyengine:
+        envvars.set_pyrevit_env_var(PYREVIT_CSPYVERSION_ENVVAR,
+                                    cpyengine.Version)
+
     uuid_str = safe_strtype(coreutils.new_uuid())
     set_session_uuid(uuid_str)
     return uuid_str
