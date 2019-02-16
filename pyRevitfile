@@ -75,6 +75,7 @@ base = ['bin',
         'pyRevitfile']
 basepublic = ['bin',
               'extensions/pyRevitCore.extension',
+              'extensions/pyRevitRun.run',
               'extensions/pyRevitTags.extension',
               'extensions/pyRevitTools.extension',
               'extensions/pyRevitTutor.extension',
