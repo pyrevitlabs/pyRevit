@@ -13,9 +13,6 @@ from pyrevit.coreutils import git
 mlogger = get_logger(__name__)
 
 
-PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
-
-
 class PyRevitVersion(object):
     """Contains current pyrevit version"""
     major = VERSION_MAJOR
@@ -61,15 +58,10 @@ def get_pyrevit_repo():
 
 def get_pyrevit_version():
     try:
-        pyrvt_ver = PyRevitVersion(get_pyrevit_repo().last_commit_hash)
+        return PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
         mlogger.debug('Can not get pyRevit patch number. | %s', ver_err)
-        pyrvt_ver = PyRevitVersion('')
-
-    envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR,
-                                pyrvt_ver.get_formatted())
-
-    return pyrvt_ver
+        return PyRevitVersion('')
 
 
 def get_pyrevit_cli_version():

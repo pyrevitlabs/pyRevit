@@ -62,6 +62,12 @@ def _clear_running_engines():
 def _setup_output():
     # create output window and assign handle
     out_window = loadertypes.ScriptOutput()
+    runtime_info = sessioninfo.get_runtime_info()
+    out_window.AppVersion = '{}:{}:{}'.format(
+        runtime_info.pyrevit_version,
+        runtime_info.engine_version,
+        runtime_info.host_version
+        )
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
@@ -205,6 +211,9 @@ def load_session():
     Returns:
         None
     """
+    # setup runtime environment variables
+    sessioninfo.setup_runtime_vars()
+
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if EXEC_PARAMS.first_load:
