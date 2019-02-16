@@ -4,6 +4,7 @@ import os
 import sys
 import os.path as op
 
+__context__ = 'zerodoc'
 
 import clr
 # add path of active python.runtime.dll to the sys.path
