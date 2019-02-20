@@ -2,7 +2,9 @@
 #pylint: disable=E0401,C0111,W0613,C0103,broad-except
 from pyrevit import revit, UI
 from pyrevit import forms
+from pyrevit import script
 
+logger = script.get_logger()
 
 with forms.WarningBar(title='Pick source object:'):
     source_face = revit.pick_face()
@@ -11,6 +13,8 @@ with forms.WarningBar(title='Pick source object:'):
 if source_face:
     material_id = source_face.MaterialElementId
     material = revit.doc.GetElement(material_id)
+
+    logger.debug('Selected material id:%s name:%s', material.Id, material.Name)
 
     with forms.WarningBar(title='Pick faces to match materials:'):
         while True:
