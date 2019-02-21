@@ -1,5 +1,7 @@
 """Print items in order from a sheet index."""
 #pylint: disable=W0613,E0401,C0103
+import re
+
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
@@ -25,7 +27,12 @@ class ReOrderWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
+        self._config = script.get_config()
+
         self._setup_item_params_combobox()
+
+        self.grouping_pattern = \
+            self._config.get_option('index_grouping_pattern', r'([A-Z])\d')
 
     @property
     def items_list(self):
@@ -41,9 +48,38 @@ class ReOrderWindow(forms.WPFWindow):
     def selected_item_param(self):
         return self.orderparams_cb.SelectedItem
 
+    @property
+    def grouping_pattern(self):
+        pattern = self.indexgroup_tb.Text
+        try:
+            re.compile(pattern)
+            return pattern
+        except Exception:
+            return ""
+
+    @grouping_pattern.setter
+    def grouping_pattern(self, value):
+        self.indexgroup_tb.Text = value
+
     def _update_order_indices(self):
-        for idx, item in enumerate(self.items_list):
-            item.order_index = idx
+        if self.grouping_pattern:
+            last_groupid = ''
+            grouping_index = 0
+            grouping_range = 1000
+            for idx, item in enumerate(self.items_list):
+                match = re.search(self.grouping_pattern, item.number)
+                if match and match.groups():
+                    groupid = match.groups()[0]
+                    if groupid != last_groupid:
+                        last_groupid = groupid
+                        grouping_index += 1
+
+                    item.order_index = (grouping_range * grouping_index) + idx
+                else:
+                    item.order_index = idx
+        else:
+            for idx, item in enumerate(self.items_list):
+                item.order_index = idx
 
     def _setup_item_params_combobox(self):
         items = revit.query.get_sheets()
@@ -99,6 +135,11 @@ class ReOrderWindow(forms.WPFWindow):
         elif order_param == 'name':
             self.items_list = sorted(self.items_list, key=lambda x: x.name)
 
+    def grouping_pattern_changed(self, sender, args):
+        existing_items = self.items_list
+        self.items_list = []
+        self.items_list = existing_items
+
     def move_to_top(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
         new_list = self._insert_list_in_list(selected, non_selected, 0)
@@ -137,6 +178,8 @@ class ReOrderWindow(forms.WPFWindow):
 
     def reorder_items(self, sender, args):
         self.Close()
+        self._config.set_option('index_grouping_pattern',
+                                self.grouping_pattern)
         with revit.Transaction('Reorder Sheets'):
             for item in self.items_list:
                 idx_param = \
