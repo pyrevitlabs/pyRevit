@@ -355,7 +355,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "with other projects. Users should NOT be making changes to "
                 "the existing keynote file during the conversion process.\n"
                 "Are you sure you want to convert?",
-                options=["Convert", "Give me more info"])
+                options=["Convert",
+                         "Select a different keynote file",
+                         "Give me more info"])
             if res:
                 if res == "Convert":
                     try:
@@ -370,6 +372,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         logger.debug('Legacy conversion failed | %s' % convex)
                         forms.alert("Conversion failed! %s" % convex,
                                     exitscript=True)
+                elif res == "Select a different keynote file":
+                    self._change_kfile()
                 elif res == "Give me more info":
                     script.open_url('https://eirannejad.github.io/pyRevit')
                     script.exit()
