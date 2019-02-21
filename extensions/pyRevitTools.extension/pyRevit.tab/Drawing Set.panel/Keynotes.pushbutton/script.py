@@ -892,19 +892,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def show_keynote(self, sender, args):
         if self.selected_keynote:
             self.Close()
-            for kkey, kids in self.get_used_keynote_elements().items():
-                if kkey == self.selected_keynote.key:
-                    for kid in kids:
-                        source = viewname = ''
-                        kel = revit.doc.GetElement(kid)
-                        if kel:
-                            source = kel.Parameter[
-                                DB.BuiltInParameter.KEY_SOURCE_PARAM].AsString()
-                            vel = revit.doc.GetElement(kel.OwnerViewId)
-                            if vel:
-                                viewname = revit.query.get_name(vel)
-                        print('{} \"{}\" Keynote @ \"{}\"'
-                              .format(output.linkify(kid), source, viewname))
+            kids = self.get_used_keynote_elements() \
+                       .get(self.selected_keynote.key, [])
+            for kid in kids:
+                source = viewname = ''
+                kel = revit.doc.GetElement(kid)
+                ehist = revit.query.get_history(kel)
+                if kel:
+                    source = kel.Parameter[
+                        DB.BuiltInParameter.KEY_SOURCE_PARAM].AsString()
+                    vel = revit.doc.GetElement(kel.OwnerViewId)
+                    if vel:
+                        viewname = revit.query.get_name(vel)
+                # prepare report
+                report = \
+                    '{} \"{}\" Keynote @ \"{}\"'.format(
+                        output.linkify(kid),
+                        source,
+                        viewname
+                        )
+
+                if ehist:
+                    report += \
+                        ' - Last Edited By \"{}\"'.format(ehist.last_changed_by)
+
+                print(report)
 
     def place_keynote(self, sender, args):
         self.Close()

@@ -45,6 +45,9 @@ SheetRefInfo = namedtuple('SheetRefInfo',
                           ['sheet_num', 'sheet_name', 'detail_num',
                            'ref_viewid'])
 
+ElementHistory = namedtuple('ElementHistory',
+                            ['creator', 'owner', 'last_changed_by'])
+
 
 def get_name(element, title_on_sheet=False):
     # grab viewname correctly
@@ -1094,3 +1097,13 @@ def get_line_categories(doc=None):
 def get_line_styles(doc=None):
     return [x.GetGraphicsStyle(DB.GraphicsStyleType.Projection)
             for x in get_line_categories(doc=doc)]
+
+
+def get_history(target_element):
+    doc = target_element.Document
+    if doc.IsWorkshared:
+        wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(doc,
+                                                            target_element.Id)
+        return ElementHistory(creator=wti.Creator,
+                              owner=wti.Owner,
+                              last_changed_by=wti.LastChangedBy)
