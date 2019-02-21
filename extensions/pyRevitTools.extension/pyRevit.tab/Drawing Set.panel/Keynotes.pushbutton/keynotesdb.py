@@ -1,5 +1,6 @@
 """Module for managing keynotes using DeffrelDB."""
 #pylint: disable=E0401,W0613
+import re
 import codecs
 from collections import namedtuple, defaultdict
 
@@ -39,6 +40,7 @@ EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
 
 RKeynoteFilter = namedtuple('RKeynoteFilter', ['name', 'code'])
 
+
 class RKeynoteFilters(object):
     """Custom filters for filtering keynotes."""
 
@@ -46,6 +48,8 @@ class RKeynoteFilters(object):
     UnusedOnly = RKeynoteFilter(name="Unused Only", code=":unused:")
     LockedOnly = RKeynoteFilter(name="Locked Only", code=":locked:")
     UnlockedOnly = RKeynoteFilter(name="Unlocked Only", code=":unlocked:")
+    UseRegex = RKeynoteFilter(name="Use Regular Expressions (Regex)",
+                              code=":regex:")
 
     @classmethod
     def get_available_filters(cls):
@@ -53,7 +57,9 @@ class RKeynoteFilters(object):
         return [cls.UsedOnly,
                 cls.UnusedOnly,
                 cls.LockedOnly,
-                cls.UnlockedOnly,]
+                cls.UnlockedOnly,
+                cls.UseRegex
+                ]
 
     @classmethod
     def remove_filters(cls, source_string):
@@ -100,6 +106,10 @@ class RKeynote(object):
 
     def filter(self, search_term):
         self._filter = search_term.lower()
+
+        # use regex for string matching?
+        use_regex = RKeynoteFilters.UseRegex.code in self._filter
+
         self_pass = False
         if RKeynoteFilters.UsedOnly.code in self._filter:
             self_pass = self.used
@@ -117,15 +127,28 @@ class RKeynote(object):
         has_smart_filter = cleaned_sfilter != self._filter
 
         if cleaned_sfilter:
-            sterm = self.key +' '+ self.text +' '+ self.owner
+            sterm = self.key + ' ' + self.text + ' ' + self.owner
+            sterm = sterm.lower()
+
             # here is where matching against the string happens
-            self_pass_keyword = \
-                coreutils.fuzzy_search_ratio(sterm.lower(),
-                                             cleaned_sfilter) > 80
-            if has_smart_filter:
-                self_pass = self_pass_keyword and self_pass
+            if use_regex:
+                # check if pattern is valid
+                try:
+                    self_pass = re.search(
+                        cleaned_sfilter,
+                        sterm,
+                        re.IGNORECASE
+                        )
+                except Exception:
+                    self_pass = False
             else:
-                self_pass = self_pass_keyword
+                self_pass_keyword = \
+                    coreutils.fuzzy_search_ratio(sterm, cleaned_sfilter) > 80
+
+                if has_smart_filter:
+                    self_pass = self_pass_keyword and self_pass
+                else:
+                    self_pass = self_pass_keyword
 
         # filter children now
         self._filtered_children = \
