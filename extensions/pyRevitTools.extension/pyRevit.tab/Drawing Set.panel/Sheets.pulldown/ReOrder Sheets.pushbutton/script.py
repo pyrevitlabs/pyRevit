@@ -32,7 +32,8 @@ class ReOrderWindow(forms.WPFWindow):
         self._setup_item_params_combobox()
 
         self.grouping_pattern = \
-            self._config.get_option('index_grouping_pattern', r'([A-Z])\d')
+            self._config.get_option('index_grouping_pattern',
+                                    r'([A-Z])\d')
 
     @property
     def items_list(self):
@@ -60,6 +61,11 @@ class ReOrderWindow(forms.WPFWindow):
     @grouping_pattern.setter
     def grouping_pattern(self, value):
         self.indexgroup_tb.Text = value
+
+    def _refresh(self):
+        existing_items = self.items_list
+        self.items_list = []
+        self.items_list = existing_items
 
     def _update_order_indices(self):
         if self.grouping_pattern:
@@ -136,9 +142,7 @@ class ReOrderWindow(forms.WPFWindow):
             self.items_list = sorted(self.items_list, key=lambda x: x.name)
 
     def grouping_pattern_changed(self, sender, args):
-        existing_items = self.items_list
-        self.items_list = []
-        self.items_list = existing_items
+        self._refresh()
 
     def move_to_top(self, sender, args):
         selected, non_selected = self._get_selected_nonselected()
