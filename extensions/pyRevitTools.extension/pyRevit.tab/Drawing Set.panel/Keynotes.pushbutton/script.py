@@ -384,6 +384,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                     locked=False, owner='',
                                     children=None)
 
+        self._needs_update = False
         self._config = script.get_config()
         self._used_keysdict = self.get_used_keynote_elements()
         self.load_config()
@@ -694,6 +695,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                  kdb.EDIT_MODE_ADD_CATEG).show()
             if new_cat:
                 self.selected_category = new_cat.key
+                # make sure to relaod on close
+                self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
         except Exception as ex:
@@ -715,6 +718,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     EditRecordWindow(self, self._conn,
                                      kdb.EDIT_MODE_EDIT_CATEG,
                                      rkeynote=selected_category).show()
+                    # make sure to relaod on close
+                    self._needs_update = True
                 except System.TimeoutException as toutex:
                     forms.alert(toutex.Message)
                 except Exception as ex:
@@ -743,6 +748,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_category(self._conn, selected_category.key)
+                        # make sure to relaod on close
+                        self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(toutex.Message)
                     except Exception as ex:
@@ -771,6 +778,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=parent_key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -785,6 +794,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 EditRecordWindow(self, self._conn,
                                  kdb.EDIT_MODE_ADD_KEYNOTE,
                                  pkey=selected_keynote.key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -801,6 +812,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=self.selected_keynote.text,
                     pkey=self.selected_keynote.parent_key).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -826,6 +839,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                                yes=True, no=True):
                     try:
                         kdb.remove_keynote(self._conn, selected_keynote.key)
+                        # make sure to relaod on close
+                        self._needs_update = True
                     except System.TimeoutException as toutex:
                         forms.alert(toutex.Message)
                     except Exception as ex:
@@ -841,6 +856,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._conn,
                     kdb.EDIT_MODE_EDIT_KEYNOTE,
                     rkeynote=self.selected_keynote).show()
+                # make sure to relaod on close
+                self._needs_update = True
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
             except Exception as ex:
@@ -901,6 +918,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def change_keynote_file(self, sender, args):
         self._change_kfile()
+        # make sure to relaod on close
+        self._needs_update = True
         self.Close()
 
     def show_keynote_file(self, sender, args):
@@ -948,13 +967,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except System.TimeoutException as toutex:
                 forms.alert(toutex.Message)
 
-
     def update_model(self, sender, args):
         self.Close()
 
     def window_closing(self, sender, args):
-        with revit.Transaction('Update Keynotes'):
-            revit.update.update_linked_keynotes(doc=revit.doc)
+        if self._needs_update:
+            with revit.Transaction('Update Keynotes'):
+                revit.update.update_linked_keynotes(doc=revit.doc)
 
         try:
             self.save_config()
