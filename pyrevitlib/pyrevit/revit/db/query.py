@@ -1083,3 +1083,14 @@ def yield_unreferenced_views(doc=None, all_views=None):
         # if it has NO referring views, yield
         if len(list(yield_referring_views(view))) == 0:
             yield view.Id
+
+
+def get_line_categories(doc=None):
+    doc = doc or HOST_APP.doc
+    lines_cat = doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
+    return lines_cat.SubCategories
+
+
+def get_line_styles(doc=None):
+    return [x.GetGraphicsStyle(DB.GraphicsStyleType.Projection)
+            for x in get_line_categories(doc=doc)]
