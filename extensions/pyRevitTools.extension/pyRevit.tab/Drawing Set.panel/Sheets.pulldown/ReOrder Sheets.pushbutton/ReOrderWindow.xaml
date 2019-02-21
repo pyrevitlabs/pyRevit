@@ -41,7 +41,7 @@
                     Sheet Numbers and group indices. For example, to group using the discipline identifier in
                     Sheet Number (A in A1.00), use "([A-Z])\d". The () in pattern select the discipline identifier as a group
                     which is used to group sheet ranges.
-                    <Hyperlink NavigateUri="https://regexr.com/">
+                    <Hyperlink NavigateUri="https://regexr.com/" Click="handle_url_click">
                         See Regexr on how to use Regular Expressions
                     </Hyperlink>
                 </TextBlock>

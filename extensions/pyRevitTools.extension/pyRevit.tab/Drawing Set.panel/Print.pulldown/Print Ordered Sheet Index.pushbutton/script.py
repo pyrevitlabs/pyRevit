@@ -375,9 +375,6 @@ class PrintSheetsWindow(forms.WPFWindow):
             else:
                 self._print_sheets_in_order()
 
-    def handle_url_click(self, sender, args):
-        script.open_url('https://github.com/McCulloughRT/PrintFromIndex')
-
     def preview_mouse_down(self, sender, args):
         if isinstance(sender, Windows.Controls.ListViewItem):
             if sender.DataContext.printable:

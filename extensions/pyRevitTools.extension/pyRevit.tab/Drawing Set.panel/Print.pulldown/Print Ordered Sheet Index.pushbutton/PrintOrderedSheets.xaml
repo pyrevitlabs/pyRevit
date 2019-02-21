@@ -22,6 +22,10 @@
             </StackPanel>
         </ControlTemplate>
 
+        <Style TargetType="{x:Type Hyperlink}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="TextBlock.TextDecorations" Value="{x:Null}" />
+        </Style>
     </Window.Resources>
 
     <DockPanel>
@@ -82,7 +86,9 @@
         </StackPanel>
         <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
+                <Hyperlink NavigateUri="https://github.com/McCulloughRT/PrintFromIndex" Click="handle_url_click">
                     Kudos to Ryan McCullough for PrintFromIndex
+                </Hyperlink>
             </TextBlock>
         </StatusBar>
         <ListView x:Name="sheets_lb" Margin="10,0,10,10" AllowDrop="True">
