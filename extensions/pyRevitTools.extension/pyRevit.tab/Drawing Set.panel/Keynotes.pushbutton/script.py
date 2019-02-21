@@ -677,10 +677,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def selected_keynote_changed(self, sender, args):
         logger.debug('New keynote selected: %s', self.selected_keynote)
-        if self.selected_keynote and not self.selected_keynote.locked:
-            self.keynoteEditButtons.IsEnabled = True
+        if self.selected_keynote \
+                and not self.selected_keynote.locked:
+            if self.selected_keynote.parent_key:
+                self.catEditButtons.IsEnabled = False
+                self.keynoteEditButtons.IsEnabled = True
+            else:
+                self.catEditButtons.IsEnabled = True
+                self.keynoteEditButtons.IsEnabled = False
         else:
             self.keynoteEditButtons.IsEnabled = False
+            self.catEditButtons.IsEnabled = False
 
     def refresh(self, sender, args):
         if self._conn:
@@ -704,20 +711,28 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def edit_category(self, sender, args):
         selected_category = self.selected_category
+        selected_keynote = self.selected_keynote
+        # determine where the category is coming from
+        # selected category in drop-down
         if selected_category:
-            if selected_category.locked:
+            target_keynote = selected_category
+        # or selected category in keynotes list
+        elif selected_keynote and not selected_keynote.parent_key:
+            target_keynote = selected_keynote
+        if target_keynote:
+            if target_keynote.locked:
                 forms.alert('Category is locked and is being edited by {}. '
                             'Wait until their changes are committed. '
                             'Meanwhile you can use or modify the keynotes '
                             'under this category.'
-                            .format('\"%s\"' % selected_category.owner
-                                    if selected_category.owner
+                            .format('\"%s\"' % target_keynote.owner
+                                    if target_keynote.owner
                                     else 'and unknown user'))
             else:
                 try:
                     EditRecordWindow(self, self._conn,
                                      kdb.EDIT_MODE_EDIT_CATEG,
-                                     rkeynote=selected_category).show()
+                                     rkeynote=target_keynote).show()
                     # make sure to relaod on close
                     self._needs_update = True
                 except System.TimeoutException as toutex:
@@ -726,6 +741,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     forms.alert(str(ex))
                 finally:
                     self._update_ktree()
+                    if selected_keynote:
+                        self._update_ktree_knotes()
 
     def rekey_category(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
