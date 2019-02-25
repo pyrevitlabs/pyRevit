@@ -150,8 +150,8 @@
 
         <Style x:Key="treeItemStyle" TargetType="TreeViewItem">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding used}" Value="False">
-                    <Setter Property="Foreground" Value="DarkGray" />
+                <DataTrigger Binding="{Binding used}" Value="True">
+                    <Setter Property="FontWeight" Value="Medium" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding locked}" Value="True">
                     <Setter Property="Background" Value="WhiteSmoke" />
