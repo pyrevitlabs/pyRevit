@@ -1438,3 +1438,15 @@ def get_reg_key(key, subkey):
         return wr.OpenKey(key, subkey, 0, wr.KEY_READ)
     except Exception:
         return None
+
+
+def kill_tasks(task_name):
+    """Kill running tasks matching task_name
+
+    Args:
+        task_name (str): task name
+
+    Example:
+        >>> kill_tasks('Revit.exe')
+    """
+    os.system("taskkill /f /im %s" % task_name)

@@ -12,6 +12,7 @@ from collections import OrderedDict
 import threading
 from functools import wraps
 import datetime
+import webbrowser
 
 from pyrevit import HOST_APP, EXEC_PARAMS, BIN_DIR
 from pyrevit.compat import safe_strtype
@@ -209,6 +210,10 @@ class WPFWindow(framework.Windows.Window):
         """
         for wpfel in wpf_elements:
             wpfel.IsEnabled = True
+
+    def handle_url_click(self, sender, args):
+        """Callback for handling click on package website url"""
+        return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
 
 
 class TemplateUserInputWindow(WPFWindow):
