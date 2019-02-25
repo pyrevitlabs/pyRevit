@@ -381,7 +381,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Keynote file is not yet converted.",
                             exitscript=True)
 
-
         self._cache = []
         self._allcat = kdb.RKeynote(key='', text='-- ALL CATEGORIES --',
                                     parent_key='',
@@ -548,11 +547,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
         last_category_dict = self._config.get_option('last_category', {})
         if last_category_dict and self._kfile in last_category_dict:
             self._update_ktree(active_catkey=last_category_dict[self._kfile])
+        else:
+            self.selected_category = self._allcat
 
         # load last search term
         last_searchterm_dict = self._config.get_option('last_search_term', {})
         if last_searchterm_dict and self._kfile in last_searchterm_dict:
             self.search_term = last_searchterm_dict[self._kfile]
+        else:
+            self.search_term = ""
 
     def _convert_existing(self):
         # make a copy of exsing
