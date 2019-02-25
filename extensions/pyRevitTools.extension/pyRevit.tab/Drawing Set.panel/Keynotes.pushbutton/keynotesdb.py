@@ -11,6 +11,7 @@ from pyrevit import framework
 
 from pyrevit.labs import DeffrelDB as dfdb
 
+from natsort import natsorted
 
 #pylint: disable=W0703,C0302
 mlogger = logger.get_logger(__name__)  #pylint: disable=C0103
@@ -246,13 +247,16 @@ def get_categories(conn):
     locked_records = {x.LockTargetRecordKey: x.LockRequester
                       for x in db_locks if x.IsRecordLock}
     cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
-    return [RKeynote(key=x[CATEGORY_KEY_FIELD],
-                     text=x[CATEGORY_TITLE_FIELD] or '',
-                     parent_key='',
-                     locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
-                     children=[])
-            for x in cats_records]
+    return natsorted(
+        [RKeynote(
+            key=x[CATEGORY_KEY_FIELD],
+            text=x[CATEGORY_TITLE_FIELD] or '',
+            parent_key='',
+            locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+            owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
+            children=[]
+            )
+         for x in cats_records], key=lambda x: x.key)
 
 
 def get_keynotes(conn):
@@ -260,13 +264,15 @@ def get_keynotes(conn):
     locked_records = {x.LockTargetRecordKey: x.LockRequester
                       for x in db_locks if x.IsRecordLock}
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
-    return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
-                     text=x[KEYNOTES_TEXT_FIELD] or '',
-                     parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                     locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
-                     children=[])
-            for x in keynote_records]
+    return natsorted(
+        [RKeynote(
+            key=x[KEYNOTES_KEY_FIELD],
+            text=x[KEYNOTES_TEXT_FIELD] or '',
+            parent_key=x[KEYNOTES_PARENTKEY_FIELD],
+            locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+            owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
+            children=[])
+         for x in keynote_records], key=lambda x: x.key)
 
 
 def get_keynotes_tree(conn):
