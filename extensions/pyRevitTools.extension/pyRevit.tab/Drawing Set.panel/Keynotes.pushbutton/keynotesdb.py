@@ -8,6 +8,7 @@ from pyrevit import HOST_APP
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
+from pyrevit import revit
 
 from pyrevit.labs import DeffrelDB as dfdb
 
@@ -90,6 +91,7 @@ class RKeynote(object):
 
         self.used = False
         self.used_count = 0
+        self.tooltip = 'Referenced on views:'
 
     def __str__(self):
         return repr(self)
@@ -157,10 +159,17 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict):
+    def update_used(self, used_keysdict, doc=None):
+        doc = doc or HOST_APP.doc
+        # update count, and tooltip
         if self.key in used_keysdict:
             self.used = True
             self.used_count = len(used_keysdict[self.key])
+            for keyid in used_keysdict[self.key]:
+                owner_view = doc.GetElement(doc.GetElement(keyid).OwnerViewId)
+                view_name = revit.query.get_name(owner_view)
+                self.tooltip += '\n' + view_name
+
         for crkey in self._children:
             crkey.update_used(used_keysdict)
 
