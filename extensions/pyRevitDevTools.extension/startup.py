@@ -13,11 +13,13 @@ All errors will be printed to the dedicated output window similar to the way
 errors are printed from pyRevit commands.
 """
 
+import sys
+
 # with open(r'C:\Temp\test.txt', 'w') as f:
 #     f.write('test')
 
 print('Startup script execution test.')
-
+print('\n'.join(sys.path))
 
 # # importing HOST_APP to access Autodesk.Revit.ApplicationServices.Application
 # from pyrevit import HOST_APP, framework
