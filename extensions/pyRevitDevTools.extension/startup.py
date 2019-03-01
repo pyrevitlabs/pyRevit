@@ -15,25 +15,24 @@ errors are printed from pyRevit commands.
 
 import sys
 
-# with open(r'C:\Temp\test.txt', 'w') as f:
-#     f.write('test')
+# add your module paths to the sys.path here
+# sys.path.append(r'path/to/your/module')
 
 print('Startup script execution test.')
 print('\n'.join(sys.path))
 
-# # importing HOST_APP to access Autodesk.Revit.ApplicationServices.Application
+
+# example code for creating event handlers
 # from pyrevit import HOST_APP, framework
 # from pyrevit import DB
 # from pyrevit import forms
-#
-#
-# # define event handler
+
+# define event handler
 # def docopen_eventhandler(sender, args):
 #     forms.alert('Document Opened: {}'.format(args.PathName))
-#
-#
-# # add to DocumentOpening
-# # type is EventHandler[DocumentOpeningEventArgs] so create that correctly
+
+# add to DocumentOpening
+# type is EventHandler[DocumentOpeningEventArgs] so create that correctly
 # HOST_APP.app.DocumentOpening += \
 #     framework.EventHandler[DB.Events.DocumentOpeningEventArgs](
 #         docopen_eventhandler
