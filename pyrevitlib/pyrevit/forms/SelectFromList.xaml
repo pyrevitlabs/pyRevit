@@ -95,10 +95,10 @@
 							Content="Toggle" Click="toggle_all"
 							Margin="3,10,0,0"/>
             </Grid>
-            <Button x:Name="select_b" Content="" Height="24"
-						Click="button_select" Margin="0,10,0,0"/>
+            <Button x:Name="select_b" Content="" Height="24" Click="button_select" Margin="0,10,0,0"/>
         </StackPanel>
         <ListView x:Name="list_lb"
+                  MouseDoubleClick="button_select"
                   SelectionMode="Extended"
                   HorizontalContentAlignment="Stretch"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
