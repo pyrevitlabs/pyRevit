@@ -95,13 +95,17 @@
     <DockPanel Margin="10">
         <Grid DockPanel.Dock="Top">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="5*" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" FontSize="14" VerticalAlignment="Center">
-                    Double-Click on a Cell to Specify the Change Type:
+                    Double-Click on a Cell to Specify the Change Type
             </TextBlock>
             <DockPanel Grid.Column="1">
+                <WrapPanel x:Name="sheetordering_options" Visibility="Collapsed" IsEnabled="False">
+                    <TextBlock Text="Sheet Ordering" VerticalAlignment="Center" />
+                    <ComboBox x:Name="orderparams_cb" Width="200" Height="24" Margin="5,0,10,0" SelectionChanged="update_list"/>
+                </WrapPanel>
                 <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
                     <ContentControl.LayoutTransform>
                         <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
@@ -109,7 +113,7 @@
                 </ContentControl>
                 <StackPanel>
                     <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
-                             TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
+                             TextChanged="update_list" VerticalContentAlignment="Center"/>
                     <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
                             Width="22px" Height="22px" HorizontalAlignment="Right"
                             BorderThickness="0"
