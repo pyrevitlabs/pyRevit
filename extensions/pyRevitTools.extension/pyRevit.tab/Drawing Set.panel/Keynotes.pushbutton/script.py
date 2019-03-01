@@ -287,11 +287,14 @@ class EditRecordWindow(forms.WPFWindow):
     def to_sentence(self, sender, args):
         self.active_text = self.active_text.capitalize()
 
-    def to_reserved(self, sender, args):
-        self.active_text = "-- reserved for future use --"
-
-    def to_donotuse(self, sender, args):
-        self.active_text = "!! do not use !! " + self.active_text
+    def select_template(self, sender, args):
+        # TODO: get templates from config
+        template = forms.SelectFromList.show(
+            ["-- reserved for future use --", "!! do not use !! "],
+            title='Select Template',
+            owner=self)
+        if template:
+            self.active_text = template
 
     def translate(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -674,7 +677,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def custom_filter(self, sender, args):
         sterm = forms.SelectFromList.show(
             kdb.RKeynoteFilters.get_available_filters(),
-            title='Select Filter')
+            title='Select Filter',
+            owner=self)
         if sterm:
             # add space so user can type after
             self.search_term = \
