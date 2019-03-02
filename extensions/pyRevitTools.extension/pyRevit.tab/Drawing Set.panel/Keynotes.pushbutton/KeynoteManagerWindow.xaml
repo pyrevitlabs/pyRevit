@@ -169,10 +169,12 @@
                 <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
                 <WrapPanel Grid.Column="1" >
                     <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" Padding="0" TextWrapping="Wrap" />
-                    <Border x:Name="usedCount" Background="LightGray" Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed" ToolTip="{Binding Path=tooltip}">
+                    <Border x:Name="usedCount"
+                            Background="White" BorderBrush="LightGray" BorderThickness="1"
+                            Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" ToolTip="{Binding Path=tooltip}">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="DimGray" FontSize="10">
                             <TextBlock.Text>
-                                <MultiBinding StringFormat=" {0} refs">
+                                <MultiBinding StringFormat="{}{0}x">
                                     <Binding Path="used_count"/>
                                 </MultiBinding>
                             </TextBlock.Text>

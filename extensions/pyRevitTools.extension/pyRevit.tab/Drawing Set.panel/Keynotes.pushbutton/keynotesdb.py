@@ -50,8 +50,14 @@ class RKeynoteFilters(object):
     UnusedOnly = RKeynoteFilter(name="Unused Only", code=":unused:")
     LockedOnly = RKeynoteFilter(name="Locked Only", code=":locked:")
     UnlockedOnly = RKeynoteFilter(name="Unlocked Only", code=":unlocked:")
-    UseRegex = RKeynoteFilter(name="Use Regular Expressions (Regex)",
-                              code=":regex:")
+    UseRegex = RKeynoteFilter(
+        name="Matching Regular Expression (Regex)",
+        code=":regex:"
+        )
+    UseRegexNegate = RKeynoteFilter(
+        name="Not Matching Regular Expression (Regex)",
+        code=":notregex:"
+        )
 
     @classmethod
     def get_available_filters(cls):
@@ -60,7 +66,8 @@ class RKeynoteFilters(object):
                 cls.UnusedOnly,
                 cls.LockedOnly,
                 cls.UnlockedOnly,
-                cls.UseRegex
+                cls.UseRegex,
+                cls.UseRegexNegate
                 ]
 
     @classmethod
@@ -112,6 +119,7 @@ class RKeynote(object):
 
         # use regex for string matching?
         use_regex = RKeynoteFilters.UseRegex.code in self._filter
+        use_regex_not = RKeynoteFilters.UseRegexNegate.code in self._filter
 
         self_pass = False
         if RKeynoteFilters.UsedOnly.code in self._filter:
@@ -134,7 +142,7 @@ class RKeynote(object):
             sterm = sterm.lower()
 
             # here is where matching against the string happens
-            if use_regex:
+            if use_regex or use_regex_not:
                 # check if pattern is valid
                 try:
                     self_pass = re.search(
@@ -144,6 +152,8 @@ class RKeynote(object):
                         )
                 except Exception:
                     self_pass = False
+                if use_regex_not:
+                    self_pass = not self_pass
             else:
                 self_pass_keyword = \
                     coreutils.fuzzy_search_ratio(sterm, cleaned_sfilter) > 80

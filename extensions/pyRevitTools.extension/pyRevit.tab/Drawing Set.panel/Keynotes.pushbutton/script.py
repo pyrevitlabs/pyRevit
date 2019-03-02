@@ -675,15 +675,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def custom_filter(self, sender, args):
+        csi_regex = r' \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}'
+        cfilters = kdb.RKeynoteFilters.get_available_filters()
+        cfilters.extend(
+            ["With CSI MasterFormat Division #",
+             "Without CSI MasterFormat Division #"]
+            )
         sterm = forms.SelectFromList.show(
-            kdb.RKeynoteFilters.get_available_filters(),
+            cfilters,
             title='Select Filter',
             owner=self)
         if sterm:
             # add space so user can type after
-            self.search_term = \
-                sterm.code + " " \
-                + kdb.RKeynoteFilters.remove_filters(self.search_term)
+            exst_term = \
+                " " + kdb.RKeynoteFilters.remove_filters(self.search_term)
+            if sterm == "With CSI MasterFormat Division #":
+                self.search_term = \
+                    kdb.RKeynoteFilters.UseRegex.code + csi_regex
+            elif sterm == "Without CSI MasterFormat Division #":
+                self.search_term = \
+                    kdb.RKeynoteFilters.UseRegexNegate.code + csi_regex
+            elif sterm == kdb.RKeynoteFilters.UseRegex \
+                    or sterm == kdb.RKeynoteFilters.UseRegexNegate:
+                self.search_term = sterm.code
+            else:
+                self.search_term = sterm.code + exst_term
 
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
