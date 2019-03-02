@@ -611,7 +611,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_ktree_knotes(self, fast=False):
         keynote_filter = self.search_term if self.search_term else None
-        if fast and self.search_term:
+
+        # update the visible keys in active view if filter is ViewOnly
+        if keynote_filter \
+                and kdb.RKeynoteFilters.ViewOnly.code in keynote_filter:
+            visible_keys = \
+                [x.TagText for x in
+                 revit.query.get_visible_keynotes(revit.activeview)]
+            kdb.RKeynoteFilters.ViewOnly.set_keys(visible_keys)
+
+        if fast and keynote_filter:
             # fast filtering using already loaded content
             active_tree = list(self._cache)
         else:
@@ -675,31 +684,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def custom_filter(self, sender, args):
-        csi_regex = r' \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}'
-        cfilters = kdb.RKeynoteFilters.get_available_filters()
-        cfilters.extend(
-            ["With CSI MasterFormat Division #",
-             "Without CSI MasterFormat Division #"]
-            )
-        sterm = forms.SelectFromList.show(
-            cfilters,
+        sfilter = forms.SelectFromList.show(
+            kdb.RKeynoteFilters.get_available_filters(),
             title='Select Filter',
             owner=self)
-        if sterm:
-            # add space so user can type after
-            exst_term = \
-                " " + kdb.RKeynoteFilters.remove_filters(self.search_term)
-            if sterm == "With CSI MasterFormat Division #":
-                self.search_term = \
-                    kdb.RKeynoteFilters.UseRegex.code + csi_regex
-            elif sterm == "Without CSI MasterFormat Division #":
-                self.search_term = \
-                    kdb.RKeynoteFilters.UseRegexNegate.code + csi_regex
-            elif sterm == kdb.RKeynoteFilters.UseRegex \
-                    or sterm == kdb.RKeynoteFilters.UseRegexNegate:
-                self.search_term = sterm.code
-            else:
-                self.search_term = sterm.code + exst_term
+        if sfilter:
+            self.search_term = sfilter.format_term(self.search_term)
 
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
