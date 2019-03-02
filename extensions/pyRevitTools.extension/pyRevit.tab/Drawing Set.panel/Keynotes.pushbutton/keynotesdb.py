@@ -8,9 +8,11 @@ from pyrevit import HOST_APP
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
+from pyrevit import revit
 
 from pyrevit.labs import DeffrelDB as dfdb
 
+from natsort import natsorted
 
 #pylint: disable=W0703,C0302
 mlogger = logger.get_logger(__name__)  #pylint: disable=C0103
@@ -37,8 +39,54 @@ EDIT_MODE_ADD_KEYNOTE = 'add-keynote'
 EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
 
 
+CSI_REGEX = r' \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}'
 
-RKeynoteFilter = namedtuple('RKeynoteFilter', ['name', 'code'])
+
+class RKeynoteFilter(object):
+    """Keynote smart filter."""
+
+    def __init__(self, name, code):
+        self.name = name
+        self.code = code
+
+    def format_term(self, exst_term):
+        """Format existing search term for this filter"""
+        # grab clearn existing
+        exst_term = RKeynoteFilters.remove_filters(exst_term)
+        # add space so user can type after
+        return self.code + " " + exst_term
+
+
+class RKeynoteRegexFilter(RKeynoteFilter):
+    """Keynote smart regular expressions filter."""
+
+    def __init__(self,
+                 name="Regular Expression (Regex)",
+                 regex=None,
+                 negate=False):
+        self.name = (name + "{}").format(" [Exclude]" if negate else "")
+        self.code = ":notregex:" if negate else ":regex:"
+        self.regex = regex or ""
+
+    def format_term(self, exst_term):
+        """Format existing search term for this filter"""
+        # add space so user can type after
+        return self.code + " " + self.regex
+
+
+class RKeynoteViewFilter(RKeynoteFilter):
+    """Keynote smart regular expressions filter."""
+
+    def __init__(self):
+        self.name = "Current View Only"
+        self.code = ":view:"
+        self.keys = []
+
+    def __contains__(self, knote_key):
+        return knote_key in self.keys
+
+    def set_keys(self, valid_keys):
+        self.keys = valid_keys
 
 
 class RKeynoteFilters(object):
@@ -48,8 +96,18 @@ class RKeynoteFilters(object):
     UnusedOnly = RKeynoteFilter(name="Unused Only", code=":unused:")
     LockedOnly = RKeynoteFilter(name="Locked Only", code=":locked:")
     UnlockedOnly = RKeynoteFilter(name="Unlocked Only", code=":unlocked:")
-    UseRegex = RKeynoteFilter(name="Use Regular Expressions (Regex)",
-                              code=":regex:")
+    ViewOnly = RKeynoteViewFilter()
+    UseRegex = RKeynoteRegexFilter()
+    UseRegexNegate = RKeynoteRegexFilter(negate=True)
+    UseCSI = RKeynoteRegexFilter(
+        name="CSI MasterFormat Division No.",
+        regex=CSI_REGEX
+        )
+    UseCSINegate = RKeynoteRegexFilter(
+        name="CSI MasterFormat Division No.",
+        regex=CSI_REGEX,
+        negate=True
+        )
 
     @classmethod
     def get_available_filters(cls):
@@ -58,7 +116,11 @@ class RKeynoteFilters(object):
                 cls.UnusedOnly,
                 cls.LockedOnly,
                 cls.UnlockedOnly,
-                cls.UseRegex
+                cls.ViewOnly,
+                cls.UseRegex,
+                cls.UseRegexNegate,
+                cls.UseCSI,
+                cls.UseCSINegate
                 ]
 
     @classmethod
@@ -89,6 +151,7 @@ class RKeynote(object):
 
         self.used = False
         self.used_count = 0
+        self.tooltip = 'Referenced on views:'
 
     def __str__(self):
         return repr(self)
@@ -107,11 +170,16 @@ class RKeynote(object):
     def filter(self, search_term):
         self._filter = search_term.lower()
 
+        self_pass = False
+
         # use regex for string matching?
         use_regex = RKeynoteFilters.UseRegex.code in self._filter
+        use_regex_not = RKeynoteFilters.UseRegexNegate.code in self._filter
 
-        self_pass = False
-        if RKeynoteFilters.UsedOnly.code in self._filter:
+        if RKeynoteFilters.ViewOnly.code in self._filter:
+            self_pass = self.key in RKeynoteFilters.ViewOnly
+
+        elif RKeynoteFilters.UsedOnly.code in self._filter:
             self_pass = self.used
 
         elif RKeynoteFilters.UnusedOnly.code in self._filter:
@@ -131,7 +199,7 @@ class RKeynote(object):
             sterm = sterm.lower()
 
             # here is where matching against the string happens
-            if use_regex:
+            if use_regex or use_regex_not:
                 # check if pattern is valid
                 try:
                     self_pass = re.search(
@@ -141,6 +209,8 @@ class RKeynote(object):
                         )
                 except Exception:
                     self_pass = False
+                if use_regex_not:
+                    self_pass = not self_pass
             else:
                 self_pass_keyword = \
                     coreutils.fuzzy_search_ratio(sterm, cleaned_sfilter) > 80
@@ -156,10 +226,17 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict):
+    def update_used(self, used_keysdict, doc=None):
+        doc = doc or HOST_APP.doc
+        # update count, and tooltip
         if self.key in used_keysdict:
             self.used = True
             self.used_count = len(used_keysdict[self.key])
+            for keyid in used_keysdict[self.key]:
+                owner_view = doc.GetElement(doc.GetElement(keyid).OwnerViewId)
+                view_name = revit.query.get_name(owner_view)
+                self.tooltip += '\n' + view_name
+
         for crkey in self._children:
             crkey.update_used(used_keysdict)
 
@@ -246,13 +323,16 @@ def get_categories(conn):
     locked_records = {x.LockTargetRecordKey: x.LockRequester
                       for x in db_locks if x.IsRecordLock}
     cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
-    return [RKeynote(key=x[CATEGORY_KEY_FIELD],
-                     text=x[CATEGORY_TITLE_FIELD] or '',
-                     parent_key='',
-                     locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
-                     children=[])
-            for x in cats_records]
+    return natsorted(
+        [RKeynote(
+            key=x[CATEGORY_KEY_FIELD],
+            text=x[CATEGORY_TITLE_FIELD] or '',
+            parent_key='',
+            locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+            owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
+            children=[]
+            )
+         for x in cats_records], key=lambda x: x.key)
 
 
 def get_keynotes(conn):
@@ -260,13 +340,15 @@ def get_keynotes(conn):
     locked_records = {x.LockTargetRecordKey: x.LockRequester
                       for x in db_locks if x.IsRecordLock}
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
-    return [RKeynote(key=x[KEYNOTES_KEY_FIELD],
-                     text=x[KEYNOTES_TEXT_FIELD] or '',
-                     parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                     locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
-                     owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
-                     children=[])
-            for x in keynote_records]
+    return natsorted(
+        [RKeynote(
+            key=x[KEYNOTES_KEY_FIELD],
+            text=x[KEYNOTES_TEXT_FIELD] or '',
+            parent_key=x[KEYNOTES_PARENTKEY_FIELD],
+            locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+            owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
+            children=[])
+         for x in keynote_records], key=lambda x: x.key)
 
 
 def get_keynotes_tree(conn):

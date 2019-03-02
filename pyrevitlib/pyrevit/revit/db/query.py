@@ -947,6 +947,14 @@ def get_used_keynotes(doc=None):
              .ToElements()
 
 
+def get_visible_keynotes(view=None):
+    doc = view.Document
+    return DB.FilteredElementCollector(doc, view.Id)\
+             .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)\
+             .WhereElementIsNotElementType()\
+             .ToElements()
+
+
 def get_available_keynotes(doc=None):
     doc = doc or HOST_APP.doc
     knote_table = DB.KeynoteTable.GetKeynoteTable(doc)

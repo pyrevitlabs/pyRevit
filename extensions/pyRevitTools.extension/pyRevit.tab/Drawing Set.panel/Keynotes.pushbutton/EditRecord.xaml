@@ -20,9 +20,9 @@
             </Path>
         </Canvas>
 
-        <Canvas x:Key="reserveIcon">
+        <Canvas x:Key="templatesIcon">
             <Path Canvas.Top="-9" Canvas.Left="-8"
-                  Data="M3,3H21V7H3V3M4,8H20V21H4V8M9.5,11A0.5,0.5 0 0,0 9,11.5V13H15V11.5A0.5,0.5 0 0,0 14.5,11H9.5Z" 
+                  Data="M20,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8A2,2 0 0,0 20,6M15,16H6V14H15V16M18,12H6V10H18V12Z" 
                   Fill="Black">
                 <Path.LayoutTransform>
                     <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
@@ -77,8 +77,7 @@
                 <Button Height="24" Content="Ti" Margin="0,5,0,0" FontWeight="Medium" ToolTip="To Title Case" Click="to_title"/>
                 <Button Height="24" Content="Se" Margin="0,5,0,0" FontWeight="Medium" ToolTip="To Sentence case" Click="to_sentence"/>
                 <Button Height="24" Content="{StaticResource translateIcon}" Margin="0,5,0,0" ToolTip="Translate" Click="translate"/>
-                <Button Height="24" Content="{StaticResource reserveIcon}" Margin="0,5,0,0" FontWeight="Medium" ToolTip="Change text to RESERVED" Click="to_reserved"/>
-                <Button Height="24" Content="{StaticResource donotuseIcon}" Margin="0,5,0,0" FontWeight="Medium" ToolTip="Add DO NOT USE to text" Click="to_donotuse"/>
+                <Button Height="24" Content="{StaticResource templatesIcon}" Margin="0,5,0,0" FontWeight="Medium" ToolTip="Templates" Click="select_template"/>
             </StackPanel>
         </Grid>
     </Grid>

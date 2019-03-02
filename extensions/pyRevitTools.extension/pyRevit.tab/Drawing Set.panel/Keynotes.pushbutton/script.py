@@ -287,11 +287,14 @@ class EditRecordWindow(forms.WPFWindow):
     def to_sentence(self, sender, args):
         self.active_text = self.active_text.capitalize()
 
-    def to_reserved(self, sender, args):
-        self.active_text = "-- reserved for future use --"
-
-    def to_donotuse(self, sender, args):
-        self.active_text = "!! do not use !! " + self.active_text
+    def select_template(self, sender, args):
+        # TODO: get templates from config
+        template = forms.SelectFromList.show(
+            ["-- reserved for future use --", "!! do not use !! "],
+            title='Select Template',
+            owner=self)
+        if template:
+            self.active_text = template
 
     def translate(self, sender, args):
         forms.alert("Not yet implemented. Coming soon.")
@@ -423,15 +426,24 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return get_keynote_pcommands()[self.postcmd_idx]
 
     @property
+    def postcmd_options(self):
+        return [self.userknote_rb, self.elementknote_rb, self.materialknote_rb]
+
+    @property
     def postcmd_idx(self):
-        return self.keynotetype_cb.SelectedIndex
+        # return self.keynotetype_cb.SelectedIndex
+        for idx, postcmd_op in enumerate(self.postcmd_options):
+            if postcmd_op.IsChecked:
+                return idx
 
     @postcmd_idx.setter
     def postcmd_idx(self, index):
-        self.keynotetype_cb.ItemsSource = \
-            [str(x).replace('UI.PostableCommand', '')
-             for x in get_keynote_pcommands()]
-        self.keynotetype_cb.SelectedIndex = index
+        # self.keynotetype_cb.ItemsSource = \
+        #     [str(x).replace('UI.PostableCommand', '')
+        #      for x in get_keynote_pcommands()]
+        # self.keynotetype_cb.SelectedIndex = index
+        postcmd_op = self.postcmd_options[index]
+        postcmd_op.IsChecked = True
 
     @property
     def selected_keynote(self):
@@ -577,9 +589,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 with revit.Transaction("Set Keynote File"):
                     revit.update.set_keynote_file(kfile, doc=revit.doc)
                 self._kfile = revit.query.get_keynote_file(doc=revit.doc)
+                return self._kfile
             except Exception as skex:
                 forms.alert(str(skex))
-                return
 
     def _update_ktree(self, active_catkey=None):
         categories = [self._allcat]
@@ -599,7 +611,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_ktree_knotes(self, fast=False):
         keynote_filter = self.search_term if self.search_term else None
-        if fast and self.search_term:
+
+        # update the visible keys in active view if filter is ViewOnly
+        if keynote_filter \
+                and kdb.RKeynoteFilters.ViewOnly.code in keynote_filter:
+            visible_keys = \
+                [x.TagText for x in
+                 revit.query.get_visible_keynotes(revit.activeview)]
+            kdb.RKeynoteFilters.ViewOnly.set_keys(visible_keys)
+
+        if fast and keynote_filter:
             # fast filtering using already loaded content
             active_tree = list(self._cache)
         else:
@@ -663,14 +684,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.search_tb.Focus()
 
     def custom_filter(self, sender, args):
-        sterm = forms.SelectFromList.show(
+        sfilter = forms.SelectFromList.show(
             kdb.RKeynoteFilters.get_available_filters(),
-            title='Select Filter')
-        if sterm:
-            # add space so user can type after
-            self.search_term = \
-                sterm.code + " " \
-                + kdb.RKeynoteFilters.remove_filters(self.search_term)
+            title='Select Filter',
+            owner=self)
+        if sfilter:
+            self.search_term = sfilter.format_term(self.search_term)
 
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
@@ -953,10 +972,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         forms.alert("Not yet implemented. Coming soon.")
 
     def change_keynote_file(self, sender, args):
-        self._change_kfile()
-        # make sure to relaod on close
-        self._needs_update = True
-        self.Close()
+        if self._change_kfile():
+            # make sure to relaod on close
+            self._needs_update = True
+            self.Close()
 
     def show_keynote_file(self, sender, args):
         coreutils.show_entry_in_explorer(self._kfile)
