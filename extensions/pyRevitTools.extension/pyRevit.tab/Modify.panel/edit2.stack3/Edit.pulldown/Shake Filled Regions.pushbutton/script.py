@@ -5,7 +5,7 @@ from pyrevit import script
 __doc__ = 'Moves all Filled Regions on the seleced views back-and-forth by '\
           'a tiny amount to push Revit to regenerate the filled region and '\
           'update the display. This tool is meant to be used in '     \
-          'conjunction with the "Swap Line Styles" tool. The swap tool '\
+          'conjunction with the "Convert Line Styles" tool. The convert tool '\
           'updates the line styles inside Filled region but does not '\
           'currently shake the filled regions (Revit crashes on large models.)'
 
