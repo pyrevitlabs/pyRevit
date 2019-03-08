@@ -1,13 +1,15 @@
 """Lists all views that the selected elements is visible in."""
+#pylint: disable=import-error,invalid-name
 from pyrevit import revit, DB
+from pyrevit import script
 
 
 __context__ = 'selection'
 
+output = script.get_output()
 
-selection = revit.get_selection()
 
-
+# collect all model views
 cl_views = DB.FilteredElementCollector(revit.doc)
 allviews = cl_views.OfCategory(DB.BuiltInCategory.OST_Views)\
                    .WhereElementIsNotElementType()\
@@ -18,29 +20,27 @@ views = filter(lambda x: ((x.ViewType != DB.ViewType.DraftingView
                           and not x.IsTemplate),
                allviews)
 
-viewList = []
-
+# process visible elements in views
+view_list = []
 
 for v in views:
-    print('Searching {0} of type: {1}'.format(revit.query.get_name(v),
-                                              str(v.ViewType).ljust(25)))
+    print('Searching {} of type: {}'
+          .format(revit.query.get_name(v), str(v.ViewType).ljust(25)))
 
+    # collect view elements
     cl_els = DB.FilteredElementCollector(revit.doc, v.Id)\
                .WhereElementIsNotElementType()\
                .ToElementIds()
-
     print('\tTotal found: {0}'.format(len(cl_els)))
 
     i = 0
-    for elId in selection:
-        if elId in cl_els:
+    for elid in revit.get_selection().element_ids:
+        if elid in cl_els:
             i = + 1
-            viewList.append(v)
-        print('\t{0} element(s) found.'.format(i))
+            view_list.append(v)
+    print('\t{0} matching element(s) found.'.format(i))
 
-print('\n\nViews Containing the selected objects:')
+output.print_md('## Views Containing the selected objects:')
 
-for v in viewList:
-    print('{0}{1}ID:{2}'.format(revit.query.get_name(v).ljust(45),
-                                str(v.ViewType).ljust(25),
-                                str(v.Id).ljust(10)))
+for view in view_list:
+    revit.report.print_view(view)

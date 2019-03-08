@@ -82,12 +82,11 @@ elif selected_switch == 'Line Patterns':
         print(i.Name)
 
 elif selected_switch == 'Line Styles':
-    c = revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
-    subcats = c.SubCategories
-
-    for lineStyle in subcats:
-        print("STYLE NAME: {0} ID: {1}".format(lineStyle.Name.ljust(40),
-                                               lineStyle.Id.ToString()))
+    for lineStyle in revit.query.get_line_styles(doc=revit.doc):
+        print("STYLE NAME: {} ID: {} ({})".format(
+            lineStyle.Name.ljust(40),
+            lineStyle.Id.ToString(),
+            lineStyle))
 
 elif selected_switch == 'Model / Detail / Sketch Lines':
     cat_list = List[DB.BuiltInCategory]([DB.BuiltInCategory.OST_Lines,

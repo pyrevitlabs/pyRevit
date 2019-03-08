@@ -13,6 +13,7 @@ import os.path as op
 import warnings
 
 from pyrevit import EXEC_PARAMS, PyRevitException
+from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import envvars
@@ -449,9 +450,13 @@ def exit():     #pylint: disable=W0622
 
 def show_file_in_explorer(file_path):
     """Show file in Windows Explorer."""
-    import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'
-                     .format(os.path.normpath(file_path)))
+    coreutils.show_entry_in_explorer(file_path)
+
+
+def show_folder_in_explorer(folder_path):
+    """Show folder in Windows Explorer."""
+    coreutils.open_folder_in_explorer(folder_path)
+
 
 
 def open_url(url):

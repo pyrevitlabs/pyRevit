@@ -131,6 +131,9 @@ class SheetItem(object):
 
         return citem
 
+    def __repr__(self):
+        return '<{} no:{}>'.format(self.__class__.__name__, self.number)
+
     @property
     def name(self):
         return self._csheet.name
@@ -146,6 +149,9 @@ class SheetItem(object):
     @staticmethod
     def build_commit_sort_param(commit_point):
         return 'sort_{}{}'.format(commit_point.cptype, commit_point.idx)
+
+    def get_order(self, param_name):
+        return self._csheet.revit_sheet.LookupParameter(param_name).AsInteger()
 
     def get_commit_at_point(self, commit_point):
         return self._csheet.get_commit_at_point(commit_point)
@@ -176,6 +182,9 @@ class ManagePackagesWindow(forms.WPFWindow):
 
         forms.WPFWindow.__init__(self, xaml_file_name)
 
+        # prepare default privates
+        self._last_filter_len = 0
+
         # prepare wpf resources
         self.dt_template = None
         self.package_column_cell_style = \
@@ -203,13 +212,12 @@ class ManagePackagesWindow(forms.WPFWindow):
             sheetitems = [SheetItem(x) for x in committed_sheets]
 
         self._sheetitems = sorted(sheetitems, key=lambda x: x.number)
+        self._setup_item_params_combobox(committed_sheets)
 
         # list all sheets
         self._list_sheets()
         if isinstance(revit.activeview, DB.ViewSheet):
             self.search_tb.Text = revit.activeview.SheetNumber
-
-        self.last_selected_number = ''
 
     def _read_resources(self):
         dt_template_file = script.get_bundle_file('PackagesDataTemplate.xaml')
@@ -240,15 +248,30 @@ class ManagePackagesWindow(forms.WPFWindow):
 
     def _list_sheets(self, sheet_filter=None):
         if not self.sheets_dg.ItemsSource or not sheet_filter:
-            self.sheets_dg.ItemsSource = list(self._sheetitems)
+            items_source = list(self._sheetitems)
+        else:
+            items_source = self.sheets_dg.ItemsSource
 
         if sheet_filter:
             sheet_filter = sheet_filter.lower()
-            self.sheets_dg.ItemsSource = \
-                [x for x in self.sheets_dg.ItemsSource
+            sheet_filter_len = len(sheet_filter)
+            # if backspacing, reset the sheet list
+            if self._last_filter_len > sheet_filter_len:
+                items_source = list(self._sheetitems)
+
+            items_source = \
+                [x for x in items_source
                  if sheet_filter in x.number.lower()
                  or sheet_filter in x.name.lower()]
 
+            self._last_filter_len = sheet_filter_len
+
+        if self.sheetorder_param:
+            param = self.sheetorder_param
+            items_source = \
+                sorted(items_source, key=lambda x: x.get_order(param))
+
+        self.sheets_dg.ItemsSource = items_source
         # update misc gui items
         if len(self.sheets_dg.ItemsSource) > 1:
             self.updatesheets_b.Content = "Update Sheets"
@@ -288,7 +311,25 @@ class ManagePackagesWindow(forms.WPFWindow):
         else:
             forms.alert('No changes is allowed at this point.')
 
-    def search_txt_changed(self, sender, args):
+    def _setup_item_params_combobox(self, committed_sheets):
+        if committed_sheets:
+            csheet = committed_sheets[0]
+            sheet_params = \
+                [x.Definition.Name for x in csheet.revit_sheet.Parameters
+                 if x.StorageType == DB.StorageType.Integer]
+            order_params = [x for x in sheet_params if 'order' in x.lower()]
+            if order_params:
+                self.orderparams_cb.ItemsSource = sorted(order_params)
+                self.orderparams_cb.SelectedIndex = 0
+                self.sheetordering_options.IsEnabled = True
+                self.show_element(self.sheetordering_options)
+
+    @property
+    def sheetorder_param(self):
+        if self.sheetordering_options.IsEnabled:
+            return self.orderparams_cb.SelectedItem
+
+    def update_list(self, sender, args):
         """Handle text change in search box."""
         if self.search_tb.Text == '':
             self.hide_element(self.clrsearch_b)

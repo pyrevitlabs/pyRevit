@@ -1,13 +1,20 @@
 """Print sheets in order from a sheet index.
 
-Shift-Click:
+Note:
 When using the `Combine into one file` option,
-the tool adds invisible characters at the start of
-the sheet names to push Revit's interenal printing
-engine to sort the sheets correctly per the drawing
-index order. Shift-Clicking the tool will remove all
-these characters from the sheet numbers, in case an error
-in the tool causes these characters to remain.
+the tool adds non-printable character u'\u200e'
+(Left-To-Right Mark) at the start of the sheet names
+to push Revit's interenal printing engine to sort
+the sheets correctly per the drawing index order. 
+
+Make sure your drawings indices consider this
+when filtering for sheet numbers.
+
+Shift-Click:
+Shift-Clicking the tool will remove all
+non-printable characters from the sheet numbers,
+in case an error in the tool causes these characters
+to remain.
 """
 
 import os.path as op
@@ -367,9 +374,6 @@ class PrintSheetsWindow(forms.WPFWindow):
                 self._print_combined_sheets_in_order()
             else:
                 self._print_sheets_in_order()
-
-    def handle_url_click(self, sender, args):
-        script.open_url('https://github.com/McCulloughRT/PrintFromIndex')
 
     def preview_mouse_down(self, sender, args):
         if isinstance(sender, Windows.Controls.ListViewItem):

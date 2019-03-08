@@ -177,8 +177,10 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         Args:
             path_list (list[str]): list of external extension paths
         """
-        if not op.exists(path_list):
-            raise PyRevitException("Path does not exist.")
+        for ext_path in path_list:
+            if not op.exists(ext_path):
+                raise PyRevitException("Path \"%s\" does not exist." % ext_path)
+
         try:
             self.core.userextensions = \
                 [op.normpath(x) for x in path_list]

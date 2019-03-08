@@ -2,6 +2,7 @@
 import re
 
 from pyrevit.coreutils import pyutils
+from pyrevit import HOST_APP
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
@@ -211,8 +212,13 @@ class MakePatternWindow(forms.WPFWindow):
         biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_IMPERIAL
         if revit.query.is_metric(revit.doc):
             biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_METRIC
-        self.viewscale_tb.Text = \
-            revit.activeview.Parameter[biparam].AsValueString()
+        # re issue #510 indexing the builtinparam only works on >=2015
+        if HOST_APP.is_newer_than(2014):
+            self.viewscale_tb.Text = \
+                revit.activeview.Parameter[biparam].AsValueString()
+        else:
+            self.viewscale_tb.Text = \
+                revit.activeview.get_Parameter(biparam).AsValueString()
 
     def pick_domain(self):
         # ask user for origin and max domain points

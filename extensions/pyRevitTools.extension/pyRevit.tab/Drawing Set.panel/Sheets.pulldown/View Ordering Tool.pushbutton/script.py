@@ -3,8 +3,8 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__doc__ = 'Run this tool in a sheet view and click on sheet_vports one '\
-          'by one and this tool will change the detail number sequencially.'
+__doc__ = 'Run this tool in a sheet view and click on sheet viewports one '\
+          'by one and this tool will change the detail number sequentially.'
 
 
 # verify active view is sheet

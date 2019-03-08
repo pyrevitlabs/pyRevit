@@ -337,11 +337,6 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.hide_element(self.ext_infopanel)
 
-    def handle_url_click(self, sender, args):
-        """Callback for handling click on package website url
-        """
-        script.open_url(sender.NavigateUri.AbsoluteUri)
-
     def handle_private_repo(self, sender, args):
         """Callback for updating private status of a package
         """
