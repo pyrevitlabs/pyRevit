@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Linq;
+using System.Reflection;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -43,6 +45,22 @@ namespace pyRevitLabs.TargetApps.Revit {
                 throw new pyRevitException(string.Format("Name \"{0}\" is reserved.", name));
         }
 
+        private PyRevitClone(string clonePath) {
+            // clone path could be any path inside or outside the clonePath
+            // find the clone root first
+            var _clonePath = FindValidClonePathAbove(clonePath);
+            if (_clonePath == null) {
+                _clonePath = FindValidClonePathBelow(clonePath);
+                if (_clonePath == null)
+                    throw new pyRevitException(
+                        string.Format("Path does not point to a valid clone \"{0}\"", clonePath)
+                    );
+            }
+
+            ClonePath = _clonePath.NormalizeAsPath();
+            Name = "Unnamed";
+        }
+
         // properties
         public string Name { get; private set; }
 
@@ -69,15 +87,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public bool IsValidClone {
-            get {
-                try {
-                    VerifyCloneValidity(ClonePath);
-                    return true;
-                }
-                catch { return false; }
-            }
-        }
+        public bool IsValidClone => IsCloneValid(ClonePath);
 
         public bool HasDeployments {
             get { return VerifyHasDeployments(ClonePath); }
@@ -181,6 +191,18 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
 
             throw new pyRevitResourceMissingException(normClonePath);
+        }
+
+        // return true of false for clone validity
+        public static bool IsCloneValid(string clonePath) {
+            try {
+                VerifyCloneValidity(clonePath);
+                return true;
+            }
+            catch (Exception ex) {
+                logger.Debug("Invalid pyRevit clone. | {0}", ex.Message);
+                return false;
+            }
         }
 
         // get engine from clone path
@@ -354,6 +376,17 @@ namespace pyRevitLabs.TargetApps.Revit {
                 GitInstaller.SetRemoteUrl(clonePath, PyRevitConsts.DefaultCloneRemoteName, originUrl);
         }
 
+        // check if given assembly belongs to pyrevit
+        public static bool IsPyRevitAssembly(Assembly assm) {
+            try {
+                var clone = new PyRevitClone(Path.GetDirectoryName(assm.Location));
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
         // static
         // private
         // find latest engine path
@@ -483,6 +516,37 @@ namespace pyRevitLabs.TargetApps.Revit {
                 throw new pyRevitException(string.Format("Error reading deployment arguments from \"{0}\" | {1}",
                                                          clonePath, ex.Message));
             }
+        }
+
+        // find valid clone directory downstream
+        private static string FindValidClonePathBelow(string startingPath) {
+            logger.Debug("Searching for valid clones below: {0}", startingPath);
+            if (IsCloneValid(startingPath)) {
+                logger.Debug("Valid clone found at: {0}", startingPath);
+                return startingPath;
+            }
+            else
+                foreach (var subFolder in Directory.GetDirectories(startingPath)) {
+                    var clonePath = FindValidClonePathBelow(subFolder);
+                    if (clonePath != null)
+                        return clonePath;
+                }
+
+            return null;
+        }
+
+        // find valid clone directory downstream
+        private static string FindValidClonePathAbove(string startingPath) {
+            logger.Debug("Searching for valid clones above: {0}", startingPath);
+            string testPath = startingPath;
+            while (!IsCloneValid(testPath)) {
+                testPath = Path.GetDirectoryName(testPath);
+                if (testPath == null || testPath == string.Empty)
+                    return null;
+            }
+
+            logger.Debug("Valid clone found at: {0}", testPath);
+            return testPath;
         }
     }
 }
