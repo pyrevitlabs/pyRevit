@@ -299,35 +299,48 @@ namespace pyRevitLabs.TargetApps.Revit {
         private static Dictionary<string, (string, string)> _revitBuildNumberLookupTable = new Dictionary<string, (string, string)>() {
 
             // 2008
-            {"20080101_2345", ("08.0.0",        "2008 Architecture Service Pack 3")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
+            // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
+            {"20070607_1700", ("Unknown",       "2008 Architecture Service Pack 2")},
+            {"20070810_1700", ("Unknown",       "2008 Architecture Service Pack 2")},
+            {"20080101_2345", ("Unknown",       "2008 Architecture Service Pack 3")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
 
             // 2009
+            // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
+            {"20080602_1900", ("Unknown",       "2009 Architecture Service Pack 1")},
+            {"20080915_2100", ("Unknown",       "2009 Architecture Service Pack 2")},
+            {"20081118_1045", ("Unknown",       "2009 Architecture Service Pack 3")},
+
             // 2010
-            
+            // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
+            {"20090612_2115", ("Unknown",       "2010 Architecture Service Pack 1")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
+            {"20090917_1515", ("Unknown",       "2010 Architecture Service Pack 2")},
+
             // 2011
-            {"20100326_1700", ("10.0.0",		"2011 Architecture")}, // http://forums.augi.com/showthread.php?138574-Revit-Architecture-Door-Centerline-not-selectable-during-dimensioning
-            {"20100615_2115", ("10.1.0",		"2011 Architecture Web Update 1 Service Pack")},   // http://revitclinic.typepad.com/my_weblog/2010/06/revit-2011-build-number-update-display.html
-            {"20100903_2115", ("10.2.0",		"2011 Architecture Web Update 2 Service Pack")},   // http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html
+            {"20100326_1700", ("Unknown",       "2011 Architecture")}, // http://forums.augi.com/showthread.php?138574-Revit-Architecture-Door-Centerline-not-selectable-during-dimensioning
+            {"20100615_2115", ("Unknown",       "2011 Architecture Service Pack 1")},   // http://revitclinic.typepad.com/my_weblog/2010/06/revit-2011-build-number-update-display.html
+            {"20100903_2115", ("Unknown",       "2011 Architecture Service Pack 2")},   // http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html
 
             // 2012
-            {"20110309_2315", ("12.0.0",		"2012 First Customer Ship")},
-            {"20110622_0930", ("12.0.1",		"2012 Update Release 1")},
-            {"20110916_2132", ("12.0.2",		"2012 Update Release 2")},
+            // http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html
+            {"20110309_2315", ("Unknown",       "2012 First Customer Ship")},
+            {"20110622_0930", ("Unknown",       "2012 Update Release 1")},
+            {"20110916_2132", ("Unknown",       "2012 Update Release 2")},
 
             // 2013
-            {"20120221_2030", ("12.02.21203",	"2013 First Customer Ship")},
-            {"20120716_1115", ("13.0.1",		"2013 Update Release 1")},
-            {"20121003_2115", ("13.0.2",		"2013 Update Release 2")},
-            {"20130531_2115", ("13.0.3",		"2013 Update Release 3")},
-            {"20120821_1330", ("13.0",		    "2013 LT First Customer Ship")},
-            {"20130531_0300", ("13.1",		    "2013 LT Update Release 1")},
+            // http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html
+            {"20120221_2030", ("12.02.21203",   "2013 First Customer Ship")},
+            {"20120716_1115", ("Unknown",       "2013 Update Release 1")},
+            {"20121003_2115", ("Unknown",       "2013 Update Release 2")},
+            {"20130531_2115", ("Unknown",       "2013 Update Release 3")},
+            {"20120821_1330", ("Unknown",       "2013 LT First Customer Ship")},
+            {"20130531_0300", ("Unknown",       "2013 LT Update Release 1")},
 
             // 2014
             // tested on local machine
-            {"20130308_1515", ("13.03.08151",	"2014 First Customer Ship")},
-            {"20130709_2115", ("14.0.1",		"2014 Update Release 1")},
-            {"20131024_2115", ("14.0.2",		"2014 Update Release 2")},
-            {"20140709_2115", ("14.0.3",		"2014 Update Release 3")},
+            {"20130308_1515", ("13.03.08151",   "2014 First Customer Ship")},
+            {"20130709_2115", ("Unknown",       "2014 Update Release 1")},
+            {"20131024_2115", ("Unknown",       "2014 Update Release 2")},
+            {"20140709_2115", ("Unknown",       "2014 Update Release 3")},
 
             // 2015
             {"20140223_1515", ("15.0.136.0",	"2015 First Customer Ship")},
@@ -406,13 +419,123 @@ namespace pyRevitLabs.TargetApps.Revit {
             {"20180927_2315", ("19.0.20.1",		"2019.0.2")},
             {"20180806_1515", ("19.1.0.112",	"2019.1")},
             {"20181217_1515", ("19.2.0.65",     "2019.2 (Update)")},
-            {"20190108_1515", ("19.2.0.65",     "2019.2 (Full Install)")},
+            {"20190108_1515", ("19.2.1.1",      "2019.2 (Full Install)")}, // reported by: https://twitter.com/JarodJSchultz/status/1100459171491676160
         };
 
         private static Regex BuildNumberFinder = new Regex(@".*(?<build>\d{8}_\d{4}).*");
 
         private RevitProduct(string buildNumber) {
             BuildNumber = buildNumber;
+        }
+
+        public override string ToString() {
+            return string.Format("{0} | Version: {1} | Build: {2}({3}) | Language: {4} | Path: \"{5}\"", ProductName, Version, BuildNumber, BuildTarget, LanguageCode, InstallLocation);
+        }
+
+        public override int GetHashCode() {
+            return BuildNumber.GetHashCode();
+        }
+
+        public string BuildNumber { get; private set; }
+
+        public string BuildTarget { get; private set; } = "x64";
+
+        public Version Version {
+            get {
+                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber))
+                    return new Version(_revitBuildNumberLookupTable[BuildNumber].Item1);
+                else if (RegisteredVersion != null || RegisteredVersion != string.Empty)
+                    return new Version(RegisteredVersion);
+                else
+                    return null;
+            }
+        }
+
+        public Version FullVersion {
+            get {
+                if (Version != null) {
+                    if (Version.Revision >=0 )
+                        return new Version(2000 + Version.Major, Version.Minor, Version.Build, Version.Revision);
+                    else if (Version.Build >= 0)
+                        return new Version(2000 + Version.Major, Version.Minor, Version.Build);
+                    else
+                        return new Version(2000 + Version.Major, Version.Minor);
+                }
+
+                else
+                    return null;
+            }
+        }
+
+        public int ProductYear {
+            get {
+                if (FullVersion != null) {
+                    var productYearFinder = new Regex(@".*\s(?<product_year>\d{4}).*");
+                    var match = productYearFinder.Match(this.ProductName);
+                    if (match.Success) {
+                        var productYear = match.Groups["product_year"].Value;
+                        return int.Parse(productYear);
+                    }
+                }
+
+                // if product year not found, return 0
+                return 0;
+            }
+        }
+
+        public string ProductName {
+            get {
+                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber))
+                    return string.Format("Autodesk Revit {0}", _revitBuildNumberLookupTable[BuildNumber].Item2);
+                else if (RegisteredName != null || RegisteredName != string.Empty)
+                    return RegisteredName;
+                else
+                    return "";
+            }
+        }
+
+        public string DefaultInstallLocation {
+            get {
+                return Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            }
+        }
+
+        public string RegisteredName { get; set; }
+
+        public string RegisteredVersion { get; set; }
+
+        public string InstallLocation {
+            get {
+                if (_registeredInstallPath == null) {
+                    string revitInstallDirName = null;
+                    if (FullVersion != null)
+                        revitInstallDirName = string.Format("Revit {0}", FullVersion.Major);
+                    else if (Version != null)
+                        revitInstallDirName = string.Format("Revit {0}", 2000 + Version.Major);
+                    var expectedPath = Path.Combine(DefaultInstallLocation,		"Autodesk", revitInstallDirName);
+                    logger.Debug("Expected path {0}", expectedPath);
+                    if (CommonUtils.VerifyPath(expectedPath))
+                        return expectedPath;
+                }
+
+                return _registeredInstallPath;
+            }
+
+            set {
+                _registeredInstallPath = value;
+            }
+        }
+
+        public string ExecutiveLocation => GetBinaryLocation(InstallLocation);
+
+        public int LanguageCode { get; set; }
+
+        // static:
+        public static string GetBinaryLocation(string installPath) => Path.Combine(installPath, "Revit.exe");
+
+        public static string GetBinaryBuildNumber(string binaryPath) {
+            var fileInfo = FileVersionInfo.GetVersionInfo(binaryPath);
+            return fileInfo.ProductVersion;
         }
 
         public static RevitProduct LookupRevitProduct(string buildOrVersionString) {
@@ -459,14 +582,38 @@ namespace pyRevitLabs.TargetApps.Revit {
                 if (appName != null && revitFinder.IsMatch(appName)) {
                     logger.Debug("App is a Revit product: {0}", appName);
                     try {
-                        var revitProduct =
-                            RevitProduct.LookupRevitProduct(subkey.GetValue("DisplayVersion") as string);
+                        // collect info from reg key
+                        var regName = subkey.GetValue("DisplayName") as string;
+                        var regVersion = subkey.GetValue("DisplayVersion") as string;
+                        var regPath = (subkey.GetValue("InstallLocation") as string).NormalizeAsPath();
+                        int regLangCode = (int)subkey.GetValue("Language");
+                        logger.Debug("Read version from registery key: \"{0}\"", regVersion);
+                        logger.Debug("Read install path from registery key: \"{0}\"", regPath);
+                        logger.Debug("Read language code from registery key: \"{0}\"", regLangCode);
+
+                        // attempt at finding revit product
+                        RevitProduct revitProduct = null;
+                        revitProduct = LookupRevitProduct(regVersion);
+                        // if could not determine product by version
+                        if (revitProduct == null) {
+                            logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
+                            // try to get product key from binary
+                            var binaryLocation = GetBinaryLocation(regPath);
+                            var buildNumber = GetBinaryBuildNumber(binaryLocation);
+                            logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", buildNumber, binaryLocation);
+                            revitProduct = LookupRevitProduct(buildNumber);
+                        }
 
                         logger.Debug("Revit Product is : {0}", revitProduct);
                         if (revitProduct != null) {
-                            revitProduct.InstallLocation = subkey.GetValue("InstallLocation") as string;
-                            revitProduct.LanguageCode = (int)subkey.GetValue("Language");
+                            revitProduct.RegisteredName = regName;
+                            revitProduct.RegisteredVersion = regVersion;
+                            revitProduct.InstallLocation = regPath;
+                            revitProduct.LanguageCode = regLangCode;
                             installedRevits.Add(revitProduct);
+                        }
+                        else {
+                            logger.Debug("Can not determine Revit product.");
                         }
                     }
                     catch (Exception rpEx) {
@@ -478,104 +625,6 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             return installedRevits.ToList();
         }
-
-        public override string ToString() {
-            return String.Format("{0} | Version: {1} | Language: {3} | Path: \"{2}\"", ProductName, Version, InstallLocation, LanguageCode);
-        }
-
-        public override int GetHashCode() {
-            return BuildNumber.GetHashCode();
-        }
-
-        public string BuildNumber { get; private set; }
-
-        public string BuildTarget { get; private set; } = "x64";
-
-        public Version Version {
-            get {
-                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber))
-                    return new Version(_revitBuildNumberLookupTable[BuildNumber].Item1);
-                else
-                    return null;
-            }
-        }
-
-        public Version FullVersion {
-            get {
-                if (Version != null) {
-                    if (Version.Revision >=0 )
-                        return new Version(2000 + Version.Major, Version.Minor, Version.Build, Version.Revision);
-                    else if (Version.Build >= 0)
-                        return new Version(2000 + Version.Major, Version.Minor, Version.Build);
-                    else
-                        return new Version(2000 + Version.Major, Version.Minor);
-                }
-
-                else
-                    return null;
-            }
-        }
-
-        public int ProductYear {
-            get {
-                if (FullVersion != null) {
-                    var productYearFinder = new Regex(@".*\s(?<product_year>\d{4}).*");
-                    var match = productYearFinder.Match(this.ProductName);
-                    if (match.Success) {
-                        var productYear = match.Groups["product_year"].Value;
-                        return int.Parse(productYear);
-                    }
-                }
-
-                // if product year not found, return 0
-                return 0;
-            }
-        }
-
-        public string ProductName {
-            get {
-                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber))
-                    return string.Format("Autodesk Revit {0}", _revitBuildNumberLookupTable[BuildNumber].Item2);
-                else
-                    return "";
-            }
-        }
-
-        public string DefaultInstallLocation {
-            get {
-                return System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles);
-            }
-        }
-
-        public string InstallLocation {
-            get {
-                if (_registeredInstallPath == null) {
-                    string revitInstallDirName = null;
-                    if (FullVersion != null)
-                        revitInstallDirName = string.Format("Revit {0}", FullVersion.Major);
-                    else if (Version != null)
-                        revitInstallDirName = string.Format("Revit {0}", 2000 + Version.Major);
-                    var expectedPath = Path.Combine(DefaultInstallLocation,		"Autodesk", revitInstallDirName);
-                    logger.Debug("Expected path {0}", expectedPath);
-                    if (CommonUtils.VerifyPath(expectedPath))
-                        return expectedPath;
-                }
-
-                return _registeredInstallPath;
-            }
-
-            set {
-                _registeredInstallPath = value;
-            }
-        }
-
-        public string ExecutiveLocation {
-            get {
-                return Path.Combine(InstallLocation, "Revit.exe");
-            }
-        }
-
-        public int LanguageCode { get; set; }
 
     }
 
