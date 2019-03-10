@@ -1,4 +1,8 @@
-"""Manage project keynotes."""
+"""Manage project keynotes.
+
+Shift+Click:
+Reset window configurations and open.
+"""
 #pylint: disable=E0401,W0613,C0111,C0103,C0302,W0703
 import os
 import os.path as op
@@ -329,7 +333,7 @@ class EditRecordWindow(forms.WPFWindow):
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
-    def __init__(self, xaml_file_name):
+    def __init__(self, xaml_file_name, reset_config=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         # verify keynote file existence
@@ -393,7 +397,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._needs_update = False
         self._config = script.get_config()
         self._used_keysdict = self.get_used_keynote_elements()
-        self.load_config()
+        self.load_config(reset_config)
         self.search_tb.Focus()
 
     @property
@@ -531,10 +535,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         script.save_config()
 
-    def load_config(self):
+    def load_config(self, reset_config):
         # load last window geom
-        last_window_geom_dict = \
-            self._config.get_option('last_window_geom', {})
+        if reset_config:
+            last_window_geom_dict = {}
+        else:
+            last_window_geom_dict = \
+                self._config.get_option('last_window_geom', {})
         if last_window_geom_dict and self._kfile in last_window_geom_dict:
             width, height, top, left = last_window_geom_dict[self._kfile]
         else:
@@ -549,21 +556,33 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 framework.Windows.WindowStartupLocation.CenterScreen
 
         # load last postable commands id
-        last_postcmd_dict = self._config.get_option('last_postcmd_idx', {})
+        if reset_config:
+            last_postcmd_dict = {}
+        else:
+            last_postcmd_dict = \
+                self._config.get_option('last_postcmd_idx', {})
         if last_postcmd_dict and self._kfile in last_postcmd_dict:
             self.postcmd_idx = last_postcmd_dict[self._kfile]
         else:
             self.postcmd_idx = 0
 
         # load last category
-        last_category_dict = self._config.get_option('last_category', {})
+        if reset_config:
+            last_category_dict = {}
+        else:
+            last_category_dict = \
+                self._config.get_option('last_category', {})
         if last_category_dict and self._kfile in last_category_dict:
             self._update_ktree(active_catkey=last_category_dict[self._kfile])
         else:
             self.selected_category = self._allcat
 
         # load last search term
-        last_searchterm_dict = self._config.get_option('last_search_term', {})
+        if reset_config:
+            last_searchterm_dict = {}
+        else:
+            last_searchterm_dict = \
+                self._config.get_option('last_search_term', {})
         if last_searchterm_dict and self._kfile in last_searchterm_dict:
             self.search_term = last_searchterm_dict[self._kfile]
         else:
@@ -1045,6 +1064,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
 
 try:
-    KeynoteManagerWindow('KeynoteManagerWindow.xaml').show(modal=True)
+    KeynoteManagerWindow(
+        xaml_file_name='KeynoteManagerWindow.xaml',
+        reset_config=__shiftclick__ #pylint: disable=undefined-variable
+        ).show(modal=True)
 except Exception as kmex:
     forms.alert(str(kmex))

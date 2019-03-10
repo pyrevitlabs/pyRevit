@@ -1,4 +1,8 @@
-"""Print the full path to the central model (if model is workshared)."""
+"""Print the full path to the central model (if model is workshared).
+
+Shift+Click:
+Open central model path in file browser
+"""
 #pylint: disable=E0401,invalid-name
 import os.path as op
 

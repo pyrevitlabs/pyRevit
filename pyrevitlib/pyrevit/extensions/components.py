@@ -258,9 +258,14 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.NOGUI_COMMAND_POSTFIX + ')'
+        # tnteresting directories
+        pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
         # search for scripts, setting files (future support), and layout files
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
         return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 

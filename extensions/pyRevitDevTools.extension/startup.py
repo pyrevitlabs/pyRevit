@@ -21,6 +21,9 @@ import sys
 print('Startup script execution test.')
 print('\n'.join(sys.path))
 
+# test imports from same directory and exensions lib
+import startupimport
+import startuplibimport
 
 # example code for creating event handlers
 # from pyrevit import HOST_APP, framework

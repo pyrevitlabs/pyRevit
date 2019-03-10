@@ -218,6 +218,12 @@ class _GenericPyRevitUIContainer(object):
                 flagged_cmps.append(component)
         return flagged_cmps
 
+    def keys(self):
+        list(self._sub_pyrvt_components.keys())
+
+    def values(self):
+        list(self._sub_pyrvt_components.values())
+
     @staticmethod
     def is_native():
         return False
@@ -524,6 +530,9 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             raise PyRevitUIError('Error setting tooltip video {} | {} '
                                  .format(tooltip_video, ttvideo_err))
 
+    def get_contexthelp(self):
+        return self.get_rvtapi_object().GetContextualHelp()
+
     def set_contexthelp(self, ctxhelpurl):
         if ctxhelpurl:
             ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
@@ -576,7 +585,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
         # if button group shows the active button icon, then the child
         # buttons need to have large icons
-        self._use_active_item_icon = self._is_splitbutton()
+        self._use_active_item_icon = self.is_splitbutton()
 
         # by default the last item used, stays on top as the default button
         self._sync_with_cur_item = True
@@ -588,13 +597,13 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 # _PyRevitRibbonButton for existing buttons
                 self._add_component(_PyRevitRibbonButton(revit_button))
 
-    def _is_splitbutton(self):
+    def is_splitbutton(self):
         return isinstance(self._rvtapi_object, UI.SplitButton) \
                or isinstance(self._rvtapi_object, UI.SplitButtonData)
 
     def set_rvtapi_object(self, rvtapi_obj):
         _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
-        if self._is_splitbutton():
+        if self.is_splitbutton():
             self.get_rvtapi_object().IsSynchronizedWithCurrentItem = \
                 self._sync_with_cur_item
 
@@ -639,6 +648,14 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         except Exception as icon_err:
             raise PyRevitUIError('Error in applying icon to button > {} : {}'
                                  .format(icon_file, icon_err))
+
+    def get_contexthelp(self):
+        return self.get_rvtapi_object().GetContextualHelp()
+
+    def set_contexthelp(self, ctxhelpurl):
+        if ctxhelpurl:
+            ch = UI.ContextualHelp(UI.ContextualHelpType.Url, ctxhelpurl)
+            self.get_rvtapi_object().SetContextualHelp(ch)
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
@@ -685,6 +702,15 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 if tooltip_video:
                     existing_item.set_tooltip_video(tooltip_video)
 
+                # if ctx help on this group matches the existing,
+                # update self ctx before changing the existing item ctx help
+                self_ctxhelp = self.get_contexthelp()
+                ctx_help = existing_item.get_contexthelp()
+                if self_ctxhelp and ctx_help \
+                        and self_ctxhelp.HelpType == ctx_help.HelpType \
+                        and self_ctxhelp.HelpPath == ctx_help.HelpPath:
+                    self.set_contexthelp(ctxhelpurl)
+                # now change the existing item ctx help
                 existing_item.set_contexthelp(ctxhelpurl)
 
                 if ui_title:
@@ -740,6 +766,10 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                 new_button.set_tooltip_video(tooltip_video)
 
             new_button.set_contexthelp(ctxhelpurl)
+            # if this is the first button being added
+            if not self.keys():
+                mlogger.debug('Setting ctx help on parent: %s', ctxhelpurl)
+                self.set_contexthelp(ctxhelpurl)
 
             new_button.set_dirty_flag()
             self._add_component(new_button)
