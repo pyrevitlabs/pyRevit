@@ -1,11 +1,11 @@
 # pyRevit Command Line Tool Help
 
-##### Version 0.9.0.0
+##### Version 0.9.6.0
 
 `pyrevit` is the command line tool, developed specifically to install and configure pyRevit in your production/development environment. Each section below showcases a specific set of functionality of the command line tool.
 
 - [pyRevit Command Line Tool Help](#pyrevit-command-line-tool-help)
-        - [Version 0.9.0.0](#version-0900)
+        - [Version 0.9.6.0](#version-0960)
   - [Getting Help](#getting-help)
     - [pyrevit CLI version](#pyrevit-cli-version)
     - [pyRevit Online Resources](#pyrevit-online-resources)

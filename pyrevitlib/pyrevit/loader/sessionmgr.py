@@ -172,10 +172,20 @@ def _new_session():
     # run startup scripts for this ui extension, if any
     for assm_ext in assembled_exts:
         if assm_ext.ext.startup_script:
+            # build syspaths for the startup script
+            sys_paths = [assm_ext.ext.directory]
+            if assm_ext.ext.library_path:
+                sys_paths.insert(0, assm_ext.ext.library_path)
+
             mlogger.info('Running startup tasks for %s', assm_ext.ext.name)
             mlogger.debug('Executing startup script for extension: %s',
                           assm_ext.ext.name)
-            execute_script(assm_ext.ext.startup_script)
+
+            # now run
+            execute_script(
+                assm_ext.ext.startup_script,
+                sys_paths=sys_paths
+                )
 
     # update/create ui (needs the assembly to link button actions
     # to commands saved in the dll)
@@ -479,7 +489,7 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path, arguments=None,
+def execute_script(script_path, arguments=None, sys_paths=None,
                    clean_engine=True, fullframe_engine=True):
     """Executes a script using pyRevit script executor.
 
@@ -496,8 +506,11 @@ def execute_script(script_path, arguments=None,
 
     executor = loadertypes.ScriptExecutor()
     script_name = op.basename(script_path)
-    sys_paths = DEFAULT_SEPARATOR.join([MAIN_LIB_DIR,
-                                        MISC_LIB_DIR])
+    core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
+    if sys_paths:
+        sys_paths.extend(core_syspaths)
+    else:
+        sys_paths = core_syspaths
 
     cmd_runtime = \
         loadertypes.PyRevitCommandRuntime(
@@ -505,7 +518,7 @@ def execute_script(script_path, arguments=None,
             elements=None,
             scriptSource=script_path,
             alternateScriptSource=None,
-            syspaths=sys_paths,
+            syspaths=DEFAULT_SEPARATOR.join(sys_paths),
             arguments=arguments,
             helpSource=None,
             cmdName=script_name,

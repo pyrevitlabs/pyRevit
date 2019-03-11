@@ -154,6 +154,15 @@ namespace PyRevitBaseClasses {
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_syspaths.Replace(";", "\r\n")); };
                 pyRevitCmdContextMenu.Items.Add(copySysPaths);
 
+                // menu item to copy help url
+                MenuItem copyHelpSource = new MenuItem();
+                copyHelpSource.Header = "Copy Help Url";
+                copyHelpSource.ToolTip = baked_helpSource;
+                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource.Replace(";", "\r\n")); };
+                pyRevitCmdContextMenu.Items.Add(copyHelpSource);
+                if (baked_helpSource == null || baked_helpSource == string.Empty)
+                    copyHelpSource.IsEnabled = false;
+
                 // open the menu
                 pyRevitCmdContextMenu.IsOpen = true;
 

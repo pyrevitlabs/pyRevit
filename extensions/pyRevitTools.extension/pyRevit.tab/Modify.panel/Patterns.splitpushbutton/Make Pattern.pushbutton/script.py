@@ -1,5 +1,6 @@
 #pylint: disable=C0111,E0401,C0103,W0201,W0613
 import re
+import math
 
 from pyrevit.coreutils import pyutils
 from pyrevit import HOST_APP
@@ -111,10 +112,11 @@ class MakePatternWindow(forms.WPFWindow):
         mult = self.multiplier_tb.Text
         if pyutils.isnumber(mult):
             logger.debug('Multiplier is %s', float(mult))
-            return float(mult)
+            return abs(float(mult))
         else:
             logger.debug('Multiplier is not a number (%s). Defaulting to 1.0',
                          mult)
+            return 1.0
 
     @property
     def export_scale(self):
@@ -132,6 +134,25 @@ class MakePatternWindow(forms.WPFWindow):
     def round_coord(coord):
         return coord
         # return round(coord, PICK_COORD_RESOLUTION)
+
+    @property
+    def pat_rotation(self):
+        rotat = self.rotation_tb.Text
+        if pyutils.isnumber(rotat):
+            logger.debug('Rotation is %s', float(rotat))
+            return float(rotat)
+        else:
+            logger.debug('Rotation is not a number (%s). Defaulting to 0.0',
+                         rotat)
+            return 0.0
+
+    @property
+    def flip_horiz(self):
+        return self.fliphoriz_cb.IsChecked
+
+    @property
+    def flip_vert(self):
+        return self.flipvert_cb.IsChecked
 
     def get_view_direction(self):
         return revit.activeview.ViewDirection
@@ -346,6 +367,9 @@ class MakePatternWindow(forms.WPFWindow):
                                   line_tuples, domain,
                                   fillgrids=self.selected_fillgrids,
                                   scale=self.pat_scale,
+                                  rotation=math.radians(self.pat_rotation),
+                                  flip_u=self.flip_horiz,
+                                  flip_v=self.flip_vert,
                                   model_pattern=self.is_model_pat,
                                   allow_expansion=self.highestres_cb.IsChecked,
                                   create_filledregion=self.create_filledregion)

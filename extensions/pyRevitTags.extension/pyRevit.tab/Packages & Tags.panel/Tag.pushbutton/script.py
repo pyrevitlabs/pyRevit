@@ -12,7 +12,7 @@ import tagsmgr
 
 __title__ = 'Tag\nSelected'
 __author__ = '{{author}}'
-__helpurl__ = '{{docpath}}'
+__helpurl__ = '{{docpath}}FYNDSAypWlg'
 
 
 logger = script.get_logger()
