@@ -1421,6 +1421,7 @@ def select_revisions(title='Select Revision',
         ... [<Autodesk.Revit.DB.Revision object>,
         ...  <Autodesk.Revit.DB.Revision object>]
     """
+    doc = doc or HOST_APP.doc
     revisions = sorted(revit.query.get_revisions(doc=doc),
                        key=lambda x: x.SequenceNumber)
 
@@ -1537,6 +1538,7 @@ def select_views(title='Select Views',
         ... [<Autodesk.Revit.DB.View object>,
         ...  <Autodesk.Revit.DB.View object>]
     """
+    doc = doc or HOST_APP.doc
     all_graphviews = revit.query.get_all_views(doc=doc)
 
     if filterfunc:
@@ -1553,6 +1555,53 @@ def select_views(title='Select Views',
         )
 
     return selected_views
+
+
+def select_viewtemplates(title='Select View Templates',
+                         button_name='Select',
+                         width=DEFAULT_INPUTWINDOW_WIDTH,
+                         multiple=True,
+                         filterfunc=None,
+                         doc=None):
+    """Standard form for selecting view templates.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+
+    Returns:
+        list[DB.View]: list of selected view templates
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_viewtemplates()
+        ... [<Autodesk.Revit.DB.View object>,
+        ...  <Autodesk.Revit.DB.View object>]
+    """
+    doc = doc or HOST_APP.doc
+    all_viewtemplates = revit.query.get_all_view_templates(doc=doc)
+
+    if filterfunc:
+        all_viewtemplates = filter(filterfunc, all_viewtemplates)
+
+    selected_viewtemplates = SelectFromList.show(
+        sorted([ViewOption(x) for x in all_viewtemplates],
+               key=lambda x: x.name),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True
+        )
+
+    return selected_viewtemplates
 
 
 def select_open_docs(title='Select Open Documents',

@@ -15,6 +15,8 @@ if selected_revisions:
     if dest_docs:
         for ddoc in dest_docs:
             with revit.Transaction('Copy Revisions', doc=ddoc):
-                revit.create.copy_revisions(src_doc=revit.doc,
-                                            dest_doc=ddoc,
-                                            revisions=selected_revisions)
+                revit.create.copy_revisions(
+                    selected_revisions,
+                    src_doc=revit.doc,
+                    dest_doc=ddoc
+                    )

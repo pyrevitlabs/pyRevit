@@ -29,6 +29,14 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
         return True
 
 
+class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
+    """Handle copy and paste errors."""
+
+    def OnDuplicateTypeNamesFound(self, args):
+        """Use destination model types if duplicate."""
+        return DB.DuplicateTypeAction.UseDestinationTypes
+
+
 def create_param_from_definition(param_def,
                                  category_list,
                                  builtin_param_group,
@@ -147,7 +155,21 @@ def create_revision(description=None, by=None, to=None, date=None,
     return new_rev
 
 
-def copy_revisions(src_doc, dest_doc, revisions=None):
+def copy_elements(element_ids, src_doc, dest_doc):
+    cp_options = DB.CopyPasteOptions()
+    cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
+
+    if element_ids:
+        DB.ElementTransformUtils.CopyElements(
+            src_doc,
+            framework.List[DB.ElementId](element_ids),
+            dest_doc, None, cp_options
+            )
+
+    return True
+
+
+def copy_revisions(revisions, src_doc, dest_doc):
     if revisions is None:
         all_src_revs = query.get_revisions(doc=src_doc)
     else:
@@ -167,6 +189,20 @@ def copy_revisions(src_doc, dest_doc, revisions=None):
                             to=src_rev.IssuedTo,
                             date=src_rev.RevisionDate,
                             doc=dest_doc)
+
+
+def copy_all_revisions(src_doc, dest_doc):
+    copy_revisions(None, src_doc=src_doc, dest_doc=dest_doc)
+
+
+def copy_viewtemplates(viewtemplates, src_doc, dest_doc):
+    if viewtemplates is None:
+        all_viewtemplates = query.get_all_view_templates(doc=src_doc)
+    else:
+        all_viewtemplates = viewtemplates
+
+    vtemp_ids = [x.Id for x in all_viewtemplates]
+    copy_elements(vtemp_ids, src_doc=src_doc, dest_doc=dest_doc)
 
 
 def create_sheet(sheet_num, sheet_name,

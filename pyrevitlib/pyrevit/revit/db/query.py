@@ -522,7 +522,9 @@ def get_all_views(doc=None, view_types=None, include_nongraphical=False):
 
 
 def get_all_view_templates(doc=None, view_types=None):
-    return [x for x in get_all_views(doc=doc, view_types=view_types)
+    return [x for x in get_all_views(doc=doc,
+                                     view_types=view_types,
+                                     include_nongraphical=True)
             if x.IsTemplate]
 
 
