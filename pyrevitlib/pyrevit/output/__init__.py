@@ -330,12 +330,12 @@ class PyRevitOutputWindow(object):
             self.window.UnlockSize()
 
     def freeze(self):
-        """Freeze output contetn update."""
+        """Freeze output content update."""
         if self.window:
             self.window.Freeze()
 
     def unfreeze(self):
-        """Unfreeze output contetn update."""
+        """Unfreeze output content update."""
         if self.window:
             self.window.Unfreeze()
 
