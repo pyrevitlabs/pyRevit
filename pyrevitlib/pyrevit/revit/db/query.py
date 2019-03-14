@@ -133,8 +133,12 @@ def get_biparam_stringequals_filter(bip_paramvalue_dict):
 
 
 def get_all_elements(doc=None):
+            #  .WhereElementIsNotElementType()\
     return DB.FilteredElementCollector(doc or HOST_APP.doc)\
-             .WhereElementIsNotElementType()\
+             .WherePasses(
+                 DB.LogicalOrFilter(
+                     DB.ElementIsElementTypeFilter(False),
+                     DB.ElementIsElementTypeFilter(True)))\
              .ToElements()
 
 
@@ -1142,3 +1146,30 @@ def is_sketch_curve(element):
     if element.Category:
         cid = element.Category.Id
         return cid == DB.ElementId(DB.BuiltInCategory.OST_SketchLines)
+
+
+def get_all_schemas():
+    return DB.ExtensibleStorage.Schema.ListSchemas()
+
+
+def get_schema_field_values(element, schema):
+    field_values = {}
+    entity = element.GetEntity(schema)
+    if entity:
+        for field in schema.ListFields():
+            field_type = field.ValueType
+            if field.ContainerType == DB.ExtensibleStorage.ContainerType.Array:
+                field_type = framework.IList[field.ValueType]
+            elif field.ContainerType == DB.ExtensibleStorage.ContainerType.Map:
+                field_type = \
+                    framework.IDictionary[field.KeyType, field.ValueType]
+            try:
+                value = entity.Get[field_type](
+                    field.FieldName,
+                    DB.DisplayUnitType.DUT_UNDEFINED
+                    )
+            except:
+                value = None
+
+            field_values[field.FieldName] = value
+    return field_values
