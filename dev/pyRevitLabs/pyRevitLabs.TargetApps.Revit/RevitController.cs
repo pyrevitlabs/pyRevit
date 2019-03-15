@@ -300,47 +300,47 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // 2008
             // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
-            {"20070607_1700", ("Unknown",       "2008 Architecture Service Pack 2")},
-            {"20070810_1700", ("Unknown",       "2008 Architecture Service Pack 2")},
-            {"20080101_2345", ("Unknown",       "2008 Architecture Service Pack 3")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
+            {"20070607_1700", ("0.0.0.0",       "2008 Architecture Service Pack 2")},
+            {"20070810_1700", ("0.0.0.0",       "2008 Architecture Service Pack 2")},
+            {"20080101_2345", ("0.0.0.0",       "2008 Architecture Service Pack 3")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
 
             // 2009
             // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
-            {"20080602_1900", ("Unknown",       "2009 Architecture Service Pack 1")},
-            {"20080915_2100", ("Unknown",       "2009 Architecture Service Pack 2")},
-            {"20081118_1045", ("Unknown",       "2009 Architecture Service Pack 3")},
+            {"20080602_1900", ("0.0.0.0",       "2009 Architecture Service Pack 1")},
+            {"20080915_2100", ("0.0.0.0",       "2009 Architecture Service Pack 2")},
+            {"20081118_1045", ("0.0.0.0",       "2009 Architecture Service Pack 3")},
 
             // 2010
             // https://www.revitforum.org/architecture-general-revit-questions/105-revit-builds-updates-product-support.html
-            {"20090612_2115", ("Unknown",       "2010 Architecture Service Pack 1")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
-            {"20090917_1515", ("Unknown",       "2010 Architecture Service Pack 2")},
+            {"20090612_2115", ("0.0.0.0",       "2010 Architecture Service Pack 1")},  // https://forums.autodesk.com/t5/revit-architecture-forum/sp3-build-20080101-2345/td-p/2152807
+            {"20090917_1515", ("0.0.0.0",       "2010 Architecture Service Pack 2")},
 
             // 2011
-            {"20100326_1700", ("Unknown",       "2011 Architecture")}, // http://forums.augi.com/showthread.php?138574-Revit-Architecture-Door-Centerline-not-selectable-during-dimensioning
-            {"20100615_2115", ("Unknown",       "2011 Architecture Service Pack 1")},   // http://revitclinic.typepad.com/my_weblog/2010/06/revit-2011-build-number-update-display.html
-            {"20100903_2115", ("Unknown",       "2011 Architecture Service Pack 2")},   // http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html
+            {"20100326_1700", ("0.0.0.0",       "2011 Architecture")}, // http://forums.augi.com/showthread.php?138574-Revit-Architecture-Door-Centerline-not-selectable-during-dimensioning
+            {"20100615_2115", ("0.0.0.0",       "2011 Architecture Service Pack 1")},   // http://revitclinic.typepad.com/my_weblog/2010/06/revit-2011-build-number-update-display.html
+            {"20100903_2115", ("0.0.0.0",       "2011 Architecture Service Pack 2")},   // http://revitoped.blogspot.com/2010/09/revit-web-update-2-posted-subscription.html
 
             // 2012
             // http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html
-            {"20110309_2315", ("Unknown",       "2012 First Customer Ship")},
-            {"20110622_0930", ("Unknown",       "2012 Update Release 1")},
-            {"20110916_2132", ("Unknown",       "2012 Update Release 2")},
+            {"20110309_2315", ("0.0.0.0",       "2012 First Customer Ship")},
+            {"20110622_0930", ("0.0.0.0",       "2012 Update Release 1")},
+            {"20110916_2132", ("0.0.0.0",       "2012 Update Release 2")},
 
             // 2013
             // http://web.archive.org/web/20150123061214/https://knowledge.autodesk.com/support/revit-products/troubleshooting/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html
             {"20120221_2030", ("12.02.21203",   "2013 First Customer Ship")},
-            {"20120716_1115", ("Unknown",       "2013 Update Release 1")},
-            {"20121003_2115", ("Unknown",       "2013 Update Release 2")},
-            {"20130531_2115", ("Unknown",       "2013 Update Release 3")},
-            {"20120821_1330", ("Unknown",       "2013 LT First Customer Ship")},
-            {"20130531_0300", ("Unknown",       "2013 LT Update Release 1")},
+            {"20120716_1115", ("0.0.0.0",       "2013 Update Release 1")},
+            {"20121003_2115", ("0.0.0.0",       "2013 Update Release 2")},
+            {"20130531_2115", ("0.0.0.0",       "2013 Update Release 3")},
+            {"20120821_1330", ("0.0.0.0",       "2013 LT First Customer Ship")},
+            {"20130531_0300", ("0.0.0.0",       "2013 LT Update Release 1")},
 
             // 2014
             // tested on local machine
             {"20130308_1515", ("13.03.08151",   "2014 First Customer Ship")},
-            {"20130709_2115", ("Unknown",       "2014 Update Release 1")},
-            {"20131024_2115", ("Unknown",       "2014 Update Release 2")},
-            {"20140709_2115", ("Unknown",       "2014 Update Release 3")},
+            {"20130709_2115", ("0.0.0.0",       "2014 Update Release 1")},
+            {"20131024_2115", ("0.0.0.0",       "2014 Update Release 2")},
+            {"20140709_2115", ("13.11.00004",   "2014 Update Release 3")},  //https://github.com/eirannejad/pyRevit/issues/543
 
             // 2015
             {"20140223_1515", ("15.0.136.0",	"2015 First Customer Ship")},
@@ -443,12 +443,26 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public Version Version {
             get {
-                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber))
-                    return new Version(_revitBuildNumberLookupTable[BuildNumber].Item1);
-                else if (RegisteredVersion != null || RegisteredVersion != string.Empty)
-                    return new Version(RegisteredVersion);
-                else
-                    return null;
+                // build version from build-number lookup
+                if (_revitBuildNumberLookupTable.ContainsKey(BuildNumber)) {
+                    try {
+                        return new Version(_revitBuildNumberLookupTable[BuildNumber].Item1);
+                    }
+                    catch {
+                    }
+                }
+
+                // otherwise build version from registry info if available
+                if (RegisteredVersion != null || RegisteredVersion != string.Empty) {
+                    try {
+                        return new Version(RegisteredVersion);
+                    }
+                    catch {
+                    }
+                }
+
+                // return none
+                return null;
             }
         }
 
