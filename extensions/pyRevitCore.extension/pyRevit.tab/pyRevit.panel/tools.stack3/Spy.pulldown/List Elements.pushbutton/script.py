@@ -205,7 +205,6 @@ elif selected_switch == 'Element Types':
             print('\t{} {}'.format(output.linkify(et.Id),
                                    revit.query.get_name(et)))
 
-
 elif selected_switch == 'Family Symbols':
     cl = DB.FilteredElementCollector(revit.doc)
     eltype_list = cl.OfClass(DB.ElementType).ToElements()
@@ -437,25 +436,27 @@ elif selected_switch == 'Selected Line Coordinates':
             print('Elemend with ID: {0} is a not a line.\n'.format(el.Id))
 
 elif selected_switch == 'Data Schema Entities':
-    allElements = \
-        list(DB.FilteredElementCollector(revit.doc)
-             .WherePasses(
-                 DB.LogicalOrFilter(DB.ElementIsElementTypeFilter(False),
-                                    DB.ElementIsElementTypeFilter(True))))
+    schemas = {x.GUID.ToString(): x
+               for x in revit.query.get_all_schemas()}
 
-    guids = {sc.GUID.ToString(): sc.SchemaName
-             for sc in DB.ExtensibleStorage.Schema.ListSchemas()}
-
-    for el in allElements:
-        schemaGUIDs = el.GetEntitySchemaGuids()
-        for guid in schemaGUIDs:
-            if guid.ToString() in guids.keys():
-                print('ELEMENT ID: {0}\t\t'
-                      'SCHEMA NAME: {1}'
-                      .format(el.Id.IntegerValue,
-                              guids[guid.ToString()]))
-
-    print('Iteration completed over {0} elements.'.format(len(allElements)))
+    for el in revit.query.get_all_elements(doc=revit.doc):
+        schema_guids = el.GetEntitySchemaGuids()
+        for guid_obj in schema_guids:
+            guid = guid_obj.ToString()
+            if guid in schemas:
+                schema = schemas[guid]
+                print(
+                    '{}{}'.format(
+                        '{} ({})'.format(
+                            output.linkify(el.Id),
+                            el.Category.Name
+                            ).ljust(40),
+                        schema.SchemaName
+                        )
+                    )
+                for fname, fval in \
+                    revit.query.get_schema_field_values(el, schema).items():
+                    print('\t%s: %s' %(fname, fval))
 
 elif selected_switch == 'Fill Grids':
     selection = revit.get_selection()

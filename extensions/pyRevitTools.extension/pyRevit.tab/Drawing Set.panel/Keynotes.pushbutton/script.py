@@ -431,7 +431,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @property
     def postcmd_options(self):
-        return [self.userknote_rb, self.elementknote_rb, self.materialknote_rb]
+        return [self.userknote_rb, self.materialknote_rb, self.elementknote_rb]
 
     @property
     def postcmd_idx(self):

@@ -32,6 +32,7 @@ from System import Convert
 from System.Text import Encoding
 from System.Collections import IEnumerator, IEnumerable
 from System.Collections.Generic import List, Dictionary
+from System.Collections.Generic import IList, IDictionary
 from System import DateTime, DateTimeOffset
 
 from System import Diagnostics
