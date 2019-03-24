@@ -29,6 +29,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             // generate journal and manifest file
             GenerateJournal();
             GenerateManifest();
+            CopyAddinDir(Addons.GetRevitAddonsFolder(Revit.ProductYear, true), WorkingDirectory);//MDJ_TODO cleanup where to get AllUsers/CurrentUser from.
         }
 
         private const string JournalNameTemplate = "PyRevitRunner_{0}.txt";
@@ -108,6 +109,48 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                       "PyRevitRunner.PyRevitRunnerApplication",
                                       PyRevitConsts.VendorId,
                                       addinPath: WorkingDirectory);
+        }
+
+      
+        // MDJ added code to copy all .addin files and subdirs into the batch running context.
+        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch. 
+        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx 
+
+        public static void CopyAddinDir(string sourceDirectory, string targetDirectory)
+        {
+            DirectoryInfo diSource = new DirectoryInfo(sourceDirectory);
+            DirectoryInfo diTarget = new DirectoryInfo(targetDirectory);
+
+            CopyAll(diSource, diTarget);
+        }
+
+        public static void CopyAll(DirectoryInfo source, DirectoryInfo target)
+        {
+            if (source.FullName.ToLower() == target.FullName.ToLower())
+            {
+                return;
+            }
+
+            // Check if the target directory exists, if not, create it.
+            if (Directory.Exists(target.FullName) == false)
+            {
+                Directory.CreateDirectory(target.FullName);
+            }
+
+            // Copy each file into it's new directory.
+            foreach (FileInfo fi in source.GetFiles())
+            {
+                Console.WriteLine(@"Copying {0}\{1}", target.FullName, fi.Name);
+                fi.CopyTo(Path.Combine(target.ToString(), fi.Name), true);
+            }
+
+            // Copy each subdirectory using recursion.
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            {
+                DirectoryInfo nextTargetSubDir =
+                    target.CreateSubdirectory(diSourceSubDir.Name);
+                CopyAll(diSourceSubDir, nextTargetSubDir);
+            }
         }
     }
 
