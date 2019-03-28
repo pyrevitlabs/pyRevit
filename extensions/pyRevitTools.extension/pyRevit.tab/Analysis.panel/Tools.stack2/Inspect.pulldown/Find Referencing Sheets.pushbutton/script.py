@@ -1,36 +1,35 @@
+"""Find all sheets referencing the current view.
+Especially useful for finding legends.
+"""
+#pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
+from pyrevit import forms
+from pyrevit import script
 
+__author__ = "{{author}}"
 
-__doc__ = 'Find all sheets referencing the current view.'\
-          ' Especially useful for finding legends.'
-
-
-cl_views = DB.FilteredElementCollector(revit.doc)
-shts = cl_views.OfCategory(DB.BuiltInCategory.OST_Sheets)\
-               .WhereElementIsNotElementType()\
-               .ToElements()
-
-sheets = sorted(shts, key=lambda x: x.SheetNumber)
+output = script.get_output()
 
 curview = revit.activeview
 count = 0
 
-print('Searching All Sheets for {0} ID:{1}\n'.format(curview.Name, curview.Id))
-for s in sheets:
-    vpsIds = [revit.doc.GetElement(x).ViewId for x in s.GetAllViewports()]
+
+print('Searching All Sheets for {} {}\n'
+      .format(curview.Name, output.linkify(curview.Id)))
+
+for sheet in revit.query.get_sheets(include_placeholders=False):
+    vps_ids = [revit.doc.GetElement(x).ViewId for x in sheet.GetAllViewports()]
     curviewelements = DB.FilteredElementCollector(revit.doc)\
-                        .OwnedByView(s.Id)\
+                        .OwnedByView(sheet.Id)\
                         .WhereElementIsNotElementType()\
                         .ToElements()
 
     for el in curviewelements:
         if isinstance(el, DB.ScheduleSheetInstance):
-            vpsIds.append(el.ScheduleId)
+            vps_ids.append(el.ScheduleId)
 
-    if curview.Id in vpsIds:
+    if curview.Id in vps_ids:
         count += 1
-        print('NUMBER: {0}   NAME:{1}'
-              .format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString().rjust(10),
-                      s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString().ljust(50)))
+        revit.report.print_sheet(sheet)
 
 print('\n\nView is referenced on {0} sheets.'.format(count))
