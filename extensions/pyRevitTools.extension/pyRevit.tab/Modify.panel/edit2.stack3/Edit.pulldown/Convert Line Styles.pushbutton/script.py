@@ -23,7 +23,7 @@ class StyleOption(object):
         return '{} ({} {} {})'.format(
             self.name,
             self.weight,
-            self.colorhex,
+            self.color_hex,
             self.pattern_name
             )
 
