@@ -375,6 +375,9 @@
                             Revit versions from here. This effectively removes the
                             pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
                         </TextBlock>
+                        <CheckBox x:Name="revit2020_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
+                            Autodesk Revit 2020
+                        </CheckBox>
                         <CheckBox x:Name="revit2019_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
                             Autodesk Revit 2019
                         </CheckBox>
