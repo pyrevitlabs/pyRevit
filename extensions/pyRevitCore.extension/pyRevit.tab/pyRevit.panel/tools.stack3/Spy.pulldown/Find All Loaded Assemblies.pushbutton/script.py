@@ -1,16 +1,21 @@
 """List all currently loaded assemblies"""
-
+#pylint: disable=import-error,invalid-name,broad-except
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
-
+from pyrevit import script
 
 __context__ = 'zerodoc'
 
 
-userScriptsAssemblies = []
+output = script.get_output()
+
+output.freeze()
+
+userscript_assms = []
 for loadedAssembly in framework.AppDomain.CurrentDomain.GetAssemblies():
     loc = ''
-    if 'pyrevit' in unicode(loadedAssembly.FullName).lower():
-        userScriptsAssemblies.append(loadedAssembly)
+    if 'pyrevit' in safe_strtype(loadedAssembly.FullName).lower():
+        userscript_assms.append(loadedAssembly)
         continue
     try:
         loc = loadedAssembly.Location
@@ -35,7 +40,7 @@ for loadedAssembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         pass
 
 print('\n\nPYREVIT ASSEMBLIES:')
-for loadedAssembly in userScriptsAssemblies:
+for loadedAssembly in userscript_assms:
     loc = ''
     try:
         loc = loadedAssembly.Location
@@ -52,3 +57,5 @@ for loadedAssembly in userScriptsAssemblies:
         print('\n')
     except Exception:
         pass
+
+output.unfreeze()

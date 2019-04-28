@@ -5,7 +5,7 @@ __context__ = 'zerodoc'
 
 
 commandlist = \
-    ["pyRevitDevToolspyRevitDevDebugUnitTestsTestRPW",
+    ["pyRevitDevToolspyRevitDevDebugMiscTestsTestRPW",
      "pyRevitToolspyRevitSelectionselectSelectListSelectionasClickableLinks"]
 
 for cmd in commandlist:

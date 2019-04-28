@@ -10,48 +10,54 @@ I suggest reading this section completely as it provides 99% of what you will
 need to know for developing scripts in pyRevit environment. Other sections dive
 deeper into pyRevit inner workings.
 
-* :doc:`scriptanatomy`
-* :doc:`outputfeatures`
-* :doc:`commandbutton`
-* :doc:`creatingexts`
-* :doc:`config`
-* :doc:`usagelogger`
-* :doc:`installer`
+* :doc:`articles/firstcommand`
+* :doc:`articles/scriptanatomy`
+* :doc:`articles/outputfeatures`
+* :doc:`articles/commandbutton`
+* :doc:`articles/creatingexts`
+* :doc:`articles/config`
+* :doc:`articles/usagelogger`
+* :doc:`articles/cli`
 
 ..  toctree::
     :maxdepth: 2
     :hidden:
     :caption: Getting Started
 
-    scriptanatomy.rst
-    outputfeatures.rst
-    commandbutton.rst
-    creatingexts.rst
-    config.rst
-    usagelogger.rst
-    installer.rst
+    articles/firstcommand.rst
+    articles/scriptanatomy.rst
+    articles/outputfeatures.rst
+    articles/commandbutton.rst
+    articles/creatingexts.rst
+    articles/config.rst
+    articles/usagelogger.rst
+    articles/cli.rst
 
 **pyRevit Core**
 
-* :doc:`loaderaddon`
-* :doc:`loadseq`
+* :doc:`articles/core/loaderaddon`
+* :doc:`articles/core/loadseq`
 
 ..  toctree::
     :maxdepth: 2
     :hidden:
     :caption: pyRevit Core
 
-    loaderaddon.rst
-    loadseq.rst
+    articles/core/loaderaddon.rst
+    articles/core/loadseq.rst
 
 **Modules**
 
 * :doc:`pyrevit/init`
 * :doc:`pyrevit/api`
+* :doc:`pyrevit/compat`
+* :doc:`pyrevit/forms`
 * :doc:`pyrevit/framework`
 * :doc:`pyrevit/script`
 * :doc:`pyrevit/userconfig`
-* :doc:`output`
+* :doc:`pyrevit/coreutils`
+* :doc:`pyrevit/output`
+* :doc:`pyrevit/revit`
 
 ..  toctree::
     :maxdepth: 2
@@ -60,7 +66,11 @@ deeper into pyRevit inner workings.
 
     pyrevit/init.rst
     pyrevit/api.rst
+    pyrevit/compat.rst
+    pyrevit/forms.rst
     pyrevit/framework.rst
     pyrevit/script.rst
     pyrevit/userconfig.rst
-    output.rst
+    pyrevit/coreutils.rst
+    pyrevit/output.rst
+    pyrevit/revit.rst

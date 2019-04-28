@@ -32,7 +32,7 @@ console.lock_size()
 
 report_title = 'Revision Report'
 report_date = coreutils.current_date()
-report_project = revit.get_project_info().name
+report_project = revit.query.get_project_info().name
 
 
 # setup element styling
@@ -58,7 +58,8 @@ rev_table_header = "| Number        | Date           | Description  |\n" \
 rev_table_template = "|{number}|{date}|{desc}|\n"
 rev_table = rev_table_header
 for rev in all_revisions:
-    rev_table += rev_table_template.format(number=rev.RevisionNumber,
+    revnum = revit.query.get_param(rev, 'RevisionNumber', rev.SequenceNumber)
+    rev_table += rev_table_template.format(number=revnum,
                                            date=rev.RevisionDate,
                                            desc=rev.Description)
 
@@ -107,7 +108,9 @@ class RevisedSheet:
     def get_comments(self):
         all_comments = set()
         for cloud in self._clouds:
-            comment = cloud.LookupParameter('Comments').AsString()
+            cparam = \
+                cloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+            comment = cparam.AsString()
             if not coreutils.is_blank(comment):
                 all_comments.add(comment)
         return all_comments

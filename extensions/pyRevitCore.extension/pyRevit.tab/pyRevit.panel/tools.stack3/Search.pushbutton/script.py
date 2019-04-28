@@ -146,7 +146,7 @@ search_db.extend(pyrevit_cmds.keys())
 search_db.extend(postable_cmds.keys())
 
 # search
-matched_cmdname, switches = \
+matched_cmdname, matched_cmdargs, switches = \
     forms.SearchPrompt.show(search_db,
                             switches=[HELP_SWITCH,
                                       DOC_SWITCH,
@@ -160,7 +160,11 @@ matched_cmdname, switches = \
                                       NP_SWITCH,
                                       CONFIG_SWITCH,
                                       ALT_FLAG],
-                            search_tip='pyRevit Search')
+                            search_tip='type to search')
+
+logger.debug('matched command: {}'.format(matched_cmdname))
+logger.debug('arguments: {}'.format(matched_cmdargs))
+logger.debug('switches: {}'.format(switches))
 
 # if asking for help show help and exit
 if switches[HELP_SWITCH] and not matched_cmdname:
@@ -203,7 +207,7 @@ if matched_cmdname:
             fullframe_engine = switches[FULLFRAME_SWITCH]
             alternate_mode = switches[CONFIG_SWITCH] or switches[ALT_FLAG]
             sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
-                                           arguments=None,
+                                           arguments=matched_cmdargs,
                                            clean_engine=clean_engine,
                                            fullframe_engine=fullframe_engine,
                                            alternate_mode=alternate_mode)

@@ -1,4 +1,9 @@
+#pylint: disable=E0401,C0103
 from pyrevit import revit, DB
+from pyrevit import script
+
+
+output = script.get_output()
 
 
 __context__ = 'selection'
@@ -11,9 +16,9 @@ areas = DB.FilteredElementCollector(revit.doc)\
           .OfCategory(DB.BuiltInCategory.OST_Areas)\
           .WhereElementIsNotElementType().ToElements()
 
-rms = DB.FilteredElementCollector(revit.doc)\
-        .OfCategory(DB.BuiltInCategory.OST_Rooms)\
-        .WhereElementIsNotElementType().ToElements()
+rooms = DB.FilteredElementCollector(revit.doc)\
+          .OfCategory(DB.BuiltInCategory.OST_Rooms)\
+          .WhereElementIsNotElementType().ToElements()
 
 spaces = DB.FilteredElementCollector(revit.doc)\
            .OfCategory(DB.BuiltInCategory.OST_MEPSpaces)\
@@ -28,47 +33,75 @@ processed_items = {DB.Area: [],
 selection = revit.get_selection()
 
 
+def calc_and_print(items, item_type, type_name, match_name):
+    item_total_area = 0.0
+    item_count = 0
+    if match_name not in processed_items[item_type]:
+        print("{} TYPE IS: {}".format(type_name, match_name))
+        for item in items:
+            if revit.query.is_placed(item):
+                item_name = \
+                    item.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+                item_number = \
+                    item.Parameter[DB.BuiltInParameter.ROOM_NUMBER].AsString()
+                item_level = \
+                    item.Parameter[
+                        DB.BuiltInParameter.ROOM_LEVEL_ID].AsValueString()
+                if match_name == item_name:
+                    area_value = \
+                        item.Parameter[DB.BuiltInParameter.ROOM_AREA].AsDouble()
+                    print('{} {} #{} \"{}\" @ \"{}\" = {}'.format(
+                        output.linkify(item.Id),
+                        type_name.title(),
+                        item_number,
+                        item_name,
+                        item_level,
+                        revit.units.format_area(area_value)
+                        ))
+                    item_total_area += area_value
+                    item_count += 1
+            else:
+                print(':cross_mark: '
+                      'SKIPPED \"NOT PLACED\" {} {} #{} \"{}\" @ \"{}\"'
+                      .format(
+                          output.linkify(item.Id),
+                          type_name.title(),
+                          item_number,
+                          item_name,
+                          item_level))
+        print("TOTAL OF {} {}S WERE FOUND.".format(item_count, type_name))
+        processed_items[item_type].append(match_name)
+    return item_total_area, item_count
+
+
 for el in selection.elements:
     count = 0
     total = 0.0
-    average = 0.0
     if isinstance(el, DB.Area):
-        selareaname = el.LookupParameter('Name').AsString()
-        if selareaname not in processed_items[DB.Area]:
-            print("AREA TYPE IS: {}".format(selareaname))
-            for area in areas:
-                areaname = area.LookupParameter('Name').AsString()
-                if area.AreaScheme.Name == el.AreaScheme.Name\
-                        and selareaname == areaname:
-                    total += area.LookupParameter('Area').AsDouble()
-                    count += 1
-            print("TOTAL OF {} AREAS WERE FOUND.".format(count))
-            processed_items[DB.Area].append(selareaname)
+        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        area_total, area_count = \
+            calc_and_print(areas, DB.Area, 'AREA', target_name)
+        count += area_count
+        total += area_total
     elif isinstance(el, DB.Architecture.Room):
-        selroomname = el.LookupParameter('Name').AsString()
-        if selroomname not in processed_items[DB.Architecture.Room]:
-            print("ROOM TYPE IS: {}".format(selroomname))
-            for room in rms:
-                roomname = room.LookupParameter('Name').AsString()
-                if selroomname == roomname:
-                    total += room.LookupParameter('Area').AsDouble()
-                    count += 1
-            print("TOTAL OF {} ROOMS WERE FOUND.".format(count))
-            processed_items[DB.Architecture.Room].append(selroomname)
+        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        area_total, area_count = \
+            calc_and_print(rooms, DB.Architecture.Room, 'ROOM', target_name)
+        count += area_count
+        total += area_total
     elif isinstance(el, DB.Mechanical.Space):
-        selspacename = el.LookupParameter('Name').AsString()
-        if selspacename not in processed_items[DB.Mechanical.Space]:
-            print("SPACE TYPE IS: {}".format(selspacename))
-            for space in spaces:
-                spacename = space.LookupParameter('Name').AsString()
-                if selspacename == spacename:
-                    total += space.LookupParameter('Area').AsDouble()
-                    count += 1
-            print("TOTAL OF {} SPACES WERE FOUND.".format(count))
-            processed_items[DB.Mechanical.Space].append(selspacename)
+        target_name = el.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+        area_total, area_count = \
+            calc_and_print(spaces, DB.Mechanical.Space, 'SPACE', target_name)
+        count += area_count
+        total += area_total
 
     if count != 0:
         average = total / count
-        print('AVERAGE AREA OF THE SELECTED TYPE IS:'
-              '\n{0} SQFT'
-              '\n{1} ACRE'.format(average, average / 43560))
+        print('\nAVERAGE AREA OF THE SELECTED TYPE IS:'
+              '\n{}'
+              '\n ======================================='
+              '\n{} ACRE'
+              '\n{} HECTARES'.format(revit.units.format_area(average),
+                                     average / 43560,
+                                     average / 107639))

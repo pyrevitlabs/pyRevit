@@ -43,33 +43,31 @@ allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
                         .ToElements()
 
 
-selSheets = forms.select_sheets(title='Select Target Sheets',
-                                button_name='Select Sheets')
+selected_sheets = forms.select_sheets(title='Select Target Sheets',
+                                      button_name='Select Sheets')
 
 # get a list of viewports to be copied, updated
-if selSheets and len(selSheets) > 0:
+if selected_sheets and len(selected_sheets) > 0:
     if int(__revit__.Application.VersionNumber) > 2014:
         cursheet = revit.uidoc.ActiveGraphicalView
-        for v in selSheets:
+        for v in selected_sheets:
             if cursheet.Id == v.Id:
-                selSheets.remove(v)
+                selected_sheets.remove(v)
     else:
-        cursheet = selSheets[0]
-        selSheets.remove(cursheet)
+        cursheet = selected_sheets[0]
+        selected_sheets.remove(cursheet)
 
     revit.uidoc.ActiveView = cursheet
-    sel = revit.pick_elements()
-    for el in sel:
-        selViewports.append(el)
+    selected_vps = revit.pick_elements()
 
-    if len(selViewports) > 0:
+    if selected_vps:
         with revit.Transaction('Copy Viewports to Sheets'):
-            for sht in selSheets:
+            for sht in selected_sheets:
                 existing_vps = [revit.doc.GetElement(x)
                                 for x in sht.GetAllViewports()]
                 existing_schedules = [x for x in allSheetedSchedules
                                       if x.OwnerViewId == sht.Id]
-                for vp in selViewports:
+                for vp in selected_vps:
                     if isinstance(vp, DB.Viewport):
                         src_view = revit.doc.GetElement(vp.ViewId)
                         # check if viewport already exists
@@ -86,10 +84,10 @@ if selSheets and len(selSheets) > 0:
 
                             new_vp.ChangeTypeId(vp.GetTypeId())
                         else:
-                            logger.warning('Skipping {}. This view type '
+                            logger.warning('Skipping %s. This view type '
                                            'can not be placed on '
-                                           'multiple sheets.'
-                                           .format(src_view.ViewName))
+                                           'multiple sheets.',
+                                           revit.query.get_name(src_view))
                     elif isinstance(vp, DB.ScheduleSheetInstance):
                         # check if schedule already exists
                         # and update location

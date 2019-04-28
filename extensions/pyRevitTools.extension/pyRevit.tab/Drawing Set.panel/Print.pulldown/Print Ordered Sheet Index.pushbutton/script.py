@@ -1,11 +1,28 @@
-"""Print sheets in order from a sheet index."""
+"""Print sheets in order from a sheet index.
+
+Note:
+When using the `Combine into one file` option,
+the tool adds non-printable character u'\u200e'
+(Left-To-Right Mark) at the start of the sheet names
+to push Revit's interenal printing engine to sort
+the sheets correctly per the drawing index order. 
+
+Make sure your drawings indices consider this
+when filtering for sheet numbers.
+
+Shift-Click:
+Shift-Clicking the tool will remove all
+non-printable characters from the sheet numbers,
+in case an error in the tool causes these characters
+to remain.
+"""
 
 import os.path as op
 import codecs
 
 from pyrevit import USER_DESKTOP
 from pyrevit import framework
-from pyrevit.framework import Windows
+from pyrevit.framework import Windows, Drawing
 from pyrevit import coreutils
 from pyrevit import forms
 from pyrevit import revit, DB
@@ -13,6 +30,7 @@ from pyrevit import script
 
 
 logger = script.get_logger()
+config = script.get_config()
 
 
 # Non Printable Char
@@ -40,6 +58,8 @@ class PrintSheetsWindow(forms.WPFWindow):
             if cat.Name == 'Sheets':
                 self.sheet_cat_id = cat.Id
 
+        self._setup_printers()
+        self._setup_print_settings()
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
         self.schedules_cb.SelectedIndex = 0
 
@@ -71,6 +91,14 @@ class PrintSheetsWindow(forms.WPFWindow):
         return self.schedules_cb.SelectedItem
 
     @property
+    def selected_printer(self):
+        return self.printers_cb.SelectedItem
+
+    @property
+    def selected_print_setting(self):
+        return self.printsettings_cb.SelectedItem
+
+    @property
     def reverse_print(self):
         return self.reverse_cb.IsChecked
 
@@ -85,6 +113,18 @@ class PrintSheetsWindow(forms.WPFWindow):
     @property
     def include_placeholders(self):
         return self.indexspace_cb.IsChecked
+
+    @property
+    def sheet_list(self):
+        return self.sheets_lb.ItemsSource
+
+    @sheet_list.setter
+    def sheet_list(self, value):
+        self.sheets_lb.ItemsSource = value
+
+    @property
+    def printable_sheets(self):
+        return [x for x in self.sheet_list if x.printable]
 
     def _get_schedule_text_data(self, schedule_view):
         schedule_data_file = \
@@ -101,8 +141,8 @@ class PrintSheetsWindow(forms.WPFWindow):
                     as sched_data_file:
                 return sched_data_file.readlines()
         except Exception as open_err:
-            logger.error('Error opening sheet index export: {} | {}'
-                         .format(schedule_data_file, open_err))
+            logger.error('Error opening sheet index export: %s | %s',
+                         schedule_data_file, open_err)
             return sched_data
 
     def _order_sheets_by_schedule_data(self, schedule_view, sheet_list):
@@ -118,6 +158,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                     if sheet.SheetNumber in data_line:
                         ordered_sheets_dict[line_no] = sheet
                         break
+                    if not sheet.CanBePrinted:
+                        logger.debug('Sheet %s is not printable.',
+                                     sheet.SheetNumber)
                 except Exception:
                     continue
 
@@ -145,75 +188,139 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         return [sched for sched in schedules if self._is_sheet_index(sched)]
 
-    def _print_combined_sheets_in_order(self):
-        print_mgr = revit.doc.PrintManager
-        print_mgr.PrintRange = DB.PrintRange.Select
-        viewsheet_settings = print_mgr.ViewSheetSetting
-
-        sheet_set = DB.ViewSet()
-
-        # add non-printable char in front of sheet Numbers
-        # to push revit to sort them per user
-        original_sheetnums = []
-        with revit.Transaction('Fix Sheet Numbers') as t:
-            for idx, sheet in enumerate(self.sheets_lb.ItemsSource):
-                sht = sheet.revit_sheet
-                original_sheetnums.append(sht.SheetNumber)
-                sht.SheetNumber = NPC * (idx + 1) + sht.SheetNumber
-                sheet_set.Insert(sht)
-
-        # Collect existing sheet sets
-        cl = DB.FilteredElementCollector(revit.doc)
-        viewsheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet))\
-                          .WhereElementIsNotElementType()\
-                          .ToElements()
-        all_viewsheetsets = {vss.Name: vss for vss in viewsheetsets}
-
-        sheetsetname = 'OrderedPrintSet'
-
-        with revit.Transaction('Update Ordered Print Set') as t:
-            # Delete existing matching sheet set
-            if sheetsetname in all_viewsheetsets:
-                viewsheet_settings.CurrentViewSheetSet = \
-                    all_viewsheetsets[sheetsetname]
-                viewsheet_settings.Delete()
-
-            viewsheet_settings.CurrentViewSheetSet.Views = sheet_set
-            viewsheet_settings.SaveAs(sheetsetname)
-
-        print_mgr.PrintOrderReverse = self.reverse_print
+    def _get_printmanager(self):
         try:
-            print_mgr.CombinedFile = True
-        except Exception as e:
-            forms.alert(str(e) + '\nSet printer correctly in Print settings.')
-            script.exit()
-        print_mgr.PrintToFile = True
-        print_mgr.PrintToFileName = op.join(r'C:', 'Ordered Sheet Set.pdf')
-        print_mgr.Apply()
-        print_mgr.SubmitPrint()
+            return revit.doc.PrintManager
+        except Exception as printerr:
+            logger.critical('Error getting printer manager from document. '
+                            'Most probably there is not a printer defined '
+                            'on your system. | %s', printerr)
+            return None
 
-        # now fix the sheet names
-        with revit.Transaction('Restore Sheet Numbers') as t:
-            for sheet, sheetnum in zip(self.sheets_lb.ItemsSource,
-                                      original_sheetnums):
-                sht = sheet.revit_sheet
-                sht.SheetNumber = sheetnum
+    def _setup_printers(self):
+        printers = list(Drawing.Printing.PrinterSettings.InstalledPrinters)
+        self.printers_cb.ItemsSource = printers
+        print_mgr = self._get_printmanager()
+        self.printers_cb.SelectedItem = print_mgr.PrinterName
+
+    def _setup_print_settings(self):
+        print_settings = [revit.doc.GetElement(x)
+                          for x in revit.doc.GetPrintSettingIds()]
+        self.printsettings_cb.ItemsSource = print_settings
+        print_mgr = self._get_printmanager()
+        if not isinstance(print_mgr.PrintSetup.CurrentPrintSetting,
+                          DB.InSessionPrintSetting):
+            cur_psetting_name = print_mgr.PrintSetup.CurrentPrintSetting.Name
+            for psetting in print_settings:
+                if psetting.Name == cur_psetting_name:
+                    self.printsettings_cb.SelectedItem = psetting
+
+    def _print_combined_sheets_in_order(self):
+        # make sure we can access the print config
+        print_mgr = self._get_printmanager()
+        with revit.TransactionGroup('Print Sheets in Order') as tg:
+            if not print_mgr:
+                return
+            print_mgr.PrintSetup.CurrentPrintSetting = \
+                self.selected_print_setting
+            print_mgr.SelectNewPrintDriver(self.selected_printer)
+            print_mgr.PrintRange = DB.PrintRange.Select
+            # add non-printable char in front of sheet Numbers
+            # to push revit to sort them per user
+            sheet_set = DB.ViewSet()
+            original_sheetnums = []
+            with revit.Transaction('Fix Sheet Numbers') as t:
+                for idx, sheet in enumerate(self.sheet_list):
+                    rvtsheet = sheet.revit_sheet
+                    original_sheetnums.append(rvtsheet.SheetNumber)
+                    rvtsheet.SheetNumber = \
+                        NPC * (idx + 1) + rvtsheet.SheetNumber
+                    if sheet.printable:
+                        sheet_set.Insert(rvtsheet)
+
+            # Collect existing sheet sets
+            cl = DB.FilteredElementCollector(revit.doc)
+            viewsheetsets = cl.OfClass(framework.get_type(DB.ViewSheetSet))\
+                              .WhereElementIsNotElementType()\
+                              .ToElements()
+            all_viewsheetsets = {vss.Name: vss for vss in viewsheetsets}
+
+            sheetsetname = 'OrderedPrintSet'
+
+            with revit.Transaction('Remove Previous Print Set') as t:
+                # Delete existing matching sheet set
+                if sheetsetname in all_viewsheetsets:
+                    print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
+                        all_viewsheetsets[sheetsetname]
+                    print_mgr.ViewSheetSetting.Delete()
+
+            with revit.Transaction('Update Ordered Print Set') as t:
+                try:
+                    viewsheet_settings = print_mgr.ViewSheetSetting
+                    viewsheet_settings.CurrentViewSheetSet.Views = \
+                        sheet_set
+                    viewsheet_settings.SaveAs(sheetsetname)
+                except Exception as viewset_err:
+                    sheet_report = ''
+                    for sheet in sheet_set:
+                        sheet_report += '{} {}\n'.format(
+                            sheet.SheetNumber if isinstance(sheet,
+                                                            DB.ViewSheet)
+                            else '---',
+                            type(sheet)
+                            )
+                    logger.critical(
+                        'Error setting sheet set on print mechanism. '
+                        'These items are included in the viewset '
+                        'object:\n%s', sheet_report
+                        )
+                    raise viewset_err
+
+            # set print job configurations
+            print_mgr.PrintOrderReverse = self.reverse_print
+            try:
+                print_mgr.CombinedFile = True
+            except Exception as e:
+                forms.alert(str(e) +
+                            '\nSet printer correctly in Print settings.')
+                script.exit()
+            print_mgr.PrintToFile = True
+            print_mgr.PrintToFileName = \
+                op.join(r'C:\\', 'Ordered Sheet Set.pdf')
+            print_mgr.Apply()
+            print_mgr.SubmitPrint()
+
+            # now fix the sheet names
+            with revit.Transaction('Restore Sheet Numbers') as t:
+                for sheet, sheetnum in zip(self.sheet_list,
+                                           original_sheetnums):
+                    rvtsheet = sheet.revit_sheet
+                    rvtsheet.SheetNumber = sheetnum
 
     def _print_sheets_in_order(self):
-        print_mgr = revit.doc.PrintManager
+        # make sure we can access the print config
+        print_mgr = self._get_printmanager()
+        if not print_mgr:
+            return
         print_mgr.PrintToFile = True
-        # print_mgr.CombinedFile = False
-        print_mgr.PrintRange = DB.PrintRange.Current
-        for sheet in self.sheets_lb.ItemsSource:
-            output_fname = \
-                coreutils.cleanup_filename('{:05} {} - {}.pdf'
-                                           .format(sheet.print_index,
-                                                   sheet.number,
-                                                   sheet.name))
+        with revit.DryTransaction('Set Printer Settubgs') as t:
+            print_mgr.PrintSetup.CurrentPrintSetting = \
+                self.selected_print_setting
+            print_mgr.SelectNewPrintDriver(self.selected_printer)
+            print_mgr.PrintRange = DB.PrintRange.Current
+            for sheet in self.sheet_list:
+                output_fname = \
+                    coreutils.cleanup_filename('{:05} {} - {}.pdf'
+                                            .format(sheet.print_index,
+                                                    sheet.number,
+                                                    sheet.name))
 
-            print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
-            if sheet.printable:
-                print_mgr.SubmitPrint(sheet.revit_sheet)
+                print_mgr.PrintToFileName = op.join(USER_DESKTOP, output_fname)
+                if sheet.printable:
+                    print_mgr.SubmitPrint(sheet.revit_sheet)
+                else:
+                    logger.debug('Sheet %s is not printable. Skipping print.',
+                                sheet.number)
 
     def _update_print_indices(self, sheet_list):
         for idx, sheet in enumerate(sheet_list):
@@ -242,7 +349,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if not self.include_placeholders:
                     self._update_print_indices(printable_sheets)
 
-                self.sheets_lb.ItemsSource = printable_sheets
+                self.sheet_list = printable_sheets
 
             else:
                 self.indexspace_cb.IsChecked = True
@@ -250,18 +357,23 @@ class PrintSheetsWindow(forms.WPFWindow):
                 # update print indices
                 self._update_print_indices(sheet_list)
                 # Show all sheets
-                self.sheets_lb.ItemsSource = sheet_list
+                self.sheet_list = sheet_list
 
     def print_sheets(self, sender, args):
-        if self.sheets_lb.ItemsSource:
+        if self.sheet_list:
+            if not self.combine_print:
+                sheet_count = len(self.sheet_list)
+                if sheet_count > 5:
+                    if not forms.alert('Are you sure you want to print {} '
+                                       'sheets individually? The process can '
+                                       'not be cancelled.'.format(sheet_count),
+                                       ok=False, yes=True, no=True):
+                        return
             self.Close()
             if self.combine_print:
                 self._print_combined_sheets_in_order()
             else:
                 self._print_sheets_in_order()
-
-    def handle_url_click(self, sender, args):
-        script.open_url('https://github.com/McCulloughRT/PrintFromIndex')
 
     def preview_mouse_down(self, sender, args):
         if isinstance(sender, Windows.Controls.ListViewItem):
@@ -279,11 +391,21 @@ class PrintSheetsWindow(forms.WPFWindow):
         dropped_idx = self.sheets_lb.Items.IndexOf(dropped_data)
         target_idx = self.sheets_lb.Items.IndexOf(target)
 
-        sheet_list = self.sheets_lb.ItemsSource
+        sheet_list = self.sheet_list
         sheet_list.remove(dropped_data)
         sheet_list.insert(target_idx, dropped_data)
         self._update_print_indices(sheet_list)
         self.sheets_lb.Items.Refresh()
 
 
-PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()
+def cleanup_sheetnumbers():
+    sheets = revit.query.get_sheets(doc=revit.doc)
+    with revit.Transaction('Cleanup Sheet Numbers'):
+        for sheet in sheets:
+            sheet.SheetNumber = sheet.SheetNumber.replace(NPC, '')
+
+
+if __shiftclick__:  # noqa
+    cleanup_sheetnumbers()
+else:
+    PrintSheetsWindow('PrintOrderedSheets.xaml').ShowDialog()

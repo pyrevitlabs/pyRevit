@@ -28,19 +28,16 @@ sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
 for s in sheets:
     hasSelectedRevision = False
-    revs = s.GetAllRevisionIds()
-    revIds = [x.IntegerValue for x in revs]
+    revision_ids = s.GetAllRevisionIds()
+    revids = [x.IntegerValue for x in revision_ids]
     for sr in selectedrevs:
-        if sr in revIds:
+        if sr in revids:
             hasSelectedRevision = True
     if hasSelectedRevision:
-        print('{0}\t{1}'.format(s.LookupParameter('Sheet Number').AsString(),
-                                s.LookupParameter('Sheet Name').AsString()))
+        print('{0}\t{1}'.format(s.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
+                                s.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()))
 
         if multipleRevs:
-            for rev in revs:
-                rev = revit.doc.GetElement(rev)
-                print('\tREV#: {0}\t\tDATE: {1}\t\tDESC:{2}'
-                      .format(rev.RevisionNumber,
-                              rev.RevisionDate,
-                              rev.Description))
+            for revid in revision_ids:
+                rev = revit.doc.GetElement(revid)
+                revit.report.print_revision(rev, prefix='\t\t', print_id=False)

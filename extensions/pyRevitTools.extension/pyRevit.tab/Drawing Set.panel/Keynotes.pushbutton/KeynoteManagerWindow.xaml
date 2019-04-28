@@ -1,0 +1,444 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        Width="850" Height="750"
+        MinWidth="650" MinHeight="435"
+        ResizeMode="CanResizeWithGrip"
+        HorizontalContentAlignment="Center"
+        WindowStartupLocation="Manual"
+        Title="Manage Keynotes (BETA - USE FOR TESTING ONLY)"
+        Closing="window_closing">
+    <Window.Resources>
+        <Style x:Key="ClearButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+
+        <Canvas x:Key="filterIcon">
+            <Path Canvas.Top="-14" Canvas.Left="-14"
+                  Data="F1 M 45.4403,56.9637L 45.4403,55.0463L 52.8201,44.5143L 52.8201,44.4237L 46.13,44.4237L 46.13,41.4774L 57.372,41.4774L 57.372,43.5352L 50.1532,53.9265L 50.1532,54.0174L 57.4869,54.0174L 57.4869,56.9637L 45.4403,56.9637 Z M 34.8333,61.75L 34.8333,42.75L 19,20.5833L 57,20.5833L 41.1667,42.75L 41.1667,58.5833L 34.8333,61.75 Z M 25.903,52.8055L 21.4072,52.8055L 20.289,56.9855L 16.6085,56.9855L 21.4072,41.4556L 26.0661,41.4556L 30.9337,56.9855L 27.1143,56.9855L 25.903,52.8055 Z M 21.9196,50.2801L 25.3905,50.2801L 24.4122,46.9804L 23.9987,45.4806L 23.6201,43.981L 23.5736,43.981L 23.2212,45.4941L 22.8514,47.0194L 21.9196,50.2801 Z "
+                  Fill="Black">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.36"  ScaleY="0.36"/>
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="addCategoryIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,16H10V14H2M18,14V10H16V14H12V16H16V20H18V16H22V14M14,6H2V8H14M14,10H2V12H14V10Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}" />
+        </Canvas>
+
+        <Canvas x:Key="editCategoryIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,6V8H14V6H2M2,10V12H14V10H2M20.04,10.13C19.9,10.13 19.76,10.19 19.65,10.3L18.65,11.3L20.7,13.35L21.7,12.35C21.92,12.14 21.92,11.79 21.7,11.58L20.42,10.3C20.31,10.19 20.18,10.13 20.04,10.13M18.07,11.88L12,17.94V20H14.06L20.12,13.93L18.07,11.88M2,14V16H10V14H2Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Canvas>
+
+        <Canvas x:Key="removeCategoryIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,6V8H14V6H2M2,10V12H11V10H2M14.17,10.76L12.76,12.17L15.59,15L12.76,17.83L14.17,19.24L17,16.41L19.83,19.24L21.24,17.83L18.41,15L21.24,12.17L19.83,10.76L17,13.59L14.17,10.76M2,14V16H11V14H2Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Canvas>
+
+        <Canvas x:Key="rekeyCategoryIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M6.5,2C8.46,2 10.13,3.25 10.74,5H22V8H18V11H15V8H10.74C10.13,9.75 8.46,11 6.5,11C4,11 2,9 2,6.5C2,4 4,2 6.5,2M6.5,5A1.5,1.5 0 0,0 5,6.5A1.5,1.5 0 0,0 6.5,8A1.5,1.5 0 0,0 8,6.5A1.5,1.5 0 0,0 6.5,5M6.5,13C8.46,13 10.13,14.25 10.74,16H22V19H20V22H18V19H16V22H13V19H10.74C10.13,20.75 8.46,22 6.5,22C4,22 2,20 2,17.5C2,15 4,13 6.5,13M6.5,16A1.5,1.5 0 0,0 5,17.5A1.5,1.5 0 0,0 6.5,19A1.5,1.5 0 0,0 8,17.5A1.5,1.5 0 0,0 6.5,16Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="historyCategoryIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="addKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,16H10V14H2M18,14V10H16V14H12V16H16V20H18V16H22V14M14,6H2V8H14M14,10H2V12H14V10Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}" />
+        </Canvas>
+
+        <Canvas x:Key="addSubKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M 9.157464 16 H 12 V 14 H 9.157464 M 20 14 v -4 h -2 v 4 h -4 v 2 h 4 v 4 h 2 v -4 h 4 V 14 M 16 8 H 2 V 6 h 14 m 0 4 H 9.157464 v 2 H 16 Z M 7.1574642 10.842535 2 16 h 5.1574642 z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="editKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,6V8H14V6H2M2,10V12H14V10H2M20.04,10.13C19.9,10.13 19.76,10.19 19.65,10.3L18.65,11.3L20.7,13.35L21.7,12.35C21.92,12.14 21.92,11.79 21.7,11.58L20.42,10.3C20.31,10.19 20.18,10.13 20.04,10.13M18.07,11.88L12,17.94V20H14.06L20.12,13.93L18.07,11.88M2,14V16H10V14H2Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Canvas>
+
+        <Canvas x:Key="duplicateKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="3" Canvas.Left="3"
+                  Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="removeKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="1" Canvas.Left="1"
+                  Data="M2,6V8H14V6H2M2,10V12H11V10H2M14.17,10.76L12.76,12.17L15.59,15L12.76,17.83L14.17,19.24L17,16.41L19.83,19.24L21.24,17.83L18.41,15L21.24,12.17L19.83,10.76L17,13.59L14.17,10.76M2,14V16H11V14H2Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}"/>
+        </Canvas>
+
+        <Canvas x:Key="rekeyKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M6.5,2C8.46,2 10.13,3.25 10.74,5H22V8H18V11H15V8H10.74C10.13,9.75 8.46,11 6.5,11C4,11 2,9 2,6.5C2,4 4,2 6.5,2M6.5,5A1.5,1.5 0 0,0 5,6.5A1.5,1.5 0 0,0 6.5,8A1.5,1.5 0 0,0 8,6.5A1.5,1.5 0 0,0 6.5,5M6.5,13C8.46,13 10.13,14.25 10.74,16H22V19H20V22H18V19H16V22H13V19H10.74C10.13,20.75 8.46,22 6.5,22C4,22 2,20 2,17.5C2,15 4,13 6.5,13M6.5,16A1.5,1.5 0 0,0 5,17.5A1.5,1.5 0 0,0 6.5,19A1.5,1.5 0 0,0 8,17.5A1.5,1.5 0 0,0 6.5,16Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="historyKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="findKeynoteIcon" Width="24" Height="24">
+            <Path Canvas.Top="2" Canvas.Left="2"
+                  Data="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.9" ScaleY="0.9" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Canvas x:Key="showKFileIcon" Width="24" Height="24">
+            <Path Canvas.Top="3" Canvas.Left="3"
+                  Data="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+                  Fill="{Binding Foreground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Button}}">
+                <Path.LayoutTransform>
+                    <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
+                </Path.LayoutTransform>
+            </Path>
+        </Canvas>
+
+        <Style x:Key="comboItemStyle" TargetType="ComboBoxItem">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding locked}" Value="True">
+                    <Setter Property="Foreground" Value="DarkGray" />
+                    <Setter Property="Background" Value="WhiteSmoke" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="treeItemStyle" TargetType="TreeViewItem">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding used}" Value="True">
+                    <Setter Property="FontWeight" Value="Medium" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding locked}" Value="True">
+                    <Setter Property="Background" Value="WhiteSmoke" />
+                </DataTrigger>
+            </Style.Triggers>
+            <Setter Property="IsExpanded" Value="True"/>
+        </Style>
+
+        <HierarchicalDataTemplate x:Key="treeViewItem" ItemsSource="{Binding children}">
+            <Grid Margin="0,2,0,2" Width="600" MaxWidth="600">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition MinWidth="30" Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Path=key}" Grid.Column="0" FontWeight="Medium"/>
+                <WrapPanel Grid.Column="1" >
+                    <TextBlock Text="{Binding Path=text}" Margin="10,0,0,0" Padding="0" TextWrapping="Wrap" />
+                    <Border x:Name="usedCount"
+                            Background="White" BorderBrush="LightGray" BorderThickness="1"
+                            Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="8,0,8,0" Visibility="Collapsed" ToolTip="{Binding Path=tooltip}">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="DimGray" FontSize="10">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}x">
+                                    <Binding Path="used_count"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                    <Border x:Name="ownerId" Background="Red" Height="16" CornerRadius="4" Margin="10,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="10">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat=" {0} is editing...">
+                                    <Binding Path="owner"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                </WrapPanel>
+            </Grid>
+            <HierarchicalDataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Path=locked}" Value="True">
+                    <Setter TargetName="ownerId" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=used}" Value="True">
+                    <Setter TargetName="usedCount" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </HierarchicalDataTemplate.Triggers>
+        </HierarchicalDataTemplate>
+
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="140"/>
+        </Grid.ColumnDefinitions>
+        <DockPanel Grid.Column="0" Margin="0,0,10,0">
+            <DockPanel DockPanel.Dock="Top">
+                <Button Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="0,0,10,0" Click="custom_filter"/>
+                <StackPanel>
+                    <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
+                             TextChanged="search_txt_changed" VerticalContentAlignment="Center"/>
+                    <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
+                            Width="22px" Height="22px" HorizontalAlignment="Right"
+                            BorderThickness="0"
+                            Style="{StaticResource ClearButton}"
+                            Click="clear_search">
+                        <Button.Content>
+                            <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Path Canvas.Top="3" Canvas.Left="1" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" Fill="DimGray" />
+                            </Canvas>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+            <ComboBox x:Name="categories_tv" DockPanel.Dock="Top" BorderBrush="LightGray" Height="25" Margin="0,10,0,0"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      ItemTemplate="{StaticResource treeViewItem}"
+                      ItemContainerStyle="{StaticResource comboItemStyle}"
+                      SelectionChanged="selected_category_changed"/>
+            <TreeView x:Name="keynotes_tv" Grid.Row="2" BorderBrush="LightGray" BorderThickness="1,0,1,1"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      Padding="0,0,0,0"
+                      PreviewMouseDoubleClick="place_keynote"
+                      SelectedItemChanged="selected_keynote_changed"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      ItemTemplate="{StaticResource treeViewItem}"
+                      ItemContainerStyle="{StaticResource treeItemStyle}"/>
+        </DockPanel>
+        <DockPanel Grid.Column="1" Margin="0,0,0,0">
+            <StackPanel DockPanel.Dock="Bottom">
+                <Button Content="Import Keynotes"
+                        Margin="0,15,0,0"
+                        Padding="8,4,8,4"
+                        ToolTip = "Import keynotes from Revit standard keynote file"
+                        Click="import_keynotes"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button Content="Export All"
+                            BorderThickness="1,1,0,1"
+                            Grid.Column="0"
+                            Margin="0,5,0,0"
+                            Padding="8,4,8,4"
+                            ToolTip = "Export keynotes to Revit standard keynote file"
+                            Click="export_keynotes"/>
+                    <Button Content="or Visible"
+                            BorderThickness="0,1,1,1"
+                            Grid.Column="1"
+                            Margin="0,5,0,0"
+                            Padding="8,4,8,4"
+                            ToolTip = "Export listed keynotes to Revit standard keynote file"
+                            Click="export_visible_keynotes"/>
+                </Grid>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <Grid Height="26">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="26"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Content="Refresh"
+                            Grid.Column="0"
+                            Padding="8,4,8,4"
+                            ToolTip="Reloads keynote file and updates keynotes per changes"
+                            Click="refresh"/>
+                    <Button Content="&#x25CF;&#x25CF;&#x25CF;"
+                            Grid.Column="1"
+                            Margin="5,0,5,0"
+                            Padding="0,4,0,4"
+                            ToolTip="Change keynote file."
+                            Click="change_keynote_file"/>
+                    <Button Content="{StaticResource showKFileIcon}"
+                            Grid.Column="2"
+                            ToolTip="Show keynote file."
+                            Click="show_keynote_file"/>
+                </Grid>
+                <Button Content="Update Model"
+                        Margin="0,10,0,0"
+                        Padding="8,4,8,4"
+                        ToolTip="Reloads keynote file and updates keynotes per changes"
+                        Click="update_model"/>
+            </StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                <StackPanel>
+                    <GroupBox Header="Categories" Margin="0,10,0,0" Padding="5">
+                        <Grid Height="74">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0"
+                                    Margin="0,0,2,0"
+                                    Content="{StaticResource addCategoryIcon}"
+                                    ToolTip="Add new keynote category"
+                                    Click="add_category"/>
+                            <Grid x:Name="catEditButtons" Grid.Column="1" IsEnabled="False">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions >
+                                    <RowDefinition />
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <Button Grid.Column="0" Grid.Row="0"
+                                        Margin="2,0,2,2"
+                                        Content="{StaticResource editCategoryIcon}"
+                                        ToolTip = "Edit selected category"
+                                        Click="edit_category"/>
+                                <Button Grid.Column="1"  Grid.Row="0"
+                                        Margin="2,0,0,2"
+                                        Content="{StaticResource removeCategoryIcon}"
+                                        ToolTip="Remove selected category"
+                                        Click="remove_category"/>
+                                <Button Grid.Column="0" Grid.Row="1"
+                                        IsEnabled="False"
+                                        Margin="2,2,2,0"
+                                        Content="{StaticResource rekeyCategoryIcon}"
+                                        ToolTip="Change key for selected category"
+                                        Click="rekey_category"/>
+                                <Button Grid.Column="1" Grid.Row="1"
+                                        IsEnabled="False"
+                                        Content="{StaticResource historyCategoryIcon}"
+                                        Margin="2,2,0,0"
+                                        ToolTip="Show category change history"
+                                        Click="show_category_history"/>
+                            </Grid>
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Header="Keynotes" Margin="0,10,0,0" Padding="5">
+                        <StackPanel IsEnabled="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="2*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions >
+                                    <RowDefinition Height="78" />
+                                    <RowDefinition Height="78" />
+                                </Grid.RowDefinitions>
+                                <Button x:Name="keynoteAdd" Grid.Column="0" Grid.Row="0"
+                                        Margin="0,0,2,2"
+                                        Content="{StaticResource addKeynoteIcon}"
+                                        ToolTip="Add a new keynote"
+                                        Click="add_keynote"/>
+                                <Grid x:Name="keynoteEditButtons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                                      Height="156"
+                                      IsEnabled="False">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions >
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+                                    <Button Grid.Column="0" Grid.Row="0"
+                                            Margin="2,0,2,2"
+                                            Content="{StaticResource editKeynoteIcon}"
+                                            ToolTip = "Edit selected keynote"
+                                            Click="edit_keynote"/>
+                                    <Button Grid.Column="1"  Grid.Row="0"
+                                            Margin="2,0,0,2"
+                                            Content="{StaticResource removeKeynoteIcon}"
+                                            ToolTip="Remove selected keynote"
+                                            Click="remove_keynote"/>
+                                    <Button x:Name="subkeynoteAdd" Grid.Column="0"  Grid.Row="1"
+                                            Margin="2,2,2,2"
+                                            Content="{StaticResource addSubKeynoteIcon}"
+                                            ToolTip="Add a new keynote as a child to the selected keynote"
+                                            Click="add_sub_keynote"/>
+                                    <Button Grid.Column="1"  Grid.Row="1"
+                                            Margin="2,2,0,2"
+                                            Content="{StaticResource duplicateKeynoteIcon}"
+                                            ToolTip="Duplicte selected keynote"
+                                            Click="duplicate_keynote"/>
+                                    <Button Grid.Column="0"  Grid.Row="2"
+                                            IsEnabled="False"
+                                            Margin="2,2,2,2"
+                                            Content="{StaticResource rekeyKeynoteIcon}"
+                                            ToolTip="Change key of selected keynote"
+                                            Click="rekey_keynote"/>
+                                    <Button Grid.Column="1"  Grid.Row="2"
+                                            IsEnabled="False"
+                                            Margin="2,2,0,2"
+                                            Content="{StaticResource historyKeynoteIcon}"
+                                            ToolTip="Show keynote change history"
+                                            Click="show_keynote_history"/>
+                                    <Button Grid.Column="0" Grid.Row="3"
+                                            Margin="2,2,2,0"
+                                            Content="{StaticResource findKeynoteIcon}"
+                                            ToolTip="Find instances of selected keynote"
+                                            Click="show_keynote"/>
+                                    <Border Grid.Column="1" Grid.Row="3"
+                                            Margin="2,2,0,0"
+                                            BorderThickness="1" BorderBrush="LightGray" />
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Keynote Tags" Margin="0,10,0,0" Padding="5">
+                        <StackPanel>
+                            <RadioButton x:Name="userknote_rb" Content="User Keynotes" Margin="0,0,0,5"/>
+                            <RadioButton x:Name="elementknote_rb" Content="Element Keynotes" Margin="0,0,0,5"/>
+                            <RadioButton x:Name="materialknote_rb" Content="Material Keynotes" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Header="Keynotes History" Margin="0,10,0,0" Padding="5">
+                        <StackPanel >
+                            <Button Content="Enable History"
+                                    IsEnabled="False"
+                                    Margin="0,5,0,0"
+                                    Padding="8,4,8,4"
+                                    ToolTip="Enable history tracking on keynotes."
+                                    Click="enable_history"/>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</Window>

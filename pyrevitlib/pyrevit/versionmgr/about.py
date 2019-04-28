@@ -8,6 +8,6 @@ PyRevitAbout = namedtuple('PyRevitAbout', ['subtitle',
 
 
 def get_pyrevit_about():
-    return PyRevitAbout(subtitle='python tools for Autodesk Revit®',
+    return PyRevitAbout(subtitle='python RAD Environment for Autodesk Revit®',
                         madein="['pdx', 'hio', 'rno']",
-                        copyright='© 2014-2018 Ehsan Iran-Nejad')
+                        copyright='© 2014-2019 Ehsan Iran-Nejad')

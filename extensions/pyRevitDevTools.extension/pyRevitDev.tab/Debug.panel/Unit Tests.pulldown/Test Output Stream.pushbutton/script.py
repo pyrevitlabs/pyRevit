@@ -2,6 +2,7 @@
 from pyrevit import DB
 from pyrevit import script
 
+from pyrevit.coreutils.loadertypes import ScriptOutputEmojis
 
 __context__ = 'zerodoc'
 
@@ -24,6 +25,13 @@ output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'
       .format(output.linkify(DB.ElementId(1557))))
 
+output.print_md('**Testing emojify:**')
+emoji_str = ''
+for e in ScriptOutputEmojis.emojiDict.Keys:
+    emoji_str += ' :{}:'.format(e)
+
+print(emoji_str)
+
 output.print_md('**Testing code block:**')
 output.print_code("""
 #include <iostream>
@@ -44,4 +52,30 @@ output.print_table([[1, 2, 3],
                    title='Test Table')
 
 
+data = [['结构', '结构', '结构结构', 80],
+        ['结构', '结构', '结构', 45],
+        ['row3', 'data', 'data', 45],
+        ['结构结构', 'data', '结构', 45]]
+
+output.print_table(table_data=data,
+                   title="Example Table",
+                   columns=["Row Name", "Column 1", "Column 2", "Percentage"],
+                   formats=['', '', '', '{}%'],
+                   last_line_style='color:red;')
+
 output.update_progress(50, 100)
+output.hide_progress()
+output.unhide_progress()
+
+
+output.print_md('**Testing output freeze:**')
+output.freeze()
+
+for i in range(5000):
+    print(i)
+
+output.unfreeze()
+
+output.debug_mode = True
+
+raise Exception('Testing long error reports...')

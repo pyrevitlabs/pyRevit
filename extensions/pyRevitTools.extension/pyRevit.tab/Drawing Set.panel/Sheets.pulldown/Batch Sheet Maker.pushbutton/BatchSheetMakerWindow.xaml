@@ -1,13 +1,17 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="False"
-        Width="600" Height="450" ResizeMode="CanResizeWithGrip"
+        Width="600" Height="500" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
-        HorizontalContentAlignment="Center">
+        HorizontalContentAlignment="Center"
+		Title="Batch Sheet Maker">
         <DockPanel Margin="10">
             <TextBlock DockPanel.Dock="Top">
                 Enter list of sheet number and names in this format:<LineBreak />
-                %sheet-number  %tab  %sheet-name (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)
+                <Bold>sheet-number</Bold>  TAB  <Bold>sheet-name</Bold> (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)<LineBreak />
+                Multiple sheet with indentical names could be listed with sheet number ranges:<LineBreak />
+                <Bold>Range of Sheet Numbers:</Bold>   e.g. A103--A106 or A103::A106<LineBreak />
+                <Bold>List of Sheet Numbers:</Bold>   e.g. A104,A105 or A104;A105
             </TextBlock>
             <StackPanel DockPanel.Dock="Bottom">
                 <WrapPanel>
@@ -24,6 +28,7 @@
                      </RadioButton>
                 </WrapPanel>
                 <Button Content="Create" Margin="0,10,0,0"
+                        Height="24"
                         Click="create_sheets"/>
             </StackPanel>
             <TextBox x:Name="sheets_tb"

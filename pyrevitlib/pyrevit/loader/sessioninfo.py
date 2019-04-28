@@ -1,11 +1,12 @@
+"""Session info."""
 import sys
-import uuid
 
-from pyrevit import PYREVIT_ADDON_NAME, HOST_APP, HOME_DIR
+from pyrevit import HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
+from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
-from pyrevit.coreutils import DEFAULT_SEPARATOR
+from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
@@ -14,7 +15,8 @@ from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
@@ -31,7 +33,7 @@ def get_session_uuid():
 
 
 def new_session_uuid():
-    uuid_str = unicode(uuid.uuid1())
+    uuid_str = safe_strtype(coreutils.new_uuid())
     set_session_uuid(uuid_str)
     return uuid_str
 
@@ -70,14 +72,16 @@ def set_total_loaded_assm_count(assm_count):
 def get_loaded_pyrevit_assemblies():
     loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
-        return loaded_assms_str.split(DEFAULT_SEPARATOR)
+        return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)
     else:
         return []
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
-    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR,
-                        DEFAULT_SEPARATOR.join(loaded_assm_name_list))
+    envvars.set_pyrevit_env_var(
+        PYREVIT_LOADEDASSMS_ENVVAR,
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
+        )
 
     set_total_loaded_assm_count(get_total_loaded_assm_count()
                                 + len(loaded_assm_name_list))
@@ -90,16 +94,23 @@ def report_env():
 
     system_diag()
 
-    logger.info('pyRevit version: {} - '
-                ':coded: with :small-black-heart: '
-                'in {}'.format(pyrvt_ver, about.get_pyrevit_about().madein))
+    mlogger.info('pyRevit version: %s - </> with :growing_heart: in %s',
+                 pyrvt_ver, about.get_pyrevit_about().madein)
     if user_config.core.get_option('rocketmode', False):
-        logger.info('pyRevit Rocket Mode enabled. :rocket:')
-    logger.info('Host is {} (build: {} id: {})'.format(HOST_APP.version_name,
-                                                       HOST_APP.build,
-                                                       HOST_APP.proc_id))
-    logger.info('Running on: {}'.format(sys.version))
-    logger.info('Home Directory is: {}'.format(HOME_DIR))
-    logger.info('Session uuid is: {}'.format(get_session_uuid()))
-    logger.info('Base assembly is: {}'.format(BASE_TYPES_ASM_NAME))
-    logger.info('Config file is: {}'.format(user_config.config_file))
+        mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
+
+    if HOST_APP.is_newer_than(2017):
+        full_host_name = \
+            HOST_APP.version_name.replace(HOST_APP.version,
+                                          HOST_APP.subversion)
+    else:
+        full_host_name = HOST_APP.version_name
+    mlogger.info('Host is %s (build: %s id: %s)',
+                 full_host_name, HOST_APP.build, HOST_APP.proc_id)
+    mlogger.info('Running on: %s', sys.version)
+    mlogger.info('User is: %s', HOST_APP.username)
+    mlogger.info('Home Directory is: %s', HOME_DIR)
+    mlogger.info('Session uuid is: %s', get_session_uuid())
+    mlogger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
+    mlogger.info('Config file is (%s): %s',
+                 user_config.config_type, user_config.config_file)

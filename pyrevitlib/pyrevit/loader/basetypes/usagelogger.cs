@@ -24,8 +24,9 @@ namespace PyRevitBaseClasses
         public string commandextension { get; set; }
         public string commanduniquename { get; set; }
         public int resultcode { get; set; }
-        public Dictionary<String, String> commandresults { get; set; }
+        public Dictionary<string, string> commandresults { get; set; }
         public string scriptpath { get; set; }
+        public Dictionary<string, object> trace { get; set; }
 
         public LogEntry()
         {
@@ -36,7 +37,7 @@ namespace PyRevitBaseClasses
                         string pyRevitVersion,
                         bool debugModeEnabled, bool alternateModeEnabled,
                         string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName, string pyRevitCommandPath,
-                        int executorResultCode, Dictionary<String, String> resultDict)
+                        int executorResultCode, Dictionary<string, string> resultDict, string engineVesion, List<string> enginePaths, string ipyTrace, string clrTrace)
         {
             username = revitUsername;
             revit = revitVersion;
@@ -52,6 +53,14 @@ namespace PyRevitBaseClasses
             scriptpath = pyRevitCommandPath;
             resultcode = executorResultCode;
             commandresults = resultDict;
+            trace = new Dictionary<string, object>() {
+                { "engine", new Dictionary<string, object>(){
+                    { "version",  engineVesion},
+                    { "syspath", enginePaths},
+                } },
+                { "ipy" , ipyTrace},
+                { "clr", clrTrace }
+            };
         }
 
         public void TimeStamp()
@@ -75,9 +84,9 @@ namespace PyRevitBaseClasses
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(_usageLogServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
+            httpWebRequest.UserAgent = "pyrevit";
 
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-            {
+            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
                 string json = MakeJSONLogEntry(logEntry);
 
                 streamWriter.Write(json);
@@ -86,8 +95,7 @@ namespace PyRevitBaseClasses
             }
 
             var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream())) {
                 var result = streamReader.ReadToEnd();
             }
         }
@@ -98,11 +106,11 @@ namespace PyRevitBaseClasses
             string jsonData = "[]";
             if (File.Exists(_usageLogFilePath))
             {
-                jsonData = System.IO.File.ReadAllText(_usageLogFilePath);
+                jsonData = File.ReadAllText(_usageLogFilePath);
             }
             else
             {
-                System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
+                File.WriteAllText(_usageLogFilePath, jsonData);
             }
 
             // De-serialize to object or create new list
@@ -114,7 +122,7 @@ namespace PyRevitBaseClasses
 
             // Update json data string
             jsonData = new JavaScriptSerializer().Serialize(logData);
-            System.IO.File.WriteAllText(_usageLogFilePath, jsonData);
+            File.WriteAllText(_usageLogFilePath, jsonData);
         }
 
         public static void LogUsage(LogEntry logEntry)
@@ -123,10 +131,10 @@ namespace PyRevitBaseClasses
 
             if (envDict.usageLogState)
             {
-                if (envDict.usageLogState && envDict.usageLogServerUrl != null && !String.IsNullOrEmpty(envDict.usageLogServerUrl))
+                if (envDict.usageLogState && envDict.usageLogServerUrl != null && !string.IsNullOrEmpty(envDict.usageLogServerUrl))
                     new Task(() => PostUsageLogToServer(envDict.usageLogServerUrl, logEntry)).Start();
 
-                if (envDict.usageLogState && envDict.usageLogFilePath != null && !String.IsNullOrEmpty(envDict.usageLogFilePath))
+                if (envDict.usageLogState && envDict.usageLogFilePath != null && !string.IsNullOrEmpty(envDict.usageLogFilePath))
                     new Task(() => WriteUsageLogToFile(envDict.usageLogFilePath, logEntry)).Start();
             }
         }

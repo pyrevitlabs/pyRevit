@@ -38,7 +38,6 @@ print('SEARCHING...\n')
 for revcloud in revclouds:
     # get revision info
     revid = revcloud.RevisionId.IntegerValue
-    revnum = revit.doc.GetElement(DB.ElementId(revid)).RevisionNumber
 
     # get parent view
     parentvpid = revcloud.OwnerViewId
@@ -65,16 +64,13 @@ for sheetid, revids in sheetrevs.items():
             atleastonecrazysheetwasfound = True
     if len(missedrevids) > 0:
         print('SHEET:  {0}\t{1}\nDOES NOT LIST THESE REVISIONS:\n'
-              .format(sheet.LookupParameter('Sheet Number').AsString(),
-                      sheet.LookupParameter('Sheet Name').AsString()))
+              .format(sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
+                      sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()))
 
         for revid in missedrevids:
             if revid not in listedrevids:
                 rev = revit.doc.GetElement(DB.ElementId(revid))
-                print('\tREV#: {0}\t\tDATE: {1}\t\tDESC:{2}'
-                      .format(rev.RevisionNumber,
-                              rev.RevisionDate,
-                              rev.Description))
+                revit.report.print_revision(rev, prefix='\t', print_id=False)
 
 if atleastonecrazysheetwasfound:
     print('\nSEARCH COMPLETED.')

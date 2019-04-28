@@ -1,18 +1,20 @@
+"""Prepare and compile python script types."""
 from pyrevit.coreutils import create_type, create_ext_command_attrs, \
                               join_strings
 from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
-    CMD_AVAIL_TYPE_CATEGORY
+    CMD_AVAIL_TYPE_EXTENDED
 
 from pyrevit.userconfig import user_config
 
 import pyrevit.extensions as exts
-import pyrevit.plugins.extpackages as extpkgs
+import pyrevit.extensions.extpackages as extpkgs
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def _is_rocketmode_compat(ext_name):
@@ -25,13 +27,12 @@ def _is_rocketmode_compat(ext_name):
     try:
         ext_pkg = extpkgs.get_ext_package_by_name(ext_name)
         if ext_pkg:
-            return ext_pkg.rocket_mode
+            return ext_pkg.rocket_mode_compatible
         else:
-            logger.debug('Extension package is not defined: {}'
-                         .format(ext_name))
+            mlogger.debug('Extension package is not defined: %s', ext_name)
     except Exception as ext_check_err:
-        logger.error('Error checking rocket-mode compatibility '
-                     'for extension: {} | {}'.format(ext_name, ext_check_err))
+        mlogger.error('Error checking rocket-mode compatibility '
+                      'for extension: %s | %s', ext_name, ext_check_err)
 
     # assume not-compatible if not set
     return False
@@ -55,12 +56,12 @@ def _make_python_avail_type(module_builder, cmd_component):
                     cmd_component.unique_avail_name, [],
                     cmd_component.cmd_context)
 
-    elif context_str == exts.CTX_ZERODOC:
+    elif context_str in exts.CTX_ZERODOC:
         create_type(module_builder, CMD_AVAIL_TYPE,
                     cmd_component.unique_avail_name, [])
 
     else:
-        create_type(module_builder, CMD_AVAIL_TYPE_CATEGORY,
+        create_type(module_builder, CMD_AVAIL_TYPE_EXTENDED,
                     cmd_component.unique_avail_name, [],
                     cmd_component.cmd_context)
 
@@ -77,7 +78,7 @@ def _make_python_types(extension, module_builder, cmd_component):
     Returns:
 
     """
-    logger.debug('Creating executor type for: {}'.format(cmd_component))
+    mlogger.debug('Creating executor type for: %s', cmd_component)
 
     # by default, core uses a clean engine for each command execution
     use_clean_engine = True
@@ -86,16 +87,15 @@ def _make_python_types(extension, module_builder, cmd_component):
     #   AND extension is rocket-mode compatible
     #       AND the command is not asking for a clean engine
     if user_config.core.get_option('rocketmode', False) \
-        and _is_rocketmode_compat(extension.name) \
+            and _is_rocketmode_compat(extension.name) \
             and not cmd_component.requires_clean_engine:
-                use_clean_engine = False
+        use_clean_engine = False
 
-    logger.debug('{} uses clean engine: {}'.format(cmd_component.name,
-                                                   use_clean_engine))
+    mlogger.debug('%s uses clean engine: %s',
+                  cmd_component.name, use_clean_engine)
 
-    logger.debug('{} requires Fullframe engine: {}'
-                 .format(cmd_component.name,
-                         cmd_component.requires_fullframe_engine))
+    mlogger.debug('%s requires Fullframe engine: %s',
+                  cmd_component.name, cmd_component.requires_fullframe_engine)
 
     create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
                 create_ext_command_attrs(),
@@ -110,23 +110,21 @@ def _make_python_types(extension, module_builder, cmd_component):
                 int(use_clean_engine),
                 int(cmd_component.requires_fullframe_engine))
 
-    logger.debug('Successfully created executor type for: {}'
-                 .format(cmd_component))
+    mlogger.debug('Successfully created executor type for: %s', cmd_component)
     cmd_component.class_name = cmd_component.unique_name
 
     # create command availability class for this command
     if cmd_component.cmd_context:
         try:
-            logger.debug('Creating availability type for: {}'
-                         .format(cmd_component))
+            mlogger.debug('Creating availability type for: %s', cmd_component)
             cmd_component.avail_class_name = \
                 _make_python_avail_type(module_builder, cmd_component)
-            logger.debug('Successfully created availability type for: {}'
-                         .format(cmd_component))
+            mlogger.debug('Successfully created availability type for: %s',
+                          cmd_component)
         except Exception as cmd_avail_err:
             cmd_component.avail_class_name = None
-            logger.error('Error creating availability type: {} | {}'
-                         .format(cmd_component, cmd_avail_err))
+            mlogger.error('Error creating availability type: %s | %s',
+                          cmd_component, cmd_avail_err)
 
 
 def create_python_types(extension, cmd_component, module_builder=None):

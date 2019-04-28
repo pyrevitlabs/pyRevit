@@ -1,0 +1,5 @@
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+    <Border Background="{Binding hex_color}" VerticalAlignment="Center">
+        <TextBlock Text="{Binding name}" Foreground="{Binding safe_text_color}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+    </Border>
+</ControlTemplate>

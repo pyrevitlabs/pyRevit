@@ -1,9 +1,9 @@
 from collections import namedtuple
-from customcollections import DefaultOrderedDict
 
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.coreutils import pyutils
 
 
 __context__ = 'selection'
@@ -11,7 +11,7 @@ __doc__ = 'Sums up the values of selected parameter on selected elements. ' \
           'This tool studies the selected elements and their associated '   \
           'types and presents the user with a list of parameters that are ' \
           'shared between the selected elements. Only parameters with '     \
-          'Double or Interger values are included.'
+          'Double or Integer values are included.'
 
 __title__ = 'Sum Total'
 
@@ -138,7 +138,7 @@ def process_options(element_list):
 
 
 def process_sets(element_list):
-    el_sets = DefaultOrderedDict(list)
+    el_sets = pyutils.DefaultOrderedDict(list)
 
     # add all elements as first set, for totals of all elements
     el_sets['All Selected Elements'].extend(element_list)
@@ -149,8 +149,8 @@ def process_sets(element_list):
             el_sets[el.LineStyle.Name].append(el)
         else:
             eltype = revit.doc.GetElement(el.GetTypeId())
-            wrapped_eltype = revit.ElementWrapper(eltype)
-            el_sets[wrapped_eltype.name].append(el)
+            if eltype:
+                el_sets[revit.query.get_name(eltype)].append(el)
 
     return el_sets
 

@@ -5,7 +5,6 @@ using Microsoft.Scripting.Hosting;
 using IronPython.Runtime.Exceptions;
 using IronPython.Compiler;
 
-
 namespace PyRevitBaseClasses
 {
     /// Executes a script
@@ -29,13 +28,13 @@ namespace PyRevitBaseClasses
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Create the script from source file
-            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, System.Text.Encoding.UTF8, SourceCodeKind.Statements);
+            var script = engine.CreateScriptSourceFromFile(pyrvtCmd.ScriptSourceFile, System.Text.Encoding.UTF8, SourceCodeKind.File);
 
             // 4: ---------------------------------------------------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
             var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
-            compiler_options.ModuleName = pyrvtCmd.CommandUniqueId;
+            compiler_options.ModuleName = "__main__";
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
             var errors = new ErrorReporter();
@@ -52,7 +51,7 @@ namespace PyRevitBaseClasses
             // Finally let's execute
             try
             {
-                script.Execute(scope);
+                command.Execute(scope);
                 return ExecutionErrorCodes.Succeeded;
             }
             catch (SystemExitException)
@@ -70,7 +69,11 @@ namespace PyRevitBaseClasses
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
                 _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                pyrvtCmd.IronPythonTraceBack = _ipy_err_messages;
+
                 _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+                pyrvtCmd.ClrTraceBack = _dotnet_err_message;
+
                 _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
                 _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
@@ -78,10 +81,10 @@ namespace PyRevitBaseClasses
                 return ExecutionErrorCodes.ExecutionException;
             }
             finally
-            {
+            {   
                 // clean the scope unless the script is requesting clean engine
                 // this is a temporary convention to allow users to keep global references in the scope
-                if(!pyrvtCmd.NeedsCleanEngine)
+                if (!pyrvtCmd.NeedsCleanEngine)
                     CleanupScope(engine, scope);
 
                 engineMgr.CleanupEngine(engine);
@@ -89,13 +92,9 @@ namespace PyRevitBaseClasses
         }
 
 
-        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd, string moduleName="__main__")
+        public ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd)
         {
-            var scope = IronPython.Hosting.Python.CreateModule(engine, moduleName);
-
-            SetupScope(scope, ref pyrvtCmd);
-
-            return scope;
+            return engine.CreateScope();
         }
 
 
@@ -107,20 +106,11 @@ namespace PyRevitBaseClasses
             script.Compile();
             script.Execute(scope);
         }
-
-
-        public void SetupScope(ScriptScope scope, ref PyRevitCommandRuntime pyrvtCmd)
-        {
-            // SCOPE --------------------------------------------------------------------------------------------------
-            // Add command info to builtins
-            scope.SetVariable("__file__", pyrvtCmd.ScriptSourceFile);
-        }
-
     }
 
     public class ErrorReporter : ErrorListener
     {
-        public List<String> Errors = new List<string>();
+        public List<string> Errors = new List<string>();
 
         public override void ErrorReported(ScriptSource source, string message,
                                            SourceSpan span, int errorCode, Severity severity)

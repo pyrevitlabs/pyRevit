@@ -2,49 +2,23 @@
 extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
+!extensions/pyRevitTemplates.extension/
+!extensions/pyRevitTags.extension/
 !extensions/pyRevitTools.extension/
 !extensions/pyRevitTutor.extension/
 !extensions/extensions.json
 !extensions/README.md
 
-# ignore third-party lib folder
-lib/*
-!lib/README.md
-!lib/enum
-!lib/customcollections
-!lib/requests
-!lib/urllib3
-
-# ignore pyCharm workspace settings
-.idea/workspace.xml
-
 # ignore visual studio files
-.vs\*
-obj\*
-pyrevitlib/pyrevit/loader/addin/277/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/277/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/addin/272/Source/\.vs/
-pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/bin/
-pyrevitlib/pyrevit/loader/addin/272/Source/pyRevitLoader/obj/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/\.vs/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/bin/
-pyrevitlib/pyrevit/loader/basetypes/pyRevitBaseTypes/pyRevitBaseTypes/obj/
+**/.vs
+**/.suo
+**/obj
+**/packages
+**/dev/**/bin
 
 # ignore sphinx build files
 docs/_*
 !docs/_static
-
-# ignore release files
-release/*.exe
-release/setupmaker/output/*
-
-# ignore uninstaller files that will be copied to this folder at installation
-unins*.dat
-unins*.exe
-
-# ignore Goodsync cache folder
-_gsdata_/
 
 # ignore standard python and os temp files
 __py*
@@ -53,3 +27,12 @@ __py*
 
 # ignore sphinx files
 *.pyc
+
+# ignore local config file
+*.ini
+
+# Release files
+release/pyRevit-cache
+release/pyRevit-SetupFiles
+release/pyRevit\ CLI-cache
+release/pyRevit\ CLI-SetupFiles

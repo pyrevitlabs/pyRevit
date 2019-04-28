@@ -31,11 +31,9 @@ def deleteallinstances(family):
         revit.doc.Delete(elid)
 
 
-res = forms.alert('All instances of the selected families '
-                  'will be removed for this conversion. '
-                  'Are you ready to proceed?', cancel=True, yes=True)
-
-if res == UI.TaskDialogResult.Yes:
+if forms.alert('All instances of the selected families '
+               'will be removed for this conversion. '
+               'Are you ready to proceed?', cancel=True, yes=True):
     for el in revit.get_selection():
         fam = el.Symbol.Family
         famid = el.Symbol.Family.Id

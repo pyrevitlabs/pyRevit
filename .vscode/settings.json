@@ -1,0 +1,9 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": ["--max-line-length=80"],
+    "python.linting.pep8Enabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.pylamaEnabled": false,
+    "restructuredtext.confPath": "${workspaceFolder}/docs",
+}

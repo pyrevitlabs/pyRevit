@@ -1,5 +1,5 @@
-from pyrevit import framework
-from pyrevit import revit, DB
+#pylint: disable=E0401,C0103,C0111
+from pyrevit import revit
 from pyrevit import forms
 
 
@@ -9,51 +9,27 @@ __doc__ = 'Select a revision from the list of revisions and this script '\
           'the default print set.'
 
 
-def createsheetset(revision_element):
-    # get printed printmanager
-    printmanager = revit.doc.PrintManager
-    printmanager.PrintRange = DB.PrintRange.Select
-    viewsheetsetting = printmanager.ViewSheetSetting
+revisions = forms.select_revisions(button_name='Create Sheet Set',
+                                   multiple=True)
+if revisions:
+    selected_switch = \
+        forms.CommandSwitchWindow.show(['Matching ANY revision',
+                                        'Matching ALL revisions'],
+                                       message='Pick an option:')
+    if selected_switch:
+        match_any = (selected_switch == 'Matching ANY revision')
+        with revit.Transaction('Create Revision Sheet Set'):
+            rev_sheetset = \
+                revit.create.create_revision_sheetset(revisions,
+                                                      match_any=match_any)
 
-    # collect data
-    sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
-                        .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-                        .WhereElementIsNotElementType()\
-                        .ToElements()
+        empty_sheets = []
+        for sheet in rev_sheetset:
+            if revit.query.is_sheet_empty(sheet):
+                empty_sheets.append(sheet)
 
-    sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
-    viewsheetsets = DB.FilteredElementCollector(revit.doc)\
-                      .OfClass(framework.get_type(DB.ViewSheetSet))\
-                      .WhereElementIsNotElementType()\
-                      .ToElements()
-
-    allviewsheetsets = {vss.Name: vss for vss in viewsheetsets}
-    revnum = revision_element.SequenceNumber
-    if hasattr(revision_element, 'RevisionNumber'):
-        revnum = revision_element.RevisionNumber
-    sheetsetname = 'Rev {0}: {1}'.format(revnum,
-                                         revision_element.Description)
-
-    with revit.Transaction('Create Revision Sheet Set'):
-        if sheetsetname in allviewsheetsets.keys():
-            viewsheetsetting.CurrentViewSheetSet = \
-                allviewsheetsets[sheetsetname]
-            viewsheetsetting.Delete()
-
-        # find revised sheets
-        myviewset = DB.ViewSet()
-        for sheet in sheets:
-            revs = sheet.GetAllRevisionIds()
-            revids = [x.IntegerValue for x in revs]
-            if revision_element.Id.IntegerValue in revids:
-                myviewset.Insert(sheet)
-
-        # create new sheet set
-        viewsheetsetting.CurrentViewSheetSet.Views = myviewset
-        viewsheetsetting.SaveAs(sheetsetname)
-
-
-revision = forms.select_revisions(button_name='Create Sheet Set',
-                                  multiselect=False)
-if revision:
-    createsheetset(revision)
+        if empty_sheets:
+            print('These sheets do not have any contents and seem to be '
+                  'placeholders for other content:')
+            for esheet in empty_sheets:
+                revit.report.print_sheet(esheet)

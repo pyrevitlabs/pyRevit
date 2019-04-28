@@ -1,10 +1,12 @@
+"""Base module for compiling dotnet sources to bytecode."""
 from pyrevit import PyRevitException
+from pyrevit.compat import safe_strtype
 from pyrevit.framework import Array, Dictionary
 from pyrevit.framework import Compiler, CSharpCodeProvider
 from pyrevit.coreutils.logger import get_logger
 
 
-logger = get_logger(__name__)
+mlogger = get_logger(__name__)   #pylint: disable=C0103
 
 
 def _compile_dotnet(code_provider,
@@ -13,9 +15,8 @@ def _compile_dotnet(code_provider,
                     reference_list=None,
                     resource_list=None,
                     ):
-
-    logger.debug('Compiling source files to: {}'.format(full_output_file_addr))
-    logger.debug('References assemblies are: {}'.format(reference_list))
+    mlogger.debug('Compiling source files to: %s', full_output_file_addr)
+    mlogger.debug('References assemblies are: %s', reference_list)
 
     compiler_params = Compiler.CompilerParameters()
 
@@ -30,37 +31,52 @@ def _compile_dotnet(code_provider,
     compiler_params.CompilerOptions = "/optimize"
 
     for reference in reference_list or []:
-        logger.debug('Adding reference to compiler: {}'.format(reference))
+        mlogger.debug('Adding reference to compiler: %s', reference)
         compiler_params.ReferencedAssemblies.Add(reference)
 
     for resource in resource_list or []:
-        logger.debug('Adding resource to compiler: {}'.format(resource))
+        mlogger.debug('Adding resource to compiler: %s', resource)
         compiler_params.EmbeddedResources.Add(resource)
 
-    logger.debug('Compiling source files.')
+    mlogger.debug('Compiling source files.')
     compiler = \
         code_provider.CompileAssemblyFromFile(compiler_params,
                                               Array[str](sourcefiles_list))
 
     if compiler.Errors.HasErrors:
-        err_list = [unicode(err) for err in compiler.Errors.GetEnumerator()]
+        err_list = \
+            [safe_strtype(err) for err in compiler.Errors.GetEnumerator()]
         err_str = '\n'.join(err_list)
         raise PyRevitException("Compile error: {}".format(err_str))
 
     if full_output_file_addr is None:
-        logger.debug('Compile to memory successful: {}'
-                     .format(compiler.CompiledAssembly))
+        mlogger.debug('Compile to memory successful: %s',
+                      compiler.CompiledAssembly)
         return compiler.CompiledAssembly
     else:
-        logger.debug('Compile successful: {}'.format(compiler.PathToAssembly))
+        mlogger.debug('Compile successful: %s', compiler.PathToAssembly)
         return compiler.PathToAssembly
 
 
 def compile_csharp(sourcefiles_list,
                    full_output_file_addr=None,
                    reference_list=None, resource_list=None):
+    """Compile list of c-sharp source files to assembly.
 
-    logger.debug('Getting csharp provider.')
+    if full_output_file_addr is provided, the generated dll will be written
+    to that file, otherwise the assembly will be generated in memory.
+
+    Args:
+        sourcefiles_list (list[str]): list of source c-sharp files
+        full_output_file_addr (str): full path of output dll
+        reference_list (list[str]): list of reference assemblies
+        resource_list (list[str]): list of resources to be included
+    
+    Returns:
+        str or System.Reflection.Assembly:
+            path to assembly if dll path provided, otherwise generated assembly
+    """
+    mlogger.debug('Getting csharp provider.')
 
     cleanedup_source_list = \
         [src.replace('\\', '\\\\') for src in sourcefiles_list]

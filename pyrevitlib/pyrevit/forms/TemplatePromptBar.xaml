@@ -1,0 +1,10 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		WindowStyle="None" Background="{x:Null}"
+		ShowInTaskbar="False" ShowActivated="False"
+		WindowStartupLocation="Manual"
+		ResizeMode="NoResize"
+		ScrollViewer.VerticalScrollBarVisibility="Disabled">
+	<Grid>
+	</Grid>
+</Window>

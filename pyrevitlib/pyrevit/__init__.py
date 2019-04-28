@@ -1,16 +1,29 @@
-"""pyRevit root level config for all pyrevit sub-modules."""
+"""pyRevit root level config for all pyrevit sub-modules.
 
-import clr
+Examples:
+    >>> from pyrevit import DB, UI
+    >>> from pyrevit import PyRevitException, PyRevitIOError
+
+    >>> # pyrevit module has global instance of the
+    >>> # _HostAppPostableCommand and _ExecutorParams classes already created
+    >>> # import and use them like below
+    >>> from pyrevit import HOST_APP
+    >>> from pyrevit import EXEC_PARAMS
+"""
+#pylint: disable=W0703,C0302,C0103,C0413
 import sys
 import os
 import os.path as op
 from collections import namedtuple
 import traceback
+import re
+
+import clr  #pylint: disable=E0401
 
 
 try:
     clr.AddReference('PyRevitLoader')
-except Exception as e:
+except Exception:
     # probably older IronPython engine not being able to
     # resolve to an already loaded assembly.
     # PyRevitLoader is executing this script so it should be referabe.
@@ -25,9 +38,15 @@ except ImportError:
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
-VERSION_MAJOR = 4
-VERSION_MINOR = 5
-BUILD_METADATA = ''
+
+# extract version from version file
+VERSION_STRING = '0.0.'
+with open(op.join(op.dirname(__file__), 'version'), 'r') as version_file:
+    VERSION_STRING = version_file.read()
+VERSION_MAJOR, VERSION_MINOR, BUILD_METADATA = \
+    re.findall(r'(\d+).(\d+)(.+)', VERSION_STRING)[0]
+VERSION_MAJOR = int(VERSION_MAJOR)
+VERSION_MINOR = int(VERSION_MINOR)
 
 # -----------------------------------------------------------------------------
 # config environment paths
@@ -39,44 +58,45 @@ try:
 except NameError:
     raise Exception('Critical Error. Can not find home directory.')
 
-# default extensions directory
-EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
+# BIN directory
+BIN_DIR = op.join(HOME_DIR, 'bin')
 
 # main pyrevit lib folders
 MAIN_LIB_DIR = op.join(HOME_DIR, 'pyrevitlib')
 MISC_LIB_DIR = op.join(HOME_DIR, 'site-packages')
 
 # path to pyrevit module
-PYREVIT_MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
+MODULE_DIR = op.join(MAIN_LIB_DIR, 'pyrevit')
 
 # loader directory
-LOADER_DIR = op.join(PYREVIT_MODULE_DIR, 'loader')
+LOADER_DIR = op.join(MODULE_DIR, 'loader')
 
 # addin directory
 ADDIN_DIR = op.join(LOADER_DIR, 'addin')
 
 # if loader module is available means pyRevit is being executed by Revit.
 if PyRevitLoader:
-    PYREVITLOADER_DIR = \
-        op.join(ADDIN_DIR, PyRevitLoader.ScriptExecutor.EngineVersion)
-    ADDIN_RESOURCE_DIR = op.join(PYREVITLOADER_DIR,
+    ENGINES_DIR = \
+        op.join(BIN_DIR, 'engines', PyRevitLoader.ScriptExecutor.EngineVersion)
+    ADDIN_RESOURCE_DIR = op.join(BIN_DIR, 'engines',
                                  'Source', 'pyRevitLoader', 'Resources')
 # otherwise it might be under test, or documentation processing.
 # so let's keep the symbols but set to None (fake the symbols)
 else:
-    PYREVITLOADER_DIR = ADDIN_RESOURCE_DIR = None
+    ENGINES_DIR = ADDIN_RESOURCE_DIR = None
 
 # add the framework dll path to the search paths
+sys.path.append(BIN_DIR)
 sys.path.append(ADDIN_DIR)
-sys.path.append(PYREVITLOADER_DIR)
+sys.path.append(ENGINES_DIR)
 
 
-# pylama:ignore=E402
 # now we can start importing stuff
+from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI  # noqa pylama ignore DB not being used here
+from pyrevit.api import DB, UI
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -91,14 +111,21 @@ class PyRevitException(Exception):
     Parameters args and message are derived from Exception class.
     """
 
+    @property
+    def msg(self):
+        """Return exception message."""
+        if self.args:
+            return self.args[0] #pylint: disable=E1136
+        else:
+            return ''
+
     def __str__(self):
         """Process stack trace and prepare report for output window."""
         sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
         try:
             tb_report = traceback.format_tb(sys.exc_traceback)[0]
-            if self.args:
-                message = self.args[0]
-                return '{}\n\n{}\n{}'.format(message,
+            if self.msg:
+                return '{}\n\n{}\n{}'.format(self.msg,
                                              TRACEBACK_TITLE,
                                              tb_report)
             else:
@@ -129,7 +156,7 @@ Attributes:
 """
 
 
-class _HostApplication:
+class _HostApplication(object):
     """Private Wrapper for Current Instance of Revit.
 
     Provides version info and comparison functionality, alongside providing
@@ -173,6 +200,11 @@ class _HostApplication:
         """Return view that is active (UIDocument.ActiveView)."""
         return getattr(self.uidoc, 'ActiveView', None)
 
+    @activeview.setter
+    def activeview(self, value):
+        """Set the active view in user interface."""
+        setattr(self.uidoc, 'ActiveView', value)
+
     @property
     def docs(self):
         """Return :obj:`list` of open :obj:`Document` objects."""
@@ -187,6 +219,11 @@ class _HostApplication:
     def version(self):
         """str: Return version number (e.g. '2018')."""
         return self.app.VersionNumber
+
+    @property
+    def subversion(self):
+        """str: Return subversion number (e.g. '2018.3')."""
+        return self.app.SubVersionNumber
 
     @property
     def version_name(self):
@@ -249,13 +286,16 @@ class _HostApplication:
             scaled_width = screen.PrimaryScreen.WorkingArea.Width
             return abs(scaled_width / actual_wdith)
 
-    def is_newer_than(self, version):
+    def is_newer_than(self, version, or_equal=False):
         """bool: Return True if host app is newer than provided version.
 
         Args:
             version (str or int): version to check against.
         """
-        return int(self.version) > int(version)
+        if or_equal:
+            return int(self.version) >= int(version)
+        else:
+            return int(self.version) > int(version)
 
     def is_older_than(self, version):
         """bool: Return True if host app is older than provided version.
@@ -287,7 +327,7 @@ class _HostApplication:
                     rcid = UI.RevitCommandId.LookupPostableCommandId(pc)
                     self._postable_cmds.append(
                         # wrap postable command info in custom namedtuple
-                        _HostAppPostableCommand(name=str(pc),
+                        _HostAppPostableCommand(name=safe_strtype(pc),
                                                 key=rcid.Name,
                                                 id=rcid.Id,
                                                 rvtobj=rcid)
@@ -303,7 +343,7 @@ class _HostApplication:
 try:
     # Create an intance of host application wrapper
     # making sure __revit__ is available
-    HOST_APP = _HostApplication(__revit__)  # noqa
+    HOST_APP = _HostApplication(__revit__)  #pylint: disable=E0602
 except Exception:
     raise Exception('Critical Error: Host software is not supported. '
                     '(__revit__ handle is not available)')
@@ -367,6 +407,24 @@ class _ExecutorParams(object):
             return self.pyrevit_command.OutputWindow
 
     @property   # read-only
+    def command_path(self):
+        """str: Return current command path."""
+        if '__commandpath__' in __builtins__ \
+                and __builtins__['__commandpath__']:
+            return __builtins__['__commandpath__']
+        elif self.pyrevit_command:
+            return op.dirname(self.pyrevit_command.ScriptSourceFile)
+
+    @property   # read-only
+    def command_alt_path(self):
+        """str: Return current command alternate script path."""
+        if '__alternatecommandpath__' in __builtins__ \
+                and __builtins__['__alternatecommandpath__']:
+            return __builtins__['__alternatecommandpath__']
+        elif self.pyrevit_command:
+            return op.dirname(self.pyrevit_command.AlternateScriptSourceFile)
+
+    @property   # read-only
     def command_name(self):
         """str: Return current command name."""
         if '__commandname__' in __builtins__ \
@@ -376,13 +434,31 @@ class _ExecutorParams(object):
             return self.pyrevit_command.CommandName
 
     @property   # read-only
-    def command_path(self):
-        """str: Return current command path."""
-        if '__commandpath__' in __builtins__ \
-                and __builtins__['__commandpath__']:
-            return __builtins__['__commandpath__']
+    def command_bundle(self):
+        """str: Return current command bundle name."""
+        if '__commandbundle__' in __builtins__ \
+                and __builtins__['__commandbundle__']:
+            return __builtins__['__commandbundle__']
         elif self.pyrevit_command:
-            return op.dirname(self.pyrevit_command.ScriptSourceFile)
+            return self.pyrevit_command.CommandBundle
+
+    @property   # read-only
+    def command_extension(self):
+        """str: Return current command extension name."""
+        if '__commandextension__' in __builtins__ \
+                and __builtins__['__commandextension__']:
+            return __builtins__['__commandextension__']
+        elif self.pyrevit_command:
+            return self.pyrevit_command.CommandExtension
+
+    @property   # read-only
+    def command_uniqueid(self):
+        """str: Return current command unique id."""
+        if '__commanduniqueid__' in __builtins__ \
+                and __builtins__['__commanduniqueid__']:
+            return __builtins__['__commanduniqueid__']
+        elif self.pyrevit_command:
+            return self.pyrevit_command.CommandUniqueId
 
     @property
     def command_data(self):
@@ -418,22 +494,39 @@ EXEC_PARAMS = _ExecutorParams()
 # config user environment paths
 # -----------------------------------------------------------------------------
 # user env paths
-USER_ROAMING_DIR = os.getenv('appdata')
-USER_SYS_TEMP = os.getenv('temp')
-USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+if EXEC_PARAMS.doc_mode:
+    ALLUSER_PROGRAMDATA = USER_ROAMING_DIR = USER_SYS_TEMP = USER_DESKTOP = \
+    EXTENSIONS_DEFAULT_DIR = THIRDPARTY_EXTENSIONS_DEFAULT_DIR = ' '
+else:
+    ALLUSER_PROGRAMDATA = os.getenv('programdata')
+    USER_ROAMING_DIR = os.getenv('appdata')
+    USER_SYS_TEMP = os.getenv('temp')
+    USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
+
+    # verify directory per issue #369
+    if not USER_DESKTOP or not op.exists(USER_DESKTOP):
+        USER_DESKTOP = USER_SYS_TEMP
+
+    # default extensions directory
+    EXTENSIONS_DEFAULT_DIR = op.join(HOME_DIR, 'extensions')
+    THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
+        op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME, 'Extensions')
 
 # create paths for pyrevit files
 if EXEC_PARAMS.doc_mode:
-    PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
+    PYREVIT_ALLUSER_APP_DIR = PYREVIT_APP_DIR = PYREVIT_VERSION_APP_DIR = ' '
 else:
     # pyrevit file directory
+    PYREVIT_ALLUSER_APP_DIR = op.join(ALLUSER_PROGRAMDATA, PYREVIT_ADDON_NAME)
     PYREVIT_APP_DIR = op.join(USER_ROAMING_DIR, PYREVIT_ADDON_NAME)
     PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
 
     # add runtime paths to sys.paths
     # this will allow importing any dynamically compiled DLLs that
     # would be placed under this paths.
-    for pyrvt_app_dir in [PYREVIT_APP_DIR, PYREVIT_VERSION_APP_DIR]:
+    for pyrvt_app_dir in [PYREVIT_APP_DIR,
+                          PYREVIT_VERSION_APP_DIR,
+                          THIRDPARTY_EXTENSIONS_DEFAULT_DIR]:
         if not op.isdir(pyrvt_app_dir):
             try:
                 os.mkdir(pyrvt_app_dir)
@@ -456,28 +549,43 @@ if EXEC_PARAMS.doc_mode:
         PYREVIT_FILE_PREFIX_STAMPED_USER = None
 else:
     # e.g. pyRevit_
-    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}'.format(PYREVIT_ADDON_NAME)
+    PYREVIT_FILE_PREFIX_UNIVERSAL = '{}_'.format(PYREVIT_ADDON_NAME)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_
-    PYREVIT_FILE_PREFIX = '{}_{}'.format(PYREVIT_ADDON_NAME,
-                                         HOST_APP.version)
+    PYREVIT_FILE_PREFIX = '{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                          HOST_APP.version)
+    PYREVIT_FILE_PREFIX_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<version>\d{4})_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_14422_
-    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                    HOST_APP.version,
-                                                    HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                     HOST_APP.version,
+                                                     HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<pid>\d+)_(?P<fname>.+)'
 
     # e.g. pyRevit_eirannejad_
-    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                        HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER = '{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                         HOST_APP.username)
+    PYREVIT_FILE_PREFIX_UNIVERSAL_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME + r'_(?P<user>.+)_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_eirannejad_
-    PYREVIT_FILE_PREFIX_USER = '{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                 HOST_APP.version,
-                                                 HOST_APP.username)
+    PYREVIT_FILE_PREFIX_USER = '{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                  HOST_APP.version,
+                                                  HOST_APP.username)
+    PYREVIT_FILE_PREFIX_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<fname>.+)'
 
     # e.g. pyRevit_2018_eirannejad_14422_
-    PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}'.format(PYREVIT_ADDON_NAME,
-                                                            HOST_APP.version,
-                                                            HOST_APP.username,
-                                                            HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_USER = '{}_{}_{}_{}_'.format(PYREVIT_ADDON_NAME,
+                                                             HOST_APP.version,
+                                                             HOST_APP.username,
+                                                             HOST_APP.proc_id)
+    PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
+        r'^' + PYREVIT_ADDON_NAME \
+        + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<pid>\d+)_(?P<fname>.+)'

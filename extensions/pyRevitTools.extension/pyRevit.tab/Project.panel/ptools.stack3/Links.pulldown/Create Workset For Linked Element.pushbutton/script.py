@@ -20,7 +20,8 @@ if len(selection) > 0:
         if isinstance(el, DB.RevitLinkInstance):
             linkedModelName = el.Name.split(':')[0]
         elif isinstance(el, DB.ImportInstance):
-            linkedModelName = el.LookupParameter('Name').AsString()
+            linkedModelName = \
+                el.Parameter[DB.BuiltInParameter.IMPORT_SYMBOL_NAME].AsString()
         if linkedModelName:
             if not revit.doc.IsWorkshared and revit.doc.CanEnableWorksharing:
                 revit.doc.EnableWorksharing('Shared Levels and Grids',

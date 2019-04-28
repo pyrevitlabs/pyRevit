@@ -1,11 +1,12 @@
+#pylint: disable=import-error,invalid-name
 from pyrevit import script
-from pyrevit import revit
+from pyrevit import revit, DB
 
 
 __context__ = 'selection'
-__helpurl__ = 'https://www.youtube.com/watch?v=4IlvCkoOolw'
-__doc__ = 'Lists all the elements that are tied to the selected element.'\
-          ' For example elements tags or dimensions.'
+__helpurl__ = '{{docpath}}4IlvCkoOolw'
+__doc__ = "Lists all the elements that are tied to the selected element."\
+          " For example elements tags or dimensions."
 
 
 selection = revit.get_selection()
@@ -22,9 +23,19 @@ if not selection.is_empty:
         el = revit.doc.GetElement(elId)
         if el and elId in selection.element_ids:
             elid_link = output.linkify(elId)
-            print("ID: {0}\t\tTYPE: {1} ( selected object )"
+            print("ID: {}\t\tTYPE: {} ( selected object )"
                   .format(elid_link, el.GetType().Name))
         elif el:
             elid_link = output.linkify(elId)
-            print("ID: {0}\t\tTYPE: {1}"
-                  .format(elid_link, el.GetType().Name))
+            if isinstance(el, DB.FamilyInstance):
+                family_name = revit.query.get_family_name(el)
+                symbol_name = revit.query.get_symbol_name(el)
+                print("ID: {}\t\tTYPE: {} ({}) --> {}:{}"
+                      .format(elid_link,
+                              el.GetType().Name,
+                              el.Category.Name,
+                              family_name,
+                              symbol_name))
+            else:
+                print("ID: {}\t\tTYPE: {}"
+                      .format(elid_link, el.GetType().Name))

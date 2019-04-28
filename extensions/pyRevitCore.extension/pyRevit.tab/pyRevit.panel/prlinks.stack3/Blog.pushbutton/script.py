@@ -6,4 +6,4 @@ from pyrevit.versionmgr import urls
 __context__ = 'zerodoc'
 
 
-script.open_url(urls.blog)
+script.open_url(urls.PYREVIT_BLOG)

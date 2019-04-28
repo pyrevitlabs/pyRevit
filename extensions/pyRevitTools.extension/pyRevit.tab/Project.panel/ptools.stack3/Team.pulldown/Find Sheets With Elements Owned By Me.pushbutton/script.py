@@ -45,9 +45,9 @@ if revit.doc.IsWorkshared:
                         filteredlist.append(sheet)
                         print('{0}{1}'
                               .format(
-                                  sheet.LookupParameter('Sheet Number')
+                                  sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
                                        .AsString().ljust(10),
-                                  sheet.LookupParameter('Sheet Name')
+                                  sheet.Parameter[DB.BuiltInParameter.SHEET_NAME]
                                        .AsString().ljust(50)
                                        )
                               )

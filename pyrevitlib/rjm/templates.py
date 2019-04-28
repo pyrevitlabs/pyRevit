@@ -235,7 +235,21 @@ Jrn.RibbonEvent "Execute external command:CustomCtrl_%CustomCtrl_%{external_comm
 EXTERNAL_COMMANDDATA = """' Providing command data to external command
 Jrn.Data "APIStringStringMapJournalData"  _
     , {data_count} _
-    ,{data_string}
+    , {data_string}
+"""
+
+
+# template for executing a Dynamo script
+DYNAMO_COMMAND = """' Executing Dynamo
+Jrn.RibbonEvent "TabActivated:Manage"
+Jrn.Command "Ribbon" , "Launch Dynamo, ID_VISUAL_PROGRAMMING_DYNAMO"
+Jrn.Data "APIStringStringMapJournalData"  _
+    , 5 _
+    , "dynPath", "{dynamo_def_path}" _
+    , "dynShowUI", "{dyn_show_ui}" _
+    , "dynAutomation", "{dyn_automation}" _
+    , "dynPathExecute", "{dyn_path_exec}" _
+    , "dynModelShutDown", "{dyn_shutdown}"
 """
 
 

@@ -1,3 +1,4 @@
+"""Session diagnostics."""
 from pyrevit import HOST_APP
 
 from pyrevit.userconfig import user_config
@@ -5,18 +6,19 @@ from pyrevit.framework import DriveInfo, Path
 from pyrevit.coreutils.logger import get_logger
 
 
-logger = get_logger(__name__)
+#pylint: disable=W0703,C0302,C0103
+mlogger = get_logger(__name__)
 
 
 def check_min_host_version():
     # get required version and build from user config
     req_build = user_config.core.get_option('requiredhostbuild',
-                                            default_value=0)
+                                            default_value="")
 
     if req_build:
         if HOST_APP.build != req_build:
-            logger.warning('You are not using the required host build: '
-                           '{}'.format(req_build))
+            mlogger.warning('You are not using the required host build: %s',
+                            req_build)
 
 
 def check_host_drive_freespace():
@@ -32,8 +34,8 @@ def check_host_drive_freespace():
                 free_hd_space = float(drive.TotalFreeSpace) / (1024 ** 3)
 
                 if free_hd_space < min_freespace:
-                    logger.warning('Remaining space on local drive '
-                                   'is less than {}GB...'.format(min_freespace))
+                    mlogger.warning('Remaining space on local drive '
+                                    'is less than %sGB...', min_freespace)
 
 
 def system_diag():

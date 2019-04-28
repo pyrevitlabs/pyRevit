@@ -50,16 +50,13 @@ def who_created_selection():
     selection = revit.get_selection()
     if revit.doc.IsWorkshared:
         if selection and len(selection) == 1:
-            wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(
-                revit.doc,
-                selection.first.Id
-                )
+            eh = revit.query.get_history(selection.first)
 
             forms.alert('Creator: {0}\n'
                         'Current Owner: {1}\n'
-                        'Last Changed By: {2}'.format(wti.Creator,
-                                                      wti.Owner,
-                                                      wti.LastChangedBy))
+                        'Last Changed By: {2}'.format(eh.creator,
+                                                      eh.owner,
+                                                      eh.last_changed_by))
         else:
             forms.alert('Exactly one element must be selected.')
     else:

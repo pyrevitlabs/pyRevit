@@ -32,7 +32,7 @@ def select_file(extensions='All Files (*.*)|*.*',
     https://msdn.microsoft.com/en-us/library/system.windows.forms.filedialog.filter
 
     >>> from rpw.ui.forms import select_file
-    >>> filepath = select_file('Revit File ('*.rvt)|*.rvt')
+    >>> filepath = select_file('Revit Model (*.rvt)|*.rvt')
     'C:\\folder\\file.rvt'
 
     Args:
@@ -41,6 +41,9 @@ def select_file(extensions='All Files (*.*)|*.*',
         multiple (bool): Allow selection of multiple files. Default is `False`
         restore_directory (bool): Restores the directory to the previously selected directory before closing
 
+    Returns:
+        filepath (list, string): filepath string if ``multiple=False`` otherwise list of filepath strings
+
     """
     form = Forms.OpenFileDialog()
     form.Filter = extensions
@@ -48,9 +51,11 @@ def select_file(extensions='All Files (*.*)|*.*',
     form.Multiselect = multiple
     form.RestoreDirectory = restore_directory
     if form.ShowDialog() == Forms.DialogResult.OK:
-        return form.FileName
+        return form.FileName if not multiple else list(form.FileNames)
 
 # Tests
 if __name__ == '__main__':
-    print(select_folder())
-    print(select_file('Python Files|*.py'))
+    # print(select_folder())
+    # print(select_file('Python Files|*.py'))
+    print(select_file('Python Files|*.py', multiple=False))
+    print(select_file('Python Files|*.py', multiple=True))

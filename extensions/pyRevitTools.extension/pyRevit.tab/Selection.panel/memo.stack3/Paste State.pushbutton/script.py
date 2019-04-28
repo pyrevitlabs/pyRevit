@@ -67,14 +67,18 @@ class TransformationMatrix:
         self.destmax = None
 
 
-def unpickle_line_list(linelist):
-    curveloop = DB.CurveLoop()
-    for line in linelist:
-        p1 = DB.XYZ(line[0][0], line[0][1], 0)
-        p2 = DB.XYZ(line[1][0], line[1][1], 0)
-        curveloop.Append(DB.Line.CreateBound(p1, p2))
+def unpickle_line_list(all_cloops_data):
+    all_cloops = []
+    for cloop_lines in all_cloops_data:
+        curveloop = DB.CurveLoop()
+        for line in cloop_lines:
+            p1 = DB.XYZ(line[0][0], line[0][1], 0)
+            p2 = DB.XYZ(line[1][0], line[1][1], 0)
+            curveloop.Append(DB.Line.CreateBound(p1, p2))
+        
+        all_cloops.append(curveloop)
 
-    return curveloop
+    return all_cloops
 
 
 selected_switch = \
@@ -395,16 +399,17 @@ elif selected_switch == 'Crop Region':
 
     try:
         f = open(datafile, 'r')
-        line_list = pickle.load(f)
+        cloops_data = pickle.load(f)
         f.close()
         with revit.Transaction('Paste Crop Region'):
             revit.activeview.CropBoxVisible = True
             crsm = revit.activeview.GetCropRegionShapeManager()
-            cloop = unpickle_line_list(line_list)
-            if HOST_APP.is_newer_than(2015):
-                crsm.SetCropShape(cloop)
-            else:
-                crsm.SetCropRegionShape(cloop)
+            all_cloops = unpickle_line_list(cloops_data)
+            for cloop in all_cloops:
+                if HOST_APP.is_newer_than(2015):
+                    crsm.SetCropShape(cloop)
+                else:
+                    crsm.SetCropRegionShape(cloop)
 
         revit.uidoc.RefreshActiveView()
     except Exception:

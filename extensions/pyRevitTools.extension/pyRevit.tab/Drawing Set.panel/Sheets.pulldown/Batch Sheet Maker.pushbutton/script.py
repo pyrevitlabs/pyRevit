@@ -6,7 +6,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__helpurl__ = "https://www.youtube.com/watch?v=SJzs9ZxqRYc"
+__helpurl__ = "{{docpath}}SJzs9ZxqRYc"
 
 __doc__ = 'Enter sheet names and numbers in the text box and '\
           'this tool will create all at once.'
@@ -18,7 +18,7 @@ logger = script.get_logger()
 class BatchSheetMakerWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
-        self._sheet_dict = dict()
+        self._sheet_dict = {}
         self._titleblock_id = None
         self.sheets_tb.Focus()
 
@@ -36,29 +36,19 @@ class BatchSheetMakerWindow(forms.WPFWindow):
             sheet_code = re.sub('\t+', '\t', sheet_code)
             sheet_code = sheet_code.replace('\n', '').replace('\r', '')
             num, name = sheet_code.split('\t')
-            self._sheet_dict[num] = name
+            try:
+                for range_num in coreutils.extract_range(num):
+                    self._sheet_dict[range_num] = name
+            except Exception as range_err:
+                logger.error(range_err)
+                return False
 
         return True
 
     def _ask_for_titleblock(self):
-        no_tb_option = 'No Title Block'
-        titleblocks = DB.FilteredElementCollector(revit.doc)\
-                        .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)\
-                        .WhereElementIsElementType()\
-                        .ToElements()
-
-        tblock_dict = {'{}: {}'.format(tb.FamilyName,
-                                       revit.ElementWrapper(tb).name): tb
-                       for tb in titleblocks}
-        options = [no_tb_option]
-        options.extend(tblock_dict.keys())
-        selected_titleblocks = forms.SelectFromList.show(options,
-                                                         multiselect=False)
-        if selected_titleblocks:
-            if no_tb_option not in selected_titleblocks:
-                self._titleblock_id = tblock_dict[selected_titleblocks[0]].Id
-            else:
-                self._titleblock_id = DB.ElementId.InvalidElementId
+        tblock = forms.select_titleblocks(doc=revit.doc)
+        if tblock is not None:
+            self._titleblock_id = tblock
             return True
 
         return False
@@ -111,6 +101,8 @@ class BatchSheetMakerWindow(forms.WPFWindow):
                                                                 sheet_name))
                     create_func(sheet_num, sheet_name)
                 tg.Assimilate()
+        else:
+            logger.error('Aborted with errors.')
 
 
 BatchSheetMakerWindow('BatchSheetMakerWindow.xaml').ShowDialog()

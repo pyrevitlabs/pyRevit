@@ -1,0 +1,133 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Re-Order Sheets" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
+    <Window.Resources>
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Foreground" Value="Orange"/>
+        </Style>
+
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="ToolTip" Value="{Binding tooltip}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding printable}" Value="False">
+                    <Setter Property="Foreground" Value="#bdbdbd" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <ControlTemplate x:Key="Default" TargetType="{x:Type DataGridCell}">
+            <StackPanel Background="White">
+                <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                      Columns="{TemplateBinding GridView.ColumnCollection}"/>
+            </StackPanel>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="NonPrintableSheet" TargetType='{x:Type DataGridCell}'>
+            <StackPanel Background="#f6f6f6">
+                <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                          Columns="{TemplateBinding GridView.ColumnCollection}"/>
+            </StackPanel>
+        </ControlTemplate>
+
+    </Window.Resources>
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Select Order Parameter" />
+            <ComboBox x:Name="orderparams_cb" Height="24" Margin="0,5,0,0" SelectionChanged="selection_changed"/>
+            <Expander Header="Group Index Numbers By" Margin="0,5,0,0">
+                <TextBlock TextWrapping="WrapWithOverflow" Margin="0,3,0,0" FontSize="12">
+                    <Bold>Usage</Bold>: Enter a regular expression pattern in this box. This pattern is used to detect changes in
+                    Sheet Numbers and group indices. For example, to group using the discipline identifier in
+                    Sheet Number (A in A1.00), use "([A-Z])\d". The () in pattern select the discipline identifier as a group
+                    which is used to group sheet ranges.
+                    <Hyperlink NavigateUri="https://regexr.com/" Click="handle_url_click">
+                        See Regexr on how to use Regular Expressions
+                    </Hyperlink>
+                </TextBlock>
+            </Expander>
+            <TextBox x:Name="indexgroup_tb" Text=""
+                     Height="24" Margin="0,5,0,0" FontFamily="Consolas"
+                     VerticalContentAlignment="Center"
+                     TextChanged="grouping_pattern_changed"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+                List of the sheets (Drag to manually reorder)
+            </TextBlock>
+        </StackPanel>
+        <Grid DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="reorder_b"
+                    Margin="5,0,0,0"
+				    Grid.Column="2" Grid.Row="0"
+                    Height="24"
+                    Content="Re-Order"
+                    Click="reorder_items"/>
+        </Grid>
+        <Grid DockPanel.Dock="Left" Width="30" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" Margin="0,0,0,5" Content="&gt;&gt;&gt; Top" Click="move_to_top">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+            <Button Grid.Row="1" Margin="0,0,0,5" Content="10 &gt;&gt;" Click="move_10_to_top">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+            <Button Grid.Row="2" Margin="0,0,0,5" Content="&gt;" Click="move_1_to_top">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+            <Button Grid.Row="3" Margin="0,0,0,5" Content="&lt;" Click="move_1_to_bottom">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+            <Button Grid.Row="4" Margin="0,0,0,5" Content="10 &lt;&lt;" Click="move_10_to_bottom">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+            <Button Grid.Row="5" Margin="0,0,0,0" Content="Bottom &lt;&lt;&lt;" Click="move_to_bottom">
+                <Button.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </Button.LayoutTransform>
+            </Button>
+        </Grid>
+        <DataGrid x:Name="items_dg"
+                  AutoGenerateColumns="False"
+                  BorderThickness="1"
+                  RowHeaderWidth="0"
+                  CanUserSortColumns="True"
+                  HorizontalGridLinesBrush="#dedede"
+                  VerticalGridLinesBrush="#dedede"
+                  Sorting="sorting_changed">
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell" >
+                    <Setter Property="BorderThickness" Value="0"/>
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Index" Binding="{Binding order_index}" MinWidth="40" Width="40" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="50" Width="*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

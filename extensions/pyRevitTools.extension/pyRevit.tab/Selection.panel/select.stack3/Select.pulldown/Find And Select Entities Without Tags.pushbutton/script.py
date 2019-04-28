@@ -1,137 +1,171 @@
 """Selects elements with no associated tags in current view."""
+#pylint: disable=import-error,invalid-name
+from collections import namedtuple
 
-import sys
-
-from pyrevit.framework import List
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB
 from pyrevit import forms
 
 
+Taggable = namedtuple('Taggable', ['tag_type', 'element_type'])
+
+
+# make sure active view is not a sheet
 curview = revit.activeview
 if isinstance(curview, DB.ViewSheet):
-    forms.alert("You're on a Sheet. Activate a model view please.")
-    sys.exit(0)
+    forms.alert("You're on a Sheet. Activate a model view please.",
+                exitscript=True)
 
-selected_switch = ''
 
-options = ['Rooms',
-           'Areas',
-           'Doors',
-           'Windows',
-           'Equipment',
-           'Walls']
+options = {
+    'Rooms': Taggable(
+        tag_type=DB.BuiltInCategory.OST_RoomTags,
+        element_type=DB.BuiltInCategory.OST_Rooms
+        ),
+
+    'Areas': Taggable(
+        tag_type=DB.BuiltInCategory.OST_AreaTags,
+        element_type=DB.BuiltInCategory.OST_Areas
+        ),
+
+    'Spaces': Taggable(
+        tag_type=DB.BuiltInCategory.OST_MEPSpaceTags,
+        element_type=DB.BuiltInCategory.OST_MEPSpaces
+        ),
+
+    'Doors': Taggable(
+        tag_type=DB.BuiltInCategory.OST_DoorTags,
+        element_type=DB.BuiltInCategory.OST_Doors
+        ),
+
+    'Windows': Taggable(
+        tag_type=DB.BuiltInCategory.OST_WindowTags,
+        element_type=DB.BuiltInCategory.OST_Windows
+        ),
+
+    'Speciality Equipment': Taggable(
+        tag_type=DB.BuiltInCategory.OST_SpecialityEquipmentTags,
+        element_type=DB.BuiltInCategory.OST_SpecialityEquipment
+        ),
+
+    'Mechanical Equipment': Taggable(
+        tag_type=DB.BuiltInCategory.OST_MechanicalEquipmentTags,
+        element_type=DB.BuiltInCategory.OST_MechanicalEquipment
+        ),
+
+    'Electrical Equipment': Taggable(
+        tag_type=DB.BuiltInCategory.OST_ElectricalEquipmentTags,
+        element_type=DB.BuiltInCategory.OST_ElectricalEquipment
+        ),
+
+    'Walls': Taggable(
+        tag_type=DB.BuiltInCategory.OST_WallTags,
+        element_type=DB.BuiltInCategory.OST_Walls
+        ),
+
+    'Curtain Walls': Taggable(
+        tag_type=DB.BuiltInCategory.OST_CurtainWallPanelTags,
+        element_type=DB.BuiltInCategory.OST_CurtainWallPanels
+        ),
+
+    'Ceilings': Taggable(
+        tag_type=DB.BuiltInCategory.OST_CeilingTags,
+        element_type=DB.BuiltInCategory.OST_Ceilings
+        ),
+
+    'Columns': Taggable(
+        tag_type=DB.BuiltInCategory.OST_StructuralColumnTags,
+        element_type=DB.BuiltInCategory.OST_StructuralColumns
+        ),
+}
 
 selected_switch = \
-    forms.CommandSwitchWindow.show(options,
+    forms.CommandSwitchWindow.show(sorted(options.keys()),
                                    message='Find untagged elements of type:')
 
 
-selection = revit.get_selection()
+if selected_switch:
+    target = options[selected_switch]
+    selection = revit.get_selection()
 
+    # collect target elements and tags in view
+    target_tags = DB.FilteredElementCollector(revit.doc, curview.Id)\
+                .OfCategory(target.tag_type)\
+                .WhereElementIsNotElementType()\
+                .ToElementIds()
 
-if selected_switch == 'Rooms':
-    roomtags = DB.FilteredElementCollector(revit.doc, curview.Id)\
-                 .OfCategory(DB.BuiltInCategory.OST_RoomTags)\
-                 .WhereElementIsNotElementType()\
-                 .ToElementIds()
+    target_elements = DB.FilteredElementCollector(revit.doc, curview.Id)\
+            .OfCategory(target.element_type)\
+            .WhereElementIsNotElementType()\
+            .ToElementIds()
 
-    rooms = DB.FilteredElementCollector(revit.doc, curview.Id)\
-              .OfCategory(DB.BuiltInCategory.OST_Rooms)\
-              .WhereElementIsNotElementType()\
-              .ToElementIds()
+    if selected_switch == 'Rooms':
+        tagged_rooms = []
+        untagged_rooms = []
+        for room_tag_id in target_tags:
+            room_tag = revit.doc.GetElement(room_tag_id)
+            if room_tag.Room is not None:
+                tagged_rooms.append(room_tag.Room.Id.IntegerValue)
 
-    taggedrooms = []
-    untaggedrooms = []
-    for rtid in roomtags:
-        rt = revit.doc.GetElement(rtid)
-        if rt.Room is not None:
-            taggedrooms.append(rt.Room.Number)
+        for room_id in target_elements:
+            room = revit.doc.GetElement(room_id)
+            if room.Id.IntegerValue not in tagged_rooms:
+                untagged_rooms.append(room_id)
 
-    for rmid in rooms:
-        rm = revit.doc.GetElement(rmid)
-        if rm.Number not in taggedrooms:
-            untaggedrooms.append(rmid)
+        if untagged_rooms:
+            selection.set_to(untagged_rooms)
+        else:
+            forms.alert('All rooms have associated tags.')
 
-    if len(untaggedrooms) > 0:
-        selection.set_to(untaggedrooms)
+    elif selected_switch == 'Areas':
+        tagged_areas = []
+        untagged_areas = []
+        for area_tag_id in target_tags:
+            area_tag = revit.doc.GetElement(area_tag_id)
+            if area_tag.Area is not None:
+                tagged_areas.append(area_tag.Area.Id.IntegerValue)
+
+        for area_id in target_elements:
+            area = revit.doc.GetElement(area_id)
+            if area.Id.IntegerValue not in tagged_areas:
+                untagged_areas.append(area_id)
+
+        if untagged_areas:
+            selection.set_to(untagged_areas)
+        else:
+            forms.alert('All areas have associated tags.')
+
+    elif selected_switch == 'Spaces':
+        tagged_spaces = []
+        untagged_spaces = []
+        for space_tag_id in target_tags:
+            space_tag = revit.doc.GetElement(space_tag_id)
+            if space_tag.Space is not None:
+                tagged_spaces.append(space_tag.Space.Id.IntegerValue)
+
+        for space_id in target_elements:
+            space = revit.doc.GetElement(space_id)
+            if space.Id.IntegerValue not in tagged_spaces:
+                untagged_spaces.append(space_id)
+
+        if untagged_spaces:
+            selection.set_to(untagged_spaces)
+        else:
+            forms.alert('All spaces have associated tags.')
+
     else:
-        forms.alert('All rooms have associated tags.')
+        tagged_elements = []
+        untagged_elements = []
+        for eltid in target_tags:
+            elt = revit.doc.GetElement(eltid)
+            if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
+                tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
 
-elif selected_switch == 'Areas':
-    areatags = DB.FilteredElementCollector(revit.doc, curview.Id)\
-                 .OfCategory(DB.BuiltInCategory.OST_AreaTags)\
-                 .WhereElementIsNotElementType()\
-                 .ToElementIds()
-
-    areas = DB.FilteredElementCollector(revit.doc, curview.Id)\
-              .OfCategory(DB.BuiltInCategory.OST_Areas)\
-              .WhereElementIsNotElementType()\
-              .ToElementIds()
-
-    taggedareas = []
-    untaggedareas = []
-    for atid in areatags:
-        at = revit.doc.GetElement(atid)
-        if at.Area is not None:
-            taggedareas.append(at.Area.Id.IntegerValue)
-
-    for areaid in areas:
-        area = revit.doc.GetElement(areaid)
-        if area.Id.IntegerValue not in taggedareas:
-            untaggedareas.append(areaid)
-
-    if len(untaggedareas) > 0:
-        selection.set_to(untaggedareas)
-    else:
-        forms.alert('All areas have associated tags.')
-
-elif selected_switch == 'Doors' \
-        or selected_switch == 'Windows' \
-        or selected_switch == 'Walls':
-    if selected_switch == 'Doors':
-        tagcat = DB.BuiltInCategory.OST_DoorTags
-        elcat = DB.BuiltInCategory.OST_Doors
-        elname = 'doors'
-    elif selected_switch == 'Windows':
-        tagcat = DB.BuiltInCategory.OST_WindowTags
-        elcat = DB.BuiltInCategory.OST_Windows
-        elname = 'windows'
-    elif selected_switch == 'Walls':
-        tagcat = DB.BuiltInCategory.OST_WallTags
-        elcat = DB.BuiltInCategory.OST_Walls
-        elname = 'Walls'
-
-    elementtags = DB.FilteredElementCollector(revit.doc, curview.Id)\
-                    .OfCategory(tagcat)\
-                    .WhereElementIsNotElementType()\
-                    .ToElementIds()
-
-    elements = DB.FilteredElementCollector(revit.doc, curview.Id)\
-                 .OfCategory(elcat)\
-                 .WhereElementIsNotElementType()\
-                 .ToElementIds()
-
-    tagged_elements = []
-    untagged_elements = []
-    for eltid in elementtags:
-        elt = revit.doc.GetElement(eltid)
-        if elt.TaggedLocalElementId != DB.ElementId.InvalidElementId:
-            tagged_elements.append(elt.TaggedLocalElementId.IntegerValue)
-
-    for elid in elements:
-        el = revit.doc.GetElement(elid)
-        try:
-            typecomment = el.Symbol.LookupParameter('Type Comments')
-            if el.Id.IntegerValue not in tagged_elements \
-                    and typecomment \
-                    and typecomment.HasValue \
-                    and ('auxiliary' not in typecomment.AsString().lower()):
-                untagged_elements.append(elid)
-        except Exception:
+        for elid in target_elements:
+            el = revit.doc.GetElement(elid)
             if el.Id.IntegerValue not in tagged_elements:
                 untagged_elements.append(elid)
 
-    if len(untagged_elements) > 0:
-        selection.set_to(untagged_elements)
-    else:
-        forms.alert('All {} have associated tags.'.format(elname))
+        if untagged_elements:
+            selection.set_to(untagged_elements)
+        else:
+            forms.alert('All %s have associated tags.'% selected_switch.lower())
