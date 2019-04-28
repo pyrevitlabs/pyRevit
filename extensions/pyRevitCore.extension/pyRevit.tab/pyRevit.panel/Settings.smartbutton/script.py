@@ -145,6 +145,10 @@ class SettingsWindow(forms.WPFWindow):
                     self.availableEngines.SelectedItem = engine_cfg
                     break
 
+            # if addin-file is not writable, lock changing of the engine
+            if not user_config.is_attachment_writable(attachment):
+                self.availableEngines.IsEnabled = False
+
             # now select the current runtime engine
             self.cpyengine = user_config.get_active_cpython_engine()
             for engine_cfg in self.cpythonEngines.ItemsSource:

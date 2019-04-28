@@ -247,6 +247,15 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         hostver = int(HOST_APP.version)
         return TargetApps.Revit.PyRevit.GetAttached(hostver)
 
+    @staticmethod
+    def is_attachment_writable(attachment):
+        """Checks if addin-file of an attachment is writable"""
+        try:
+            open(attachment.Manifest.FilePath, a).close()
+            return True
+        except:
+            return False
+
 
 def find_config_file(target_path):
     """Find config file in target path."""
