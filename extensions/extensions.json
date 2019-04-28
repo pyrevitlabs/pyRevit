@@ -28,35 +28,6 @@
             "dependencies": []
         },
         {
-<<<<<<< HEAD
-        "builtin": "False",
-        "enable": "True",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "PyRevitMEP",
-        "description": "MEP extension for PyRevit",
-        "author": "Cyril Waechter",
-        "author-url": "https://github.com/CyrilWaechter",
-        "url": "https://github.com/CyrilWaechter/pyRevitMEP.git",
-        "website": "http://pythoncvc.net/?page_id=123",
-        "image" : "",
-        "dependencies": []
-        },  
-        {
-        "builtin": "False",
-        "enable": "True",
-        "type": "extension",
-        "rocket_mode_compatible": "True",
-        "name": "pyApex",
-        "description": "Apex Project BIM Utils",
-        "author": "Aleksey Melnikov",
-        "author-url": "https://github.com/melnikovalex",
-        "url": "https://github.com/apex-project/pyApex.git",
-        "website": "https://github.com/apex-project/pyApex",
-        "image": "",
-        "dependencies": []
-        }     
-=======
             "builtin": "False",
             "default_enabled": "True",
             "type": "extension",
@@ -70,6 +41,5 @@
             "image": "",
             "dependencies": []
         }
->>>>>>> a6f2ce8af050da970784f244ecaa75f48d7e630a
     ]
 }
