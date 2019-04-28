@@ -148,7 +148,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         if op.exists(EXTENSIONS_DEFAULT_DIR):
             dir_list.append(EXTENSIONS_DEFAULT_DIR)
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
-        return dir_list
+        return list(set(dir_list))
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
