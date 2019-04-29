@@ -251,7 +251,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def is_attachment_writable(attachment):
         """Checks if addin-file of an attachment is writable"""
         try:
-            open(attachment.Manifest.FilePath, a).close()
+            open(attachment.Manifest.FilePath, "a").close()
             return True
         except:
             return False
