@@ -1941,7 +1941,6 @@ def pick_folder(title=None):
             return fb_dlg.SelectedPath
 
 
-
 def pick_file(file_ext='', files_filter='', init_dir='',
               restore_dir=True, multi_file=False, unc_paths=False):
     r"""Pick file dialog to select a destination file.
