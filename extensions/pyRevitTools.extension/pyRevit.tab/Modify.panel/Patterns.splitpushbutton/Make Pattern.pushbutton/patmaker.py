@@ -713,10 +713,10 @@ def _make_filledregion(fillpattern_name, fillpattern_id):
 
 def _export_pat(revit_pat, export_dir):
     pat_file_contents = revit_pat.get_pat_data()
-    with open(op.join(export_dir,
-                      '{}.pat'.format(
-                          coreutils.cleanup_filename(revit_pat.name)
-                          )), 'w') as pat_file:
+    pat_file_name = coreutils.cleanup_filename(revit_pat.name)
+    pat_file_path = op.join(export_dir, '{}.pat'.format(pat_file_name))
+    logger.debug('Exporting pattern to: %s', pat_file_path)
+    with open(pat_file_path, 'w') as pat_file:
         pat_file.write(pat_file_contents)
 
 
