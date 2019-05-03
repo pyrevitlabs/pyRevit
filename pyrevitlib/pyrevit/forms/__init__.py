@@ -308,7 +308,7 @@ class TemplateListItem(object):
         """Name property."""
         # get custom attr, or name or just str repr
         if self._nameattr:
-            return str(getattr(self.item, self._nameattr))
+            return safe_strtype(getattr(self.item, self._nameattr))
         elif hasattr(self.item, 'name'):
             return getattr(self.item, 'name', '')
         else:
