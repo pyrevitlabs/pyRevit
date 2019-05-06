@@ -25,7 +25,7 @@ def get_source_properties(src_type):
             button_name='Select Properties',
             multiselect=True
             )
-    for tprop in selected_properties:
+    for tprop in selected_properties or []:
         tp = src_type.LookupParameter(tprop)
         if tp:
             if tp.StorageType == DB.StorageType.Integer:
@@ -87,4 +87,5 @@ if source_element:
         get_source_properties(
             revit.query.get_type(source_element)
             )
-    pick_and_match_types(source_typeprops)
+    if source_typeprops:
+        pick_and_match_types(source_typeprops)
