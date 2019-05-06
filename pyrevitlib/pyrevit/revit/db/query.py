@@ -83,6 +83,19 @@ def get_name(element, title_on_sheet=False):
     return Element.Name.__get__(element)
 
 
+def get_type(element):
+    """Get element type.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.ElementType: type object of given element
+    """
+    type_id = element.GetTypeId()
+    return element.Document.GetElement(type_id)
+
+
 def get_symbol_name(element):
     return get_name(element.Symbol)
 
