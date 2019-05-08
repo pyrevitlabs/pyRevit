@@ -8,7 +8,7 @@ import sys
 import os
 import os.path as op
 import string
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import threading
 from functools import wraps
 import datetime
@@ -49,6 +49,18 @@ WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
 WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 
+XAML_FILES_DIR = op.dirname(__file__)
+
+
+ParamDef = namedtuple('ParamDef', ['name', 'istype'])
+"""Parameter definition tuple.
+
+Attributes:
+    name (str): parameter name
+    istype (bool): true if type parameter, otherwise false
+"""
+
+
 class WPFWindow(framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
@@ -77,8 +89,7 @@ class WPFWindow(framework.Windows.Window):
             if not op.exists(xaml_source):
                 wpf.LoadComponent(self,
                                   os.path.join(EXEC_PARAMS.command_path,
-                                               xaml_source)
-                                  )
+                                               xaml_source))
             else:
                 wpf.LoadComponent(self, xaml_source)
         else:
@@ -232,7 +243,7 @@ class TemplateUserInputWindow(WPFWindow):
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source),
+                           op.join(XAML_FILES_DIR, self.xaml_source),
                            handle_esc=True)
         self.Title = title or 'pyRevit'
         self.Width = width
@@ -862,7 +873,7 @@ class TemplatePromptBar(WPFWindow):
     def __init__(self, height=32, **kwargs):
         """Initialize user prompt window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), self.xaml_source))
+                           op.join(XAML_FILES_DIR, self.xaml_source))
 
         self.user_height = height
         self.update_window()
@@ -1123,7 +1134,7 @@ class SearchPrompt(WPFWindow):
     def __init__(self, search_db, width, height, **kwargs):
         """Initialize search prompt window."""
         WPFWindow.__init__(self,
-                           op.join(op.dirname(__file__), 'SearchPrompt.xaml'))
+                           op.join(XAML_FILES_DIR, 'SearchPrompt.xaml'))
         self.Width = width
         self.MinWidth = self.Width
         self.Height = height
@@ -1716,10 +1727,9 @@ def select_swatch(title='Select Color Swatch', button_name='Select'):
         >>> forms.select_swatch(title="Select Text Color")
         ... <RGB #CD8800>
     """
-    itemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "SwatchContainerStyle.xaml")
-    itemplate = \
-        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "SwatchContainerStyle.xaml")
+        )
     swatch = SelectFromList.show(
         colors.COLORS.values(),
         title=title,
@@ -1751,15 +1761,13 @@ def select_image(images, title='Select Image', button_name='Select'):
                                 title="Select Variation")
         ... 'C:/path/to/image1.png'
     """
-    ptemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "ImageListPanelStyle.xaml")
-    ptemplate = \
-        wpf.LoadComponent(Controls.ItemsPanelTemplate(), ptemplate_xaml_file)
+    ptemplate = utils.load_itemspanel_template(
+        os.path.join(XAML_FILES_DIR, "ImageListPanelStyle.xaml")
+        )
 
-    itemplate_xaml_file = \
-        os.path.join(op.dirname(__file__), "ImageListContainerStyle.xaml")
-    itemplate = \
-        wpf.LoadComponent(Controls.ControlTemplate(), itemplate_xaml_file)
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "ImageListContainerStyle.xaml")
+        )
 
     bitmap_images = {}
     for imageobj in images:
@@ -1781,6 +1789,74 @@ def select_image(images, title='Select Image', button_name='Select'):
         )
 
     return bitmap_images.get(selected_image, None)
+
+
+def select_parameter(src_element,
+                     title='Select Parameters',
+                     button_name='Select',
+                     multiple=True,
+                     filterfunc=None,
+                     include_instance=True,
+                     include_type=True):
+    """Standard form for selecting parameters from given element.
+
+    Args:
+        src_element (DB.Element): source element
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        include_instance (bool, optional): list instance parameters
+        include_type (bool, optional): list type parameters
+
+    Returns:
+        list[:obj:`ParamDef`]: list of paramdef objects
+
+    Example:
+        >>> selected_params = forms.select_parameter(
+        ...     src_element,
+        ...     title='Select Parameters',
+        ...     multiple=True,
+        ...     include_instance=True,
+        ...     include_type=True)
+        ... [<ParamDef >, <ParamDef >]
+    """
+    param_defs = []
+    if include_instance:
+        # collect instance parameters
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=False)
+             for x in src_element.Parameters
+             if not x.IsReadOnly]
+        )
+
+    if include_type:
+        # collect type parameters
+        src_type = revit.query.get_type(src_element)
+        param_defs.extend(
+            [ParamDef(name=x.Definition.Name, istype=True)
+             for x in src_type.Parameters
+             if not x.IsReadOnly]
+        )
+
+    if filterfunc:
+        param_defs = filter(filterfunc, param_defs)
+
+    itemplate = utils.load_ctrl_template(
+        os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
+        )
+    selected_params = SelectFromList.show(
+        param_defs,
+        title=title,
+        button_name=button_name,
+        width=450,
+        multiselect=multiple,
+        item_template=itemplate
+        )
+
+    return selected_params
 
 
 def alert(msg, title=None, sub_msg=None, expanded=None, footer='',

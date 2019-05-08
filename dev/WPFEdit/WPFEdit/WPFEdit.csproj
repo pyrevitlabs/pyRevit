@@ -192,6 +192,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ParameterItemStyle.xaml">
+      <Link>Forms\ParameterItemStyle.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="..\..\..\pyrevitlib\pyrevit\forms\ProgressBar.xaml">
       <Link>Forms\ProgressBar.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
