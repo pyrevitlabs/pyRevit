@@ -1829,7 +1829,7 @@ def select_parameter(src_element,
         param_defs.extend(
             [ParamDef(name=x.Definition.Name, istype=False)
              for x in src_element.Parameters
-             if not x.IsReadOnly]
+             if not x.IsReadOnly and x.StorageType != DB.StorageType.None]
         )
 
     if include_type:
@@ -1838,7 +1838,7 @@ def select_parameter(src_element,
         param_defs.extend(
             [ParamDef(name=x.Definition.Name, istype=True)
              for x in src_type.Parameters
-             if not x.IsReadOnly]
+             if not x.IsReadOnly and x.StorageType != DB.StorageType.None]
         )
 
     if filterfunc:
