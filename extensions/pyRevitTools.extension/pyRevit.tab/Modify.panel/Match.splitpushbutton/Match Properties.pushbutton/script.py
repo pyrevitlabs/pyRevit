@@ -1,4 +1,9 @@
-"""Match instance or type properties between elements and their types."""
+"""Match instance or type properties between elements and their types.
+
+Shift+Click:
+Reapply the previous match properties.
+
+"""
 #pylint: disable=import-error,invalid-name,broad-except
 import pickle
 
@@ -43,47 +48,31 @@ def get_source_properties(src_element):
         multiple=True,
         include_instance=True,
         include_type=True
-    )
+    ) or []
 
     logger.debug('Selected parameters: %s', [x.name for x in selected_params])
 
-    for sparam in selected_params or []:
+    for sparam in selected_params:
         logger.debug('Reading %s', sparam.name)
         target = src_type if sparam.istype else src_element
         tparam = target.LookupParameter(sparam.name)
         if tparam:
             if tparam.StorageType == DB.StorageType.Integer:
-                props.append(
-                    PropKeyValue(
-                        name=sparam.name,
-                        datatype=tparam.StorageType,
-                        value=tparam.AsInteger(),
-                        istype=sparam.istype
-                        ))
+                value = tparam.AsInteger()
             elif tparam.StorageType == DB.StorageType.Double:
-                props.append(
-                    PropKeyValue(
-                        name=sparam.name,
-                        datatype=tparam.StorageType,
-                        value=tparam.AsDouble(),
-                        istype=sparam.istype
-                        ))
+                value = tparam.AsDouble()
             elif tparam.StorageType == DB.StorageType.ElementId:
-                props.append(
-                    PropKeyValue(
-                        name=sparam.name,
-                        datatype=tparam.StorageType,
-                        value=tparam.AsElementId().IntegerValue,
-                        istype=sparam.istype
-                        ))
+                value = tparam.AsElementId().IntegerValue
             else:
-                props.append(
-                    PropKeyValue(
-                        name=sparam.name,
-                        datatype=tparam.StorageType,
-                        value=tparam.AsString(),
-                        istype=sparam.istype
-                        ))
+                value = tparam.AsString()
+
+            props.append(
+                PropKeyValue(
+                    name=sparam.name,
+                    datatype=tparam.StorageType,
+                    value=value,
+                    istype=sparam.istype
+                    ))
 
     return props
 
