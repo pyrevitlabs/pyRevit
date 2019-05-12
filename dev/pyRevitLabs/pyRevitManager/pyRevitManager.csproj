@@ -44,11 +44,12 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>..\..\..\bin\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -132,19 +133,26 @@
     <ProjectReference Include="..\pyRevitLabs.CommonCLI\pyRevitLabs.CommonCLI.csproj">
       <Project>{614720ba-c0e3-4199-9a5e-d2468ffcbfe5}</Project>
       <Name>pyRevitLabs.CommonCLI</Name>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj">
       <Project>{c5a03112-6ee1-415f-b53d-5d732d9f47ad}</Project>
       <Name>pyRevitLabs.Common</Name>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\pyRevitLabs.Language\pyRevitLabs.Language.csproj">
       <Project>{269fe01f-093a-4774-8017-fefc2342abf5}</Project>
       <Name>pyRevitLabs.Language</Name>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj">
       <Project>{ed0fb7a2-e4a8-4490-a020-73140bfbce0b}</Project>
       <Name>pyRevitLabs.TargetApps.Revit</Name>
       <Private>False</Private>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +180,9 @@
     <PackageReference Include="Expression.Blend.Sdk">
       <Version>1.0.2</Version>
     </PackageReference>
+    <PackageReference Include="LibGit2Sharp">
+      <Version>0.25.4</Version>
+    </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.3</Version>
     </PackageReference>
@@ -186,9 +197,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetDir)lib\win32\x64\git2-8e0b172.dll" "$(TargetDir)git2-8e0b172.dll"
+    <PostBuildEvent>copy "$(TargetDir)lib\win32\x64\git2-4aecb64.dll" "$(TargetDir)git2-4aecb64.dll"
 rd /S /Q "$(TargetDir)lib"
-REM del /Q "$(TargetDir)*.pdb"
+del /Q "$(TargetDir)*.pdb"
 REM del /Q "$(TargetDir)*.config"
 REM del /Q "$(TargetDir)*.xml"
 signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 "$(TargetPath)"</PostBuildEvent>

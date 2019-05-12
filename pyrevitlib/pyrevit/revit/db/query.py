@@ -83,6 +83,19 @@ def get_name(element, title_on_sheet=False):
     return Element.Name.__get__(element)
 
 
+def get_type(element):
+    """Get element type.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.ElementType: type object of given element
+    """
+    type_id = element.GetTypeId()
+    return element.Document.GetElement(type_id)
+
+
 def get_symbol_name(element):
     return get_name(element.Symbol)
 
@@ -1173,3 +1186,21 @@ def get_schema_field_values(element, schema):
 
             field_values[field.FieldName] = value
     return field_values
+
+
+def get_family_type(type_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for ftype in family_doc.FamilyManager.Types:
+            if ftype.Name == type_name:
+                return ftype
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameter(param_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for fparam in family_doc.FamilyManager.GetParameters():
+            if fparam.Definition.Name == param_name:
+                return fparam
+    else:
+        raise PyRevitException('Document is not a family')

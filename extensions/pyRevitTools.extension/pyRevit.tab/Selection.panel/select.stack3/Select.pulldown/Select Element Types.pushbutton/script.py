@@ -22,7 +22,7 @@ graphic_styles = \
 
 all_options = list(element_types)
 all_options.extend(graphic_styles)
-all_options.extend(['Fill Patterns', 'Area Schemes'])
+all_options.extend(['Fill Patterns', 'Area Schemes', 'Line Styles'])
 selected_option = \
     forms.CommandSwitchWindow.show(all_options,
                                    message='Pick type category:')
@@ -33,10 +33,13 @@ if selected_option:
         fill_patterns = revit.query.get_types_by_class(DB.FillPatternElement,
                                                        doc=revit.doc)
         selection.set_to(list(fill_patterns))
-    if selected_option == 'Area Schemes':
+    elif selected_option == 'Area Schemes':
         area_schemes = revit.query.get_types_by_class(DB.AreaScheme,
                                                       doc=revit.doc)
         selection.set_to(list(area_schemes))
+    elif selected_option == 'Line Styles':
+        line_styles = revit.query.get_line_styles(doc=revit.doc)
+        selection.set_to(list(line_styles))
     elif selected_option.startswith('Graphics Styles: '):
         graphic_style_cat = selected_option.replace('Graphics Styles: ', '')
         graphic_styles = \

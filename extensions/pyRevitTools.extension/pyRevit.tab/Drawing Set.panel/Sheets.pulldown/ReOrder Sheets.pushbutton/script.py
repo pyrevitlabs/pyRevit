@@ -37,7 +37,7 @@ class ReOrderWindow(forms.WPFWindow):
 
     @property
     def items_list(self):
-        return self.items_dg.ItemsSource
+        return self.items_dg.ItemsSource or []
 
     @items_list.setter
     def items_list(self, value):

@@ -80,7 +80,8 @@ class SettingsWindow(forms.WPFWindow):
                                    '2016': self.revit2016_cb,
                                    '2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
-                                   '2019': self.revit2019_cb}
+                                   '2019': self.revit2019_cb,
+                                   '2020': self.revit2020_cb}
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
