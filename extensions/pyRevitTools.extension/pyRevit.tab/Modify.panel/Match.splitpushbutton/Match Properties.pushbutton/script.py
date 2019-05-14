@@ -95,10 +95,14 @@ def pick_and_match_types(src_props):
                         logger.debug('Target is %s', target)
                         dparam = target.LookupParameter(pkv.name)
                         if dparam and pkv.datatype == dparam.StorageType:
-                            if dparam.StorageType == DB.StorageType.ElementId:
+                            if dparam.StorageType == DB.StorageType.Integer:
+                                dparam.Set(pkv.value or 0)
+                            elif dparam.StorageType == DB.StorageType.Double:
+                                dparam.Set(pkv.value or 0.0)
+                            elif dparam.StorageType == DB.StorageType.ElementId:
                                 dparam.Set(DB.ElementId(pkv.value))
                             else:
-                                dparam.Set(pkv.value)
+                                dparam.Set(pkv.value or "")
 
 
 def recall():
