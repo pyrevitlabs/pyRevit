@@ -157,12 +157,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.pushbutton\MatchConfigWindow.xaml">
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml">
       <Link>Tools\MatchConfigWindow.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.pushbutton\MatchConfigWindowLegacy.xaml">
+    <Page Include="..\..\..\extensions\pyRevitTools.extension\pyRevit.tab\Modify.panel\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml">
       <Link>Tools\MatchConfigWindowLegacy.xaml</Link>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
