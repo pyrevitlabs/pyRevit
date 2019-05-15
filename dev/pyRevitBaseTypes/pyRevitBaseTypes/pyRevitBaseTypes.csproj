@@ -84,12 +84,6 @@
     <Reference Include="LibGit2Sharp">
       <HintPath>..\..\..\bin\LibGit2Sharp.dll</HintPath>
     </Reference>
-    <Reference Include="MahApps.Metro">
-      <HintPath>..\..\..\bin\MahApps.Metro.dll</HintPath>
-    </Reference>
-    <Reference Include="MathNet.Numerics">
-      <HintPath>..\..\..\bin\MathNet.Numerics.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Dynamic, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\bin\engines\278\Microsoft.Dynamic.dll</HintPath>
@@ -110,8 +104,14 @@
     <Reference Include="pyRevitLabs.CommonWPF">
       <HintPath>..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.MahAppsMetro">
+      <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
+    </Reference>
     <Reference Include="pyRevitLoader">
       <HintPath>..\..\..\bin\engines\278\pyRevitLoader.dll</HintPath>
+    </Reference>
+    <Reference Include="Python.Runtime">
+      <HintPath>..\..\..\bin\engines\372\Python.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2018\RevitAPI.dll</HintPath>

@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
-using Newtonsoft.Json;
+using NLog;
+using pyRevitLabs.Json;
 
 namespace pyRevitLabs.Common.Extensions {
     public static class CharExtensions {
@@ -80,6 +81,9 @@ namespace pyRevitLabs.Common.Extensions {
     }
 
     public static class StringExtensions {
+        // private logger and data
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         private static Regex DriveLetterFinder = new Regex(@"^(?<drive>[A-Za-z]):");
         private static Regex GuidFinder = new Regex(@".*(?<guid>[0-9A-Fa-f]{8}[-]" +
                                                         "[0-9A-Fa-f]{4}[-]" +
@@ -93,6 +97,10 @@ namespace pyRevitLabs.Common.Extensions {
                                .Replace("|\\", separator)
                                .Replace("|", separator)
                                .Replace(Path.DirectorySeparatorChar.ToString(), separator);
+        }
+
+        public static string GetHashShort(this string commitHash) {
+            return commitHash.Substring(0, 7);
         }
 
         public static string TripleDot(this string sourceString, uint maxLength) {
@@ -110,6 +118,7 @@ namespace pyRevitLabs.Common.Extensions {
         }
 
         public static string NormalizeAsPath(this string path) {
+            //logger.Debug("Normalizing \"{0}\"", path);
             var normedPath =
                 Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             var match = DriveLetterFinder.Match(normedPath);
@@ -118,13 +127,33 @@ namespace pyRevitLabs.Common.Extensions {
                 normedPath = normedPath.Replace(driveLetter, driveLetter.ToUpper());
             }
 
+            logger.Debug("Normalized as \"{0}\"", normedPath);
             return normedPath;
         }
 
-        public static Version ConvertToVersion(this string version) {
-            if (!version.Contains("."))
-                version = version + ".0";
-            return new Version(version);
+        public static Version ExtractVersion(this string version) {
+            try {
+                return new Version(version);
+            }
+            catch {
+                var m = Regex.Match(version, "(?<version>[0-9.]+)");
+                if (m.Success) {
+                    var vernumber = m.Groups["version"].Value;
+                    try {
+                        return new Version(vernumber);
+                    }
+                    catch {
+                        try {
+                            return new Version(vernumber + ".0");
+                        }
+                        catch {
+                            // don't know what else to check
+                        }
+                    }
+                }
+                // otherwise return default version
+                return new Version();
+            }
         }
 
         public static Guid ExtractGuid(this string inputString) {
@@ -148,12 +177,18 @@ namespace pyRevitLabs.Common.Extensions {
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
-        /// <summary>
-        /// Creates a URL And SEO friendly slug
-        /// </summary>
-        /// <param name="text">Text to slugify</param>
-        /// <param name="maxLength">Max length of slug</param>
-        /// <returns>URL and SEO friendly string</returns>
+        public static List<string> GetLines(this string sourceString) {
+            return new List<string>(sourceString.Split(Environment.NewLine.ToCharArray()));
+        }
+        
+        public static string Indent(this string sourceString, int indentLevel) {
+            var indentedString = string.Empty;
+            foreach (var line in sourceString.GetLines())
+                if (line != string.Empty)
+                    indentedString += '\t' + line + '\n';
+            return indentedString;
+        }
+
         public static string UrlFriendly(this string text, int maxLength = 0) {
             // Return empty value if text is null
             if (text == null) return "";
@@ -203,6 +238,22 @@ namespace pyRevitLabs.Common.Extensions {
             var result = stringBuilder.ToString().Trim('-');
             // Remove any excess character to meet maxlength criteria
             return maxLength <= 0 || result.Length <= maxLength ? result : result.Substring(0, maxLength);
+        }
+
+        // https://stackoverflow.com/a/24031467/2350244
+        public static string GenerateHash(this string input) {
+            // Use input string to calculate MD5 hash
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create()) {
+                byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Convert the byte array to hexadecimal string
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < hashBytes.Length; i++) {
+                    sb.Append(hashBytes[i].ToString("X2"));
+                }
+                return sb.ToString();
+            }
         }
 
         // comma separated strings

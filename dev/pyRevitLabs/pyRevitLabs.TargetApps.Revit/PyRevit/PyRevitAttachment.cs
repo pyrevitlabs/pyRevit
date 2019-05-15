@@ -1,40 +1,67 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.AccessControl;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitAttachment {
-        public PyRevitAttachment(RevitAddonManifest manifest, RevitProduct product, PyRevitAttachmentType attachmentType) {
+        private PyRevitClone _clone = null;
+
+        public PyRevitAttachment(RevitAddonManifest manifest,
+                                 RevitProduct product,
+                                 PyRevitAttachmentType attachmentType) {
             Manifest = manifest;
             Product = product;
             AttachmentType = attachmentType;
+        }
+
+        public override string ToString() {
+            return string.Format(
+                "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
+                Clone.Name,
+                Product.ProductName,
+                Engine.Version,
+                Clone.ClonePath,
+                Manifest.FilePath
+                );
         }
 
         public RevitAddonManifest Manifest { get; private set; }
         public RevitProduct Product { get; private set; }
         public PyRevitAttachmentType AttachmentType { get; private set; }
 
-        public PyRevitClone Clone => GetCloneFromManifest(Manifest);
-        public PyRevitEngine Engine => GetEngineFromManifest(Manifest, Clone);
+        public PyRevitClone Clone {
+            get {
+                if (_clone != null)
+                    return _clone;
+                else {
+                    try {
+                        return PyRevitClone.GetCloneFromManifest(Manifest);
+                    }
+                    catch {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        public PyRevitEngine Engine => PyRevitEngine.GetEngineFromManifest(Manifest, Clone);
         public bool AllUsers => AttachmentType == PyRevitAttachmentType.AllUsers;
 
-        public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
-            foreach (var clone in PyRevit.GetRegisteredClones())
-                if (manifest.Assembly.Contains(clone.ClonePath))
-                    return clone;
-            return null;
+        public void SetClone(PyRevitClone clone) {
+            _clone = clone;
         }
 
-        public static PyRevitEngine GetEngineFromManifest(RevitAddonManifest manifest, PyRevitClone clone) {
-            foreach (var engine in clone.GetEngines())
-                if (manifest.Assembly.Contains(engine.Path))
-                    return engine;
-            return null;
+        public bool IsReadOnly() {
+            // determine if attachment can be modified by user
+            var us = new UserSecurity();
+            return us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
         }
-
     }
 }

@@ -1,41 +1,46 @@
 ﻿using System;
-using System.Windows;
+using System.Diagnostics;
 
-using pyRevitLabs.CommonCLI;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitUpdater {
     public class PyRevitUpdaterCLI {
-        public static void ProcessArguments(string[] args) {
+        static void Main(string[] args) {
             if (args.Length >= 1) {
+                // grab clone from args
                 var clonePath = args[0];
-                if (args.Length == 2 && args[1] == "--gui") {
-                    // show gui
-                    var updaterWindow = new UpdaterWindow();
-                    updaterWindow.ClonePath = clonePath;
-                    updaterWindow.ShowDialog();
-                }
-                else {
-                    ConsoleProvider.Attach();
-                    Console.WriteLine("Updating...");
-                    RunUpdate(clonePath);
-                    Console.WriteLine("Updating completed.");
-                    ConsoleProvider.Detach();
-                }
-            }
-        }
 
-        public static bool RevitsAreRunning() {
-            return RevitController.ListRunningRevits().Count > 0;
+                // request update
+                RunUpdate(clonePath);
+            }
         }
 
         public static void RunUpdate(string clonePath) {
             try {
+                // find target clone
                 var clone = PyRevit.GetRegisteredClone(clonePath);
+
+                // run update
                 PyRevit.Update(clone);
+
+                // write success message to system logs
+                using (EventLog eventLog = new EventLog("Application")) {
+                    eventLog.Source = "Application";
+                    eventLog.WriteEntry(
+                        string.Format("Successfully Updated Clone \"{0}\"", clone.Name),
+                        EventLogEntryType.Information
+                        );
+                }
             }
             catch (Exception ex){
-                MessageBox.Show(ex.Message, PyRevitConsts.AddinFileName);
+                // write error message to system logs
+                using (EventLog eventLog = new EventLog("Application")) {
+                    eventLog.Source = "pyRevit Updater";
+                    eventLog.WriteEntry(
+                        string.Format("Update Error: {0}", ex.Message),
+                        EventLogEntryType.Error
+                        );
+                }
             }
         }
 

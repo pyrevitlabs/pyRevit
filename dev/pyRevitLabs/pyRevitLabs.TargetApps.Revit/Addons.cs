@@ -64,7 +64,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static void CreateManifestFile(int revitYear, string addinFileName,
-                                              string addinName, string assemblyPath, string addinId, string addinClassName, string vendorId,
+                                              string addinName, string assemblyPath,
+                                              string addinId, string addinClassName, string vendorId,
                                               bool allusers = false, string addinPath = null) {
             string manifest = string.Format(ManifestTemplate, addinName, assemblyPath, addinId, addinClassName, vendorId);
             logger.Debug("Creating addin manifest...\n{0}", manifest);
@@ -74,10 +75,20 @@ namespace pyRevitLabs.TargetApps.Revit {
             else
                 addinFile = Path.Combine(addinPath, addinFileName);
             logger.Debug("Creating manifest file \"{0}\"", addinFile);
-            CommonUtils.ConfirmFile(addinFile);
+            CommonUtils.EnsureFile(addinFile);
             var f = File.CreateText(addinFile);
             f.Write(manifest);
             f.Close();
+        }
+
+        public static RevitAddonManifest GetAttachedManifest(int revitYear, bool allUsers) {
+            logger.Debug(
+                "Querying clone attached to Revit {0} {1}",
+                revitYear,
+                allUsers ? "(All Users)" : "(Current User)"
+                );
+
+            return GetManifest(revitYear, PyRevitConsts.AddinName, allUsers: allUsers);
         }
 
         public static void RemoveManifestFile(int revitYear, string addinName, bool currentAndAllUsers = true) {
@@ -109,9 +120,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 return revitManifest;
                         }
                         catch (Exception ex) {
-                            logger.Debug(string.Format("Error reading Revit \"{0}\" manifest file for \"{1}\" | {2}",
+                            logger.Debug(string.Format("Not pyRevit \"{0}\" manifest file \"{1}\" | {2}",
                                     revitYear,
-                                    addinName,
+                                    file,
                                     ex.Message)
                                 );
                         }
@@ -128,7 +139,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public static string PrepareAddonPath(int revitYear, bool allUsers) {
             var addonPath = GetRevitAddonsFolder(revitYear, allUsers: allUsers);
-            CommonUtils.ConfirmPath(addonPath);
+            CommonUtils.EnsurePath(addonPath);
             logger.Debug("Prepared: {0}", addonPath);
             return addonPath;
         }
