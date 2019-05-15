@@ -1,35 +1,59 @@
-[core]
-enginename = 'pyRevitLoader.dll'
-
 [engines]
 
 [engines.IPY273]
 kernel = 'IronPython'
 version = 273
+runtime = true
 path = 'bin\engines\273'
+assembly = 'pyRevitLoader.dll'
 compatproducts = ['dynamo']
 description = 'Provided for backward-compatibility with Dynamo BIM <= 2.0.2'
 
 [engines.IPY277]
 kernel = 'IronPython'
 version = 277
+runtime = true
 path = 'bin\engines\277'
+assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'Compatible with RevitPythonShell'
 
 [engines.IPY278]
 kernel = 'IronPython'
 version = 278
+runtime = true
 path = 'bin\engines\278'
+assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'IronPython Engine'
 
 [engines.IPY279]
 kernel = 'IronPython'
 version = 279
+runtime = true
 path = 'bin\engines\279'
+assembly = 'pyRevitLoader.dll'
 compatproducts = []
 description = 'Latest Stable IronPython Engine'
+
+[engines.CPY368]
+kernel = 'CPython'
+version = 368
+runtime = false
+path = 'bin\engines\368'
+assembly = 'Python.Runtime.dll'
+compatproducts = []
+description = 'Alternative command execution engine.'
+
+[engines.CPY372]
+kernel = 'CPython'
+version = 372
+runtime = false
+path = 'bin\engines\372'
+assembly = 'Python.Runtime.dll'
+compatproducts = []
+description = 'Alternative command execution engine.'
+
 
 [deployments]
 core = ['bin',
@@ -38,6 +62,7 @@ core = ['bin',
         'pyRevitfile']
 corex = ['bin',
          'extensions/pyRevitCore.extension',
+         'extensions/pyRevitRun.run',
          'pyrevitlib',
          'site-packages',
          'pyRevitfile']
@@ -50,6 +75,7 @@ base = ['bin',
         'pyRevitfile']
 basepublic = ['bin',
               'extensions/pyRevitCore.extension',
+              'extensions/pyRevitRun.run',
               'extensions/pyRevitTags.extension',
               'extensions/pyRevitTools.extension',
               'extensions/pyRevitTutor.extension',

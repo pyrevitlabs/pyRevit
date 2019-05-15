@@ -3,8 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:pyRevitLabs.CommonWPF.Controls"
-             xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
              mc:Ignorable="d"
              d:DesignHeight="100" d:DesignWidth="900">
     <UserControl.Resources>
@@ -55,20 +53,16 @@
                          Block.LineHeight="6" VerticalScrollBarVisibility="Auto">
             </RichTextBox>
             <StackPanel Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal">
-                <Button x:Name="clearConsoleButton" Content="CLEAR" 
-                        controls:ButtonHelper.PreserveTextCase="True" Margin="0,0,5,0"
+                <Button x:Name="clearConsoleButton" Content="CLEAR" Margin="0,0,5,0"
                         Click="clearConsoleButton_Click"
                         ToolTip="Clear all console content"/>
-                <Button x:Name="copyConsoleButton" Content="COPY ALL"
-                        controls:ButtonHelper.PreserveTextCase="True" Margin="0,0,5,0"
+                <Button x:Name="copyConsoleButton" Content="COPY ALL" Margin="0,0,5,0"
                         Click="copyConsoleButton_Click"
                         ToolTip="Copy all console contents to clipboard"/>
-                <Button x:Name="clearErrorsConsoleButton" Content="CLEAR ERRORS" 
-                        controls:ButtonHelper.PreserveTextCase="True" Margin="0,0,5,0"
+                <Button x:Name="clearErrorsConsoleButton" Content="CLEAR ERRORS"  Margin="0,0,5,0"
                         Click="clearErrorsConsoleButton_Click"
                         ToolTip="Clear errors on console"/>
-                <Button x:Name="closeButton" Content="CLOSE"
-                        controls:ButtonHelper.PreserveTextCase="True" Margin="0,0,15,0"
+                <Button x:Name="closeButton" Content="CLOSE" Margin="0,0,15,0"
                         Click="closeButton_Click"
                         ToolTip="Collapse console"/>
             </StackPanel>

@@ -38,7 +38,7 @@ def _make_button_tooltip(button):
     tooltip += 'Bundle Name:\n{} ({})'\
         .format(button.name, button.type_id.replace('.', ''))
     if button.author:
-        tooltip += '\n\nAuthor:\n{}'.format(button.author)
+        tooltip += '\n\nAuthor(s):\n{}'.format(button.author)
     return tooltip
 
 

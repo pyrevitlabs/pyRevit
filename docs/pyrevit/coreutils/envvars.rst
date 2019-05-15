@@ -1,9 +1,6 @@
-:mod:`pyrevit.coreutils.envvars`
-================================
+pyrevit.coreutils.envvars
+=========================
 
 .. automodule:: pyrevit.coreutils.envvars
     :members:
-
-**Implementation**
-
-.. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/envvars.py
+    :show-inheritance:

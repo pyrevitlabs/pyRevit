@@ -31,7 +31,7 @@
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -40,6 +40,9 @@
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="pyRevitLabs.MahAppsMetro">
+      <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -95,15 +98,13 @@
     <PackageReference Include="Expression.Blend.Sdk">
       <Version>1.0.2</Version>
     </PackageReference>
-    <PackageReference Include="MahApps.Metro">
-      <Version>1.6.5</Version>
-    </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.3</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin"</PostBuildEvent>
+    <PostBuildEvent>copy "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin"
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

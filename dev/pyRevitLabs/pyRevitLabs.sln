@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitUpdater", "pyRevitUp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.DeffrelDB", "pyRevitLabs.DeffrelDB\pyRevitLabs.DeffrelDB.csproj", "{4672A022-5855-4C70-B81E-9E1109BD7B6D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit Tests", "Unit Tests\Unit Tests.csproj", "{17D33C7F-79A4-4403-96A2-13887ECAC775}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4672A022-5855-4C70-B81E-9E1109BD7B6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17D33C7F-79A4-4403-96A2-13887ECAC775}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

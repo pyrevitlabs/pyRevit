@@ -102,7 +102,7 @@ def get_pyrevit_version():
     """Return pyRevit version.
 
     Returns:
-        :obj:`pyrevit.versionmgr.PyRevitVersion`: pyRevit version provider
+        :obj:`pyrevit.versionmgr._PyRevitVersion`: pyRevit version provider
     """
     return versionmgr.get_pyrevit_version()
 

@@ -12,8 +12,9 @@ from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils.dotnetcompiler import compile_csharp
 from pyrevit.coreutils import appdata
-
 from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
+
+from pyrevit.userconfig import user_config
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -63,10 +64,21 @@ SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
 
 if not EXEC_PARAMS.doc_mode:
+    # get and load the active Cpython engine
+    CPYTHON_ENGINE = user_config.get_active_cpython_engine()
+    CPYTHON_ENGINE_ASSM = CPYTHON_ENGINE.AssemblyPath
+    load_asm_file(CPYTHON_ENGINE_ASSM)
+
+    # create a hash for the loader assembly
+    # this hash is calculated based on:
+    # - basetypes csharp files
+    # - runtime engine version
+    # - cpython engine version
     BASE_TYPES_DIR_HASH = \
         get_str_hash(
             calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
             + EXEC_PARAMS.engine_ver
+            + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, LOADER_BASE_NAMESPACE)
@@ -161,9 +173,15 @@ def _get_references():
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-                'MahApps.Metro']
+                'pyRevitLabs.MahAppsMetro']
 
-    return [_get_reference_file(ref_name) for ref_name in ref_list]
+    refs = [_get_reference_file(ref_name) for ref_name in ref_list]
+
+    # add cpython engine dll to references
+    # _get_reference_file('engines/372/Python.Runtime')
+    refs.append(CPYTHON_ENGINE_ASSM)
+
+    return refs
 
 
 def _generate_base_classes_asm():

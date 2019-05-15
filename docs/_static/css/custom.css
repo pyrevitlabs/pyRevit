@@ -11,7 +11,12 @@ a:visited {
     color: #23303d;
 }
 
+em {
+    font-style: normal;
+}
+
 .wy-nav-content {
+    background: white !important;
     max-width: none;
 }
 
@@ -19,12 +24,14 @@ a:visited {
     max-width: 800px;
 }
 
-.icon.icon-home {
+.wy-side-nav-search>a img.logo,
+.wy-side-nav-search .wy-dropdown>a img.logo {
+    margin-top: 20px;
     width: 200px;
 }
 
-.version {
-    display:none;
+.wy-side-nav-search>div.version {
+    color: #23303d;
 }
 
 .highlight {
@@ -79,7 +86,7 @@ a:visited {
 }
 
 .rst-content dl:not(.docutils) dt .headerlink {
-    color: white;
+    color:  #23303d;
 }
 
 .wy-nav-side {
@@ -87,11 +94,20 @@ a:visited {
 }
 
 .wy-side-nav-search {
-    background-color: #f39c12;
+    background-color:white;
+    padding: 0 !important;
 }
 
 .wy-side-nav-search input[type=text] {
-    border-color: white;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #23303d;
+    background: lightgrey;
+}
+
+.wy-menu-vertical p.caption {
+    color: white;
 }
 
 .wy-side-nav-search>a,

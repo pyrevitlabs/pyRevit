@@ -100,7 +100,12 @@ def get_all_extension_repos():
 
 
 def update_repo(repo_info):
-    """Update repository."""
+    """Update repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     repo = repo_info.repo
     logger.debug('Updating repo: %s', repo_info.directory)
     head_msg = safe_strtype(repo.Head.Tip.Message).replace('\n', '')
@@ -127,7 +132,12 @@ def update_repo(repo_info):
 
 
 def get_updates(repo_info):
-    """Fetch updates on repository."""
+    """Fetch updates on repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     repo = repo_info.repo
     at_least_one_fetch_was_successful = False
 
@@ -153,7 +163,12 @@ def get_updates(repo_info):
 
 
 def has_pending_updates(repo_info):
-    """Check for updates on repository."""
+    """Check for updates on repository.
+
+    Args:
+        repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
+            repository info wrapper object
+    """
     if get_updates(repo_info):
         hist_div = libgit.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:

@@ -1,3 +1,4 @@
+"""Core logging module for pyRevit."""
 import sys
 import os.path
 import logging
@@ -52,18 +53,32 @@ FILE_LOGGING_DEFAULT_STATE = False
 
 # custom logger methods --------------------------------------------------------
 # (for module consistency and custom adjustments)
-class DispatchingFormatter:
+class DispatchingFormatter(object):
+    """Dispatching formatter to format by log level.
+
+    Args:
+        log_formatters (dict[int:logging.Formatter]):
+            dict of level:formatter key pairs
+        log_default_formatter (logging.Formatter): default formatter
+    """
     def __init__(self, log_formatters, log_default_formatter):
         self._formatters = log_formatters
         self._default_formatter = log_default_formatter
 
     def format(self, record):
+        """Format given record by log level."""
         formatter = self._formatters.get(record.levelno,
                                          self._default_formatter)
         return formatter.format(record)
 
 
 class LoggerWrapper(logging.Logger):
+    """Custom logging object.
+
+    Args:
+        val (type): desc
+        val (type): desc
+    """
     def __init__(self, *args):
         logging.Logger.__init__(self, *args)
         self._has_errors = False
@@ -87,6 +102,7 @@ class LoggerWrapper(logging.Logger):
                             exc_info=exc_info, extra=extra)
 
     def callHandlers(self, record):
+        """Override logging.Logger.callHandlers"""
         for hdlr in self.handlers:
             # stream-handler only records based on current level
             if isinstance(hdlr, logging.StreamHandler) \
@@ -98,6 +114,7 @@ class LoggerWrapper(logging.Logger):
                 hdlr.handle(record)
 
     def isEnabledFor(self, level):
+        """Override logging.Logger.isEnabledFor"""
         # update current logging level and file logging state
         self._filelogstate = \
             envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
@@ -119,6 +136,7 @@ class LoggerWrapper(logging.Logger):
         return level >= self._curlevel
 
     def is_enabled_for(self, level):
+        """Check if logger is enabled for level in pyRevit environment."""
         self._curlevel = \
             envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
@@ -134,27 +152,35 @@ class LoggerWrapper(logging.Logger):
         envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, log_level)
 
     def has_errors(self):
+        """Check if logger has reported any errors."""
         return self._has_errors
 
     def set_level(self, level):
+        """Set logging level to level."""
         self._reset_logger_env_vars(level)
 
     def set_quiet_mode(self):
+        """Activate quiet mode. All log levels are disabled."""
         self._reset_logger_env_vars(logging.CRITICAL)
 
     def set_verbose_mode(self):
+        """Activate verbose mode. Log levels >= INFO are enabled."""
         self._reset_logger_env_vars(logging.INFO)
 
     def set_debug_mode(self):
+        """Activate debug mode. Log levels >= DEBUG are enabled."""
         self._reset_logger_env_vars(logging.DEBUG)
 
     def reset_level(self):
+        """Reset logging level back to default."""
         self._reset_logger_env_vars(DEFAULT_LOGGING_LEVEL)
 
     def get_level(self):
+        """Return current logging level."""
         return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
     def deprecate(self, message):
+        """Log message with custom Deprecate level."""
         self.warning(message)
 
 
@@ -174,12 +200,24 @@ file_hndlr.setFormatter(file_formatter)
 
 
 def get_stdout_hndlr():
+    """Return stdout logging handler object.
+
+    Returns:
+        logging.StreamHandler:
+            configured instance of python's native stream handler
+    """
     global stdout_hndlr     #pylint: disable=W0603
 
     return stdout_hndlr
 
 
 def get_file_hndlr():
+    """Return file logging handler object.
+
+    Returns:
+        logging.FileHandler:
+            configured instance of python's native stream handler
+    """
     global file_hndlr       #pylint: disable=W0603
 
     if EXEC_PARAMS.command_mode:
@@ -202,6 +240,22 @@ loggers = {}
 
 
 def get_logger(logger_name):
+    """Register and return a logger with given name.
+
+    Caches all registered loggers and returns the same logger object on
+    second call with the same logger name.
+
+    Args:
+        logger_name (str): logger name
+        val (type): desc
+
+    Returns:
+        :obj:`LoggerWrapper`: logger object wrapper python's native logger
+
+    Example:
+        >>> get_logger('my command')
+        ... <LoggerWrapper ...>
+    """
     if loggers.get(logger_name):
         return loggers.get(logger_name)
     else:
@@ -215,10 +269,16 @@ def get_logger(logger_name):
 
 
 def set_file_logging(status):
+    """Set file logging status (enable/disable).
+
+    Args:
+        status (bool): True to enable, False to disable
+    """
     envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, status)
 
 
 def loggers_have_errors():
+    """Check if any errors have been reported by any of registered loggers."""
     for logger in loggers.values():
         if logger.has_errors():
             return True

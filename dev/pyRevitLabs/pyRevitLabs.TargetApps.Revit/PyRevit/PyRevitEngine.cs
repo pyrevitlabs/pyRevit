@@ -1,31 +1,40 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 
 using pyRevitLabs.Common.Extensions;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitEngine {
-        public PyRevitEngine(int engineVer, string enginePath, string kernelName = "", string engineDescription = "", IEnumerable<string> compatibleProducts = null) {
+        // create engine from engine info
+        public PyRevitEngine(int engineVer, bool runtime,
+                             string enginePath, string assemblyName = PyRevitConsts.LegacyEngineDllName,
+                             string kernelName = "", string engineDescription = "",
+                             IEnumerable<string> compatibleProducts = null) {
             Version = engineVer;
+            Runtime = runtime;
             Path = enginePath;
+            AssemblyName = assemblyName;
             KernelName = kernelName;
             Description = engineDescription;
-            CompatibleProducts = compatibleProducts != null ? compatibleProducts.ToList<string>() : new List<string>();
+            CompatibleProducts = compatibleProducts != null ? compatibleProducts.ToList() : new List<string>();
         }
 
         public override string ToString() {
             return string.Format(
-                "KernelName:\"{0}\" | Version: \"{1}\" | Path: \"{2}\" | Desc: \"{3}\" | Compatible: \"{4}\"",
-                KernelName, Version, Path, Description, CompatibleProducts.ConvertToCommaSeparatedString());
+                "Kernel: {0} | Version: {1} | Runtime: {2} | Path: \"{3}\" | Desc: \"{4}\" | Compatible: \"{5}\"",
+                KernelName, Version, Runtime, AssemblyPath, Description, CompatibleProducts.ConvertToCommaSeparatedString());
         }
 
         public int Version { get; private set; }
+        public bool Runtime { get; private set; }
         public string Path { get; private set; }
+        public string AssemblyName { get; private set; }
         public string KernelName { get; private set; }
 
-        public string LoaderPath {
+        public string AssemblyPath {
             get {
-                return System.IO.Path.Combine(Path, PyRevitConsts.DllName).NormalizeAsPath();
+                return System.IO.Path.Combine(Path, AssemblyName).NormalizeAsPath();
             }
         }
 
@@ -34,6 +43,13 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public bool IsCompatibleWith(string productName) {
             return CompatibleProducts.Contains(productName);
+        }
+
+        public static PyRevitEngine GetEngineFromManifest(RevitAddonManifest manifest, PyRevitClone clone) {
+            foreach (var engine in clone.GetEngines())
+                if (manifest.Assembly.Contains(engine.Path))
+                    return engine;
+            return null;
         }
     }
 }
