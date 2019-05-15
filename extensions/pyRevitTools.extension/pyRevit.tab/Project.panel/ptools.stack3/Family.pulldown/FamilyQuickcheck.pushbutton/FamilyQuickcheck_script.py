@@ -15,6 +15,10 @@ pyRevit: repository at https://github.com/eirannejad/pyRevit
 
 from pyrevit.framework import Diagnostics
 from pyrevit import revit, DB
+from pyrevit import script
+
+
+logger = script.get_logger()
 
 
 __title__ = 'Families Quickcheck'
@@ -39,11 +43,13 @@ for fam in all_families:
         checked_families += 1
         print("--{}-----".format(str(checked_families).zfill(4)))
         print("attempt to open family: {}".format(fam.Name))
-        fam_doc = revit.doc.EditFamily(fam)
-        print("{} seems ok.".format(fam.Name))
+        try:
+            fam_doc = revit.doc.EditFamily(fam)
+            print("{} seems ok.".format(fam.Name))
+        except Exception as ex:
+            logger.warning("seems corrupt: %s | %s", fam.Name, str(ex))
 
-print("\nquickchecked: {0} families\n{1} run in: "
-      .format(checked_families, __title__))
+print("\nquickchecked: {0} families\n{1} run in: ".format(checked_families, __title__))
 
 stopwatch.Stop()
 timespan = stopwatch.Elapsed
