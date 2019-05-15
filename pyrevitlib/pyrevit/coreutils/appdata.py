@@ -14,7 +14,7 @@ import os.path as op
 import re
 
 import pyrevit
-from pyrevit import EXEC_PARAMS, HOST_APP
+from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils import make_canonical_name
 from pyrevit.coreutils import logger
 from pyrevit.labs import TargetApps
@@ -221,7 +221,11 @@ def list_data_files(file_ext, universal=False):
     Returns:
         :obj:`list`: list of files
     """
-    return _list_app_files(pyrevit.PYREVIT_FILE_PREFIX, file_ext, universal=universal)
+    return _list_app_files(
+        pyrevit.PYREVIT_FILE_PREFIX,
+        file_ext,
+        universal=universal
+        )
 
 
 def list_session_data_files(file_ext):

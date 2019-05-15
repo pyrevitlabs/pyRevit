@@ -181,7 +181,7 @@ namespace PyRevitBaseClasses
                     }
                 }
                 TXN.Commit();
-            } catch (Exception ex) {
+            } catch {
             }
 
             _txnCompleted = true;

@@ -8,6 +8,7 @@ https://github.com/libgit2/libgit2sharp/wiki
 
 import importlib
 import os.path as op
+from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException, EXEC_PARAMS
 from pyrevit.compat import safe_strtype
@@ -37,13 +38,22 @@ if not EXEC_PARAMS.doc_mode:
 
 
 class PyRevitGitAuthenticationError(PyRevitException):
+    """Git authentication error."""
     pass
 
 
-class RepoInfo:
-    """
-    Generic repo wrapper for passing repository information to other modules
+class RepoInfo(object):
+    """Repo wrapper for passing around repository information.
 
+    Attributes:
+        directory (str): repo directory
+        name (str): repo name
+        head_name (str): head branch name
+        last_commit_hash (str): hash of head commit
+        repo (str): ``LibGit2Sharp.Repository`` object
+        branch (str): current branch name
+        username (str): credentials - username
+        password (str): credentials - password
     """
     def __init__(self, repo):
         self.directory = repo.Info.WorkingDirectory
@@ -131,19 +141,27 @@ def _process_git_error(exception_err):
 
 
 def get_repo(repo_dir):
-    """
+    """Return repo object for given git repo directory.
 
     Args:
-        repo_dir:
+        repo_dir (str): full path of git repo directory
 
     Returns:
-        RepoInfo:
+        :obj:`RepoInfo`: repo object
     """
     repo = libgit.Repository(repo_dir)
     return RepoInfo(repo)
 
 
 def git_pull(repo_info):
+    """Pull the current head of given repo.
+
+    Args:
+        repo_info (:obj:`RepoInfo`): target repo object
+
+    Returns:
+        :obj:`RepoInfo`: repo object with updated head
+    """
     repo = repo_info.repo
     try:
         libgit.Commands.Pull(repo,
@@ -162,6 +180,14 @@ def git_pull(repo_info):
 
 
 def git_fetch(repo_info):
+    """Fetch current branch of given repo.
+
+    Args:
+        repo_info (:obj:`RepoInfo`): target repo object
+
+    Returns:
+        :obj:`RepoInfo`: repo object with updated head
+    """
     repo = repo_info.repo
     try:
         libgit.Commands.Fetch(repo,
@@ -183,6 +209,14 @@ def git_fetch(repo_info):
 
 
 def git_clone(repo_url, clone_dir, username=None, password=None):
+    """Clone git repository to given location
+
+    Args:
+        repo_url (str): repo .git url
+        clone_dir (str): destination path
+        username (str): credentials - username
+        password (str): credentials - password
+    """
     try:
         libgit.Repository.Clone(repo_url,
                                 clone_dir,
@@ -198,6 +232,15 @@ def git_clone(repo_url, clone_dir, username=None, password=None):
 
 
 def compare_branch_heads(repo_info):
+    """Compare local and remote branch heads and return ???
+
+    Args:
+        repo_info (:obj:`RepoInfo`): target repo object
+
+    Returns:
+        type: desc
+    """
+    # FIXME: need return type. possibly simplify
     repo = repo_info.repo
     repo_branches = repo.Branches
 
@@ -226,8 +269,14 @@ def compare_branch_heads(repo_info):
 
 
 def get_all_new_commits(repo_info):
-    from collections import OrderedDict
+    """Fetch and return new commits ahead of current head.
 
+    Args:
+        repo_info (:obj:`RepoInfo`): target repo object
+
+    Returns:
+        OrderedDict[str:str]: ordered dict of commit hash:message
+    """
     repo = repo_info.repo
     current_commit = repo_info.last_commit_hash
 

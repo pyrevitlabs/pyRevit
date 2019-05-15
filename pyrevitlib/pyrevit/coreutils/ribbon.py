@@ -25,10 +25,18 @@ ICON_LARGE = 32
 DEFAULT_DPI = 96
 
 
-def load_bitmapimage(path):
+def load_bitmapimage(image_file):
+    """Load given png file.
+
+    Args:
+        image_file (str): image file path
+
+    Returns:
+        Imaging.BitmapImage: bitmap image object
+    """
     bitmap = Imaging.BitmapImage()
     bitmap.BeginInit()
-    bitmap.UriSource = Uri(path)
+    bitmap.UriSource = Uri(image_file)
     bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
     bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
     bitmap.EndInit()
@@ -38,20 +46,34 @@ def load_bitmapimage(path):
 
 # Helper classes and functions -------------------------------------------------
 class PyRevitUIError(PyRevitException):
+    """Common base class for all pyRevit ui-related exceptions."""
     pass
 
 
-class _ButtonIcons(object):
-    def __init__(self, file_address):
-        self.icon_file_path = file_address
+class ButtonIcons(object):
+    """pyRevit ui element icon.
+
+    Upon init, this type reads the given image file into an io stream and
+    releases the os lock on the file.
+
+    Args:
+        image_file (str): image file path to be used as icon
+
+    Attributes:
+        icon_file_path (str): icon image file path
+        filestream (IO.FileStream): io stream containing image binary data
+    """
+    def __init__(self, image_file):
+        self.icon_file_path = image_file
         self.check_icon_size()
-        self.filestream = IO.FileStream(file_address,
+        self.filestream = IO.FileStream(image_file,
                                         IO.FileMode.Open,
                                         IO.FileAccess.Read)
 
     @staticmethod
     def recolour(image_data, size, stride, color):
-        # _ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
+        # FIXME: needs doc, and argument types
+        # ButtonIcons.recolour(image_data, image_size, stride, 0x8e44ad)
         step = stride / size
         for i in range(0, stride, step):
             for j in range(0, stride, step):
@@ -65,6 +87,7 @@ class _ButtonIcons(object):
                 image_data[idx+2] = color >> 16 & 0xff    # red
 
     def check_icon_size(self):
+        """Verify icon size is within acceptable range."""
         image = System.Drawing.Image.FromFile(self.icon_file_path)
         image_size = max(image.Width, image.Height)
         if image_size > 96:
@@ -75,6 +98,16 @@ class _ButtonIcons(object):
                             self.icon_file_path)
 
     def create_bitmap(self, icon_size):
+        """Resamples image and creates bitmap for the given size.
+
+        Icons are assumed to be square.
+
+        Args:
+            icon_size (int): icon size (width or height)
+
+        Returns:
+            Imaging.BitmapSource: object containing image data at given size
+        """
         mlogger.debug('Creating %sx%s bitmap from: %s',
                       icon_size, icon_size, self.icon_file_path)
         adjusted_icon_size = icon_size * 2
@@ -112,19 +145,40 @@ class _ButtonIcons(object):
 
     @property
     def small_bitmap(self):
+        """Resamples image and creates bitmap for size :obj:`ICON_SMALL`.
+
+        Returns:
+            Imaging.BitmapSource: object containing image data at given size
+        """
         return self.create_bitmap(ICON_SMALL)
 
     @property
     def medium_bitmap(self):
+        """Resamples image and creates bitmap for size :obj:`ICON_MEDIUM`.
+
+        Returns:
+            Imaging.BitmapSource: object containing image data at given size
+        """
         return self.create_bitmap(ICON_MEDIUM)
 
     @property
     def large_bitmap(self):
+        """Resamples image and creates bitmap for size :obj:`ICON_LARGE`.
+
+        Returns:
+            Imaging.BitmapSource: object containing image data at given size
+        """
         return self.create_bitmap(ICON_LARGE)
 
 
 # Superclass to all ui item classes --------------------------------------------
-class _GenericPyRevitUIContainer(object):
+class GenericPyRevitUIContainer(object):
+    """Common type for all pyRevit ui containers.
+
+    Attributes:
+        name (str): container name
+        itemdata_mode (bool): if container is wrapping UI.*ItemData
+    """
     def __init__(self):
         self.name = ''
         self._rvtapi_object = None
@@ -158,6 +212,7 @@ class _GenericPyRevitUIContainer(object):
 
     @property
     def visible(self):
+        """Is container visible."""
         if hasattr(self._rvtapi_object, 'Visible'):
             return self._rvtapi_object.Visible
         elif hasattr(self._rvtapi_object, 'IsVisible'):
@@ -176,6 +231,7 @@ class _GenericPyRevitUIContainer(object):
 
     @property
     def enabled(self):
+        """Is container enabled."""
         if hasattr(self._rvtapi_object, 'Enabled'):
             return self._rvtapi_object.Enabled
         elif hasattr(self._rvtapi_object, 'IsEnabled'):
@@ -193,14 +249,24 @@ class _GenericPyRevitUIContainer(object):
             raise AttributeError()
 
     def get_rvtapi_object(self):
+        """Return underlying Revit API object for this container."""
+        # FIXME: return type
         return self._rvtapi_object
 
     def set_rvtapi_object(self, rvtapi_obj):
+        """Set underlying Revit API object for this container.
+
+        Args:
+            rvtapi_obj (obj): Revit API container object
+        """
+        # FIXME: rvtapi_obj type
         self._rvtapi_object = rvtapi_obj
         self.itemdata_mode = False
         self._dirty = True
 
     def get_adwindows_object(self):
+        """Return underlying AdWindows API object for this container."""
+        # FIXME: return type
         rvtapi_obj = self._rvtapi_object
         getRibbonItemMethod = \
             rvtapi_obj.GetType().GetMethod(
@@ -211,6 +277,19 @@ class _GenericPyRevitUIContainer(object):
             return getRibbonItemMethod.Invoke(rvtapi_obj, None)
 
     def get_flagged_children(self, state=True):
+        """Get all children with their flag equal to given state.
+
+        Flagging is a mechanism to mark certain containers. There are various
+        reasons that container flagging might be used e.g. marking updated
+        containers or the ones in need of an update or removal.
+
+        Args:
+            state (bool): flag state to filter children
+
+        Returns:
+            list[*]: list of filtered child objects
+        """
+        # FIXME: return type
         flagged_cmps = []
         for component in self:
             flagged_cmps.extend(component.get_flagged_children(state))
@@ -219,16 +298,20 @@ class _GenericPyRevitUIContainer(object):
         return flagged_cmps
 
     def keys(self):
+        # FIXME: what does this do?
         list(self._sub_pyrvt_components.keys())
 
     def values(self):
+        # FIXME: what does this do?
         list(self._sub_pyrvt_components.values())
 
     @staticmethod
     def is_native():
+        """Is this container generated by pyRevit or is native."""
         return False
 
     def is_dirty(self):
+        """Is dirty flag set."""
         if self._dirty:
             return self._dirty
         else:
@@ -239,12 +322,33 @@ class _GenericPyRevitUIContainer(object):
             return False
 
     def set_dirty_flag(self, state=True):
+        """Set dirty flag to given state.
+
+        See .get_flagged_children()
+
+        Args:
+            state (bool): state to set flag
+        """
         self._dirty = state
 
     def contains(self, pyrvt_cmp_name):
+        """Check if container contains a component with given name.
+
+        Args:
+            pyrvt_cmp_name (str): target component name
+            val (type): desc
+        """
         return pyrvt_cmp_name in self._sub_pyrvt_components.keys()
 
     def find_child(self, child_name):
+        """Find a component with given name in children.
+
+        Args:
+            child_name (str): target component name
+
+        Returns:
+            *: component object if found, otherwise None
+        """
         for sub_cmp in self._sub_pyrvt_components.values():
             if child_name == sub_cmp.name:
                 return sub_cmp
@@ -259,6 +363,7 @@ class _GenericPyRevitUIContainer(object):
         return None
 
     def activate(self):
+        """Activate this container in ui."""
         try:
             self.enabled = True
             self.visible = True
@@ -267,6 +372,7 @@ class _GenericPyRevitUIContainer(object):
             raise PyRevitUIError('Can not activate: {}'.format(self))
 
     def deactivate(self):
+        """Deactivate this container in ui."""
         try:
             self.enabled = False
             self.visible = False
@@ -275,17 +381,25 @@ class _GenericPyRevitUIContainer(object):
             raise PyRevitUIError('Can not deactivate: {}'.format(self))
 
     def get_updated_items(self):
+        # FIXME: reduntant, this is a use case and should be on uimaker side?
         return self.get_flagged_children()
 
     def get_unchanged_items(self):
+        # FIXME: reduntant, this is a use case and should be on uimaker side?
         return self.get_flagged_children(state=False)
 
-    def reorder_before(self, litem_name, ritem_name):
+    def reorder_before(self, item_name, ritem_name):
+        """Reorder and place item_name before ritem_name
+
+        Args:
+            item_name (str): name of component to be moved
+            ritem_name (str): name of component that should be on the right
+        """
         apiobj = self.get_rvtapi_object()
         litem_idx = ritem_idx = None
         if hasattr(apiobj, 'Panels'):
             for item in apiobj.Panels:
-                if item.Source.AutomationName == litem_name:
+                if item.Source.AutomationName == item_name:
                     litem_idx = apiobj.Panels.IndexOf(item)
                 elif item.Source.AutomationName == ritem_name:
                     ritem_idx = apiobj.Panels.IndexOf(item)
@@ -295,22 +409,34 @@ class _GenericPyRevitUIContainer(object):
                 elif litem_idx > ritem_idx:
                     apiobj.Panels.Move(litem_idx, ritem_idx)
 
-    def reorder_beforeall(self, litem_name):
+    def reorder_beforeall(self, item_name):
+        """Reorder and place item_name before all others.
+
+        Args:
+            item_name (str): name of component to be moved
+        """
+        # FIXME: verify docs description is correct
         apiobj = self.get_rvtapi_object()
         litem_idx = None
         if hasattr(apiobj, 'Panels'):
             for item in apiobj.Panels:
-                if item.Source.AutomationName == litem_name:
+                if item.Source.AutomationName == item_name:
                     litem_idx = apiobj.Panels.IndexOf(item)
             if litem_idx:
                 apiobj.Panels.Move(litem_idx, 0)
 
-    def reorder_after(self, litem_name, ritem_name):
+    def reorder_after(self, item_name, ritem_name):
+        """Reorder and place item_name after ritem_name
+
+        Args:
+            item_name (str): name of component to be moved
+            ritem_name (str): name of component that should be on the left
+        """
         apiobj = self.get_rvtapi_object()
         litem_idx = ritem_idx = None
         if hasattr(apiobj, 'Panels'):
             for item in apiobj.Panels:
-                if item.Source.AutomationName == litem_name:
+                if item.Source.AutomationName == item_name:
                     litem_idx = apiobj.Panels.IndexOf(item)
                 elif item.Source.AutomationName == ritem_name:
                     ritem_idx = apiobj.Panels.IndexOf(item)
@@ -320,12 +446,17 @@ class _GenericPyRevitUIContainer(object):
                 elif litem_idx > ritem_idx:
                     apiobj.Panels.Move(litem_idx, ritem_idx + 1)
 
-    def reorder_afterall(self, litem_name):
+    def reorder_afterall(self, item_name):
+        """Reorder and place item_name after all others.
+
+        Args:
+            item_name (str): name of component to be moved
+        """
         apiobj = self.get_rvtapi_object()
         litem_idx = None
         if hasattr(apiobj, 'Panels'):
             for item in apiobj.Panels:
-                if item.Source.AutomationName == litem_name:
+                if item.Source.AutomationName == item_name:
                     litem_idx = apiobj.Panels.IndexOf(item)
             if litem_idx:
                 max_idx = len(apiobj.Panels) - 1
@@ -334,24 +465,38 @@ class _GenericPyRevitUIContainer(object):
 
 # Classes holding existing native ui elements
 # (These elements are native and can not be modified) --------------------------
-class _GenericRevitNativeUIContainer(_GenericPyRevitUIContainer):
+class GenericRevitNativeUIContainer(GenericPyRevitUIContainer):
+    """Common base type for native Revit API UI containers."""
     def __init__(self):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
     @staticmethod
     def is_native():
+        """Is this container generated by pyRevit or is native."""
         return True
 
+    def activate(self):
+        """Activate this container in ui.
+
+        Under current implementation, raises PyRevitUIError exception as
+        native Revit API UI components should not be changed.
+        """
+        return self.deactivate()
+
     def deactivate(self):
+        """Deactivate this container in ui.
+
+        Under current implementation, raises PyRevitUIError exception as
+        native Revit API UI components should not be changed.
+        """
         raise PyRevitUIError('Can not de/activate native item: {}'
                              .format(self))
 
-    activate = deactivate
 
-
-class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
+class RevitNativeRibbonButton(GenericRevitNativeUIContainer):
+    """Revit API UI native ribbon button."""
     def __init__(self, adwnd_ribbon_button):
-        _GenericRevitNativeUIContainer.__init__(self)
+        GenericRevitNativeUIContainer.__init__(self)
 
         self.name = \
             safe_strtype(adwnd_ribbon_button.AutomationName)\
@@ -359,23 +504,34 @@ class _RevitNativeRibbonButton(_GenericRevitNativeUIContainer):
         self._rvtapi_object = adwnd_ribbon_button
 
 
-class _RevitNativeRibbonGroupItem(_GenericRevitNativeUIContainer):
+class RevitNativeRibbonGroupItem(GenericRevitNativeUIContainer):
+    """Revit API UI native ribbon button."""
     def __init__(self, adwnd_ribbon_item):
-        _GenericRevitNativeUIContainer.__init__(self)
+        GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adwnd_ribbon_item.Source.Title
         self._rvtapi_object = adwnd_ribbon_item
 
         # finding children on this button group
         for adwnd_ribbon_button in adwnd_ribbon_item.Items:
-            self._add_component(_RevitNativeRibbonButton(adwnd_ribbon_button))
+            self._add_component(RevitNativeRibbonButton(adwnd_ribbon_button))
 
-    button = _GenericRevitNativeUIContainer._get_component
+    def button(self, name):
+        """Get button item with given name.
+
+        Args:
+            name (str): name of button item to find
+
+        Returns:
+            :obj:`RevitNativeRibbonButton`: button object if found
+        """
+        return super(RevitNativeRibbonGroupItem, self)._get_component(name)
 
 
-class _RevitNativeRibbonPanel(_GenericRevitNativeUIContainer):
+class RevitNativeRibbonPanel(GenericRevitNativeUIContainer):
+    """Revit API UI native ribbon button."""
     def __init__(self, adwnd_ribbon_panel):
-        _GenericRevitNativeUIContainer.__init__(self)
+        GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adwnd_ribbon_panel.Source.Title
         self._rvtapi_object = adwnd_ribbon_panel
@@ -412,22 +568,34 @@ class _RevitNativeRibbonPanel(_GenericRevitNativeUIContainer):
                         or isinstance(adwnd_ribbon_item,
                                       AdWindows.RibbonToggleButton):
                     self._add_component(
-                        _RevitNativeRibbonButton(adwnd_ribbon_item))
+                        RevitNativeRibbonButton(adwnd_ribbon_item))
                 elif isinstance(adwnd_ribbon_item,
                                 AdWindows.RibbonSplitButton):
                     self._add_component(
-                        _RevitNativeRibbonGroupItem(adwnd_ribbon_item))
+                        RevitNativeRibbonGroupItem(adwnd_ribbon_item))
 
             except Exception as append_err:
                 mlogger.debug('Can not create native ribbon item: %s '
                               '| %s', adwnd_ribbon_item, append_err)
 
-    ribbon_item = _GenericRevitNativeUIContainer._get_component
+    def ribbon_item(self, item_name):
+        """Get panel item with given name.
+
+        Args:
+            item_name (str): name of panel item to find
+
+        Returns:
+            object:
+                panel item if found, could be :obj:`RevitNativeRibbonButton`
+                or :obj:`RevitNativeRibbonGroupItem`
+        """
+        return super(RevitNativeRibbonPanel, self)._get_component(item_name)
 
 
-class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
+class RevitNativeRibbonTab(GenericRevitNativeUIContainer):
+    """Revit API UI native ribbon tab."""
     def __init__(self, adwnd_ribbon_tab):
-        _GenericRevitNativeUIContainer.__init__(self)
+        GenericRevitNativeUIContainer.__init__(self)
 
         self.name = adwnd_ribbon_tab.Title
         self._rvtapi_object = adwnd_ribbon_tab
@@ -438,30 +606,40 @@ class _RevitNativeRibbonTab(_GenericRevitNativeUIContainer):
                 # only listing visible panels
                 if adwnd_ribbon_panel.IsVisible:
                     self._add_component(
-                        _RevitNativeRibbonPanel(adwnd_ribbon_panel)
+                        RevitNativeRibbonPanel(adwnd_ribbon_panel)
                     )
         except Exception as append_err:
             mlogger.debug('Can not get native panels for this native tab: %s '
                           '| %s', adwnd_ribbon_tab, append_err)
 
-    ribbon_panel = _GenericRevitNativeUIContainer._get_component
+    def ribbon_panel(self, panel_name):
+        """Get panel with given name.
+
+        Args:
+            panel_name (str): name of panel to find
+
+        Returns:
+            :obj:`RevitNativeRibbonPanel`: panel if found
+        """
+        return super(RevitNativeRibbonTab, self)._get_component(panel_name)
 
     @staticmethod
     def is_pyrevit_tab():
+        """Is this tab generated by pyRevit."""
         return False
 
 
 # Classes holding non-native ui elements --------------------------------------
-class _PyRevitSeparator(_GenericPyRevitUIContainer):
+class _PyRevitSeparator(GenericPyRevitUIContainer):
     def __init__(self):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
         self.name = coreutils.new_uuid()
         self.itemdata_mode = True
 
 
-class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
+class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def __init__(self, ribbon_button):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
         self.name = ribbon_button.Name
         self._rvtapi_object = ribbon_button
@@ -477,13 +655,13 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
             self.ui_title = self._rvtapi_object.ItemText
 
     def set_rvtapi_object(self, rvtapi_obj):
-        _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
+        GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
         # update the ui title for the newly added rvtapi_obj
         self._rvtapi_object.ItemText = self.ui_title
 
     def set_icon(self, icon_file, icon_size=ICON_MEDIUM):
         try:
-            button_icon = _ButtonIcons(icon_file)
+            button_icon = ButtonIcons(icon_file)
             rvtapi_obj = self.get_rvtapi_object()
             rvtapi_obj.Image = button_icon.small_bitmap
             if icon_size == ICON_LARGE:
@@ -565,12 +743,12 @@ class _PyRevitRibbonButton(_GenericPyRevitUIContainer):
         return self._rvtapi_object.AvailabilityClassName
 
 
-class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
+class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
-    button = _GenericPyRevitUIContainer._get_component
+    button = GenericPyRevitUIContainer._get_component
 
     def __init__(self, ribbon_item):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
         self.name = ribbon_item.Name
         self._rvtapi_object = ribbon_item
@@ -602,7 +780,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
                or isinstance(self._rvtapi_object, UI.SplitButtonData)
 
     def set_rvtapi_object(self, rvtapi_obj):
-        _GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
+        GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
         if self.is_splitbutton():
             self.get_rvtapi_object().IsSynchronizedWithCurrentItem = \
                 self._sync_with_cur_item
@@ -637,7 +815,7 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
 
     def set_icon(self, icon_file, icon_size=ICON_LARGE):
         try:
-            button_icon = _ButtonIcons(icon_file)
+            button_icon = ButtonIcons(icon_file)
             rvtapi_obj = self.get_rvtapi_object()
             rvtapi_obj.Image = button_icon.small_bitmap
             if icon_size == ICON_LARGE:
@@ -787,13 +965,13 @@ class _PyRevitRibbonGroupItem(_GenericPyRevitUIContainer):
         self._dirty = True
 
 
-class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
+class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
-    button = _GenericPyRevitUIContainer._get_component
-    ribbon_item = _GenericPyRevitUIContainer._get_component
+    button = GenericPyRevitUIContainer._get_component
+    ribbon_item = GenericPyRevitUIContainer._get_component
 
     def __init__(self, rvt_ribbon_panel, parent_tab):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
         self.name = rvt_ribbon_panel.Name
         self._rvtapi_object = rvt_ribbon_panel
@@ -1097,11 +1275,11 @@ class _PyRevitRibbonPanel(_GenericPyRevitUIContainer):
         self.set_dlglauncher(self.button(button_name))
 
 
-class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
-    ribbon_panel = _GenericPyRevitUIContainer._get_component
+class _PyRevitRibbonTab(GenericPyRevitUIContainer):
+    ribbon_panel = GenericPyRevitUIContainer._get_component
 
     def __init__(self, revit_ribbon_tab, is_pyrvt_tab=False):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
         self.name = revit_ribbon_tab.Title
         self._rvtapi_object = revit_ribbon_tab
@@ -1161,13 +1339,13 @@ class _PyRevitRibbonTab(_GenericPyRevitUIContainer):
                                      .format(panel_err))
 
 
-class _PyRevitUI(_GenericPyRevitUIContainer):
+class _PyRevitUI(GenericPyRevitUIContainer):
     """Captures the existing ui state and elements at creation."""
 
-    ribbon_tab = _GenericPyRevitUIContainer._get_component
+    ribbon_tab = GenericPyRevitUIContainer._get_component
 
     def __init__(self, all_native=False):
-        _GenericPyRevitUIContainer.__init__(self)
+        GenericPyRevitUIContainer.__init__(self)
 
         # Revit does not have any method to get a list of current tabs.
         # Getting a list of current tabs using adwindows.dll methods
@@ -1176,8 +1354,8 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
         # does not return invisible tabs
         for revit_ui_tab in AdWindows.ComponentManager.Ribbon.Tabs:
             # feeding self._sub_pyrvt_ribbon_tabs with an instance of
-            # _PyRevitRibbonTab or _RevitNativeRibbonTab for each existing
-            # tab. _PyRevitRibbonTab or _RevitNativeRibbonTab will find
+            # _PyRevitRibbonTab or RevitNativeRibbonTab for each existing
+            # tab. _PyRevitRibbonTab or RevitNativeRibbonTab will find
             # their existing panels only listing visible tabs
             # (there might be tabs with identical names
             # e.g. there are two Annotate tabs. They are activated as
@@ -1189,16 +1367,16 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
                         and _PyRevitRibbonTab.check_pyrevit_tab(revit_ui_tab):
                     new_pyrvt_tab = _PyRevitRibbonTab(revit_ui_tab)
                 else:
-                    new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
+                    new_pyrvt_tab = RevitNativeRibbonTab(revit_ui_tab)
                 self._add_component(new_pyrvt_tab)
                 mlogger.debug('Tab added to the list of tabs: %s',
                               new_pyrvt_tab.name)
             except PyRevitUIError:
                 # if _PyRevitRibbonTab(revit_ui_tab) fails,
-                # Revit restricts access to its panels _RevitNativeRibbonTab
+                # Revit restricts access to its panels RevitNativeRibbonTab
                 # uses a different method to access the panels
                 # to interact with existing native ui
-                new_pyrvt_tab = _RevitNativeRibbonTab(revit_ui_tab)
+                new_pyrvt_tab = RevitNativeRibbonTab(revit_ui_tab)
                 self._add_component(new_pyrvt_tab)
                 mlogger.debug('Native tab added to the list of tabs: %s',
                               new_pyrvt_tab.name)
@@ -1248,21 +1426,30 @@ class _PyRevitUI(_GenericPyRevitUIContainer):
 # to interact with current ui --------------------------------------------------
 def get_current_ui(all_native=False):
     """Revit UI Wrapper class for interacting with current pyRevit UI.
+
     Returned class provides min required functionality for user interaction
 
-    :Example:
+    Example:
+        >>> current_ui = pyrevit.session.current_ui()
+        >>> this_script = pyrevit.session.get_this_command()
+        >>> current_ui.update_button_icon(this_script, new_icon)
 
-        current_ui = pyrevit.session.current_ui()
-        this_script = pyrevit.session.get_this_command()
-        current_ui.update_button_icon(this_script, new_icon)
-
-    :return: Returns an instance of _PyRevitUI that contains info on current ui
-    :rtype: _PyRevitUI
+    Returns:
+        :obj:`_PyRevitUI`: wrapper around active ribbon gui
     """
     return _PyRevitUI(all_native=all_native)
 
 
 def get_uibutton(command_unique_name):
+    """Find and return ribbon ui button with given unique id.
+
+    Args:
+        command_unique_name (str): unique id of pyRevit command
+
+    Returns:
+        :obj:`_PyRevitRibbonButton`: ui button wrapper object
+    """
+    # FIXME: verify return type
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
     for tab in pyrvt_tabs:
         button = tab.find_child(command_unique_name)

@@ -1,11 +1,9 @@
 """Base module for pyRevit config parsing."""
-import ast
 import json
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
 from pyrevit import PyRevitException, PyRevitIOError
-from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 
 #pylint: disable=W0703,C0302
