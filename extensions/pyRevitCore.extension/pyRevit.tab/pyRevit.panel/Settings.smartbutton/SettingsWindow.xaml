@@ -114,9 +114,9 @@
                                                                                                at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Engine" Margin="0,10,0,0">
+                        <GroupBox Header="Engines" Margin="0,10,0,0">
                             <StackPanel>
-                                <DockPanel Margin="10,10,0,10" >
+                                <DockPanel Margin="10,10,0,0" >
                                     <ContentControl Content="{StaticResource engineIcon}"
                                                     Width="32" Height="32" VerticalAlignment="Center"
                                                     DockPanel.Dock="Left">
@@ -129,7 +129,38 @@
                                               DisplayMemberPath="name" Height="24"
                                               VerticalContentAlignment="Center"/>
                                 </DockPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">Save settings after changing the engine and then restart Revit.</TextBlock>
+                                <DockPanel Margin="42,5,0,10" >
+                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left">Active CPython Engine:</TextBlock>
+                                    <ComboBox x:Name="cpythonEngines" Margin="0,0,10,0"
+                                              DisplayMemberPath="name" Height="24"
+                                              VerticalContentAlignment="Center"/>
+                                </DockPanel>
+                                <StackPanel Margin="10,5,10,10">
+                                    <TextBlock FontWeight="Medium">Using CPython:</TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        pyRevit can use a CPython (x64) engine to run a command instead of the active IronPython Engine. This means that all
+                                        CPython modules (e.g. numpy, scipy) can be used within Revit environment. Note that Revit is a x64 program and
+                                        will only work with the x64 version of CPython.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        The CPython engine is shipped with pyRevit so you do not need to have it installed on your machine. However if
+                                        you intent to use third-party libraries, make sure you have installed the same version as the selected
+                                        engine here.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        PYTHONPATH environment variable must point to the "site-packages" directory, so modules
+                                        installed with "pip" package manager, could be found and loaded.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
+                                        To run a script with CPython, first line of the script file must be:
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,5,0,0" FontFamily="Consolas">
+                                        #! python3
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,20,0,0">
+                                        Save settings after changing the engine and then restart Revit.
+                                    </TextBlock>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="Development" Margin="0,10,0,0">
