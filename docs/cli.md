@@ -1,11 +1,19 @@
 # pyRevit Command Line Tool Help
 
-##### Version 0.9.7.0
+<<<<<<< HEAD:docs/cli.md
+##### Version 0.16.0.0
+=======
+##### Version 0.9.6.0
+>>>>>>> pr548:README_CLI.md
 
 `pyrevit` is the command line tool, developed specifically to install and configure pyRevit in your production/development environment. Each section below showcases a specific set of functionality of the command line tool.
 
 - [pyRevit Command Line Tool Help](#pyrevit-command-line-tool-help)
-        - [Version 0.9.7.0](#version-0970)
+<<<<<<< HEAD:docs/cli.md
+        - [Version 0.16.0.0](#version-01600)
+=======
+        - [Version 0.9.6.0](#version-0960)
+>>>>>>> pr548:README_CLI.md
   - [Getting Help](#getting-help)
     - [pyrevit CLI version](#pyrevit-cli-version)
     - [pyRevit Online Resources](#pyrevit-online-resources)
@@ -15,6 +23,7 @@
     - [Maintaining Clones](#maintaining-clones)
       - [Managing Git Clones](#managing-git-clones)
       - [Updating Clones](#updating-clones)
+      - [pyRevit Releases](#pyrevit-releases)
     - [Attaching pyRevit to Installed Revits](#attaching-pyrevit-to-installed-revits)
   - [Managing pyRevit extensions](#managing-pyrevit-extensions)
     - [Finding Extensions](#finding-extensions)
@@ -267,6 +276,54 @@ $ pyrevit clones update --all       # update all clones
 $ pyrevit clones update dev         # update `dev` clone only
 ```
 
+#### pyRevit Releases
+
+You can get information, and download the archive or installer for pyRevit releases using the cli tool.
+
+``` powershell
+pyrevit releases [--notes]
+pyrevit releases <search_pattern> [--notes]
+pyrevit releases open latest
+pyrevit releases open <search_pattern>
+pyrevit releases download (installer | archive) latest --dest=<dest_path>
+pyrevit releases download (installer | archive) <search_pattern> --dest=<dest_path>
+```
+
+``` powershell
+$ pyrevit releases
+pyRevit v4.7.0-beta (pre-release) | Tag: v4.7.0-beta | Version: 4.7.0 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.7.0-beta"
+pyRevit v4.6.15 | Tag: v4.6.15 | Version: 4.6.15 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.6.15"
+pyRevit v4.6.14 | Tag: v4.6.14 | Version: 4.6.14 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.6.14"
+pyRevit v4.6.13 | Tag: v4.6.13 | Version: 4.6.13 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.6.13"
+pyRevit v4.6.12 | Tag: v4.6.12 | Version: 4.6.12 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.6.12"
+...
+```
+
+``` powershell
+$ pyrevit releases 4.7 --notes
+pyRevit v4.7.0-beta (pre-release) | Tag: v4.7.0-beta | Version: 4.7.0 | Url: "https://github.com/eirannejad/pyRevit/releases/tag/v4.7.0-beta"
+        New features:
+        - CPython command execution engine (v3.6.8 and v3.7.2)
+        - `.run` Extensions for `pyrevit run` commands
+        Updates:
+        - Improvements and fixes Re #520 #513
+        - Misc fixes
+```
+
+``` powershell
+# opens the latest release web page
+$ pyrevit releases open latest
+```
+
+``` powershell
+# download the archive
+$ pyrevit releases download archive 4.6.15 --dest="C:\Users\eirannejad\Downloads"
+
+# or the installer
+$ pyrevit releases download installer 4.6.15 --dest="C:\Users\eirannejad\Downloads"
+```
+
+
 ### Attaching pyRevit to Installed Revits
 
 `pyrevit` can detect the exact installed Revit versions on your machine. You can use the commands below to attach any pyRevit clone to any or all installed Revits. Make sure to specify the clone to be attached and the desired engine version:
@@ -354,7 +411,11 @@ $ pyrevit extend pyApex "C:\pyRevit\Extensions"     # install pyApex extension
 To installing your own extensions, you'll need to specify what type if extension you're installing (ui or lib) and provide the url:
 
 ``` powershell
+<<<<<<< HEAD:docs/cli.md
+pyrevit extend (ui | lib | run) <extension_name> <repo_url> <dest_path> [--branch=<branch_name>] [--log=<log_file>]
+=======
 pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
+>>>>>>> pr548:README_CLI.md
 
 $ pyrevit extend ui MyExtension "https://www.github.com/my-extension.git" "C:\pyRevit\Extensions" 
 ```
@@ -448,6 +509,23 @@ Use `env` command to get info about the current `pyrevit` environment:
 $ pyrevit env
 
 ==> Registered Clones (full git repos)
+<<<<<<< HEAD:docs/cli.md
+dev | Branch: "develop" | Version: "4.7.0-beta:167b3d7" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev"
+
+==> Registered Clones (deployed from archive)
+devbase | Deploy: "base" | Branch: "develop" | Version: "4.7.0-beta" | Path: "C:\tmp\devbase"
+
+==> Attachments
+Autodesk Revit 2014 First Customer Ship | Clone: "dev" | Engine: "279" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev" | Manifest: "C:\Users\eirannejad\AppData\Roaming\Autodesk\Revit\Addins\2014\pyRevit.addin"
+Autodesk Revit 2016 Update 7 for R2 | Clone: "dev" | Engine: "277" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev" | Manifest: "C:\Users\eirannejad\AppData\Roaming\Autodesk\Revit\Addins\2016\pyRevit.addin"
+Autodesk Revit 2017.0.4 | Clone: "dev" | Engine: "277" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev" | Manifest: "C:\Users\eirannejad\AppData\Roaming\Autodesk\Revit\Addins\2017\pyRevit.addin"
+Autodesk Revit 2018.3.2 | Clone: "dev" | Engine: "277" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev" | Manifest: "C:\Users\eirannejad\AppData\Roaming\Autodesk\Revit\Addins\2018\pyRevit.addin"
+Autodesk Revit 2019.2 (Update) | Clone: "dev" | Engine: "277" | Path: "C:\Users\eirannejad\Desktop\gits\pyRevitDev" | Manifest: "C:\Users\eirannejad\AppData\Roaming\Autodesk\Revit\Addins\2019\pyRevit.addin"
+
+==> Installed Extensions
+Name: "pyApex" | Type: "UIExtension" | Repo: "https://github.com/apex-project/pyApex.git" | Installed: "C:\pyRevit\Extensions\pyApex.extension"
+Name: "PyRevitPlus" | Type: "UIExtension" | Repo: "https://github.com/gtalarico/pyrevitplus.git" | Installed: "C:\pyRevit\Extensions\PyRevitPlus.extension"
+=======
 dev | Branch: "hotfix/clihelp" | Version: "4.6.13:e9da94781a34ecb002ad634fa95b6a075726913c" | Path: "C:\Users\LeoW10\Desktop\gits\pyRevit"
 
 ==> Registered Clones (deployed from archive)
@@ -464,19 +542,26 @@ Autodesk Revit 2016 First Customer Ship | Clone: "dev" | Engine: "277"
 Autodesk Revit 2017 First Customer Ship | Clone: "dev" | Engine: "277"
 Autodesk Revit 2018.3.1 | Clone: "dev" | Engine: "277"
 Autodesk Revit 2019.2 (Update) | Clone: "dev" | Engine: "277"
+>>>>>>> pr548:README_CLI.md
 
-==> Installed UI Extensions
-Name: "pyApex" | Repo: "" | Installed: "C:\tmp\exts\pyApex.extension"
+==> Default Extension Search Path
+C:\Users\eirannejad\AppData\Roaming\pyRevit\Extensions
 
-==> Installed Library Extensions
+==> Default Extension Search Path
+C:\Users\LeoW10\AppData\Roaming\pyRevit\Extensions
 
 ==> Default Extension Search Path
 C:\Users\LeoW10\AppData\Roaming\pyRevit\Extensions
 
 ==> Extension Search Paths
+<<<<<<< HEAD:docs/cli.md
+C:\tmp
+C:\Users\eirannejad\AppData\Roaming\pyRevit\Extensions
+=======
 C:\tmp\exts
 C:\Users\LeoW10\Desktop\gits
 C:\Users\LeoW10\AppData\Roaming\pyRevit\Extensions
+>>>>>>> pr548:README_CLI.md
 
 ==> Extension Sources - Default
 https://github.com/eirannejad/pyRevit/raw/master/extensions/extensions.json
@@ -484,25 +569,39 @@ https://github.com/eirannejad/pyRevit/raw/master/extensions/extensions.json
 ==> Extension Sources - Additional
 
 ==> Installed Revits
+<<<<<<< HEAD:docs/cli.md
+Autodesk Revit 2014 First Customer Ship | Version: 13.3.8151 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2014\"
+Autodesk Revit 2016 Update 7 for R2 | Version: 16.0.1185.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2016\"
+Autodesk Revit 2017.0.4 | Version: 17.0.511.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2017\"
+Autodesk Revit 2018.3.2 | Version: 18.3.2.7 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2018\"
+=======
 Autodesk Revit 2013 First Customer Ship | Version: 12.2.21203 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2013\"
 Autodesk Revit 2014 First Customer Ship | Version: 13.3.8151 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit Architecture 2014\"
 Autodesk Revit 2015 First Customer Ship | Version: 15.0.136.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2015\"
 Autodesk Revit 2016 First Customer Ship | Version: 16.0.428.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2016\"
 Autodesk Revit 2017 First Customer Ship | Version: 17.0.416.0 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2017\"
 Autodesk Revit 2018.3.1 | Version: 18.3.1.2 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2018\"
+>>>>>>> pr548:README_CLI.md
 Autodesk Revit 2019.2 (Update) | Version: 19.2.0.65 | Language: 1033 | Path: "C:\Program Files\Autodesk\Revit 2019\"
 
 ==> Running Revit Instances
+PID: 12236 | Autodesk Revit 2019.2 (Update) | Version: 19.2.0.65 | Language: 0 | Path: "C:\Program Files\Autodesk\Revit 2019"
 
 ==> User Environment
-Microsoft Windows 10 [Version 10.0.17134]
-Executing User: LEO-W10\LeoW10
-Active User: LEO-W10\LeoW10
+Microsoft Windows 10 [Version 10.0.17763]
+Executing User: DOMAIN\eirannejad
+Active User: DOMAIN\eirannejad
 Adming Access: Yes
-%APPDATA%: "C:\Users\LeoW10\AppData\Roaming"
+%APPDATA%: "C:\Users\eirannejad\AppData\Roaming"
 Latest Installed .Net Framework: "4.7.2"
+<<<<<<< HEAD:docs/cli.md
+Installed .Net Target Packs: v3.5 v4.0 v4.5 v4.5.1 v4.5.2 v4.6 v4.6.1 v4.7.1 v4.7.2 v4.X
+Installed .Net-Core Target Packs: v2.1.401 v2.1.402 v2.1.403 v2.1.500 v2.1.502 v2.1.503 v2.1.504
+pyRevit CLI 0.16.0.0
+=======
 Installed .Net Target Packs: v3.5 v4.0 v4.5 v4.5.1 v4.5.2 v4.6 v4.6.1 v4.7.1 v4.X
 pyRevit CLI 0.9.0.0
+>>>>>>> pr548:README_CLI.md
 ```
 
 ## Configuring pyRevit
@@ -641,7 +740,11 @@ You can use the `pyrevit init` commnd to quickly create pyRevit bundles based on
 Init pyRevit bundles
 
     Usage:
+<<<<<<< HEAD:docs/cli.md
+        pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<templates_path>]
+=======
         pyrevit init (ui | lib) <extension_name> [--usetemplate] [--templates=<templates_path>]
+>>>>>>> pr548:README_CLI.md
         pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<templates_path>]
 
 # creates MyExtension.extension inside the current directory

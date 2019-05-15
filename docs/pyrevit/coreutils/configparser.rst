@@ -1,9 +1,6 @@
-:mod:`pyrevit.coreutils.configparser`
-=====================================
+pyrevit.coreutils.configparser
+==============================
 
 .. automodule:: pyrevit.coreutils.configparser
     :members:
-
-**Implementation**
-
-.. literalinclude:: ../../../pyrevitlib/pyrevit/coreutils/configparser.py
+    :show-inheritance:
