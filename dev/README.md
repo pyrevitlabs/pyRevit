@@ -42,3 +42,9 @@ Changes listed here were made to the Visual Studio project
 - Refactored xaml namespaces to `pyRevitLabs.MahAppsMetro`
 - Refactored `StaticResource` and `DynamicResource` references to `pyRevitLabs.MahAppsMetro`
 - Renamed project assembly name to `pyRevitLabs.MahAppsMetro`
+
+
+## natsort
+
+natsort.natsort.py
+wrapped natsort_key.__doc__ (line # 209) in try-except for IronPython 2.7.3 compatibility
