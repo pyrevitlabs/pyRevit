@@ -758,7 +758,7 @@ namespace pyRevitManager {
         private static bool all(params string[] keywords) {
             logger.Debug("Checking for all: {0}", string.Join(",", keywords));
             foreach (var keyword in keywords)
-                if (!arguments[keyword].IsTrue) {
+                if (!arguments.ContainsKey(keyword) || !arguments[keyword].IsTrue) {
                     logger.Debug("Missing: {0}", keyword);
                     return false;
                 }

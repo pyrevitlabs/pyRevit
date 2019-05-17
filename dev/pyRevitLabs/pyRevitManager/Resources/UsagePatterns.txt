@@ -54,6 +54,7 @@ Usage:
 	pyrevit releases open latest [--pre]
 	pyrevit releases open <search_pattern> [--pre]
 	pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
+	pyrevit revits
 	pyrevit revits --help
 	pyrevit revits [(--installed|--supported)] [--log=<log_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
