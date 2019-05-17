@@ -2203,6 +2203,30 @@ def check_familydoc(doc=None, family_cat=None, exitscript=False):
     return False
 
 
+def check_modeldoc(doc=None, exitscript=False):
+    """Verify document is a not a Model and notify user if not.
+
+    Args:
+        doc (DB.Document): target document, current of not provided
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if doc is a Model
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_modeldoc(doc=revit.doc)
+        ... True
+    """
+    doc = doc or HOST_APP.doc
+    if not doc.IsFamilyDocument:
+        return True
+
+    alert('Active document must be a Revit model (not a Family).',
+          exitscript=exitscript)
+    return False
+
+
 def toast(message, title='pyRevit', appid='pyRevit',
           icon=None, click=None, actions=None):
     """Show a Windows 10 notification.
