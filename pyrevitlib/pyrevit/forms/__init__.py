@@ -2173,7 +2173,7 @@ def check_selection(exitscript=False,
 
 
 def check_familydoc(doc=None, family_cat=None, exitscript=False):
-    """Verify document is a Family and notify user of not.
+    """Verify document is a Family and notify user if not.
 
     Args:
         doc (DB.Document): target document, current of not provided
