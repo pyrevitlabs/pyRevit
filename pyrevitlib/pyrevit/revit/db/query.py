@@ -387,17 +387,18 @@ def get_project_parameters(doc=None):
     # collect shared parameter names
     shared_params = {x.Name: x for x in get_defined_sharedparams()}
 
-    param_bindings = doc.ParameterBindings
-    pb_iterator = param_bindings.ForwardIterator()
-    pb_iterator.Reset()
-
     pp_list = []
-    while pb_iterator.MoveNext():
-        msp = db.ProjectParameter(
-            pb_iterator.Key,
-            param_bindings[pb_iterator.Key],
-            param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
-        pp_list.append(msp)
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+
+        while pb_iterator.MoveNext():
+            msp = db.ProjectParameter(
+                pb_iterator.Key,
+                param_bindings[pb_iterator.Key],
+                param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
+            pp_list.append(msp)
 
     return pp_list
 
