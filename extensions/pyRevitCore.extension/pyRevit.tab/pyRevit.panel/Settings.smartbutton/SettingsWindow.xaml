@@ -61,7 +61,7 @@
             </Setter>
         </Style>
 
-        <Style TargetType="{x:Type TextBoxBase}">
+        <Style TargetType="{x:Type TextBox}">
             <Style.Triggers>
                 <Trigger Property="IsReadOnly" Value="{StaticResource BooleanTrue}">
                     <Setter Property="Background" Value="#d4d9d0" />
