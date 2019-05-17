@@ -15,6 +15,9 @@ __author__ = '{{author}}'
 logger = script.get_logger()
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
+
 if tagscfg.verify_tags_configs():
     if not forms.check_selection():
         script.exit()

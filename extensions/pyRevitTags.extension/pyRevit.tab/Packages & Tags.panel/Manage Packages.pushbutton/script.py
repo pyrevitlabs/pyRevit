@@ -386,5 +386,7 @@ class ManagePackagesWindow(forms.WPFWindow):
                 sheet_item.update_sheet_history()
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
 
 ManagePackagesWindow('ManagePackagesWindow.xaml').ShowDialog()
