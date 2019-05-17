@@ -1,10 +1,14 @@
+ <!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
         Height="700" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
+        <s:Boolean x:Key="BooleanTrue">True</s:Boolean>
+        
         <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
             <Setter Property="Foreground" Value="Black" />
             <Setter Property="Background" Value="#FAFAFB" />
@@ -56,14 +60,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="{x:Type TextBox}">
+
+        <Style TargetType="{x:Type TextBoxBase}">
             <Style.Triggers>
-                <Trigger Property="IsReadOnly" Value="True">
+                <Trigger Property="IsReadOnly" Value="{StaticResource BooleanTrue}">
                     <Setter Property="Background" Value="#d4d9d0" />
                     <Setter Property="Foreground" Value="#4f693a" />
                 </Trigger>
             </Style.Triggers>
         </Style>
+
         <Style x:Key="RevitCheckbox" TargetType="{x:Type CheckBox}">
             <Setter Property="LayoutTransform">
                 <Setter.Value>
