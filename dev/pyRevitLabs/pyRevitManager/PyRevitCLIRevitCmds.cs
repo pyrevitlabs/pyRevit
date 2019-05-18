@@ -116,7 +116,7 @@ namespace pyRevitManager {
 
 
         internal static void
-        RunPythonCommand(string inputCommand, string targetFile, string revitYear, bool purge) {
+        RunPythonCommand(string inputCommand, string targetFile, string revitYear, PyRevitRunnerOptions runOptions) {
             // determine if script or command
 
             var modelFiles = new List<string>();
@@ -237,8 +237,8 @@ namespace pyRevitManager {
                             attachment,
                             commandScriptPath,
                             modelFiles,
-                            purgeTempFiles: purge
-                            );
+                            runOptions
+                        );
 
                         // print results (exec env)
                         PyRevitCLIAppCmds.PrintHeader("Execution Environment");

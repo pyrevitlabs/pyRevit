@@ -203,6 +203,7 @@ func main() {
 				Flags: complete.Flags{
 					"--revit=": complete.PredictAnything,
 					"--purge":  complete.PredictAnything,
+					"--import": complete.PredictAnything,
 				},
 			},
 			"init": complete.Command{

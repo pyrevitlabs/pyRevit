@@ -524,8 +524,11 @@ namespace pyRevitManager {
                         inputCommand: TryGetValue("<script_or_command_name>"),
                         targetFile: TryGetValue("<model_file>"),
                         revitYear: TryGetValue("--revit"),
-                        purge: arguments["--purge"].IsTrue
-                        );
+                        runOptions: new PyRevitRunnerOptions() {
+                            PurgeTempFiles = arguments["--purge"].IsTrue,
+                            ImportPath = TryGetValue("--import", null)
+                        }
+                    );
             }
 
             else if (all("init")) {

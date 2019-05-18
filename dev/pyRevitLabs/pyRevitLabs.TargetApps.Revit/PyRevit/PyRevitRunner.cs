@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Common.Extensions;
 using NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitRunnerExecEnv {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public PyRevitRunnerExecEnv(PyRevitAttachment attachment, string script, IEnumerable<string> modelPaths) {
             Attachment = attachment;
             Script = script;
@@ -29,7 +32,6 @@ namespace pyRevitLabs.TargetApps.Revit {
             // generate journal and manifest file
             GenerateJournal();
             GenerateManifest();
-            CopyAddinDir(Addons.GetRevitAddonsFolder(Revit.ProductYear, true), WorkingDirectory);//MDJ_TODO cleanup where to get AllUsers/CurrentUser from.
         }
 
         private const string JournalNameTemplate = "PyRevitRunner_{0}.txt";
@@ -86,6 +88,15 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             Purged = true;
         }
 
+        // MDJ added code to copy all .addin files and subdirs into the batch running context.
+        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch. 
+        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx 
+
+        public void CopyExistingAddons(string sourceDirectory) {
+            var targetDirectoryInfo = new DirectoryInfo(WorkingDirectory);
+            CopyAll(new DirectoryInfo(sourceDirectory), targetDirectoryInfo);
+        }
+
         // private
         private void GenerateJournal() {
             File.WriteAllText(
@@ -111,36 +122,18 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                       addinPath: WorkingDirectory);
         }
 
-      
-        // MDJ added code to copy all .addin files and subdirs into the batch running context.
-        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch. 
-        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx 
-
-        public static void CopyAddinDir(string sourceDirectory, string targetDirectory)
+        private static void CopyAll(DirectoryInfo source, DirectoryInfo target)
         {
-            DirectoryInfo diSource = new DirectoryInfo(sourceDirectory);
-            DirectoryInfo diTarget = new DirectoryInfo(targetDirectory);
-
-            CopyAll(diSource, diTarget);
-        }
-
-        public static void CopyAll(DirectoryInfo source, DirectoryInfo target)
-        {
-            if (source.FullName.ToLower() == target.FullName.ToLower())
-            {
+            if (source.FullName.NormalizeAsPath() == target.FullName.NormalizeAsPath())
                 return;
-            }
 
             // Check if the target directory exists, if not, create it.
-            if (Directory.Exists(target.FullName) == false)
-            {
-                Directory.CreateDirectory(target.FullName);
-            }
+            CommonUtils.EnsurePath(target.FullName);
 
             // Copy each file into it's new directory.
             foreach (FileInfo fi in source.GetFiles())
             {
-                Console.WriteLine(@"Copying {0}\{1}", target.FullName, fi.Name);
+                logger.Debug(@"Copying {0}\{1}", target.FullName, fi.Name);
                 fi.CopyTo(Path.Combine(target.ToString(), fi.Name), true);
             }
 
@@ -154,13 +147,23 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         }
     }
 
+
+    public class PyRevitRunnerOptions {
+        public PyRevitRunnerOptions() { }
+
+        public bool PurgeTempFiles = false;
+        public string ImportPath;
+    }
+
+
+
     public static class PyRevitRunner {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public static PyRevitRunnerExecEnv Run(PyRevitAttachment attachment,
                                                string scriptPath,
                                                IEnumerable<string> modelPaths,
-                                               bool purgeTempFiles = false) {
+                                               PyRevitRunnerOptions opts = null) {
             var product = attachment.Product;
             var clone = attachment.Clone;
             var engineVer = attachment.Engine != null ? attachment.Engine.Version : 0;
@@ -170,7 +173,14 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             logger.Debug("On Engine: {0}", engineVer);
 
             // setup the execution environment
+            if (opts == null)
+                opts = new PyRevitRunnerOptions();
+
             var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths);
+
+            // purge files if requested
+            if (opts.ImportPath != null)
+                execEnv.CopyExistingAddons(opts.ImportPath);
 
             // run the process
             ProcessStartInfo revitProcessInfo = new ProcessStartInfo(product.ExecutiveLocation);
@@ -183,7 +193,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             revitProcess.WaitForExit();
 
             // purge files if requested
-            if (purgeTempFiles)
+            if (opts.PurgeTempFiles)
                 execEnv.Purge();
 
             return execEnv;

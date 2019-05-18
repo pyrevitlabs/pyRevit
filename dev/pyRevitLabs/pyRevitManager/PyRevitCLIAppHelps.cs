@@ -332,6 +332,7 @@ namespace pyRevitManager {
                             { "--revit=<revit_year>",   "Target Revit year e.g. 2019" },
                             { "<model_file>",           "Target Revit model file path" },
                             { "--purge",                "Remove temporary run environment after completion" },
+                            { "--import=<import_path>", "Copy content of this folder into the runtime temp path." },
                         });
                     break;
 

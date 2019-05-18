@@ -64,8 +64,8 @@ Usage:
 	pyrevit revits addons install <addon_name> [--dest=<dest_path>] [--allusers]
 	pyrevit revits addons uninstall <addon_name>
 	pyrevit run --help
-	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge]
-	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge]
+	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--import=<import_path>]
+	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--import=<import_path>]
 	pyrevit init --help
 	pyrevit init (ui | lib | run) <extension_name> [--usetemplate] [--templates=<temps_path>]
 	pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
