@@ -163,7 +163,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                                bool purgeTempFiles = false) {
             var product = attachment.Product;
             var clone = attachment.Clone;
-            var engineVer = attachment.Engine.Version;
+            var engineVer = attachment.Engine != null ? attachment.Engine.Version : 0;
             logger.Debug("Running script: \"{0}\"", scriptPath);
             logger.Debug("With: {0}", product);
             logger.Debug("Using: {0}", clone);

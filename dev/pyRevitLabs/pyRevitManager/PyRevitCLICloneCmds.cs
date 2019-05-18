@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -39,17 +39,10 @@ namespace pyRevitManager {
         PrintAttachments(int revitYear = 0) {
             PyRevitCLIAppCmds.PrintHeader("Attachments");
             foreach (var attachment in PyRevit.GetAttachments().OrderByDescending(x => x.Product.Version)) {
-                if (attachment.Clone != null && attachment.Engine != null) {
-                    if (revitYear == 0)
-                        Console.WriteLine(attachment);
-                    else if (revitYear == attachment.Product.ProductYear)
-                        Console.WriteLine(attachment);
-                }
-                else
-                    logger.Error(
-                        string.Format("pyRevit is attached to Revit {0} but can not determine the clone and engine",
-                                      attachment.Product.ProductYear)
-                        );
+                if (revitYear == 0)
+                    Console.WriteLine(attachment);
+                else if (revitYear == attachment.Product.ProductYear)
+                    Console.WriteLine(attachment);
             }
         }
 
@@ -333,11 +326,19 @@ namespace pyRevitManager {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber)) {
                     var attachment = PyRevit.GetAttached(revitYearNumber);
-                    if (attachment != null)
-                        PyRevit.Attach(attachment.Product.ProductYear,
-                                       clone,
-                                       engineVer: attachment.Engine.Version,
-                                       allUsers: attachment.AllUsers);
+                    if (attachment != null) {
+                        if (attachment.Engine != null) {
+                            PyRevit.Attach(attachment.Product.ProductYear,
+                                           clone,
+                                           engineVer: attachment.Engine.Version,
+                                           allUsers: attachment.AllUsers);
+                        }
+                        else
+                            throw new pyRevitException(
+                                string.Format("Can not determine attachment engine for Revit \"{0}\"",
+                                              revitYear)
+                                );
+                    }
                     else
                         throw new pyRevitException(
                             string.Format("Can not determine existing attachment for Revit \"{0}\"",
@@ -350,10 +351,15 @@ namespace pyRevitManager {
             else {
                 // read current attachments and reattach using the same config with the new clone
                 foreach (var attachment in PyRevit.GetAttachments()) {
-                    PyRevit.Attach(attachment.Product.ProductYear,
-                                   clone,
-                                   engineVer: attachment.Engine.Version,
-                                   allUsers: attachment.AllUsers);
+                    if (attachment.Engine != null) {
+                        PyRevit.Attach(
+                            attachment.Product.ProductYear,
+                            clone,
+                            engineVer: attachment.Engine.Version,
+                            allUsers: attachment.AllUsers);
+                    }
+                    else
+                        throw new pyRevitException("Can not determine attachment engine.");
                 }
             }
         }

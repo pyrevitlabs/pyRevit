@@ -245,7 +245,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // get clone from manifest file
         public static PyRevitClone GetCloneFromManifest(RevitAddonManifest manifest) {
-            return new PyRevitClone(manifest.Assembly);
+            return new PyRevitClone(Path.GetDirectoryName(manifest.Assembly));
         }
 
         // return true of false for clone validity

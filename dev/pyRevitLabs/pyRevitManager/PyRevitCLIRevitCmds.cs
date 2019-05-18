@@ -199,7 +199,9 @@ namespace pyRevitManager {
                             // try to find run command in attached clone being used for execution
                             // if not found, try to get run command from all other installed extensions
                             var targetExtensions = new List<PyRevitExtension>();
-                            targetExtensions.AddRange(attachment.Clone.GetExtensions());
+                            if (attachment.Clone != null) {
+                                targetExtensions.AddRange(attachment.Clone.GetExtensions());
+                            }
                             targetExtensions.AddRange(PyRevit.GetInstalledExtensions());
 
                             foreach (PyRevitExtension ext in targetExtensions) {

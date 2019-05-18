@@ -22,14 +22,25 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public override string ToString() {
-            return string.Format(
-                "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
-                Clone.Name,
-                Product.ProductName,
-                Engine.Version,
-                Clone.ClonePath,
-                Manifest.FilePath
-                );
+            if (_clone != null) {
+                var engine = Engine;
+
+                return string.Format(
+                    "{0} | Product: \"{1}\" | Engine: {2} | Path: \"{3}\" | Manifest: \"{4}\"",
+                    _clone.Name,
+                    Product.ProductName,
+                    engine != null ? engine.Version : 0,
+                    _clone.ClonePath,
+                    Manifest.FilePath
+                    );
+            }
+            else {
+                return string.Format(
+                    "Unknown | Product: \"{0}\" | Manifest: \"{1}\"",
+                    Product.ProductName,
+                    Manifest.FilePath
+                    );
+            }
         }
 
         public RevitAddonManifest Manifest { get; private set; }
@@ -42,7 +53,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                     return _clone;
                 else {
                     try {
-                        return PyRevitClone.GetCloneFromManifest(Manifest);
+                        _clone = PyRevitClone.GetCloneFromManifest(Manifest);
+                        return _clone;
                     }
                     catch {
                         return null;
@@ -51,7 +63,14 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        public PyRevitEngine Engine => PyRevitEngine.GetEngineFromManifest(Manifest, Clone);
+        public PyRevitEngine Engine {
+            get {
+                if (_clone != null)
+                    return PyRevitEngine.GetEngineFromManifest(Manifest, _clone);
+                else
+                    return null;
+            }
+        }
         public bool AllUsers => AttachmentType == PyRevitAttachmentType.AllUsers;
 
         public void SetClone(PyRevitClone clone) {

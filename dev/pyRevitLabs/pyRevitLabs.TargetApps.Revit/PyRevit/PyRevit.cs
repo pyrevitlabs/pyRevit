@@ -510,7 +510,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 if (attachment != null) {
                     // try to find clone in registered clones
                     foreach (var clone in GetRegisteredClones()) {
-                        if (attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                        if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
                             attachment.SetClone(clone);
                             break;
                         }
