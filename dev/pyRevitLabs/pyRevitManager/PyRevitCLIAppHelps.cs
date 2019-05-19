@@ -55,7 +55,7 @@ namespace pyRevitManager {
                             { "attach",                 "Attach pyRevit clone to installed Revit" },
                             { "switch",                 "Switch active pyRevit clone" },
                             { "detach",                 "Detach pyRevit clone from installed Revit" },
-                            { "image",                  "Create deployment image from pyRevit clones" },
+                            //{ "image",                  "Create deployment image from pyRevit clones" },
                             { "config",                 "Configure pyRevit for current user" },
                             { "run",                    "Run python script in Revit" },
                             { "init",                   "Create pyRevit extensions and bundles" },
