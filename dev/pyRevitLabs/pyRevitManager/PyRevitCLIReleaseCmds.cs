@@ -79,7 +79,7 @@ namespace pyRevitManager {
         DownloadReleaseAsset(PyRevitReleaseAssetType assetType, string destPath, string searchPattern, bool latest = false, bool listPreReleases = false) {
             // get dest path
             if (destPath == null)
-                throw new pyRevitException("Destination path is not specified.");
+                destPath = UserEnv.GetPath(KnownFolder.Downloads);
 
             PyRevitRelease matchedRelease = null;
             // determine latest release
