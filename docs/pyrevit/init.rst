@@ -1,5 +1,5 @@
-:mod:`pyrevit`
-==============
+pyrevit
+=======
 
 .. automodule:: pyrevit
     :synopsis:
@@ -15,8 +15,3 @@
 
 .. autoclass:: pyrevit._ExecutorParams
     :members:
-
-
-**Implementation**
-
-.. literalinclude:: ../../pyrevitlib/pyrevit/__init__.py

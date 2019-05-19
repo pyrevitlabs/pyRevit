@@ -2,6 +2,7 @@
 extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
+!extensions/pyRevitRun.run/
 !extensions/pyRevitTemplates.extension/
 !extensions/pyRevitTags.extension/
 !extensions/pyRevitTools.extension/
@@ -15,6 +16,7 @@ extensions/*
 **/obj
 **/packages
 **/dev/**/bin
+**/dev/pyRevitLabs/TestResults/
 
 # ignore sphinx build files
 docs/_*
@@ -36,3 +38,4 @@ release/pyRevit-cache
 release/pyRevit-SetupFiles
 release/pyRevit\ CLI-cache
 release/pyRevit\ CLI-SetupFiles
+release/pyrevit-cli/*.nupkg

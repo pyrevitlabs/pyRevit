@@ -5,16 +5,19 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
+using System.Windows.Data;
 
 // packages
-using MahApps.Metro;
-using MahApps.Metro.Controls;
+using pyRevitLabs.MahAppsMetro;
+using pyRevitLabs.MahAppsMetro.Controls;
 
 namespace pyRevitLabs.CommonWPF.Windows {
     /// <summary>
     /// Interaction logic for AppWindow.xaml
     /// </summary>
     public class AppWindow : MetroWindow, INotifyPropertyChanged {
+        private string _appVerOverride = string.Empty;
+
         public AppWindow() {
             InitializeComponent();
         }
@@ -23,12 +26,29 @@ namespace pyRevitLabs.CommonWPF.Windows {
             // setting up user name and app version buttons
             var windowButtons = new WindowCommands();
 
-            var userButton = new Button() { Content = CurrentUser, ToolTip = "Active User. Click to copy to clipboard.", Focusable = false };
+            var userButton = new Button() {
+                Content = CurrentUser,
+                ToolTip = "Active User. Click to copy to clipboard.",
+                Focusable = false
+            };
+
             userButton.Click += Copy_Button_Title;
             windowButtons.Items.Add(userButton);
 
             if (AppVersion != null && AppVersion != string.Empty) {
-                var versionButton = new Button() { Content = AppVersion, ToolTip = "Version. Click to copy to clipboard.", Focusable = false };
+                // create a toolbar button and bind to appversion
+                Binding myBinding = new Binding();
+                myBinding.Source = this;
+                myBinding.Path = new PropertyPath("AppVersion");
+                myBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+                var versionButton = new Button() {
+                    ToolTip = "Version. Click to copy to clipboard.",
+                    Focusable = false,
+                };
+
+                BindingOperations.SetBinding(versionButton, Button.ContentProperty, myBinding);
+
                 versionButton.Click += Copy_Button_Title;
                 windowButtons.Items.Add(versionButton);
             }
@@ -42,19 +62,28 @@ namespace pyRevitLabs.CommonWPF.Windows {
         // property updates
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected void RaisePropertyChanged(string propertyName) {
-            if (null != this.PropertyChanged) {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-            }
+        protected virtual void RaisePropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         // app version
-        public virtual string AppVersion { get { return Assembly.GetExecutingAssembly().GetName().Version.ToString(); } }
+        public virtual string AppVersion {
+            get {
+                if (_appVerOverride != string.Empty)
+                    return _appVerOverride;
+                else
+                    return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            }
+            set {
+                _appVerOverride = value;
+                RaisePropertyChanged("AppVersion");
+            }
+        }
 
         // current user id
         public string CurrentUser { get { return System.Security.Principal.WindowsIdentity.GetCurrent().Name; } }
 
-        // helper for loading icons into window
+        // helper for loading and setting icons into window
         public ImageSource LoadIcon(Uri path) {
             BitmapImage bitmap = new BitmapImage();
             bitmap.BeginInit();
@@ -64,6 +93,14 @@ namespace pyRevitLabs.CommonWPF.Windows {
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
+        }
+
+        public void SetIcon(string iconPath) {
+            Icon = LoadIcon(new Uri(iconPath));
+            IconBitmapScalingMode = BitmapScalingMode.HighQuality;
+            IconEdgeMode = EdgeMode.Aliased;
+            IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
+            ShowIconOnTitleBar = true;
         }
 
         // window button standard hander: copies to clipboard

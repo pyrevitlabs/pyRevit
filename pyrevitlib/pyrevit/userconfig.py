@@ -34,9 +34,9 @@ Example:
 #pylint: disable=C0103,C0413,W0703
 import os
 import os.path as op
-import _winreg as wr
+import _winreg as wr    #pylint: disable=import-error
 
-from pyrevit import EXEC_PARAMS, HOME_DIR
+from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
@@ -148,7 +148,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         if op.exists(EXTENSIONS_DEFAULT_DIR):
             dir_list.append(EXTENSIONS_DEFAULT_DIR)
         dir_list.extend(self.get_thirdparty_ext_root_dirs())
-        return dir_list
+        return list(set(dir_list))
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
@@ -188,6 +188,34 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
 
+    def get_active_cpython_engine(self):
+        """Return active cpython engine."""
+        # find attached clone
+        attachment = self.get_current_attachment()
+        if attachment and attachment.Clone:
+            # get all cpython engines
+            cpy_engines_dict = \
+                {x.Version: x for x in attachment.Clone.GetEngines()
+                 if 'cpython' in x.KernelName.lower()}
+            # find latest cpython engine
+            latest_cpyengine = \
+                max(cpy_engines_dict.values(), key=lambda x: x.Version)
+
+            # grab cpython engine configured to be used by user
+            consts = TargetApps.Revit.PyRevitConsts
+            cpyengine_cfg = \
+                self.core.get_option(consts.ConfigsCPythonEngine, 0)
+            try:
+                cpyengine_ver = int(cpyengine_cfg)
+            except Exception:
+                cpyengine_ver = 000
+
+            # grab the engine by version or default to latest
+            cpyengine = \
+                cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
+            # return full dll assembly path
+            return cpyengine
+
     def save_changes(self):
         """Save user config into associated config file."""
         if not self._admin:
@@ -213,6 +241,11 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             except Exception:
                 return DEFAULT_CSV_SEPARATOR
 
+    @staticmethod
+    def get_current_attachment():
+        """Return current pyRevit attachment."""
+        hostver = int(HOST_APP.version)
+        return TargetApps.Revit.PyRevit.GetAttached(hostver)
 
 
 def find_config_file(target_path):
@@ -275,6 +308,9 @@ def verify_configs(config_file_path=None):
     # compilevb
     if not parser.core.has_option(consts.ConfigsCompileVBKey):
         parser.core.set_option(consts.ConfigsCompileVBKey, True)
+
+    # cpyengine: does not need to set a default for this
+
     # loadbeta
     if not parser.core.has_option(consts.ConfigsLoadBetaKey):
         parser.core.set_option(consts.ConfigsLoadBetaKey, False)

@@ -1,5 +1,5 @@
 """Base module for handling extensions parsing."""
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS
 
 # Extension types
 # ------------------------------------------------------------------------------
@@ -17,9 +17,28 @@ class LIBExtensionType:
     POSTFIX = '.lib'
 
 
+class RUNExtensionType:
+    ID = 'run'
+    POSTFIX = '.run'
+
+
 class ExtensionTypes:
     UI_EXTENSION = UIExtensionType
     LIB_EXTENSION = LIBExtensionType
+    RUN_EXTENSION = RUNExtensionType
+
+    @classmethod
+    def get_ext_types(cls):
+        ext_types = set()
+        for attr in dir(cls):
+            if attr.endswith('_EXTENSION'):
+                ext_types.add(getattr(cls, attr))
+        return ext_types
+
+    @classmethod
+    def is_cli_ext(cls, ext_type):
+        """Check if this is a pyRevit CLI extension."""
+        return ext_type == cls.RUN_EXTENSION
 
 
 # UI_EXTENSION_POSTFIX components
@@ -68,10 +87,10 @@ DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 # Component image for tooltips
 DEFAULT_TOOLTIP_IMAGE_FILE = 'tooltip.png'
 # Component video for tooltips
-if HOST_APP.is_newer_than(2019, or_equal=True):
+DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
     DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.mp4'
-else:
-    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
+        
 
 # Command supported languages
 PYTHON_LANG = 'python'

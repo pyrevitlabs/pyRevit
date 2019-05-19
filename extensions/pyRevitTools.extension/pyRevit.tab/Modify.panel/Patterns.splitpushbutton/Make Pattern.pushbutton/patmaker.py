@@ -777,9 +777,18 @@ def make_pattern(pat_name, pat_lines, domain, fillgrids=None,
                  model_pattern=True, allow_expansion=False,
                  create_filledregion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, fillgrids,
-                          scale, rotation, flip_u, flip_v,
-                          model_pattern, allow_expansion)
+        _make_rvt_pattern(
+            pat_name,
+            pat_lines,
+            domain,
+            fillgrids=fillgrids,
+            scale=scale,
+            rotation=rotation,
+            flip_u=flip_u,
+            flip_v=flip_v,
+            model_pattern=model_pattern,
+            allow_expansion=allow_expansion
+            )
     return _create_fill_pattern(revit_pat, create_filledregion)
 
 
@@ -787,6 +796,13 @@ def export_pattern(export_dir, pat_name, pat_lines, domain,
                    fillgrids=None, scale=12.0,
                    model_pattern=True, allow_expansion=False):
     revit_pat = \
-        _make_rvt_pattern(pat_name, pat_lines, domain, fillgrids, scale,
-                          model_pattern, allow_expansion)
+        _make_rvt_pattern(
+            pat_name,
+            pat_lines,
+            domain,
+            fillgrids=fillgrids,
+            scale=scale,
+            model_pattern=model_pattern,
+            allow_expansion=allow_expansion
+            )
     return _export_pat(revit_pat, export_dir)

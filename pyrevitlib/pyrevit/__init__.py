@@ -38,6 +38,7 @@ except ImportError:
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
+PYREVIT_CLI_NAME = 'pyrevit.exe'
 
 # extract version from version file
 VERSION_STRING = '0.0.'
@@ -91,6 +92,8 @@ sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 
 
+PYREVIT_CLI_PATH = op.join(BIN_DIR, PYREVIT_CLI_NAME)
+
 # now we can start importing stuff
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
@@ -106,7 +109,7 @@ TRACEBACK_TITLE = 'Traceback:'
 
 # General Exceptions
 class PyRevitException(Exception):
-    """Base class for all pyRevit Exceptions.
+    """Common base class for all pyRevit exceptions.
 
     Parameters args and message are derived from Exception class.
     """
@@ -135,7 +138,7 @@ class PyRevitException(Exception):
 
 
 class PyRevitIOError(PyRevitException):
-    """Generic IO error in pyRevit."""
+    """Common base class for all pyRevit io-related exceptions."""
 
     pass
 

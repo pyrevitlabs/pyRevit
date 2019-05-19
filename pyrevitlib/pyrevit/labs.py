@@ -1,5 +1,7 @@
+"""Wrapper module for pyRevitLabs functionality"""
 import logging
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
+#pylint: disable=superfluous-parens
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
 
@@ -11,7 +13,7 @@ clr.AddReference('Nett')
 clr.AddReference('Nlog')
 clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
-clr.AddReference('MahApps.Metro')
+clr.AddReference('pyRevitLabs.MahAppsMetro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
 clr.AddReference('pyRevitLabs.CommonWPF')
@@ -22,7 +24,7 @@ import Nett
 import NLog
 import MadMilkman.Ini
 import OpenMcdf
-import MahApps.Metro
+import pyRevitLabs.MahAppsMetro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI
 from pyRevitLabs import CommonWPF

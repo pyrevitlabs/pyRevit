@@ -1,5 +1,6 @@
-"""Session info."""
+"""Manage information about pyRevit sessions."""
 import sys
+from collections import namedtuple
 
 from pyrevit import HOST_APP, HOME_DIR
 
@@ -23,16 +24,92 @@ PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
 PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
 PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
 
+PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
+PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
+PYREVIT_IPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_IPYVERSION'
+PYREVIT_CSPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CPYVERSION'
+
+
+RuntimeInfo = namedtuple('RuntimeInfo', ['pyrevit_version',
+                                         'engine_version',
+                                         'host_version'])
+"""Session runtime information tuple.
+
+Args:
+    pyrevit_version (str): formatted pyRevit version
+    engine_version (int): active IronPython engine version
+    host_version (str): Current Revit version
+"""
+
+
+def setup_runtime_vars():
+    """Setup runtime environment variables with session information."""
+    # set pyrevit version
+    pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
+    envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR, pyrvt_ver)
+
+    # set app version env var
+    if HOST_APP.is_newer_than(2017):
+        envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR,
+                                    HOST_APP.subversion)
+    else:
+        envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR,
+                                    HOST_APP.version)
+
+    # set ironpython engine version env var
+    attachment = user_config.get_current_attachment()
+    if attachment and attachment.Clone:
+        envvars.set_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR,
+                                    attachment.Engine.Version)
+
+    # set cpython engine version env var
+    cpyengine = user_config.get_active_cpython_engine()
+    if cpyengine:
+        envvars.set_pyrevit_env_var(PYREVIT_CSPYVERSION_ENVVAR,
+                                    cpyengine.Version)
+
+
+def get_runtime_info():
+    """Return runtime information tuple.
+
+    Returns:
+        :obj:`RuntimeInfo`: runtime info tuple
+
+    Example:
+        >>> sessioninfo.get_runtime_info()
+    """
+    # FIXME: add example output
+    return RuntimeInfo(
+        pyrevit_version=envvars.get_pyrevit_env_var(PYREVIT_VERSION_ENVVAR),
+        engine_version=envvars.get_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR),
+        host_version=envvars.get_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR)
+        )
+
 
 def set_session_uuid(uuid_str):
+    """Set session uuid on environment variable.
+
+    Args:
+        uuid_str (str): session uuid string
+    """
     envvars.set_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR, uuid_str)
 
 
 def get_session_uuid():
+    """Read session uuid from environment variable.
+
+    Returns:
+        str: session uuid string
+    """
     return envvars.get_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR)
 
 
 def new_session_uuid():
+    """Create a new uuid for a pyRevit session.
+
+    Returns:
+        str: session uuid string
+    """
     uuid_str = safe_strtype(coreutils.new_uuid())
     set_session_uuid(uuid_str)
     return uuid_str
@@ -43,10 +120,10 @@ def get_total_loaded_assm_count():
     Revit session. This value is stored in an environment variable and is kept
     updated during the multiple pyRevit sessions. Notice that not all of these
     assemblies belong to current pyRevit session as pyRevit could be reloaded
-     multiple times under the same Revit session.
+    multiple times under the same Revit session.
 
     Returns:
-        total count (int): Total number of loaded assemblies.
+        int: Total number of loaded assemblies.
     """
     assm_count = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR)
     if not assm_count:
@@ -63,13 +140,18 @@ def set_total_loaded_assm_count(assm_count):
     This value should not be updated by pyRevit users.
 
     Args:
-        assm_count (int): Number of loaded assemblies
+        assm_count (int): assembly count
     """
-
     envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR, assm_count)
 
 
 def get_loaded_pyrevit_assemblies():
+    """Return list of loaded pyRevit assemblies from environment variable.
+
+    Returns:
+        list[str]: list of loaded assemblies
+    """
+    # FIXME: verify and document return type
     loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)
@@ -78,6 +160,12 @@ def get_loaded_pyrevit_assemblies():
 
 
 def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
+    """Set the environment variable with list of loaded assemblies.
+
+    Args:
+        loaded_assm_name_list (list[str]): list of assembly names
+        val (type): desc
+    """
     envvars.set_pyrevit_env_var(
         PYREVIT_LOADEDASSMS_ENVVAR,
         coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
@@ -88,14 +176,15 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
 
 
 def report_env():
-    # log python version, home directory, config file, ...
-    # get python version that includes last commit hash
-    pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
-
+    """Report python version, home directory, config file, etc."""
+    # run diagnostics
     system_diag()
 
+    # get python version that includes last commit hash
     mlogger.info('pyRevit version: %s - </> with :growing_heart: in %s',
-                 pyrvt_ver, about.get_pyrevit_about().madein)
+                 envvars.get_pyrevit_env_var(PYREVIT_VERSION_ENVVAR),
+                 about.get_pyrevit_about().madein)
+
     if user_config.core.get_option('rocketmode', False):
         mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
 

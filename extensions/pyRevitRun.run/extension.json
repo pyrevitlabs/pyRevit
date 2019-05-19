@@ -1,0 +1,10 @@
+{
+    "builtin": "True",
+    "type": "run",
+    "name": "pyRevitRun",
+    "description": "Batch processing scripts for pyrevit run cli command",
+    "author": "Ehsan Iran-Nejad",
+    "author_profile": "https://keybase.io/ein",
+    "url": "https://github.com/eirannejad/pyRevit.git",
+    "dependencies": []
+}

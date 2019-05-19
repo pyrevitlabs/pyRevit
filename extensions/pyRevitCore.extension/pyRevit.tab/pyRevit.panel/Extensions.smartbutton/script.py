@@ -48,6 +48,9 @@ class ExtensionPackageListItem:
         elif self.ext_pkg.type == \
                 exts.ExtensionTypes.UI_EXTENSION:
             self.Type = 'Revit UI Tools'
+        elif self.ext_pkg.type == \
+                exts.ExtensionTypes.RUN_EXTENSION:
+            self.Type = 'CLI Run Commands'
 
         # setting up other list data
         self.Builtin = self.ext_pkg.builtin
@@ -250,9 +253,12 @@ class ExtensionsWindow(forms.WPFWindow):
                     self.show_element(self.ext_remove_b)
 
                 # Action Button: Toggle (Enable / Disable)
-                self._update_toggle_button(
-                    enable=ext_pkg_item.ext_pkg.config.disabled
-                )
+                if ext_pkg_item.ext_pkg.is_cli_ext:
+                    self.hide_element(self.ext_toggle_b)
+                else:
+                    self._update_toggle_button(
+                        enable=ext_pkg_item.ext_pkg.config.disabled
+                    )
             else:
                 self.show_element(self.ext_install_b)
                 self.hide_element(self.ext_toggle_b, self.ext_remove_b)
@@ -260,16 +266,26 @@ class ExtensionsWindow(forms.WPFWindow):
             self.hide_element(self.ext_update_b)
             self.hide_element(self.ext_install_b)
             self.hide_element(self.ext_remove_b)
-            all_disabled = [x.ext_pkg.config.disabled for x in ext_pkg_items]
-            if all(all_disabled):
-                self._update_toggle_button(enable=True, multiple=True)
-                return
-            all_enabled = [not x.ext_pkg.config.disabled for x in ext_pkg_items]
-            if all(all_enabled):
-                self._update_toggle_button(enable=False, multiple=True)
-                return
-            self.hide_element(self.ext_toggle_b)
+            # hide the button if includes any cli extensions
+            if any([x.ext_pkg.is_cli_ext for x in ext_pkg_items]):
+                self.hide_element(self.ext_toggle_b)
+            # hide the button if any ext is not installed
+            elif any([not x.ext_pkg.is_installed for x in ext_pkg_items]):
+                self.hide_element(self.ext_toggle_b)
+            else:
+                all_disabled = \
+                    [x.ext_pkg.config.disabled for x in ext_pkg_items]
+                if all(all_disabled):
+                    self._update_toggle_button(enable=True, multiple=True)
+                    return
 
+                all_enabled = \
+                    [not x.ext_pkg.config.disabled for x in ext_pkg_items]
+                if all(all_enabled):
+                    self._update_toggle_button(enable=False, multiple=True)
+                    return
+                # hide the button if mixed enabled and disabled
+                self.hide_element(self.ext_toggle_b)
 
     def _update_ext_settings_panel(self, ext_pkg_item):
         """Updates the package settings panel based on the provided
@@ -406,7 +422,8 @@ class ExtensionsWindow(forms.WPFWindow):
         try:
             extpkgs.remove(self.selected_pkg.ext_pkg)
             self.Close()
-            call_reload()
+            if not self.selected_pkg.ext_pkg.is_cli_ext:
+                call_reload()
         except Exception as pkg_remove_err:
             logger.error('Error removing package. | {}'.format(pkg_remove_err))
 
