@@ -21,14 +21,29 @@ from pyrevit.userconfig import user_config
 mlogger = get_logger(__name__)
 
 
+# C:\Windows\Microsoft.NET\Framework\
+
 if not EXEC_PARAMS.doc_mode:
     INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
+
+    DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET','Framework')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
                              'Reference Assemblies',
                              'Microsoft', 'Framework', '.NETFramework')
 
+
     try:
+        # get sorted list of installed frawework paths
+        DOTNET_FRAMEWORK_DIRS = sorted(
+            [x for x in os.listdir(DOTNET_DIR)
+             if x.startswith('v4.') and 'X' not in x], reverse=True)
+    except Exception as dotnet_fw_err:
+        DOTNET_FRAMEWORK_DIRS = []
+        mlogger.debug('Dotnet Frawework is not installed. | %s', dotnet_fw_err)
+
+    try:
+        # get sorted list of installed frawework sdk paths
         DOTNET_TARGETPACK_DIRS = sorted(
             [x for x in os.listdir(DOTNET_SDK_DIR)
              if x.startswith('v4.') and 'X' not in x], reverse=True)
@@ -36,7 +51,8 @@ if not EXEC_PARAMS.doc_mode:
         DOTNET_TARGETPACK_DIRS = []
         mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
 else:
-    INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = DOTNET_TARGETPACK_DIRS = None
+    DOTNET_DIR = INTERFACE_TYPES_DIR = DOTNET_SDK_DIR = \
+        DOTNET_FRAMEWORK_DIRS = DOTNET_TARGETPACK_DIRS = None
 
 
 # base classes for pyRevit commands --------------------------------------------
@@ -67,6 +83,7 @@ if not EXEC_PARAMS.doc_mode:
     # get and load the active Cpython engine
     CPYTHON_ENGINE = user_config.get_active_cpython_engine()
     CPYTHON_ENGINE_ASSM = CPYTHON_ENGINE.AssemblyPath
+    mlogger.debug('Loading cpython engine: %s', CPYTHON_ENGINE_ASSM)
     load_asm_file(CPYTHON_ENGINE_ASSM)
 
     # create a hash for the loader assembly
@@ -127,12 +144,31 @@ def _get_resource_file(resource_name):
 def _get_framework_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
+    for fw_folder in DOTNET_FRAMEWORK_DIRS:
+        fw_module_file = op.join(DOTNET_DIR,
+                                 fw_folder,
+                                 make_canonical_name(fw_module,
+                                                     ASSEMBLY_FILE_TYPE))
+        mlogger.debug('Searching for installed: %s', fw_module_file)
+        if op.exists(fw_module_file):
+            mlogger.debug('Found installed: %s', fw_module_file)
+            sys.path.append(op.join(DOTNET_DIR, fw_folder))
+            return fw_module_file
+
+    return None
+
+
+def _get_framework_sdk_module(fw_module):
+    # start with the newest sdk folder and
+    # work backwards trying to find the dll
     for sdk_folder in DOTNET_TARGETPACK_DIRS:
         fw_module_file = op.join(DOTNET_SDK_DIR,
                                  sdk_folder,
                                  make_canonical_name(fw_module,
                                                      ASSEMBLY_FILE_TYPE))
+        mlogger.debug('Searching for sdk: %s', fw_module_file)
         if op.exists(fw_module_file):
+            mlogger.debug('Found sdk: %s', fw_module_file)
             sys.path.append(op.join(DOTNET_SDK_DIR, sdk_folder))
             return fw_module_file
 
@@ -140,26 +176,41 @@ def _get_framework_module(fw_module):
 
 
 def _get_reference_file(ref_name):
+    mlogger.debug('Searching for dependency: %s', ref_name)
     # First try to find the dll in the project folder
     addin_file = framework.get_dll_file(ref_name)
     if addin_file:
         load_asm_file(addin_file)
         return addin_file
 
+    mlogger.debug('Dependency is not shipped: %s', ref_name)
+    mlogger.debug('Searching for dependency in loaded assemblies: %s', ref_name)
     # Lastly try to find location of assembly if already loaded
     loaded_asm = find_loaded_asm(ref_name)
     if loaded_asm:
         return loaded_asm[0].Location
 
-    # Then try to find the dll in windows SDK
-    if DOTNET_TARGETPACK_DIRS:
+    mlogger.debug('Dependency is not loaded: %s', ref_name)
+    mlogger.debug('Searching for dependency in installed frameworks: %s',
+                  ref_name)
+    # Then try to find the dll in windows installed framework files
+    if DOTNET_DIR:
         fw_module_file = _get_framework_module(ref_name)
         if fw_module_file:
             return fw_module_file
 
+
+    mlogger.debug('Dependency is not installed: %s', ref_name)
+    mlogger.debug('Searching for dependency in installed frameworks sdks: %s',
+                  ref_name)
+    # Then try to find the dll in windows SDK
+    if DOTNET_TARGETPACK_DIRS:
+        fw_sdk_module_file = _get_framework_sdk_module(ref_name)
+        if fw_sdk_module_file:
+            return fw_sdk_module_file
+
     # if not worked raise critical error
-    mlogger.critical('Can not find required reference assembly: %s',
-                     ref_name)
+    mlogger.critical('Can not find required reference assembly: %s', ref_name)
 
 
 def _get_references():
@@ -177,8 +228,7 @@ def _get_references():
 
     refs = [_get_reference_file(ref_name) for ref_name in ref_list]
 
-    # add cpython engine dll to references
-    # _get_reference_file('engines/372/Python.Runtime')
+    # add cpython engine assembly
     refs.append(CPYTHON_ENGINE_ASSM)
 
     return refs
