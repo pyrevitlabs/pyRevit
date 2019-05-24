@@ -270,7 +270,10 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return AdWindows.ComponentManager.ApplicationWindow
+        if self.is_newer_than(2019, or_equal=True):
+            return self.uiapp.MainWindowHandle
+        else:
+            return AdWindows.ComponentManager.ApplicationWindow
 
     @property
     def proc_screen(self):
