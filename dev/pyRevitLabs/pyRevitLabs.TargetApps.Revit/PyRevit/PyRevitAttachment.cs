@@ -80,7 +80,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public bool IsReadOnly() {
             // determine if attachment can be modified by user
             var us = new UserSecurity();
-            return us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
+            return ! us.HasAccess(new FileInfo(Manifest.FilePath), FileSystemRights.Write);
         }
     }
 }
