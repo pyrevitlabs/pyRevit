@@ -221,10 +221,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         with revit.TransactionGroup('Print Sheets in Order') as tg:
             if not print_mgr:
                 return
-            print_mgr.PrintSetup.CurrentPrintSetting = \
-                self.selected_print_setting
-            print_mgr.SelectNewPrintDriver(self.selected_printer)
-            print_mgr.PrintRange = DB.PrintRange.Select
+            with revit.Transaction('Set Printer Settings') as t:
+                print_mgr.PrintSetup.CurrentPrintSetting = \
+                    self.selected_print_setting
+                print_mgr.SelectNewPrintDriver(self.selected_printer)
+                print_mgr.PrintRange = DB.PrintRange.Select
             # add non-printable char in front of sheet Numbers
             # to push revit to sort them per user
             sheet_set = DB.ViewSet()
@@ -303,7 +304,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         if not print_mgr:
             return
         print_mgr.PrintToFile = True
-        with revit.DryTransaction('Set Printer Settubgs') as t:
+        with revit.DryTransaction('Set Printer Settings') as t:
             print_mgr.PrintSetup.CurrentPrintSetting = \
                 self.selected_print_setting
             print_mgr.SelectNewPrintDriver(self.selected_printer)
