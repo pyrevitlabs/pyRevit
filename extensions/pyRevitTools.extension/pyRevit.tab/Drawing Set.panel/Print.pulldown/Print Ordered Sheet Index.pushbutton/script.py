@@ -218,10 +218,10 @@ class PrintSheetsWindow(forms.WPFWindow):
     def _print_combined_sheets_in_order(self):
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
-        with revit.TransactionGroup('Print Sheets in Order') as tg:
+        with revit.TransactionGroup('Print Sheets in Order'):
             if not print_mgr:
                 return
-            with revit.Transaction('Set Printer Settings') as t:
+            with revit.Transaction('Set Printer Settings'):
                 print_mgr.PrintSetup.CurrentPrintSetting = \
                     self.selected_print_setting
                 print_mgr.SelectNewPrintDriver(self.selected_printer)
@@ -230,7 +230,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             # to push revit to sort them per user
             sheet_set = DB.ViewSet()
             original_sheetnums = []
-            with revit.Transaction('Fix Sheet Numbers') as t:
+            with revit.Transaction('Fix Sheet Numbers'):
                 for idx, sheet in enumerate(self.sheet_list):
                     rvtsheet = sheet.revit_sheet
                     original_sheetnums.append(rvtsheet.SheetNumber)
@@ -248,14 +248,14 @@ class PrintSheetsWindow(forms.WPFWindow):
 
             sheetsetname = 'OrderedPrintSet'
 
-            with revit.Transaction('Remove Previous Print Set') as t:
+            with revit.Transaction('Remove Previous Print Set'):
                 # Delete existing matching sheet set
                 if sheetsetname in all_viewsheetsets:
                     print_mgr.ViewSheetSetting.CurrentViewSheetSet = \
                         all_viewsheetsets[sheetsetname]
                     print_mgr.ViewSheetSetting.Delete()
 
-            with revit.Transaction('Update Ordered Print Set') as t:
+            with revit.Transaction('Update Ordered Print Set'):
                 try:
                     viewsheet_settings = print_mgr.ViewSheetSetting
                     viewsheet_settings.CurrentViewSheetSet.Views = \
@@ -292,7 +292,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             print_mgr.SubmitPrint()
 
             # now fix the sheet names
-            with revit.Transaction('Restore Sheet Numbers') as t:
+            with revit.Transaction('Restore Sheet Numbers'):
                 for sheet, sheetnum in zip(self.sheet_list,
                                            original_sheetnums):
                     rvtsheet = sheet.revit_sheet
@@ -304,7 +304,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         if not print_mgr:
             return
         print_mgr.PrintToFile = True
-        with revit.DryTransaction('Set Printer Settings') as t:
+        with revit.DryTransaction('Set Printer Settings'):
             print_mgr.PrintSetup.CurrentPrintSetting = \
                 self.selected_print_setting
             print_mgr.SelectNewPrintDriver(self.selected_printer)
