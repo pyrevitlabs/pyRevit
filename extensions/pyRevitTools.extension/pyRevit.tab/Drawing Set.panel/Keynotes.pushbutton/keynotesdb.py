@@ -167,6 +167,9 @@ class RKeynote(object):
             return self._filtered_children
         return self._children
 
+    def has_children(self):
+        return len(self.children)
+
     def filter(self, search_term):
         self._filter = search_term.lower()
 

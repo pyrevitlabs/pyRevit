@@ -99,7 +99,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI
+from pyrevit.api import DB, UI, AdWindows
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -268,10 +268,17 @@ class _HostApplication(object):
         return Process.GetCurrentProcess().MainModule.FileName
 
     @property
+    def proc_window(self):
+        """``intptr``: Return handle to screen hosting current process."""
+        if self.is_newer_than(2019, or_equal=True):
+            return self.uiapp.MainWindowHandle
+        else:
+            return AdWindows.ComponentManager.ApplicationWindow
+
+    @property
     def proc_screen(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return Forms.Screen.FromHandle(
-            Process.GetCurrentProcess().MainWindowHandle)
+        return Forms.Screen.FromHandle(self.proc_window)
 
     @property
     def proc_screen_workarea(self):

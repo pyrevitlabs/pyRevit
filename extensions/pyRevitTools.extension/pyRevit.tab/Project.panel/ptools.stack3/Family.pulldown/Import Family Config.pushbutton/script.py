@@ -10,6 +10,7 @@ parameters:
 		type: <Autodesk.Revit.DB.ParameterType>
 		category: <Autodesk.Revit.DB.BuiltInParameterGroup>
 		instance: <true|false>
+		formula: <str>
 types:
 	<type-name>:
 		<parameter-name>: <value>
@@ -54,6 +55,8 @@ PARAM_SECTION_NAME = 'parameters'
 TYPES_SECTION_NAME = 'types'
 
 
+FAMILY_SYMBOL_SEPARATOR = ' : '
+
 ParamConfig = \
     namedtuple(
         'ParamConfig',
@@ -76,11 +79,21 @@ TypeConfig = \
 
 
 def get_symbol(symbol_name):
+    if FAMILY_SYMBOL_SEPARATOR not in symbol_name:
+        logger.warning(
+            'Family type parameter value must be formatted as '
+            '<family-name> : <symbol-name> | incorrect format: %s',
+            symbol_name
+        )
+        return
+
+    fam_name, sym_name = symbol_name.split(FAMILY_SYMBOL_SEPARATOR)
     for fsym in DB.FilteredElementCollector(revit.doc)\
                   .OfClass(DB.FamilySymbol)\
                   .ToElements():
-        name = revit.query.get_name(fsym)
-        if name == symbol_name:
+        famname = revit.query.get_name(fsym.Family)
+        symname = revit.query.get_name(fsym)
+        if famname == fam_name and symname == sym_name:
             return fsym.Id
 
 
@@ -138,7 +151,7 @@ def ensure_param(param_name, param_opts):
                     pcfg.bitype,
                     pcfg.isinst
                 )
-            
+
             if pcfg.formula:
                 fm.SetFormula(fparam, pcfg.formula)
 
@@ -173,6 +186,33 @@ def ensure_type(type_config):
     return ftype
 
 
+def set_fparam_value(pvcfg, fparam):
+    fm = revit.doc.FamilyManager
+
+    if fparam.Formula:
+        logger.debug(
+            'can not set parameter value with formula: %s', pvcfg.name
+            )
+        return
+
+    if not pvcfg.value:
+        logger.debug('skipping parameter with no value: %s', pvcfg.name)
+        return
+
+    if fparam.StorageType == DB.StorageType.ElementId \
+            and fparam.Definition.ParameterType == \
+                DB.ParameterType.FamilyType:
+        fsym_id = get_symbol(pvcfg.value)
+        fm.Set(fparam, fsym_id)
+    elif fparam.StorageType == DB.StorageType.String:
+        fm.Set(fparam, pvcfg.value)
+    elif fparam.StorageType == DB.StorageType.Integer \
+            and fparam.Definition.ParameterType.YesNo:
+        fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
+    else:
+        fm.SetValueString(fparam, pvcfg.value)
+
+
 def ensure_types(fconfig):
     fm = revit.doc.FamilyManager
     type_cfgs = fconfig.get(TYPES_SECTION_NAME, None)
@@ -193,19 +233,11 @@ def ensure_types(fconfig):
                                 )
                         logger.debug('setting value for: %s', pvcfg.name)
                         if fparam:
-                            if fparam.StorageType == DB.StorageType.ElementId \
-                                    and fparam.Definition.ParameterType == DB.ParameterType.FamilyType:
-                                fsym_id = get_symbol(pvcfg.value)
-                                fm.Set(fparam, fsym_id)
-                            elif fparam.StorageType == DB.StorageType.String:
-                                fm.Set(fparam, pvcfg.value)
-                            elif fparam.StorageType == DB.StorageType.Integer \
-                                    and fparam.Definition.ParameterType.YesNo:
-                                fm.Set(fparam, 1 if pvcfg.value.lower() == 'true' else 0)
-                            else:
-                                fm.SetValueString(fparam, pvcfg.value)
+                            set_fparam_value(pvcfg, fparam)
                         else:
-                            logger.warning('can not find parameter: %s', pvcfg.name)
+                            logger.warning(
+                                'can not find parameter: %s', pvcfg.name
+                                )
 
 
 def get_config_file():
@@ -226,5 +258,11 @@ if __name__ == '__main__':
         family_configs = load_configs(family_cfg_file)
         logger.debug(family_configs)
         with revit.Transaction('Import Params from Config'):
+            # remember current type
+            ctype = revit.doc.FamilyManager.CurrentType
+
             ensure_params(family_configs)
             ensure_types(family_configs)
+
+            # restore current type
+            revit.doc.FamilyManager.CurrentType = ctype

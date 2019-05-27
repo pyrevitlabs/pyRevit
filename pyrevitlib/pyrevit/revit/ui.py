@@ -1,6 +1,7 @@
 from pyrevit.framework import IntPtr
 
 #pylint: disable=W0611
+from pyrevit import HOST_APP
 from pyrevit.api import AdInternal as ai
 from pyrevit.api import AdPrivate as ap
 from pyrevit.api import AdWindows as ad
@@ -15,7 +16,7 @@ __all__ = ('get_mainwindow_hwnd', 'get_statusbar_hwnd',
 
 
 def get_mainwindow_hwnd():
-    return ad.ComponentManager.ApplicationWindow
+    return HOST_APP.proc_window
 
 
 def get_statusbar_hwnd():

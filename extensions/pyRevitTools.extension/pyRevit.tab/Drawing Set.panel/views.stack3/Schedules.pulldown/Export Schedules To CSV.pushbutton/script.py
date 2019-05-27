@@ -52,7 +52,7 @@ def is_schedule(view):
         isrevsched = view.IsTitleblockRevisionSchedule
         isintkeynote = view.IsInternalKeynoteSchedule
         iskeynotelegend = view.Definition.CategoryId == \
-            revit.query.get_category('Keynote Tags').Id
+            revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
 
         return not (isrevsched or isintkeynote or iskeynotelegend)
 

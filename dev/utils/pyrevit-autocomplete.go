@@ -164,12 +164,6 @@ func main() {
 					"--notes": complete.PredictAnything,
 				},
 			},
-			"image": complete.Command{
-				Flags: complete.Flags{
-					"--config=": complete.PredictAnything,
-					"--dest=":   complete.PredictAnything,
-				},
-			},
 			"revits": complete.Command{
 				Sub: complete.Commands{
 					"killall": complete.Command{},
@@ -228,10 +222,11 @@ func main() {
 			},
 			"caches": complete.Command{
 				Sub: complete.Commands{
-					"clear": complete.Command{},
-				},
-				Flags: complete.Flags{
-					"--all": complete.PredictAnything,
+					"clear": complete.Command{
+						Flags: complete.Flags{
+							"--all": complete.PredictAnything,
+						},
+					},
 				},
 			},
 			"config": complete.Command{},

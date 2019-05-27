@@ -98,7 +98,7 @@ namespace pyRevitManager {
                             { "--dest=<dest_path>",     "Clone destination directory" },
                             { "--source=<image_url>",   "Clone source image url or path" },
                             { "--source=<repo_url>",    "Clone source git repo url" },
-                            { "--image=<image_path>",   "Clone from a custom image" },
+                            { "--image=<image_path>",   "Clone from a custom image (.zip archive)" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                         });
                     break;

@@ -1,6 +1,8 @@
 """Wrapper for YamlDotNet."""
 import os.path as op
 from collections import OrderedDict
+import codecs
+
 from winterops import clr, System, binary_path
 
 clr.AddReferenceToFileAndPath(op.join(binary_path, 'YamlDotNet'))
@@ -33,12 +35,12 @@ def load(yaml_file):
     """Load Yaml file into YamlDotNet object.
 
     Args:
-        yaml_file (str): fiel path to yaml file
+        yaml_file (str): file path to yaml file
 
     Returns:
         obj`YamlDotNet.RepresentationModel.YamlMappingNode`: yaml node
     """
-    with open(yaml_file, 'r') as yamlfile:
+    with codecs.open(yaml_file, 'r', 'utf-8') as yamlfile:
         yamlstr = libyaml.RepresentationModel.YamlStream()
         yamlstr.Load(System.IO.StringReader(yamlfile.read()))
         if yamlstr.Documents.Count >= 1:
@@ -49,9 +51,22 @@ def load_as_dict(yaml_file):
     """Load Yaml file into python dict object.
 
     Args:
-        yaml_file (str): fiel path to yaml file
+        yaml_file (str): file path to yaml file
 
     Returns:
         obj`dict`: dictionary representing yaml data
     """
     return _convert_yamldotnet_to_dict(load(yaml_file))
+
+
+def dump_dict(dict_object, yaml_file):
+    """Save YamlDotNet object to Yaml file.
+
+    Args:
+        dict_object (dict): dict object to be serialized into yaml
+        yaml_file (str): file path to yaml file
+    """
+    ybuilder = libyaml.Serialization.SerializerBuilder().Build()
+    serialized_yaml = ybuilder.Serialize(dict_object)
+    with codecs.open(yaml_file, 'w', 'utf-8') as yamlfile:
+        yamlfile.write(serialized_yaml.replace('\r\n', '\n'))
