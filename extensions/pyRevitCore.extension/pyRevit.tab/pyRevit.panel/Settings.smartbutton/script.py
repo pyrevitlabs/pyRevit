@@ -152,10 +152,14 @@ class SettingsWindow(forms.WPFWindow):
 
             # now select the current runtime engine
             self.cpyengine = user_config.get_active_cpython_engine()
-            for engine_cfg in self.cpythonEngines.ItemsSource:
-                if engine_cfg.engine.Version == self.cpyengine.Version:
-                    self.cpythonEngines.SelectedItem = engine_cfg
-                    break
+            if self.cpyengine:
+                for engine_cfg in self.cpythonEngines.ItemsSource:
+                    if engine_cfg.engine.Version == self.cpyengine.Version:
+                        self.cpythonEngines.SelectedItem = engine_cfg
+                        break
+            else:
+                logger.debug('Failed getting active cpython engine.')
+                self.cpythonEngines.IsEnabled = False
         else:
             logger.error('Error determining current attached clone.')
             self.disable_element(self.availableEngines)

@@ -197,24 +197,29 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             cpy_engines_dict = \
                 {x.Version: x for x in attachment.Clone.GetEngines()
                  if 'cpython' in x.KernelName.lower()}
-            # find latest cpython engine
-            latest_cpyengine = \
-                max(cpy_engines_dict.values(), key=lambda x: x.Version)
+            mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
+            if cpy_engines_dict:
+                # find latest cpython engine
+                latest_cpyengine = \
+                    max(cpy_engines_dict.values(), key=lambda x: x.Version)
 
-            # grab cpython engine configured to be used by user
-            consts = TargetApps.Revit.PyRevitConsts
-            cpyengine_cfg = \
-                self.core.get_option(consts.ConfigsCPythonEngine, 0)
-            try:
-                cpyengine_ver = int(cpyengine_cfg)
-            except Exception:
-                cpyengine_ver = 000
+                # grab cpython engine configured to be used by user
+                consts = TargetApps.Revit.PyRevitConsts
+                cpyengine_cfg = \
+                    self.core.get_option(consts.ConfigsCPythonEngine, 0)
+                try:
+                    cpyengine_ver = int(cpyengine_cfg)
+                except Exception:
+                    cpyengine_ver = 000
 
-            # grab the engine by version or default to latest
-            cpyengine = \
-                cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
-            # return full dll assembly path
-            return cpyengine
+                # grab the engine by version or default to latest
+                cpyengine = \
+                    cpy_engines_dict.get(cpyengine_ver, latest_cpyengine)
+                # return full dll assembly path
+                return cpyengine
+            else:
+                mlogger.error('Can not determine cpython engines for '
+                              'current attachment: %s', attachment)
 
     def save_changes(self):
         """Save user config into associated config file."""
