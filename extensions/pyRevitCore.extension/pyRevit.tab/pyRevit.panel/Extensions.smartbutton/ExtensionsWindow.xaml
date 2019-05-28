@@ -60,8 +60,9 @@
                 </TextBlock>
                 <TextBlock Margin="5,0,0,0" FontSize="14" > Developed by:
                     <Hyperlink x:Name="ext_authorlink_hl" Click="handle_url_click">
-                        <TextBlock x:Name="ext_author_t"/>
+                        <TextBlock x:Name="ext_author_t" Visibility="Visible"/>
                     </Hyperlink>
+                    <TextBlock x:Name="ext_author_nolink_t" Visibility="Collapsed"/>
                 </TextBlock>
                 <TextBlock Margin="5,0,0,0" FontSize="14" > Repository:
                     <Hyperlink x:Name="ext_repolink_hl" Click="handle_url_click">

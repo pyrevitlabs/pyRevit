@@ -58,6 +58,7 @@ class ExtensionPackageListItem:
         self.Name = self.ext_pkg.name
         self.Desciption = self.ext_pkg.description
         self.Author = self.ext_pkg.author
+        self.AuthorProfile = self.ext_pkg.author_profile
 
         self.GitURL = self.ext_pkg.url
         self.URL = self.ext_pkg.website
@@ -185,8 +186,15 @@ class ExtensionsWindow(forms.WPFWindow):
         # Update the author and profile link
         if ext_pkg_item.Author:
             self.ext_author_t.Text = ext_pkg_item.Author
-            self.ext_authorlink_hl.NavigateUri = \
-                framework.Uri(ext_pkg_item.ext_pkg.author_profile)
+            self.ext_author_nolink_t.Text = ext_pkg_item.Author
+            if ext_pkg_item.AuthorProfile:
+                self.ext_authorlink_hl.NavigateUri = \
+                    framework.Uri(ext_pkg_item.AuthorProfile)
+                self.show_element(self.ext_author_t)
+                self.hide_element(self.ext_author_nolink_t)
+            else:
+                self.hide_element(self.ext_author_t)
+                self.show_element(self.ext_author_nolink_t)
         else:
             self.ext_author_t.Text = ''
 
