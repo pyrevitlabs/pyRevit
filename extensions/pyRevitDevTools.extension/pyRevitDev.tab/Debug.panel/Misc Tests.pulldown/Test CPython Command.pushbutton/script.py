@@ -1,4 +1,5 @@
 #! python3
+# -*- coding: utf-8 -*-
 # pylint: skip-file
 
 # set PYTHONPATH to ....\Lib\site-packages correctly
@@ -48,3 +49,8 @@ cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
 print('\n## list of DB.Walls:')
 for wall in cl:
     print(f'{wall} id:{wall.Id.IntegerValue}')
+
+# test unicode
+print("""
+Кириллица (/ sɪˈrɪlɪk /) - это система письма
+""")
