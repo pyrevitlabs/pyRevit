@@ -5,7 +5,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__context__ = 'Text Notes'
+__context__ = 'OST_TextNotes'
 
 
 selection = revit.get_selection()
