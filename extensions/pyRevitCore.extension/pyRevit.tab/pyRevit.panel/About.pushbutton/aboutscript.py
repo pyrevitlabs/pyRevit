@@ -18,6 +18,9 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
           'detailed information on how pyrevit works, updates about the ' \
           'new tools and changes, and a lot of other information there.'
 
+
+logger = script.get_logger()
+
 Revit = TargetApps.Revit
 
 
@@ -39,15 +42,16 @@ class AboutWindow(forms.WPFWindow):
             self.branch_name = pyrvt_repo.branch
             self.show_element(self.git_commit)
             self.show_element(self.git_branch)
-        except Exception:
+        except Exception as getbranch_ex:
+            logger.debug('Error getting branch: %s', getbranch_ex)
             # other wise try to get deployment name
             attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
             if attachment:
                 try:
-                    self.deployname = attachment.Clone.GetDeployment().Name
+                    self.deployname = attachment.Clone.Deployment.Name
                     self.show_element(self.repo_deploy)
-                except Exception:
-                    pass
+                except Exception as getdepl_ex:
+                    logger.debug('Error getting depoyment: %s', getdepl_ex)
 
         # get cli version
         pyrvt_cli_version = 'v' + versionmgr.get_pyrevit_cli_version()
