@@ -42,7 +42,7 @@ DEFAULT_SEARCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_HEIGHT = 100
 DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
-
+DEFAULT_RECOGNIZE_ACCESS_KEY = False
 
 WPF_HIDDEN = framework.Windows.Visibility.Hidden
 WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
@@ -638,7 +638,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         switches (list[str]): list of on/off switches
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
-
+        recognize_access_key (bool): recognize '_' as mark of access key
     Returns:
         str: name of selected option
 
@@ -660,12 +660,13 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         >>> from pyrevit import forms
         >>> ops = ['option1', 'option2', 'option3', 'option4']
         >>> switches = ['switch1', 'switch2']
-        >>> cfgs = {'option1': { 'background': '0xFF55FF'}}
+        >>> cfgs = {'option1': { 'background': '0xFF55FF', 'recognize_access_key': True}}
         >>> rops, rswitches = forms.CommandSwitchWindow.show(
         ...     ops,
         ...     switches=switches
         ...     message='Select Option',
-        ...     config=cfgs
+        ...     config=cfgs,
+        ...     recognize_access_key=False
         ...     )
         >>> rops
         'option2'
@@ -690,6 +691,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.message_label.Content = \
             message if message else 'Pick a command option:'
 
+        recognize_access_key = kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+
         # creates the switches first
         for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
@@ -703,8 +706,16 @@ class CommandSwitchWindow(TemplateUserInputWindow):
             my_button = framework.Controls.Button()
             my_button.Content = option
             my_button.Click += self.process_option
+            # is **args recognize_access_key parameter overriden by button config
+            override_recognize_access_key = False
             if configs and option in configs:
                 self._set_config(my_button, configs[option])
+                # override **args recognize_access_key by config
+                if "recognize_access_key" in configs[option]:
+                    override_recognize_access_key = True
+            if not override_recognize_access_key and not recognize_access_key:
+                # make underscores visible, instead of using it as AccessKey identifier
+                my_button.Content = my_button.Content.replace('_','__')
             self.button_list.Children.Add(my_button)
 
         self._setup_response()
@@ -717,6 +728,10 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         if bg:
             bg = bg.replace('0x', '#')
             item.Background = Media.BrushConverter().ConvertFrom(bg)
+        recognize_access_key = config_dict.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+        if not recognize_access_key:
+            # make underscore visible, instead of using it as AccessKey identifier
+            item.Content = item.Content.replace('_','__',1)
 
     def _setup_response(self, response=None):
         if self._switches:
