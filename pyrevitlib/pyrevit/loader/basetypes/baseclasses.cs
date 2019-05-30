@@ -276,6 +276,7 @@ namespace PyRevitBaseClasses {
         private bool selectionRequired = false;                                 // is any selection required?
         private HashSet<ViewType> activeViewTypes = new HashSet<ViewType>();    // list of acceptable view types
         private string _contextCatNameCompareString = null;                     // category comparison string (e.g. wallsdoors)
+        private HashSet<int> _contextCatIdsCompareSet = new HashSet<int>();
 
         public PyRevitCommandExtendedAvail(string contextString) {
             // keep a backup
@@ -346,6 +347,23 @@ namespace PyRevitBaseClasses {
                 }
             }
 
+            // extract builtincategory ids from required text
+            if (contextTokens.Count > 0) {
+                List<string> tokensBic = new List<string>();
+                foreach(string token in contextTokens) {
+                    if (token.ToLower().Substring(0, 4) == "ost_") // token.StartWith("OST_")
+                        tokensBic.Add(token);
+                }
+                if (tokensBic.Count > 0) {
+                    foreach(string token in tokensBic) {
+                        BuiltInCategory bic;
+                        if (Enum.TryParse(token, true, out bic)) {
+                            _contextCatIdsCompareSet.Add((int)bic);
+                            contextTokens.Remove(token);
+                        }
+                    }
+                }
+            }
             // assume that the remaining tokens are category names and create a comparison string
             if (contextTokens.Count > 0) {
                 contextTokens.Sort();
@@ -365,7 +383,27 @@ namespace PyRevitBaseClasses {
                     return false;
             }
 
-            // check element categories
+            // check element categories by id
+            if (_contextCatIdsCompareSet.Count > 0)
+            {
+                if (selectedCategories.IsEmpty)
+                    return false;
+
+                try
+                {
+                    var selectedCategoryIds = new HashSet<int>();
+                    foreach (Category rvt_cat in selectedCategories)
+                        selectedCategoryIds.Add(rvt_cat.Id.IntegerValue);
+                    if (!_contextCatIdsCompareSet.SetEquals(selectedCategoryIds))
+                        return false;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            
+            // check element categories by name
             if (_contextCatNameCompareString != null) {
                 if (selectedCategories.IsEmpty)
                     return false;
@@ -377,9 +415,9 @@ namespace PyRevitBaseClasses {
 
                     selectedCategoryNames.Sort();
                     string selectedCatNameCompareString = string.Join("", selectedCategoryNames);
-
+                    
                     if (selectedCatNameCompareString != _contextCatNameCompareString)
-                        return false;
+                        return false;                    
                 }
                 catch (Exception) {
                     return false;
