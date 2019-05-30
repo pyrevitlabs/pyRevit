@@ -1,4 +1,6 @@
-"""Provides options for overriding Visibility/Graphics on selected elements."""
+"""Provides options for overriding Visibility/Graphics on selected elements.
+
+Shift-Click: Override Cut pattern also"""
 #pylint: disable=E0401,C0103
 import re
 from collections import OrderedDict
@@ -19,14 +21,12 @@ selection.expand_groups()
 
 
 def find_solid_fillpat():
-    solid_fill_regex = re.compile('[<]?solid fill[>]?')
     existing_pats = DB.FilteredElementCollector(revit.doc)\
                       .OfClass(DB.FillPatternElement)\
                       .ToElements()
     for pat in existing_pats:
         fpat = pat.GetFillPattern()
-        if solid_fill_regex.match(fpat.Name.lower()) \
-                and fpat.Target == DB.FillPatternTarget.Drafting:
+        if fpat.IsSolidFill and fpat.Target == DB.FillPatternTarget.Drafting:
             return pat
 
 
@@ -39,14 +39,20 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
                     selection.append(revit.doc.GetElement(mem))
             ogs = DB.OverrideGraphicSettings()
             ogs.SetProjectionLineColor(color)
+            if __shiftclick__:
+                ogs.SetCutLineColor(color)
             if not projline_only:
                 ogs.SetProjectionFillColor(color)
+                if __shiftclick__:
+                    ogs.SetCutFillColor(color)
                 solid_fpattern = find_solid_fillpat()
                 if solid_fpattern:
                     ogs.SetProjectionFillPatternId(solid_fpattern.Id)
+                    if __shiftclick__:
+                        ogs.SetCutFillPatternId(solid_fpattern.Id)
                 else:
                     logger.warning('Can not find solid fill pattern in model'
-                                   'to assign as projection pattern.')
+                                   'to assign as projection/cut pattern.')
             revit.doc.ActiveView.SetElementOverrides(el.Id, ogs)
 
 
