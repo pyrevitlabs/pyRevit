@@ -1,5 +1,5 @@
-:mod:`pyrevit.revit`
-====================
+pyrevit.revit
+=============
 
 
 Functions for frequently performed Revit tasks or queries.

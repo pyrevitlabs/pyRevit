@@ -167,6 +167,9 @@ class RKeynote(object):
             return self._filtered_children
         return self._children
 
+    def has_children(self):
+        return len(self.children)
+
     def filter(self, search_term):
         self._filter = search_term.lower()
 
@@ -363,9 +366,14 @@ def get_keynotes_tree(conn):
 
     for catroot_rkey in keynote_records:
         if catroot_rkey.key in parents:
-            catroot_rkey.children.extend(parents[catroot_rkey.key])
+            catroot_rkey.children.extend(
+                natsorted(
+                    parents[catroot_rkey.key],
+                    key=lambda x: x.key
+                )
+            )
 
-    return sorted(cat_roots, key=lambda x: x.key)
+    return natsorted(cat_roots, key=lambda x: x.key)
 
 
 def find(conn, key):

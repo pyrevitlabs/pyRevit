@@ -14,4 +14,4 @@ rather than a more complex documentation like this that needs sphinx to generate
 the actual documentation pages.
 
 
-You can access the latest CLI help `HERE <https://github.com/eirannejad/pyRevit/blob/master/README_CLI.md>`_
+You can access the latest CLI help `HERE <https://github.com/eirannejad/pyRevit/blob/master/docs/cli.md>`_

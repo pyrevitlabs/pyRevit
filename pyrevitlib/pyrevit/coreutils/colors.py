@@ -1,13 +1,31 @@
 #pylint: disable=C0302
 """Provide RGB color constants and a colors dictionary with
-elements formatted: COLORS[colorname] = CONSTANT"""
-from collections import namedtuple, OrderedDict
+elements formatted: COLORS[colorname] = CONSTANT
+
+Example:
+    >>> from pyrevit.coreutils import colors
+    >>> colors.COLORS['black']
+    ... <RGB #000000>
+    >>> colors.BLACK
+    ... <RGB #000000>
+
+"""
+from collections import OrderedDict
 
 
-Color = namedtuple('RGB', 'name, red, green, blue')
+class RGB(object):
+    """RGB named color object.
 
+    Attributes:
+        name (str): color name
+        red (int): value for red component (0-255)
+        green (int): value for green component (0-255)
+        blue (int): value for blue component (0-255)
+    """
+    def __init__(self, name='default', red=0, green=0, blue=0):
+        self.name = name
+        self.red, self.green, self.blue = red, green, blue
 
-class RGB(Color):
     def __str__(self):
         return self.hex_color
 
@@ -16,17 +34,17 @@ class RGB(Color):
 
     @property
     def hex_color(self):
-        '''Return color in hex format'''
+        """Return color in hex format"""
         return '#{:02X}{:02X}{:02X}'.format(self.red, self.green, self.blue)
 
     @property
     def luminance(self):
-        '''Return color luminance (preceived)'''
-        return (0.299*self.red + 0.587*self.green + 0.114*self.blue)
+        """Return color luminance (preceived)"""
+        return 0.299*self.red + 0.587*self.green + 0.114*self.blue
 
     @property
     def safe_text_color(self):
-        '''Return text color that is safe to overlap this color.'''
+        """Return text color that is safe to overlap this color."""
         return '#FFFFFF' if self.luminance < 128 else '#000000'
 
 
@@ -335,7 +353,8 @@ LIGHTGOLDENROD1 = RGB(name='lightgoldenrod1', red=255, green=236, blue=139)
 LIGHTGOLDENROD2 = RGB(name='lightgoldenrod2', red=238, green=220, blue=130)
 LIGHTGOLDENROD3 = RGB(name='lightgoldenrod3', red=205, green=190, blue=112)
 LIGHTGOLDENROD4 = RGB(name='lightgoldenrod4', red=139, green=129, blue=76)
-LIGHTGOLDENRODYELLOW = RGB(name='lightgoldenrodyellow', red=250, green=250, blue=210)
+LIGHTGOLDENRODYELLOW = \
+    RGB(name='lightgoldenrodyellow', red=250, green=250, blue=210)
 LIGHTGREY = RGB(name='lightgrey', red=211, green=211, blue=211)
 LIGHTPINK = RGB(name='lightpink', red=255, green=182, blue=193)
 LIGHTPINK1 = RGB(name='lightpink1', red=255, green=174, blue=185)

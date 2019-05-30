@@ -14,6 +14,9 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
+
 if tagscfg.verify_tags_configs():
     forms.inform_wip()
 else:

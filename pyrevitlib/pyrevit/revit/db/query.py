@@ -83,6 +83,19 @@ def get_name(element, title_on_sheet=False):
     return Element.Name.__get__(element)
 
 
+def get_type(element):
+    """Get element type.
+
+    Args:
+        element (DB.Element): source element
+
+    Returns:
+        DB.ElementType: type object of given element
+    """
+    type_id = element.GetTypeId()
+    return element.Document.GetElement(type_id)
+
+
 def get_symbol_name(element):
     return get_name(element.Symbol)
 
@@ -374,17 +387,18 @@ def get_project_parameters(doc=None):
     # collect shared parameter names
     shared_params = {x.Name: x for x in get_defined_sharedparams()}
 
-    param_bindings = doc.ParameterBindings
-    pb_iterator = param_bindings.ForwardIterator()
-    pb_iterator.Reset()
-
     pp_list = []
-    while pb_iterator.MoveNext():
-        msp = db.ProjectParameter(
-            pb_iterator.Key,
-            param_bindings[pb_iterator.Key],
-            param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
-        pp_list.append(msp)
+    if doc and not doc.IsFamilyDocument:
+        param_bindings = doc.ParameterBindings
+        pb_iterator = param_bindings.ForwardIterator()
+        pb_iterator.Reset()
+
+        while pb_iterator.MoveNext():
+            msp = db.ProjectParameter(
+                pb_iterator.Key,
+                param_bindings[pb_iterator.Key],
+                param_ext_def=shared_params.get(pb_iterator.Key.Name, None))
+            pp_list.append(msp)
 
     return pp_list
 
@@ -1173,3 +1187,21 @@ def get_schema_field_values(element, schema):
 
             field_values[field.FieldName] = value
     return field_values
+
+
+def get_family_type(type_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for ftype in family_doc.FamilyManager.Types:
+            if ftype.Name == type_name:
+                return ftype
+    else:
+        raise PyRevitException('Document is not a family')
+
+
+def get_family_parameter(param_name, family_doc):
+    if family_doc.IsFamilyDocument:
+        for fparam in family_doc.FamilyManager.GetParameters():
+            if fparam.Definition.Name == param_name:
+                return fparam
+    else:
+        raise PyRevitException('Document is not a family')

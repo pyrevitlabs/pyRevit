@@ -38,6 +38,7 @@ except ImportError:
 
 
 PYREVIT_ADDON_NAME = 'pyRevit'
+PYREVIT_CLI_NAME = 'pyrevit.exe'
 
 # extract version from version file
 VERSION_STRING = '0.0.'
@@ -91,12 +92,14 @@ sys.path.append(ADDIN_DIR)
 sys.path.append(ENGINES_DIR)
 
 
+PYREVIT_CLI_PATH = op.join(BIN_DIR, PYREVIT_CLI_NAME)
+
 # now we can start importing stuff
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI
+from pyrevit.api import DB, UI, AdWindows
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -106,7 +109,7 @@ TRACEBACK_TITLE = 'Traceback:'
 
 # General Exceptions
 class PyRevitException(Exception):
-    """Base class for all pyRevit Exceptions.
+    """Common base class for all pyRevit exceptions.
 
     Parameters args and message are derived from Exception class.
     """
@@ -135,7 +138,7 @@ class PyRevitException(Exception):
 
 
 class PyRevitIOError(PyRevitException):
-    """Generic IO error in pyRevit."""
+    """Common base class for all pyRevit io-related exceptions."""
 
     pass
 
@@ -265,10 +268,17 @@ class _HostApplication(object):
         return Process.GetCurrentProcess().MainModule.FileName
 
     @property
+    def proc_window(self):
+        """``intptr``: Return handle to screen hosting current process."""
+        if self.is_newer_than(2019, or_equal=True):
+            return self.uiapp.MainWindowHandle
+        else:
+            return AdWindows.ComponentManager.ApplicationWindow
+
+    @property
     def proc_screen(self):
         """``intptr``: Return handle to screen hosting current process."""
-        return Forms.Screen.FromHandle(
-            Process.GetCurrentProcess().MainWindowHandle)
+        return Forms.Screen.FromHandle(self.proc_window)
 
     @property
     def proc_screen_workarea(self):

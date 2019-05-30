@@ -9,6 +9,7 @@ from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
 from pyrevit import script
+from pyrevit.userconfig import user_config
 
 
 __context__ = 'zerodoc'
@@ -53,13 +54,18 @@ class AboutWindow(forms.WPFWindow):
         self.show_element(self.cli_info)
         self.cliversion.Text = pyrvt_cli_version
 
+        # get cpython engine version
+        self.cpyengine = user_config.get_active_cpython_engine()
+
         self.short_version_info.Text = short_version
         self.pyrevit_subtitle.Text = pyrvtabout.subtitle
         self.version.Text = nice_version
         self.pyrevit_branch.Text = self.branch_name
         self.pyrevit_deploy.Text = '{} deployment'.format(self.deployname)
-        self.pyrevit_engine.Text = 'Running on IronPython {}'\
-                                   .format(sys.version.split('(')[0].strip())
+        self.pyrevit_engine.Text = \
+            'Running on IronPython {} (cpython {})'\
+                .format(sys.version.split('(')[0].strip(),
+                        '.'.join(list(str(self.cpyengine.Version))))
 
         rocketmodetext = \
             'Rocket-mode {}' \

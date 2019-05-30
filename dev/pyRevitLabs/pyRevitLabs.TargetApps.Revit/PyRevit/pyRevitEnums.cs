@@ -17,6 +17,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         Unknown,
         UIExtension,
         LibraryExtension,
+        RunnerExtension
     }
 
     // pyrevit bundle types

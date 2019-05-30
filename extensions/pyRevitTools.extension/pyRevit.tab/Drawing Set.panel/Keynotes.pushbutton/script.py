@@ -455,9 +455,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @property
     def selected_category(self):
+        # grab selected category
         cat = self.categories_tv.SelectedItem
-        if cat and cat != self._allcat:
-            return cat
+        if cat:
+            # verify category is not all-categories item
+            if cat != self._allcat:
+                return cat
+            # grab category from keynote list
+            elif self.selected_keynote \
+                    and not self.selected_keynote.parent_key:
+                return self.selected_keynote
 
     @selected_category.setter
     def selected_category(self, cat_key):
@@ -686,6 +693,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # show keynotes
         self.keynotes_tv.ItemsSource = filtered_keynotes
 
+    def _update_catedit_buttons(self):
+        self.catEditButtons.IsEnabled = \
+            self.selected_category and not self.selected_category.locked
+
+    def _update_knoteedit_buttons(self):
+        if self.selected_keynote \
+                and not self.selected_keynote.locked:
+            self.keynoteEditButtons.IsEnabled = \
+                bool(self.selected_keynote.parent_key)
+            self.catEditButtons.IsEnabled = \
+                not self.keynoteEditButtons.IsEnabled
+        else:
+            self.keynoteEditButtons.IsEnabled = False
+
     def search_txt_changed(self, sender, args):
         """Handle text change in search box."""
         logger.debug('New search term: %s', self.search_term)
@@ -712,27 +733,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def selected_category_changed(self, sender, args):
         logger.debug('New category selected: %s', self.selected_category)
-        if self.selected_category and not self.selected_category.locked:
-            self.subkeynoteAdd.IsEnabled = True
-            self.catEditButtons.IsEnabled = True
-        else:
-            self.subkeynoteAdd.IsEnabled = False
-            self.catEditButtons.IsEnabled = False
+        self._update_catedit_buttons()
         self._update_ktree_knotes()
 
     def selected_keynote_changed(self, sender, args):
         logger.debug('New keynote selected: %s', self.selected_keynote)
-        if self.selected_keynote \
-                and not self.selected_keynote.locked:
-            if self.selected_keynote.parent_key:
-                self.catEditButtons.IsEnabled = False
-                self.keynoteEditButtons.IsEnabled = True
-            else:
-                self.catEditButtons.IsEnabled = True
-                self.keynoteEditButtons.IsEnabled = False
-        else:
-            self.keynoteEditButtons.IsEnabled = False
-            self.catEditButtons.IsEnabled = False
+        self._update_catedit_buttons()
+        self._update_knoteedit_buttons()
 
     def refresh(self, sender, args):
         if self._conn:
@@ -796,7 +803,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # TODO: ask user which category to move the subkeynotes or delete?
         selected_category = self.selected_category
         if selected_category:
-            if self.current_keynotes:
+            if selected_category.has_children():
                 forms.alert("Category \"%s\" is not empty. "
                             "Delete all its keynotes first."
                             % selected_category.key)

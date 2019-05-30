@@ -80,7 +80,8 @@ class SettingsWindow(forms.WPFWindow):
                                    '2016': self.revit2016_cb,
                                    '2017': self.revit2017_cb,
                                    '2018': self.revit2018_cb,
-                                   '2019': self.revit2019_cb}
+                                   '2019': self.revit2019_cb,
+                                   '2020': self.revit2020_cb}
 
         self.set_image_source(self.lognone, 'lognone.png')
         self.set_image_source(self.logverbose, 'logverbose.png')
@@ -125,20 +126,40 @@ class SettingsWindow(forms.WPFWindow):
         self.rocketmode_cb.IsChecked = user_config.core.rocketmode
 
     def _setup_engines(self):
-        attachment = self.get_current_attachment()
+        attachment = user_config.get_current_attachment()
         if attachment and attachment.Clone:
             engine_cfgs = \
                 [PyRevitEngineConfig(x) for x in attachment.Clone.GetEngines()]
             engine_cfgs = \
                 sorted(engine_cfgs,
                        key=lambda x: x.engine.Version, reverse=True)
-            self.availableEngines.ItemsSource = engine_cfgs
 
-            # now select the current engine
+            # add engines to ui
+            self.availableEngines.ItemsSource = \
+                [x for x in engine_cfgs if x.engine.Runtime]
+            self.cpythonEngines.ItemsSource = \
+                [x for x in engine_cfgs if not x.engine.Runtime]
+
+            # now select the current runtime engine
             for engine_cfg in self.availableEngines.ItemsSource:
                 if engine_cfg.engine.Version == int(EXEC_PARAMS.engine_ver):
                     self.availableEngines.SelectedItem = engine_cfg
                     break
+
+            # if addin-file is not writable, lock changing of the engine
+            if attachment.IsReadOnly():
+                self.availableEngines.IsEnabled = False
+
+            # now select the current runtime engine
+            self.cpyengine = user_config.get_active_cpython_engine()
+            if self.cpyengine:
+                for engine_cfg in self.cpythonEngines.ItemsSource:
+                    if engine_cfg.engine.Version == self.cpyengine.Version:
+                        self.cpythonEngines.SelectedItem = engine_cfg
+                        break
+            else:
+                logger.debug('Failed getting active cpython engine.')
+                self.cpythonEngines.IsEnabled = False
         else:
             logger.error('Error determining current attached clone.')
             self.disable_element(self.availableEngines)
@@ -229,11 +250,6 @@ class SettingsWindow(forms.WPFWindow):
                     checkbox.IsChecked = False
 
     @staticmethod
-    def get_current_attachment():
-        hostver = int(HOST_APP.version)
-        return Revit.PyRevit.GetAttached(hostver)
-
-    @staticmethod
     def update_usagelogging():
         """Updates the usage logging system per changes.
 
@@ -248,7 +264,7 @@ class SettingsWindow(forms.WPFWindow):
     def update_addinfiles(self):
         """Enables/Disables the adding files for different Revit versions."""
         # update active engine
-        attachment = self.get_current_attachment()
+        attachment = user_config.get_current_attachment()
         if attachment:
             all_users = attachment.AttachmentType == \
                 Revit.PyRevitAttachmentType.AllUsers
@@ -378,6 +394,14 @@ class SettingsWindow(forms.WPFWindow):
         user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
         user_config.core.compilevb = self.compilevb_cb.IsChecked
         user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
+
+        # set active cpython engine
+        engine_cfg = self.cpythonEngines.SelectedItem
+        if engine_cfg:
+            user_config.core.cpyengine = engine_cfg.engine.Version
+            if self.cpyengine.Version != engine_cfg.engine.Version:
+                forms.alert('Active CPython engine has changed. '
+                            'Restart Revit for this change to take effect.')
 
         try:
             min_freespace = int(self.minhostdrivefreespace_tb.Text)

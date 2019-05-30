@@ -100,6 +100,15 @@ class ElementSelection:
     def only_views(self):
         return self.include(DB.View)
 
+    def expand_groups(self):
+        expanded_refs = []
+        for element in self.elements:
+            if isinstance(element, DB.Group):
+                expanded_refs.extend(element.GetMemberIds())
+            else:
+                expanded_refs.append(element.Id)
+        self._refs = expanded_refs
+
 
 def _pick_obj(obj_type, pick_message, multiple=False, world=False):
     refs = []

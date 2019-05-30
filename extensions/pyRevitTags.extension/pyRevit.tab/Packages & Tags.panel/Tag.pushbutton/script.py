@@ -77,6 +77,9 @@ class ApplyTagWindow(forms.WPFWindow):
         self._apply_tags()
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
+
 if tagscfg.verify_tags_configs():
     ApplyTagWindow('ApplyTagWindow.xaml').ShowDialog()
 else:

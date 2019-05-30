@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Net.Cache;
 using System.Diagnostics;
 
-using MahApps.Metro.Controls;
+using pyRevitLabs.MahAppsMetro.Controls;
 using pyRevitLabs.CommonWPF.Controls;
 
 namespace PyRevitBaseClasses {
@@ -46,19 +46,19 @@ namespace PyRevitBaseClasses {
 
         private void SetupDynamicResources() {
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml")
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Controls.xaml")
             });
 
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml")
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Fonts.xaml")
             });
 
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml")
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Colors.xaml")
             });
 
             var accentResDict = new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/MahApps.Metro;component/Styles/Accents/Steel.xaml")
+                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Accents/Steel.xaml")
             };
 
             // TODO: read the colors from css? all colors and styles should be in the same place
@@ -79,11 +79,6 @@ namespace PyRevitBaseClasses {
             Resources.MergedDictionaries.Add(accentResDict);
         }
 
-        public string GetCurrentPyRevitVersion() {
-            var envDict = new EnvDictionary();
-            return envDict.pyRevitVersion;
-        }
-
         private void ScriptOutput_SizeChanged(object sender, SizeChangedEventArgs e) {
             Visibility isVisible = Visibility.Visible;
             if (ActualWidth < 400)
@@ -94,19 +89,11 @@ namespace PyRevitBaseClasses {
             this.TitleForeground = isVisible == Visibility.Visible ? Brushes.White : new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
         }
 
-        // app version
-        public override string AppVersion { get { return GetCurrentPyRevitVersion(); } }
-
-        public void SetIcon(string iconPath) {
-            Icon = LoadIcon(new Uri(iconPath));
-            IconBitmapScalingMode = BitmapScalingMode.HighQuality;
-            IconEdgeMode = EdgeMode.Aliased;
-            IconScalingMode = MultiFrameImageMode.ScaleDownLargerFrame;
-            ShowIconOnTitleBar = true;
-        }
-
         public void ResetIcon() {
-            var iconPath = Path.Combine(Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location), "outputwindow_icon.png");
+            var iconPath = Path.Combine(
+                Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location),
+                "outputwindow_icon.png"
+                );
             SetIcon(iconPath);
         }
     }
@@ -305,7 +292,7 @@ namespace PyRevitBaseClasses {
             // create the head with default styling
             var dochead = string.Format(
                 ExternalConfig.doctype + ExternalConfig.dochead,
-                GetCurrentPyRevitVersion(),
+                AppVersion,
                 cssFilePath
                 );
             // create default html

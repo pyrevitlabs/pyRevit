@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Common.Extensions;
 using NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitRunnerExecEnv {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public PyRevitRunnerExecEnv(PyRevitAttachment attachment, string script, IEnumerable<string> modelPaths) {
             Attachment = attachment;
             Script = script;
@@ -24,7 +27,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             ExecutionId = Guid.NewGuid().ToString();
             // setup working dir
             WorkingDirectory = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), ExecutionId);
-            CommonUtils.ConfirmPath(WorkingDirectory);
+            CommonUtils.EnsurePath(WorkingDirectory);
 
             // generate journal and manifest file
             GenerateJournal();
@@ -85,6 +88,15 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             Purged = true;
         }
 
+        // MDJ added code to copy all .addin files and subdirs into the batch running context.
+        // This is to workaround built-in Revit addins like the NavisExporter not being available while using pyRevit batch. 
+        // Per MSDN, the below code is a relatively safe way to recurse through dirs and copy: http://msdn.microsoft.com/en-us/library/system.io.directoryinfo.aspx 
+
+        public void CopyExistingAddons(string sourceDirectory) {
+            var targetDirectoryInfo = new DirectoryInfo(WorkingDirectory);
+            CopyAll(new DirectoryInfo(sourceDirectory), targetDirectoryInfo);
+        }
+
         // private
         private void GenerateJournal() {
             File.WriteAllText(
@@ -109,7 +121,41 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                       PyRevitConsts.VendorId,
                                       addinPath: WorkingDirectory);
         }
+
+        private static void CopyAll(DirectoryInfo source, DirectoryInfo target)
+        {
+            if (source.FullName.NormalizeAsPath() == target.FullName.NormalizeAsPath())
+                return;
+
+            // Check if the target directory exists, if not, create it.
+            CommonUtils.EnsurePath(target.FullName);
+
+            // Copy each file into it's new directory.
+            foreach (FileInfo fi in source.GetFiles())
+            {
+                logger.Debug(@"Copying {0}\{1}", target.FullName, fi.Name);
+                fi.CopyTo(Path.Combine(target.ToString(), fi.Name), true);
+            }
+
+            // Copy each subdirectory using recursion.
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            {
+                DirectoryInfo nextTargetSubDir =
+                    target.CreateSubdirectory(diSourceSubDir.Name);
+                CopyAll(diSourceSubDir, nextTargetSubDir);
+            }
+        }
     }
+
+
+    public class PyRevitRunnerOptions {
+        public PyRevitRunnerOptions() { }
+
+        public bool PurgeTempFiles = false;
+        public string ImportPath;
+    }
+
+
 
     public static class PyRevitRunner {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -117,17 +163,24 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         public static PyRevitRunnerExecEnv Run(PyRevitAttachment attachment,
                                                string scriptPath,
                                                IEnumerable<string> modelPaths,
-                                               bool purgeTempFiles = false) {
+                                               PyRevitRunnerOptions opts = null) {
             var product = attachment.Product;
             var clone = attachment.Clone;
-            var engineVer = attachment.Engine.Version;
+            var engineVer = attachment.Engine != null ? attachment.Engine.Version : 0;
             logger.Debug("Running script: \"{0}\"", scriptPath);
             logger.Debug("With: {0}", product);
             logger.Debug("Using: {0}", clone);
             logger.Debug("On Engine: {0}", engineVer);
 
             // setup the execution environment
+            if (opts == null)
+                opts = new PyRevitRunnerOptions();
+
             var execEnv = new PyRevitRunnerExecEnv(attachment, scriptPath, modelPaths);
+
+            // purge files if requested
+            if (opts.ImportPath != null)
+                execEnv.CopyExistingAddons(opts.ImportPath);
 
             // run the process
             ProcessStartInfo revitProcessInfo = new ProcessStartInfo(product.ExecutiveLocation);
@@ -140,7 +193,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             revitProcess.WaitForExit();
 
             // purge files if requested
-            if (purgeTempFiles)
+            if (opts.PurgeTempFiles)
                 execEnv.Purge();
 
             return execEnv;

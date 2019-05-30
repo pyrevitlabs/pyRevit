@@ -27,7 +27,7 @@ from Autodesk.Revit import UI
 
 # try loading some utility modules shipped with revit
 try:
-    clr.AddReference('Newtonsoft.Json')
-    import Newtonsoft.Json as NSJson
+    clr.AddReference('pyRevitLabs.Json')
+    import pyRevitLabs.Json as NSJson
 except Exception:
     pass

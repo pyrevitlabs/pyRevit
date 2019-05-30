@@ -45,11 +45,31 @@ namespace PyRevitBaseClasses {
             #region Execute and return results
             bool showDynamoGUI = CTRL || DetermineShowDynamoGUI();
             var journalData = new Dictionary<string, string>() {
+                // Specifies the path to the Dynamo workspace to execute.
                 { "dynPath", baked_scriptSource },
+
+                // Specifies whether the Dynamo UI should be visible (set to false - Dynamo will run headless).
                 { "dynShowUI", showDynamoGUI.ToString() },
+
+                // If the journal file specifies automation mode
+                // Dynamo will run on the main thread without the idle loop.
                 { "dynAutomation",  "True" },
+
+                // The journal file can specify if the Dynamo workspace opened
+                //{ "dynForceManualRun",  "True" }
+
+                // The journal file can specify if the Dynamo workspace opened from DynPathKey will be executed or not. 
+                // If we are in automation mode the workspace will be executed regardless of this key.
                 { "dynPathExecute",  "True" },
-                { "dynModelShutDown",  "False" }
+
+                // The journal file can specify if the existing UIless RevitDynamoModel
+                // needs to be shutdown before performing any action.
+                // per comments on https://github.com/eirannejad/pyRevit/issues/570
+                // Setting this to True slows down Dynamo by a factor of 3
+                { "dynModelShutDown",  "True" },
+
+                // The journal file can specify the values of Dynamo nodes.
+                //{ "dynModelNodesInfo",  "" }
                 };
 
             //return new DynamoRevit().ExecuteCommand(new DynamoRevitCommandData() {

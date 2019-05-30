@@ -1,17 +1,17 @@
-:mod:`pyrevit.forms`
-====================
+pyrevit.forms
+=============
 
 .. automodule:: pyrevit.forms
     :members:
-    :private-members:
 
-:mod:`pyrevit.forms.utils`
-**************************
+pyrevit.forms.toaster
+*********************
+
+.. automodule:: pyrevit.forms.toaster
+    :members:
+
+pyrevit.forms.utils
+*******************
 
 .. automodule:: pyrevit.forms.utils
     :members:
-    :private-members:
-
-**Implementation**
-
-.. literalinclude:: ../../pyrevitlib/pyrevit/forms/__init__.py

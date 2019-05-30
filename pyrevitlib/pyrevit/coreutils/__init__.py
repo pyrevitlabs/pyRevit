@@ -4,7 +4,7 @@ Example:
     >>> from pyrevit import coreutils
     >>> coreutils.cleanup_string('some string')
 """
-
+#pylint: disable=invalid-name
 import os
 import os.path as op
 import re
@@ -18,7 +18,7 @@ import stat
 import codecs
 import math
 from collections import defaultdict
-import _winreg as wr
+import _winreg as wr     #pylint: disable=import-error
 
 #pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
@@ -49,7 +49,7 @@ UNICODE_NONPRINTABLE_CHARS = [
     ]
 
 
-class Timer:
+class Timer(object):
     """Timer class using python native time module.
 
     Example:
@@ -71,7 +71,7 @@ class Timer:
         return time.time() - self.start
 
 
-class ScriptFileParser:
+class ScriptFileParser(object):
     """Parse python script to extract variables and docstrings.
 
     Primarily designed to assist pyRevit in determining script configurations
@@ -91,16 +91,19 @@ class ScriptFileParser:
         Args:
             file_address (str): python script file path
         """
+        self.ast_tree = None
         self.file_addr = file_address
         with open(file_address, 'r') as source_file:
-            self.ast_tree = ast.parse(source_file.read())
+            contents = source_file.read()
+            if contents and not '#! python3' in contents:
+                self.ast_tree = ast.parse(contents)
 
     def get_docstring(self):
         """Get global docstring."""
-        doc_str = ast.get_docstring(self.ast_tree)
-        if doc_str:
-            return doc_str.decode('utf-8')
-        return None
+        if self.ast_tree:
+            doc_str = ast.get_docstring(self.ast_tree)
+            if doc_str:
+                return doc_str.decode('utf-8')
 
     def extract_param(self, param_name, default_value=None):
         """Find variable and extract its value.
@@ -113,20 +116,21 @@ class ScriptFileParser:
         Returns:
             any: value of the variable or :obj:`None`
         """
-        try:
-            for child in ast.iter_child_nodes(self.ast_tree):
-                if hasattr(child, 'targets'):
-                    for target in child.targets:
-                        if hasattr(target, 'id') and target.id == param_name:
-                            param_value = ast.literal_eval(child.value)
-                            if isinstance(param_value, str):
-                                param_value = param_value.decode('utf-8')
-                            return param_value
-        except Exception as err:
-            raise PyRevitException('Error parsing parameter: {} '
-                                   'in script file for : {} | {}'
-                                   .format(param_name, self.file_addr, err))
-
+        if self.ast_tree:
+            try:
+                for child in ast.iter_child_nodes(self.ast_tree):
+                    if hasattr(child, 'targets'):
+                        for target in child.targets:
+                            if hasattr(target, 'id') \
+                                    and target.id == param_name:
+                                param_value = ast.literal_eval(child.value)
+                                if isinstance(param_value, str):
+                                    param_value = param_value.decode('utf-8')
+                                return param_value
+            except Exception as err:
+                raise PyRevitException('Error parsing parameter: {} '
+                                       'in script file for : {} | {}'
+                                       .format(param_name, self.file_addr, err))
         return default_value
 
 
@@ -824,6 +828,7 @@ def fully_remove_dir(dir_path):
         dir_path (str): directory path
     """
     def del_rw(action, name, exc):   #pylint: disable=W0613
+        """Force delete entry."""
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
 
@@ -841,9 +846,12 @@ def cleanup_filename(file_name):
 
     Example:
         >>> cleanup_filename('Myfile-(3).txt')
-        "Myfile3.txt"
+        "Myfile(3).txt"
+
+        >>> cleanup_filename('Perforations 1/8" (New)')
+        "Perforations 18 (New).txt"
     """
-    return re.sub(r'[^\w_.)( -#]', '', file_name)
+    return re.sub(r'[^\w_.() -#]|["]', '', file_name)
 
 
 def _inc_or_dec_string(str_id, shift):
@@ -1355,7 +1363,7 @@ def is_box_visible_on_screens(left, top, width, height):
 
 def fuzzy_search_ratio(target_string, sfilter):
     """Match target string against the filter and return a match ratio.
-    
+
     Args:
         target_string (str): target string
         sfilter (str): search term

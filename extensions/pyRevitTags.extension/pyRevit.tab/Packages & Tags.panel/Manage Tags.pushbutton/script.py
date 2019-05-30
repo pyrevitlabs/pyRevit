@@ -274,6 +274,9 @@ class ManageTagsWindow(forms.WPFWindow):
                 forms.alert(getattr(e, 'msg', str(e)))
 
 
+# make sure doc is not family
+forms.check_modeldoc(doc=revit.doc, exitscript=True)
+
 if tagscfg.verify_tags_configs():
     ManageTagsWindow('ManageTagsWindow.xaml').ShowDialog()
 else:

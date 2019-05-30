@@ -14,6 +14,8 @@ __context__ = 'selection'
 logger = script.get_logger()
 
 selection = revit.get_selection()
+# select all individual elements inside a group
+selection.expand_groups()
 
 
 def find_solid_fillpat():

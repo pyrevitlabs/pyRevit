@@ -1,11 +1,9 @@
 """Base module for pyRevit config parsing."""
-import ast
 import json
 import ConfigParser
 from ConfigParser import NoOptionError, NoSectionError
 
 from pyrevit import PyRevitException, PyRevitIOError
-from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 
 #pylint: disable=W0703,C0302
@@ -101,7 +99,6 @@ class PyRevitConfigSectionParser(object):
             return self.__getattr__(op_name)
         except Exception as opt_get_err:
             if default_value is not None:
-                self.__setattr__(op_name, default_value)
                 return default_value
             else:
                 raise opt_get_err

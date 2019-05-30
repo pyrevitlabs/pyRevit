@@ -64,10 +64,17 @@ namespace PyRevitBaseClasses
         }
 
 
+        public Encoding OutputEncoding {
+            get {
+                return Encoding.UTF8;
+            }
+        }
+
         // this is for python stream compatibility
         public void write(string s)
         {
-            Write(Encoding.ASCII.GetBytes(s), 0, s.Length);
+            var buffer = OutputEncoding.GetBytes(s);
+            Write(buffer, 0, buffer.Length);
         }
 
 
@@ -87,7 +94,8 @@ namespace PyRevitBaseClasses
                 var err_div = output.ComposeEntry(error_msg.Replace("\n", "<br/>"), ExternalConfig.errordiv);
                 var output_err_message = err_div.OuterHtml.Replace("<", "&clt;").Replace(">", "&cgt;");
                 foreach(string message_part in Split(output_err_message, 1024)) {
-                    Write(Encoding.ASCII.GetBytes(message_part), 0, message_part.Length);
+                    var buffer = OutputEncoding.GetBytes(message_part);
+                    Write(buffer, 0, buffer.Length);
                 }
             }
         }
@@ -123,12 +131,12 @@ namespace PyRevitBaseClasses
 
                     var actualBuffer = new byte[count];
                     Array.Copy(buffer, offset, actualBuffer, 0, count);
-                    var text = Encoding.UTF8.GetString(actualBuffer);
+                    var text = OutputEncoding.GetString(actualBuffer);
 
                     // append output to the buffer
                     _outputBuffer += text;
 
-                    if(PrintDebugInfo) {
+                    if (PrintDebugInfo) {
                         output.AppendText(string.Format("<---- Offset: {0}, Count: {1} ---->", offset, count), ExternalConfig.defaultelement);
                     }
 

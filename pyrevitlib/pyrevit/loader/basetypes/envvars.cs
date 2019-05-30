@@ -9,7 +9,10 @@ namespace PyRevitBaseClasses
         public static string keyPrefix = "PYREVIT";
 
         public static string sessionUUID = string.Format("{0}_UUID", keyPrefix);
+        public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);
         public static string pyRevitVersion = string.Format("{0}_VERSION", keyPrefix);
+        public static string pyRevitIpyVersion = string.Format("{0}_IPYVERSION", keyPrefix);
+        public static string pyRevitCpyVersion = string.Format("{0}_CPYVERSION", keyPrefix);
 
         public static string loggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
         public static string fileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
@@ -29,7 +32,10 @@ namespace PyRevitBaseClasses
     public class EnvDictionary
     {
         public string sessionUUID;
+        public string RevitVersion;
         public string pyRevitVersion;
+        public int pyRevitIpyVersion;
+        public int pyRevitCpyVersion;
 
         public string activeStyleSheet;
 
@@ -42,8 +48,17 @@ namespace PyRevitBaseClasses
             // get the dictionary from appdomain
             var _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitEnvVarsDictKey);
 
+            if (_envData.Contains(EnvDictionaryKeys.RevitVersion))
+                RevitVersion = (string)_envData[EnvDictionaryKeys.RevitVersion];
+
             if (_envData.Contains(EnvDictionaryKeys.pyRevitVersion))
                 pyRevitVersion = (string)_envData[EnvDictionaryKeys.pyRevitVersion];
+
+            if (_envData.Contains(EnvDictionaryKeys.pyRevitIpyVersion))
+                pyRevitIpyVersion = (int)_envData[EnvDictionaryKeys.pyRevitIpyVersion];
+
+            if (_envData.Contains(EnvDictionaryKeys.pyRevitCpyVersion))
+                pyRevitCpyVersion = (int)_envData[EnvDictionaryKeys.pyRevitCpyVersion];
 
             if (_envData.Contains(EnvDictionaryKeys.sessionUUID))
                 sessionUUID = (string)_envData[EnvDictionaryKeys.sessionUUID];

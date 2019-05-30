@@ -1,10 +1,14 @@
+ <!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
         Title="pyRevit Settings"
         Height="700" Width="700"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
+        <s:Boolean x:Key="BooleanTrue">True</s:Boolean>
+        
         <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
             <Setter Property="Foreground" Value="Black" />
             <Setter Property="Background" Value="#FAFAFB" />
@@ -56,14 +60,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style TargetType="{x:Type TextBox}">
             <Style.Triggers>
-                <Trigger Property="IsReadOnly" Value="True">
+                <Trigger Property="IsReadOnly" Value="{StaticResource BooleanTrue}">
                     <Setter Property="Background" Value="#d4d9d0" />
                     <Setter Property="Foreground" Value="#4f693a" />
                 </Trigger>
             </Style.Triggers>
         </Style>
+
         <Style x:Key="RevitCheckbox" TargetType="{x:Type CheckBox}">
             <Setter Property="LayoutTransform">
                 <Setter.Value>
@@ -114,9 +120,9 @@
                                                                                                at Revit startup. If no internet connection is detected, update check will be skipped.</TextBlock>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Engine" Margin="0,10,0,0">
+                        <GroupBox Header="Engines" Margin="0,10,0,0">
                             <StackPanel>
-                                <DockPanel Margin="10,10,0,10" >
+                                <DockPanel Margin="10,10,0,0" >
                                     <ContentControl Content="{StaticResource engineIcon}"
                                                     Width="32" Height="32" VerticalAlignment="Center"
                                                     DockPanel.Dock="Left">
@@ -129,7 +135,38 @@
                                               DisplayMemberPath="name" Height="24"
                                               VerticalContentAlignment="Center"/>
                                 </DockPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,0,10,10">Save settings after changing the engine and then restart Revit.</TextBlock>
+                                <DockPanel Margin="42,5,0,10" >
+                                    <TextBlock Margin="20,0,10,0" VerticalAlignment="Center" DockPanel.Dock="Left">Active CPython Engine:</TextBlock>
+                                    <ComboBox x:Name="cpythonEngines" Margin="0,0,10,0"
+                                              DisplayMemberPath="name" Height="24"
+                                              VerticalContentAlignment="Center"/>
+                                </DockPanel>
+                                <StackPanel Margin="10,5,10,10">
+                                    <TextBlock FontWeight="Medium">Using CPython:</TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        pyRevit can use a CPython (x64) engine to run a command instead of the active IronPython Engine. This means that all
+                                        CPython modules (e.g. numpy, scipy) can be used within Revit environment. Note that Revit is a x64 program and
+                                        will only work with the x64 version of CPython.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        The CPython engine is shipped with pyRevit so you do not need to have it installed on your machine. However if
+                                        you intent to use third-party libraries, make sure you have installed the same version as the selected
+                                        engine here.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                                        PYTHONPATH environment variable must point to the "site-packages" directory, so modules
+                                        installed with "pip" package manager, could be found and loaded.
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0">
+                                        To run a script with CPython, first line of the script file must be:
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="20,5,0,0" FontFamily="Consolas">
+                                        #! python3
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Margin="0,20,0,0">
+                                        Save settings after changing the engine and then restart Revit.
+                                    </TextBlock>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="Development" Margin="0,10,0,0">
@@ -375,6 +412,9 @@
                             Revit versions from here. This effectively removes the
                             pyRevit.addin manifest file from %appdata%/Autodesk/Revit/Addins folders.
                         </TextBlock>
+                        <CheckBox x:Name="revit2020_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
+                            Autodesk Revit 2020
+                        </CheckBox>
                         <CheckBox x:Name="revit2019_cb" Style="{StaticResource RevitCheckbox}" Margin="0,10,0,0" IsChecked="False" IsEnabled="False">
                             Autodesk Revit 2019
                         </CheckBox>
