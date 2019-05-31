@@ -26,7 +26,7 @@ else:
     if not selection.is_empty:
         logger.debug('Getting views from selection.')
         for el in selection:
-            if el.Category and el.Category.Name == 'Views':
+            if el.Category and el.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Views):
                 logger.debug('Selected element referencing: {}'
                              .format(el.Name))
                 target_view = revit.query.get_view_by_name(el.Name)
