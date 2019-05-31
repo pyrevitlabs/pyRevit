@@ -1,6 +1,6 @@
 #pylint: disable=W0703,E0401,C0103,C0111
 from pyrevit import coreutils
-from pyrevit import revit
+from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
@@ -28,7 +28,7 @@ with revit.TransactionGroup('Shift Sheets'):
         with revit.Transaction('Shift Single Sheet'):
             try:
                 cur_sheet_num = sheet.SheetNumber
-                sheet_num_param = sheet.LookupParameter('Sheet Number')
+                sheet_num_param = sheet.get_Parameter(DB.BuiltInParameter.SHEET_NUMBER)
                 sheet_num_param.Set(coreutils.decrement_str(sheet.SheetNumber,
                                                             shift))
                 new_sheet_num = sheet.SheetNumber
