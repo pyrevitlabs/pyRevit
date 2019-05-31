@@ -277,8 +277,8 @@ class TemplateUserInputWindow(WPFWindow):
         Args:
             context (any): window context element(s)
             title (str): window title
-            width (str): window width
-            height (str): window height
+            width (int): window width
+            height (int): window height
             **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
