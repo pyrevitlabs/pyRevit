@@ -49,6 +49,11 @@ MODEL_CURVES = (DB.ModelLine,
                 DB.ModelEllipse,
                 DB.ModelNurbSpline)
 
+BUILTINCATEGORIES_VIEW = [
+    int(DB.BuiltInCategory.OST_Views),
+    int(DB.BuiltInCategory.OST_ReferenceViewer),
+    int(DB.BuiltInCategory.OST_Viewers)
+    ]
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
@@ -596,7 +601,8 @@ def get_all_referencing_elements(doc=None):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and el.Category \
+                and el.Category.Id.IntegerValue in BUILTINCATEGORIES_VIEW:
             all_referencing_elements.append(el.Id)
     return all_referencing_elements
 
@@ -608,7 +614,8 @@ def get_all_referencing_elements_in_view(view):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and str(el.Category.Name).startswith('View'):
+                and el.Category \
+                and el.Category.Id.IntegerValue in BUILTINCATEGORIES_VIEW:
             all_referencing_elements_in_view.append(el.Id)
     return all_referencing_elements_in_view
 
@@ -1086,6 +1093,7 @@ def is_referring_to(source_view, target_view):
     target_viewname = get_name(target_view)
 
     if can_refer_other_views(source_view):
+        mlogger.debug("can_refer_other_views")
         for ref_elid in get_all_referencing_elements_in_view(source_view):
             viewref_el = doc.GetElement(ref_elid)
             targetview_param = \
