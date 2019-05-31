@@ -1093,7 +1093,6 @@ def is_referring_to(source_view, target_view):
     target_viewname = get_name(target_view)
 
     if can_refer_other_views(source_view):
-        mlogger.debug("can_refer_other_views")
         for ref_elid in get_all_referencing_elements_in_view(source_view):
             viewref_el = doc.GetElement(ref_elid)
             targetview_param = \

@@ -415,9 +415,9 @@ namespace PyRevitBaseClasses {
 
                     selectedCategoryNames.Sort();
                     string selectedCatNameCompareString = string.Join("", selectedCategoryNames);
-                    
+
                     if (selectedCatNameCompareString != _contextCatNameCompareString)
-                        return false;                    
+                        return false;
                 }
                 catch (Exception) {
                     return false;

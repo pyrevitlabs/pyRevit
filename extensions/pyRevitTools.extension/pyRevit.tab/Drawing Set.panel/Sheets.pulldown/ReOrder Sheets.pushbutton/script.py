@@ -9,10 +9,6 @@ from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
 
-
-logger = script.get_logger()
-
-
 class ListItem(object):
     def __init__(self, view_sheet):
         self._item = view_sheet
@@ -92,7 +88,6 @@ class ReOrderWindow(forms.WPFWindow):
 
     def _setup_item_params_combobox(self):
         items = revit.query.get_sheets()
-        logger.debug(items)
         if items:
             item_sample = items[0]
             item_params = [x.Definition.Name for x in item_sample.Parameters
