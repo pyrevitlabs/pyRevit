@@ -62,11 +62,9 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._setup_printers()
         self._setup_print_settings()
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
-        if len(self.schedules_cb.ItemsSource) == 0:
-            self.Close()
-            forms.alert("No Sheet Lists (Schedules) found in current project")
-            script.exit()
-            
+        if not self.schedules_cb.ItemsSource:
+            forms.alert("No Sheet Lists (Schedules) found in current project",
+                        exitscript=True)
         self.schedules_cb.SelectedIndex = 0
 
         item_cstyle = self.sheets_lb.ItemContainerStyle
