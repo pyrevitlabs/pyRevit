@@ -127,7 +127,8 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
-        self.Resources['pyRevitRecognizesAccessKey'] = DEFAULT_RECOGNIZE_ACCESS_KEY
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""
@@ -694,7 +695,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.message_label.Content = \
             message if message else 'Pick a command option:'
 
-        self.Resources['pyRevitRecognizesAccessKey'] = kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+
         # creates the switches first
         for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
