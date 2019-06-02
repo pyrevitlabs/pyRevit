@@ -23,9 +23,10 @@ if __forceddebugmode__:
 
 selected_switch, switches = \
     forms.CommandSwitchWindow.show(
-        ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'],
+        ['Option_1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'],
         switches=['Switch 1', 'Switch 2'],
-        message='Select Option:'
+        message='Select Option:',
+        recognize_access_key=True
         )
 
 if selected_switch:
