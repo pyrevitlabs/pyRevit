@@ -1,6 +1,7 @@
 """Print items in order from a sheet index.
 
-Parameter to fill should be created in advance (instance parameter, integer, for 'Sheets' category. Must contain 'order' in name)
+This tool looks for project parameters (on Sheets) that are
+Instance, of type Integer, and have "Order" in their names.
 """
 #pylint: disable=W0613,E0401,C0103
 import re
@@ -8,6 +9,10 @@ import re
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
+
+
+logger = script.get_logger()
+
 
 class ListItem(object):
     def __init__(self, view_sheet):
