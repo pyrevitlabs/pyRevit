@@ -88,15 +88,13 @@ if legends:
                         )
 
                 # matching view name and scale
-                new_name = revit.query.get_name(src_legend)
-                for i in range(5):
-                    if new_name in all_legend_names:
-                        new_name += ' (Duplicate)'
-                        logger.warning(
-                            'Legend already exists. Renaming to: "%s"',
-                            new_name
-                            )
-                    else:
-                        break
+                src_name = revit.query.get_name(src_legend)
+                count = 0
+                new_name = src_name
+                while new_name in all_legend_names:
+                    count += 1
+                    new_name = src_name + ' (Duplicate %s)' % count
+                    logger.warning(
+                        'Legend already exists. Renaming to: "%s"', new_name)
                 revit.update.set_name(dest_view, new_name)
                 dest_view.Scale = src_legend.Scale
