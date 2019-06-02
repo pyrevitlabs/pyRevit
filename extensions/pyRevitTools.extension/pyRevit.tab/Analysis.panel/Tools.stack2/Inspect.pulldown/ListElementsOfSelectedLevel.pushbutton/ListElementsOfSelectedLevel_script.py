@@ -38,7 +38,7 @@ selection = revit.get_selection()
 
 levels = []
 for el in selection:
-    if el.Category.Name == 'Levels':
+    if el.Category.Id.IntegerValue == int(DB.BuiltInCategory.OST_Levels):
         levels.append(el)
 
 if not levels:
@@ -65,7 +65,7 @@ else:
                           str(len(element_categories[category]))))
 
             for elem_cat in element_categories[category]:
-                print('├ id: ' + elem_cat.Id.ToString())
+                print('├ id: {}'.format(output.linkify(elem_cat.Id)))
 
         print('├────────── {} Categories found in {}:'
               .format(str(len(element_categories)),

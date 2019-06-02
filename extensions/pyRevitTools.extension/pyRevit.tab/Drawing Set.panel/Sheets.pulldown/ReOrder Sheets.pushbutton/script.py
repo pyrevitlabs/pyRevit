@@ -1,14 +1,13 @@
-"""Print items in order from a sheet index."""
+"""Print items in order from a sheet index.
+
+Parameter to fill should be created in advance (instance parameter, integer, for 'Sheets' category. Must contain 'order' in name)
+"""
 #pylint: disable=W0613,E0401,C0103
 import re
 
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
-
-
-logger = script.get_logger()
-
 
 class ListItem(object):
     def __init__(self, view_sheet):
@@ -93,6 +92,7 @@ class ReOrderWindow(forms.WPFWindow):
             item_sample = items[0]
             item_params = [x.Definition.Name for x in item_sample.Parameters
                            if x.StorageType == DB.StorageType.Integer]
+
             order_params = [x for x in item_params if 'order' in x.lower()]
             self.orderparams_cb.ItemsSource = sorted(order_params)
             self.orderparams_cb.SelectedIndex = 0

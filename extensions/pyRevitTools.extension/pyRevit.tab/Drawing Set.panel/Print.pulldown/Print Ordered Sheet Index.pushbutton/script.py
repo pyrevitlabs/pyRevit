@@ -54,13 +54,19 @@ class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
+        self.sheet_cat_id = None
         for cat in revit.doc.Settings.Categories:
-            if cat.Name == 'Sheets':
+            if cat.Id.IntegerValue == int(DB.BuiltInCategory.OST_Sheets):
                 self.sheet_cat_id = cat.Id
 
         self._setup_printers()
         self._setup_print_settings()
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
+        if len(self.schedules_cb.ItemsSource) == 0:
+            self.Close()
+            forms.alert("No Sheet Lists (Schedules) found in current project")
+            script.exit()
+            
         self.schedules_cb.SelectedIndex = 0
 
         item_cstyle = self.sheets_lb.ItemContainerStyle
