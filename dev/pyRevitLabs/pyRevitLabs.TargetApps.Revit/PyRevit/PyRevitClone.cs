@@ -164,7 +164,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public List<PyRevitEngine> GetEngines() => GetEngines(ClonePath);
 
-        public PyRevitEngine GetEngine(int engineVer = 000) => GetEngine(ClonePath, engineVer: engineVer);
+        public PyRevitEngine GetEngine(int engineVer) => GetEngine(ClonePath, engineVer: engineVer);
 
         public List<PyRevitEngine> GetConfiguredEngines() => GetConfiguredEngines(ClonePath);
 
@@ -263,17 +263,9 @@ namespace pyRevitLabs.TargetApps.Revit {
         // get engine from clone path
         // returns latest with default engineVer value
         // @handled @logs
-        public static PyRevitEngine GetEngine(string clonePath, int engineVer = 000) {
+        public static PyRevitEngine GetEngine(string clonePath, int engineVer) {
             logger.Debug("Finding engine \"{0}\" path in \"{1}\"", engineVer, clonePath);
-
-            // find latest
-            if (engineVer == 000) {
-                return GetEngines(clonePath).OrderByDescending(x => x.Version).First();
-            }
-            // or specified
-            else {
-                return GetEngines(clonePath).Where(x => x.Version == engineVer).First();
-            }
+            return GetEngines(clonePath).Where(x => x.Version == engineVer).First();
         }
 
         // get all engines from clone path
@@ -302,7 +294,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                     logger.Debug("Engine configuration found: {0}", engineCfg.Key);
                     var infoTable = engineCfg.Value as TomlTable;
                     foreach (KeyValuePair<string, TomlObject> entry in infoTable)
-                        logger.Debug("\"{0}\" : \"{1}\"", entry.Key, entry.Value.TomlType);
+                        logger.Debug("\"{0}\" : \"{1}\"", entry.Key, entry.Value);
 
                     engines.Add(
                         new PyRevitEngine(

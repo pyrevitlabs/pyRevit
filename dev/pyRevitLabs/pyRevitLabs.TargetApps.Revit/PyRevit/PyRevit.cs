@@ -434,7 +434,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         // @handled @logs
         public static void Attach(int revitYear,
                                   PyRevitClone clone,
-                                  int engineVer = 000,
+                                  int engineVer,
                                   bool allUsers = false,
                                   bool force = false) {
             // make the addin manifest file
@@ -453,7 +453,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                                           allusers: allUsers);
             }
             else
-                throw new pyRevitException(string.Format("Engine \"{0}\" can not be used as runtime.", engineVer));
+                throw new pyRevitException(string.Format("Engine {0} can not be used as runtime.", engineVer));
         }
 
         // attach clone to all installed revit versions
