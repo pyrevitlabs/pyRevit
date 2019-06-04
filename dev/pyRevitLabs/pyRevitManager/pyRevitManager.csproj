@@ -75,6 +75,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\bin\pyRevitLabs.Json.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.NLog, Version=4.6.4.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\bin\pyRevitLabs.NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -176,9 +180,6 @@
     </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.3</Version>
-    </PackageReference>
-    <PackageReference Include="NLog">
-      <Version>4.6.3</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

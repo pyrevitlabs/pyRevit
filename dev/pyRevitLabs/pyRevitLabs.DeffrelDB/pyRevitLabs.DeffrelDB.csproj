@@ -36,8 +36,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.6.3\lib\net45\NLog.dll</HintPath>
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\..\bin\pyRevitLabs.NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -74,9 +74,6 @@
       <Project>{c5a03112-6ee1-415f-b53d-5d732d9f47ad}</Project>
       <Name>pyRevitLabs.Common</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

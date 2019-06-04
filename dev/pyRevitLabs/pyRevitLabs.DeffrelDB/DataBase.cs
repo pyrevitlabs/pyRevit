@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Text;
 
 using pyRevitLabs.Common;
-using NLog.Targets;
-using NLog.Config;
+using pyRevitLabs.NLog.Targets;
+using pyRevitLabs.NLog.Config;
 
 #if DEBUG
 using pyRevitLabs.CommonCLI;
 #endif
 
-using NLog;
+using pyRevitLabs.NLog;
 
 
 // TODO: add log messages

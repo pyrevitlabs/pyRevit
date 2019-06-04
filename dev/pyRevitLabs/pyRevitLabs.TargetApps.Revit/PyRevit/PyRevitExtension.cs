@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using pyRevitLabs.Common;
 
 using pyRevitLabs.Json.Linq;
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitExtensionDefinition {

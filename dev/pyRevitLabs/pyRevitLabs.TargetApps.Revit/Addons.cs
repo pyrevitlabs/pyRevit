@@ -8,7 +8,7 @@ using System.Xml;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     public class RevitAddonManifest {

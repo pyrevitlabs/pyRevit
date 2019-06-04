@@ -9,7 +9,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
 using Nett;
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     // helper struct

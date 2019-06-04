@@ -10,9 +10,9 @@ from pyrevit.coreutils import logger
 
 # try loading pyrevitlabs
 clr.AddReference('Nett')
-clr.AddReference('Nlog')
 clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
+clr.AddReference('pyRevitLabs.NLog')
 clr.AddReference('pyRevitLabs.MahAppsMetro')
 clr.AddReference('pyRevitLabs.Common')
 clr.AddReference('pyRevitLabs.CommonCLI')
@@ -21,7 +21,7 @@ clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
 import Nett
-import NLog
+import pyRevitLabs.NLog as NLog
 import MadMilkman.Ini
 import OpenMcdf
 import pyRevitLabs.MahAppsMetro

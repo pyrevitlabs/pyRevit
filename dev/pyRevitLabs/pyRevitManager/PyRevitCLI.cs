@@ -14,9 +14,9 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 
 using DocoptNet;
-using NLog;
-using NLog.Config;
-using NLog.Targets;
+using pyRevitLabs.NLog;
+using pyRevitLabs.NLog.Config;
+using pyRevitLabs.NLog.Targets;
 
 using Console = Colorful.Console;
 

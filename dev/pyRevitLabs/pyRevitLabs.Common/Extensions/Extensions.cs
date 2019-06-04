@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
 
-using NLog;
+using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 
 namespace pyRevitLabs.Common.Extensions {

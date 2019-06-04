@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
-using NLog;
+using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 

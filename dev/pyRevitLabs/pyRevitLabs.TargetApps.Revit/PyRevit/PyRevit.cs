@@ -11,7 +11,7 @@ using pyRevitLabs.Common.Extensions;
 
 using MadMilkman.Ini;
 using pyRevitLabs.Json.Linq;
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     // main pyrevit functionality class

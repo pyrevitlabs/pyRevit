@@ -11,7 +11,7 @@ using Microsoft.Win32;
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
-using NLog;
+using pyRevitLabs.NLog;
 using System.Xml;
 
 namespace pyRevitLabs.TargetApps.Revit {
