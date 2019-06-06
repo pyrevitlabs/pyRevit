@@ -449,7 +449,7 @@ elif selected_switch == 'Data Schema Entities':
                     '{}{}'.format(
                         '{} ({})'.format(
                             output.linkify(el.Id),
-                            el.Category.Name
+                            el.Category.Name if el.Category else "Unknown"
                             ).ljust(40),
                         schema.SchemaName
                         )
