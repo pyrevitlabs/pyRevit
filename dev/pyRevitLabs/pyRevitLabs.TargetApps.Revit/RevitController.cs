@@ -554,7 +554,16 @@ namespace pyRevitLabs.TargetApps.Revit {
         public int LanguageCode { get; set; }
 
         // static:
-        public static string GetBinaryLocation(string installPath) => Path.Combine(installPath, "Revit.exe");
+        public static string GetBinaryLocation(string installPath) {
+            var possibleLocations = new List<string>() {
+                Path.Combine(installPath, "Revit.exe"),
+                Path.Combine(installPath, "Program", "Revit.exe")
+            };
+            foreach (var binaryLoc in possibleLocations)
+                if (File.Exists(binaryLoc))
+                    return binaryLoc;
+            return null;
+        }
 
         public static string GetBinaryBuildNumber(string binaryPath) {
             var fileInfo = FileVersionInfo.GetVersionInfo(binaryPath);
@@ -622,9 +631,11 @@ namespace pyRevitLabs.TargetApps.Revit {
                             logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
                             // try to get product key from binary
                             var binaryLocation = GetBinaryLocation(regPath);
-                            var buildNumber = GetBinaryBuildNumber(binaryLocation);
-                            logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", buildNumber, binaryLocation);
-                            revitProduct = LookupRevitProduct(buildNumber);
+                            if (binaryLocation != null) {
+                                var buildNumber = GetBinaryBuildNumber(binaryLocation);
+                                logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", buildNumber, binaryLocation);
+                                revitProduct = LookupRevitProduct(buildNumber);
+                            }
                         }
 
                         logger.Debug("Revit Product is : {0}", revitProduct);
