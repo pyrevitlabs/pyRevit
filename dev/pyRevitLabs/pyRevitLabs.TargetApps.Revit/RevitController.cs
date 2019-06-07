@@ -331,7 +331,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             {"20120221_2030", ("12.02.21203",   "2013 First Customer Ship")},
             {"20120716_1115", ("0.0.0.0",       "2013 Update Release 1")},
             {"20121003_2115", ("0.0.0.0",       "2013 Update Release 2")},
-            {"20130531_2115", ("0.0.0.0",       "2013 Update Release 3")},
+            {"20130531_2115", ("12.11.10090",   "2013 Update Release 3")},  // https://github.com/eirannejad/pyRevit/issues/622
             {"20120821_1330", ("0.0.0.0",       "2013 LT First Customer Ship")},
             {"20130531_0300", ("0.0.0.0",       "2013 LT Update Release 1")},
 
