@@ -1,8 +1,5 @@
-"""Provides options for overriding Visibility/Graphics on selected elements.
-
-Shift-Click: Override Cut pattern also"""
+"""Provides options for overriding Visibility/Graphics on selected elements."""
 #pylint: disable=E0401,C0103
-import re
 from collections import OrderedDict
 
 from pyrevit import revit, DB
@@ -39,17 +36,14 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
                     selection.append(revit.doc.GetElement(mem))
             ogs = DB.OverrideGraphicSettings()
             ogs.SetProjectionLineColor(color)
-            if __shiftclick__:
-                ogs.SetCutLineColor(color)
+            ogs.SetCutLineColor(color)
             if not projline_only:
                 ogs.SetProjectionFillColor(color)
-                if __shiftclick__:
-                    ogs.SetCutFillColor(color)
+                ogs.SetCutFillColor(color)
                 solid_fpattern = find_solid_fillpat()
                 if solid_fpattern:
                     ogs.SetProjectionFillPatternId(solid_fpattern.Id)
-                    if __shiftclick__:
-                        ogs.SetCutFillPatternId(solid_fpattern.Id)
+                    ogs.SetCutFillPatternId(solid_fpattern.Id)
                 else:
                     logger.warning('Can not find solid fill pattern in model'
                                    'to assign as projection/cut pattern.')
