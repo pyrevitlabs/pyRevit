@@ -16,7 +16,7 @@ non-printable characters from the sheet numbers,
 in case an error in the tool causes these characters
 to remain.
 """
-
+import re
 import os.path as op
 import codecs
 
@@ -155,9 +155,13 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         ordered_sheets_dict = {}
         for sheet in sheet_list:
+            logger.debug('finding index for: %s', sheet.SheetNumber)
             for line_no, data_line in enumerate(sched_data):
+                match_pattern = r'(^|.*\t){}\t.*'.format(sheet.SheetNumber)
+                matches_sheet = re.match(match_pattern, data_line)
+                logger.debug('match: %s', matches_sheet)
                 try:
-                    if sheet.SheetNumber in data_line:
+                    if matches_sheet:
                         ordered_sheets_dict[line_no] = sheet
                         break
                     if not sheet.CanBePrinted:
