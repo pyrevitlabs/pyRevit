@@ -3,22 +3,53 @@
 Shift-Click:
 Pick from all available categories.
 """
-
 # pylint: disable=E0401,W0703,C0103
+from collections import namedtuple
+
 from pyrevit import revit, UI, DB
 from pyrevit import forms
 from pyrevit import script
 
+
 logger = script.get_logger()
 
 
+# somehow DB.BuiltInCategory.OST_Truss does not have a corresponding DB.Category
+FREQUENTLY_SELECTED_CATEGORIES = [
+    DB.BuiltInCategory.OST_Areas,
+    DB.BuiltInCategory.OST_AreaTags,
+    DB.BuiltInCategory.OST_AreaSchemeLines,
+    DB.BuiltInCategory.OST_Columns,
+    DB.BuiltInCategory.OST_StructuralColumns,
+    DB.BuiltInCategory.OST_Dimensions,
+    DB.BuiltInCategory.OST_Doors,
+    DB.BuiltInCategory.OST_Floors,
+    DB.BuiltInCategory.OST_StructuralFraming,
+    DB.BuiltInCategory.OST_Furniture,
+    DB.BuiltInCategory.OST_Grids,
+    DB.BuiltInCategory.OST_Rooms,
+    DB.BuiltInCategory.OST_RoomTags,
+    DB.BuiltInCategory.OST_Truss,
+    DB.BuiltInCategory.OST_Walls,
+    DB.BuiltInCategory.OST_Windows,
+    DB.BuiltInCategory.OST_Ceilings,
+    DB.BuiltInCategory.OST_SectionBox,
+    DB.BuiltInCategory.OST_ElevationMarks,
+    DB.BuiltInCategory.OST_Parking
+]
+
+
+CategoryOption = namedtuple('CategoryOption', ['name', 'revit_cat'])
+
+
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
-    def __init__(self, catname):
-        self.category = catname
+    def __init__(self, category_opt):
+        self.category_opt = category_opt
 
     # standard API override function
     def AllowElement(self, element):
-        if self.category == element.Category.Name:
+        if element.Category \
+                and self.category_opt.revit_cat.Id == element.Category.Id:
             return True
         else:
             return False
@@ -28,10 +59,10 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
         return False
 
 
-def pickbycategory(catname):
+def pick_by_category(category_opt):
     try:
         selection = revit.get_selection()
-        msfilter = PickByCategorySelectionFilter(catname)
+        msfilter = PickByCategorySelectionFilter(category_opt)
         selection_list = revit.pick_rectangle(pick_filter=msfilter)
         filtered_list = []
         for element in selection_list:
@@ -40,40 +71,23 @@ def pickbycategory(catname):
     except Exception as err:
         logger.debug(err)
 
-
+source_categories = \
+    [revit.query.get_category(x) for x in FREQUENTLY_SELECTED_CATEGORIES]
 if __shiftclick__:  # pylint: disable=E0602
-    options = sorted([x.Name for x in revit.doc.Settings.Categories])
-else:
-    categories_shortlist = [
-        DB.BuiltInCategory.OST_Areas,
-        DB.BuiltInCategory.OST_AreaSchemeLines,
-        DB.BuiltInCategory.OST_Columns,
-        DB.BuiltInCategory.OST_StructuralColumns,
-        DB.BuiltInCategory.OST_Dimensions,
-        DB.BuiltInCategory.OST_Doors,
-        DB.BuiltInCategory.OST_Floors,
-        DB.BuiltInCategory.OST_StructuralFraming,
-        DB.BuiltInCategory.OST_Furniture,
-        DB.BuiltInCategory.OST_Grids,
-        DB.BuiltInCategory.OST_Rooms,
-        DB.BuiltInCategory.OST_RoomTags,
-        DB.BuiltInCategory.OST_Truss,
-        DB.BuiltInCategory.OST_Walls,
-        DB.BuiltInCategory.OST_Windows,
-        DB.BuiltInCategory.OST_Ceilings,
-        DB.BuiltInCategory.OST_SectionBox,
-        DB.BuiltInCategory.OST_ElevationMarks,
-        DB.BuiltInCategory.OST_Parking
-    ]
-    categories_shortlist_ids = [int(x) for x in categories_shortlist]
-    categories_filtered = [
-        x for x in revit.doc.Settings.Categories if (
-            x.Id.IntegerValue in categories_shortlist_ids)]
-    options = sorted([x.Name for x in categories_filtered])
+    source_categories = revit.doc.Settings.Categories
 
-selected_switch = \
-    forms.CommandSwitchWindow.show(options,
-                                   message='Pick only elements of type:')
+# cleanup source categories
+source_categories = filter(None, source_categories)
+category_opts = \
+    [CategoryOption(name=x.Name, revit_cat=x) for x in source_categories]
+selected_category = \
+    forms.CommandSwitchWindow.show(
+        sorted([x.name for x in category_opts]),
+        message='Pick only elements of type:'
+    )
 
-if selected_switch:
-    pickbycategory(selected_switch)
+if selected_category:
+    selected_category_opt = \
+        next(x for x in category_opts if x.name == selected_category)
+    logger.debug(selected_category_opt)
+    pick_by_category(selected_category_opt)
