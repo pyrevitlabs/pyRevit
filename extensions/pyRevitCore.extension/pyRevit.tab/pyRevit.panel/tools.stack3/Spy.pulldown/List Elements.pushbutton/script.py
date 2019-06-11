@@ -43,7 +43,8 @@ switches = ['Graphic Styles',
             'Fill Grids',
             'Connected Circuits',
             'Point Cloud Instances',
-            'External Services'
+            'External Services',
+            'Builtin Categories with No DB.Category',
             ]
 
 selected_switch = \
@@ -522,3 +523,9 @@ elif selected_switch == 'External Services':
                 server.GetName(),
                 server.GetDescription(),
                 sid in bisrvids))
+
+elif selected_switch == 'Builtin Categories with No DB.Category':
+    for bic in coreutils.get_enum_values(DB.BuiltInCategory):
+        dbcat = revit.query.get_category(bic)
+        if not dbcat:
+            print(bic)
