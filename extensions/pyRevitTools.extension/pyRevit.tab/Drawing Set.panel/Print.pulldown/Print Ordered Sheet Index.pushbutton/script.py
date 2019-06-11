@@ -54,10 +54,8 @@ class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        self.sheet_cat_id = None
-        for cat in revit.doc.Settings.Categories:
-            if cat.Id.IntegerValue == int(DB.BuiltInCategory.OST_Sheets):
-                self.sheet_cat_id = cat.Id
+        self.sheet_cat_id = \
+            revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
         self._setup_printers()
         self._setup_print_settings()
