@@ -60,8 +60,3 @@ Changes listed here were made to the Visual Studio project
 
 natsort.natsort.py
 wrapped natsort_key.__doc__ (line # 209) in try-except for IronPython 2.7.3 compatibility
-
-## natsort
-
-natsort.natsort.py
-wrapped natsort_key.__doc__ (line # 209) in try-except for IronPython 2.7.3 compatibility
