@@ -287,6 +287,12 @@ namespace pyRevitManager {
             Console.WriteLine(string.Format("Open Workset Settings: {0}", model.OpenWorksetConfig));
             Console.WriteLine(string.Format("Document Increment: {0}", model.DocumentIncrement));
 
+            // print project information properties
+            Console.WriteLine("Project Information (Properties):");
+            foreach(var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
+                Console.WriteLine("\t{0} = {1}", item.Key, item.Value);
+            }
+
             if (model.IsFamily) {
                 Console.WriteLine("Model is a Revit Family!");
                 Console.WriteLine(string.Format("Category Name: {0}", model.CategoryName));
@@ -301,9 +307,17 @@ namespace pyRevitManager {
             logger.Info(string.Format("Building CSV data to \"{0}\"", outputCSV));
             var csv = new StringBuilder();
             csv.Append(
-                "filepath,productname,buildnumber,isworkshared,centralmodelpath,lastsavedpath,uniqueid,error\n"
+                "filepath,productname,buildnumber,isworkshared,centralmodelpath,lastsavedpath,uniqueid,projectinfo,error\n"
                 );
             foreach (var model in models) {
+                // build project info string
+                var pinfo = new List<string>();
+                foreach (var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
+                    pinfo.Add(string.Format("{0}:{1}", item.Key, item.Value));
+                }
+                var pinfoString = string.Join("\\n", pinfo);
+
+                // create csv entry
                 var data = new List<string>() {
                     string.Format("\"{0}\"", model.FilePath),
                     string.Format("\"{0}\"", model.RevitProduct != null ? model.RevitProduct.ProductName : ""),
@@ -312,6 +326,7 @@ namespace pyRevitManager {
                     string.Format("\"{0}\"", model.CentralModelPath),
                     string.Format("\"{0}\"", model.LastSavedPath),
                     string.Format("\"{0}\"", model.UniqueId.ToString()),
+                    pinfoString,
                     ""
                 };
 
@@ -319,9 +334,11 @@ namespace pyRevitManager {
             }
 
             // write list of files with errors
-            logger.Debug("Adding errors to \"{0}\"", outputCSV);
-            foreach (var errinfo in errorList)
-                csv.Append(string.Format("\"{0}\",,,,,,,\"{1}\"\n", errinfo.Item1, errinfo.Item2));
+            if (errorList != null) {
+                logger.Debug("Adding errors to \"{0}\"", outputCSV);
+                foreach (var errinfo in errorList)
+                    csv.Append(string.Format("\"{0}\",,,,,,,,\"{1}\"\n", errinfo.Item1, errinfo.Item2));
+            }
 
             logger.Info(string.Format("Writing results to \"{0}\"", outputCSV));
             File.WriteAllText(outputCSV, csv.ToString());

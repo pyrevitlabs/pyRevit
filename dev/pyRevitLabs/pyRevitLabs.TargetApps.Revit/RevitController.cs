@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,12 +89,35 @@ namespace pyRevitLabs.TargetApps.Revit {
             else
                 throw new pyRevitException(string.Format("Target is not a valid Revit model \"{0}\"", filePath));
 
+            // extract ProjectInformation (Revit Project Files)
+            // ProjectInformation is a PK Zip stream
+            var rawProjectInformationData = CommonUtils.GetStructuredStorageStream(FilePath, "ProjectInformation");
+            if (rawProjectInformationData != null) {
+                Stream zipData = new MemoryStream(rawProjectInformationData);
+                var zipFile = new ZipArchive(zipData);
+                foreach (var entry in zipFile.Entries) {
+                    if (entry.FullName.ToLower().EndsWith(".project.xml")) {
+                        logger.Debug("Reading Project Info from: \"{0}\"", entry.FullName);
+                        using (Stream projectInfoXamlData = entry.Open()) {
+                            var projectInfoXmlData = new StreamReader(projectInfoXamlData).ReadToEnd();
+                            ProcessProjectInfo(projectInfoXmlData);
+                        }
+                    }
+                }
+            } else {
+                ProjectInfoProperties = new Dictionary<string, string>();
+            }
+
             // extract partatom (Revit Family Files) and prepare string
-            // throws exception if stream doesn't exist
+            // PartAtom is a Xml stream
+            // https://ein.sh/pyRevit/pyrevit/updates/2019/01/19/basicfileinfo.html
             var rawPartAtomData = CommonUtils.GetStructuredStorageStream(FilePath, "PartAtom");
             if (rawPartAtomData != null) {
                 IsFamily = true;
                 ProcessPartAtom(Encoding.ASCII.GetString(rawPartAtomData));
+            } else {
+                CategoryName = "";
+                HostCategoryName = "";
             }
         }
 
@@ -221,6 +245,37 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
+        private void ProcessProjectInfo(string rawProjectInfoData) {
+            logger.Debug("Parsing ProjctInformation Data: \"{0}\"", rawProjectInfoData);
+            var doc = new XmlDocument();
+            try {
+                doc.LoadXml(rawProjectInfoData);
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("rfa", @"http://www.w3.org/2005/Atom");
+                nsmgr.AddNamespace("A", @"urn:schemas-autodesk-com:partatom");
+
+                // extract project parameters
+                var projectInfoDict = new Dictionary<string, string>();
+                XmlNodeList propertyGroups = doc.SelectNodes("//rfa:entry/A:features/A:feature/A:group", nsmgr);
+                foreach(XmlElement properyGroup in propertyGroups) {
+                    foreach(XmlElement child in properyGroup.ChildNodes) {
+                        if (child.HasAttribute("displayName")) {
+                            string propertyName = child.GetAttribute("displayName");
+                            string propertyValue = child.InnerText;
+                            logger.Debug("\"{0}\" = \"{1}\"", propertyName, propertyValue);
+                            projectInfoDict.Add(propertyName, propertyValue);
+                        }
+                    }
+                }
+
+                // set the created info dict
+                ProjectInfoProperties = projectInfoDict;
+            }
+            catch (Exception ex) {
+                logger.Debug("Error parsing PartAtom XML. | {0}", ex.Message);
+            }
+        }
+
         public string FilePath { get; private set; }
 
         public bool IsFamily { get; private set; }
@@ -240,6 +295,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public Guid LastReloadLatestUniqueId { get; private set; } = new Guid();
 
         public RevitProduct RevitProduct { get; private set; } = null;
+
+        public Dictionary<string, string> ProjectInfoProperties { get; private set; }
 
         public string CategoryName { get; private set; }
 
