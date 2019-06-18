@@ -488,7 +488,11 @@ namespace pyRevitManager {
                 else if (all("fileinfo"))
                     PyRevitCLIRevitCmds.ProcessFileInfo(
                         targetPath: TryGetValue("<file_or_dir_path>"),
-                        outputCSV: TryGetValue("--csv")
+                        outputCSV: TryGetValue("--csv"),
+                        IncludeRVT: arguments["--rvt"].IsTrue,
+                        includeRTE: arguments["--rte"].IsTrue,
+                        includeRFA: arguments["--rfa"].IsTrue,
+                        includeRFT: arguments["--rft"].IsTrue
                         );
 
                 else if (all("addons")) {

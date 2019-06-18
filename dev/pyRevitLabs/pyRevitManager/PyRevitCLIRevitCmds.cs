@@ -54,7 +54,8 @@ namespace pyRevitManager {
         }
 
         internal static void
-        ProcessFileInfo(string targetPath, string outputCSV) {
+        ProcessFileInfo(string targetPath, string outputCSV,
+                        bool IncludeRVT=true, bool includeRTE=false, bool includeRFA=false, bool includeRFT=false) {
             // if targetpath is a single model print the model info
             if (File.Exists(targetPath))
                 if (outputCSV != null)
@@ -69,20 +70,35 @@ namespace pyRevitManager {
             else {
                 var models = new List<RevitModelFile>();
                 var errorList = new List<(string, string)>();
+                var fileSearchPatterns = new List<string>();
+
+                // determine search patterns
+                // if no other file format is specified search for rvt only
+                if ((!includeRTE && !includeRFA && !includeRFT) || IncludeRVT)
+                    fileSearchPatterns.Add("*.rvt");
+
+                if (includeRTE)
+                    fileSearchPatterns.Add("*.rte");
+                if (includeRFA)
+                    fileSearchPatterns.Add("*.rfa");
+                if (includeRFT)
+                    fileSearchPatterns.Add("*.rft");
 
                 logger.Info(string.Format("Searching for revit files under \"{0}\"", targetPath));
                 FileAttributes attr = File.GetAttributes(targetPath);
                 if ((attr & FileAttributes.Directory) == FileAttributes.Directory) {
-                    var files = Directory.EnumerateFiles(targetPath, "*.rvt", SearchOption.AllDirectories);
-                    logger.Info(string.Format(" {0} revit files found under \"{1}\"", files.Count(), targetPath));
-                    foreach (var file in files) {
-                        try {
-                            logger.Info(string.Format("Revit file found \"{0}\"", file));
-                            var model = new RevitModelFile(file);
-                            models.Add(model);
-                        }
-                        catch (Exception ex) {
-                            errorList.Add((file, ex.Message));
+                    foreach(string searchPattern in fileSearchPatterns) {
+                        var files = Directory.EnumerateFiles(targetPath, searchPattern, SearchOption.AllDirectories);
+                        logger.Info(string.Format(" {0} revit files found under \"{1}\"", files.Count(), targetPath));
+                        foreach (var file in files) {
+                            try {
+                                logger.Info(string.Format("Revit file found \"{0}\"", file));
+                                var model = new RevitModelFile(file);
+                                models.Add(model);
+                            }
+                            catch (Exception ex) {
+                                errorList.Add((file, ex.Message));
+                            }
                         }
                     }
                 }

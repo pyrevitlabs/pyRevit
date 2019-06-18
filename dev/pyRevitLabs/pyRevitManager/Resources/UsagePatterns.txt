@@ -58,7 +58,7 @@ Usage:
 	pyrevit revits --help
 	pyrevit revits [(--installed|--supported)] [--log=<log_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
-	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>]
+	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit revits addons [--help]
 	pyrevit revits addons prepare <revit_year> [--allusers]
 	pyrevit revits addons install <addon_name> [--dest=<dest_path>] [--allusers]
