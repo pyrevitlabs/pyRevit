@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Xml;
 using Microsoft.Win32;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
 using pyRevitLabs.NLog;
-using System.Xml;
 
 namespace pyRevitLabs.TargetApps.Revit {
     // EXCEPTIONS ====================================================================================================

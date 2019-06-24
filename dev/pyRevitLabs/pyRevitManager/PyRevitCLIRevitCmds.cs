@@ -306,7 +306,7 @@ namespace pyRevitManager {
             // print project information properties
             Console.WriteLine("Project Information (Properties):");
             foreach(var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
-                Console.WriteLine("\t{0} = {1}", item.Key, item.Value);
+                Console.WriteLine("\t{0} = {1}", item.Key, item.Value.ToEscaped());
             }
 
             if (model.IsFamily) {
@@ -327,11 +327,10 @@ namespace pyRevitManager {
                 );
             foreach (var model in models) {
                 // build project info string
-                var pinfo = new List<string>();
+                var jsonData = new Dictionary<string, object>();
                 foreach (var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
-                    pinfo.Add(string.Format("{0}:{1}", item.Key, item.Value));
+                    jsonData[item.Key] = item.Value;
                 }
-                var pinfoString = string.Join("\\n", pinfo);
 
                 // create csv entry
                 var data = new List<string>() {
@@ -342,7 +341,7 @@ namespace pyRevitManager {
                     string.Format("\"{0}\"", model.CentralModelPath),
                     string.Format("\"{0}\"", model.LastSavedPath),
                     string.Format("\"{0}\"", model.UniqueId.ToString()),
-                    pinfoString,
+                    JsonConvert.SerializeObject(jsonData).PrepareJSONForCSV(),
                     ""
                 };
 

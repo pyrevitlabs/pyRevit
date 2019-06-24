@@ -6,6 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.CodeDom.Compiler;
+using System.CodeDom;
+using System.Web;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
@@ -263,6 +266,55 @@ namespace pyRevitLabs.Common.Extensions {
 
         public static List<string> ConvertFromCommaSeparatedString(this string commaSeparatedValue) {
             return new List<string>(commaSeparatedValue.Split(','));
+        }
+
+        public static string ToLiteral(this string input) {
+            using (var writer = new StringWriter()) {
+                using (var provider = CodeDomProvider.CreateProvider("CSharp")) {
+                    provider.GenerateCodeFromExpression(new CodePrimitiveExpression(input), writer, null);
+                    return writer.ToString();
+                }
+            }
+        }
+
+        public static string ToEscaped(this string input, bool WrapInQuotes = false) {
+            var literal = new StringBuilder(input.Length + 2);
+            if (WrapInQuotes)
+                literal.Append("\"");
+
+            foreach (var c in input) {
+                switch (c) {
+                    case '\'': literal.Append(@"\'"); break;
+                    case '\"': literal.Append("\\\""); break;
+                    case '\\': literal.Append(@"\\"); break;
+                    case '\0': literal.Append(@"\0"); break;
+                    case '\a': literal.Append(@"\a"); break;
+                    case '\b': literal.Append(@"\b"); break;
+                    case '\f': literal.Append(@"\f"); break;
+                    case '\n': literal.Append(@"\n"); break;
+                    case '\r': literal.Append(@"\r"); break;
+                    case '\t': literal.Append(@"\t"); break;
+                    case '\v': literal.Append(@"\v"); break;
+                    default:
+                        if (Char.GetUnicodeCategory(c) != UnicodeCategory.Control) {
+                            literal.Append(c);
+                        }
+                        else {
+                            literal.Append(@"\u");
+                            literal.Append(((ushort)c).ToString("x4"));
+                        }
+                        break;
+                }
+            }
+
+            if (WrapInQuotes)
+                literal.Append("\"");
+
+            return literal.ToString();
+        }
+
+        public static string PrepareJSONForCSV(this string input) {
+            return "\"" + input.Replace("\"", "\"\"") + "\"";
         }
     }
 
