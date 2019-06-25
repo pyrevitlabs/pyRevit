@@ -12,6 +12,13 @@ print(sys.version)
 print("\n## sys.path:")
 print('\n'.join(sys.path))
 
+# try tkinter
+try:
+    import tkinter
+    print('tkinter is included')
+except Exception as ex:
+    print('tkinter load error: {}'.format(ex))
+
 # test numpy
 try:
     import numpy as np
