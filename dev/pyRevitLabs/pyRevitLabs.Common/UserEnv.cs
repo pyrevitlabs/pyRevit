@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 
 using DotNetVersionFinder;
+using pyRevitLabs.NLog;
 
 
 // user default folder implementation from https://stackoverflow.com/a/21953690/2350244
@@ -37,6 +38,8 @@ namespace pyRevitLabs.Common {
     }
 
     public static class UserEnv {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+
         public static string GetWindowsVersion() {
             // https://docs.microsoft.com/en-us/windows/desktop/SysInfo/operating-system-version
             // https://stackoverflow.com/a/37700770/2350244
@@ -66,17 +69,20 @@ namespace pyRevitLabs.Common {
         }
 
         public static string GetLoggedInUserName() {
-            ConnectionOptions oConn = new ConnectionOptions();
-            ManagementScope oMs = new ManagementScope("\\\\localhost", oConn);
+            try {
+                ConnectionOptions oConn = new ConnectionOptions();
+                ManagementScope oMs = new ManagementScope("\\\\localhost", oConn);
 
-            ObjectQuery oQuery = new ObjectQuery("select * from Win32_ComputerSystem");
-            ManagementObjectSearcher oSearcher = new ManagementObjectSearcher(oMs, oQuery);
-            ManagementObjectCollection oReturnCollection = oSearcher.Get();
+                ObjectQuery oQuery = new ObjectQuery("select * from Win32_ComputerSystem");
+                ManagementObjectSearcher oSearcher = new ManagementObjectSearcher(oMs, oQuery);
+                ManagementObjectCollection oReturnCollection = oSearcher.Get();
 
-            foreach (ManagementObject oReturn in oReturnCollection) {
-                return oReturn["UserName"].ToString();
+                foreach (ManagementObject oReturn in oReturnCollection) {
+                    return oReturn["UserName"].ToString();
+                }
+            } catch (Exception ex) {
+                logger.Debug("Failed to get logged in username. | {0}", ex.Message);
             }
-
             return null;
         }
 
