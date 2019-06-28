@@ -39,9 +39,6 @@ namespace pyRevitManager {
 
         internal static void
         PrintSupportedRevits() {
-            PyRevitCLIAppCmds.PrintHeader("Supported Revits");
-            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
-                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
         }
 
         internal static void
@@ -121,6 +118,14 @@ namespace pyRevitManager {
                     }
                 }
             }
+        }
+
+        internal static void
+        ProcessBuildInfo(string outputCSV) {
+            if (outputCSV != null)
+                ExportBuildInfoToCSV(outputCSV);
+            else
+                PrintBuildInfo();
         }
 
         internal static void
@@ -316,6 +321,13 @@ namespace pyRevitManager {
             }
         }
 
+        private static void PrintBuildInfo() {
+            PyRevitCLIAppCmds.PrintHeader("Supported Revits");
+            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
+                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
+
+        }
+
         // export model info to csv
         private static void ExportModelInfoToCSV(IEnumerable<RevitModelFile> models,
                                                  string outputCSV,
@@ -353,6 +365,28 @@ namespace pyRevitManager {
                 logger.Debug("Adding errors to \"{0}\"", outputCSV);
                 foreach (var errinfo in errorList)
                     csv.Append(string.Format("\"{0}\",,,,,,,,\"{1}\"\n", errinfo.Item1, errinfo.Item2));
+            }
+
+            logger.Info(string.Format("Writing results to \"{0}\"", outputCSV));
+            File.WriteAllText(outputCSV, csv.ToString());
+        }
+
+        // export build info to csv
+        private static void ExportBuildInfoToCSV(string outputCSV) {
+            logger.Info(string.Format("Building CSV data to \"{0}\"", outputCSV));
+            var csv = new StringBuilder();
+            csv.Append(
+                "\"buildnum\",\"buildversion\",\"productname\"\n"
+                );
+            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version)) {
+                // create csv entry
+                var data = new List<string>() {
+                    string.Format("\"{0}\"", revit.BuildNumber),
+                    string.Format("\"{0}\"", revit.Version),
+                    string.Format("\"{0}\"", revit.ProductName),
+                };
+
+                csv.Append(string.Join(",", data) + "\n");
             }
 
             logger.Info(string.Format("Writing results to \"{0}\"", outputCSV));

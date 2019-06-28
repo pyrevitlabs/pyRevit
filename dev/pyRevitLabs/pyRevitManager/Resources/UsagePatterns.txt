@@ -56,7 +56,8 @@ Usage:
 	pyrevit releases download (installer | archive) <search_pattern> [--dest=<dest_path>] [--pre]
 	pyrevit revits
 	pyrevit revits --help
-	pyrevit revits [(--installed|--supported)] [--log=<log_file>]
+	pyrevit revits [--installed] [--log=<log_file>]
+	pyrevit revits --supported [--csv=<output_file>]
 	pyrevit revits killall [<revit_year>] [--log=<log_file>]
 	pyrevit revits fileinfo <file_or_dir_path> [--csv=<output_file>] [--rvt] [--rte] [--rfa] [--rft]
 	pyrevit revits addons [--help]

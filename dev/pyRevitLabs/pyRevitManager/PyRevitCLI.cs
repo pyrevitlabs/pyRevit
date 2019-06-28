@@ -514,7 +514,9 @@ namespace pyRevitManager {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
 
                 else if (arguments["--supported"].IsTrue)
-                    PyRevitCLIRevitCmds.PrintSupportedRevits();
+                    PyRevitCLIRevitCmds.ProcessBuildInfo(
+                        outputCSV: TryGetValue("--csv")
+                        );
 
                 else
                     PyRevitCLIRevitCmds.PrintLocalRevits(running: arguments["--installed"].IsFalse);
