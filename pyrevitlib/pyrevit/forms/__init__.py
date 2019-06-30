@@ -71,7 +71,10 @@ class WPFWindow(framework.Windows.Window):
 
     Example:
         >>> from pyrevit import forms
-        >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
+        >>> layout = '<Window ' \
+        >>>          'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" ' \
+        >>>          'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" ' \
+        >>>          'ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
