@@ -22,10 +22,10 @@
     <ROW Property="BannerBitmap" Value="banner" MultiBuildValue="DefaultBuild:pyRevit2.bmp" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog" MultiBuildValue="DefaultBuild:pyRevitCLI.bmp" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Ehsan Iran-Nejad"/>
-    <ROW Property="ProductCode" Value="1033:{3B7168BD-E66B-4CF0-B22E-87A3BB809384} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{0D50CCF6-35DF-47A2-B13A-D442C835FFB5} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="0.11.0.0" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.13.0.0" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
@@ -56,7 +56,7 @@
     <ROW Directory="templates_Dir" Directory_Parent="APPDIR" DefaultDir="TEMPLA~1|templates"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="AI_CustomARPName" ComponentId="{23CB634A-A58D-45B6-B5F8-1545DE2D813A}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
+    <ROW Component="AI_CustomARPName" ComponentId="{F0A1AB46-5824-4C18-A470-8A9C021993F1}" Directory_="APPDIR" Attributes="260" KeyPath="DisplayName" Options="1"/>
     <ROW Component="AI_ExePath" ComponentId="{ED98A64F-BD1E-4B58-B43B-B983C4FF59D4}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="Colorful.Console.dll" ComponentId="{0E2C12E3-BEE9-421D-B2F9-C084E247EBA5}" Directory_="APPDIR" Attributes="0" KeyPath="Colorful.Console.dll"/>
     <ROW Component="ControlzEx.dll" ComponentId="{746030B0-35BD-40A5-8F8E-905A936647F5}" Directory_="APPDIR" Attributes="0" KeyPath="ControlzEx.dll"/>
@@ -80,6 +80,7 @@
     <ROW Component="pyRevitLabs.Json.dll" ComponentId="{44E90747-3E88-4349-A27B-72DB3B0EA2E2}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.Json.dll"/>
     <ROW Component="pyRevitLabs.Language.dll" ComponentId="{2509CB52-1D7E-4604-B3BC-380A70F5A958}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.Language.dll"/>
     <ROW Component="pyRevitLabs.MahAppsMetro.dll" ComponentId="{A5EF28A0-DEE8-4AA0-919B-7CBB971BE430}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.MahAppsMetro.dll"/>
+    <ROW Component="pyRevitLabs.NLog.dll" ComponentId="{CAA5B782-6387-46D5-9564-92DEF706509F}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.NLog.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.AutoCAD.dll" ComponentId="{FDC094C3-9080-44CE-92C6-167740B24FE8}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.TargetApps.AutoCAD.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Navisworks.dll" ComponentId="{EC2E7D13-2174-4559-BCF7-E93DA0B56FE7}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{A9CA691C-CE20-4F1A-89EC-C6FC17BF5CFB}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
@@ -91,7 +92,7 @@
     <ROW Component="toast64.exe" ComponentId="{5219B5A6-357A-4F52-A3F2-73DDD009EEF8}" Directory_="APPDIR" Attributes="256" KeyPath="toast64.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="0" Level="1" Directory_="APPDIR" Attributes="0" Components="AI_CustomARPName AI_ExePath Colorful.Console.dll ControlzEx.dll DocoptNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll LibGit2Sharp.dll.config MadMilkman.Ini.dll NETCoreRuntime2.0.7x64.aip NETFramework4.7.1webinstaller.aip NLog.dll Nett.dll OpenMcdf.dll ProductInformation System.Windows.Interactivity.dll git2572e4d8.dll pyRevitLabs.Common.dll pyRevitLabs.CommonCLI.dll pyRevitLabs.CommonWPF.dll pyRevitLabs.DeffrelDB.dll pyRevitLabs.Json.dll pyRevitLabs.Language.dll pyRevitLabs.MahAppsMetro.dll pyRevitLabs.TargetApps.AutoCAD.dll pyRevitLabs.TargetApps.Navisworks.dll pyRevitLabs.TargetApps.Revit.dll pyrevit.exe pyrevitautocomplete.exe script.py script.py_1 template.pulldown toast64.exe"/>
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="0" Level="1" Directory_="APPDIR" Attributes="0" Components="AI_CustomARPName AI_ExePath Colorful.Console.dll ControlzEx.dll DocoptNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll LibGit2Sharp.dll.config MadMilkman.Ini.dll NETCoreRuntime2.0.7x64.aip NETFramework4.7.1webinstaller.aip NLog.dll Nett.dll OpenMcdf.dll ProductInformation System.Windows.Interactivity.dll git2572e4d8.dll pyRevitLabs.Common.dll pyRevitLabs.CommonCLI.dll pyRevitLabs.CommonWPF.dll pyRevitLabs.DeffrelDB.dll pyRevitLabs.Json.dll pyRevitLabs.Language.dll pyRevitLabs.MahAppsMetro.dll pyRevitLabs.NLog.dll pyRevitLabs.TargetApps.AutoCAD.dll pyRevitLabs.TargetApps.Navisworks.dll pyRevitLabs.TargetApps.Revit.dll pyrevit.exe pyrevitautocomplete.exe script.py script.py_1 template.pulldown toast64.exe"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
@@ -116,6 +117,7 @@
     <ROW File="pyRevitLabs.Json.dll" Component_="pyRevitLabs.Json.dll" FileName="PYREVI~7.DLL|pyRevitLabs.Json.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Json.dll" SelfReg="false" NextFile="pyRevitLabs.MahAppsMetro.dll"/>
     <ROW File="pyRevitLabs.Language.dll" Component_="pyRevitLabs.Language.dll" FileName="PYREVI~3.DLL|pyRevitLabs.Language.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.Language.dll" SelfReg="false" NextFile="pyRevitLabs.Common.dll"/>
     <ROW File="pyRevitLabs.MahAppsMetro.dll" Component_="pyRevitLabs.MahAppsMetro.dll" FileName="PYREVI~8.DLL|pyRevitLabs.MahAppsMetro.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.MahAppsMetro.dll" SelfReg="false" NextFile="pyRevitLabs.TargetApps.AutoCAD.dll"/>
+    <ROW File="pyRevitLabs.NLog.dll" Component_="pyRevitLabs.NLog.dll" FileName="PYREV~11.DLL|pyRevitLabs.NLog.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.NLog.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.TargetApps.AutoCAD.dll" Component_="pyRevitLabs.TargetApps.AutoCAD.dll" FileName="PYREVI~9.DLL|pyRevitLabs.TargetApps.AutoCAD.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.AutoCAD.dll" SelfReg="false" NextFile="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW File="pyRevitLabs.TargetApps.Navisworks.dll" Component_="pyRevitLabs.TargetApps.Navisworks.dll" FileName="PYREV~10.DLL|pyRevitLabs.TargetApps.Navisworks.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Navisworks.dll" SelfReg="false" NextFile="pyrevit_cli.ico"/>
     <ROW File="pyRevitLabs.TargetApps.Revit.dll" Component_="pyRevitLabs.TargetApps.Revit.dll" FileName="PYREVI~2.DLL|pyRevitLabs.TargetApps.Revit.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Revit.dll" SelfReg="false" NextFile="pyRevitLabs.Language.dll"/>
@@ -125,7 +127,7 @@
     <ROW File="pyrevitautocomplete.exe" Component_="pyrevitautocomplete.exe" FileName="PYREVI~2.EXE|pyrevit-autocomplete.exe" Attributes="0" SourcePath="..\bin\pyrevit-autocomplete.exe" SelfReg="false" NextFile="pyrevitupdater" DigSign="true"/>
     <ROW File="pyrevitupdater" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1|pyrevit-updater" Attributes="0" SourcePath="..\bin\pyrevit-updater" SelfReg="false" NextFile="pyRevitLabs.CommonWPF.dll"/>
     <ROW File="script.py" Component_="script.py" FileName="script.py" Attributes="0" SourcePath="..\bin\templates\template.nobutton\script.py" SelfReg="false" NextFile="script.py_1"/>
-    <ROW File="script.py_1" Component_="script.py_1" FileName="script.py" Attributes="0" SourcePath="..\bin\templates\template.pushbutton\script.py" SelfReg="false"/>
+    <ROW File="script.py_1" Component_="script.py_1" FileName="script.py" Attributes="0" SourcePath="..\bin\templates\template.pushbutton\script.py" SelfReg="false" NextFile="pyRevitLabs.NLog.dll"/>
     <ROW File="toast64.exe" Component_="toast64.exe" FileName="toast64.exe" Attributes="0" SourcePath="..\bin\toast64.exe" SelfReg="false" NextFile="script.py" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
