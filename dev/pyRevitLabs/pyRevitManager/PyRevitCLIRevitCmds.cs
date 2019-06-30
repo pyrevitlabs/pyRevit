@@ -38,10 +38,6 @@ namespace pyRevitManager {
         }
 
         internal static void
-        PrintSupportedRevits() {
-        }
-
-        internal static void
         KillAllRevits(string revitYear) {
             int revitYearNumber = 0;
             if (int.TryParse(revitYear, out revitYearNumber))
