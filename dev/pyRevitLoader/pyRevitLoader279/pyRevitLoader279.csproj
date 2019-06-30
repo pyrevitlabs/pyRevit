@@ -102,6 +102,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>rd /S /Q "$(ProjectDir)\obj"
+del /Q "$(TargetDir)*.pdb"
 signtool sign /n "Ehsan Iran Nejad" /t http://timestamp.digicert.com /fd sha256 $(TargetPath)</PostBuildEvent>
   </PropertyGroup>
 </Project>

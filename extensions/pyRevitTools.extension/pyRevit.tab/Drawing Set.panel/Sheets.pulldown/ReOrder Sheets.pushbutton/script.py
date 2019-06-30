@@ -1,4 +1,8 @@
-"""Print items in order from a sheet index."""
+"""Print items in order from a sheet index.
+
+This tool looks for project parameters (on Sheets) that are
+Instance, of type Integer, and have "Order" in their names.
+"""
 #pylint: disable=W0613,E0401,C0103
 import re
 
@@ -93,6 +97,7 @@ class ReOrderWindow(forms.WPFWindow):
             item_sample = items[0]
             item_params = [x.Definition.Name for x in item_sample.Parameters
                            if x.StorageType == DB.StorageType.Integer]
+
             order_params = [x for x in item_params if 'order' in x.lower()]
             self.orderparams_cb.ItemsSource = sorted(order_params)
             self.orderparams_cb.SelectedIndex = 0

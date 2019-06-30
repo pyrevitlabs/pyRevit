@@ -13,7 +13,7 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.Language.Properties;
 
-using NLog;
+using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Serialization;
 
@@ -272,14 +272,25 @@ namespace pyRevitManager {
                     string revitYear, bool installed, bool attached,
                     bool allUsers) {
             var clone = PyRevit.GetRegisteredClone(cloneName);
+
             // grab engine version
             int engineVer = 0;
             int.TryParse(engineVersion, out engineVer);
 
-            if (latest)
-                engineVer = 0;
-            else if (dynamoSafe)
+            if (latest) {
+                logger.Debug("Attaching on latest engine...");
+                var latestCloneEngine = 
+                    clone.GetEngines().Where(x => x.Runtime).OrderByDescending(x => x.Version).First();
+                logger.Debug(string.Format("Latest engine: {0}", latestCloneEngine));
+                if (latestCloneEngine != null)
+                    engineVer = latestCloneEngine.Version;
+                else
+                    throw new pyRevitException("Can not determine latest runtime engine for this clone.");
+            }
+            else if (dynamoSafe) {
+                logger.Debug("Attaching on dynamo-safe engine");
                 engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
+            }
 
             // decide targets revits to attach to
             int revitYearNumber = 0;

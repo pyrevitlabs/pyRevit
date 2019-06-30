@@ -42,7 +42,7 @@ DEFAULT_SEARCHWND_WIDTH = 600
 DEFAULT_SEARCHWND_HEIGHT = 100
 DEFAULT_INPUTWINDOW_WIDTH = 500
 DEFAULT_INPUTWINDOW_HEIGHT = 400
-
+DEFAULT_RECOGNIZE_ACCESS_KEY = False
 
 WPF_HIDDEN = framework.Windows.Visibility.Hidden
 WPF_COLLAPSED = framework.Windows.Visibility.Collapsed
@@ -71,7 +71,10 @@ class WPFWindow(framework.Windows.Window):
 
     Example:
         >>> from pyrevit import forms
-        >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
+        >>> layout = '<Window ' \
+        >>>          'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" ' \
+        >>>          'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" ' \
+        >>>          'ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
@@ -126,6 +129,9 @@ class WPFWindow(framework.Windows.Window):
 
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
+
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""
@@ -277,8 +283,8 @@ class TemplateUserInputWindow(WPFWindow):
         Args:
             context (any): window context element(s)
             title (str): window title
-            width (str): window width
-            height (str): window height
+            width (int): window width
+            height (int): window height
             **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
@@ -638,6 +644,7 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         switches (list[str]): list of on/off switches
         message (str): window title message
         config (dict): dictionary of config dicts for options or switches
+        recognize_access_key (bool): recognize '_' as mark of access key
 
     Returns:
         str: name of selected option
@@ -665,7 +672,8 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         ...     ops,
         ...     switches=switches
         ...     message='Select Option',
-        ...     config=cfgs
+        ...     config=cfgs,
+        ...     recognize_access_key=False
         ...     )
         >>> rops
         'option2'
@@ -689,6 +697,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
 
         self.message_label.Content = \
             message if message else 'Pick a command option:'
+
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
 
         # creates the switches first
         for switch, state in self._switches.items():

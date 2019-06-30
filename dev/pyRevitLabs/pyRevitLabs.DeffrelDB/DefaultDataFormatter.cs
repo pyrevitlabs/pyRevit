@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.DeffrelDB {
     internal class DefaultDataFormatter: IDataFormatter {

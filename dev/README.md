@@ -43,6 +43,18 @@ Changes listed here were made to the Visual Studio project
 - Refactored `StaticResource` and `DynamicResource` references to `pyRevitLabs.MahAppsMetro`
 - Renamed project assembly name to `pyRevitLabs.MahAppsMetro`
 
+## NLog
+
+[See related issues here](https://github.com/eirannejad/pyRevit/issues/579)
+
+`NLog` (==4.6.4) was recompile to `pyRevitLabs.NLog` (==4.6.4 | .NET 4.5) to avoid the conflict.
+
+Changes listed here were made to the Visual Studio project
+
+- Refactored the root namespace to `pyRevitLabs.NLog`
+- Changed Package settings to version 4.6.4
+- Renamed project assembly name to `pyRevitLabs.NLog`
+
 
 ## natsort
 

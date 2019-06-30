@@ -301,6 +301,10 @@ namespace pyRevitManager {
                             { "<revit_year>",           "Target Revit year (major version)" },
                             { "<file_or_dir_path>",     "Target file or directory" },
                             { "--csv=<output_file>",    "Output csv file path" },
+                            { "--rvt",                  "Include Revit Project files (default when not provided)" },
+                            { "--rte",                  "Include Revit Project Template files" },
+                            { "--rfa",                  "Include Revit Family files" },
+                            { "--rft",                  "Include Revit Family Template files" },
                             { "--installed",            "Installed Revits only" },
                             { "--supported",            "Supported Revits only" },
                         });

@@ -13,7 +13,7 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.Language.Properties;
 
-using NLog;
+using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Serialization;
 
@@ -38,13 +38,6 @@ namespace pyRevitManager {
         }
 
         internal static void
-        PrintSupportedRevits() {
-            PyRevitCLIAppCmds.PrintHeader("Supported Revits");
-            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
-                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
-        }
-
-        internal static void
         KillAllRevits(string revitYear) {
             int revitYearNumber = 0;
             if (int.TryParse(revitYear, out revitYearNumber))
@@ -54,7 +47,8 @@ namespace pyRevitManager {
         }
 
         internal static void
-        ProcessFileInfo(string targetPath, string outputCSV) {
+        ProcessFileInfo(string targetPath, string outputCSV,
+                        bool IncludeRVT=true, bool includeRTE=false, bool includeRFA=false, bool includeRFT=false) {
             // if targetpath is a single model print the model info
             if (File.Exists(targetPath))
                 if (outputCSV != null)
@@ -69,20 +63,35 @@ namespace pyRevitManager {
             else {
                 var models = new List<RevitModelFile>();
                 var errorList = new List<(string, string)>();
+                var fileSearchPatterns = new List<string>();
+
+                // determine search patterns
+                // if no other file format is specified search for rvt only
+                if ((!includeRTE && !includeRFA && !includeRFT) || IncludeRVT)
+                    fileSearchPatterns.Add("*.rvt");
+
+                if (includeRTE)
+                    fileSearchPatterns.Add("*.rte");
+                if (includeRFA)
+                    fileSearchPatterns.Add("*.rfa");
+                if (includeRFT)
+                    fileSearchPatterns.Add("*.rft");
 
                 logger.Info(string.Format("Searching for revit files under \"{0}\"", targetPath));
                 FileAttributes attr = File.GetAttributes(targetPath);
                 if ((attr & FileAttributes.Directory) == FileAttributes.Directory) {
-                    var files = Directory.EnumerateFiles(targetPath, "*.rvt", SearchOption.AllDirectories);
-                    logger.Info(string.Format(" {0} revit files found under \"{1}\"", files.Count(), targetPath));
-                    foreach (var file in files) {
-                        try {
-                            logger.Info(string.Format("Revit file found \"{0}\"", file));
-                            var model = new RevitModelFile(file);
-                            models.Add(model);
-                        }
-                        catch (Exception ex) {
-                            errorList.Add((file, ex.Message));
+                    foreach(string searchPattern in fileSearchPatterns) {
+                        var files = Directory.EnumerateFiles(targetPath, searchPattern, SearchOption.AllDirectories);
+                        logger.Info(string.Format(" {0} revit files found under \"{1}\"", files.Count(), targetPath));
+                        foreach (var file in files) {
+                            try {
+                                logger.Info(string.Format("Revit file found \"{0}\"", file));
+                                var model = new RevitModelFile(file);
+                                models.Add(model);
+                            }
+                            catch (Exception ex) {
+                                errorList.Add((file, ex.Message));
+                            }
                         }
                     }
                 }
@@ -105,6 +114,14 @@ namespace pyRevitManager {
                     }
                 }
             }
+        }
+
+        internal static void
+        ProcessBuildInfo(string outputCSV) {
+            if (outputCSV != null)
+                ExportBuildInfoToCSV(outputCSV);
+            else
+                PrintBuildInfo();
         }
 
         internal static void
@@ -287,11 +304,24 @@ namespace pyRevitManager {
             Console.WriteLine(string.Format("Open Workset Settings: {0}", model.OpenWorksetConfig));
             Console.WriteLine(string.Format("Document Increment: {0}", model.DocumentIncrement));
 
+            // print project information properties
+            Console.WriteLine("Project Information (Properties):");
+            foreach(var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
+                Console.WriteLine("\t{0} = {1}", item.Key, item.Value.ToEscaped());
+            }
+
             if (model.IsFamily) {
                 Console.WriteLine("Model is a Revit Family!");
                 Console.WriteLine(string.Format("Category Name: {0}", model.CategoryName));
                 Console.WriteLine(string.Format("Host Category Name: {0}", model.HostCategoryName));
             }
+        }
+
+        private static void PrintBuildInfo() {
+            PyRevitCLIAppCmds.PrintHeader("Supported Revits");
+            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version))
+                Console.WriteLine(string.Format("{0} | Version: {1} | Build: {2}({3})", revit.ProductName, revit.Version, revit.BuildNumber, revit.BuildTarget));
+
         }
 
         // export model info to csv
@@ -301,9 +331,16 @@ namespace pyRevitManager {
             logger.Info(string.Format("Building CSV data to \"{0}\"", outputCSV));
             var csv = new StringBuilder();
             csv.Append(
-                "filepath,productname,buildnumber,isworkshared,centralmodelpath,lastsavedpath,uniqueid,error\n"
+                "filepath,productname,buildnumber,isworkshared,centralmodelpath,lastsavedpath,uniqueid,projectinfo,error\n"
                 );
             foreach (var model in models) {
+                // build project info string
+                var jsonData = new Dictionary<string, object>();
+                foreach (var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
+                    jsonData[item.Key] = item.Value;
+                }
+
+                // create csv entry
                 var data = new List<string>() {
                     string.Format("\"{0}\"", model.FilePath),
                     string.Format("\"{0}\"", model.RevitProduct != null ? model.RevitProduct.ProductName : ""),
@@ -312,6 +349,7 @@ namespace pyRevitManager {
                     string.Format("\"{0}\"", model.CentralModelPath),
                     string.Format("\"{0}\"", model.LastSavedPath),
                     string.Format("\"{0}\"", model.UniqueId.ToString()),
+                    JsonConvert.SerializeObject(jsonData).PrepareJSONForCSV(),
                     ""
                 };
 
@@ -319,9 +357,33 @@ namespace pyRevitManager {
             }
 
             // write list of files with errors
-            logger.Debug("Adding errors to \"{0}\"", outputCSV);
-            foreach (var errinfo in errorList)
-                csv.Append(string.Format("\"{0}\",,,,,,,\"{1}\"\n", errinfo.Item1, errinfo.Item2));
+            if (errorList != null) {
+                logger.Debug("Adding errors to \"{0}\"", outputCSV);
+                foreach (var errinfo in errorList)
+                    csv.Append(string.Format("\"{0}\",,,,,,,,\"{1}\"\n", errinfo.Item1, errinfo.Item2));
+            }
+
+            logger.Info(string.Format("Writing results to \"{0}\"", outputCSV));
+            File.WriteAllText(outputCSV, csv.ToString());
+        }
+
+        // export build info to csv
+        private static void ExportBuildInfoToCSV(string outputCSV) {
+            logger.Info(string.Format("Building CSV data to \"{0}\"", outputCSV));
+            var csv = new StringBuilder();
+            csv.Append(
+                "\"buildnum\",\"buildversion\",\"productname\"\n"
+                );
+            foreach (var revit in RevitProduct.ListSupportedProducts().OrderByDescending(x => x.Version)) {
+                // create csv entry
+                var data = new List<string>() {
+                    string.Format("\"{0}\"", revit.BuildNumber),
+                    string.Format("\"{0}\"", revit.Version),
+                    string.Format("\"{0}\"", revit.ProductName),
+                };
+
+                csv.Append(string.Join(",", data) + "\n");
+            }
 
             logger.Info(string.Format("Writing results to \"{0}\"", outputCSV));
             File.WriteAllText(outputCSV, csv.ToString());

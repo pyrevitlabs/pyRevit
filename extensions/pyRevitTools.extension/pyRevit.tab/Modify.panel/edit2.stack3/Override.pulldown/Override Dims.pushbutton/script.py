@@ -8,7 +8,7 @@ from pyrevit import forms
 
 
 __author__ = 'Ehsan Iran-Nejad; SILMAN'
-__context__ = 'Dimensions'
+__context__ = 'OST_Dimensions'
 
 
 def grab_dims():

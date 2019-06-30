@@ -14,6 +14,7 @@ Test FullFrame Engine
 Test pyRevit Button
 Test Output Stream
 Test Multiple Outputs
+Test Independent Logging
 Test Progressbar
 Test Charts
 Test D3

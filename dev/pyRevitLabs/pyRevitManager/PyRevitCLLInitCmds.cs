@@ -13,7 +13,7 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 using pyRevitLabs.Language.Properties;
 
-using NLog;
+using pyRevitLabs.NLog;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Serialization;
 

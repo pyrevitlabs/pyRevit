@@ -32,7 +32,7 @@
 												  Margin="{TemplateBinding Padding}"
 												  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
 												  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-												  RecognizesAccessKey="True"
+												  RecognizesAccessKey="{DynamicResource pyRevitRecognizesAccessKey}"
 												  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                         </Border>
                         <ControlTemplate.Triggers>

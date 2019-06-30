@@ -9,7 +9,7 @@ using Autodesk.Revit.DB;
 
 using pyRevitLabs.CommonWPF.Converters;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 using Image = System.Drawing.Image;
 using Matrix = System.Drawing.Drawing2D.Matrix;

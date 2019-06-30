@@ -272,85 +272,112 @@ namespace PyRevitBaseClasses {
 
 
     public abstract class PyRevitCommandExtendedAvail : IExternalCommandAvailability {
-        private string originalContextString;
-        private bool selectionRequired = false;                                 // is any selection required?
-        private HashSet<ViewType> activeViewTypes = new HashSet<ViewType>();    // list of acceptable view types
-        private string _contextCatNameCompareString = null;                     // category comparison string (e.g. wallsdoors)
+        // category name separator for comparisons
+        const string SEP = "|";
+
+        // is any selection required?
+        private bool selectionRequired = false;
+
+        // list of acceptable view types
+        private HashSet<ViewType> _activeViewTypes = new HashSet<ViewType>();
+
+        // category comparison string (e.g. wallsdoors)
+        private string _contextCatNameHash = null;
+        // builtin category comparison list
+        private HashSet<int> _contextCatIdsHash = new HashSet<int>();
 
         public PyRevitCommandExtendedAvail(string contextString) {
-            // keep a backup
-            originalContextString = contextString;
+            // NOTE:
+            // docs have builtin categories
+            // docs might have custom categories with non-english names
+            // the compare mechanism is providing methods to cover both conditions
+            // compare mechanism stores integer ids for builtin categories
+            // compare mechanism stores strings for custom category names
+            //   avail methods don't have access to doc object so the category names must be stored as string
 
             // get the tokens out of the string (it could only have one token)
+            // contextString in a ;-separated list of tokens
             List<string> contextTokens = new List<string>();
-            foreach (string catName in contextString.Split(';'))
-                contextTokens.Add(catName.ToLower());
+            foreach (string contextToken in contextString.Split(';'))
+                contextTokens.Add(contextToken.ToLower());
+            // keep them sorted for comparison
+            contextTokens.Sort();
 
-            // go thru the tokens and extract the custom (non-element-category) tokens
-            List<string> contextTokensCopy = new List<string>(contextTokens);
-            foreach (string token in contextTokensCopy) {
+            // first process the tokens for custom directives
+            // remove processed tokens and move to next step
+            foreach (string token in new List<string>(contextTokens)) {
                 switch (token.ToLower()) {
+                    // selection token requires selected elements
                     case "selection":
                         selectionRequired = true;
                         contextTokens.Remove(token); break;
+                    // active-* tokens require a certain type of active view
                     case "active-drafting-view":
-                        activeViewTypes.Add(ViewType.DraftingView);
+                        _activeViewTypes.Add(ViewType.DraftingView);
                         contextTokens.Remove(token); break;
                     case "active-detail-view":
-                        activeViewTypes.Add(ViewType.Detail);
+                        _activeViewTypes.Add(ViewType.Detail);
                         contextTokens.Remove(token); break;
                     case "active-plan-view":
-                        activeViewTypes.Add(ViewType.FloorPlan);
-                        activeViewTypes.Add(ViewType.CeilingPlan);
-                        activeViewTypes.Add(ViewType.AreaPlan);
-                        activeViewTypes.Add(ViewType.EngineeringPlan);
+                        _activeViewTypes.Add(ViewType.FloorPlan);
+                        _activeViewTypes.Add(ViewType.CeilingPlan);
+                        _activeViewTypes.Add(ViewType.AreaPlan);
+                        _activeViewTypes.Add(ViewType.EngineeringPlan);
                         contextTokens.Remove(token); break;
                     case "active-floor-plan":
-                        activeViewTypes.Add(ViewType.FloorPlan);
+                        _activeViewTypes.Add(ViewType.FloorPlan);
                         contextTokens.Remove(token); break;
                     case "active-rcp-plan":
-                        activeViewTypes.Add(ViewType.CeilingPlan);
+                        _activeViewTypes.Add(ViewType.CeilingPlan);
                         contextTokens.Remove(token); break;
                     case "active-structural-plan":
-                        activeViewTypes.Add(ViewType.EngineeringPlan);
+                        _activeViewTypes.Add(ViewType.EngineeringPlan);
                         contextTokens.Remove(token); break;
                     case "active-area-plan":
-                        activeViewTypes.Add(ViewType.AreaPlan);
+                        _activeViewTypes.Add(ViewType.AreaPlan);
                         contextTokens.Remove(token); break;
                     case "active-elevation-view":
-                        activeViewTypes.Add(ViewType.Elevation);
+                        _activeViewTypes.Add(ViewType.Elevation);
                         contextTokens.Remove(token); break;
                     case "active-section-view":
-                        activeViewTypes.Add(ViewType.Section);
+                        _activeViewTypes.Add(ViewType.Section);
                         contextTokens.Remove(token); break;
                     case "active-3d-view":
-                        activeViewTypes.Add(ViewType.ThreeD);
+                        _activeViewTypes.Add(ViewType.ThreeD);
                         contextTokens.Remove(token); break;
                     case "active-sheet":
-                        activeViewTypes.Add(ViewType.DrawingSheet);
+                        _activeViewTypes.Add(ViewType.DrawingSheet);
                         contextTokens.Remove(token); break;
                     case "active-legend":
-                        activeViewTypes.Add(ViewType.Legend);
+                        _activeViewTypes.Add(ViewType.Legend);
                         contextTokens.Remove(token); break;
                     case "active-schedule":
-                        activeViewTypes.Add(ViewType.PanelSchedule);
-                        activeViewTypes.Add(ViewType.ColumnSchedule);
-                        activeViewTypes.Add(ViewType.Schedule);
+                        _activeViewTypes.Add(ViewType.PanelSchedule);
+                        _activeViewTypes.Add(ViewType.ColumnSchedule);
+                        _activeViewTypes.Add(ViewType.Schedule);
                         contextTokens.Remove(token); break;
                     case "active-panel-schedule":
-                        activeViewTypes.Add(ViewType.PanelSchedule);
+                        _activeViewTypes.Add(ViewType.PanelSchedule);
                         contextTokens.Remove(token); break;
                     case "active-column-schedule":
-                        activeViewTypes.Add(ViewType.ColumnSchedule);
+                        _activeViewTypes.Add(ViewType.ColumnSchedule);
                         contextTokens.Remove(token); break;
                 }
             }
 
-            // assume that the remaining tokens are category names and create a comparison string
-            if (contextTokens.Count > 0) {
-                contextTokens.Sort();
-                _contextCatNameCompareString = string.Join("", contextTokens);
+            // first pass processed and removed the processed tokens
+            // second, process tokens for builtin categories
+            // if any tokens left
+            foreach (string token in new List<string>(contextTokens)) {
+                BuiltInCategory bic = BuiltInCategory.INVALID;
+                if (Enum.TryParse(token, true, out bic) && bic != 0 && bic != BuiltInCategory.INVALID) {
+                    _contextCatIdsHash.Add((int)bic);
+                    contextTokens.Remove(token);
+                }
             }
+
+            // assume that the remaining tokens are category names and create a comparison string
+            _contextCatNameHash = string.Join(SEP, contextTokens);
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
@@ -358,35 +385,65 @@ namespace PyRevitBaseClasses {
             if (selectionRequired && selectedCategories.IsEmpty)
                 return false;
 
-            // check active views
-            if (activeViewTypes.Count > 0) {
-                if (uiApp != null && uiApp.ActiveUIDocument != null
-                    && !activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
-                    return false;
-            }
+            try {
+                // check active views
+                if (_activeViewTypes.Count > 0) {
+                    if (uiApp != null && uiApp.ActiveUIDocument != null
+                        && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
+                        return false;
+                }
 
-            // check element categories
-            if (_contextCatNameCompareString != null) {
+                // the rest are category comparisons so if no categories are selected return false
                 if (selectedCategories.IsEmpty)
                     return false;
 
-                try {
-                    var selectedCategoryNames = new List<string>();
-                    foreach (Category rvt_cat in selectedCategories)
-                        selectedCategoryNames.Add(rvt_cat.Name.ToLower());
+                // make a hash of selected category ids
+                var selectedCatIdsHash = new HashSet<int>();
+                foreach (Category rvt_cat in selectedCategories)
+                    selectedCatIdsHash.Add(rvt_cat.Id.IntegerValue);
 
-                    selectedCategoryNames.Sort();
-                    string selectedCatNameCompareString = string.Join("", selectedCategoryNames);
+                // make a hash of selected category names
+                var selectedCategoryNames = new List<string>();
+                foreach (Category rvt_cat in selectedCategories)
+                    selectedCategoryNames.Add(rvt_cat.Name.ToLower());
+                selectedCategoryNames.Sort();
+                string selectedCatNameHash = string.Join(SEP, selectedCategoryNames);
 
-                    if (selectedCatNameCompareString != _contextCatNameCompareString)
+                // user might have added a combination of category names and builtin categories
+                // test each possibility
+                // if both builtin categories and category names are specified
+                if (_contextCatIdsHash.Count > 0 && _contextCatNameHash != null) {
+                    // test select inclusion in context (test selected is not bigger than context)
+                    foreach(Category rvt_cat in selectedCategories) {
+                        if (!_contextCatIdsHash.Contains(rvt_cat.Id.IntegerValue)
+                                && !_contextCatNameHash.Contains(rvt_cat.Name.ToLower()))
+                            return false;
+                    }
+
+                    // test context inclusion in selected (test context is not bigger than selected)
+                    foreach (int catId in _contextCatIdsHash)
+                        if (!selectedCatIdsHash.Contains(catId))
+                            return false;
+                    foreach (string catName in _contextCatNameHash.Split(SEP.ToCharArray()))
+                        if (!selectedCatNameHash.Contains(catName))
+                            return false;
+                }
+                // if only builtin categories
+                else if (_contextCatIdsHash.Count > 0 && _contextCatNameHash == null) {
+                    if (!_contextCatIdsHash.SetEquals(selectedCatIdsHash))
                         return false;
                 }
-                catch (Exception) {
-                    return false;
+                // if only category names
+                else if (_contextCatIdsHash.Count == 0 && _contextCatNameHash != null) {
+                    if (selectedCatNameHash != _contextCatNameHash)
+                        return false;
                 }
-            }
 
-            return true;
+                return true;
+            }
+            // say no if any errors occured, otherwise Revit will not call this method again if exceptions
+            // are bubbled up
+            catch { return false; }
         }
     }
 

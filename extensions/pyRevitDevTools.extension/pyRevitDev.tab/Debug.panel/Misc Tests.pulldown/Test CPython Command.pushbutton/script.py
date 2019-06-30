@@ -1,4 +1,5 @@
 #! python3
+# -*- coding: utf-8 -*-
 # pylint: skip-file
 
 # set PYTHONPATH to ....\Lib\site-packages correctly
@@ -10,6 +11,13 @@ import sys
 print(sys.version)
 print("\n## sys.path:")
 print('\n'.join(sys.path))
+
+# try tkinter
+try:
+    import tkinter
+    print('tkinter is included')
+except Exception as ex:
+    print('tkinter load error: {}'.format(ex))
 
 # test numpy
 try:
@@ -48,3 +56,8 @@ cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
 print('\n## list of DB.Walls:')
 for wall in cl:
     print(f'{wall} id:{wall.Id.IntegerValue}')
+
+# test unicode
+print("""
+Кириллица (/ sɪˈrɪlɪk /) - это система письма
+""")
