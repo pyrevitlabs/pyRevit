@@ -191,6 +191,7 @@ func main() {
 				},
 				Flags: complete.Flags{
 					"--installed": complete.PredictAnything,
+					"--supported": complete.PredictAnything,
 				},
 			},
 			"run": complete.Command{
@@ -229,6 +230,7 @@ func main() {
 					},
 				},
 			},
+			"doctor": complete.Command{},
 			"config": complete.Command{},
 			"configs": complete.Command{
 				Sub: complete.Commands{
