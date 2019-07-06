@@ -371,6 +371,13 @@ namespace pyRevitManager {
                         });
                     break;
 
+                case PyRevitCLICommandType.Doctor:
+                    BuildHelp(
+                        new List<string>() { "doctor" },
+                        header: "Inspect and fix errors and issues in pyRevit environment"
+                        );
+                    break;
+
                 case PyRevitCLICommandType.Config:
                     BuildHelp(
                         new List<string>() { "config" },

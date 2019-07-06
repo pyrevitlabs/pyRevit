@@ -67,6 +67,7 @@ namespace pyRevitManager {
         Run,
         Init,
         Caches,
+        Doctor,
         Config,
         Configs,
         Cli
@@ -577,6 +578,14 @@ namespace pyRevitManager {
                         allCaches: arguments["--all"].IsTrue,
                         revitYear: TryGetValue("<revit_year>")
                         );
+            }
+
+            else if (all("doctor")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Doctor);
+
+                else
+                    PyRevitCLIAppCmds.InspectAndFixEnv();
             }
 
             else if (all("config")) {
