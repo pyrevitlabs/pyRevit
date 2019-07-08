@@ -39,3 +39,7 @@ release/pyRevit-SetupFiles
 release/pyRevit\ CLI-cache
 release/pyRevit\ CLI-SetupFiles
 release/pyrevit-cli/*.nupkg
+
+# ignore linter configs
+.vscode/.ropeproject/*
+!.vscode/.ropeproject/config.py

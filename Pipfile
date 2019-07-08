@@ -12,6 +12,7 @@ readthedocs-sphinx-ext = "*"
 
 [dev-packages]
 pylint = "<2.0.0"
+rope = "*"
 
 [requires]
 python_version = "2.7"
