@@ -162,7 +162,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
             dir_list.extend([
-                op.expandvars(op.normpath(x.encode('string-escape')))
+                op.expandvars(op.normpath(x))
                 for x in self.core.userextensions
                 ])
         except Exception as read_err:
