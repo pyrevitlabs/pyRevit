@@ -11,8 +11,11 @@ CLEAN=false
 OPENDOCS=false
 BUILDDOCS=false
 BUILDLABS=false
+BUILDINSTALLER=false
+BUILDINSTALLERCLI=false
 BUILDDEBUG=false
 REBUILD=false
+SETVER=false
 
 # ==============================================================================
 # Configs
@@ -29,6 +32,11 @@ DOCSINDEXPATH=$DOCSBUILDPATH/index.html
 
 LABS=$THISPATH/pyRevitLabs/pyRevitLabs.sln
 
+PYREVIT_AIPFILE=$THISPATH/../release/pyrevit.aip
+PYREVIT_CLI_AIPFILE=$THISPATH/../release/pyrevit-cli.aip
+PYREVIT_VERSION=""
+PYREVIT_CLI_VERSION=""
+
 AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.go
 AUTOCOMPBIN=$BINPATH/pyrevit-autocomplete.exe
 
@@ -43,14 +51,20 @@ Usage: build OPTIONS
 | Build Tools:                                                                 |
 |                                                                              |
 |     Install these tools before starting the build process                    |
-|         cmder (full)          https://cmder.net/                             |
-|         choco (pkg manager)   https://chocolatey.org/install                 |
-|         Visual Studio (C#)    https://visualstudio.microsoft.com/vs/         |
-|         python 2.7 (docs)     https://www.python.org/downloads/              |
-|         pipenv (venv)         https://pipenv.readthedocs.io/en/latest/       |
+|         cmder (full)              https://cmder.net/                         |
+|         choco (pkg manager)       https://chocolatey.org/install             |
+|         Visual Studio (C#)        https://visualstudio.microsoft.com/vs/     |
+|         python 2.7 (docs)         https://www.python.org/downloads/          |
+|         pipenv (venv)             https://pipenv.readthedocs.io/en/latest/   |
+|         Advanced Installer v15.9 (installer builder)                         |
+|                                   https://www.advancedinstaller.com          |
 |                                                                              |
 |     Add the "Microsoft Visual Studio\2017\Community\Common7\IDE" path        |
 |     to system %PATH% env variable. Test 'devenv.exe' works from shell.       |
+|                                                                              |
+|     Add the "C:\Program Files (x86)\Caphyon\Advanced Installer 15.9\bin\x86" |
+|     path to system %PATH% env variable. Test 'advancedinstaller.com /help'   |
+|     works from shell.                                                        |
 |                                                                              |
 |     After successfully installing build tools, open bash and run command     |
 |     below. This will install other tools (listed below) using choco,         |
@@ -61,15 +75,23 @@ Usage: build OPTIONS
 |         golang                for building helper utilities                  |
 |         upx                   for compressing exe binaries                   |
 
+
 OPTIONS:
     -h                  print this help
+    -i                  install build-time dependencies
+    ----------------------------------------------------------------------- docs
     -d                  build documentation using sphinx.
+    -p                  open docs page after build
+    ----------------------------------------------------------------------- labs
     -l                  build pyrevit labs modules and cli tool using
                          Visual Studio C# compiler
-    -g                  build for debug
+    -g                  build pyrevit labs module for debug
+    ---------------------------------------------------------------- docs & labs
     -c                  clean build files and exit; use with -d or -l
-    -r                  re-build
-    -p                  open docs page after build
+    -r                  re-build; use with -d or -l
+    ----------------------------------------------------------------- installers
+    -x:[<version>]      build pyrevit installer; sets version before build
+    -y:[<version>]      build the cli admin utility installer
 
 Examples:
     build -dp           build and open docs
@@ -167,7 +189,7 @@ function install_opt() {
 }
 
 function process_args() {
-    while getopts "hidlrpc" opt; do
+    while getopts ":hidplgcrx:y:" opt; do
         case "$opt" in
         h|\?) print_help
             ;;
@@ -181,9 +203,20 @@ function process_args() {
             ;;
         g)  BUILDDEBUG=true
             ;;
+        c)  CLEAN=true
+            ;;
         r)  REBUILD=true
             ;;
-        c)  CLEAN=true
+        x)  BUILDINSTALLER=true;PYREVIT_VERSION=$OPTARG
+            ;;
+        y)  BUILDINSTALLERCLI=true;PYREVIT_CLI_VERSION=$OPTARG
+            ;;
+        # handle missing arguments
+        :)  if [[ $OPTARG == "x" ]]; then
+                BUILDINSTALLER=true;
+            elif [[ $OPTARG == "y" ]]; then
+                BUILDINSTALLERCLI=true;
+            fi
             ;;
         esac
     done
@@ -278,6 +311,30 @@ elif $BUILDLABS; then
     echo "downloading toast64 helper binary..."
     curl -o $TOASTBIN $TOASTURL
     upx --mono $TOASTBIN
+# build installers?
+# ------------------------------------------------------------------------------
+elif $BUILDINSTALLER || $BUILDINSTALLERCLI; then
+    # build installer for public pyrevit?
+    if $BUILDINSTALLER; then
+        echo "version: "$PYREVIT_VERSION
+        if [[ $PYREVIT_VERSION != "" ]]; then
+            echo "setting version: "$PYREVIT_VERSION
+            advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//SetVersion" $PYREVIT_VERSION
+        fi
+        echo "building: "$PYREVIT_AIPFILE
+        advancedinstaller.com "//build" $PYREVIT_AIPFILE
+    fi
+
+    # build installer for cli admin utility?
+    if $BUILDINSTALLERCLI; then
+        echo "version: "$PYREVIT_CLI_VERSION
+        if [[ $PYREVIT_CLI_VERSION != "" ]]; then
+            echo "setting version: "$PYREVIT_CLI_VERSION
+            advancedinstaller.com "//edit" $PYREVIT_CLI_AIPFILE "//SetVersion" $PYREVIT_CLI_VERSION
+        fi
+        echo "building: "$PYREVIT_CLI_AIPFILE
+        advancedinstaller.com "//build" $PYREVIT_CLI_AIPFILE
+    fi
 fi
 
 # done
