@@ -15,7 +15,6 @@ BUILDINSTALLER=false
 BUILDINSTALLERCLI=false
 BUILDDEBUG=false
 REBUILD=false
-SETVER=false
 
 # ==============================================================================
 # Configs
@@ -32,9 +31,12 @@ DOCSINDEXPATH=$DOCSBUILDPATH/index.html
 
 LABS=$THISPATH/pyRevitLabs/pyRevitLabs.sln
 
-PYREVIT_AIPFILE=$THISPATH/../release/pyrevit.aip
-PYREVIT_CLI_AIPFILE=$THISPATH/../release/pyrevit-cli.aip
+# API file paths must be absolute otherwise advancedinstaller will mess up
+# the relative source paths defined inside the api file and fails
+PYREVIT_AIPFILE=$(realpath $THISPATH/../release/pyrevit.aip)
+PYREVIT_CLI_AIPFILE=$(realpath $THISPATH/../release/pyrevit-cli.aip)
 PYREVIT_VERSION=""
+PYREVIT_VERSION_FILE=$THISPATH/../pyrevitlib/pyrevit/version
 PYREVIT_CLI_VERSION=""
 
 AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.go
@@ -90,8 +92,10 @@ OPTIONS:
     -c                  clean build files and exit; use with -d or -l
     -r                  re-build; use with -d or -l
     ----------------------------------------------------------------- installers
-    -x:[<version>]      build pyrevit installer; sets version before build
-    -y:[<version>]      build the cli admin utility installer
+    -x                  build pyrevit installer
+    -x -increment       increment version and build pyrevit installer
+    -x <version>        set version and build pyrevit installer
+    -y                  build cli admin utility installer
 
 Examples:
     build -dp           build and open docs
@@ -189,7 +193,7 @@ function install_opt() {
 }
 
 function process_args() {
-    while getopts ":hidplgcrx:y:" opt; do
+    while getopts ":hidplgcrx:y" opt; do
         case "$opt" in
         h|\?) print_help
             ;;
@@ -214,8 +218,6 @@ function process_args() {
         # handle missing arguments
         :)  if [[ $OPTARG == "x" ]]; then
                 BUILDINSTALLER=true;
-            elif [[ $OPTARG == "y" ]]; then
-                BUILDINSTALLERCLI=true;
             fi
             ;;
         esac
@@ -318,8 +320,10 @@ elif $BUILDINSTALLER || $BUILDINSTALLERCLI; then
     if $BUILDINSTALLER; then
         echo "version: "$PYREVIT_VERSION
         if [[ $PYREVIT_VERSION != "" ]]; then
-            echo "setting version: "$PYREVIT_VERSION
+            echo "setting version "$PYREVIT_VERSION" on "$PYREVIT_AIPFILE
             advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//SetVersion" $PYREVIT_VERSION
+            AIPVersion=$(advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//GetProperty" "ProductVersion")
+            echo $AIPVersion > $PYREVIT_VERSION_FILE
         fi
         echo "building: "$PYREVIT_AIPFILE
         advancedinstaller.com "//build" $PYREVIT_AIPFILE
@@ -327,11 +331,6 @@ elif $BUILDINSTALLER || $BUILDINSTALLERCLI; then
 
     # build installer for cli admin utility?
     if $BUILDINSTALLERCLI; then
-        echo "version: "$PYREVIT_CLI_VERSION
-        if [[ $PYREVIT_CLI_VERSION != "" ]]; then
-            echo "setting version: "$PYREVIT_CLI_VERSION
-            advancedinstaller.com "//edit" $PYREVIT_CLI_AIPFILE "//SetVersion" $PYREVIT_CLI_VERSION
-        fi
         echo "building: "$PYREVIT_CLI_AIPFILE
         advancedinstaller.com "//build" $PYREVIT_CLI_AIPFILE
     fi
