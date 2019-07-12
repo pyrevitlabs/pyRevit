@@ -25,7 +25,7 @@
     <ROW Property="ProductCode" Value="1033:{0D50CCF6-35DF-47A2-B13A-D442C835FFB5} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="pyRevit CLI"/>
-    <ROW Property="ProductVersion" Value="0.13.0.0" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.13.0.0" Type="32" TargetFile="pyrevit.exe"/>
     <ROW Property="REBOOT" MultiBuildValue="DefaultBuild:ReallySuppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{8181E458-B82E-4A4D-BAAC-784756C4B506}"/>
