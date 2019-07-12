@@ -1,35 +1,35 @@
 # Release Checklist
 
-## pyRevit CLI
+### Releasing pyRevit CLI
 
 - [ ] Increase CLI version
-- [ ] Compile CLI
+- [ ] Compile CLI: `./build -rl`
 - [ ] Run CLI unit tests
 - [ ] Update CLI docs and increase version
 - [ ] Run pyRevit and test successful load
 - [ ] Check CLI version under pyRevit about
-- [ ] Build the CLI installer
+- [ ] Build the CLI installer: `./build -y`
 - [ ] Grab the product code and add to the list
 - [ ] Commit binaries and release files
 - [ ] Push and tag
 - [ ] Create CLI release on github and add comments
 - [ ] Upload installer to github release
 
-## pyRevit
+### Releasing pyRevit
 
-- [ ] Increase pyRevit version
 - [ ] Run and test the changes
-- [ ] Build the pyRevit installer
+- [ ] Build the docs and review: `./build -rdp`
+- [ ] Increase pyRevit version and build the installer: `./build -x -increment`
 - [ ] Grab the product code and add to the list
 - [ ] Commit changes and push
 - [ ] Merge release branch into master
 - [ ] Tag the merge
 - [ ] Create release on github and add comments
-- [ ] Upload installer to guthub release
+- [ ] Upload installer to github release
 
-## Public
+### Public Post
 
-- [ ] Create a post on blog, explain the changes
+- [ ] Create a post on blog, explain the changes, or make a video
 - [ ] Tweet the post
 
 &nbsp;
