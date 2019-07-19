@@ -7,7 +7,7 @@ runtime = true
 path = 'bin\engines\273'
 assembly = 'pyRevitLoader.dll'
 compatproducts = ['dynamo']
-description = 'Provided for backward-compatibility with Dynamo BIM <= 2.0.2'
+description = 'Provided for backward-compatibility with Dynamo BIM <= 2.1.0'
 
 [engines.IPY277]
 kernel = 'IronPython'
