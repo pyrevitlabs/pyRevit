@@ -272,6 +272,12 @@ namespace PyRevitBaseClasses {
 
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
 
+        public Version RendererVersion {
+            get {
+                return renderer.Version;
+            }
+        }
+
         private string GetStyleSheetFile() {
             var envDict = new EnvDictionary();
             return envDict.activeStyleSheet;
@@ -293,6 +299,7 @@ namespace PyRevitBaseClasses {
             var dochead = string.Format(
                 ExternalConfig.doctype + ExternalConfig.dochead,
                 AppVersion,
+                RendererVersion,
                 cssFilePath
                 );
             // create default html

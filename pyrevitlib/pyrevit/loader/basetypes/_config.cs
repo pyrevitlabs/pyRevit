@@ -15,10 +15,11 @@ namespace PyRevitBaseClasses
     {
         public static string doctype = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string dochead = "<head>" +
-                                       "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=9\" />" +
+                                       "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />" +
                                        "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />" +
                                        "<meta name=\"appversion\" content=\"{0}\" />" +
-                                       "<link rel=\"stylesheet\" href=\"file:///{1}\">" +
+                                       "<meta name=\"rendererversion\" content=\"{1}\" />" +
+                                       "<link rel=\"stylesheet\" href=\"file:///{2}\">" +
                                        "</head>";
 
         public static string defaultelement = "<div class=\"entry\"></div>";
