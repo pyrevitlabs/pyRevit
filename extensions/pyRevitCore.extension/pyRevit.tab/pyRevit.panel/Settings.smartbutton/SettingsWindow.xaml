@@ -150,8 +150,8 @@
                                     </TextBlock>
                                     <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
                                         The CPython engine is shipped with pyRevit so you do not need to have it installed on your machine. However if
-                                        you intent to use third-party libraries, make sure you have installed the same version as the selected
-                                        engine here.
+                                        you intend to use third-party libraries, make sure you have the same version of CPython as the selected
+                                        engine here, installed on your machine.
                                     </TextBlock>
                                     <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
                                         PYTHONPATH environment variable must point to the "site-packages" directory, so modules
