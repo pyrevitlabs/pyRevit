@@ -66,7 +66,7 @@ namespace PyRevitBaseClasses
         public void TimeStamp()
         {
             date = DateTime.Now.ToString("yyyy/MM/dd");
-            time = DateTime.Now.ToString("HH:mm:ss:ffff");
+            time = DateTime.Now.ToString("HH:mm:ss");
         }
     }
 
