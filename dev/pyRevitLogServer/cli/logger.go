@@ -2,6 +2,8 @@ package cli
 
 import (
 	"log"
+
+	"pkg.re/essentialkaos/ek.v10/fmtc"
 )
 
 type Logger struct {
@@ -33,5 +35,5 @@ func (m *Logger) Trace(args ...interface{}) {
 }
 
 func (m *Logger) Print(args ...interface{}) {
-	log.Print(args...)
+	fmtc.Println(args...)
 }

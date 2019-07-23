@@ -29,15 +29,15 @@ func Start(opts *cli.Options, writer persistence.Writer, logger *cli.Logger) {
 		}
 
 		// now write to db
-		message := "[ OK ]"
+		message := "[ {g}OK{!} ]"
 		_, werr := writer.Write(&logrec, logger)
 		if werr != nil {
 			logger.Debug(werr)
-			message = "[    ]"
+			message = fmt.Sprintf("[ {r}%s{!} ]", werr)
 		}
 
 		logger.Print(fmt.Sprintf(
-			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v\n",
+			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
 			message,
 			logrec.Date,
 			logrec.Time,
