@@ -21,8 +21,24 @@ func Start(opts *cli.Options, writer persistence.Writer, logger *cli.Logger) {
 			return
 		}
 
-		logger.Debug(fmt.Sprintf(
-			"%s-%s %q %s:%s [%s.%s] code=%d info=%v\n",
+		if logger.PrintTrace {
+			logjson, merr := json.Marshal(logrec)
+			if merr == nil {
+				logger.Trace(string(logjson))
+			}
+		}
+
+		// now write to db
+		message := "[ OK ]"
+		_, werr := writer.Write(&logrec, logger)
+		if werr != nil {
+			logger.Debug(werr)
+			message = "[    ]"
+		}
+
+		logger.Print(fmt.Sprintf(
+			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v\n",
+			message,
 			logrec.Date,
 			logrec.Time,
 			logrec.UserName,
@@ -34,21 +50,7 @@ func Start(opts *cli.Options, writer persistence.Writer, logger *cli.Logger) {
 			logrec.CommandResults,
 		))
 
-		if logger.PrintTrace {
-			logjson, merr := json.Marshal(logrec)
-			if merr == nil {
-				logger.Trace(string(logjson))
-			}
-		}
-
-		// now write to db
-		res, werr := writer.Write(&logrec, logger)
-		if werr != nil {
-			logger.Debug(werr)
-			return
-		}
-
-		logger.Debug(res.Message)
+		// logger.Debug(res.Message)
 
 	}).Methods("POST")
 

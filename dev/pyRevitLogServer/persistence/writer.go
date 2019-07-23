@@ -28,16 +28,15 @@ func NewWriter(dbcfg *Config) (Writer, error) {
 	}
 	if dbcfg.Backend == Postgres {
 		return GenericSQLWriter{w}, nil
+	} else if dbcfg.Backend == MongoDB {
+		return MongoDBWriter{w}, nil
+	} else if dbcfg.Backend == MySql {
+		return GenericSQLWriter{w}, nil
+	} else if dbcfg.Backend == MSSql {
+		return GenericSQLWriter{w}, nil
+	} else if dbcfg.Backend == Sqlite {
+		return GenericSQLWriter{w}, nil
 	}
-	// else if dbConfig.Backend == MongoDB {
-	// 	return MongoDBWriter{*w}, nil
-	// } else if dbConfig.Backend == MySql {
-	// 	return GenericSQLWriter{*w}, nil
-	// } else if dbConfig.Backend == MSSql {
-	// 	return GenericSQLWriter{*w}, nil
-	// } else if dbConfig.Backend == Sqlite {
-	// 	return GenericSQLWriter{*w}, nil
-	// }
 	// ... other writers
 
 	panic("should not get here")
