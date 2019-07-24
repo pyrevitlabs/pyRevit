@@ -160,9 +160,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\replctrl.cs">
-      <Link>replctrl.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
     </Compile>
