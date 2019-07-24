@@ -48,7 +48,7 @@ else:
 
 if basefolder:
     logger.debug(basefolder)
-    schedules_to_export = forms.select_schedules(title="Select Schedules")
+    schedules_to_export = forms.select_schedules()
 
     if schedules_to_export:
         vseop = DB.ViewScheduleExportOptions()

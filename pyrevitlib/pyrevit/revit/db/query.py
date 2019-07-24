@@ -584,12 +584,13 @@ def get_view_by_sheetref(sheet_num, detail_num, doc=None):
 def is_schedule(view):
     """Check if given DB.View is a Revit Schedule.
 
-    Returns False if given view is a DB.ViewSchedule but is a 
+    Returns False if given view is a DB.ViewSchedule but is a
+        Schedule View Template, or
         Titleblock Revision Schedule, or
         Internal Keynote Schedule, or
         Keynote Legend Schedule
     """
-    if isinstance(view, DB.ViewSchedule):
+    if isinstance(view, DB.ViewSchedule) and not view.IsTemplate:
         isrevsched = view.IsTitleblockRevisionSchedule
         isintkeynote = view.IsInternalKeynoteSchedule
         iskeynotelegend = view.Definition.CategoryId == \

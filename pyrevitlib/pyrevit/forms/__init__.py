@@ -1630,7 +1630,7 @@ def select_viewtemplates(title='Select View Templates',
     return selected_viewtemplates
 
 
-def select_schedules(title='Select schedules',
+def select_schedules(title='Select Schedules',
                      button_name='Select',
                      width=DEFAULT_INPUTWINDOW_WIDTH,
                      multiple=True,
