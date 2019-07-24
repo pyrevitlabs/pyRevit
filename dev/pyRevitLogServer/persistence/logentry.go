@@ -1,19 +1,28 @@
 package persistence
 
+type LogMeta struct {
+	// for initial schema, the value will be ""; there is no 1.0
+	SchemaVersion string `json:"schema"` // schema 2.0
+}
+
 type EngineInfo struct {
+	Type     string   `json:"type"` // schema 2.0
 	Version  string   `json:"version"`
 	SysPaths []string `json:"syspath"`
 }
 
 type TraceInfo struct {
 	EngineInfo          EngineInfo `json:"engine"`
-	IronPythonTraceDump string     `json:"ipy"`
-	CLRTraceDump        string     `json:"clr"`
+	IronPythonTraceDump string     `json:"ipy"`     // initial schema
+	CLRTraceDump        string     `json:"clr"`     // initial schema
+	Message             string     `json:"message"` // schema 2.0
 }
 
 type LogRecord struct {
-	Date              string            `json:"date"`
-	Time              string            `json:"time"`
+	LogMeta           LogMeta           `json:"meta"`      // schema 2.0
+	Date              string            `json:"date"`      // initial schema
+	Time              string            `json:"time"`      // initial schema
+	TimeStamp         string            `json:"timestamp"` // schema 2.0
 	UserName          string            `json:"username"`
 	RevitVersion      string            `json:"revit"`
 	RevitBuild        string            `json:"revitbuild"`

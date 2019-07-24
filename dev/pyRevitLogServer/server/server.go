@@ -36,19 +36,35 @@ func Start(opts *cli.Options, writer persistence.Writer, logger *cli.Logger) {
 			message = fmt.Sprintf("[ {r}%s{!} ]", werr)
 		}
 
-		logger.Print(fmt.Sprintf(
-			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
-			message,
-			logrec.Date,
-			logrec.Time,
-			logrec.UserName,
-			logrec.RevitBuild,
-			logrec.TraceInfo.EngineInfo.Version,
-			logrec.ExtensionName,
-			logrec.CommandName,
-			logrec.ResultCode,
-			logrec.CommandResults,
-		))
+		if logrec.LogMeta.SchemaVersion == "" {
+			logger.Print(fmt.Sprintf(
+				"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
+				message,
+				logrec.Date,
+				logrec.Time,
+				logrec.UserName,
+				logrec.RevitBuild,
+				logrec.TraceInfo.EngineInfo.Version,
+				logrec.ExtensionName,
+				logrec.CommandName,
+				logrec.ResultCode,
+				logrec.CommandResults,
+			))
+		} else if logrec.LogMeta.SchemaVersion == "2.0" {
+			logger.Print(fmt.Sprintf(
+				"%s %s %q %s:%s (%s) [%s.%s] code=%d info=%v",
+				message,
+				logrec.TimeStamp,
+				logrec.UserName,
+				logrec.RevitBuild,
+				logrec.TraceInfo.EngineInfo.Version,
+				logrec.TraceInfo.EngineInfo.Type,
+				logrec.ExtensionName,
+				logrec.CommandName,
+				logrec.ResultCode,
+				logrec.CommandResults,
+			))
+		}
 
 		// logger.Debug(res.Message)
 

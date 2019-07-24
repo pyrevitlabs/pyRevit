@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 type GenericSQLWriter struct {
@@ -90,26 +93,58 @@ func generateQuery(table string, logrec *LogRecord, logger *cli.Logger) (string,
 		logger.Debug("error logging command results")
 	}
 
-	record := []string{
-		logrec.Date,
-		logrec.Time,
-		logrec.UserName,
-		logrec.RevitVersion,
-		logrec.RevitBuild,
-		logrec.SessionId,
-		logrec.PyRevitVersion,
-		strconv.FormatBool(logrec.IsDebugMode),
-		strconv.FormatBool(logrec.IsAlternateMode),
-		logrec.CommandName,
-		logrec.BundleName,
-		logrec.ExtensionName,
-		logrec.CommandUniqueName,
-		strconv.Itoa(logrec.ResultCode),
-		string(cresults),
-		logrec.ScriptPath,
-		logrec.TraceInfo.EngineInfo.Version,
-		logrec.TraceInfo.IronPythonTraceDump,
-		logrec.TraceInfo.CLRTraceDump,
+	// create record based on schema
+	var record []string
+
+	// generate record id, panic if error
+	recordId := uuid.Must(uuid.NewV4())
+
+	if logrec.LogMeta.SchemaVersion == "" {
+		re := regexp.MustCompile(`(\d+:\d+:\d+)`)
+		record = []string{
+			logrec.Date,
+			re.FindString(logrec.Time),
+			logrec.UserName,
+			logrec.RevitVersion,
+			logrec.RevitBuild,
+			logrec.SessionId,
+			logrec.PyRevitVersion,
+			strconv.FormatBool(logrec.IsDebugMode),
+			strconv.FormatBool(logrec.IsAlternateMode),
+			logrec.CommandName,
+			logrec.BundleName,
+			logrec.ExtensionName,
+			logrec.CommandUniqueName,
+			strconv.Itoa(logrec.ResultCode),
+			string(cresults),
+			logrec.ScriptPath,
+			logrec.TraceInfo.EngineInfo.Version,
+			logrec.TraceInfo.IronPythonTraceDump,
+			logrec.TraceInfo.CLRTraceDump,
+		}
+
+	} else if logrec.LogMeta.SchemaVersion == "2.0" {
+		record = []string{
+			recordId.String(),
+			logrec.TimeStamp,
+			logrec.UserName,
+			logrec.RevitVersion,
+			logrec.RevitBuild,
+			logrec.SessionId,
+			logrec.PyRevitVersion,
+			strconv.FormatBool(logrec.IsDebugMode),
+			strconv.FormatBool(logrec.IsAlternateMode),
+			logrec.CommandName,
+			logrec.BundleName,
+			logrec.ExtensionName,
+			logrec.CommandUniqueName,
+			strconv.Itoa(logrec.ResultCode),
+			string(cresults),
+			logrec.ScriptPath,
+			logrec.TraceInfo.EngineInfo.Type,
+			logrec.TraceInfo.EngineInfo.Version,
+			logrec.TraceInfo.Message,
+		}
 	}
 	datalines = append(datalines, ToSql(&record, true))
 
