@@ -581,13 +581,32 @@ def get_view_by_sheetref(sheet_num, detail_num, doc=None):
         return vport.ViewId
 
 
+def is_schedule(view):
+    """Check if given DB.View is a Revit Schedule.
+
+    Returns False if given view is a DB.ViewSchedule but is a 
+        Titleblock Revision Schedule, or
+        Internal Keynote Schedule, or
+        Keynote Legend Schedule
+    """
+    if isinstance(view, DB.ViewSchedule):
+        isrevsched = view.IsTitleblockRevisionSchedule
+        isintkeynote = view.IsInternalKeynoteSchedule
+        iskeynotelegend = view.Definition.CategoryId == \
+            get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
+
+        return not (isrevsched or isintkeynote or iskeynotelegend)
+
+    return False
+
+
 def get_all_schedules(doc=None):
     doc = doc or HOST_APP.doc
     all_scheds = DB.FilteredElementCollector(doc) \
                    .OfClass(DB.ViewSchedule) \
                    .WhereElementIsNotElementType() \
                    .ToElements()
-    return all_scheds
+    return filter(is_schedule, all_scheds)
 
 
 def get_view_by_name(view_name, doc=None):
@@ -1214,3 +1233,4 @@ def get_family_parameter(param_name, family_doc):
                 return fparam
     else:
         raise PyRevitException('Document is not a family')
+

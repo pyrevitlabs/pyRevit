@@ -1630,6 +1630,54 @@ def select_viewtemplates(title='Select View Templates',
     return selected_viewtemplates
 
 
+def select_schedules(title='Select schedules',
+                     button_name='Select',
+                     width=DEFAULT_INPUTWINDOW_WIDTH,
+                     multiple=True,
+                     filterfunc=None,
+                     doc=None):
+    """Standard form for selecting schedules.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+
+    Returns:
+        list[DB.ViewSchedule]: list of selected schedules
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_schedules()
+        ... [<Autodesk.Revit.DB.ViewSchedule object>,
+        ...  <Autodesk.Revit.DB.ViewSchedule object>]
+    """
+    doc = doc or HOST_APP.doc
+    all_schedules = revit.query.get_all_schedules(doc=doc)
+
+    if filterfunc:
+        all_schedules = filter(filterfunc, all_schedules)
+
+    selected_schedules = \
+        SelectFromList.show(
+            sorted([ViewOption(x) for x in all_schedules],
+                   key=lambda x: x.name),
+            title=title,
+            button_name=button_name,
+            width=width,
+            multiselect=multiple,
+            checked_only=True
+        )
+
+    return selected_schedules
+
+
 def select_open_docs(title='Select Open Documents',
                      button_name='OK',
                      width=DEFAULT_INPUTWINDOW_WIDTH,    #pylint: disable=W0613
