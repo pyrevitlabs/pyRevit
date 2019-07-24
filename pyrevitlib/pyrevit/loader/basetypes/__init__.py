@@ -72,10 +72,6 @@ CMD_AVAIL_TYPE_NAME_EXTENDED = \
 CMD_AVAIL_TYPE_NAME_SELECTION = \
     make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
-# template dynamobim command class
-DYNOCMD_EXECUTOR_TYPE_NAME = '{}.{}'\
-    .format(LOADER_BASE_NAMESPACE, 'PyRevitCommandDynamoBIM')
-
 SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
 
@@ -283,9 +279,6 @@ if not EXEC_PARAMS.doc_mode:
                                                 CMD_AVAIL_TYPE_NAME_EXTENDED)
     CMD_AVAIL_TYPE_SELECTION = find_type_by_name(BASE_TYPES_ASM,
                                                  CMD_AVAIL_TYPE_NAME_SELECTION)
-    DYNOCMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM,
-                                              DYNOCMD_EXECUTOR_TYPE_NAME)
 else:
     BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = CMD_AVAIL_TYPE = None
     CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None
-    DYNOCMD_EXECUTOR_TYPE = None

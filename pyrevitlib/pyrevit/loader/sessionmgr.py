@@ -509,7 +509,6 @@ def execute_script(script_path, arguments=None, sys_paths=None,
     from pyrevit.coreutils import DEFAULT_SEPARATOR
     from pyrevit.framework import clr
 
-    executor = loadertypes.ScriptExecutor()
     script_name = op.basename(script_path)
     core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
     if sys_paths:
@@ -538,7 +537,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             executedFromUI=False
             )
 
-    executor.ExecuteScript(
+    loadertypes.ScriptExecutor.ExecuteScript(
         clr.Reference[loadertypes.PyRevitCommandRuntime](cmd_runtime)
         )
 

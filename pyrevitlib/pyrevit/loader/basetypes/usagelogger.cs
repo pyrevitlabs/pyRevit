@@ -5,40 +5,71 @@ using System.Web.Script.Serialization;
 using System.IO;
 using System.Threading.Tasks;
 
+using pyRevitLabs.Common;
 
 namespace PyRevitBaseClasses
 {
-    public class LogEntry
-    {
-        public string date { get; set; }
-        public string time { get; set; }
+    public class EngineInfo {
+        public string type { get; set; }
+        public string version { get; set; }
+        public List<string> syspath { get; set; }
+    }
+
+    public class TraceInfo {
+        public EngineInfo engine { get; set; }
+        public string message { get; set; }
+    }
+
+    public class LogEntry {
+        // schema
+        public Dictionary<string, string> meta { get; private set; }
+
+            // when?
+        public string timestamp { get; set; }
+        // by who?
         public string username { get; set; }
+        // on what?
         public string revit { get; set; }
         public string revitbuild { get; set; }
         public string sessionid { get; set; }
         public string pyrevit { get; set; }
+        // which mode?
         public bool debug { get; set; }
         public bool alternate { get; set; }
+        // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
         public string commandextension { get; set; }
         public string commanduniquename { get; set; }
+        public string scriptpath { get; set; }
+        // returned what?
         public int resultcode { get; set; }
         public Dictionary<string, string> commandresults { get; set; }
-        public string scriptpath { get; set; }
-        public Dictionary<string, object> trace { get; set; }
+        // any errors?
+        public TraceInfo trace { get; set; }
 
-        public LogEntry()
-        {
-
-        }
-
-        public LogEntry(string revitUsername, string revitVersion, string revitBuild, string revitProcessId,
+        public LogEntry(string revitUsername,
+                        string revitVersion,
+                        string revitBuild,
+                        string revitProcessId,
                         string pyRevitVersion,
-                        bool debugModeEnabled, bool alternateModeEnabled,
-                        string pyRevitCommandName, string pyRevitCommandBundle, string pyRevitCommandExtension, string pyRevitCommandUniqueName, string pyRevitCommandPath,
-                        int executorResultCode, Dictionary<string, string> resultDict, string engineVesion, List<string> enginePaths, string ipyTrace, string clrTrace)
+                        bool debugModeEnabled,
+                        bool alternateModeEnabled,
+                        string pyRevitCommandName,
+                        string pyRevitCommandBundle,
+                        string pyRevitCommandExtension,
+                        string pyRevitCommandUniqueName,
+                        string pyRevitCommandPath,
+                        int executorResultCode,
+                        Dictionary<string, string> resultDict,
+                        TraceInfo traceInfo)
         {
+            meta = new Dictionary<string, string> {
+                { "schema", "2.0"},
+            };
+
+            timestamp = CommonUtils.GetISOTimeStampNow();
+
             username = revitUsername;
             revit = revitVersion;
             revitbuild = revitBuild;
@@ -53,20 +84,7 @@ namespace PyRevitBaseClasses
             scriptpath = pyRevitCommandPath;
             resultcode = executorResultCode;
             commandresults = resultDict;
-            trace = new Dictionary<string, object>() {
-                { "engine", new Dictionary<string, object>(){
-                    { "version",  engineVesion},
-                    { "syspath", enginePaths},
-                } },
-                { "ipy" , ipyTrace},
-                { "clr", clrTrace }
-            };
-        }
-
-        public void TimeStamp()
-        {
-            date = DateTime.Now.ToString("yyyy/MM/dd");
-            time = DateTime.Now.ToString("HH:mm:ss");
+            trace = traceInfo;
         }
     }
 
@@ -75,7 +93,6 @@ namespace PyRevitBaseClasses
     {
         public static string MakeJSONLogEntry(LogEntry logEntry)
         {
-            logEntry.TimeStamp();
             return new JavaScriptSerializer().Serialize(logEntry);
         }
 
@@ -117,7 +134,6 @@ namespace PyRevitBaseClasses
             var logData = new JavaScriptSerializer().Deserialize<List<LogEntry>>(jsonData);
 
             // Add any new employees
-            logEntry.TimeStamp();
             logData.Add(logEntry);
 
             // Update json data string

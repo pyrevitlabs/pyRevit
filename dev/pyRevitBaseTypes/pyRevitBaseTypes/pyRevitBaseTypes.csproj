@@ -142,9 +142,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses_dyno.cs">
-      <Link>baseclasses_dyno.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\enginermgr.cs">
       <Link>enginermgr.cs</Link>
     </Compile>

@@ -7,8 +7,6 @@ using Autodesk.Revit.Attributes;
 using System.Windows.Input;
 using System.Windows.Controls;
 
-using Python.Runtime;
-
 namespace PyRevitBaseClasses {
     public enum ExtendedAvailabilityTypes {
         ZeroDocuments,
@@ -223,49 +221,22 @@ namespace PyRevitBaseClasses {
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Execute and log results
             // Executing the script and logging the results
-            if (pyrvtCmdRuntime.IsPython3) {
-                using (Py.GIL()) {
-                    // initialize
-                    if (!PythonEngine.IsInitialized)
-                        PythonEngine.Initialize();
+            // Get script executor and Execute the script
+            pyrvtCmdRuntime.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtCmdRuntime);
 
-                    // set output stream
-                    dynamic sys = PythonEngine.ImportModule("sys");
-                    sys.stdout = pyrvtCmdRuntime.OutputStream;
+            // Log results
+            ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
 
-                    // set uiapplication
-                    sys.host = pyrvtCmdRuntime.UIApp;
+            // GC cleanups
+            var re = pyrvtCmdRuntime.ExecutionResult;
+            pyrvtCmdRuntime.Dispose();
+            pyrvtCmdRuntime = null;
 
-                    // run
-                    var scriptContents = File.ReadAllText(pyrvtCmdRuntime.ScriptSourceFile);
-                    PythonEngine.Exec(scriptContents);
-
-                    // shutdown halts and breaks Revit
-                    // let's not do that!
-                    // PythonEngine.Shutdown();
-
-                    return Result.Succeeded;
-                }
-            }
-            else {
-                // Get script executor and Execute the script
-                var executor = new ScriptExecutor();
-                pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
-
-                // Log results
-                ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
-
-                // GC cleanups
-                var re = pyrvtCmdRuntime.ExecutionResult;
-                pyrvtCmdRuntime.Dispose();
-                pyrvtCmdRuntime = null;
-
-                // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-                if (re == 0)
-                    return Result.Succeeded;
-                else
-                    return Result.Cancelled;
-            }
+            // Return results to Revit. Don't report errors since we don't want Revit popup with error results
+            if (re == 0)
+                return Result.Succeeded;
+            else
+                return Result.Cancelled;
             #endregion
         }
     }

@@ -7,6 +7,14 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
 namespace PyRevitBaseClasses {
+    public enum EngineType {
+        IronPython,
+        CPython,
+        CSharp,
+        Dynamo,
+        Grasshopper
+    }
+
     public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private ElementSet _elements = null;
@@ -37,6 +45,7 @@ namespace PyRevitBaseClasses {
         private int _execResults = 0;
         private string _ipyTrace = "";
         private string _clrTrace = "";
+        private string _cpyTrace = "";
         private Dictionary<string, string> _resultsDict = null;
 
 
@@ -91,12 +100,6 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string EngineVersion {
-            get {
-                return PyRevitLoader.ScriptExecutor.EngineVersion;
-            }
-        }
-
         public string ScriptSourceFile {
             get {
                 if (_altScriptMode)
@@ -118,11 +121,17 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public bool IsPython3 {
+        public EngineType EngineType {
             get {
+                string firstLine = "";
                 using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
-                    return reader.ReadLine().Contains("python3");
+                    firstLine = reader.ReadLine();
                 }
+
+                if (firstLine.Contains("python3") || firstLine.Contains("cpython"))
+                    return EngineType.CPython;
+                else
+                    return EngineType.IronPython;
             }
         }
 
@@ -231,12 +240,11 @@ namespace PyRevitBaseClasses {
                     newOutput.OutputId = _cmdUniqueName;
 
                     // set window app version header
-                    var envDict = new EnvDictionary();
                     newOutput.AppVersion = string.Format(
                         "{0}:{1}:{2}",
-                        envDict.pyRevitVersion,
-                        IsPython3 ? envDict.pyRevitCpyVersion : envDict.pyRevitIpyVersion,
-                        envDict.RevitVersion
+                        _envDict.pyRevitVersion,
+                        EngineType == EngineType.CPython ? _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion,
+                        _envDict.RevitVersion
                         );
 
                     _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
@@ -288,6 +296,29 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public string CpythonTraceBack {
+            get {
+                return _cpyTrace;
+            }
+            set {
+                _cpyTrace = value;
+            }
+        }
+
+        public string TraceMessage {
+            get {
+                // return the trace message based on the engine type
+                if (EngineType == EngineType.CPython) {
+                    return CpythonTraceBack;
+                }
+                else if (IronPythonTraceBack != string.Empty && ClrTraceBack != string.Empty) {
+                    return string.Format("{0}\n\n{1}", IronPythonTraceBack, ClrTraceBack);
+                }
+                // or return empty if none
+                return string.Empty;
+            }
+        }
+
         public Dictionary<string, string> GetResultsDictionary() {
             if (_resultsDict == null)
                 _resultsDict = new Dictionary<string, string>();
@@ -320,6 +351,7 @@ namespace PyRevitBaseClasses {
         }
 
         public LogEntry MakeLogEntry() {
+            // setup a new log entry
             return new LogEntry(App.Username,
                                 App.VersionNumber,
                                 App.VersionBuild,
@@ -334,10 +366,17 @@ namespace PyRevitBaseClasses {
                                 ScriptSourceFile,
                                 ExecutionResult,
                                 GetResultsDictionary(),
-                                EngineVersion,
-                                ModuleSearchPaths,
-                                IronPythonTraceBack,
-                                ClrTraceBack);
+                                new TraceInfo {
+                                    engine = new EngineInfo {
+                                        type = EngineType == EngineType.CPython ? "cpython" : "ironpython",
+                                        version = Convert.ToString(
+                                            EngineType == EngineType.CPython ?
+                                                  _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion
+                                                  ),
+                                        syspath = ModuleSearchPaths
+                                    },
+                                    message = TraceMessage
+                                });
         }
 
         public void Dispose() {
