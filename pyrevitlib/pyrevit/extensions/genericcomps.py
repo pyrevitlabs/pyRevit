@@ -3,6 +3,7 @@ import os
 import os.path as op
 import re
 from collections import namedtuple
+import codecs
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
@@ -157,31 +158,31 @@ class GenericUIContainer(GenericUIComponent):
     @staticmethod
     def _remove_layout_directives(layout_items):
         cleaned_items = []
-        for litem in layout_items:
-            cleaned_items.append(re.sub(r'\[.+\]', '', litem))
+        for layout_item in layout_items:
+            cleaned_items.append(re.sub(r'\[.+\]', '', layout_item))
         return cleaned_items
 
     def _read_layout_file(self):
         full_file_path = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
+        layout_filepath = op.join(self.directory, exts.DEFAULT_LAYOUT_FILE_NAME)
         if op.exists(full_file_path):
-            layout_file = open(op.join(self.directory,
-                                       exts.DEFAULT_LAYOUT_FILE_NAME), 'r')
-            self.layout = layout_file.read().splitlines()
-            self.layout_items = \
-                GenericUIContainer._remove_layout_directives(self.layout)
+            with codecs.open(layout_filepath, 'r', 'utf-8') as layout_file:
+                self.layout = layout_file.read().splitlines()
+                self.layout_items = \
+                    GenericUIContainer._remove_layout_directives(self.layout)
         else:
             mlogger.debug('Container does not have layout file defined: %s',
                           self)
 
     def _apply_layout_directive(self, layout_directives, component):
         # grab the first matching directive
-        matching_ldir = \
+        matching_layout_directive = \
             next((x for x in layout_directives if x.item == component.name),
                  None)
         # if matching directive found, process the directive
-        if matching_ldir:
-            if matching_ldir.type == 'title':
-                component.ui_title = matching_ldir.target
+        if matching_layout_directive:
+            if matching_layout_directive.type == 'title':
+                component.ui_title = matching_layout_directive.target
 
     def _get_components_per_layout(self):
         # if item is not listed in layout, it will not be created
