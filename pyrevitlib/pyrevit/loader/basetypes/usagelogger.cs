@@ -33,15 +33,20 @@ namespace PyRevitBaseClasses
         public string revitbuild { get; set; }
         public string sessionid { get; set; }
         public string pyrevit { get; set; }
+        public string clone { get; set; }
         // which mode?
         public bool debug { get; set; }
         public bool alternate { get; set; }
+        public bool from_gui { get; set; }
+        public bool clean_engine { get; set; }
+        public bool fullframe_engine { get; set; }
         // which script?
         public string commandname { get; set; }
         public string commandbundle { get; set; }
         public string commandextension { get; set; }
         public string commanduniquename { get; set; }
         public string scriptpath { get; set; }
+        public string arguments { get; set; }
         // returned what?
         public int resultcode { get; set; }
         public Dictionary<string, string> commandresults { get; set; }
@@ -53,8 +58,12 @@ namespace PyRevitBaseClasses
                         string revitBuild,
                         string revitProcessId,
                         string pyRevitVersion,
+                        string cloneName,
                         bool debugModeEnabled,
                         bool alternateModeEnabled,
+                        bool execFromGUI,
+                        bool cleanEngine,
+                        bool fullframeEngine,
                         string pyRevitCommandName,
                         string pyRevitCommandBundle,
                         string pyRevitCommandExtension,
@@ -75,8 +84,12 @@ namespace PyRevitBaseClasses
             revitbuild = revitBuild;
             sessionid = revitProcessId;
             pyrevit = pyRevitVersion;
+            clone = cloneName;
             debug = debugModeEnabled;
             alternate = alternateModeEnabled;
+            from_gui = execFromGUI;
+            clean_engine = cleanEngine;
+            fullframe_engine = fullframeEngine;
             commandname = pyRevitCommandName;
             commandbundle = pyRevitCommandBundle;
             commandextension = pyRevitCommandExtension;

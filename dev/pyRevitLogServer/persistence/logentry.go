@@ -19,23 +19,27 @@ type TraceInfo struct {
 }
 
 type LogRecord struct {
-	LogMeta           LogMeta           `json:"meta"`      // schema 2.0
-	Date              string            `json:"date"`      // initial schema
-	Time              string            `json:"time"`      // initial schema
-	TimeStamp         string            `json:"timestamp"` // schema 2.0
-	UserName          string            `json:"username"`
-	RevitVersion      string            `json:"revit"`
-	RevitBuild        string            `json:"revitbuild"`
-	SessionId         string            `json:"sessionid"`
-	PyRevitVersion    string            `json:"pyrevit"`
-	IsDebugMode       bool              `json:"debug"`
-	IsAlternateMode   bool              `json:"alternate"`
-	CommandName       string            `json:"commandname"`
-	CommandUniqueName string            `json:"commanduniquename"`
-	BundleName        string            `json:"commandbundle"`
-	ExtensionName     string            `json:"commandextension"`
-	ResultCode        int               `json:"resultcode"`
-	CommandResults    map[string]string `json:"commandresults"`
-	ScriptPath        string            `json:"scriptpath"`
-	TraceInfo         TraceInfo         `json:"trace"`
+	LogMeta              LogMeta           `json:"meta"`      // schema 2.0
+	Date                 string            `json:"date"`      // initial schema
+	Time                 string            `json:"time"`      // initial schema
+	TimeStamp            string            `json:"timestamp"` // schema 2.0
+	UserName             string            `json:"username"`
+	RevitVersion         string            `json:"revit"`
+	RevitBuild           string            `json:"revitbuild"`
+	SessionId            string            `json:"sessionid"`
+	PyRevitVersion       string            `json:"pyrevit"`
+	Clone                string            `json:"clone"` // schema 2.0
+	IsDebugMode          bool              `json:"debug"`
+	IsAlternateMode      bool              `json:"alternate"`
+	IsExecFromGUI        bool              `json:"from_gui"`         // schema 2.0
+	NeedsCleanEngine     bool              `json:"clean_engine"`     // schema 2.0
+	NeedsFullFrameEngine bool              `json:"fullframe_engine"` // schema 2.0
+	CommandName          string            `json:"commandname"`
+	CommandUniqueName    string            `json:"commanduniquename"`
+	BundleName           string            `json:"commandbundle"`
+	ExtensionName        string            `json:"commandextension"`
+	ResultCode           int               `json:"resultcode"`
+	CommandResults       map[string]string `json:"commandresults"`
+	ScriptPath           string            `json:"scriptpath"`
+	TraceInfo            TraceInfo         `json:"trace"`
 }

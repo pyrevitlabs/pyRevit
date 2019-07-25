@@ -11,6 +11,7 @@ namespace PyRevitBaseClasses
         public static string sessionUUID = string.Format("{0}_UUID", keyPrefix);
         public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);
         public static string pyRevitVersion = string.Format("{0}_VERSION", keyPrefix);
+        public static string pyRevitClone = string.Format("{0}_CLONE", keyPrefix);
         public static string pyRevitIpyVersion = string.Format("{0}_IPYVERSION", keyPrefix);
         public static string pyRevitCpyVersion = string.Format("{0}_CPYVERSION", keyPrefix);
 
@@ -34,6 +35,7 @@ namespace PyRevitBaseClasses
         public string sessionUUID;
         public string RevitVersion;
         public string pyRevitVersion;
+        public string pyRevitClone;
         public int pyRevitIpyVersion;
         public int pyRevitCpyVersion;
 
@@ -53,6 +55,9 @@ namespace PyRevitBaseClasses
 
             if (_envData.Contains(EnvDictionaryKeys.pyRevitVersion))
                 pyRevitVersion = (string)_envData[EnvDictionaryKeys.pyRevitVersion];
+
+            if (_envData.Contains(EnvDictionaryKeys.pyRevitClone))
+                pyRevitClone = (string)_envData[EnvDictionaryKeys.pyRevitClone];
 
             if (_envData.Contains(EnvDictionaryKeys.pyRevitIpyVersion))
                 pyRevitIpyVersion = (int)_envData[EnvDictionaryKeys.pyRevitIpyVersion];

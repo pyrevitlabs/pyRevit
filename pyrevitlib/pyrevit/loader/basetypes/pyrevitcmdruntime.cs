@@ -344,6 +344,12 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public string CloneName {
+            get {
+                return _envDict.pyRevitClone;
+            }
+        }
+
         public string SessionUUID {
             get {
                 return _envDict.sessionUUID;
@@ -357,8 +363,12 @@ namespace PyRevitBaseClasses {
                                 App.VersionBuild,
                                 SessionUUID,
                                 PyRevitVersion,
+                                CloneName,
                                 DebugMode,
                                 AlternateMode,
+                                ExecutedFromUI,
+                                NeedsCleanEngine,
+                                NeedsFullFrameEngine,
                                 CommandName,
                                 CommandBundle,
                                 CommandExtension,

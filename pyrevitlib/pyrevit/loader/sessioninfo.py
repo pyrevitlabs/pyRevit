@@ -26,6 +26,7 @@ PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
 
 PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
 PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
+PYREVIT_CLONENAME_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CLONE'
 PYREVIT_IPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_IPYVERSION'
 PYREVIT_CSPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CPYVERSION'
 
@@ -59,8 +60,12 @@ def setup_runtime_vars():
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
     if attachment and attachment.Clone:
+        envvars.set_pyrevit_env_var(PYREVIT_CLONENAME_ENVVAR,
+                                    attachment.Clone.Name)
         envvars.set_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR,
                                     attachment.Engine.Version)
+    else:
+        pass
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()

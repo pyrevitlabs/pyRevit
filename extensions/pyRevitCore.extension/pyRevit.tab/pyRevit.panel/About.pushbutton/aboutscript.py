@@ -4,7 +4,6 @@ import sys
 
 from pyrevit import HOST_APP
 from pyrevit import versionmgr
-from pyrevit.labs import TargetApps
 from pyrevit.versionmgr import urls
 from pyrevit.versionmgr import about
 from pyrevit import forms
@@ -20,8 +19,6 @@ __doc__ = 'About pyrevit. Opens the pyrevit blog website. You can find ' \
 
 
 logger = script.get_logger()
-
-Revit = TargetApps.Revit
 
 
 class AboutWindow(forms.WPFWindow):
@@ -45,7 +42,7 @@ class AboutWindow(forms.WPFWindow):
         except Exception as getbranch_ex:
             logger.debug('Error getting branch: %s', getbranch_ex)
             # other wise try to get deployment name
-            attachment = Revit.PyRevit.GetAttached(int(HOST_APP.version))
+            attachment = user_config.get_current_attachment()
             if attachment:
                 try:
                     self.deployname = attachment.Clone.Deployment.Name
