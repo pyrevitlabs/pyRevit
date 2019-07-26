@@ -172,42 +172,7 @@ namespace PyRevitBaseClasses {
 
         /// Run the script using C# script engine
         private static int ExecuteCSharpScript(ref PyRevitCommandRuntime pyrvtCmd) {
-            // https://stackoverflow.com/a/3188953
-            var scriptContents = File.ReadAllText(pyrvtCmd.ScriptSourceFile);
-
-            string[] refFiles;
-            var envDic = new EnvDictionary();
-            if (envDic.referencedAssemblies.Count() == 0) {
-                var refs = AppDomain.CurrentDomain.GetAssemblies();
-                refFiles = refs.Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
-            }
-            else {
-                refFiles = envDic.referencedAssemblies;
-            }
-
-            var compileParams = new CompilerParameters(refFiles);
-            // TODO: add DEFINE for revit version
-            compileParams.CompilerOptions = string.Format("/optimize -define:REVIT{0}", pyrvtCmd.App.VersionNumber);
-            compileParams.GenerateInMemory = true;
-            compileParams.GenerateExecutable = false;
-
-            var compiler = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } });
-            try {
-                // compile code first
-                var res = compiler.CompileAssemblyFromSource(
-                    options: compileParams,
-                    sources: new string[] { scriptContents }
-                );
-
-                return ExecuteExternalCommand(res.CompiledAssembly, ref pyrvtCmd);
-            }
-            catch (Exception runEx) {
-                TaskDialog.Show("pyRevit", runEx.Message);
-                return ExecutionErrorCodes.ExecutionException;
-            }
-            finally {
-                // whatever
-            }
+            return CompileAndRun(ref pyrvtCmd);
         }
 
         /// Run the script by directly invoking the IExternalCommand type from given dll
@@ -232,9 +197,7 @@ namespace PyRevitBaseClasses {
 
         /// Run the script using visualbasic script engine
         private static int ExecuteVisualBasicScript(ref PyRevitCommandRuntime pyrvtCmd) {
-            // TODO
-            TaskDialog.Show("pyRevit", "Visual-Basic Execution Engine Not Yet Implemented.");
-            return ExecutionErrorCodes.EngineNotImplementedException;
+            return CompileAndRun(ref pyrvtCmd);
         }
 
         /// Run the script using ruby script engine
@@ -357,7 +320,7 @@ namespace PyRevitBaseClasses {
             script.Execute(scope);
         }
 
-        // csharp
+        // csharp, vb.net script
         private static IEnumerable<Type> GetTypesSafely(Assembly assembly) {
             try {
                 return assembly.GetTypes();
@@ -365,6 +328,65 @@ namespace PyRevitBaseClasses {
             catch (ReflectionTypeLoadException ex) {
                 return ex.Types.Where(x => x != null);
             }
+        }
+
+        private static int CompileAndRun(ref PyRevitCommandRuntime pyrvtCmd) {
+            // https://stackoverflow.com/a/3188953
+
+            // read the script
+            var scriptContents = File.ReadAllText(pyrvtCmd.ScriptSourceFile);
+
+            // read the referenced dlls from env vars
+            // pyrevit sets this when loading
+            string[] refFiles;
+            var envDic = new EnvDictionary();
+            if (envDic.referencedAssemblies.Count() == 0) {
+                var refs = AppDomain.CurrentDomain.GetAssemblies();
+                refFiles = refs.Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
+            }
+            else {
+                refFiles = envDic.referencedAssemblies;
+            }
+
+            // create compiler parameters
+            var compileParams = new CompilerParameters(refFiles);
+            // TODO: add DEFINE for revit version
+            compileParams.CompilerOptions = string.Format("/optimize -define:REVIT{0}", pyrvtCmd.App.VersionNumber);
+            compileParams.GenerateInMemory = true;
+            compileParams.GenerateExecutable = false;
+
+            // determine which code provider to use
+            CodeDomProvider compiler;
+            var compConfig = new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } };
+            switch (pyrvtCmd.EngineType) {
+                case EngineType.CSharp:
+                    compiler = new CSharpCodeProvider(compConfig);
+                    break;
+                case EngineType.VisualBasic:
+                    compiler = new VBCodeProvider(compConfig);
+                    break;
+                default:
+                    throw new Exception("Specified language does not have a compiler.");
+            }
+
+            try {
+                // compile code first
+                var res = compiler.CompileAssemblyFromSource(
+                    options: compileParams,
+                    sources: new string[] { scriptContents }
+                );
+
+                // now run
+                return ExecuteExternalCommand(res.CompiledAssembly, ref pyrvtCmd);
+            }
+            catch (Exception runEx) {
+                TaskDialog.Show("pyRevit", runEx.Message);
+                return ExecutionErrorCodes.ExecutionException;
+            }
+            finally {
+                // whatever
+            }
+
         }
 
         private static int ExecuteExternalCommand(Assembly assmObj, ref PyRevitCommandRuntime pyrvtCmd) {
@@ -394,6 +416,7 @@ namespace PyRevitBaseClasses {
             }
             return ExecutionErrorCodes.ExternalCommandNotImplementedException;
         }
+
         // dynamo
         // NOTE: Dyanmo uses XML in older file versions and JSON in newer versions. This needs to support both if ever implemented
         private static bool DetermineShowDynamoGUI() {
