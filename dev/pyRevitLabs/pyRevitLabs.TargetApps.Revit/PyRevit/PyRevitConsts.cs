@@ -101,8 +101,6 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsFileLoggingKey = "filelogging";
         public const string ConfigsStartupLogTimeoutKey = "startuplogtimeout";
         public const string ConfigsUserExtensionsKey = "userextensions";
-        public const string ConfigsCompileCSharpKey = "compilecsharp";
-        public const string ConfigsCompileVBKey = "compilevb";
         public const string ConfigsCPythonEngine = "cpyengine";
         public const string ConfigsLoadBetaKey = "loadbeta";
         public const string ConfigsRocketModeKey = "rocketmode";

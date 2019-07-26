@@ -104,8 +104,6 @@ class SettingsWindow(forms.WPFWindow):
         self.filelogging_cb.IsChecked = user_config.core.filelogging
 
         self.startup_log_timeout.Text = str(user_config.core.startuplogtimeout)
-        self.compilecsharp_cb.IsChecked = user_config.core.compilecsharp
-        self.compilevb_cb.IsChecked = user_config.core.compilevb
 
         if user_config.core.bincache:
             self.bincache_rb.IsChecked = True
@@ -391,8 +389,6 @@ class SettingsWindow(forms.WPFWindow):
         user_config.core.debug = self.debug_rb.IsChecked
         user_config.core.filelogging = self.filelogging_cb.IsChecked
         user_config.core.bincache = self.bincache_rb.IsChecked
-        user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
-        user_config.core.compilevb = self.compilevb_cb.IsChecked
         user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
 
         # set active cpython engine

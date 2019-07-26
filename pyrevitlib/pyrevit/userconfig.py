@@ -307,12 +307,6 @@ def verify_configs(config_file_path=None):
     # userextensions
     if not parser.core.has_option(consts.ConfigsUserExtensionsKey):
         parser.core.set_option(consts.ConfigsUserExtensionsKey, [])
-    # compilecsharp
-    if not parser.core.has_option(consts.ConfigsCompileCSharpKey):
-        parser.core.set_option(consts.ConfigsCompileCSharpKey, True)
-    # compilevb
-    if not parser.core.has_option(consts.ConfigsCompileVBKey):
-        parser.core.set_option(consts.ConfigsCompileVBKey, True)
 
     # cpyengine: does not need to set a default for this
 
