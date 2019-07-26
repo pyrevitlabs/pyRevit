@@ -1,21 +1,48 @@
 """Prepare and compile script types."""
-from pyrevit.coreutils import create_type
+from pyrevit.coreutils import create_type, create_ext_command_attrs, \
+                              join_strings
 from pyrevit.coreutils.logger import get_logger
 
 import pyrevit.extensions as exts
 
+from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_NAME
 from pyrevit.loader.basetypes.pythontypemaker import create_python_types
-from pyrevit.loader.basetypes.csharptypemaker import create_csharp_types
 from pyrevit.loader.basetypes.invoketypemaker import create_invoke_types
-from pyrevit.loader.basetypes.vbtypemaker import create_vb_types
-from pyrevit.loader.basetypes.rubytypemaker import create_ruby_types
-from pyrevit.loader.basetypes.dynamobimtypemaker import create_dyno_types
-from pyrevit.loader.basetypes.grasshoppertypemaker import create_gh_types
 
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
+
+
+# generic type maker functions ------------------------------------------------
+def _make_types(extension, module_builder, cmd_component): #pylint: disable=W0613
+    mlogger.debug('Creating executor type for: %s', cmd_component)
+
+    create_type(module_builder,
+                CMD_EXECUTOR_TYPE,
+                cmd_component.unique_name,
+                create_ext_command_attrs(),
+                cmd_component.get_full_script_address(),
+                cmd_component.get_full_config_script_address(),
+                join_strings(cmd_component.get_search_paths()),
+                cmd_component.get_help_url() or '',
+                cmd_component.name,
+                cmd_component.bundle_name,
+                extension.name,
+                cmd_component.unique_name,
+                0,
+                0)
+
+    mlogger.debug('Successfully created executor type for: %s', cmd_component)
+    cmd_component.class_name = cmd_component.unique_name
+
+
+def create_types(extension, cmd_component, module_builder=None):
+    if module_builder:
+        _make_types(extension, module_builder, cmd_component)
+    else:
+        cmd_component.class_name = cmd_component.unique_name
 
 
 # public base class maker function ---------------------------------------------
@@ -45,7 +72,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
         elif cmd_component.script_language == exts.CSHARP_LANG:
             mlogger.debug('Command is C#: %s', cmd_component)
             try:
-                create_csharp_types(extension, cmd_component, module_builder)
+                create_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling C# types for: %s | %s',
                               cmd_component, cmd_compile_err)
@@ -54,7 +81,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
         elif cmd_component.script_language == exts.VB_LANG:
             mlogger.debug('Command is Visua Basic: %s', cmd_component)
             try:
-                create_vb_types(extension, cmd_component, module_builder)
+                create_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling Visua Basic types for: %s | %s',
                               cmd_component, cmd_compile_err)
@@ -63,7 +90,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
         elif cmd_component.script_language == exts.RUBY_LANG:
             mlogger.debug('Command is Ruby: %s', cmd_component)
             try:
-                create_ruby_types(extension, cmd_component, module_builder)
+                create_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling Ruby types for: %s | %s',
                               cmd_component, cmd_compile_err)
@@ -72,7 +99,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
         elif cmd_component.script_language == exts.DYNAMO_LANG:
             mlogger.debug('Command is DynamoBIM: %s', cmd_component)
             try:
-                create_dyno_types(extension, cmd_component, module_builder)
+                create_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling DynamoBIM types for: %s | %s',
                               cmd_component, cmd_compile_err)
@@ -81,7 +108,7 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
         elif cmd_component.script_language == exts.GRASSHOPPER_LANG:
             mlogger.debug('Command is Grasshopper script: %s', cmd_component)
             try:
-                create_gh_types(extension, cmd_component, module_builder)
+                create_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling Grasshopper types for: %s | %s',
                               cmd_component, cmd_compile_err)
