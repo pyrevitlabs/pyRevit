@@ -357,12 +357,22 @@ namespace PyRevitBaseClasses {
                 return false;
 
             try {
+#if (REVIT2013 || REVIT2014)
+                // check active views
+                if (_activeViewTypes.Count > 0) {
+                    if (uiApp != null && uiApp.ActiveUIDocument != null
+                        && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
+                        return false;
+                }
+#else
                 // check active views
                 if (_activeViewTypes.Count > 0) {
                     if (uiApp != null && uiApp.ActiveUIDocument != null
                         && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
                         return false;
                 }
+#endif
+
 
                 // the rest are category comparisons so if no categories are selected return false
                 if (selectedCategories.IsEmpty)

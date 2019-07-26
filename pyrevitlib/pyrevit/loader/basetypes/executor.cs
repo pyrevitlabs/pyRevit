@@ -186,6 +186,8 @@ namespace PyRevitBaseClasses {
             }
 
             var compileParams = new CompilerParameters(refFiles);
+            // TODO: add DEFINE for revit version
+            compileParams.CompilerOptions = string.Format("/optimize -define:REVIT{0}", pyrvtCmd.App.VersionNumber);
             compileParams.GenerateInMemory = true;
             compileParams.GenerateExecutable = false;
 

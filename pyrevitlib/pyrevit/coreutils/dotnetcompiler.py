@@ -1,5 +1,5 @@
 """Base module for compiling dotnet sources to bytecode."""
-from pyrevit import PyRevitException
+from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Array, Dictionary
 from pyrevit.framework import Compiler, CSharpCodeProvider
@@ -13,8 +13,7 @@ def _compile_dotnet(code_provider,
                     sourcefiles_list,
                     full_output_file_addr=None,
                     reference_list=None,
-                    resource_list=None,
-                   ):
+                    resource_list=None):
     mlogger.debug('Compiling source files to: %s', full_output_file_addr)
     mlogger.debug('References assemblies are: %s', reference_list)
 
@@ -28,7 +27,8 @@ def _compile_dotnet(code_provider,
 
     compiler_params.TreatWarningsAsErrors = False
     compiler_params.GenerateExecutable = False
-    compiler_params.CompilerOptions = "/optimize"
+    compiler_params.CompilerOptions = \
+        "/optimize -define:REVIT{}".format(HOST_APP.version)
 
     for reference in reference_list or []:
         mlogger.debug('Adding reference to compiler: %s', reference)
