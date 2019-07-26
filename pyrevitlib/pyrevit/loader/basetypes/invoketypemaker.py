@@ -14,16 +14,16 @@ def _make_invoke_types(extension, module_builder, cmd_component): #pylint: disab
 
     create_type(module_builder,
                 CMD_EXECUTOR_TYPE,
-                cmd_component.unique_name,
+                cmd_component.unique_name or '',
                 create_ext_command_attrs(),
-                cmd_component.get_full_script_address(),
-                cmd_component.assembly,
+                cmd_component.get_full_script_address() or '',
+                cmd_component.assembly or '',
                 '',
                 '',
-                cmd_component.name,
-                cmd_component.bundle_name,
-                extension.name,
-                cmd_component.unique_name,
+                cmd_component.name or '',
+                cmd_component.bundle_name or '',
+                extension.name or '',
+                cmd_component.unique_name or '',
                 0,
                 0)
 

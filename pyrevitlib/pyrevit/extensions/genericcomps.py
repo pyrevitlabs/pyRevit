@@ -7,6 +7,7 @@ import codecs
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit import coreutils
+from pyrevit.coreutils import yaml
 import pyrevit.extensions as exts
 
 
@@ -297,6 +298,8 @@ class GenericUICommand(GenericUIComponent):
     def __init__(self):
         GenericUIComponent.__init__(self)
         self.ui_title = None
+        self.meta_file = None
+        self.meta = {}
         self.script_file = self.config_script_file = None
         self.ttimage_file = self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
@@ -308,7 +311,7 @@ class GenericUICommand(GenericUIComponent):
         self.requires_clean_engine = False
         self.requires_fullframe_engine = False
 
-    def __init_from_dir__(self, cmd_dir):   #pylint: disable=W0221
+    def __init_from_dir__(self, cmd_dir, needs_script=True):   #pylint: disable=W0221
         GenericUIComponent.__init_from_dir__(self, cmd_dir)
 
         self.name = op.splitext(op.basename(self.directory))[0]
@@ -332,47 +335,59 @@ class GenericUICommand(GenericUIComponent):
         mlogger.debug('Command %s: Tooltip video file is: %s',
                       self, self.ttvideo_file)
 
+        # find meta file
+        self.meta_file = self._find_bundle_file([exts.BUNDLEMATA_POSTFIX])
+        if self.meta_file:
+            # sets up self.meta
+            self._read_bundle_metadata()
+
+        # find script file
         self.script_file = \
-            self._find_script_file([
+            self._find_bundle_file([
                 exts.PYTHON_SCRIPT_POSTFIX,
                 exts.CSHARP_SCRIPT_POSTFIX,
                 exts.VB_SCRIPT_POSTFIX,
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
-                exts.GRASSHOPPER_SCRIPT_POSTFIX,
-                exts.LINK_POSTFIX])
+                exts.GRASSHOPPER_SCRIPT_POSTFIX])
 
-        if self.script_file is None:
-            mlogger.error('Command %s: Does not have script file.', self)
-            raise PyRevitException()
+        if needs_script:
+            if not self.script_file:
+                mlogger.error('Command %s: Does not have script file.', self)
+                raise PyRevitException()
 
-        if self.script_language == exts.PYTHON_LANG:
-            self._analyse_python_script()
+            # if python
+            if self.script_language == exts.PYTHON_LANG:
+                if not self.meta:
+                    # sets up self.meta from script global variables
+                    self._read_script_metadata()
 
-        self.config_script_file = \
-            self._find_script_file([exts.CONFIG_SCRIPT_POSTFIX])
+                # each command can store custom libraries under
+                # /Lib inside the command folder
+                lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
+                self.library_path = lib_path if op.exists(lib_path) else None
 
-        if self.config_script_file is None:
-            mlogger.debug(
-                'Command %s: Does not have independent config script.', self
-                )
-            self.config_script_file = self.script_file
+                # setting up search paths. These paths will be added
+                # to sys.path by the command loader for easy imports.
+                self.syspath_search_paths.append(self.directory)
+                if self.library_path:
+                    self.syspath_search_paths.append(self.library_path)
 
-        # each command can store custom libraries under
-        # /Lib inside the command folder
-        lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
-        self.library_path = lib_path if op.exists(lib_path) else None
+            # find config scripts
+            self.config_script_file = \
+                self._find_bundle_file([exts.CONFIG_SCRIPT_POSTFIX])
 
-        # setting up search paths. These paths will be added to sys.path by
-        # the command loader for easy imports.
-        self.syspath_search_paths.append(self.directory)
-        if self.library_path:
-            self.syspath_search_paths.append(self.library_path)
+            if not self.config_script_file:
+                mlogger.debug(
+                    'Command %s: Does not have independent config script.',
+                    self)
+                self.config_script_file = self.script_file
 
-    def _find_script_file(self, script_postfixes):
+
+    def _find_bundle_file(self, file_postfixes):
         for bundle_file in os.listdir(self.directory):
-            for script_postfix in script_postfixes:
-                if bundle_file.endswith(script_postfix):
+            for file_postfix in file_postfixes:
+                if bundle_file.endswith(file_postfix):
                     return op.join(self.directory, bundle_file)
         return None
 
@@ -390,7 +405,15 @@ class GenericUICommand(GenericUIComponent):
                           linetext=parse_err.text)
         mlogger.error(coreutils.prepare_html_str(err_msg))
 
-    def _analyse_python_script(self):
+    def _read_bundle_metadata(self):
+        try:
+            self.meta = yaml.load_as_dict(self.meta_file)
+        except Exception as err:
+            mlogger.error(
+                "Error reading meta file @ %s | %s", self.meta_file, err
+                )
+
+    def _read_script_metadata(self):
         try:
             # reading script file content to extract parameters
             script_content = \
@@ -493,8 +516,6 @@ class GenericUICommand(GenericUIComponent):
                 return exts.DYNAMO_LANG
             elif self.script_file.endswith(exts.GRASSHOPPER_SCRIPT_FILE_FORMAT):
                 return exts.GRASSHOPPER_LANG
-            elif self.script_file.endswith(exts.YAML_FILE_FORMAT):
-                return exts.YAML_LANG
         else:
             return None
 
@@ -509,7 +530,8 @@ class GenericUICommand(GenericUIComponent):
         return self.cmd_help_url
 
     def get_bundle_file(self, file_name):
-        return op.join(self.directory, file_name)
+        if file_name:
+            return op.join(self.directory, file_name)
 
     def get_full_script_address(self):
         return self.get_bundle_file(self.script_file)

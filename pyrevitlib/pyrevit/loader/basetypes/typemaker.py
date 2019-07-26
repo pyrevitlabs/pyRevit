@@ -21,16 +21,16 @@ def _make_types(extension, module_builder, cmd_component): #pylint: disable=W061
 
     create_type(module_builder,
                 CMD_EXECUTOR_TYPE,
-                cmd_component.unique_name,
+                cmd_component.unique_name or '',
                 create_ext_command_attrs(),
-                cmd_component.get_full_script_address(),
-                cmd_component.get_full_config_script_address(),
-                join_strings(cmd_component.get_search_paths()),
+                cmd_component.get_full_script_address() or '',
+                cmd_component.get_full_config_script_address() or '',
+                join_strings(cmd_component.get_search_paths() or []),
                 cmd_component.get_help_url() or '',
-                cmd_component.name,
-                cmd_component.bundle_name,
-                extension.name,
-                cmd_component.unique_name,
+                cmd_component.name or '',
+                cmd_component.bundle_name or '',
+                extension.name or '',
+                cmd_component.unique_name or '',
                 0,
                 0)
 
@@ -114,15 +114,13 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
                               cmd_component, cmd_compile_err)
 
         # invoke button
-        elif cmd_component.script_language == exts.YAML_LANG \
-                and cmd_component.type_id == exts.INVOKE_BUTTON_POSTFIX:
+        elif cmd_component.type_id == exts.INVOKE_BUTTON_POSTFIX:
             mlogger.debug('Command is Invoke button: %s', cmd_component)
             try:
                 create_invoke_types(extension, cmd_component, module_builder)
             except Exception as cmd_compile_err:
                 mlogger.error('Error compiling Invoke types for: %s | %s',
                               cmd_component, cmd_compile_err)
-
 
     except Exception as createtype_err:
         mlogger.error('Error creating appropriate executor for: %s | %s',

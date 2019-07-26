@@ -65,22 +65,24 @@ class InvokeButton(GenericUICommand):
         self.assembly = self.command_class = None
 
     def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir)
+        GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
         self.assembly = self.command_class = None
-        try:
-            link_info = yaml.load_as_dict(self.get_full_script_address())
+        if self.meta:
             self.assembly = \
-                link_info[exts.LINK_BUTTON_ASSEMBLY_PARAM]
-            self.command_class = \
-                link_info[exts.LINK_BUTTON_COMMAND_CLASS_PARAM]
-            self._verify_link()
-        except PyRevitException as err:
-            mlogger.error(err)
+                self.meta.get(exts.LINK_BUTTON_ASSEMBLY_PARAM, None)
+            if not self.assembly:
+                mlogger.error("Invoke button does not specify target assembly.")
 
-        mlogger.debug('Link button assembly.class: %s.%s',
+            self.command_class = \
+                self.meta.get(exts.LINK_BUTTON_COMMAND_CLASS_PARAM, None)
+        else:
+            mlogger.error("Invoke button does not have any bundle metadata.")
+
+        self._verify_target()
+        mlogger.debug('Invoke button assembly.class: %s.%s',
                       self.assembly, self.command_class)
 
-    def _verify_link(self):
+    def _verify_target(self):
         # verify dll exists
         if self.assembly and not op.exists(self.assembly):
             self.assembly = self.get_bundle_file(self.assembly)
