@@ -225,7 +225,7 @@ namespace PyRevitBaseClasses {
             pyrvtCmdRuntime.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtCmdRuntime);
 
             // Log results
-            ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
+            ScriptTelemetry.LogTelemetryRecord(pyrvtCmdRuntime.MakeTelemetryRecord());
 
             // GC cleanups
             var re = pyrvtCmdRuntime.ExecutionResult;

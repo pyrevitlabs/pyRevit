@@ -28,7 +28,7 @@ from pyrevit.loader import uimaker
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import extensionmgr
-from pyrevit import usagelog
+from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the basetypes first to get all the c-sharp code to compile
@@ -122,9 +122,9 @@ def _perform_onsessionload_ops():
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
-    # asking usagelog module to setup the usage logging system
+    # asking telemetry module to setup the telemetry system
     # (active or not active)
-    usagelog.setup_usage_logfile(uuid_str)
+    telemetry.setup_telemetry_file(uuid_str)
 
     # apply Upgrades
     upgrade.upgrade_existing_pyrevit()

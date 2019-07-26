@@ -1,4 +1,4 @@
-"""Provides base class for usage records."""
+"""Provides base class for telemetry records."""
 
 import datetime
 
@@ -35,7 +35,7 @@ class CommandCustomResults(object):
 
     """
 
-    # list of standard/default usage log record params provided
+    # list of standard/default telemetry record params provided
     # by the c-sharp logger scripts should not use these names
     RESERVED_NAMES = ['time', 'username', 'revit', 'revitbuild', 'sessionid',
                       'pyrevit', 'debug', 'config', 'commandname',
@@ -56,15 +56,15 @@ class CommandCustomResults(object):
             EXEC_PARAMS.result_dict.Add(key, safe_strtype(value))
 
 
-class UsageRecord:
+class TelemetryRecord:
     r"""
-    Usage record object. This is created by ``pyrevit.usagelog.db``
+    Telemetry record object. This is created by ``pyrevit.telemetry.db``
     module when reading records.
 
     Attributes:
-        date (str): Date of usage log entry
+        date (str): Date of telemetry entry
                     e.g. '2017/03/28'
-        time (str): Time of usage log entry
+        time (str): Time of telemetry entry
                     e.g. '18:35:22:1235'
         username (str): Usename if user that used this command
                         e.g. 'eirannejad'
@@ -79,9 +79,9 @@ class UsageRecord:
         debug (bool): Was command run in debug mode?
         config (bool): Was command run while holding down the SHIFT key?
         commandname (str): Name of the executed command
-                           e.g. 'Usage Records'
+                           e.g. 'Telemetry Data'
         commandbundle (str): Bundle name of the executed command
-                             e.g. 'Usage Records.pushbutton'
+                             e.g. 'Telemetry Data.pushbutton'
         commandextension (str): pyRevit extension name of the executed command
                                 e.g. 'pyRevitDevTools'
         resultcode (int): Result code return from the executed command e.g. 3
@@ -104,7 +104,7 @@ class UsageRecord:
         self._logfilename = ''
 
     def __repr__(self):
-        return '<UsageRecord {}>'.format(self.commandname)
+        return '<TelemetryRecord {}>'.format(self.commandname)
 
     def __eq__(self, other):
         # FIXME: this won't work since the dictionaries are not ordered
@@ -130,11 +130,11 @@ class UsageRecord:
     @property
     def logfilename(self):
         """Returns the log file name that this record has been saved to.
-        The file path will be setup by the ``pyrevit.usagelog.db`` module
+        The file path will be setup by the ``pyrevit.telemetry.db`` module
         when parsing the log records.
 
         Returns:
-            str: Full file path of the usage log file containing this record
+            str: Full file path of the telemetry file containing this record
         """
 
         return self._logfilename
@@ -142,7 +142,7 @@ class UsageRecord:
     @logfilename.setter
     def logfilename(self, logfile_path):
         """Sets the log file name that this record has been saved to.
-        The file path will be set by the ``pyrevit.usagelog.db`` module
+        The file path will be set by the ``pyrevit.telemetry.db`` module
         when parsing the log records.
         """
 
@@ -189,7 +189,7 @@ class UsageRecord:
     def update(self, src_dict):
         """Updates all parameters in this record object based on the
         given src_dict. This is the promary method for the
-        ``pyrevit.usagelog.db`` module to create the records from
+        ``pyrevit.telemetry.db`` module to create the records from
         a dictionary return by the record file reader.
 
         Args:

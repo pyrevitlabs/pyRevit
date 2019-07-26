@@ -1,33 +1,33 @@
-"""pyRevit usage records viewer for debugging."""
+"""pyRevit telemetry data viewer for debugging."""
 
 
-from pyrevit import usagelog
-from pyrevit.usagelog import db
+from pyrevit import telemetry
+from pyrevit.telemetry import db
 from pyrevit import forms
 from pyrevit import coreutils
 
 
 __context__ = 'zerodoc'
-__title__ = 'Usage\nRecords'
+__title__ = 'Telemetry\nData'
 
 
-class UsageRecordsWindow(forms.WPFWindow):
+class TelemetryDataWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
         self.hide_element(self.clrsearch_b)
         self.hide_element(self.commandresults_dg)
-        self.usagelogdir_tb.IsReadOnly = True
+        self.telemetrydir_tb.IsReadOnly = True
 
         self._update_cur_logpath()
 
     @property
     def cur_logfile_path(self):
-        return self.usagelogdir_tb.Text
+        return self.telemetrydir_tb.Text
 
     @cur_logfile_path.setter
     def cur_logfile_path(self, value):
-        self.usagelogdir_tb.Text = value
+        self.telemetrydir_tb.Text = value
         self._update_records()
         self._update_filters()
 
@@ -62,7 +62,7 @@ class UsageRecordsWindow(forms.WPFWindow):
 
     def _update_cur_logpath(self, logfile_path=None):
         self.cur_logfile_path = \
-            usagelog.get_current_usage_logpath() if not logfile_path \
+            telemetry.get_current_telemetry_path() if not logfile_path \
             else logfile_path
 
     def _update_records(self):
@@ -147,7 +147,7 @@ class UsageRecordsWindow(forms.WPFWindow):
     def load_log_file(self, sender, args):
         selected_path = coreutils.pick_folder()
         if selected_path:
-            self.cur_logfile_path = selected_path
+            self.cur_telemetry_filepath = selected_path
 
 
-UsageRecordsWindow('UsageRecordsWindow.xaml').ShowDialog()
+TelemetryDataWindow('TelemetryDataWindow.xaml').ShowDialog()

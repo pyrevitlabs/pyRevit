@@ -44,8 +44,8 @@ if not EXEC_PARAMS.doc_mode:
     # scriptoutputstream.cs
     ScriptOutputStream = base_module.ScriptOutputStream
 
-    # usagelogger.cs
-    ScriptUsageLogger = base_module.ScriptUsageLogger
+    # telemetry.cs
+    ScriptTelemetry = base_module.ScriptTelemetry
 
     # unmanaged.cs
     RECT = base_module.RECT
@@ -57,5 +57,5 @@ else:
         PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
         PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
         ScriptExecutor = ScriptOutput = ScriptOutputManager = \
-        ScriptOutputStream = ScriptUsageLogger = \
+        ScriptOutputStream = ScriptTelemetry = \
         RECT = User32 = GDI32 = None

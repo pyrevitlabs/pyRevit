@@ -385,37 +385,38 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public LogEntry MakeLogEntry() {
-            // setup a new log entry
-            return new LogEntry(App.Username,
-                                App.VersionNumber,
-                                App.VersionBuild,
-                                SessionUUID,
-                                PyRevitVersion,
-                                CloneName,
-                                DebugMode,
-                                ConfigMode,
-                                ExecutedFromUI,
-                                NeedsCleanEngine,
-                                NeedsFullFrameEngine,
-                                CommandName,
-                                CommandBundle,
-                                CommandExtension,
-                                CommandUniqueId,
-                                ScriptSourceFile,
-                                ExecutionResult,
-                                GetResultsDictionary(),
-                                new TraceInfo {
-                                    engine = new EngineInfo {
-                                        type = EngineType.ToString().ToLower(),
-                                        version = Convert.ToString(
-                                            EngineType == EngineType.CPython ?
-                                                  _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion
-                                                  ),
-                                        syspath = ModuleSearchPaths
-                                    },
-                                    message = TraceMessage
-                                });
+        public TelemetryRecord MakeTelemetryRecord() {
+            // setup a new telemetry record
+            return new TelemetryRecord(
+                App.Username,
+                App.VersionNumber,
+                App.VersionBuild,
+                SessionUUID,
+                PyRevitVersion,
+                CloneName,
+                DebugMode,
+                ConfigMode,
+                ExecutedFromUI,
+                NeedsCleanEngine,
+                NeedsFullFrameEngine,
+                CommandName,
+                CommandBundle,
+                CommandExtension,
+                CommandUniqueId,
+                ScriptSourceFile,
+                ExecutionResult,
+                GetResultsDictionary(),
+                new TraceInfo {
+                    engine = new EngineInfo {
+                        type = EngineType.ToString().ToLower(),
+                        version = Convert.ToString(
+                            EngineType == EngineType.CPython ?
+                                    _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion
+                                    ),
+                        syspath = ModuleSearchPaths
+                    },
+                    message = TraceMessage
+                });
         }
 
         public void Dispose() {

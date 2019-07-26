@@ -20,7 +20,7 @@ namespace PyRevitBaseClasses
         public string message { get; set; }
     }
 
-    public class LogEntry {
+    public class TelemetryRecord {
         // schema
         public Dictionary<string, string> meta { get; private set; }
 
@@ -53,25 +53,26 @@ namespace PyRevitBaseClasses
         // any errors?
         public TraceInfo trace { get; set; }
 
-        public LogEntry(string revitUsername,
-                        string revitVersion,
-                        string revitBuild,
-                        string revitProcessId,
-                        string pyRevitVersion,
-                        string cloneName,
-                        bool debugModeEnabled,
-                        bool configModeEnabled,
-                        bool execFromGUI,
-                        bool cleanEngine,
-                        bool fullframeEngine,
-                        string pyRevitCommandName,
-                        string pyRevitCommandBundle,
-                        string pyRevitCommandExtension,
-                        string pyRevitCommandUniqueName,
-                        string pyRevitCommandPath,
-                        int executorResultCode,
-                        Dictionary<string, string> resultDict,
-                        TraceInfo traceInfo)
+        public TelemetryRecord(
+                string revitUsername,
+                string revitVersion,
+                string revitBuild,
+                string revitProcessId,
+                string pyRevitVersion,
+                string cloneName,
+                bool debugModeEnabled,
+                bool configModeEnabled,
+                bool execFromGUI,
+                bool cleanEngine,
+                bool fullframeEngine,
+                string pyRevitCommandName,
+                string pyRevitCommandBundle,
+                string pyRevitCommandExtension,
+                string pyRevitCommandUniqueName,
+                string pyRevitCommandPath,
+                int executorResultCode,
+                Dictionary<string, string> resultDict,
+                TraceInfo traceInfo)
         {
             meta = new Dictionary<string, string> {
                 { "schema", "2.0"},
@@ -102,22 +103,22 @@ namespace PyRevitBaseClasses
     }
 
 
-    public static class ScriptUsageLogger
+    public static class ScriptTelemetry
     {
-        public static string MakeJSONLogEntry(LogEntry logEntry)
+        public static string MakeTelemetryRecord(TelemetryRecord record)
         {
-            return new JavaScriptSerializer().Serialize(logEntry);
+            return new JavaScriptSerializer().Serialize(record);
         }
 
-        public static void PostUsageLogToServer(string _usageLogServerUrl, LogEntry logEntry)
+        public static void PostTelemetryRecordToServer(string _telemetryServerUrl, TelemetryRecord record)
         {
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(_usageLogServerUrl);
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(_telemetryServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
             httpWebRequest.UserAgent = "pyrevit";
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
-                string json = MakeJSONLogEntry(logEntry);
+                string json = MakeTelemetryRecord(record);
 
                 streamWriter.Write(json);
                 streamWriter.Flush();
@@ -130,41 +131,41 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public static void WriteUsageLogToFile(string _usageLogFilePath, LogEntry logEntry)
+        public static void WriteTelemetryRecordToFile(string _telemetryFilePath, TelemetryRecord record)
         {
             // Read existing json data
             string jsonData = "[]";
-            if (File.Exists(_usageLogFilePath))
+            if (File.Exists(_telemetryFilePath))
             {
-                jsonData = File.ReadAllText(_usageLogFilePath);
+                jsonData = File.ReadAllText(_telemetryFilePath);
             }
             else
             {
-                File.WriteAllText(_usageLogFilePath, jsonData);
+                File.WriteAllText(_telemetryFilePath, jsonData);
             }
 
             // De-serialize to object or create new list
-            var logData = new JavaScriptSerializer().Deserialize<List<LogEntry>>(jsonData);
+            var logData = new JavaScriptSerializer().Deserialize<List<TelemetryRecord>>(jsonData);
 
             // Add any new employees
-            logData.Add(logEntry);
+            logData.Add(record);
 
             // Update json data string
             jsonData = new JavaScriptSerializer().Serialize(logData);
-            File.WriteAllText(_usageLogFilePath, jsonData);
+            File.WriteAllText(_telemetryFilePath, jsonData);
         }
 
-        public static void LogUsage(LogEntry logEntry)
+        public static void LogTelemetryRecord(TelemetryRecord record)
         {
             var envDict = new EnvDictionary();
 
-            if (envDict.usageLogState)
+            if (envDict.telemetryState)
             {
-                if (envDict.usageLogState && envDict.usageLogServerUrl != null && !string.IsNullOrEmpty(envDict.usageLogServerUrl))
-                    new Task(() => PostUsageLogToServer(envDict.usageLogServerUrl, logEntry)).Start();
+                if (envDict.telemetryState && envDict.telemetryServerUrl != null && !string.IsNullOrEmpty(envDict.telemetryServerUrl))
+                    new Task(() => PostTelemetryRecordToServer(envDict.telemetryServerUrl, record)).Start();
 
-                if (envDict.usageLogState && envDict.usageLogFilePath != null && !string.IsNullOrEmpty(envDict.usageLogFilePath))
-                    new Task(() => WriteUsageLogToFile(envDict.usageLogFilePath, logEntry)).Start();
+                if (envDict.telemetryState && envDict.telemetryFilePath != null && !string.IsNullOrEmpty(envDict.telemetryFilePath))
+                    new Task(() => WriteTelemetryRecordToFile(envDict.telemetryFilePath, record)).Start();
             }
         }
     }

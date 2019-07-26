@@ -344,13 +344,13 @@
 
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
-                <Expander Header="Usage Logging" IsExpanded="False" Margin="10px">
+                <Expander Header="Telemetry" IsExpanded="False" Margin="10px">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow">
-                            Usage logging system, records each use of tools under any of the pyRevit extensions.
-                            You can activate usage logging to a local or network folder, or logging to an outside
-                            webserver, or both. If activated, the system will log usage to any of the outputs provided
-                            here. Leave any of the fields blank to disable logging to that destination.
+                            Telemetry system, records each use of tools under any of the pyRevit extensions.
+                            You can activate telemetry for a local or network folder, or for an outside
+                            webserver, or both. If activated, the system will send telemetry records to any of the outputs provided
+                            here. Leave any of the fields blank to disable sending telemetry records to that destination.
                         </TextBlock>
                         <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0">
                             pyRevit creates a new log file for every sesssion to avoid creating large log files that
@@ -358,40 +358,40 @@
                         </TextBlock>
                         <StackPanel >
                             <WrapPanel Margin="0,15,0,0">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="usagelogging_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0">Log Tool Usage</TextBlock>
+                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="telemetry_cb" IsChecked="False"/>
+                                <TextBlock Margin="30,4,0,0">Log Telemetry Data</TextBlock>
                             </WrapPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current usage log file:</TextBlock>
+                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current telemetry file:</TextBlock>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                     <Button Content="Open Folder" Width="90" Margin="6,0,0,0" Height="24"
-                                            Click="open_usagelog_folder" ToolTip="Open the current usage log folder"/>
+                                            Click="open_telemetry_folder" ToolTip="Open the current telemetry folder"/>
                                 </WrapPanel>
-                                <TextBox x:Name="cur_usagelogfile_tb" FontFamily="Consolas"
+                                <TextBox x:Name="cur_telemetryfile_tb" FontFamily="Consolas"
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center">Log usage to folder (e.g. C:\pyRevitUsageLogs):</TextBlock>
+                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="top" VerticalAlignment="Center">Log telemetry data to folder (e.g. C:\pyRevitTelemetry):</TextBlock>
                                 <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
                                     <Button Content="&#x25CF;&#x25CF;&#x25CF;"
                                             Width="48" Height="24" Margin="6,0,3,0" Padding="0,0,0,2"
-                                            Click="pick_usagelog_folder" ToolTip="Pick a folder for usage logging"/>
-                                    <Button Content="Reset" Width="48" Height="24" Margin="3,0,0,0" Click="reset_usagelog_folder" ToolTip="Reset usage logging folder back to default"/>
+                                            Click="pick_telemetry_folder" ToolTip="Pick a folder for telemetry"/>
+                                    <Button Content="Reset" Width="48" Height="24" Margin="3,0,0,0" Click="reset_telemetry_folder" ToolTip="Reset telemetry folder back to default"/>
                                 </WrapPanel>
-                                <TextBox x:Name="usagelogfile_tb" FontFamily="Consolas"
+                                <TextBox x:Name="telemetryfile_tb" FontFamily="Consolas"
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current usage server url:</TextBlock>
-                                <TextBox x:Name="cur_usageserverurl_tb" FontFamily="Consolas" 
+                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Current telemetry server url:</TextBlock>
+                                <TextBox x:Name="cur_telemetryserverurl_tb" FontFamily="Consolas" 
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
-                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=usagelogging_cb, Path=IsChecked}">
-                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Log usage to webserver (e.g. http://logserver.io):</TextBlock>
-                                <TextBox x:Name="usagelogserver_tb" FontFamily="Consolas" 
+                            <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=telemetry_cb, Path=IsChecked}">
+                                <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center">Log telemetry data to webserver (e.g. http://telemetryserver.io):</TextBlock>
+                                <TextBox x:Name="telemetryserver_tb" FontFamily="Consolas" 
                                          Margin="0,10,0,0" Height="24" Padding="5,0,0,0"
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>

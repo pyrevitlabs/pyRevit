@@ -20,9 +20,9 @@ namespace PyRevitBaseClasses
 
         public static string outputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
 
-        public static string usageLogState = string.Format("{0}_USAGELOGSTATE", keyPrefix);
-        public static string usageLogFilePath = string.Format("{0}_USAGELOGFILE", keyPrefix);
-        public static string usageLogServerUrl = string.Format("{0}_USAGELOGSERVER", keyPrefix);
+        public static string telemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
+        public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
+        public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
 
         public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);
@@ -43,9 +43,9 @@ namespace PyRevitBaseClasses
 
         public string activeStyleSheet;
 
-        public bool usageLogState;
-        public string usageLogFilePath;
-        public string usageLogServerUrl;
+        public bool telemetryState;
+        public string telemetryFilePath;
+        public string telemetryServerUrl;
 
         public string[] referencedAssemblies;
 
@@ -77,14 +77,14 @@ namespace PyRevitBaseClasses
                 activeStyleSheet = (string)_envData[EnvDictionaryKeys.outputStyleSheet];
 
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogState))
-                usageLogState = (bool)_envData[EnvDictionaryKeys.usageLogState];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryState))
+                telemetryState = (bool)_envData[EnvDictionaryKeys.telemetryState];
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogFilePath))
-                usageLogFilePath = (string)_envData[EnvDictionaryKeys.usageLogFilePath];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryFilePath))
+                telemetryFilePath = (string)_envData[EnvDictionaryKeys.telemetryFilePath];
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogServerUrl))
-                usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryServerUrl))
+                telemetryServerUrl = (string)_envData[EnvDictionaryKeys.telemetryServerUrl];
 
             if (_envData.Contains(EnvDictionaryKeys.refedAssms))
                 referencedAssemblies  = (string[])_envData[EnvDictionaryKeys.refedAssms];

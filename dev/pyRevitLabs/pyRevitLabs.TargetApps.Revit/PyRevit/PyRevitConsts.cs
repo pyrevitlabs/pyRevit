@@ -108,10 +108,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsMinDriveSpaceKey = "minhostdrivefreespace";
         public const string ConfigsRequiredHostBuildKey = "requiredhostbuild";
         public const string ConfigsOutputStyleSheet = "outputstylesheet";
-        public const string ConfigsUsageLoggingSection = "usagelogging";
-        public const string ConfigsUsageLoggingStatusKey = "active";
-        public const string ConfigsUsageLogFilePathKey = "logfilepath";
-        public const string ConfigsUsageLogServerUrlKey = "logserverurl";
+        public const string ConfigsTelemetrySection = "telemetry";
+        public const string ConfigsTelemetryStatusKey = "active";
+        public const string ConfigsTelemetryFilePathKey = "telemetrypath";
+        public const string ConfigsTelemetryServerUrlKey = "telemetryserverurl";
         public const string ConfigsUserCanUpdateKey = "usercanupdate";
         public const string ConfigsUserCanExtendKey = "usercanextend";
         public const string ConfigsUserCanConfigKey = "usercanconfig";

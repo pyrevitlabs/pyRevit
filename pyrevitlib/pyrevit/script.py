@@ -91,10 +91,10 @@ def get_results():
     """Return command results dictionary for logging.
 
     Returns:
-        :obj:`pyrevit.usagelog.record.CommandCustomResults`:
+        :obj:`pyrevit.telemetry.record.CommandCustomResults`:
             Command results dict
     """
-    from pyrevit.usagelog.record import CommandCustomResults
+    from pyrevit.telemetry.record import CommandCustomResults
     return CommandCustomResults()
 
 

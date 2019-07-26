@@ -405,7 +405,7 @@ namespace pyRevitManager {
                             { "usercanupdate",          "Enable/Disable Update button in pyRevit" },
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
-                            { "usagelogging",           "Tool usage logging" },
+                            { "telemetry",              "Telemetry" },
                             { "outputcss",              "Output window styling" },
                         },
                         options: new Dictionary<string, string>() {

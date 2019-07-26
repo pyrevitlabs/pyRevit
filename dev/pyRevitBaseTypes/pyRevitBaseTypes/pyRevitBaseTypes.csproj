@@ -172,11 +172,11 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\telemetry.cs">
+      <Link>telemetry.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\unmanaged.cs">
       <Link>unmanaged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\usagelogger.cs">
-      <Link>usagelogger.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
       <Link>_config.cs</Link>

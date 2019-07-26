@@ -1,6 +1,6 @@
 """
-Provides base class and standard filters to filter the usage records data,
-provided by the pyrevit.usagelog module.
+Provides base class and standard filters to filter the telemetry records data,
+provided by the pyrevit.telemetry module.
 
     Base filter class is:
         >>> RecordFilter()
@@ -15,7 +15,7 @@ provided by the pyrevit.usagelog module.
 
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.usagelog.record import RESULT_DICT
+from pyrevit.telemetry.record import RESULT_DICT
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -24,18 +24,18 @@ mlogger = get_logger(__name__)
 
 class RecordFilter(object):
     """
-    Superclass of all UsageRecord filters. Use the subclasses for each of
+    Superclass of all TelemetryRecord filters. Use the subclasses for each of
     access to standard parameters.
 
     Class Attributes:
         RecordFilter.filter_param (str): This is the parameter name of
-                                         the UsageRecord object,
+                                         the TelemetryRecord object,
                                          filtered by this filter
         RecordFilter.name_template (str): This template is used to create
                                           a human-readable name for the filter
 
     Attributes:
-        filter_value (str): Any UsageRecord object that
+        filter_value (str): Any TelemetryRecord object that
                             object.filter_param == filter_value,
                             will pass the filter
         filter_name (str): Human-readable name for this filter.
@@ -68,7 +68,7 @@ class RecordFilter(object):
             return self.filter_name < other.filter_name
 
     def filter_records(self, record_list, search_term=None):
-        """Filters the input list of UsageRecord objects.
+        """Filters the input list of TelemetryRecord objects.
 
         Example:
             >>> all_records = [] # List of all records
@@ -76,12 +76,12 @@ class RecordFilter(object):
             >>> recfilter.filter_records(all_records, search_term="some term")
 
         Args:
-            record_list (list): List of UsageRecord object to be filtered
+            record_list (list): List of TelemetryRecord object to be filtered
             search_term (str): If provided, filters all objects that
                                pass object.has_term(search_term)
 
         Returns:
-            list: Filtered list of UsageRecord objects.
+            list: Filtered list of TelemetryRecord objects.
 
         """
 
@@ -237,22 +237,22 @@ class RecordResultFilter(RecordFilter):
 def get_auto_filters(record_list):
     """
     Returns a list of RecordFilter objects. This function works on the input
-    list of usage records. This function traverses the usage records list,
-    finds the parameters on each record object and creates a filter object for
-    each (if a subclass of RecordFilter is available to that parameter)
+    list of telemetry records. This function traverses the telemetry records
+    list, finds the parameters on each record object and creates a filter object
+    for each (if a subclass of RecordFilter is available to that parameter)
 
     Any of the filter objects returned from this function, can be passed to
-    the db.get_records() method to filter the usage record data.
+    the db.get_records() method to filter the telemetry record data.
 
         Example of typical use:
-        >>> from pyrevit.usagelog import db, filters
+        >>> from pyrevit.telemetry import db, filters
         >>> all_unfiltered_records = db.get_records()
         >>> filter_list = filters.get_auto_filters(all_unfiltered_records)
         >>> chosen_filter = filter_list[0] # type: RecordFilter
         >>> filtered_records = db.get_records(record_filter=chosen_filter)
 
     Args:
-        record_list (list): list of UsageRecord objects
+        record_list (list): list of TelemetryRecord objects
 
     Returns:
         list: returns a list of RecordFilter objects, sorted; Empty list if

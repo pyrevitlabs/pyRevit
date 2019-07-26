@@ -1054,7 +1054,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         // managing configs ==========================================================================================
         // pyrevit config getter/setter
-        // usage logging config
+        // telemetry config
         // @handled @logs
         public static string FindConfigFileInDirectory(string sourcePath) {
             var configMatcher = new Regex(PyRevitConsts.ConfigsFileRegexPattern, RegexOptions.IgnoreCase);
@@ -1065,46 +1065,46 @@ namespace pyRevitLabs.TargetApps.Revit {
             return null;
         }
 
-        public static bool GetUsageReporting() {
-            return bool.Parse(GetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                                          PyRevitConsts.ConfigsUsageLoggingStatusKey));
+        public static bool GetTelemetryStatus() {
+            return bool.Parse(GetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                                          PyRevitConsts.ConfigsTelemetryStatusKey));
         }
 
-        public static string GetUsageLogFilePath() {
-            return GetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                               PyRevitConsts.ConfigsUsageLogFilePathKey);
+        public static string GetTelemetryFilePath() {
+            return GetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                               PyRevitConsts.ConfigsTelemetryFilePathKey);
         }
 
-        public static string GetUsageLogServerUrl() {
-            return GetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                               PyRevitConsts.ConfigsUsageLogServerUrlKey);
+        public static string GetTelemetryServerUrl() {
+            return GetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                               PyRevitConsts.ConfigsTelemetryServerUrlKey);
         }
 
-        public static void EnableUsageReporting(string logFilePath = null, string logServerUrl = null) {
-            logger.Debug(string.Format("Enabling usage logging... path: \"{0}\" server: {1}",
-                                       logFilePath, logServerUrl));
-            SetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                        PyRevitConsts.ConfigsUsageLoggingStatusKey,
+        public static void EnableTelemetry(string telemetryFilePath = null, string telemetryServerUrl = null) {
+            logger.Debug(string.Format("Enabling telemetry... path: \"{0}\" server: {1}",
+                                       telemetryFilePath, telemetryServerUrl));
+            SetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                        PyRevitConsts.ConfigsTelemetryStatusKey,
                         true);
 
-            if (logFilePath != null)
-                if (CommonUtils.VerifyPath(logFilePath))
-                    SetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                                PyRevitConsts.ConfigsUsageLogFilePathKey,
-                                logFilePath);
+            if (telemetryFilePath != null)
+                if (CommonUtils.VerifyPath(telemetryFilePath))
+                    SetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                                PyRevitConsts.ConfigsTelemetryFilePathKey,
+                                telemetryFilePath);
                 else
-                    logger.Debug("Invalid log path \"{0}\"", logFilePath);
+                    logger.Debug("Invalid log path \"{0}\"", telemetryFilePath);
 
-            if (logServerUrl != null)
-                SetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                            PyRevitConsts.ConfigsUsageLogServerUrlKey,
-                            logServerUrl);
+            if (telemetryServerUrl != null)
+                SetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                            PyRevitConsts.ConfigsTelemetryServerUrlKey,
+                            telemetryServerUrl);
         }
 
-        public static void DisableUsageReporting() {
-            logger.Debug("Disabling usage reporting...");
-            SetKeyValue(PyRevitConsts.ConfigsUsageLoggingSection,
-                        PyRevitConsts.ConfigsUsageLoggingStatusKey,
+        public static void DisableTelemetry() {
+            logger.Debug("Disabling telemetry...");
+            SetKeyValue(PyRevitConsts.ConfigsTelemetrySection,
+                        PyRevitConsts.ConfigsTelemetryStatusKey,
                         false);
         }
 
