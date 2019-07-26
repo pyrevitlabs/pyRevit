@@ -36,7 +36,7 @@ namespace PyRevitBaseClasses
         public string clone { get; set; }
         // which mode?
         public bool debug { get; set; }
-        public bool alternate { get; set; }
+        public bool config { get; set; }
         public bool from_gui { get; set; }
         public bool clean_engine { get; set; }
         public bool fullframe_engine { get; set; }
@@ -60,7 +60,7 @@ namespace PyRevitBaseClasses
                         string pyRevitVersion,
                         string cloneName,
                         bool debugModeEnabled,
-                        bool alternateModeEnabled,
+                        bool configModeEnabled,
                         bool execFromGUI,
                         bool cleanEngine,
                         bool fullframeEngine,
@@ -86,7 +86,7 @@ namespace PyRevitBaseClasses
             pyrevit = pyRevitVersion;
             clone = cloneName;
             debug = debugModeEnabled;
-            alternate = alternateModeEnabled;
+            config = configModeEnabled;
             from_gui = execFromGUI;
             clean_engine = cleanEngine;
             fullframe_engine = fullframeEngine;

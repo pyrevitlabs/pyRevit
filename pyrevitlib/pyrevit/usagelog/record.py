@@ -38,7 +38,7 @@ class CommandCustomResults(object):
     # list of standard/default usage log record params provided
     # by the c-sharp logger scripts should not use these names
     RESERVED_NAMES = ['time', 'username', 'revit', 'revitbuild', 'sessionid',
-                      'pyrevit', 'debug', 'alternate', 'commandname',
+                      'pyrevit', 'debug', 'config', 'commandname',
                       'result', 'source']
 
     def __getattr__(self, key):
@@ -77,7 +77,7 @@ class UsageRecord:
         pyrevit (str): pyRevit version that his command was executed by
                        e.g. '4.2:dcf4090'
         debug (bool): Was command run in debug mode?
-        alternate (bool): Was command run while holding down the SHIFT key?
+        config (bool): Was command run while holding down the SHIFT key?
         commandname (str): Name of the executed command
                            e.g. 'Usage Records'
         commandbundle (str): Bundle name of the executed command
@@ -96,7 +96,7 @@ class UsageRecord:
         self._src_dict = None
         self.date = self.time = self.username = ''
         self.revit = self.revitbuild = self.sessionid = self.pyrevit = ''
-        self.debug = self.alternate = False
+        self.debug = self.config = False
         self.commandname = self.commandbundle = self.commandextension = ''
         self.resultcode = 0
         self.commandresults = {}

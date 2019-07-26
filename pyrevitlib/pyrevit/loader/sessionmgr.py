@@ -306,8 +306,8 @@ class PyRevitExternalCommandType(object):
         return getattr(self._extcmd, 'baked_scriptSource', None)
 
     @property
-    def alternate_script(self):
-        return getattr(self._extcmd, 'baked_alternateScriptSource', None)
+    def config_script(self):
+        return getattr(self._extcmd, 'baked_configScriptSource', None)
 
     @property
     def syspaths(self):
@@ -452,7 +452,7 @@ def create_tmp_commanddata():
 
 def execute_command_cls(extcmd_type, arguments=None,
                         clean_engine=False, fullframe_engine=False,
-                        alternate_mode=False):
+                        config_mode=False):
 
     command_instance = extcmd_type()
     # this is a manual execution from python code and not by user
@@ -464,8 +464,8 @@ def execute_command_cls(extcmd_type, arguments=None,
     command_instance.baked_needsCleanEngine = clean_engine
     # force using fullframe engine
     command_instance.baked_needsFullFrameEngine = fullframe_engine
-    # force using the alternate script
-    command_instance.altScriptModeOverride = alternate_mode
+    # force using the config script
+    command_instance.altScriptModeOverride = config_mode
 
     re = command_instance.Execute(create_tmp_commanddata(),
                                   '',
@@ -521,7 +521,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             cmdData=create_tmp_commanddata(),
             elements=None,
             scriptSource=script_path,
-            alternateScriptSource=None,
+            configScriptSource=None,
             syspaths=DEFAULT_SEPARATOR.join(sys_paths),
             arguments=arguments,
             helpSource='',

@@ -28,7 +28,6 @@ ATOM_SWITCH = '/atom'
 NPP_SWITCH = '/npp'
 NP_SWITCH = '/np'
 CONFIG_SWITCH = '/config'
-ALT_FLAG = '/alt'
 
 
 def print_help():
@@ -38,17 +37,16 @@ def print_help():
         '### Options:\n\n'
         '- **{help}**: Prints this help\n\n'
         '- **{help} COMMAND:** Opens the help url or prints the docstring\n\n'
-        '- **{doc} [{alt}] COMMAND:** Prints the command docstring\n\n'
-        '- **{info} [{alt}] COMMAND:** Prints info about the command\n\n'
-        '- **{clean} [{alt}] COMMAND:** Runs command with clean engine\n\n'
-        '- **{full} [{alt}] COMMAND:** Runs command with full-frame engine\n\n'
-        '- **{open} [{alt}] COMMAND:** Opens the bundle folder\n\n'
-        '- **{show} [{alt}] COMMAND:** Shows the source code\n\n'
-        '- **{atom} [{alt}] COMMAND:** Opens the script in atom\n\n'
-        '- **{npp} [{alt}] COMMAND:** Opens the script in notepad++\n\n'
-        '- **{np} [{alt}] COMMAND:** Opens the script in notepad\n\n'
+        '- **{doc} [{config}] COMMAND:** Prints the command docstring\n\n'
+        '- **{info} [{config}] COMMAND:** Prints info about the command\n\n'
+        '- **{clean} [{config}] COMMAND:** Runs command with clean engine\n\n'
+        '- **{full} [{config}] COMMAND:** Runs command with full-frame engine\n\n'
+        '- **{open} [{config}] COMMAND:** Opens the bundle folder\n\n'
+        '- **{show} [{config}] COMMAND:** Shows the source code\n\n'
+        '- **{atom} [{config}] COMMAND:** Opens the script in atom\n\n'
+        '- **{npp} [{config}] COMMAND:** Opens the script in notepad++\n\n'
+        '- **{np} [{config}] COMMAND:** Opens the script in notepad\n\n'
         '- **{config}:** Executes the config script (like Shift+Click).\n\n'
-        '- **{alt}:** Executes option on the alternate script.\n\n'
         .format(help=HELP_SWITCH,
                 doc=DOC_SWITCH,
                 info=INFO_SWITCH,
@@ -59,14 +57,13 @@ def print_help():
                 atom=ATOM_SWITCH,
                 npp=NPP_SWITCH,
                 np=NP_SWITCH,
-                config=CONFIG_SWITCH,
-                alt=ALT_FLAG)
+                config=CONFIG_SWITCH)
         )
 
 
 def show_command_info(pyrvtcmd):
     print('Script Source: {}\n\n'
-          'Alternate Script Source: {}\n\n'
+          'Config Script Source: {}\n\n'
           'Sys Paths: {}\n\n'
           'Help Source: {}\n\n'
           'Name: {}\n\n'
@@ -78,7 +75,7 @@ def show_command_info(pyrvtcmd):
           'Class Name: {}\n\n'
           'Availability Class Name: {}\n\n'
           .format(pyrvtcmd.script,
-                  pyrvtcmd.alternate_script,
+                  pyrvtcmd.config_script,
                   pyrvtcmd.syspaths.split(';'),
                   pyrvtcmd.helpsource,
                   pyrvtcmd.name,
@@ -116,7 +113,7 @@ def open_command_helpurl(pyrvtcmd):
 def print_source(selected_cmd, altsrc=False):
     output = script.get_output()
     source = \
-        selected_cmd.script if not altsrc else selected_cmd.alternate_script
+        selected_cmd.script if not altsrc else selected_cmd.config_script
     if source:
         with open(source, 'r') as s:
             output.print_code(s.read())
@@ -124,7 +121,7 @@ def print_source(selected_cmd, altsrc=False):
 
 def open_in_editor(editor_name, selected_cmd, altsrc=False):
     source = \
-        selected_cmd.script if not altsrc else selected_cmd.alternate_script
+        selected_cmd.script if not altsrc else selected_cmd.config_script
     if source:
         os.popen('{} "{}"'.format(editor_name, source))
 
@@ -192,22 +189,22 @@ if matched_cmdname:
         elif switches[OPEN_SWITCH]:
             coreutils.open_folder_in_explorer(op.dirname(selected_cmd.script))
         elif switches[SHOW_SWITCH]:
-            print_source(selected_cmd, altsrc=switches[ALT_FLAG])
+            print_source(selected_cmd, altsrc=switches[CONFIG_SWITCH])
         elif switches[ATOM_SWITCH]:
             open_in_editor('atom', selected_cmd,
-                           altsrc=switches[ALT_FLAG])
+                           altsrc=switches[CONFIG_SWITCH])
         elif switches[NPP_SWITCH]:
             open_in_editor('notepad++', selected_cmd,
-                           altsrc=switches[ALT_FLAG])
+                           altsrc=switches[CONFIG_SWITCH])
         elif switches[NP_SWITCH]:
             open_in_editor('notepad', selected_cmd,
-                           altsrc=switches[ALT_FLAG])
+                           altsrc=switches[CONFIG_SWITCH])
         else:
             clean_engine = switches[CLEAN_SWITCH]
             fullframe_engine = switches[FULLFRAME_SWITCH]
-            alternate_mode = switches[CONFIG_SWITCH] or switches[ALT_FLAG]
+            config_mode = switches[CONFIG_SWITCH] or switches[CONFIG_SWITCH]
             sessionmgr.execute_command_cls(selected_cmd.extcmd_type,
                                            arguments=matched_cmdargs,
                                            clean_engine=clean_engine,
                                            fullframe_engine=fullframe_engine,
-                                           alternate_mode=alternate_mode)
+                                           config_mode=config_mode)

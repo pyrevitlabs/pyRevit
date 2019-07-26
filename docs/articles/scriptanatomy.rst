@@ -353,7 +353,7 @@ Variables listed below are provided for every script in pyRevit.
 
     # information about the pyrevit command being run
     __commandpath__             # main script path
-    __alternatecommandpath__    # alternate script path
+    __configcommandpath__       # config script path
     __commandname__             # command name
     __commandbundle__           # command bundle name
     __commandextension__        # command extension name

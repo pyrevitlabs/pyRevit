@@ -23,7 +23,7 @@ namespace PyRevitBaseClasses {
         private ElementSet _elements = null;
 
         private string _scriptSource = null;
-        private string _alternateScriptSource = null;
+        private string _configScriptSource = null;
         private string _syspaths = null;
         private string[] _arguments = null;
         private string _helpSource = null;
@@ -55,7 +55,7 @@ namespace PyRevitBaseClasses {
         public PyRevitCommandRuntime(ExternalCommandData cmdData,
                                      ElementSet elements,
                                      string scriptSource,
-                                     string alternateScriptSource,
+                                     string configScriptSource,
                                      string syspaths,
                                      string[] arguments,
                                      string helpSource,
@@ -73,7 +73,7 @@ namespace PyRevitBaseClasses {
             _elements = elements;
 
             _scriptSource = scriptSource;
-            _alternateScriptSource = alternateScriptSource;
+            _configScriptSource = configScriptSource;
             _syspaths = syspaths;
             _arguments = arguments;
 
@@ -106,7 +106,7 @@ namespace PyRevitBaseClasses {
         public string ScriptSourceFile {
             get {
                 if (_altScriptMode)
-                    return _alternateScriptSource;
+                    return _configScriptSource;
                 else
                     return _scriptSource;
             }
@@ -118,9 +118,9 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string AlternateScriptSourceFile {
+        public string ConfigScriptSourceFile {
             get {
-                return _alternateScriptSource;
+                return _configScriptSource;
             }
         }
 
@@ -239,7 +239,7 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public bool AlternateMode {
+        public bool ConfigMode {
             get {
                 return _altScriptMode;
             }
@@ -394,7 +394,7 @@ namespace PyRevitBaseClasses {
                                 PyRevitVersion,
                                 CloneName,
                                 DebugMode,
-                                AlternateMode,
+                                ConfigMode,
                                 ExecutedFromUI,
                                 NeedsCleanEngine,
                                 NeedsFullFrameEngine,

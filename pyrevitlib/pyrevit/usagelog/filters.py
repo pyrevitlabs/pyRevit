@@ -173,9 +173,9 @@ class RecordDebugModeFilter(RecordFilter):
     name_template = 'Debug Mode: {}'
 
 
-class RecordAltScriptFilter(RecordFilter):
-    filter_param = 'alternate'
-    name_template = 'Alternate Mode: {}'
+class RecordConfigScriptFilter(RecordFilter):
+    filter_param = 'config'
+    name_template = 'Config Mode: {}'
 
 
 class RecordCommandFilter(RecordFilter):

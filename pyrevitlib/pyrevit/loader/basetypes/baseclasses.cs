@@ -19,7 +19,7 @@ namespace PyRevitBaseClasses {
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand {
         public string baked_scriptSource = null;
-        public string baked_alternateScriptSource = null;
+        public string baked_configScriptSource = null;
         public string baked_syspaths = null;
         public string baked_helpSource = null;
         public string baked_cmdName = null;
@@ -29,9 +29,9 @@ namespace PyRevitBaseClasses {
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
 
-        // unlike fullframe or clean engine modes, the alternate script mode is determined at
+        // unlike fullframe or clean engine modes, the config script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
-        // trigger the alternate script mode when executing a command from a program and not
+        // trigger the config script mode when executing a command from a program and not
         // from the Revit user interface.
         public bool altScriptModeOverride = false;
 
@@ -46,7 +46,7 @@ namespace PyRevitBaseClasses {
 
 
         public PyRevitCommand(string scriptSource,
-                              string alternateScriptSource,
+                              string configScriptSource,
                               string syspaths,
                               string helpSource,
                               string cmdName,
@@ -56,7 +56,7 @@ namespace PyRevitBaseClasses {
                               int needsCleanEngine,
                               int needsFullFrameEngine) {
             baked_scriptSource = scriptSource;
-            baked_alternateScriptSource = alternateScriptSource;
+            baked_configScriptSource = configScriptSource;
             baked_syspaths = syspaths;
             baked_helpSource = helpSource;
             baked_cmdName = cmdName;
@@ -123,12 +123,12 @@ namespace PyRevitBaseClasses {
                 copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
-                // menu item to copy alternate script path to clipboard, if exists
-                if (baked_alternateScriptSource != null && baked_alternateScriptSource != "") {
+                // menu item to copy config script path to clipboard, if exists
+                if (baked_configScriptSource != null && baked_configScriptSource != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
-                    copyAltScriptPath.Header = "Copy Alternate Script Path";
-                    copyAltScriptPath.ToolTip = baked_alternateScriptSource;
-                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_alternateScriptSource); };
+                    copyAltScriptPath.Header = "Copy Config Script Path";
+                    copyAltScriptPath.ToolTip = baked_configScriptSource;
+                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_configScriptSource); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
@@ -170,7 +170,7 @@ namespace PyRevitBaseClasses {
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
             else if (CTRL && (SHIFT || altScriptModeOverride)) {
-                _script = baked_alternateScriptSource;
+                _script = baked_configScriptSource;
                 _altScriptMode = true;
                 _forcedDebugMode = true;
             }
@@ -187,7 +187,7 @@ namespace PyRevitBaseClasses {
 
             // If Shift clicking on button, run config script instead
             else if (SHIFT || altScriptModeOverride) {
-                _script = baked_alternateScriptSource;
+                _script = baked_configScriptSource;
                 _altScriptMode = true;
             }
 
@@ -202,7 +202,7 @@ namespace PyRevitBaseClasses {
             var pyrvtCmdRuntime = new PyRevitCommandRuntime(cmdData: commandData,
                                                             elements: elements,
                                                             scriptSource: baked_scriptSource,
-                                                            alternateScriptSource: baked_alternateScriptSource,
+                                                            configScriptSource: baked_configScriptSource,
                                                             syspaths: baked_syspaths,
                                                             arguments: argumentList,
                                                             helpSource: baked_helpSource,

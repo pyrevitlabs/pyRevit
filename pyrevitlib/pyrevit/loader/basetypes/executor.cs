@@ -179,9 +179,9 @@ namespace PyRevitBaseClasses {
         private static int ExecuteInvokableDLL(ref PyRevitCommandRuntime pyrvtCmd) {
             try {
                 // load the binary data from the DLL
-                // Direct invoke commands use the alternate script source file to point
+                // Direct invoke commands use the config script source file to point
                 // to the target dll assembly location
-                byte[] assmBin = File.ReadAllBytes(pyrvtCmd.AlternateScriptSourceFile);
+                byte[] assmBin = File.ReadAllBytes(pyrvtCmd.ConfigScriptSourceFile);
                 Assembly assmObj = Assembly.Load(assmBin);
 
                 return ExecuteExternalCommand(assmObj, ref pyrvtCmd);

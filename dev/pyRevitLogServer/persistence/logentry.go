@@ -30,7 +30,7 @@ type LogRecord struct {
 	PyRevitVersion       string            `json:"pyrevit"`
 	Clone                string            `json:"clone"` // schema 2.0
 	IsDebugMode          bool              `json:"debug"`
-	IsAlternateMode      bool              `json:"alternate"`
+	IsConfigMode         bool              `json:"config"`
 	IsExecFromGUI        bool              `json:"from_gui"`         // schema 2.0
 	NeedsCleanEngine     bool              `json:"clean_engine"`     // schema 2.0
 	NeedsFullFrameEngine bool              `json:"fullframe_engine"` // schema 2.0
