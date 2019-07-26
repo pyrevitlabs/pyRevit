@@ -41,7 +41,7 @@ from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
-from winterops import yaml
+from pyrevit.coreutils import yaml
 
 
 __author__ = "{{author}}"

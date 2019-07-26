@@ -11,6 +11,9 @@ namespace PyRevitBaseClasses {
         IronPython,
         CPython,
         CSharp,
+        Invoke,
+        VisualBasic,
+        IronRuby,
         Dynamo,
         Grasshopper
     }
@@ -43,7 +46,7 @@ namespace PyRevitBaseClasses {
         private EnvDictionary _envDict = new EnvDictionary();
 
         private int _execResults = 0;
-        private string _ipyTrace = "";
+        private string _ironLangTrace = "";
         private string _clrTrace = "";
         private string _cpyTrace = "";
         private Dictionary<string, string> _resultsDict = null;
@@ -123,15 +126,41 @@ namespace PyRevitBaseClasses {
 
         public EngineType EngineType {
             get {
-                string firstLine = "";
-                using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
-                    firstLine = reader.ReadLine();
+                // determine engine necessary to run this script
+                var scriptFile = ScriptSourceFile.ToLower();
+                var bundleName = CommandBundle.ToLower();
+                if (scriptFile.EndsWith(".py")) {
+                    string firstLine = "";
+                    using (StreamReader reader = new StreamReader(scriptFile)) {
+                        firstLine = reader.ReadLine();
+                    }
+
+                    if (firstLine.Contains("python3") || firstLine.Contains("cpython"))
+                        return EngineType.CPython;
+                    else
+                        return EngineType.IronPython;
+                }
+                else if (scriptFile.EndsWith(".cs")) {
+                    return EngineType.CSharp;
+                }
+                else if (scriptFile.EndsWith(".vb")) {
+                    return EngineType.VisualBasic;
+                }
+                else if (scriptFile.EndsWith(".rb")) {
+                    return EngineType.IronRuby;
+                }
+                else if (scriptFile.EndsWith(".dyn")) {
+                    return EngineType.Dynamo;
+                }
+                else if (scriptFile.EndsWith(".gh")) {
+                    return EngineType.Grasshopper;
+                }
+                else if (bundleName.EndsWith(".invokebutton")) {
+                    return EngineType.Invoke;
                 }
 
-                if (firstLine.Contains("python3") || firstLine.Contains("cpython"))
-                    return EngineType.CPython;
-                else
-                    return EngineType.IronPython;
+                // should not get here
+                throw new Exception("Unknown script type.");
             }
         }
 
@@ -278,12 +307,12 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string IronPythonTraceBack {
+        public string IronLanguageTraceBack {
             get {
-                return _ipyTrace;
+                return _ironLangTrace;
             }
             set {
-                _ipyTrace = value;
+                _ironLangTrace = value;
             }
         }
 
@@ -311,8 +340,8 @@ namespace PyRevitBaseClasses {
                 if (EngineType == EngineType.CPython) {
                     return CpythonTraceBack;
                 }
-                else if (IronPythonTraceBack != string.Empty && ClrTraceBack != string.Empty) {
-                    return string.Format("{0}\n\n{1}", IronPythonTraceBack, ClrTraceBack);
+                else if (IronLanguageTraceBack != string.Empty && ClrTraceBack != string.Empty) {
+                    return string.Format("{0}\n\n{1}", IronLanguageTraceBack, ClrTraceBack);
                 }
                 // or return empty if none
                 return string.Empty;
@@ -378,7 +407,7 @@ namespace PyRevitBaseClasses {
                                 GetResultsDictionary(),
                                 new TraceInfo {
                                     engine = new EngineInfo {
-                                        type = EngineType == EngineType.CPython ? "cpython" : "ironpython",
+                                        type = EngineType.ToString().ToLower(),
                                         version = Convert.ToString(
                                             EngineType == EngineType.CPython ?
                                                   _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion

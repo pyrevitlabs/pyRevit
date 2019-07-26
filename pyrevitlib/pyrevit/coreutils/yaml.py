@@ -1,13 +1,9 @@
 """Wrapper for YamlDotNet."""
-import os.path as op
 from collections import OrderedDict
 import codecs
 
-from winterops import clr, System, binary_path
-
-clr.AddReferenceToFileAndPath(op.join(binary_path, 'YamlDotNet'))
-
-import YamlDotNet as libyaml
+from pyrevit.framework import StringReader
+from pyrevit.labs import libyaml
 
 
 def _convert_yamldotnet_to_dict(ynode, level=0):
@@ -42,7 +38,7 @@ def load(yaml_file):
     """
     with codecs.open(yaml_file, 'r', 'utf-8') as yamlfile:
         yamlstr = libyaml.RepresentationModel.YamlStream()
-        yamlstr.Load(System.IO.StringReader(yamlfile.read()))
+        yamlstr.Load(StringReader(yamlfile.read()))
         if yamlstr.Documents.Count >= 1:
             return yamlstr.Documents[0].RootNode
 

@@ -6,6 +6,7 @@ import codecs
 from pyrevit import PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
+from pyrevit.coreutils import yaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
 from pyrevit.extensions.genericcomps import GenericComponent
@@ -54,6 +55,40 @@ class LinkButton(GenericUICommand):
 
         mlogger.debug('Link button assembly.class: %s.%s',
                       self.assembly, self.command_class)
+
+
+class InvokeButton(GenericUICommand):
+    type_id = exts.INVOKE_BUTTON_POSTFIX
+
+    def __init__(self):
+        GenericUICommand.__init__(self)
+        self.assembly = self.command_class = None
+
+    def __init_from_dir__(self, cmd_dir):
+        GenericUICommand.__init_from_dir__(self, cmd_dir)
+        self.assembly = self.command_class = None
+        try:
+            link_info = yaml.load_as_dict(self.get_full_script_address())
+            self.assembly = \
+                link_info[exts.LINK_BUTTON_ASSEMBLY_PARAM]
+            self.command_class = \
+                link_info[exts.LINK_BUTTON_COMMAND_CLASS_PARAM]
+            self._verify_link()
+        except PyRevitException as err:
+            mlogger.error(err)
+
+        mlogger.debug('Link button assembly.class: %s.%s',
+                      self.assembly, self.command_class)
+
+    def _verify_link(self):
+        # verify dll exists
+        if self.assembly and not op.exists(self.assembly):
+            self.assembly = self.get_bundle_file(self.assembly)
+            if not op.exists(self.assembly):
+                mlogger.error(
+                    'Command %s: Can not determine target dll from: %s',
+                    self, self.assembly)
+                raise PyRevitException()
 
 
 class PushButton(GenericUICommand):

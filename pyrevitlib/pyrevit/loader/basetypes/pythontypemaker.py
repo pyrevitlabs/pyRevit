@@ -97,7 +97,9 @@ def _make_python_types(extension, module_builder, cmd_component):
     mlogger.debug('%s requires Fullframe engine: %s',
                   cmd_component.name, cmd_component.requires_fullframe_engine)
 
-    create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
+    create_type(module_builder,
+                CMD_EXECUTOR_TYPE,
+                cmd_component.unique_name,
                 create_ext_command_attrs(),
                 cmd_component.get_full_script_address(),
                 cmd_component.get_full_config_script_address(),

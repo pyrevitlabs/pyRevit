@@ -213,6 +213,7 @@ def _get_reference_file(ref_name):
 
 
 def _get_references():
+    # 'IronRuby', 'IronRuby.Libraries',
     ref_list = ['pyRevitLoader',
                 'RevitAPI', 'RevitAPIUI',
                 'IronPython', 'IronPython.Modules',

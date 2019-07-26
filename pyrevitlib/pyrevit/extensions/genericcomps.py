@@ -332,15 +332,20 @@ class GenericUICommand(GenericUIComponent):
         mlogger.debug('Command %s: Tooltip video file is: %s',
                       self, self.ttvideo_file)
 
-        self.script_file = self._find_script_file([exts.PYTHON_SCRIPT_POSTFIX,
-                                                   exts.CSHARP_SCRIPT_POSTFIX,
-                                                   exts.VB_SCRIPT_POSTFIX,
-                                                   exts.RUBY_SCRIPT_POSTFIX,
-                                                   exts.DYNAMO_SCRIPT_POSTFIX])
+        self.script_file = \
+            self._find_script_file([
+                exts.PYTHON_SCRIPT_POSTFIX,
+                exts.CSHARP_SCRIPT_POSTFIX,
+                exts.VB_SCRIPT_POSTFIX,
+                exts.RUBY_SCRIPT_POSTFIX,
+                exts.DYNAMO_SCRIPT_POSTFIX,
+                exts.GRASSHOPPER_SCRIPT_POSTFIX,
+                exts.LINK_POSTFIX])
 
         if self.script_file is None:
             mlogger.error('Command %s: Does not have script file.', self)
             raise PyRevitException()
+
         if self.script_language == exts.PYTHON_LANG:
             self._analyse_python_script()
 
@@ -482,8 +487,14 @@ class GenericUICommand(GenericUIComponent):
                 return exts.CSHARP_LANG
             elif self.script_file.endswith(exts.VB_SCRIPT_FILE_FORMAT):
                 return exts.VB_LANG
+            elif self.script_file.endswith(exts.RUBY_SCRIPT_FILE_FORMAT):
+                return exts.RUBY_LANG
             elif self.script_file.endswith(exts.DYNAMO_SCRIPT_FILE_FORMAT):
                 return exts.DYNAMO_LANG
+            elif self.script_file.endswith(exts.GRASSHOPPER_SCRIPT_FILE_FORMAT):
+                return exts.GRASSHOPPER_LANG
+            elif self.script_file.endswith(exts.YAML_FILE_FORMAT):
+                return exts.YAML_LANG
         else:
             return None
 
@@ -497,11 +508,14 @@ class GenericUICommand(GenericUIComponent):
     def get_help_url(self):
         return self.cmd_help_url
 
+    def get_bundle_file(self, file_name):
+        return op.join(self.directory, file_name)
+
     def get_full_script_address(self):
-        return op.join(self.directory, self.script_file)
+        return self.get_bundle_file(self.script_file)
 
     def get_full_config_script_address(self):
-        return op.join(self.directory, self.config_script_file)
+        return self.get_bundle_file(self.config_script_file)
 
     def add_syspath(self, path):
         if path and not self.has_syspath(path):

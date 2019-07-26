@@ -1,22 +1,32 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Reflection;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
+
+// iron languages
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using IronPython.Runtime.Exceptions;
 using IronPython.Compiler;
-using Autodesk.Revit.UI;
-using Autodesk.Revit.DB;
+//using IronRuby;
 
+// cpython
 using Python.Runtime;
 
-namespace PyRevitBaseClasses
-{
+// csharp
+using System.CodeDom.Compiler;
+using Microsoft.CSharp;
+//vb
+using Microsoft.VisualBasic;
+
+
+namespace PyRevitBaseClasses {
     /// Executes a script
-    public class ScriptExecutor
-    {
+    public class ScriptExecutor {
         /// Run the script and print the output to a new output window.
         public static int ExecuteScript(ref PyRevitCommandRuntime pyrvtCmd) {
             switch (pyrvtCmd.EngineType) {
@@ -26,6 +36,12 @@ namespace PyRevitBaseClasses
                     return ExecuteCPythonScript(ref pyrvtCmd);
                 case EngineType.CSharp:
                     return ExecuteCSharpScript(ref pyrvtCmd);
+                case EngineType.Invoke:
+                    return ExecuteInvokableDLL(ref pyrvtCmd);
+                case EngineType.VisualBasic:
+                    return ExecuteVisualBasicScript(ref pyrvtCmd);
+                case EngineType.IronRuby:
+                    return ExecuteRubyScript(ref pyrvtCmd);
                 case EngineType.Dynamo:
                     return ExecuteDynamoDefinition(ref pyrvtCmd);
                 case EngineType.Grasshopper:
@@ -37,8 +53,7 @@ namespace PyRevitBaseClasses
         }
 
         /// Run the script using IronPython Engine
-        private static int ExecuteIronPythonScript(ref PyRevitCommandRuntime pyrvtCmd)
-        {
+        private static int ExecuteIronPythonScript(ref PyRevitCommandRuntime pyrvtCmd) {
             // 1: ----------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
@@ -47,7 +62,7 @@ namespace PyRevitBaseClasses
 
             // 2: ----------------------------------------------------------------------------------------------------
             // Setup the command scope in this engine with proper builtin and scope parameters
-            var scope = CreateScope(engine, ref pyrvtCmd);
+            var scope = engine.CreateScope();
 
             // 3: ----------------------------------------------------------------------------------------------------
             // Create the script from source file
@@ -60,11 +75,11 @@ namespace PyRevitBaseClasses
             // 4: ----------------------------------------------------------------------------------------------------
             // Setting up error reporter and compile the script
             // setting module to be the main module so __name__ == __main__ is True
-            var compiler_options = (PythonCompilerOptions) engine.GetCompilerOptions(scope);
+            var compiler_options = (PythonCompilerOptions)engine.GetCompilerOptions(scope);
             compiler_options.ModuleName = "__main__";
             compiler_options.Module |= IronPython.Runtime.ModuleOptions.Initialize;
 
-            var errors = new ErrorReporter();
+            var errors = new IronPythonErrorReporter();
             var command = script.Compile(compiler_options, errors);
 
             // Process compile errors if any
@@ -78,18 +93,15 @@ namespace PyRevitBaseClasses
 
             // 6: ----------------------------------------------------------------------------------------------------
             // Finally let's execute
-            try
-            {
+            try {
                 command.Execute(scope);
                 return ExecutionErrorCodes.Succeeded;
             }
-            catch (SystemExitException)
-            {
+            catch (SystemExitException) {
                 // ok, so the system exited. That was bound to happen...
                 return ExecutionErrorCodes.SysExited;
             }
-            catch (Exception exception)
-            {
+            catch (Exception exception) {
                 // show (power) user everything!
                 string _dotnet_err_message = exception.ToString();
                 string _ipy_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
@@ -98,7 +110,7 @@ namespace PyRevitBaseClasses
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
                 _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
-                pyrvtCmd.IronPythonTraceBack = _ipy_err_messages;
+                pyrvtCmd.IronLanguageTraceBack = _ipy_err_messages;
 
                 _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
                 pyrvtCmd.ClrTraceBack = _dotnet_err_message;
@@ -109,8 +121,7 @@ namespace PyRevitBaseClasses
                 pyrvtCmd.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _dotnet_err_message);
                 return ExecutionErrorCodes.ExecutionException;
             }
-            finally
-            {   
+            finally {
                 // clean the scope unless the script is requesting clean engine
                 // this is a temporary convention to allow users to keep global references in the scope
                 if (!pyrvtCmd.NeedsCleanEngine)
@@ -150,7 +161,7 @@ namespace PyRevitBaseClasses
 
                     pyrvtCmd.OutputStream.WriteError(_cpy_err_message);
                     return ExecutionErrorCodes.ExecutionException;
-                } 
+                }
                 finally {
                     // shutdown halts and breaks Revit
                     // let's not do that!
@@ -161,8 +172,114 @@ namespace PyRevitBaseClasses
 
         /// Run the script using C# script engine
         private static int ExecuteCSharpScript(ref PyRevitCommandRuntime pyrvtCmd) {
+            // https://stackoverflow.com/a/3188953
+            var scriptContents = File.ReadAllText(pyrvtCmd.ScriptSourceFile);
+
+            string[] refFiles;
+            var envDic = new EnvDictionary();
+            if (envDic.referencedAssemblies.Count() == 0) {
+                var refs = AppDomain.CurrentDomain.GetAssemblies();
+                refFiles = refs.Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
+            }
+            else {
+                refFiles = envDic.referencedAssemblies;
+            }
+
+            var compileParams = new CompilerParameters(refFiles);
+            compileParams.GenerateInMemory = true;
+            compileParams.GenerateExecutable = false;
+
+            var compiler = new CSharpCodeProvider(new Dictionary<string, string>() { { "CompilerVersion", "v4.0" } });
+            try {
+                // compile code first
+                var res = compiler.CompileAssemblyFromSource(
+                    options: compileParams,
+                    sources: new string[] { scriptContents }
+                );
+
+                return ExecuteExternalCommand(res.CompiledAssembly, ref pyrvtCmd);
+            }
+            catch (Exception runEx) {
+                TaskDialog.Show("pyRevit", runEx.Message);
+                return ExecutionErrorCodes.ExecutionException;
+            }
+            finally {
+                // whatever
+            }
+        }
+
+        /// Run the script by directly invoking the IExternalCommand type from given dll
+        private static int ExecuteInvokableDLL(ref PyRevitCommandRuntime pyrvtCmd) {
+            try {
+                // load the binary data from the DLL
+                // Direct invoke commands use the alternate script source file to point
+                // to the target dll assembly location
+                byte[] assmBin = File.ReadAllBytes(pyrvtCmd.AlternateScriptSourceFile);
+                Assembly assmObj = Assembly.Load(assmBin);
+
+                return ExecuteExternalCommand(assmObj, ref pyrvtCmd);
+            }
+            catch (Exception invokeEx) {
+                TaskDialog.Show("pyRevit", invokeEx.Message);
+                return ExecutionErrorCodes.ExecutionException;
+            }
+            finally {
+                // whatever
+            }
+        }
+
+        /// Run the script using visualbasic script engine
+        private static int ExecuteVisualBasicScript(ref PyRevitCommandRuntime pyrvtCmd) {
             // TODO
-            throw new NotImplementedException();
+            TaskDialog.Show("pyRevit", "Visual-Basic Execution Engine Not Yet Implemented.");
+            return ExecutionErrorCodes.EngineNotImplementedException;
+        }
+
+        /// Run the script using ruby script engine
+        private static int ExecuteRubyScript(ref PyRevitCommandRuntime pyrvtCmd) {
+            // TODO
+            TaskDialog.Show("pyRevit", "Ruby-Script Execution Engine Not Yet Implemented.");
+            return ExecutionErrorCodes.EngineNotImplementedException;
+            //// https://github.com/hakonhc/RevitRubyShell/blob/master/RevitRubyShell/RevitRubyShellApplication.cs
+            //// 1: ----------------------------------------------------------------------------------------------------
+            //// start ruby interpreter
+            //var engine = Ruby.CreateEngine();
+            //var scope = engine.CreateScope();
+
+            //// 2: ----------------------------------------------------------------------------------------------------
+            //// Finally let's execute
+            //try {
+            //    // Run the code
+            //    engine.ExecuteFile(pyrvtCmd.ScriptSourceFile, scope);
+            //    return ExecutionErrorCodes.Succeeded;
+            //}
+            //catch (SystemExitException) {
+            //    // ok, so the system exited. That was bound to happen...
+            //    return ExecutionErrorCodes.SysExited;
+            //}
+            //catch (Exception exception) {
+            //    // show (power) user everything!
+            //    string _dotnet_err_message = exception.ToString();
+            //    string _ruby_err_messages = engine.GetService<ExceptionOperations>().FormatException(exception);
+
+            //    // Print all errors to stdout and return cancelled to Revit.
+            //    // This is to avoid getting window prompts from Revit.
+            //    // Those pop ups are small and errors are hard to read.
+            //    _ruby_err_messages = _ruby_err_messages.Replace("\r\n", "\n");
+            //    pyrvtCmd.IronLanguageTraceBack = _ruby_err_messages;
+
+            //    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+            //    pyrvtCmd.ClrTraceBack = _dotnet_err_message;
+
+            //    _ruby_err_messages = string.Join("\n", ExternalConfig.irubyerrtitle, _ruby_err_messages);
+            //    _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
+
+            //    pyrvtCmd.OutputStream.WriteError(_ruby_err_messages + "\n\n" + _dotnet_err_message);
+            //    return ExecutionErrorCodes.ExecutionException;
+            //}
+            //finally {
+            //    // whatever
+            //}
         }
 
         /// Run the script using DynamoBIM
@@ -203,7 +320,7 @@ namespace PyRevitBaseClasses
             try {
                 // find the DynamoRevitApp from DynamoRevitDS.dll
                 // this should be already loaded since Dynamo loads before pyRevit
-                ObjectHandle dynRevitAppObjHandle = 
+                ObjectHandle dynRevitAppObjHandle =
                     Activator.CreateInstance("DynamoRevitDS", "Dynamo.Applications.DynamoRevitApp");
                 object dynRevitApp = dynRevitAppObjHandle.Unwrap();
                 MethodInfo execDynamo = dynRevitApp.GetType().GetMethod("ExecuteDynamoCommand");
@@ -214,8 +331,8 @@ namespace PyRevitBaseClasses
             }
             catch (FileNotFoundException) {
                 // if failed in finding DynamoRevitDS.dll, assume no dynamo
-                TaskDialog.Show("pyRevit", 
-                    "Can not find dynamo installation or determine which Dynamo version to Run.\n\n" + 
+                TaskDialog.Show("pyRevit",
+                    "Can not find dynamo installation or determine which Dynamo version to Run.\n\n" +
                     "Run Dynamo once to select the active version.");
                 return ExecutionErrorCodes.ExecutionException;
             }
@@ -224,18 +341,13 @@ namespace PyRevitBaseClasses
         /// Run the script using Grasshopper
         private static int ExecuteGrasshopperDocument(ref PyRevitCommandRuntime pyrvtCmd) {
             // TODO
-            throw new NotImplementedException();
+            TaskDialog.Show("pyRevit", "Grasshopper Execution Engine Not Yet Implemented.");
+            return ExecutionErrorCodes.EngineNotImplementedException;
         }
 
         // utility methods -------------------------------------------------------------------------------------------
         // iron python
-        private static ScriptScope CreateScope(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd)
-        {
-            return engine.CreateScope();
-        }
-
-        private static void CleanupScope(ScriptEngine engine, ScriptScope scope)
-        {
+        private static void CleanupScope(ScriptEngine engine, ScriptScope scope) {
             var script = engine.CreateScriptSourceFromString("for __deref in dir():\n" +
                                                              "    if not __deref.startswith('__'):\n" +
                                                              "        del globals()[__deref]");
@@ -243,6 +355,43 @@ namespace PyRevitBaseClasses
             script.Execute(scope);
         }
 
+        // csharp
+        private static IEnumerable<Type> GetTypesSafely(Assembly assembly) {
+            try {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex) {
+                return ex.Types.Where(x => x != null);
+            }
+        }
+
+        private static int ExecuteExternalCommand(Assembly assmObj, ref PyRevitCommandRuntime pyrvtCmd) {
+            foreach (Type assmType in GetTypesSafely(assmObj)) {
+                if (assmType.IsClass) {
+                    if (assmType.GetInterfaces().Contains(typeof(IExternalCommand))) {
+                        object cmdInstance = Activator.CreateInstance(assmType);
+                        string commandMessage = string.Empty;
+                        try {
+                            assmType.InvokeMember(
+                                "Execute",
+                                BindingFlags.Default | BindingFlags.InvokeMethod,
+                                null,
+                                cmdInstance,
+                                new object[] {
+                                        pyrvtCmd.CommandData,
+                                        commandMessage,
+                                        pyrvtCmd.SelectedElements}
+                                );
+                            return ExecutionErrorCodes.Succeeded;
+                        }
+                        catch {
+                            return ExecutionErrorCodes.ExecutionException;
+                        }
+                    }
+                }
+            }
+            return ExecutionErrorCodes.ExternalCommandNotImplementedException;
+        }
         // dynamo
         // NOTE: Dyanmo uses XML in older file versions and JSON in newer versions. This needs to support both if ever implemented
         private static bool DetermineShowDynamoGUI() {
@@ -267,18 +416,15 @@ namespace PyRevitBaseClasses
 
     }
 
-    public class ErrorReporter : ErrorListener
-    {
+    public class IronPythonErrorReporter : ErrorListener {
         public List<string> Errors = new List<string>();
 
         public override void ErrorReported(ScriptSource source, string message,
-                                           SourceSpan span, int errorCode, Severity severity)
-        {
+                                           SourceSpan span, int errorCode, Severity severity) {
             Errors.Add(string.Format("{0} (line {1})", message, span.Start.Line));
         }
 
-        public int Count
-        {
+        public int Count {
             get { return Errors.Count; }
         }
     }

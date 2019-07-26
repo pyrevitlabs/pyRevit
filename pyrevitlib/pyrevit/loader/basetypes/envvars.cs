@@ -28,6 +28,8 @@ namespace PyRevitBaseClasses
         public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);
 
         public static string autoupdating = string.Format("{0}_AUTOUPDATING", keyPrefix);
+
+        public static string refedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
     }
 
     public class EnvDictionary
@@ -44,6 +46,8 @@ namespace PyRevitBaseClasses
         public bool usageLogState;
         public string usageLogFilePath;
         public string usageLogServerUrl;
+
+        public string[] referencedAssemblies;
 
         public EnvDictionary()
         {
@@ -81,6 +85,9 @@ namespace PyRevitBaseClasses
 
             if (_envData.Contains(EnvDictionaryKeys.usageLogServerUrl))
                 usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
+
+            if (_envData.Contains(EnvDictionaryKeys.refedAssms))
+                referencedAssemblies  = (string[])_envData[EnvDictionaryKeys.refedAssms];
         }
     }
 }

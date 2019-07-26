@@ -9,13 +9,8 @@ if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
 
 #pylint: disable=W0703,C0302,C0103,C0413
+import pyrevit.extensions as exts
 from pyrevit.extensions import components
-from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
-    STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
-    PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
-    PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX,\
-    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER,\
-    PANEL_PUSH_BUTTON_POSTFIX
 
 
 mlogger = get_logger(__name__)
@@ -410,9 +405,9 @@ def _produce_ui_stacks(ui_maker_params):
         mlogger.debug('Opened stack: %s', stack_cmp.name)
 
         if HOST_APP.is_older_than('2017'):
-            _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLIT_BUTTON_POSTFIX] = \
                 _produce_ui_pulldown
-            _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLITPUSH_BUTTON_POSTFIX] = \
                 _produce_ui_pulldown
 
         # capturing and logging any errors on stack item
@@ -426,9 +421,9 @@ def _produce_ui_stacks(ui_maker_params):
                           ui_maker_params.create_beta_cmds))
 
         if HOST_APP.is_older_than('2017'):
-            _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLIT_BUTTON_POSTFIX] = \
                 _produce_ui_split
-            _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLITPUSH_BUTTON_POSTFIX] = \
                 _produce_ui_splitpush
 
         try:
@@ -521,20 +516,21 @@ def _produce_ui_tab(ui_maker_params):
 
 
 _component_creation_dict = {
-    TAB_POSTFIX: _produce_ui_tab,
-    PANEL_POSTFIX: _produce_ui_panels,
-    STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
-    STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
-    PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
-    SPLIT_BUTTON_POSTFIX: _produce_ui_split,
-    SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
-    PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-    TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
-    SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
-    LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
-    SEPARATOR_IDENTIFIER: _produce_ui_separator,
-    SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
-    PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
+    exts.TAB_POSTFIX: _produce_ui_tab,
+    exts.PANEL_POSTFIX: _produce_ui_panels,
+    exts.STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
+    exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
+    exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
+    exts.PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    exts.TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    exts.SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    exts.LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
+    exts.INVOKE_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    exts.SEPARATOR_IDENTIFIER: _produce_ui_separator,
+    exts.SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
+    exts.PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
     }
 
 

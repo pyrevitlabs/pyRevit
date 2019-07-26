@@ -5,13 +5,14 @@ from collections import namedtuple
 from pyrevit import HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
+from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-
+from pyrevit.loader.basetypes import _get_references
 from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
 from pyrevit.loader.systemdiag import system_diag
 
@@ -23,6 +24,7 @@ mlogger = get_logger(__name__)
 PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
 PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
 PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
+PYREVIT_REFEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_REFEDASSMS'
 
 PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
 PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
@@ -72,6 +74,11 @@ def setup_runtime_vars():
     if cpyengine:
         envvars.set_pyrevit_env_var(PYREVIT_CSPYVERSION_ENVVAR,
                                     cpyengine.Version)
+
+    # set a list of important assemblies
+    # this is required for dotnet script execution
+    refArray = framework.Array[str](_get_references())
+    envvars.set_pyrevit_env_var(PYREVIT_REFEDASSMS_ENVVAR, refArray)
 
 
 def get_runtime_info():
