@@ -86,8 +86,10 @@ namespace PyRevitBaseClasses
             if (_envData.Contains(EnvDictionaryKeys.telemetryServerUrl))
                 telemetryServerUrl = (string)_envData[EnvDictionaryKeys.telemetryServerUrl];
 
-            if (_envData.Contains(EnvDictionaryKeys.refedAssms))
-                referencedAssemblies  = (string[])_envData[EnvDictionaryKeys.refedAssms];
+            if (_envData.Contains(EnvDictionaryKeys.refedAssms)) {
+                var assms = (string)_envData[EnvDictionaryKeys.refedAssms];
+                referencedAssemblies = assms.Split(ExternalConfig.defaultsep);
+            }
         }
     }
 }

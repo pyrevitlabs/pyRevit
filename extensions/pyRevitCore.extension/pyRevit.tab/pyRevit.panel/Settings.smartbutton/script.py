@@ -169,8 +169,9 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_env_vars_list(self):
         """Reads the pyRevit environment variables and updates the list"""
-        env_vars_list = [EnvVariable(k, v)
-                         for k, v in envvars.get_pyrevit_env_vars().items()]
+        env_vars_list = \
+            [EnvVariable(k, v)
+             for k, v in sorted(envvars.get_pyrevit_env_vars().items())]
 
         self.envvars_lb.ItemsSource = env_vars_list
 

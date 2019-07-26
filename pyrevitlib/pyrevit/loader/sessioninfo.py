@@ -5,7 +5,6 @@ from collections import namedtuple
 from pyrevit import HOST_APP, HOME_DIR
 
 from pyrevit import versionmgr
-from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
 from pyrevit import coreutils
@@ -77,8 +76,10 @@ def setup_runtime_vars():
 
     # set a list of important assemblies
     # this is required for dotnet script execution
-    refArray = framework.Array[str](_get_references())
-    envvars.set_pyrevit_env_var(PYREVIT_REFEDASSMS_ENVVAR, refArray)
+    envvars.set_pyrevit_env_var(
+        PYREVIT_REFEDASSMS_ENVVAR,
+        coreutils.DEFAULT_SEPARATOR.join(_get_references())
+        )
 
 
 def get_runtime_info():
