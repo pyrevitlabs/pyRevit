@@ -75,6 +75,9 @@ class InvokeButton(GenericUICommand):
 
             self.command_class = \
                 self.meta.get(exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None)
+
+            # assign the metadata file to the script
+            self.script_file = self.config_script_file = self.meta_file
         else:
             mlogger.error("Invoke button does not have any bundle metadata.")
 
