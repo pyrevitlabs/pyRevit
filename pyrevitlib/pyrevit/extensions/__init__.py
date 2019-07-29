@@ -127,18 +127,33 @@ UI_TITLE_PARAM = '__title__'
 DOCSTRING_PARAM = '__doc__'
 AUTHOR_PARAM = '__author__'
 
-COMMAND_HELP_URL = '__helpurl__'
+COMMAND_HELP_URL_PARAM = '__helpurl__'
 COMMAND_CONTEXT_PARAM = '__context__'
 MIN_REVIT_VERSION_PARAM = '__min_revit_ver__'
 MAX_REVIT_VERSION_PARAM = '__max_revit_ver__'
 SHIFT_CLICK_PARAM = '__shiftclick__'
 BETA_SCRIPT_PARAM = '__beta__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
-
-LINK_BUTTON_ASSEMBLY_PARAM = 'assembly'
-LINK_BUTTON_COMMAND_CLASS_PARAM = 'commandclass'
-
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
+
+# bundle metadata keys
+MDATA_UI_TITLE = 'title'
+MDATA_TOOLTIP = 'tooltip'
+MDATA_AUTHOR = 'author'
+
+MDATA_COMMAND_HELP_URL = 'help_url'
+MDATA_COMMAND_CONTEXT = 'context'
+MDATA_MIN_REVIT_VERSION = 'min_revit_version'
+MDATA_MAX_REVIT_VERSION = 'max_revit_version'
+MDATA_BETA_SCRIPT = 'is_beta'
+
+MDATA_ENGINE = 'engine'
+MDATA_ENGINE_CLEAN = 'clean'
+MDATA_ENGINE_FULLFRAME = 'full_frame'
+
+MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
+MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
+
 
 COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
 COMP_LIBRARY_DIR_NAME = 'lib'

@@ -407,6 +407,32 @@ class GenericUICommand(GenericUIComponent):
     def _read_bundle_metadata(self):
         try:
             self.meta = yaml.load_as_dict(self.meta_file)
+            if self.meta:
+                self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, None)
+                self.doc_string = self.meta.get(exts.MDATA_TOOLTIP, None)
+                self.author = self.meta.get(exts.MDATA_AUTHOR, None)
+                self.cmd_help_url = \
+                    self.meta.get(exts.MDATA_COMMAND_HELP_URL, None)
+                self.min_revit_ver = \
+                    self.meta.get(exts.MDATA_MIN_REVIT_VERSION, None)
+                self.max_revit_ver = \
+                    self.meta.get(exts.MDATA_MAX_REVIT_VERSION, None)
+                self.beta_cmd = \
+                    self.meta.get(exts.MDATA_BETA_SCRIPT, False)
+                if self.meta.get(exts.MDATA_ENGINE, False):
+                    self.requires_clean_engine = \
+                        self.meta.get(exts.MDATA_ENGINE_CLEAN, None)
+                    self.requires_fullframe_engine = \
+                        self.meta.get(exts.MDATA_ENGINE_FULLFRAME, None)
+
+                # panel buttons should be active always
+                if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
+                    self.cmd_context = \
+                        self.meta.get(exts.MDATA_COMMAND_CONTEXT, None)
+                    if isinstance(self.cmd_context, list):
+                        self.cmd_context = ';'.join(self.cmd_context)
+                else:
+                    self.cmd_context = exts.CTX_ZERODOC[0]
         except Exception as err:
             mlogger.error(
                 "Error reading meta file @ %s | %s", self.meta_file, err
@@ -437,7 +463,7 @@ class GenericUICommand(GenericUIComponent):
             self.min_revit_ver = script_content.extract_param(
                 exts.MIN_REVIT_VERSION_PARAM)  # type: str
             self.cmd_help_url = script_content.extract_param(
-                exts.COMMAND_HELP_URL)  # type: str
+                exts.COMMAND_HELP_URL_PARAM)  # type: str
 
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
@@ -458,24 +484,24 @@ class GenericUICommand(GenericUIComponent):
             else:
                 self.cmd_context = exts.CTX_ZERODOC[0]
 
-            if not self.meta and any([
-                    self.ui_title,
-                    self.doc_string,
-                    self.author,
-                    self.max_revit_ver,
-                    self.min_revit_ver,
-                    self.cmd_help_url,
-                    self.cmd_context,
-                    self.beta_cmd,
-                    self.requires_clean_engine,
-                    self.requires_fullframe_engine,
-                ]):
-                mlogger.deprecate(
-                    "Script '%s': Using private variables (e.g. __title__) to "
-                    "specify bundle metadata is deprecated. Please update "
-                    "your bundles to use the new bundle.yaml metadata file.",
-                    self.name
-                    )
+            # if not self.meta and any([
+            #         self.ui_title,
+            #         custom_docstring,   # only docstring defined in __doc__
+            #         self.author,
+            #         self.max_revit_ver,
+            #         self.min_revit_ver,
+            #         self.cmd_help_url,
+            #         self.cmd_context,
+            #         self.beta_cmd,
+            #         self.requires_clean_engine,
+            #         self.requires_fullframe_engine,
+            #     ]):
+                # mlogger.deprecate(
+                #     "Script '%s': Using private variables (e.g. __title__) to "
+                #     "specify bundle metadata is deprecated. Please update "
+                #     "your bundles to use the new bundle.yaml metadata file.",
+                #     self.name
+                #     )
 
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)

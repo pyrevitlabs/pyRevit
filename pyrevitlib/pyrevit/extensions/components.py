@@ -44,11 +44,11 @@ class LinkButton(GenericUICommand):
                 coreutils.ScriptFileParser(self.get_full_script_address())
 
             self.assembly = script_content.extract_param(
-                exts.LINK_BUTTON_ASSEMBLY_PARAM)  # type: str
+                exts.MDATA_LINK_BUTTON_ASSEMBLY)  # type: str
 
             self.command_class = \
                 script_content.extract_param(
-                    exts.LINK_BUTTON_COMMAND_CLASS_PARAM)  # type: str
+                    exts.MDATA_LINK_BUTTON_COMMAND_CLASS)  # type: str
 
         except PyRevitException as err:
             mlogger.error(err)
@@ -69,12 +69,12 @@ class InvokeButton(GenericUICommand):
         self.assembly = self.command_class = None
         if self.meta:
             self.assembly = \
-                self.meta.get(exts.LINK_BUTTON_ASSEMBLY_PARAM, None)
+                self.meta.get(exts.MDATA_LINK_BUTTON_ASSEMBLY, None)
             if not self.assembly:
                 mlogger.error("Invoke button does not specify target assembly.")
 
             self.command_class = \
-                self.meta.get(exts.LINK_BUTTON_COMMAND_CLASS_PARAM, None)
+                self.meta.get(exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None)
         else:
             mlogger.error("Invoke button does not have any bundle metadata.")
 
