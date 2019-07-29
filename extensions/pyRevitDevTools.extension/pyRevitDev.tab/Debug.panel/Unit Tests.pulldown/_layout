@@ -12,6 +12,7 @@ Test Engine Stability
 Test Cached Engines
 Test FullFrame Engine
 Test pyRevit Button
+Test pyRevit Bundle
 Test Output Stream
 Test Multiple Outputs
 Test Independent Logging

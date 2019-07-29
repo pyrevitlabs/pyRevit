@@ -1,0 +1,13 @@
+title: Test pyRevit Bundle (Custom Title)
+tooltip: Test pyRevit Bundle Tooltip
+help_url: "{{docpath}}"
+author: "{{author}}"
+context:
+  - Walls
+  - Text Notes
+min_revit_version:
+max_revit_version:
+is_beta: false
+engine:
+  clean: false
+  full_frame: true

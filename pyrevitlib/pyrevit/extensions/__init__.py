@@ -105,7 +105,7 @@ GRASSHOPPER_LANG = 'grasshopper'
 # Component scripts
 DEFAULT_SCRIPT_NAME = 'script'
 DEFAULT_CONFIG_NAME = 'config'
-DEFAULT_BUNDLEMATA_NAME = 'bundle'
+DEFAULT_BUNDLEMATA_NAME = 'script'
 
 # Hash file for caching directory state hash value
 EXTENSION_HASH_CACHE_FILENAME = 'ext_hash'
@@ -151,6 +151,7 @@ MDATA_ENGINE = 'engine'
 MDATA_ENGINE_CLEAN = 'clean'
 MDATA_ENGINE_FULLFRAME = 'full_frame'
 
+MDATA_LINK_BUTTON_REFERENCES = 'references'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
 

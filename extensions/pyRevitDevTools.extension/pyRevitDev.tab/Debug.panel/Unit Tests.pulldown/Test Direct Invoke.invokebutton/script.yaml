@@ -6,4 +6,4 @@
 # - name of a dll inside the bundle: AliTpyRevitConcepts.dll
 # - absolute path to dll: c:\users\eirannejad\downloads\AliTpyRevitConcepts.dll
 assembly: AliTpyRevitConcepts.dll
-commandclass:
+command_class:

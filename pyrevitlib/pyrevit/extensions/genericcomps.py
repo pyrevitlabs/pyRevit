@@ -408,22 +408,36 @@ class GenericUICommand(GenericUIComponent):
         try:
             self.meta = yaml.load_as_dict(self.meta_file)
             if self.meta:
-                self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, None)
-                self.doc_string = self.meta.get(exts.MDATA_TOOLTIP, None)
-                self.author = self.meta.get(exts.MDATA_AUTHOR, None)
+                self.ui_title = \
+                    self.meta.get(exts.MDATA_UI_TITLE,
+                                  self.ui_title)
+                self.doc_string = \
+                    self.meta.get(exts.MDATA_TOOLTIP,
+                                  self.doc_string)
+                self.author = \
+                    self.meta.get(exts.MDATA_AUTHOR,
+                                  self.author)
                 self.cmd_help_url = \
-                    self.meta.get(exts.MDATA_COMMAND_HELP_URL, None)
+                    self.meta.get(exts.MDATA_COMMAND_HELP_URL,
+                                  self.cmd_help_url)
                 self.min_revit_ver = \
-                    self.meta.get(exts.MDATA_MIN_REVIT_VERSION, None)
+                    self.meta.get(exts.MDATA_MIN_REVIT_VERSION,
+                                  self.min_revit_ver)
                 self.max_revit_ver = \
-                    self.meta.get(exts.MDATA_MAX_REVIT_VERSION, None)
+                    self.meta.get(exts.MDATA_MAX_REVIT_VERSION,
+                                  self.max_revit_ver)
                 self.beta_cmd = \
-                    self.meta.get(exts.MDATA_BETA_SCRIPT, False)
-                if self.meta.get(exts.MDATA_ENGINE, False):
+                    self.meta.get(exts.MDATA_BETA_SCRIPT,
+                                  'false').lower() == 'true'
+                if exts.MDATA_ENGINE in self.meta:
                     self.requires_clean_engine = \
-                        self.meta.get(exts.MDATA_ENGINE_CLEAN, None)
+                        self.meta[exts.MDATA_ENGINE].get(
+                            exts.MDATA_ENGINE_CLEAN,
+                            'false').lower() == 'true'
                     self.requires_fullframe_engine = \
-                        self.meta.get(exts.MDATA_ENGINE_FULLFRAME, None)
+                        self.meta[exts.MDATA_ENGINE].get(
+                            exts.MDATA_ENGINE_FULLFRAME,
+                            'false').lower() == 'true'
 
                 # panel buttons should be active always
                 if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
