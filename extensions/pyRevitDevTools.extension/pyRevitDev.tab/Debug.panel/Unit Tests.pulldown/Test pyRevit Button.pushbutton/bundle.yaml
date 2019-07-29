@@ -1,0 +1,11 @@
+title: pyRevit Test Command(bundle)
+tooltip: Testing all features of pyRevit bundle
+author: "{{author}}"
+help_url: "{{rooturl}}/somepath"
+min_revit_version: 2014
+max_revit_version:
+is_beta: false
+context: zero-doc
+engine:
+  clean: false
+  fullframe: false

@@ -383,7 +383,6 @@ class GenericUICommand(GenericUIComponent):
                     self)
                 self.config_script_file = self.script_file
 
-
     def _find_bundle_file(self, file_postfixes):
         for bundle_file in os.listdir(self.directory):
             for file_postfix in file_postfixes:
@@ -440,15 +439,6 @@ class GenericUICommand(GenericUIComponent):
             self.cmd_help_url = script_content.extract_param(
                 exts.COMMAND_HELP_URL)  # type: str
 
-            # panel buttons should be active always
-            if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
-                self.cmd_context = script_content.extract_param(
-                    exts.COMMAND_CONTEXT_PARAM)  # type: str or list
-                if isinstance(self.cmd_context, list):
-                    self.cmd_context = ';'.join(self.cmd_context)
-            else:
-                self.cmd_context = exts.CTX_ZERODOC[0]
-
             self.beta_cmd = script_content.extract_param(
                 exts.BETA_SCRIPT_PARAM)  # type: bool
 
@@ -458,6 +448,34 @@ class GenericUICommand(GenericUIComponent):
                 exts.CLEAN_ENGINE_SCRIPT_PARAM, False)  # type: bool
             self.requires_fullframe_engine = script_content.extract_param(
                 exts.FULLFRAME_ENGINE_PARAM, False)  # type: bool
+
+            # panel buttons should be active always
+            if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
+                self.cmd_context = script_content.extract_param(
+                    exts.COMMAND_CONTEXT_PARAM)  # type: str or list
+                if isinstance(self.cmd_context, list):
+                    self.cmd_context = ';'.join(self.cmd_context)
+            else:
+                self.cmd_context = exts.CTX_ZERODOC[0]
+
+            if not self.meta and any([
+                    self.ui_title,
+                    self.doc_string,
+                    self.author,
+                    self.max_revit_ver,
+                    self.min_revit_ver,
+                    self.cmd_help_url,
+                    self.cmd_context,
+                    self.beta_cmd,
+                    self.requires_clean_engine,
+                    self.requires_fullframe_engine,
+                ]):
+                mlogger.deprecate(
+                    "Script '%s': Using private variables (e.g. __title__) to "
+                    "specify bundle metadata is deprecated. Please update "
+                    "your bundles to use the new bundle.yaml metadata file.",
+                    self.name
+                    )
 
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)

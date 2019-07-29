@@ -179,9 +179,9 @@ class LoggerWrapper(logging.Logger):
         """Return current logging level."""
         return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
 
-    def deprecate(self, message):
+    def deprecate(self, *args):
         """Log message with custom Deprecate level."""
-        self.warning(message)
+        self.warning(*args)
 
 
 # setting up handlers and formatters -------------------------------------------
