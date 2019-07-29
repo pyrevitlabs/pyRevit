@@ -456,7 +456,7 @@ def execute_command_cls(extcmd_type, arguments=None,
 
     command_instance = extcmd_type()
     # this is a manual execution from python code and not by user
-    command_instance.executedFromUI = False
+    command_instance.ExecutedFromUI = False
     # pass the arguments to the instance
     if arguments:
         command_instance.argumentList = Array[str](arguments)
@@ -465,7 +465,7 @@ def execute_command_cls(extcmd_type, arguments=None,
     # force using fullframe engine
     command_instance.baked_needsFullFrameEngine = fullframe_engine
     # force using the config script
-    command_instance.altScriptModeOverride = config_mode
+    command_instance.ConfigScriptMode = config_mode
 
     re = command_instance.Execute(create_tmp_commanddata(),
                                   '',
@@ -533,7 +533,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             needsFullFrameEngine=fullframe_engine,
             refreshEngine=False,
             forcedDebugMode=False,
-            altScriptMode=False,
+            configScriptMode=False,
             executedFromUI=False
             )
 

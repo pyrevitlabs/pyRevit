@@ -33,12 +33,12 @@ namespace PyRevitBaseClasses {
         // script execution by using a shortcut key combination. This parameter is created to
         // trigger the config script mode when executing a command from a program and not
         // from the Revit user interface.
-        public bool altScriptModeOverride = false;
+        public bool ConfigScriptMode = false;
 
         // this is true by default since commands are normally executed from ui.
         // pyrevit module will set this to false, when manually executing a
         // pyrevit command from python code. (e.g when executing reload after update)
-        public bool executedFromUI = true;
+        public bool ExecutedFromUI = true;
 
         // list of string arguments to be passed to executor.
         // executor then sets the sys.argv with these arguments
@@ -76,7 +76,7 @@ namespace PyRevitBaseClasses {
             var _script = baked_scriptSource;
 
             bool _refreshEngine = false;
-            bool _altScriptMode = false;
+            bool _configScriptMode = false;
             bool _forcedDebugMode = false;
 
             bool ALT = Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt);
@@ -169,9 +169,9 @@ namespace PyRevitBaseClasses {
             }
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
-            else if (CTRL && (SHIFT || altScriptModeOverride)) {
+            else if (CTRL && (SHIFT || ConfigScriptMode)) {
                 _script = baked_configScriptSource;
-                _altScriptMode = true;
+                _configScriptMode = true;
                 _forcedDebugMode = true;
             }
 
@@ -186,9 +186,9 @@ namespace PyRevitBaseClasses {
             }
 
             // If Shift clicking on button, run config script instead
-            else if (SHIFT || altScriptModeOverride) {
+            else if (SHIFT || ConfigScriptMode) {
                 _script = baked_configScriptSource;
-                _altScriptMode = true;
+                _configScriptMode = true;
             }
 
             // If Ctrl clicking on button, set forced debug mode.
@@ -214,8 +214,8 @@ namespace PyRevitBaseClasses {
                                                             needsFullFrameEngine: baked_needsFullFrameEngine,
                                                             refreshEngine: _refreshEngine,
                                                             forcedDebugMode: _forcedDebugMode,
-                                                            altScriptMode: _altScriptMode,
-                                                            executedFromUI: executedFromUI);
+                                                            configScriptMode: _configScriptMode,
+                                                            executedFromUI: ExecutedFromUI);
             #endregion
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
