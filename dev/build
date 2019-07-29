@@ -189,6 +189,10 @@ function install_opt() {
     choco install upx -y &>/dev/null
     echo "installing go..."
     choco install golang -y &>/dev/null
+    echo "installing gcc..."
+    choco install mingw -y &>/dev/null
+    echo "prepare git for go packages..."
+    git config --global http.https://pkg.re.followRedirects true
     # echo "installing python 2.7 ..."
     # choco install python2 -y &>/dev/null
     # echo "installing pipenv..."
@@ -309,11 +313,20 @@ elif $BUILDLABS; then
     # build pyrevit cli auto complete helper
     echo "building autocomplete helper binary"
     rm -f $AUTOCOMPBIN
+    go get "github.com/posener/complete"
     go build -o=$AUTOCOMPBIN $AUTOCOMP
     upx --mono $AUTOCOMPBIN
 
     # build pyrevit log server
     rm -f $TELEMETRYSERVERBIN
+    go get "github.com/lib/pq"
+    go get "gopkg.in/mgo.v2"
+    go get "github.com/denisenkom/go-mssqldb"
+    go get "github.com/go-sql-driver/mysql"
+    go get "github.com/mattn/go-sqlite3"
+    go get "github.com/gorilla/mux"
+    go get "github.com/satori/go.uuid"
+    go get "pkg.re/essentialkaos/ek.v10/fmtc"
     go build -o=$TELEMETRYSERVERBIN -ldflags "-w" $TELEMETRYSERVER
     upx --mono $TELEMETRYSERVERBIN
 
