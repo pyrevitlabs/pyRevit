@@ -1,0 +1,7 @@
+title: Test Grasshopper (Custom Title)
+tooltip: Test Grasshopper Tooltip
+author: "{{author}}"
+context:
+  - Walls
+  - Text Notes
+references:

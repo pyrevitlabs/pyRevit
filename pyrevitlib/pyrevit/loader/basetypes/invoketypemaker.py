@@ -9,7 +9,7 @@ from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 mlogger = get_logger(__name__)
 
 
-def _make_invoke_types(extension, module_builder, cmd_component): #pylint: disable=W0613
+def create_executor_type(extension, module_builder, cmd_component): #pylint: disable=W0613
     mlogger.debug('Creating executor type for: %s', cmd_component)
 
     create_type(module_builder,
@@ -29,10 +29,3 @@ def _make_invoke_types(extension, module_builder, cmd_component): #pylint: disab
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)
     cmd_component.class_name = cmd_component.unique_name
-
-
-def create_invoke_types(extension, cmd_component, module_builder=None):
-    if module_builder:
-        _make_invoke_types(extension, module_builder, cmd_component)
-    else:
-        cmd_component.class_name = cmd_component.unique_name

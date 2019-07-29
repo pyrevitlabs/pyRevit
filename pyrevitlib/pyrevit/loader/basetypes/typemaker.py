@@ -7,8 +7,10 @@ import pyrevit.extensions as exts
 
 from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
 from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_NAME
-from pyrevit.loader.basetypes.pythontypemaker import create_python_types
-from pyrevit.loader.basetypes.invoketypemaker import create_invoke_types
+from pyrevit.loader.basetypes import CMD_AVAIL_TYPE_SELECTION
+from pyrevit.loader.basetypes import CMD_AVAIL_TYPE_EXTENDED
+from pyrevit.loader.basetypes import pythontypemaker
+from pyrevit.loader.basetypes import invoketypemaker
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -16,7 +18,39 @@ mlogger = get_logger(__name__)
 
 
 # generic type maker functions ------------------------------------------------
-def _make_types(extension, module_builder, cmd_component): #pylint: disable=W0613
+def create_avail_type(module_builder, cmd_component):
+    # create command availability class for this command
+    if cmd_component.cmd_context:
+        try:
+            mlogger.debug('Creating availability type for: %s', cmd_component)
+
+            context_str = cmd_component.cmd_context.lower()
+
+            if context_str == exts.CTX_SELETION:
+                create_type(module_builder, CMD_AVAIL_TYPE_SELECTION,
+                            cmd_component.unique_avail_name, [],
+                            cmd_component.cmd_context)
+
+            elif context_str in exts.CTX_ZERODOC:
+                create_type(module_builder, CMD_AVAIL_TYPE,
+                            cmd_component.unique_avail_name, [])
+
+            else:
+                create_type(module_builder, CMD_AVAIL_TYPE_EXTENDED,
+                            cmd_component.unique_avail_name, [],
+                            cmd_component.cmd_context)
+
+            cmd_component.avail_class_name = \
+                cmd_component.unique_avail_name
+            mlogger.debug('Successfully created availability type for: %s',
+                          cmd_component)
+        except Exception as cmd_avail_err:
+            cmd_component.avail_class_name = None
+            mlogger.error('Error creating availability type: %s | %s',
+                          cmd_component, cmd_avail_err)
+
+
+def create_executor_type(extension, module_builder, cmd_component): #pylint: disable=W0613
     mlogger.debug('Creating executor type for: %s', cmd_component)
 
     create_type(module_builder,
@@ -39,10 +73,39 @@ def _make_types(extension, module_builder, cmd_component): #pylint: disable=W061
 
 
 def create_types(extension, cmd_component, module_builder=None):
+    mlogger.debug('Command language is: %s', cmd_component.script_language)
+
     if module_builder:
-        _make_types(extension, module_builder, cmd_component)
+        # create the executor types
+        # if python
+        if cmd_component.script_language == exts.PYTHON_LANG:
+            pythontypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+        # if invoke
+        elif cmd_component.type_id == exts.INVOKE_BUTTON_POSTFIX:
+            invoketypemaker.create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+        # if anything else
+        else:
+            create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
+
+        # create availability types if necessary
+        create_avail_type(module_builder, cmd_component)
+
     else:
         cmd_component.class_name = cmd_component.unique_name
+        if cmd_component.cmd_context:
+            cmd_component.avail_class_name = cmd_component.unique_avail_name
 
 
 # public base class maker function ---------------------------------------------
@@ -59,73 +122,12 @@ def make_cmd_types(extension, cmd_component, module_builder=None):
     """
     # make command interface type for the given command
     try:
-        # cpython, ironpython
-        if cmd_component.script_language == exts.PYTHON_LANG:
-            mlogger.debug('Command is python: %s', cmd_component)
-            try:
-                create_python_types(extension, cmd_component, module_builder)
-            except Exception as cmd_exec_err:
-                mlogger.error('Error creating python types for: %s | %s',
-                              cmd_component, cmd_exec_err)
-
-        # c#
-        elif cmd_component.script_language == exts.CSHARP_LANG:
-            mlogger.debug('Command is C#: %s', cmd_component)
-            try:
-                create_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling C# types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
-        # visual basic
-        elif cmd_component.script_language == exts.VB_LANG:
-            mlogger.debug('Command is Visua Basic: %s', cmd_component)
-            try:
-                create_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling Visua Basic types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
-        # ruby
-        elif cmd_component.script_language == exts.RUBY_LANG:
-            mlogger.debug('Command is Ruby: %s', cmd_component)
-            try:
-                create_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling Ruby types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
-        # dynamo
-        elif cmd_component.script_language == exts.DYNAMO_LANG:
-            mlogger.debug('Command is DynamoBIM: %s', cmd_component)
-            try:
-                create_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling DynamoBIM types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
-        # grasshopper
-        elif cmd_component.script_language == exts.GRASSHOPPER_LANG:
-            mlogger.debug('Command is Grasshopper script: %s', cmd_component)
-            try:
-                create_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling Grasshopper types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
-        # invoke button
-        elif cmd_component.type_id == exts.INVOKE_BUTTON_POSTFIX:
-            mlogger.debug('Command is Invoke button: %s', cmd_component)
-            try:
-                create_invoke_types(extension, cmd_component, module_builder)
-            except Exception as cmd_compile_err:
-                mlogger.error('Error compiling Invoke types for: %s | %s',
-                              cmd_component, cmd_compile_err)
-
+        create_types(extension, cmd_component, module_builder)
     except Exception as createtype_err:
         mlogger.error('Error creating appropriate executor for: %s | %s',
                       cmd_component, createtype_err)
 
 
 def make_shared_types(module_builder=None):
+    # creates the default availability type in module
     create_type(module_builder, CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_NAME, [])

@@ -5,5 +5,11 @@
 # first line should be:
 # - name of a dll inside the bundle: AliTpyRevitConcepts.dll
 # - absolute path to dll: c:\users\eirannejad\downloads\AliTpyRevitConcepts.dll
+title: Test Direct Invoke (Custom Title)
+tooltip: Test Direct Invoke Tooltip
+author: "{{author}}"
+context:
+  - Walls
+  - Text Notes
 assembly: AliTpyRevitConcepts.dll
 command_class:

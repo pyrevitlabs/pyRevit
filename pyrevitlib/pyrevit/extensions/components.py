@@ -302,7 +302,12 @@ class Extension(GenericUIContainer):
         # search for scripts, setting files (future support), and layout files
         patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.VB_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
         return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
