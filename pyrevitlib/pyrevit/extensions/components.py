@@ -5,8 +5,8 @@ import codecs
 
 from pyrevit import PyRevitException
 from pyrevit.compat import safe_strtype
+from pyrevit import framework
 from pyrevit import coreutils
-from pyrevit.coreutils import yaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
 from pyrevit.extensions.genericcomps import GenericComponent
@@ -28,72 +28,78 @@ class NoButton(GenericUICommand):
     type_id = exts.NOGUI_COMMAND_POSTFIX
 
 
-class LinkButton(GenericUICommand):
-    type_id = exts.LINK_BUTTON_POSTFIX
-
+class NoScriptButton(GenericUICommand):
     def __init__(self):
         GenericUICommand.__init__(self)
         self.assembly = self.command_class = None
 
-    def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir)
-        self.assembly = self.command_class = None
-        try:
-            # reading script file content to extract parameters
-            script_content = \
-                coreutils.ScriptFileParser(self.get_full_script_address())
-
-            self.assembly = script_content.extract_param(
-                exts.MDATA_LINK_BUTTON_ASSEMBLY)  # type: str
-
-            self.command_class = \
-                script_content.extract_param(
-                    exts.MDATA_LINK_BUTTON_COMMAND_CLASS)  # type: str
-
-        except PyRevitException as err:
-            mlogger.error(err)
-
-        mlogger.debug('Link button assembly.class: %s.%s',
-                      self.assembly, self.command_class)
-
-
-class InvokeButton(GenericUICommand):
-    type_id = exts.INVOKE_BUTTON_POSTFIX
-
-    def __init__(self):
-        GenericUICommand.__init__(self)
-        self.assembly = self.command_class = None
-
-    def __init_from_dir__(self, cmd_dir):
+    def __init_from_dir__(self, cmd_dir, needs_commandclass=False):
         GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
         self.assembly = self.command_class = None
-        if self.meta:
+        # to support legacy linkbutton types using python global var convention
+        # if has python script, read metadata
+        if self.script_language == exts.PYTHON_LANG:
+            try:
+                # reading script file content to extract parameters
+                script_content = \
+                    coreutils.ScriptFileParser(self.get_full_script_address())
+
+                self.assembly = \
+                    script_content.extract_param(exts.LINK_BUTTON_ASSEMBLY)
+
+                self.command_class = \
+                    script_content.extract_param(exts.LINK_BUTTON_COMMAND_CLASS)
+
+            except PyRevitException as err:
+                mlogger.error(err)
+
+        # otherwise read metadata from metadata file
+        elif self.meta:
+            # get the target assembly from metadata
             self.assembly = \
                 self.meta.get(exts.MDATA_LINK_BUTTON_ASSEMBLY, None)
-            if not self.assembly:
-                mlogger.error("Invoke button does not specify target assembly.")
 
+            # get the target command class from metadata
             self.command_class = \
                 self.meta.get(exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None)
 
+            # for invoke buttons there is no script source so
             # assign the metadata file to the script
             self.script_file = self.config_script_file = self.meta_file
         else:
-            mlogger.error("Invoke button does not have any bundle metadata.")
+            mlogger.debug("%s does not specify target assembly::class.", self)
 
-        self._verify_target()
-        mlogger.debug('Invoke button assembly.class: %s.%s',
-                      self.assembly, self.command_class)
+        if not self.assembly:
+            mlogger.error("%s does not specify target assembly.", self)
 
-    def _verify_target(self):
-        # verify dll exists
-        if self.assembly and not op.exists(self.assembly):
-            self.assembly = self.get_bundle_file(self.assembly)
-            if not op.exists(self.assembly):
-                mlogger.error(
-                    'Command %s: Can not determine target dll from: %s',
-                    self, self.assembly)
-                raise PyRevitException()
+        if needs_commandclass and not self.command_class:
+            mlogger.error("%s does not specify target command class.", self)
+
+        mlogger.debug('%s assembly.class: %s.%s',
+                      self, self.assembly, self.command_class)
+
+    def get_target_assembly(self, required=False):
+        assm_file = self.assembly.lower()
+        if not assm_file.endswith(framework.ASSEMBLY_FILE_TYPE):
+            assm_file += '.' + framework.ASSEMBLY_FILE_TYPE
+        target_asm = self.find_in_search_paths(assm_file)
+        if not target_asm and required:
+            mlogger.error("%s can not find target assembly.", self)
+        return target_asm or ''
+
+
+class LinkButton(NoScriptButton):
+    type_id = exts.LINK_BUTTON_POSTFIX
+
+    def __init_from_dir__(self, cmd_dir):
+        NoScriptButton.__init_from_dir__(self, cmd_dir, needs_commandclass=True)
+
+
+class InvokeButton(NoScriptButton):
+    type_id = exts.INVOKE_BUTTON_POSTFIX
+
+    def __init_from_dir__(self, cmd_dir):
+        NoScriptButton.__init_from_dir__(self, cmd_dir)
 
 
 class PushButton(GenericUICommand):
@@ -143,7 +149,7 @@ class SmartButton(GenericUICommand):
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):
-    allowed_sub_cmps = [GenericUICommand]
+    allowed_sub_cmps = [GenericUICommand, NoScriptButton]
 
     def has_commands(self):
         for component in self:
@@ -165,7 +171,8 @@ class SplitButtonGroup(GenericUICommandGroup):
 
 # Stacks include GenericUICommand, or GenericUICommandGroup
 class GenericStack(GenericUIContainer):
-    allowed_sub_cmps = [GenericUICommandGroup, GenericUICommand]
+    allowed_sub_cmps = \
+        [GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
     def has_commands(self):
         for component in self:
@@ -188,7 +195,8 @@ class StackTwoButtonGroup(GenericStack):
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
     type_id = exts.PANEL_POSTFIX
-    allowed_sub_cmps = [GenericStack, GenericUICommandGroup, GenericUICommand]
+    allowed_sub_cmps = \
+        [GenericStack, GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
     def has_commands(self):
         for component in self:
@@ -260,6 +268,10 @@ class Extension(GenericUIContainer):
     @property
     def ext_hash_value(self):
         return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
+
+    @property
+    def startup_script(self):
+        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
 
     # def _write_dir_hash(self, hash_value):
     #     if os.access(self.hash_cache, os.W_OK):
@@ -338,9 +350,11 @@ class Extension(GenericUIContainer):
             for cmd in self.get_all_commands():
                 cmd.configure(cfg_dict)
 
-    @property
-    def startup_script(self):
-        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
+    def get_all_modules(self):
+        referenced_modules = set()
+        for cmd in self.get_all_commands():
+            referenced_modules.update(cmd.get_modules())
+        return referenced_modules
 
 
 # library extension class

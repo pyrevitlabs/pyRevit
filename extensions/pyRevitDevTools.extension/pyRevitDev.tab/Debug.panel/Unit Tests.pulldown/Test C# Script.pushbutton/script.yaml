@@ -4,4 +4,5 @@ author: "{{author}}"
 context:
   - Walls
   - Text Notes
-references:
+modules:
+  - Markdown.dll

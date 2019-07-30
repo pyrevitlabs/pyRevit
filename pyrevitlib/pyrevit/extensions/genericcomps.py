@@ -47,8 +47,10 @@ class GenericUIComponent(GenericComponent):
         self.directory = None
         self.name = None
         self.unique_name = None
+        self.binary_path = None
         self.library_path = None
-        self.syspath_search_paths = []
+        self.modules = []
+        self.module_paths = []
         self.icon_file = None
 
     def __init_from_dir__(self, ext_dir):
@@ -57,6 +59,26 @@ class GenericUIComponent(GenericComponent):
                                    .format(ext_dir))
         self.directory = ext_dir
         self.unique_name = self._get_unique_name()
+
+        # each component can store custom libraries under
+        # /lib inside the component folder
+        lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
+        self.library_path = lib_path if op.exists(lib_path) else None
+
+        # setting up search paths. These paths will be added to
+        # all sub-components of this component.
+        if self.library_path:
+            self.module_paths.append(self.library_path)
+
+        # each component can store custom binaries under
+        # /bin inside the component folder
+        bin_path = op.join(self.directory, exts.COMP_BIN_DIR_NAME)
+        self.binary_path = bin_path if op.exists(bin_path) else None
+
+        # setting up search paths. These paths will be added to
+        # all sub-components of this component.
+        if self.binary_path:
+            self.module_paths.append(self.binary_path)
 
     def __repr__(self):
         return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
@@ -92,29 +114,40 @@ class GenericUIComponent(GenericComponent):
         return self.name + self.type_id
 
     def get_search_paths(self):
-        return self.syspath_search_paths
+        return self.module_paths
 
     def get_lib_path(self):
         return self.library_path
 
-    def has_syspath(self, path):
-        return path in self.syspath_search_paths
+    def has_search_path(self, path):
+        return path in self.module_paths
 
-    def add_syspath(self, path):
-        if path and not self.has_syspath(path):
+    def add_search_path(self, path):
+        if path and not self.has_search_path(path):
             mlogger.debug('Appending syspath: %s to %s', path, self)
-            self.syspath_search_paths.append(path)
+            self.module_paths.append(path)
 
-    def remove_syspath(self, path):
-        if path and self.has_syspath(path):
+    def remove_search_path(self, path):
+        if path and self.has_search_path(path):
             mlogger.debug('Removing syspath: %s from %s', path, self)
-            return self.syspath_search_paths.remove(path)
+            return self.module_paths.remove(path)
         else:
             return None
 
     def get_bundle_file(self, file_name):
         file_addr = op.join(self.directory, file_name)
         return file_addr if op.exists(file_addr) else None
+
+    def find_in_search_paths(self, file_name):
+        # test of file_name is an actually path to a file
+        if op.isfile(file_name):
+            return file_name
+
+        # test if file_name is inside search paths
+        for search_path in self.get_search_paths():
+            possible_file_path = op.join(search_path, file_name)
+            if op.isfile(possible_file_path):
+                return possible_file_path
 
 
 # superclass for all UI group items (tab, panel, button groups, stacks)
@@ -134,16 +167,6 @@ class GenericUIContainer(GenericUIComponent):
 
         self.name = op.splitext(op.basename(self.directory))[0]
         self.ui_title = self.name
-
-        # each container can store custom libraries under
-        # /Lib inside the container folder
-        lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
-        self.library_path = lib_path if op.exists(lib_path) else None
-
-        # setting up search paths. These paths will be added to
-        # all sub-components of this component.
-        if self.library_path:
-            self.syspath_search_paths.append(self.library_path)
 
         self._read_layout_file()    # sets self.layout and self.layout_items
         mlogger.debug('Layout is: %s', self.layout_items)
@@ -228,25 +251,25 @@ class GenericUIContainer(GenericUIComponent):
             if item_name == component.name:
                 return True
 
-    def add_syspath(self, path):
-        if path and not self.has_syspath(path):
+    def add_search_path(self, path):
+        if path and not self.has_search_path(path):
             mlogger.debug('Appending syspath: %s to %s', path, self)
             for component in self.get_components():
-                component.add_syspath(path)
-            self.syspath_search_paths.append(path)
+                component.add_search_path(path)
+            self.module_paths.append(path)
 
-    def remove_syspath(self, path):
-        if path and self.has_syspath(path):
+    def remove_search_path(self, path):
+        if path and self.has_search_path(path):
             mlogger.debug('Removing syspath: %s from %s', path, self)
             for component in self.get_components():
-                component.remove_syspath(path)
-            return self.syspath_search_paths.remove(path)
+                component.remove_search_path(path)
+            return self.module_paths.remove(path)
         else:
             return None
 
     def add_component(self, comp):
-        for path in self.syspath_search_paths:
-            comp.add_syspath(path)
+        for path in self.module_paths:
+            comp.add_search_path(path)
         self.get_components().append(comp)
 
     def get_components(self):
@@ -351,37 +374,28 @@ class GenericUICommand(GenericUIComponent):
                 exts.DYNAMO_SCRIPT_POSTFIX,
                 exts.GRASSHOPPER_SCRIPT_POSTFIX])
 
-        if needs_script:
-            if not self.script_file:
-                mlogger.error('Command %s: Does not have script file.', self)
-                raise PyRevitException()
+        if needs_script and not self.script_file:
+            mlogger.error('Command %s: Does not have script file.', self)
+            raise PyRevitException()
 
-            # if python
-            if self.script_language == exts.PYTHON_LANG:
-                if not self.meta:
-                    # sets up self.meta from script global variables
-                    self._read_script_metadata()
+        # if python
+        if self.script_language == exts.PYTHON_LANG:
+            # allow python tools to load side scripts
+            self.add_search_path(self.directory)
+            # read the metadata from python script if not metadata file
+            if not self.meta:
+                # sets up self.meta from script global variables
+                self._read_script_metadata()
 
-                # each command can store custom libraries under
-                # /Lib inside the command folder
-                lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
-                self.library_path = lib_path if op.exists(lib_path) else None
+        # find config scripts
+        self.config_script_file = \
+            self._find_bundle_file([exts.CONFIG_SCRIPT_POSTFIX])
 
-                # setting up search paths. These paths will be added
-                # to sys.path by the command loader for easy imports.
-                self.syspath_search_paths.append(self.directory)
-                if self.library_path:
-                    self.syspath_search_paths.append(self.library_path)
-
-            # find config scripts
-            self.config_script_file = \
-                self._find_bundle_file([exts.CONFIG_SCRIPT_POSTFIX])
-
-            if not self.config_script_file:
-                mlogger.debug(
-                    'Command %s: Does not have independent config script.',
-                    self)
-                self.config_script_file = self.script_file
+        if not self.config_script_file:
+            mlogger.debug(
+                'Command %s: Does not have independent config script.',
+                self)
+            self.config_script_file = self.script_file
 
     def _find_bundle_file(self, file_postfixes):
         for bundle_file in os.listdir(self.directory):
@@ -439,6 +453,9 @@ class GenericUICommand(GenericUIComponent):
                             exts.MDATA_ENGINE_FULLFRAME,
                             'false').lower() == 'true'
 
+                self.modules = \
+                    self.meta.get(exts.MDATA_LINK_BUTTON_MODULES,
+                                  self.modules)
                 # panel buttons should be active always
                 if self.type_id != exts.PANEL_PUSH_BUTTON_POSTFIX:
                     self.cmd_context = \
@@ -553,7 +570,7 @@ class GenericUICommand(GenericUIComponent):
             if int(HOST_APP.version) > int(self.max_revit_ver):
                 mlogger.debug('Requires max version: %s', self.max_revit_ver)
                 return False
-        return True        
+        return True
 
     @property
     def configurable_params(self):
@@ -585,7 +602,7 @@ class GenericUICommand(GenericUIComponent):
         return self.config_script_file != self.script_file
 
     def get_help_url(self):
-        return self.cmd_help_url
+        return self.cmd_help_url or ''
 
     def get_bundle_file(self, file_name):
         if file_name:
@@ -597,12 +614,17 @@ class GenericUICommand(GenericUIComponent):
     def get_full_config_script_address(self):
         return self.get_bundle_file(self.config_script_file)
 
-    def add_syspath(self, path):
-        if path and not self.has_syspath(path):
-            mlogger.debug('Appending syspath: %s to %s', path, self)
-            self.syspath_search_paths.append(path)
-
     def configure(self, config_dict):
         templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)
         if templates:
             self._update_configurable_params(templates)
+
+    def get_modules(self):
+        referenced_modules = set()
+        for module in self.modules:
+            module_path = self.find_in_search_paths(module)
+            if module_path:
+                referenced_modules.add(module_path)
+            else:
+                mlogger.error("%s can not find module: %s", self, module)
+        return referenced_modules

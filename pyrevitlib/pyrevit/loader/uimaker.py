@@ -2,7 +2,7 @@
 import imp
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
-from pyrevit.coreutils import find_loaded_asm
+from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
 
 if not EXEC_PARAMS.doc_mode:
@@ -61,8 +61,13 @@ def _make_button_tooltip_ext(button, asm_name):
                 .format(HOST_APP.proc_name,
                         button.min_revit_ver)
 
-    tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
-        .format(button.unique_name, asm_name)
+    if isinstance(button, (components.LinkButton, components.InvokeButton)):
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(
+            button.command_class or 'Runs first matching DB.IExternalCommand',
+            button.assembly)
+    else:
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
+            .format(button.unique_name, asm_name)
 
     return tooltip_ext
 
@@ -256,16 +261,22 @@ def _produce_ui_linkbutton(ui_maker_params):
     if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    if not linkbutton.command_class:
-        return None
-
     mlogger.debug('Producing button: %s', linkbutton)
     try:
-        linked_asm_list = find_loaded_asm(linkbutton.assembly)
-        if not linked_asm_list:
-            return None
-
-        linked_asm = linked_asm_list[0]
+        linked_asm = None
+        # attemp to find the assembly file
+        linked_asm_file = linkbutton.get_target_assembly()
+        # if not found, search the loaded assemblies
+        # this is usually a slower process
+        if linked_asm_file:
+            linked_asm = assmutils.load_asm_file(linked_asm_file)
+        else:
+            linked_asm_list = assmutils.find_loaded_asm(linkbutton.assembly)
+            # cancel button creation if not found
+            if not linked_asm_list:
+                mlogger.error("Can not find target assembly for %s", linkbutton)
+                return None
+            linked_asm = linked_asm_list[0]
 
         parent_ui_item.create_push_button(
             linkbutton.name,

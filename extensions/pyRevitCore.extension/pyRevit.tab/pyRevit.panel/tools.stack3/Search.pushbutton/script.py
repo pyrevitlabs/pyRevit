@@ -1,5 +1,5 @@
-"""The best interface ever!."""
-
+"""The best interface ever!"""
+#pylint: disable=undefined-variable,import-error,invalid-name
 import os
 import os.path as op
 
@@ -32,7 +32,7 @@ CONFIG_SWITCH = '/config'
 
 def print_help():
     output = script.get_output()
-    output.set_width(500)
+    # output.set_width(500)
     output.print_md(
         '### Options:\n\n'
         '- **{help}**: Prints this help\n\n'
@@ -155,8 +155,7 @@ matched_cmdname, matched_cmdargs, switches = \
                                       ATOM_SWITCH,
                                       NPP_SWITCH,
                                       NP_SWITCH,
-                                      CONFIG_SWITCH,
-                                      ALT_FLAG],
+                                      CONFIG_SWITCH],
                             search_tip='type to search')
 
 logger.debug('matched command: {}'.format(matched_cmdname))

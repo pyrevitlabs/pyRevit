@@ -2,29 +2,24 @@ using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
+using HeyRed.MarkdownSharp;
+
 namespace HelloWorld
 {
    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
    public class Test2 : IExternalCommand
    {
-      public Autodesk.Revit.UI.Result Execute(ExternalCommandData revit,
-         ref string message, ElementSet elements)
+      public Result Execute(ExternalCommandData revit, ref string message, ElementSet elements)
       {
          TaskDialog.Show("Revit", "Hello World from C#!!!");
-         return Autodesk.Revit.UI.Result.Succeeded;
+
+         // Create new markdown instance
+         Markdown mark = new Markdown();
+         // Run parser
+         string text = mark.Transform("**Markdown**");
+         TaskDialog.Show("Revit", "Referenced Module Loaded Successfully!");
+
+         return Result.Succeeded;
       }
-   }
-
-   public class Test2CommandSelectionAvail : IExternalCommandAvailability
-   {
-       public Test2CommandSelectionAvail()
-       {
-       }
-
-       public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
-       {
-           if (selectedCategories.IsEmpty) return false;
-           return true;
-       }
    }
 }

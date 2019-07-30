@@ -16,9 +16,9 @@ from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import coreutils
-from pyrevit.framework import FormatterServices
-from pyrevit.framework import Array
+from pyrevit import framework
 from pyrevit.coreutils import Timer
+from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
@@ -153,6 +153,13 @@ def _new_session():
         # configure extension components for metadata
         # e.g. liquid templates like {{author}}
         ui_ext.configure()
+
+        # collect all module references from extensions
+        ui_ext_modules = ui_ext.get_all_modules()
+        # make sure they are all loaded
+        assmutils.load_asm_files(ui_ext_modules)
+        # and update env information
+        sessioninfo.update_loaded_pyrevit_referenced_modules(ui_ext_modules)
 
         # create a dll assembly and get assembly info
         ext_asm_info = asmmaker.create_assembly(ui_ext)
@@ -361,7 +368,7 @@ def find_all_commands(category_set=None, cache=True):
     else:
         pyrevit_extcmds = []
         for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-            loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+            loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
             if loaded_assm:
                 all_exported_types = loaded_assm[0].GetTypes()
 
@@ -424,7 +431,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     mlogger.debug('Searching for pyrevit command: %s', pyrevitcmd_unique_id)
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
         mlogger.debug('Expecting assm: %s', loaded_assm_name)
-        loaded_assm = coreutils.find_loaded_asm(loaded_assm_name)
+        loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
             mlogger.debug('Found assm: %s', loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
@@ -442,7 +449,9 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
 def create_tmp_commanddata():
     tmp_cmd_data = \
-        FormatterServices.GetUninitializedObject(UI.ExternalCommandData)
+        framework.FormatterServices.GetUninitializedObject(
+            UI.ExternalCommandData
+            )
     tmp_cmd_data.Application = HOST_APP.uiapp
     # tmp_cmd_data.IsReadOnly = False
     # tmp_cmd_data.View = None
@@ -459,7 +468,7 @@ def execute_command_cls(extcmd_type, arguments=None,
     command_instance.ExecutedFromUI = False
     # pass the arguments to the instance
     if arguments:
-        command_instance.argumentList = Array[str](arguments)
+        command_instance.argumentList = framework.Array[str](arguments)
     # force using clean engine
     command_instance.baked_needsCleanEngine = clean_engine
     # force using fullframe engine

@@ -178,13 +178,30 @@ namespace PyRevitBaseClasses {
         /// Run the script by directly invoking the IExternalCommand type from given dll
         private static int ExecuteInvokableDLL(ref PyRevitCommandRuntime pyrvtCmd) {
             try {
-                // load the binary data from the DLL
-                // Direct invoke commands use the config script source file to point
-                // to the target dll assembly location
-                byte[] assmBin = File.ReadAllBytes(pyrvtCmd.ConfigScriptSourceFile);
-                Assembly assmObj = Assembly.Load(assmBin);
+                if (pyrvtCmd.ConfigScriptSourceFile != null || pyrvtCmd.ConfigScriptSourceFile != string.Empty) {
+                    // load the binary data from the DLL
+                    // Direct invoke commands use the config script source file to point
+                    // to the target dll assembly location
+                    string assmFile = pyrvtCmd.ConfigScriptSourceFile;
+                    string className = null;
+                    if (pyrvtCmd.ConfigScriptSourceFile.Contains("::")) {
+                        var parts = pyrvtCmd.ConfigScriptSourceFile.Split(
+                            new string[] { "::" },
+                            StringSplitOptions.RemoveEmptyEntries
+                            );
+                        assmFile = parts[0];
+                        className = parts[1];
+                    }
 
-                return ExecuteExternalCommand(assmObj, ref pyrvtCmd);
+                    byte[] assmBin = File.ReadAllBytes(assmFile);
+                    Assembly assmObj = Assembly.Load(assmBin);
+
+                    return ExecuteExternalCommand(assmObj, className, ref pyrvtCmd);
+                }
+                else {
+                    TaskDialog.Show("pyRevit", "Target assembly is not set correctly and can not be loaded.");
+                    return ExecutionErrorCodes.ExternalCommandNotImplementedException;
+                }
             }
             catch (Exception invokeEx) {
                 TaskDialog.Show("pyRevit", invokeEx.Message);
@@ -377,7 +394,7 @@ namespace PyRevitBaseClasses {
                 );
 
                 // now run
-                return ExecuteExternalCommand(res.CompiledAssembly, ref pyrvtCmd);
+                return ExecuteExternalCommand(res.CompiledAssembly, null, ref pyrvtCmd);
             }
             catch (Exception runEx) {
                 TaskDialog.Show("pyRevit", runEx.Message);
@@ -389,32 +406,47 @@ namespace PyRevitBaseClasses {
 
         }
 
-        private static int ExecuteExternalCommand(Assembly assmObj, ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteExternalCommand(Assembly assmObj, string className, ref PyRevitCommandRuntime pyrvtCmd) {
             foreach (Type assmType in GetTypesSafely(assmObj)) {
                 if (assmType.IsClass) {
-                    if (assmType.GetInterfaces().Contains(typeof(IExternalCommand))) {
-                        object cmdInstance = Activator.CreateInstance(assmType);
-                        string commandMessage = string.Empty;
-                        try {
-                            assmType.InvokeMember(
-                                "Execute",
-                                BindingFlags.Default | BindingFlags.InvokeMethod,
-                                null,
-                                cmdInstance,
-                                new object[] {
-                                        pyrvtCmd.CommandData,
-                                        commandMessage,
-                                        pyrvtCmd.SelectedElements}
-                                );
-                            return ExecutionErrorCodes.Succeeded;
-                        }
-                        catch {
-                            return ExecutionErrorCodes.ExecutionException;
-                        }
+                    // find the appropriate type and execute
+                    if (className != null) {
+                        if (assmType.Name == className)
+                            return ExecuteExternalCommandType(assmType, ref pyrvtCmd);
+                        else
+                            continue;
                     }
+                    else if (assmType.GetInterfaces().Contains(typeof(IExternalCommand)))
+                        return ExecuteExternalCommandType(assmType, ref pyrvtCmd);
                 }
             }
+
+            if (className != null)
+                TaskDialog.Show("pyRevit",
+                    string.Format("Can not find type \"{0}\" in assembly \"{1}\"", className, assmObj.Location));
+            else
+                TaskDialog.Show("pyRevit",
+                    string.Format("Can not find any type implementing IExternalCommand in assembly \"{1}\"",
+                                  className, assmObj.Location));
+
             return ExecutionErrorCodes.ExternalCommandNotImplementedException;
+        }
+
+        private static int ExecuteExternalCommandType(Type extCommandType, ref PyRevitCommandRuntime pyrvtCmd) {
+            // execute
+            object extCommandInstance = Activator.CreateInstance(extCommandType);
+            string commandMessage = string.Empty;
+            extCommandType.InvokeMember(
+                "Execute",
+                BindingFlags.Default | BindingFlags.InvokeMethod,
+                null,
+                extCommandInstance,
+                new object[] {
+                    pyrvtCmd.CommandData,
+                    commandMessage,
+                    pyrvtCmd.SelectedElements}
+                );
+            return ExecutionErrorCodes.Succeeded;
         }
 
         // dynamo

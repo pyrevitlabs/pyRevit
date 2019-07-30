@@ -136,6 +136,9 @@ BETA_SCRIPT_PARAM = '__beta__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
 
+LINK_BUTTON_ASSEMBLY = '__assembly__'
+LINK_BUTTON_COMMAND_CLASS = '__commandclass__'
+
 # bundle metadata keys
 MDATA_UI_TITLE = 'title'
 MDATA_TOOLTIP = 'tooltip'
@@ -151,13 +154,14 @@ MDATA_ENGINE = 'engine'
 MDATA_ENGINE_CLEAN = 'clean'
 MDATA_ENGINE_FULLFRAME = 'full_frame'
 
-MDATA_LINK_BUTTON_REFERENCES = 'references'
+MDATA_LINK_BUTTON_MODULES = 'modules'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
 
 
 COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
 COMP_LIBRARY_DIR_NAME = 'lib'
+COMP_BIN_DIR_NAME = 'bin'
 
 CTX_SELETION = 'selection'
 CTX_ZERODOC = ['zero-doc', 'zerodoc']

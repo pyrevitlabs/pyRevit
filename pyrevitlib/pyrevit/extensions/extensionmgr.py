@@ -46,12 +46,12 @@ import pyrevit.extensions.extpackages as extpkgs
 mlogger = get_logger(__name__)
 
 
-def _update_extension_syspaths(ui_ext, lib_ext_list, pyrvt_paths):
+def _update_extension_search_paths(ui_ext, lib_ext_list, pyrvt_paths):
     for lib_ext in lib_ext_list:
-        ui_ext.add_syspath(lib_ext.directory)
+        ui_ext.add_search_path(lib_ext.directory)
 
     for pyrvt_path in pyrvt_paths:
-        ui_ext.add_syspath(pyrvt_path)
+        ui_ext.add_search_path(pyrvt_path)
 
 
 def _is_extension_enabled(ext_info):
@@ -215,9 +215,10 @@ def get_installed_ui_extensions():
     # over paths added by this method (they're the first paths added to the
     # search paths list, and these paths will follow)
     for ui_extension in ui_ext_list:
-        _update_extension_syspaths(ui_extension,
-                                   lib_ext_list,
-                                   [MAIN_LIB_DIR,
-                                    MISC_LIB_DIR])
+        _update_extension_search_paths(
+            ui_extension,
+            lib_ext_list,
+            [MAIN_LIB_DIR, MISC_LIB_DIR]
+            )
 
     return ui_ext_list

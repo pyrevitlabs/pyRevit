@@ -11,8 +11,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-from pyrevit.loader.basetypes import _get_references
-from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
+from pyrevit.loader import basetypes
 from pyrevit.loader.systemdiag import system_diag
 
 
@@ -76,9 +75,8 @@ def setup_runtime_vars():
 
     # set a list of important assemblies
     # this is required for dotnet script execution
-    envvars.set_pyrevit_env_var(
-        PYREVIT_REFEDASSMS_ENVVAR,
-        coreutils.DEFAULT_SEPARATOR.join(_get_references())
+    set_loaded_pyrevit_referenced_modules(
+        basetypes.get_references()
         )
 
 
@@ -188,6 +186,27 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
                                 + len(loaded_assm_name_list))
 
 
+def get_loaded_pyrevit_referenced_modules():
+    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_REFEDASSMS_ENVVAR)
+    if loaded_assms_str:
+        return set(loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR))
+    else:
+        return set()
+
+
+def set_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
+    envvars.set_pyrevit_env_var(
+        PYREVIT_REFEDASSMS_ENVVAR,
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
+        )
+
+
+def update_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
+    loaded_modules = get_loaded_pyrevit_referenced_modules()
+    loaded_modules.update(loaded_assm_name_list)
+    set_loaded_pyrevit_referenced_modules(loaded_modules)
+
+
 def report_env():
     """Report python version, home directory, config file, etc."""
     # run diagnostics
@@ -213,6 +232,6 @@ def report_env():
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())
-    mlogger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
+    mlogger.info('Base assembly is: %s', basetypes.BASE_TYPES_ASM_NAME)
     mlogger.info('Config file is (%s): %s',
                  user_config.config_type, user_config.config_file)
