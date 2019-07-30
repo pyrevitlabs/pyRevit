@@ -34,6 +34,9 @@ namespace PyRevitBaseClasses
         public string sessionid { get; set; }
         public string pyrevit { get; set; }
         public string clone { get; set; }
+        // on which document
+        public string docname { get; set; }
+        public string docpath { get; set; }
         // which mode?
         public bool debug { get; set; }
         public bool config { get; set; }
@@ -70,6 +73,8 @@ namespace PyRevitBaseClasses
                 string pyRevitCommandExtension,
                 string pyRevitCommandUniqueName,
                 string pyRevitCommandPath,
+                string docName,
+                string docPath,
                 int executorResultCode,
                 Dictionary<string, string> resultDict,
                 TraceInfo traceInfo)
@@ -96,6 +101,8 @@ namespace PyRevitBaseClasses
             commandextension = pyRevitCommandExtension;
             commanduniquename = pyRevitCommandUniqueName;
             scriptpath = pyRevitCommandPath;
+            docname = docName;
+            docpath = docPath;
             resultcode = executorResultCode;
             commandresults = resultDict;
             trace = traceInfo;

@@ -46,6 +46,8 @@ CREATE TABLE public.pyrevitusage (
 	commandbundle varchar(255) NULL,
 	commandextension varchar(255) NULL,
 	commanduniquename text NULL,
+	docname text NULL,
+	docpath text NULL,
 	resultcode int4 NULL,
 	commandresults json NULL,
 	scriptpath text NULL,

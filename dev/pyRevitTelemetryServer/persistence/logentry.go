@@ -38,6 +38,8 @@ type LogRecord struct {
 	CommandUniqueName    string            `json:"commanduniquename"`
 	BundleName           string            `json:"commandbundle"`
 	ExtensionName        string            `json:"commandextension"`
+	DocumentName         string            `json:"docname"` // schema 2.0
+	DocumentPath         string            `json:"docpath"` // schema 2.0
 	ResultCode           int               `json:"resultcode"`
 	CommandResults       map[string]string `json:"commandresults"`
 	ScriptPath           string            `json:"scriptpath"`

@@ -251,6 +251,24 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public string DocumentName {
+            get {
+                if (UIApp != null && UIApp.ActiveUIDocument != null)
+                    return UIApp.ActiveUIDocument.Document.Title;
+                else
+                    return string.Empty;
+            }
+        }
+
+        public string DocumentPath {
+            get {
+                if (UIApp != null && UIApp.ActiveUIDocument != null)
+                    return UIApp.ActiveUIDocument.Document.PathName;
+                else
+                    return string.Empty;
+            }
+        }
+
         public ScriptOutput OutputWindow {
             get {
                 // get ScriptOutput from the weak reference
@@ -404,6 +422,8 @@ namespace PyRevitBaseClasses {
                 CommandExtension,
                 CommandUniqueId,
                 ScriptSourceFile,
+                DocumentName,
+                DocumentPath,
                 ExecutionResult,
                 GetResultsDictionary(),
                 new TraceInfo {
