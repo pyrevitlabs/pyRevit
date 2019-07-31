@@ -1,4 +1,5 @@
 """UI maker."""
+import sys
 import imp
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
@@ -209,6 +210,12 @@ def _produce_ui_smartbutton(ui_maker_params):
         return new_uibutton
 
     try:
+        # setup sys.paths for the smart command
+        current_paths = list(sys.path)
+        for search_path in smartbutton.get_search_paths():
+            if search_path not in current_paths:
+                sys.path.append(search_path)
+
         # importing smart button script as a module
         importedscript = imp.load_source(smartbutton.unique_name,
                                          smartbutton.script_file)
@@ -219,6 +226,9 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__forceddebugmode__'] = prev_debugmode
         mlogger.debug('Import successful: %s', importedscript)
         mlogger.debug('Running self initializer: %s', smartbutton)
+
+        # reset sys.paths back to normal
+        sys.path = current_paths
 
         res = False
         try:
