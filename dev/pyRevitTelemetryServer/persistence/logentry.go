@@ -1,5 +1,11 @@
 package persistence
 
+import (
+	"fmt"
+
+	"../cli"
+)
+
 type LogMeta struct {
 	// for initial schema, the value will be ""; there is no 1.0
 	SchemaVersion string `json:"schema"` // schema 2.0
@@ -18,7 +24,7 @@ type TraceInfo struct {
 	Message             string     `json:"message"` // schema 2.0
 }
 
-type LogRecord struct {
+type TelemetryRecord struct {
 	LogMeta              LogMeta           `json:"meta"`      // schema 2.0
 	Date                 string            `json:"date"`      // initial schema
 	Time                 string            `json:"time"`      // initial schema
@@ -44,4 +50,43 @@ type LogRecord struct {
 	CommandResults       map[string]string `json:"commandresults"`
 	ScriptPath           string            `json:"scriptpath"`
 	TraceInfo            TraceInfo         `json:"trace"`
+}
+
+func (logrec TelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
+	if logrec.LogMeta.SchemaVersion == "" {
+		logger.Print(fmt.Sprintf(
+			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
+			message,
+			logrec.Date,
+			logrec.Time,
+			logrec.UserName,
+			logrec.RevitBuild,
+			logrec.TraceInfo.EngineInfo.Version,
+			logrec.ExtensionName,
+			logrec.CommandName,
+			logrec.ResultCode,
+			logrec.CommandResults,
+		))
+	} else if logrec.LogMeta.SchemaVersion == "2.0" {
+		logger.Print(fmt.Sprintf(
+			"%s %s %q %s:%s (%s) [%s.%s] code=%d info=%v",
+			message,
+			logrec.TimeStamp,
+			logrec.UserName,
+			logrec.RevitBuild,
+			logrec.TraceInfo.EngineInfo.Version,
+			logrec.TraceInfo.EngineInfo.Type,
+			logrec.ExtensionName,
+			logrec.CommandName,
+			logrec.ResultCode,
+			logrec.CommandResults,
+		))
+	}
+}
+
+func (logrec TelemetryRecord) Validate() {
+	// todo: validate by schema version
+	if logrec.LogMeta.SchemaVersion == "" {
+	} else if logrec.LogMeta.SchemaVersion == "2.0" {
+	}
 }

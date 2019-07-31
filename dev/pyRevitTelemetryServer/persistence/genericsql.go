@@ -18,11 +18,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-type GenericSQLWriter struct {
-	DatabaseWriter
+type GenericSQLConnection struct {
+	DatabaseConnection
 }
 
-func (w GenericSQLWriter) Write(logrec *LogRecord, logger *cli.Logger) (*Result, error) {
+func (w GenericSQLConnection) Write(logrec *TelemetryRecord, logger *cli.Logger) (*Result, error) {
 	// open connection
 	db, err := openConnection(&w, logger)
 	if err != nil {
@@ -42,7 +42,7 @@ func (w GenericSQLWriter) Write(logrec *LogRecord, logger *cli.Logger) (*Result,
 
 	// generate generic sql insert query
 	logger.Debug("generating query")
-	query, qErr := generateQuery(w.Config.Target, logrec, logger)
+	query, qErr := generateInsertQuery(w.Config.Target, logrec, logger)
 	if qErr != nil {
 		return nil, qErr
 	}
@@ -67,7 +67,7 @@ func (w GenericSQLWriter) Write(logrec *LogRecord, logger *cli.Logger) (*Result,
 	}, nil
 }
 
-func openConnection(w *GenericSQLWriter, logger *cli.Logger) (*sql.DB, error) {
+func openConnection(w *GenericSQLConnection, logger *cli.Logger) (*sql.DB, error) {
 	// open connection
 	logger.Debug(fmt.Sprintf("opening %s connection", w.Config.Backend))
 	cleanConnStr := w.Config.ConnString
@@ -77,7 +77,7 @@ func openConnection(w *GenericSQLWriter, logger *cli.Logger) (*sql.DB, error) {
 	return sql.Open(string(w.Config.Backend), cleanConnStr)
 }
 
-func generateQuery(table string, logrec *LogRecord, logger *cli.Logger) (string, error) {
+func generateInsertQuery(table string, logrec *TelemetryRecord, logger *cli.Logger) (string, error) {
 	// read csv file and build sql insert query
 	var querystr strings.Builder
 

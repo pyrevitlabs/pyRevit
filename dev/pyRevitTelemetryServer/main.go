@@ -25,12 +25,12 @@ func main() {
 		panic(cErr)
 	}
 
-	// request a writer for db
-	writer, nErr := persistence.NewWriter(dbcfg)
+	// request a db connection to read and write
+	dbConn, nErr := persistence.NewConnection(dbcfg)
 	if nErr != nil {
 		panic(nErr)
 	}
 
 	// ask server to start and pass db writer interface
-	server.Start(options, writer, logger)
+	server.Start(options, dbConn, logger)
 }

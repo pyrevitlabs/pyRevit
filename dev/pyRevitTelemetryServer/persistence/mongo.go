@@ -6,11 +6,11 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-type MongoDBWriter struct {
-	DatabaseWriter
+type MongoDBConnection struct {
+	DatabaseConnection
 }
 
-func (w MongoDBWriter) Write(logrec *LogRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) Write(logrec *TelemetryRecord, logger *cli.Logger) (*Result, error) {
 	// parse and grab database name from uri
 	logger.Debug("grabbing db name from connection string")
 	dialinfo, err := mgo.ParseURL(w.Config.ConnString)

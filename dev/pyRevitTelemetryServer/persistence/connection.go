@@ -14,28 +14,29 @@ type Result struct {
 	Message    string
 }
 
-type DatabaseWriter struct {
+type DatabaseConnection struct {
 	Config *Config
 }
 
-type Writer interface {
-	Write(*LogRecord, *cli.Logger) (*Result, error)
+type Connection interface {
+	Write(*TelemetryRecord, *cli.Logger) (*Result, error)
+	// Read([]TelemetryRecord, *cli.Logger) (*Result, error)
 }
 
-func NewWriter(dbcfg *Config) (Writer, error) {
-	w := DatabaseWriter{
+func NewConnection(dbcfg *Config) (Connection, error) {
+	w := DatabaseConnection{
 		Config: dbcfg,
 	}
 	if dbcfg.Backend == Postgres {
-		return GenericSQLWriter{w}, nil
+		return GenericSQLConnection{w}, nil
 	} else if dbcfg.Backend == MongoDB {
-		return MongoDBWriter{w}, nil
+		return MongoDBConnection{w}, nil
 	} else if dbcfg.Backend == MySql {
-		return GenericSQLWriter{w}, nil
+		return GenericSQLConnection{w}, nil
 	} else if dbcfg.Backend == MSSql {
-		return GenericSQLWriter{w}, nil
+		return GenericSQLConnection{w}, nil
 	} else if dbcfg.Backend == Sqlite {
-		return GenericSQLWriter{w}, nil
+		return GenericSQLConnection{w}, nil
 	}
 	// ... other writers
 
