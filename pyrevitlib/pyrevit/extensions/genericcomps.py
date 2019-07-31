@@ -90,24 +90,25 @@ class GenericUIComponent(GenericComponent):
         pyRevit dll assembly. Current method create a unique name based on
         the command full directory address.
         Example:
-            self.direcotry =
-            '/pyRevit.extension/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
-            unique name =
-            pyRevitpyRevitEditFlipdoors
+            for 'pyRevit.extension/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
+            unique name would be: 'pyrevit-pyrevit-edit-flipdoors'
         """
-        uname = ''
+        pieces = []
         inside_ext = False
         dir_str = self.directory
         for dname in dir_str.split(op.sep):
-            if exts.UI_EXTENSION_POSTFIX in dname:
+            if exts.ExtensionTypes.UI_EXTENSION.POSTFIX in dname:
                 inside_ext = True
 
             name, ext = op.splitext(dname)
             if ext != '' and inside_ext:
-                uname += name
+                pieces.append(name)
             else:
                 continue
-        return coreutils.cleanup_string(uname)
+        return coreutils.cleanup_string(
+            exts.UNIQUE_ID_SEPARATOR.join(pieces),
+            skip=[exts.UNIQUE_ID_SEPARATOR]
+            ).lower()
 
     @property
     def bundle_name(self):
@@ -527,12 +528,13 @@ class GenericUICommand(GenericUIComponent):
             #         self.requires_clean_engine,
             #         self.requires_fullframe_engine,
             #     ]):
-                # mlogger.deprecate(
-                #     "Script '%s': Using private variables (e.g. __title__) to "
-                #     "specify bundle metadata is deprecated. Please update "
-                #     "your bundles to use the new bundle.yaml metadata file.",
-                #     self.name
-                #     )
+            #     mlogger.deprecate(
+            #         "Script '%s': Using private variables (e.g. __title__) to "
+            #         "specify bundle metadata is deprecated and will be removed "
+            #         "in the next version. Please update your bundles to use "
+            #         "the new metadata file convention.",
+            #         self.name
+            #         )
 
         except Exception as parse_err:
             self._handle_parse_err(self.script_file, parse_err)

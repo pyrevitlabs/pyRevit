@@ -284,7 +284,7 @@ SPECIAL_CHARS = {' ': '',
                  r'\/': '', '\\': ''}
 
 
-def cleanup_string(input_str):
+def cleanup_string(input_str, skip=None):
     """Replace special characters in string with another string.
 
     This function was created to help cleanup pyRevit command unique names from
@@ -303,6 +303,8 @@ def cleanup_string(input_str):
     """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
+        if skip and char in skip:
+            continue
         input_str = input_str.replace(char, repl)
 
     return input_str

@@ -12,6 +12,8 @@ from pyrevit.labs import TargetApps
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 
+import pyrevitcore_globals
+
 
 __context__ = 'zerodoc'
 
@@ -22,9 +24,6 @@ __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
 
 logger = script.get_logger()
 Revit = TargetApps.Revit
-
-
-PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 
 
 class EnvVariable:
@@ -443,7 +442,7 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for saving pyRevit settings and reloading"""
         self.savesettings(sender, args)
         from pyrevit.loader.sessionmgr import execute_command
-        execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
+        execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # decide if the settings should load or not
