@@ -322,8 +322,8 @@ class GenericUICommand(GenericUIComponent):
     def __init__(self):
         GenericUIComponent.__init__(self)
         self.ui_title = None
-        self.meta_file = None
         self.meta = {}
+        self.icon_file = self.meta_file = None
         self.script_file = self.config_script_file = None
         self.ttimage_file = self.ttvideo_file = None
         self.max_revit_ver = self.min_revit_ver = None
@@ -373,7 +373,8 @@ class GenericUICommand(GenericUIComponent):
                 exts.VB_SCRIPT_POSTFIX,
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
-                exts.GRASSHOPPER_SCRIPT_POSTFIX])
+                exts.GRASSHOPPER_SCRIPT_POSTFIX
+                ])
 
         if needs_script and not self.script_file:
             mlogger.error('Command %s: Does not have script file.', self)
@@ -386,7 +387,7 @@ class GenericUICommand(GenericUIComponent):
             # read the metadata from python script if not metadata file
             if not self.meta:
                 # sets up self.meta from script global variables
-                self._read_script_metadata()
+                self._read_bundle_metadata_from_python_script()
 
         # find config scripts
         self.config_script_file = \
@@ -397,6 +398,10 @@ class GenericUICommand(GenericUIComponent):
                 'Command %s: Does not have independent config script.',
                 self)
             self.config_script_file = self.script_file
+
+        # metadata cleanups
+        if isinstance(self.author, list):
+            self.author = '\n'.join(self.author)
 
     def _find_bundle_file(self, file_postfixes):
         for bundle_file in os.listdir(self.directory):
@@ -423,15 +428,22 @@ class GenericUICommand(GenericUIComponent):
         try:
             self.meta = yaml.load_as_dict(self.meta_file)
             if self.meta:
+                icon_file = \
+                    self.meta.get(exts.MDATA_ICON_FILE, self.icon_file)
+                icon_file = self.get_bundle_file(icon_file)
+                self.icon_file = icon_file if icon_file else self.icon_file
+
                 self.ui_title = \
                     self.meta.get(exts.MDATA_UI_TITLE,
                                   self.ui_title)
                 self.doc_string = \
                     self.meta.get(exts.MDATA_TOOLTIP,
                                   self.doc_string)
-                self.author = \
-                    self.meta.get(exts.MDATA_AUTHOR,
-                                  self.author)
+
+                # authors could be a list or single value
+                self.author = self.meta.get(exts.MDATA_AUTHOR, self.author)
+                self.author = self.meta.get(exts.MDATA_AUTHORS, self.author)
+
                 self.cmd_help_url = \
                     self.meta.get(exts.MDATA_COMMAND_HELP_URL,
                                   self.cmd_help_url)
@@ -470,7 +482,7 @@ class GenericUICommand(GenericUIComponent):
                 "Error reading meta file @ %s | %s", self.meta_file, err
                 )
 
-    def _read_script_metadata(self):
+    def _read_bundle_metadata_from_python_script(self):
         try:
             # reading script file content to extract parameters
             script_content = \
@@ -490,6 +502,9 @@ class GenericUICommand(GenericUIComponent):
 
             self.author = script_content.extract_param(
                 exts.AUTHOR_PARAM)  # type: str
+            if not self.author:
+                self.author = script_content.extract_param(
+                    exts.AUTHORS_PARAM)  # type: str
             self.max_revit_ver = script_content.extract_param(
                 exts.MAX_REVIT_VERSION_PARAM)  # type: str
             self.min_revit_ver = script_content.extract_param(

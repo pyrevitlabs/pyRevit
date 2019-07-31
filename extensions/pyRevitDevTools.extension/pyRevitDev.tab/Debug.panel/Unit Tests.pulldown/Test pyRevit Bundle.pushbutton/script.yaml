@@ -1,7 +1,10 @@
+icon: bundle_icon.png
 title: Test pyRevit Bundle (Custom Title)
 tooltip: Test pyRevit Bundle Tooltip
 help_url: "{{docpath}}"
-author: "{{author}}"
+authors:
+  - "{{author}}"
+  - John Doe
 context:
   - Walls
   - Text Notes
