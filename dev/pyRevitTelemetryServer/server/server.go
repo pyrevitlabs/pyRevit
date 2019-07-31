@@ -19,7 +19,7 @@ func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger)
 	// POST /
 	// create new telemetry record
 	// https://stackoverflow.com/a/26212073
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
 		// parse given json data into a new record
 		logrec := persistence.TelemetryRecord{}
 		decodeErr := json.NewDecoder(r.Body).Decode(&logrec)
@@ -58,7 +58,7 @@ func Start(opts *cli.Options, dbConn persistence.Connection, logger *cli.Logger)
 
 	// GET /
 	// get recorded telemetry record
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
 
 	}).Methods("GET")
 
