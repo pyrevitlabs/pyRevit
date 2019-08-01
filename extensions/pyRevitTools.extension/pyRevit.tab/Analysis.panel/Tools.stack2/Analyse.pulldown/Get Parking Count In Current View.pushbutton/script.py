@@ -4,7 +4,7 @@ from pyrevit.framework import List
 from pyrevit import revit, DB
 
 
-parkings = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
+parkings = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
              .OfCategory(DB.BuiltInCategory.OST_Parking)\
              .WhereElementIsNotElementType()\
              .ToElementIds()

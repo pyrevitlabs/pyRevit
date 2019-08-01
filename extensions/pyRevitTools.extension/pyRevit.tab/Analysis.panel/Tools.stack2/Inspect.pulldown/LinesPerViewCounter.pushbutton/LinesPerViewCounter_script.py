@@ -1,13 +1,4 @@
-"""List sorted Detail Line Counts for all views with Detail Lines.
-
-Copyright (c) 2017 Frederic Beaupere
-github.com/frederic-beaupere
-
---------------------------------------------------------
-PyRevit Notice:
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
-"""
+"""List sorted Detail Line Counts for all views with Detail Lines."""
 from collections import defaultdict
 
 from pyrevit import script
@@ -19,8 +10,6 @@ __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
 
-
-__doc__ = 'Lists sorted Detail Line Counts for all views with Detail Lines.'
 
 
 output = script.get_output()

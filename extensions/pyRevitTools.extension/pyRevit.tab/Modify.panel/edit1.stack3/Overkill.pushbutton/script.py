@@ -10,7 +10,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__author__ = "Ehsan Iran-Nejad\ntylerk"
+__authors__ = ["tylerk", "{{author}}"]
 
 logger = script.get_logger()
 output = script.get_output()
@@ -177,7 +177,7 @@ if selected_option:
     logger.debug('Collecting detail lines in current view...')
     detline_collector = \
         revit.query.get_elements_by_class(DB.CurveElement,
-                                        view_id=revit.activeview.Id)
+                                        view_id=revit.active_view.Id)
 
     # collect comparison info on each detail-lines geomtery
     logger.debug('Extracting 2d domains...')

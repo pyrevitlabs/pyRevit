@@ -13,8 +13,7 @@ __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
           ' Zoom state. Run it and see how it works.'
 
-__author__ = 'Gui Talarico\n'\
-             'Ehsan Iran-Nejad'
+__authors__ = ['Gui Talarico', '{{author}}']
 
 
 class Point:
@@ -114,7 +113,7 @@ elif selected_option == '3D Section Box State':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
     avui = revit.uidoc.GetOpenUIViews()[0]
 
     if isinstance(av, DB.View3D):
@@ -163,7 +162,7 @@ elif selected_option == 'Viewport Placement on Sheet':
 
     selview = selvp = None
     vpboundaryoffset = 0.01
-    activeSheet = revit.activeview
+    activeSheet = revit.active_view
     transmatrix = TransformationMatrix()
     revtransmatrix = TransformationMatrix()
 
@@ -319,7 +318,7 @@ elif selected_option == 'Visibility Graphics':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
 
     f = open(datafile, 'w')
     pickle.dump(int(av.Id.IntegerValue), f)
@@ -331,7 +330,7 @@ elif selected_option == 'Crop Region':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
     crsm = av.GetCropRegionShapeManager()
 
     crsm_valid = False

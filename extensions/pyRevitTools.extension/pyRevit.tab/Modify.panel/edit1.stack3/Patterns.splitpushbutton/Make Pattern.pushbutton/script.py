@@ -126,7 +126,7 @@ class MakePatternWindow(forms.WPFWindow):
     @property
     def pat_scale(self):
         if not self.is_model_pat:
-            return (1.0 / revit.activeview.Scale) * self.pat_scale_multiplier
+            return (1.0 / revit.active_view.Scale) * self.pat_scale_multiplier
         else:
             return 1.0 * self.pat_scale_multiplier
 
@@ -155,7 +155,7 @@ class MakePatternWindow(forms.WPFWindow):
         return self.flipvert_cb.IsChecked
 
     def get_view_direction(self):
-        return revit.activeview.ViewDirection
+        return revit.active_view.ViewDirection
 
     def update_fillgrid(self, rvt_fillgrid, scale):
         ext_origin = rvt_fillgrid.Origin
@@ -189,7 +189,7 @@ class MakePatternWindow(forms.WPFWindow):
                 # adjust derafting patterns to current scale
                 if fillpat.Target == DB.FillPatternTarget.Drafting:
                     adjusted_fillgrids = \
-                        [self.update_fillgrid(x, revit.activeview.Scale)
+                        [self.update_fillgrid(x, revit.active_view.Scale)
                          for x in fillgrids]
                 else:
                     adjusted_fillgrids.extend(fillgrids)
@@ -236,16 +236,16 @@ class MakePatternWindow(forms.WPFWindow):
         # re issue #510 indexing the builtinparam only works on >=2015
         if HOST_APP.is_newer_than(2014):
             self.viewscale_tb.Text = \
-                revit.activeview.Parameter[biparam].AsValueString()
+                revit.active_view.Parameter[biparam].AsValueString()
         else:
             self.viewscale_tb.Text = \
-                revit.activeview.get_Parameter(biparam).AsValueString()
+                revit.active_view.get_Parameter(biparam).AsValueString()
 
     def pick_domain(self):
         # ask user for origin and max domain points
         with forms.WarningBar(title='Pick origin point (bottom-left '
                                     'corner of the pattern area):'):
-            view = revit.activeview
+            view = revit.active_view
             if not view.SketchPlane \
                     and not isinstance(view, DB.ViewDrafting):
                 base_plane = \

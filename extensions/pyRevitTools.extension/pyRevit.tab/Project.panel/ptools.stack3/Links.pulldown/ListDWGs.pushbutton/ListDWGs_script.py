@@ -1,24 +1,11 @@
 # -*- coding: UTF-8 -*-
-"""List DWGs.
-
-Lists all linked and imported DWG instances with worksets and creator.
-
-Copyright (c) 2017 Frederic Beaupere
-github.com/frederic-beaupere
-
---------------------------------------------------------
-PyRevit Notice:
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
-
-"""
+"""Lists all linked and imported DWG instances with worksets and creator."""
 
 __title__ = 'List DWGs'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Lists all linked and imported DWG instances '\
-          'with worksets and creator.'
+
 
 import clr
 from collections import defaultdict
@@ -61,7 +48,7 @@ def listdwgs(current_view_only=False):
                                                               dwg.Id).Creator
 
             if current_view_only \
-                    and revit.activeview.Id != dwg.OwnerViewId:
+                    and revit.active_view.Id != dwg.OwnerViewId:
                 continue
 
             print('\n\n')

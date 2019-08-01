@@ -16,7 +16,7 @@ output = script.get_output()
 selection = revit.get_selection()
 target_views = selection.elements
 if not target_views:
-    target_views = [revit.activeview]
+    target_views = [revit.active_view]
 
 
 def shake_filled_regions(target_view):

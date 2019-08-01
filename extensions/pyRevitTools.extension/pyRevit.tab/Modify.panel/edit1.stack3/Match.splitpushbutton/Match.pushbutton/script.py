@@ -181,7 +181,7 @@ def pick_and_match_styles(src_style):
                 dest_element_ids.extend(dest_element.GetSubComponentIds())
             with revit.Transaction('Match Graphics Overrides'):
                 for dest_elid in dest_element_ids:
-                    revit.activeview.SetElementOverrides(dest_elid, src_style)
+                    revit.active_view.SetElementOverrides(dest_elid, src_style)
 
 
 # FIXME: modify to remember source style

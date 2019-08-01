@@ -1,14 +1,20 @@
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, PyRevitException
 from pyrevit import framework, DB, UI
 from pyrevit.coreutils.logger import get_logger
 
 from pyrevit.revit import ensure
+from pyrevit.revit import query
 
 
-__all__ = ('pick_element', 'pick_elementpoint', 'pick_edge', 'pick_face',
-           'pick_linked', 'pick_elements', 'pick_elementpoints', 'pick_edges',
-           'pick_faces', 'pick_linkeds', 'pick_point', 'pick_rectangle',
-           'get_selection_category_set', 'get_selection')
+__all__ = ('pick_element', 'pick_element_by_category',
+           'pick_elements', 'pick_elements_by_category',
+           'get_picked_elements', 'get_picked_elements_by_category',
+           'pick_edge', 'pick_edges',
+           'pick_face', 'pick_faces',
+           'pick_linked', 'pick_linkeds',
+           'pick_elementpoint', 'pick_elementpoints',
+           'pick_point', 'pick_rectangle', 'get_selection_category_set',
+           'get_selection')
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -110,23 +116,58 @@ class ElementSelection:
         self._refs = expanded_refs
 
 
-def _pick_obj(obj_type, pick_message, multiple=False, world=False):
+class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
+    def __init__(self, category_id):
+        self.category_id = category_id
+
+    # standard API override function
+    def AllowElement(self, element):
+        if element.Category and self.category_id == element.Category.Id:
+            return True
+        else:
+            return False
+
+    # standard API override function
+    def AllowReference(self, refer, point):  # pylint: disable=W0613
+        return False
+
+
+def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=None):
     refs = []
 
     try:
         mlogger.debug('Picking elements: %s '
-                      'pick_message: %s '
+                      'message: %s '
                       'multiple: %s '
-                      'world: %s', obj_type, pick_message, multiple, world)
+                      'world: %s', obj_type, message, multiple, world)
+
+        # decide which picker method to use
+        picker_func = HOST_APP.uidoc.Selection.PickObject
         if multiple:
-            refs = list(
-                HOST_APP.uidoc.Selection.PickObjects(obj_type, pick_message)
+            picker_func = HOST_APP.uidoc.Selection.PickObjects
+
+        # call the correct signature of the picker function
+        # if selection filter is provided
+        if selection_filter:
+            pick_result = \
+                picker_func(
+                    obj_type,
+                    selection_filter,
+                    message
                 )
         else:
-            refs = []
-            refs.append(
-                HOST_APP.uidoc.Selection.PickObject(obj_type, pick_message)
+            pick_result = \
+                picker_func(
+                    obj_type,
+                    message
                 )
+
+        # process the results
+        if multiple:
+            refs = list(pick_result)
+        else:
+            refs = []
+            refs.append(pick_result)
 
         if not refs:
             mlogger.debug('Nothing picked by user...Returning None')
@@ -162,75 +203,119 @@ def _pick_obj(obj_type, pick_message, multiple=False, world=False):
         return None
 
 
-def pick_element(pick_message=''):
+def pick_element(message=''):
     return _pick_obj(UI.Selection.ObjectType.Element,
-                     pick_message)
+                     message)
 
 
-def pick_elementpoint(pick_message='', world=False):
+def pick_element_by_category(cat_name_or_builtin, message=''):
+    category = query.get_category(cat_name_or_builtin)
+    if category:
+        pick_filter = PickByCategorySelectionFilter(category.Id)
+        return _pick_obj(UI.Selection.ObjectType.Element,
+                         message,
+                         selection_filter=pick_filter)
+    else:
+        raise PyRevitException("Can not determine category id from: {}"
+                               .format(cat_name_or_builtin))
+
+
+def pick_elementpoint(message='', world=False):
     return _pick_obj(UI.Selection.ObjectType.PointOnElement,
-                     pick_message,
+                     message,
                      world=world)
 
 
-def pick_edge(pick_message=''):
+def pick_edge(message=''):
     return _pick_obj(UI.Selection.ObjectType.Edge,
-                     pick_message)
+                     message)
 
 
-def pick_face(pick_message=''):
+def pick_face(message=''):
     return _pick_obj(UI.Selection.ObjectType.Face,
-                     pick_message)
+                     message)
 
 
-def pick_linked(pick_message=''):
+def pick_linked(message=''):
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
-                     pick_message)
+                     message)
 
 
-def pick_elements(pick_message=''):
+def pick_elements(message=''):
     return _pick_obj(UI.Selection.ObjectType.Element,
-                     pick_message,
+                     message,
                      multiple=True)
 
 
-def pick_elementpoints(pick_message='', world=False):
+def pick_elements_by_category(cat_name_or_builtin, message=''):
+    category = query.get_category(cat_name_or_builtin)
+    if category:
+        pick_filter = PickByCategorySelectionFilter(category.Id)
+        return _pick_obj(UI.Selection.ObjectType.Element,
+                         message,
+                         multiple=True,
+                         selection_filter=pick_filter)
+    else:
+        raise PyRevitException("Can not determine category id from: {}"
+                               .format(cat_name_or_builtin))
+
+
+def get_picked_elements(message=''):
+    picked_element = True
+    while picked_element:
+        picked_element = pick_element(message=message)
+        if not picked_element:
+            break
+        yield picked_element
+
+
+def get_picked_elements_by_category(cat_name_or_builtin, message=''):
+    picked_element = True
+    while picked_element:
+        picked_element = pick_element_by_category(cat_name_or_builtin,
+                                                  message=message)
+        if not picked_element:
+            break
+        yield picked_element
+
+
+def pick_elementpoints(message='', world=False):
     return _pick_obj(UI.Selection.ObjectType.PointOnElement,
-                     pick_message,
+                     message,
                      multiple=True, world=world)
 
 
-def pick_edges(pick_message=''):
+def pick_edges(message=''):
     return _pick_obj(UI.Selection.ObjectType.Edge,
-                     pick_message,
+                     message,
                      multiple=True)
 
 
-def pick_faces(pick_message=''):
+def pick_faces(message=''):
     return _pick_obj(UI.Selection.ObjectType.Face,
-                     pick_message,
+                     message,
                      multiple=True)
 
 
-def pick_linkeds(pick_message=''):
+def pick_linkeds(message=''):
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
-                     pick_message,
+                     message,
                      multiple=True)
 
 
-def pick_point(pick_message=''):
+def pick_point(message=''):
     try:
-        return HOST_APP.uidoc.Selection.PickPoint(pick_message)
+        return HOST_APP.uidoc.Selection.PickPoint(message)
     except Exception:
         return None
 
 
-def pick_rectangle(pick_message='', pick_filter=None):
+def pick_rectangle(message='', pick_filter=None):
     if pick_filter:
         return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_filter,
-                                                                pick_message)
+                                                                message)
     else:
-        return HOST_APP.uidoc.Selection.PickElementsByRectangle(pick_message)
+        return HOST_APP.uidoc.Selection.PickElementsByRectangle(message)
 
 
 def get_selection_category_set():

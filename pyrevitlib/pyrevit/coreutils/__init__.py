@@ -836,7 +836,7 @@ def _inc_or_dec_string(str_id, shift):
     return next_str[::-1]
 
 
-def increment_str(input_str, step):
+def increment_str(input_str, step=1):
     """Incremenet identifier.
 
     Args:
@@ -853,7 +853,7 @@ def increment_str(input_str, step):
     return _inc_or_dec_string(input_str, abs(step))
 
 
-def decrement_str(input_str, step):
+def decrement_str(input_str, step=1):
     """Decrement identifier.
 
     Args:

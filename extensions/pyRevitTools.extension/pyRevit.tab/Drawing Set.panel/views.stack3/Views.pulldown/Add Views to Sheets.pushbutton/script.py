@@ -35,7 +35,7 @@ else:
                                  .format(revit.query.get_name(target_view)))
                     selected_views.append(target_view)
     else:
-        selected_view = revit.activeview
+        selected_view = revit.active_view
         if not isinstance(selected_view, DB.View):
             forms.alert('Active view must be placable on a sheet.', exitscript=True)
         logger.debug('Selected view: {}'.format(selected_view))

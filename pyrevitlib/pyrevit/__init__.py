@@ -199,12 +199,12 @@ class _HostApplication(object):
         return getattr(self.uidoc, 'Document', None)
 
     @property
-    def activeview(self):
+    def active_view(self):
         """Return view that is active (UIDocument.ActiveView)."""
         return getattr(self.uidoc, 'ActiveView', None)
 
-    @activeview.setter
-    def activeview(self, value):
+    @active_view.setter
+    def active_view(self, value):
         """Set the active view in user interface."""
         setattr(self.uidoc, 'ActiveView', value)
 

@@ -59,8 +59,8 @@ if selected_vps:
         if selected_option == 'Bring to Front':
             viewports = get_selected_viewports()
         elif selected_option == 'Send to Back':
-            viewports = get_nonselected_viewports(revit.activeview)
+            viewports = get_nonselected_viewports(revit.active_view)
 
-        bring_to_front(revit.activeview, viewports)
+        bring_to_front(revit.active_view, viewports)
 else:
     forms.alert('Select a Viewport first.')

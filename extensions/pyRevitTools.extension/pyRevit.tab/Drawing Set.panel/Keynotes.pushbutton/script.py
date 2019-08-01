@@ -643,7 +643,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 and kdb.RKeynoteFilters.ViewOnly.code in keynote_filter:
             visible_keys = \
                 [x.TagText for x in
-                 revit.query.get_visible_keynotes(revit.activeview)]
+                 revit.query.get_visible_keynotes(revit.active_view)]
             kdb.RKeynoteFilters.ViewOnly.set_keys(visible_keys)
 
         if fast and keynote_filter:

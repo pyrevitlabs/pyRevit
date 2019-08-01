@@ -10,7 +10,7 @@ Taggable = namedtuple('Taggable', ['tag_type', 'element_type'])
 
 
 # make sure active view is not a sheet
-curview = revit.activeview
+curview = revit.active_view
 if isinstance(curview, DB.ViewSheet):
     forms.alert("You're on a Sheet. Activate a model view please.",
                 exitscript=True)

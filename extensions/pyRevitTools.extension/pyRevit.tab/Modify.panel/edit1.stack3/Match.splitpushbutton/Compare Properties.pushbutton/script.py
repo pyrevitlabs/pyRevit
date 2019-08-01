@@ -114,5 +114,5 @@ with forms.WarningBar(title="Pick source object:"):
 
 # grab parameters from source element
 if source_element:
-    target_element = revit.pick_element(pick_message="Pick target element:")
+    target_element = revit.pick_element(message="Pick target element:")
     compare_props(source_element, target_element)

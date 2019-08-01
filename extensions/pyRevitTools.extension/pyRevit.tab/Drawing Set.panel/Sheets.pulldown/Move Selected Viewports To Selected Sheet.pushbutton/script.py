@@ -17,7 +17,7 @@ dest_sheet = forms.select_sheets(title='Select Target Sheets',
                                  multiple=False)
 
 if dest_sheet:
-    cursheet = revit.activeview
+    cursheet = revit.active_view
     sel = revit.pick_elements()
     for el in sel:
         selViewports.append(el)

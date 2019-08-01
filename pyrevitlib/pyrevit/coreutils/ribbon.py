@@ -654,6 +654,8 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         if not self.itemdata_mode:
             self.ui_title = self._rvtapi_object.ItemText
 
+        self.tooltip_image = self.tooltip_video = None
+
     def set_rvtapi_object(self, rvtapi_obj):
         GenericPyRevitUIContainer.set_rvtapi_object(self, rvtapi_obj)
         # update the ui title for the newly added rvtapi_obj
@@ -692,9 +694,11 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_image(self, tooltip_image):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj.ToolTip:
+            if adwindows_obj and adwindows_obj.ToolTip:
                 adwindows_obj.ToolTip.ExpandedImage = \
                     load_bitmapimage(tooltip_image)
+            else:
+                self.tooltip_image = tooltip_image
         except Exception as ttimage_err:
             raise PyRevitUIError('Error setting tooltip image {} | {} '
                                  .format(tooltip_image, ttimage_err))
@@ -702,11 +706,28 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def set_tooltip_video(self, tooltip_video):
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj.ToolTip:
+            if adwindows_obj and adwindows_obj.ToolTip:
                 adwindows_obj.ToolTip.ExpandedVideo = Uri(tooltip_video)
+            else:
+                self.tooltip_video = tooltip_video
         except Exception as ttvideo_err:
             raise PyRevitUIError('Error setting tooltip video {} | {} '
                                  .format(tooltip_video, ttvideo_err))
+
+    def process_deferred_tooltips(self):
+        try:
+            if self.tooltip_image:
+                self.set_tooltip_image(self.tooltip_image)
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting deffered tooltip image {} | {} '
+                                 .format(self.tooltip_video, ttvideo_err))
+
+        try:
+            if self.tooltip_video:
+                self.set_tooltip_video(self.tooltip_video)
+        except Exception as ttvideo_err:
+            raise PyRevitUIError('Error setting deffered tooltip video {} | {} '
+                                 .format(self.tooltip_video, ttvideo_err))
 
     def get_contexthelp(self):
         return self.get_rvtapi_object().GetContextualHelp()
@@ -796,8 +817,14 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
                 rvtapi_ribbon_item = \
                     self.get_rvtapi_object().AddPushButton(rvtapi_data_obj)
                 rvtapi_ribbon_item.ItemText = pyrvt_ui_item.get_title()
+
                 # replace data object with the newly create ribbon item
                 pyrvt_ui_item.set_rvtapi_object(rvtapi_ribbon_item)
+
+                # extended tooltips (images and videos) can only be applied when
+                # the ui element is created
+                pyrvt_ui_item.process_deferred_tooltips()
+
             elif isinstance(pyrvt_ui_item, _PyRevitSeparator):
                 self.get_rvtapi_object().AddSeparator()
 
@@ -1074,6 +1101,11 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             # .set_rvtapi_object() disables .itemdata_mode since
             # they're no longer data objects
             pyrvt_ui_item.set_rvtapi_object(rvtapi_ribbon_item)
+
+            # extended tooltips (images and videos) can only be applied when
+            # the ui element is created
+            if isinstance(pyrvt_ui_item, _PyRevitRibbonButton):
+                pyrvt_ui_item.process_deferred_tooltips()
 
             # if pyrvt_ui_item is a group,
             # create children and update group item data

@@ -10,7 +10,7 @@ shts = DB.FilteredElementCollector(revit.doc)\
 
 sheets = sorted(shts, key=lambda x: x.SheetNumber)
 
-curview = revit.activeview
+curview = revit.active_view
 count = 0
 
 for s in sheets:

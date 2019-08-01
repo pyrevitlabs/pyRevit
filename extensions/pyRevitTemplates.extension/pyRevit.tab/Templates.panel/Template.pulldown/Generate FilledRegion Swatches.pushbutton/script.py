@@ -12,7 +12,7 @@ def make_title(base_point, fr_type):
     tnote_typeid = \
         revit.doc.GetDefaultElementTypeId(DB.ElementTypeGroup.TextNoteType)
     DB.TextNote.Create(revit.doc,
-                       revit.activeview.Id,
+                       revit.active_view.Id,
                        DB.XYZ(base_point.X, base_point.Y + 1, base_point.Z),
                        1/12.0,
                        revit.query.get_name(fr_type),
@@ -49,7 +49,7 @@ def make_filledregion_element(base_point, fr_type):
 
     DB.FilledRegion.Create(revit.doc,
                            fr_type.Id,
-                           revit.activeview.Id,
+                           revit.active_view.Id,
                            List[DB.CurveLoop]([cloop]))
 
 

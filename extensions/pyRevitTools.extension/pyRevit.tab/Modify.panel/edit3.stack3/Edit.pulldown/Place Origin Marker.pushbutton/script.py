@@ -16,10 +16,10 @@ line2 = DB.Line.CreateBound(DB.XYZ(1, -1, 0), DB.XYZ(-1, 1, 0))
 try:
     with revit.Transaction('Place Origin Marker', log_errors=False):
         if revit.doc.IsFamilyDocument:
-            revit.doc.FamilyCreate.NewDetailCurve(revit.activeview, line1)
-            revit.doc.FamilyCreate.NewDetailCurve(revit.activeview, line2)
+            revit.doc.FamilyCreate.NewDetailCurve(revit.active_view, line1)
+            revit.doc.FamilyCreate.NewDetailCurve(revit.active_view, line2)
         else:
-            revit.doc.Create.NewDetailCurve(revit.activeview, line1)
-            revit.doc.Create.NewDetailCurve(revit.activeview, line2)
+            revit.doc.Create.NewDetailCurve(revit.active_view, line1)
+            revit.doc.Create.NewDetailCurve(revit.active_view, line2)
 except Exception as ex:
     forms.alert("You are not on a plan view.", sub_msg=str(ex))

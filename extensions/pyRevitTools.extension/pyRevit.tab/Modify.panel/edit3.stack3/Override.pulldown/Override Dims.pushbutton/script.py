@@ -7,7 +7,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-__author__ = 'Ehsan Iran-Nejad; SILMAN'
+__authors__ = ['{{author}}', 'SILMAN']
 __context__ = 'OST_Dimensions'
 
 

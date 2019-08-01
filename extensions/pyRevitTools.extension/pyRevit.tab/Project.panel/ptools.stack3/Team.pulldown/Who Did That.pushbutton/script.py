@@ -6,8 +6,7 @@ from pyrevit import script
 
 
 __title__ = 'Who did that??'
-__author__ = 'Ehsan Iran-Nejad\n'\
-             'Frederic Beaupere'
+__authors__ = ['{{author}}', 'Frederic Beaupere']
 
 
 def who_reloaded_keynotes():
@@ -64,7 +63,7 @@ def who_created_selection():
 
 
 def who_created_activeview():
-    active_view = revit.activeview
+    active_view = revit.active_view
     view_id = active_view.Id.ToString()
     view_name = active_view.Name
     view_creator = \
