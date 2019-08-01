@@ -4,20 +4,18 @@ using System.Web;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
+#if (REVIT2013 || REVIT2014)
+using Autodesk.Revit.UI.Selection;
+#endif
 
-namespace PyRevitBaseClasses
-{
-    public class ScriptOutputHelpers
-    {
-        public static void ProcessUrl(UIApplication uiApp, string inputUrl)
-        {
+namespace PyRevitBaseClasses {
+    public class ScriptOutputHelpers {
+        public static void ProcessUrl(UIApplication uiApp, string inputUrl) {
             var parsedQuery = HttpUtility.ParseQueryString(inputUrl.Split('?')[1]);
 
-            if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null)
-            {
+            if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null) {
                 var idList = new List<ElementId>();
-                foreach (string strId in parsedQuery["element[]"].Split(','))
-                {
+                foreach (string strId in parsedQuery["element[]"].Split(',')) {
                     idList.Add(new ElementId(Convert.ToInt32(strId)));
                 }
 
@@ -25,19 +23,16 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds)
-        {
+        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds) {
             var uidoc = uiApp.ActiveUIDocument;
 
-            if (uidoc != null)
-            {
+            if (uidoc != null) {
                 var doc = uiApp.ActiveUIDocument.Document;
 
                 // is there is only one element and it has owner view
                 // open the view, isolate the element, zoom fit the view, unisolate
                 // this would zoom in on that element only
-                if (doc != null && elementIds.Count >= 1)
-                {
+                if (doc != null && elementIds.Count >= 1) {
                     // get all open ui views, to be able to zoom later on
                     var openUIViews = uidoc.GetOpenUIViews();
 
@@ -45,22 +40,19 @@ namespace PyRevitBaseClasses
                     var el = doc.GetElement(elementIds[0]);
 
                     // if element is a view, open the view
-                    if (el.GetType().IsSubclassOf(typeof(View)))
-                    {
+                    if (el.GetType().IsSubclassOf(typeof(View))) {
                         uidoc.ActiveView = (View)el;
                     }
                     // if element is a 2D element and has an owner view
                     // open the view and zoom to element
-                    else if (el.OwnerViewId != ElementId.InvalidElementId)
-                    {
+                    else if (el.OwnerViewId != ElementId.InvalidElementId) {
                         // if all 2D elements are in the same view
                         bool sameOwnerView = true;
                         foreach (var elid in elementIds)
                             if (doc.GetElement(elid).OwnerViewId != el.OwnerViewId)
                                 sameOwnerView = false;
 
-                        if (sameOwnerView)
-                        {
+                        if (sameOwnerView) {
                             // get the view and activate
                             View view = (View)doc.GetElement(el.OwnerViewId);
                             uidoc.ActiveView = view;
@@ -79,10 +71,19 @@ namespace PyRevitBaseClasses
 
                             elementIdsToIsolate.AddRange(elementIds);
                             view.IsolateElementsTemporary(elementIdsToIsolate);
+#if (REVIT2013 || REVIT2014)
+                            uidoc.Selection.Elements = SelElementSet.Create();
+#else
                             uidoc.Selection.SetElementIds(new List<ElementId>());
+#endif
+
+#if !(REVIT2013)
+                            // Revit 2013 API does not have zoom to fit option
                             foreach (var uiview in openUIViews)
                                 if (uiview.ViewId == view.Id)
                                     uiview.ZoomToFit();
+#endif
+
 
                             // set the view back to normal
                             view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
@@ -90,18 +91,24 @@ namespace PyRevitBaseClasses
                     }
                     // if element is a 3D element and does not have an owner view
                     // get the current view and try to zoom the element
-                    else if (el.OwnerViewId == ElementId.InvalidElementId)
-                    {
+                    else if (el.OwnerViewId == ElementId.InvalidElementId) {
                         // get the current view
                         View view = (View)uidoc.ActiveView;
 
                         // islolate the element, deselect, and zoom fit
                         view.IsolateElementsTemporary(elementIds);
-                        uidoc.Selection.SetElementIds(new List<ElementId>());
-                        foreach (var uiview in openUIViews)
-                            if (uiview.ViewId == view.Id)
-                                uiview.ZoomToFit();
+#if (REVIT2013 || REVIT2014)
+                        uidoc.Selection.Elements = SelElementSet.Create();
+#else
+                            uidoc.Selection.SetElementIds(new List<ElementId>());
+#endif
 
+#if !(REVIT2013)
+                            // Revit 2013 API does not have zoom to fit option
+                            foreach (var uiview in openUIViews)
+                                if (uiview.ViewId == view.Id)
+                                    uiview.ZoomToFit();
+#endif
                         // set the view back to normal
                         view.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
                     }
@@ -109,7 +116,20 @@ namespace PyRevitBaseClasses
                 }
 
                 // now select the element(s)
+
+#if (REVIT2013 || REVIT2014)
+                var elementSet = SelElementSet.Create();
+                foreach (ElementId elId in elementIds) {
+                    var element = doc.GetElement(elId);
+                    if (element != null)
+                        elementSet.Add(element);
+                }
+
+                uidoc.Selection.Elements = elementSet;
+#else
                 uidoc.Selection.SetElementIds(elementIds);
+#endif
+
             }
 
         }

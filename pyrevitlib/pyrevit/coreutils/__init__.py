@@ -284,7 +284,7 @@ SPECIAL_CHARS = {' ': '',
                  r'\/': '', '\\': ''}
 
 
-def cleanup_string(input_str):
+def cleanup_string(input_str, skip=None):
     """Replace special characters in string with another string.
 
     This function was created to help cleanup pyRevit command unique names from
@@ -303,6 +303,8 @@ def cleanup_string(input_str):
     """
     # remove spaces and special characters from strings
     for char, repl in SPECIAL_CHARS.items():
+        if skip and char in skip:
+            continue
         input_str = input_str.replace(char, repl)
 
     return input_str
@@ -367,87 +369,6 @@ def inspect_calling_scope_global_var(variable_name):
         if frame is None:
             return None
     return frame.f_locals[variable_name]
-
-
-def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
-    """Find loaded assembly based on name, partial name, or location.
-
-    Args:
-        asm_info (str): name or location of the assembly
-        by_partial_name (bool): returns all assemblies that has the asm_info
-        by_location (bool): returns all assemblies matching location
-
-    Returns:
-        list: List of all loaded assemblies matching the provided info
-        If only one assembly has been found, it returns the assembly.
-        :obj:`None` will be returned if assembly is not loaded.
-    """
-    loaded_asm_list = []
-    for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
-        if by_partial_name:
-            if asm_info.lower() in \
-                    safe_strtype(loaded_assembly.GetName().Name).lower():
-                loaded_asm_list.append(loaded_assembly)
-        elif by_location:
-            try:
-                if op.normpath(loaded_assembly.Location) == \
-                        op.normpath(asm_info):
-                    loaded_asm_list.append(loaded_assembly)
-            except Exception:
-                continue
-        elif asm_info.lower() == \
-                safe_strtype(loaded_assembly.GetName().Name).lower():
-            loaded_asm_list.append(loaded_assembly)
-
-    return loaded_asm_list
-
-
-def load_asm(asm_name):
-    """Load assembly by name into current domain.
-
-    Args:
-        asm_name (str): assembly name
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    return framework.AppDomain.CurrentDomain.Load(asm_name)
-
-
-def load_asm_file(asm_file):
-    """Load assembly by file into current domain.
-
-    Args:
-        asm_file (str): assembly file path
-
-    Returns:
-        returns the loaded assembly, None if not loaded.
-    """
-    try:
-        return framework.Assembly.LoadFrom(asm_file)
-    except Exception:
-        return None
-
-
-def find_type_by_name(assembly, type_name):
-    """Find type by name in assembly.
-
-    Args:
-        assembly (:obj:`Assembly`): assembly to find the type in
-        type_name (str): type name
-
-    Returns:
-        returns the type if found.
-
-    Raises:
-        :obj:`PyRevitException` if type not found.
-    """
-    base_class = assembly.GetType(type_name)
-    if base_class is not None:
-        return base_class
-    else:
-        raise PyRevitException('Can not find base class type: {}'
-                               .format(type_name))
 
 
 def make_canonical_name(*args):

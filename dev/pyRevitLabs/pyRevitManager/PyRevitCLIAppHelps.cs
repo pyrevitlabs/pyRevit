@@ -371,6 +371,13 @@ namespace pyRevitManager {
                         });
                     break;
 
+                case PyRevitCLICommandType.Doctor:
+                    BuildHelp(
+                        new List<string>() { "doctor" },
+                        header: "Inspect and fix errors and issues in pyRevit environment"
+                        );
+                    break;
+
                 case PyRevitCLICommandType.Config:
                     BuildHelp(
                         new List<string>() { "config" },
@@ -398,7 +405,7 @@ namespace pyRevitManager {
                             { "usercanupdate",          "Enable/Disable Update button in pyRevit" },
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
-                            { "usagelogging",           "Tool usage logging" },
+                            { "telemetry",              "Telemetry" },
                             { "outputcss",              "Output window styling" },
                         },
                         options: new Dictionary<string, string>() {

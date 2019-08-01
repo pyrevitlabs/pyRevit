@@ -78,6 +78,11 @@ def _create_subcomponents(search_dir,
     return sub_cmp_list
 
 
+def _get_subcomponents_classes(parent_classes):
+    """Find available subcomponents for given parent types."""
+    return [x for x in get_all_subclasses(parent_classes) if x.type_id]
+
+
 def _parse_for_components(component):
     """Recursively parses _get_component.directory for components of type
     _get_component.allowed_sub_cmps. This method uses get_all_subclasses() to
@@ -89,7 +94,7 @@ def _parse_for_components(component):
     """
     for new_cmp in _create_subcomponents(
             component.directory,
-            get_all_subclasses(component.allowed_sub_cmps)):
+            _get_subcomponents_classes(component.allowed_sub_cmps)):
         # add the successfulyl created _get_component to the
         # parent _get_component
         component.add_component(new_cmp)
@@ -100,8 +105,11 @@ def _parse_for_components(component):
 
 
 def parse_comp_dir(comp_path, comp_class):
-    return _create_subcomponents(comp_path, get_all_subclasses([comp_class]),
-                                 create_from_search_dir=True)
+    return _create_subcomponents(
+        comp_path,
+        _get_subcomponents_classes([comp_class]),
+        create_from_search_dir=True
+        )
 
 
 def get_parsed_extension(extension):

@@ -30,7 +30,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             "attach", "attatched", "latest", "dynamosafe", "detached",
             "extend", "extensions", "search", "install", "uninstall", "update", "paths", "revits",
             "config", "configs", "logs", "none", "verbose", "debug", "allowremotedll", "checkupdates",
-            "autoupdate", "rocketmode", "filelogging", "loadbeta", "usagelogging", "enable", "disable",
+            "autoupdate", "rocketmode", "filelogging", "loadbeta", "telemetry", "enable", "disable",
             "file", "server", "outputcss", "seed"
         };
 

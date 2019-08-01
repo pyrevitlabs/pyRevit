@@ -162,7 +162,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             dir_list.append(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
         try:
             dir_list.extend([
-                op.expandvars(op.normpath(x.encode('string-escape')))
+                op.expandvars(op.normpath(x))
                 for x in self.core.userextensions
                 ])
         except Exception as read_err:
@@ -307,12 +307,6 @@ def verify_configs(config_file_path=None):
     # userextensions
     if not parser.core.has_option(consts.ConfigsUserExtensionsKey):
         parser.core.set_option(consts.ConfigsUserExtensionsKey, [])
-    # compilecsharp
-    if not parser.core.has_option(consts.ConfigsCompileCSharpKey):
-        parser.core.set_option(consts.ConfigsCompileCSharpKey, True)
-    # compilevb
-    if not parser.core.has_option(consts.ConfigsCompileVBKey):
-        parser.core.set_option(consts.ConfigsCompileVBKey, True)
 
     # cpyengine: does not need to set a default for this
 
@@ -335,20 +329,20 @@ def verify_configs(config_file_path=None):
     if not parser.core.has_option(consts.ConfigsUserCanConfigKey):
         parser.core.set_option(consts.ConfigsUserCanConfigKey, True)
 
-    # usagelogging section
-    if not parser.has_section(consts.ConfigsUsageLoggingSection):
-        parser.add_section(consts.ConfigsUsageLoggingSection)
-    # usagelogging active
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLoggingStatusKey):
-        parser.usagelogging.set_option(
-            consts.ConfigsUsageLoggingStatusKey, False
+    # telemetry section
+    if not parser.has_section(consts.ConfigsTelemetrySection):
+        parser.add_section(consts.ConfigsTelemetrySection)
+    # telemetry active
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryStatusKey):
+        parser.telemetry.set_option(
+            consts.ConfigsTelemetryStatusKey, False
             )
-    # usagelogging file
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLogFilePathKey):
-        parser.usagelogging.set_option(consts.ConfigsUsageLogFilePathKey, "")
-    # usagelogging server
-    if not parser.usagelogging.has_option(consts.ConfigsUsageLogServerUrlKey):
-        parser.usagelogging.set_option(consts.ConfigsUsageLogServerUrlKey, "")
+    # telemetry file
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryFilePathKey):
+        parser.telemetry.set_option(consts.ConfigsTelemetryFilePathKey, "")
+    # telemetry server
+    if not parser.telemetry.has_option(consts.ConfigsTelemetryServerUrlKey):
+        parser.telemetry.set_option(consts.ConfigsTelemetryServerUrlKey, "")
 
     # save config into config file
     if config_file_path:

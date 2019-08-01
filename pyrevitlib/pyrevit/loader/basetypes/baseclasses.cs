@@ -7,8 +7,6 @@ using Autodesk.Revit.Attributes;
 using System.Windows.Input;
 using System.Windows.Controls;
 
-using Python.Runtime;
-
 namespace PyRevitBaseClasses {
     public enum ExtendedAvailabilityTypes {
         ZeroDocuments,
@@ -21,7 +19,7 @@ namespace PyRevitBaseClasses {
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand {
         public string baked_scriptSource = null;
-        public string baked_alternateScriptSource = null;
+        public string baked_configScriptSource = null;
         public string baked_syspaths = null;
         public string baked_helpSource = null;
         public string baked_cmdName = null;
@@ -31,16 +29,16 @@ namespace PyRevitBaseClasses {
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
 
-        // unlike fullframe or clean engine modes, the alternate script mode is determined at
+        // unlike fullframe or clean engine modes, the config script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
-        // trigger the alternate script mode when executing a command from a program and not
+        // trigger the config script mode when executing a command from a program and not
         // from the Revit user interface.
-        public bool altScriptModeOverride = false;
+        public bool ConfigScriptMode = false;
 
         // this is true by default since commands are normally executed from ui.
         // pyrevit module will set this to false, when manually executing a
         // pyrevit command from python code. (e.g when executing reload after update)
-        public bool executedFromUI = true;
+        public bool ExecutedFromUI = true;
 
         // list of string arguments to be passed to executor.
         // executor then sets the sys.argv with these arguments
@@ -48,7 +46,7 @@ namespace PyRevitBaseClasses {
 
 
         public PyRevitCommand(string scriptSource,
-                              string alternateScriptSource,
+                              string configScriptSource,
                               string syspaths,
                               string helpSource,
                               string cmdName,
@@ -58,7 +56,7 @@ namespace PyRevitBaseClasses {
                               int needsCleanEngine,
                               int needsFullFrameEngine) {
             baked_scriptSource = scriptSource;
-            baked_alternateScriptSource = alternateScriptSource;
+            baked_configScriptSource = configScriptSource;
             baked_syspaths = syspaths;
             baked_helpSource = helpSource;
             baked_cmdName = cmdName;
@@ -78,7 +76,7 @@ namespace PyRevitBaseClasses {
             var _script = baked_scriptSource;
 
             bool _refreshEngine = false;
-            bool _altScriptMode = false;
+            bool _configScriptMode = false;
             bool _forcedDebugMode = false;
 
             bool ALT = Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt);
@@ -125,12 +123,12 @@ namespace PyRevitBaseClasses {
                 copyScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(_script); };
                 pyRevitCmdContextMenu.Items.Add(copyScriptPath);
 
-                // menu item to copy alternate script path to clipboard, if exists
-                if (baked_alternateScriptSource != null && baked_alternateScriptSource != "") {
+                // menu item to copy config script path to clipboard, if exists
+                if (baked_configScriptSource != null && baked_configScriptSource != "") {
                     MenuItem copyAltScriptPath = new MenuItem();
-                    copyAltScriptPath.Header = "Copy Alternate Script Path";
-                    copyAltScriptPath.ToolTip = baked_alternateScriptSource;
-                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_alternateScriptSource); };
+                    copyAltScriptPath.Header = "Copy Config Script Path";
+                    copyAltScriptPath.ToolTip = baked_configScriptSource;
+                    copyAltScriptPath.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_configScriptSource); };
                     pyRevitCmdContextMenu.Items.Add(copyAltScriptPath);
                 }
 
@@ -171,9 +169,9 @@ namespace PyRevitBaseClasses {
             }
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
-            else if (CTRL && (SHIFT || altScriptModeOverride)) {
-                _script = baked_alternateScriptSource;
-                _altScriptMode = true;
+            else if (CTRL && (SHIFT || ConfigScriptMode)) {
+                _script = baked_configScriptSource;
+                _configScriptMode = true;
                 _forcedDebugMode = true;
             }
 
@@ -188,9 +186,9 @@ namespace PyRevitBaseClasses {
             }
 
             // If Shift clicking on button, run config script instead
-            else if (SHIFT || altScriptModeOverride) {
-                _script = baked_alternateScriptSource;
-                _altScriptMode = true;
+            else if (SHIFT || ConfigScriptMode) {
+                _script = baked_configScriptSource;
+                _configScriptMode = true;
             }
 
             // If Ctrl clicking on button, set forced debug mode.
@@ -204,7 +202,7 @@ namespace PyRevitBaseClasses {
             var pyrvtCmdRuntime = new PyRevitCommandRuntime(cmdData: commandData,
                                                             elements: elements,
                                                             scriptSource: baked_scriptSource,
-                                                            alternateScriptSource: baked_alternateScriptSource,
+                                                            configScriptSource: baked_configScriptSource,
                                                             syspaths: baked_syspaths,
                                                             arguments: argumentList,
                                                             helpSource: baked_helpSource,
@@ -216,56 +214,29 @@ namespace PyRevitBaseClasses {
                                                             needsFullFrameEngine: baked_needsFullFrameEngine,
                                                             refreshEngine: _refreshEngine,
                                                             forcedDebugMode: _forcedDebugMode,
-                                                            altScriptMode: _altScriptMode,
-                                                            executedFromUI: executedFromUI);
+                                                            configScriptMode: _configScriptMode,
+                                                            executedFromUI: ExecutedFromUI);
             #endregion
 
             // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Execute and log results
             // Executing the script and logging the results
-            if (pyrvtCmdRuntime.IsPython3) {
-                using (Py.GIL()) {
-                    // initialize
-                    if (!PythonEngine.IsInitialized)
-                        PythonEngine.Initialize();
+            // Get script executor and Execute the script
+            pyrvtCmdRuntime.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtCmdRuntime);
 
-                    // set output stream
-                    dynamic sys = PythonEngine.ImportModule("sys");
-                    sys.stdout = pyrvtCmdRuntime.OutputStream;
+            // Log results
+            ScriptTelemetry.LogTelemetryRecord(pyrvtCmdRuntime.MakeTelemetryRecord());
 
-                    // set uiapplication
-                    sys.host = pyrvtCmdRuntime.UIApp;
+            // GC cleanups
+            var re = pyrvtCmdRuntime.ExecutionResult;
+            pyrvtCmdRuntime.Dispose();
+            pyrvtCmdRuntime = null;
 
-                    // run
-                    var scriptContents = File.ReadAllText(pyrvtCmdRuntime.ScriptSourceFile);
-                    PythonEngine.Exec(scriptContents);
-
-                    // shutdown halts and breaks Revit
-                    // let's not do that!
-                    // PythonEngine.Shutdown();
-
-                    return Result.Succeeded;
-                }
-            }
-            else {
-                // Get script executor and Execute the script
-                var executor = new ScriptExecutor();
-                pyrvtCmdRuntime.ExecutionResult = executor.ExecuteScript(ref pyrvtCmdRuntime);
-
-                // Log results
-                ScriptUsageLogger.LogUsage(pyrvtCmdRuntime.MakeLogEntry());
-
-                // GC cleanups
-                var re = pyrvtCmdRuntime.ExecutionResult;
-                pyrvtCmdRuntime.Dispose();
-                pyrvtCmdRuntime = null;
-
-                // Return results to Revit. Don't report errors since we don't want Revit popup with error results
-                if (re == 0)
-                    return Result.Succeeded;
-                else
-                    return Result.Cancelled;
-            }
+            // Return results to Revit. Don't report errors since we don't want Revit popup with error results
+            if (re == 0)
+                return Result.Succeeded;
+            else
+                return Result.Cancelled;
             #endregion
         }
     }
@@ -386,12 +357,22 @@ namespace PyRevitBaseClasses {
                 return false;
 
             try {
+#if (REVIT2013 || REVIT2014)
+                // check active views
+                if (_activeViewTypes.Count > 0) {
+                    if (uiApp != null && uiApp.ActiveUIDocument != null
+                        && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType))
+                        return false;
+                }
+#else
                 // check active views
                 if (_activeViewTypes.Count > 0) {
                     if (uiApp != null && uiApp.ActiveUIDocument != null
                         && !_activeViewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType))
                         return false;
                 }
+#endif
+
 
                 // the rest are category comparisons so if no categories are selected return false
                 if (selectedCategories.IsEmpty)

@@ -4,13 +4,15 @@ import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import coreutils
-from pyrevit import usagelog
+from pyrevit import telemetry
 from pyrevit import script
 from pyrevit import forms
 from pyrevit import output
 from pyrevit.labs import TargetApps
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
+
+import pyrevitcore_globals
 
 
 __context__ = 'zerodoc'
@@ -22,9 +24,6 @@ __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
 
 logger = script.get_logger()
 Revit = TargetApps.Revit
-
-
-PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
 
 
 class EnvVariable:
@@ -88,7 +87,7 @@ class SettingsWindow(forms.WPFWindow):
         self.set_image_source(self.logdebug, 'logdebug.png')
 
         self._setup_outputsettings()
-        self._setup_usagelogging()
+        self._setup_telemetry()
         self._setup_addinfiles()
 
     def _setup_core_options(self):
@@ -104,8 +103,6 @@ class SettingsWindow(forms.WPFWindow):
         self.filelogging_cb.IsChecked = user_config.core.filelogging
 
         self.startup_log_timeout.Text = str(user_config.core.startuplogtimeout)
-        self.compilecsharp_cb.IsChecked = user_config.core.compilecsharp
-        self.compilevb_cb.IsChecked = user_config.core.compilevb
 
         if user_config.core.bincache:
             self.bincache_rb.IsChecked = True
@@ -171,8 +168,9 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_env_vars_list(self):
         """Reads the pyRevit environment variables and updates the list"""
-        env_vars_list = [EnvVariable(k, v)
-                         for k, v in envvars.get_pyrevit_env_vars().items()]
+        env_vars_list = \
+            [EnvVariable(k, v)
+             for k, v in sorted(envvars.get_pyrevit_env_vars().items())]
 
         self.envvars_lb.ItemsSource = env_vars_list
 
@@ -180,24 +178,24 @@ class SettingsWindow(forms.WPFWindow):
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
-    def _setup_usagelogging(self):
-        """Reads the pyRevit usage logging config and updates the ui"""
-        self.usagelogging_cb.IsChecked = \
-            user_config.usagelogging.get_option('active',
-                                                default_value=False)
-        self.usagelogfile_tb.Text = \
-            user_config.usagelogging.get_option('logfilepath',
-                                                default_value='')
-        self.usagelogserver_tb.Text = \
-            user_config.usagelogging.get_option('logserverurl',
-                                                default_value='')
+    def _setup_telemetry(self):
+        """Reads the pyRevit telemetry config and updates the ui"""
+        self.telemetry_cb.IsChecked = \
+            user_config.telemetry.get_option('active',
+                                             default_value=False)
+        self.telemetryfile_tb.Text = \
+            user_config.telemetry.get_option('telemetrypath',
+                                             default_value='')
+        self.telemetryserver_tb.Text = \
+            user_config.telemetry.get_option('telemetryserverurl',
+                                             default_value='')
 
-        self.cur_usagelogfile_tb.Text = \
-            usagelog.get_current_usage_logfile()
-        self.cur_usagelogfile_tb.IsReadOnly = True
-        self.cur_usageserverurl_tb.Text = \
-            usagelog.get_current_usage_serverurl()
-        self.cur_usageserverurl_tb.IsReadOnly = True
+        self.cur_telemetryfile_tb.Text = \
+            telemetry.get_current_telemetry_file()
+        self.cur_telemetryfile_tb.IsReadOnly = True
+        self.cur_telemetryserverurl_tb.Text = \
+            telemetry.get_current_telemetry_serverurl()
+        self.cur_telemetryserverurl_tb.IsReadOnly = True
 
     def _make_product_name(self, product, note):
         return '_{} | {}({}) {}'.format(
@@ -250,13 +248,13 @@ class SettingsWindow(forms.WPFWindow):
                     checkbox.IsChecked = False
 
     @staticmethod
-    def update_usagelogging():
-        """Updates the usage logging system per changes.
+    def update_telemetry():
+        """Updates the telemetry system per changes.
 
         This is usually called after new settings are saved and before
         pyRevit is reloaded.
         """
-        usagelog.setup_usage_logfile()
+        telemetry.setup_telemetry_file()
 
     def is_same_version_as_running(self, version):
         return str(version) == EXEC_PARAMS.engine_ver
@@ -351,19 +349,19 @@ class SettingsWindow(forms.WPFWindow):
         if selected_path:
             script.show_file_in_explorer(selected_path)
 
-    def pick_usagelog_folder(self, sender, args):
-        """Callback method for picking destination folder for usage log files"""
+    def pick_telemetry_folder(self, sender, args):
+        """Callback method for picking destination folder for telemetry files"""
         new_path = forms.pick_folder()
         if new_path:
-            self.usagelogfile_tb.Text = os.path.normpath(new_path)
+            self.telemetryfile_tb.Text = os.path.normpath(new_path)
 
-    def reset_usagelog_folder(self, sender, args):
-        """Callback method for resetting usage log file folder to defaults"""
-        self.usagelogfile_tb.Text = usagelog.get_default_usage_logfilepath()
+    def reset_telemetry_folder(self, sender, args):
+        """Callback method for resetting telemetry file folder to defaults"""
+        self.telemetryfile_tb.Text = telemetry.get_default_telemetry_filepath()
 
-    def open_usagelog_folder(self, sender, args):
-        """Callback method for opening destination folder for usage log files"""
-        cur_log_folder = op.dirname(self.cur_usagelogfile_tb.Text)
+    def open_telemetry_folder(self, sender, args):
+        """Callback method for opening destination folder for telemetry files"""
+        cur_log_folder = op.dirname(self.cur_telemetryfile_tb.Text)
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
 
@@ -391,8 +389,6 @@ class SettingsWindow(forms.WPFWindow):
         user_config.core.debug = self.debug_rb.IsChecked
         user_config.core.filelogging = self.filelogging_cb.IsChecked
         user_config.core.bincache = self.bincache_rb.IsChecked
-        user_config.core.compilecsharp = self.compilecsharp_cb.IsChecked
-        user_config.core.compilevb = self.compilevb_cb.IsChecked
         user_config.core.requiredhostbuild = self.requiredhostbuild_tb.Text
 
         # set active cpython engine
@@ -422,10 +418,10 @@ class SettingsWindow(forms.WPFWindow):
         else:
             user_config.set_thirdparty_ext_root_dirs([])
 
-        # set usage logging configs
-        user_config.usagelogging.active = self.usagelogging_cb.IsChecked
-        user_config.usagelogging.logfilepath = self.usagelogfile_tb.Text
-        user_config.usagelogging.logserverurl = self.usagelogserver_tb.Text
+        # set telemetry configs
+        user_config.telemetry.active = self.telemetry_cb.IsChecked
+        user_config.telemetry.telemetrypath = self.telemetryfile_tb.Text
+        user_config.telemetry.telemetryserverurl = self.telemetryserver_tb.Text
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
@@ -437,8 +433,8 @@ class SettingsWindow(forms.WPFWindow):
         # save all new values into config file
         user_config.save_changes()
 
-        # update usage logging and addin files
-        self.update_usagelogging()
+        # update telemetry and addin files
+        self.update_telemetry()
         self.update_addinfiles()
         self.Close()
 
@@ -446,7 +442,7 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for saving pyRevit settings and reloading"""
         self.savesettings(sender, args)
         from pyrevit.loader.sessionmgr import execute_command
-        execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
+        execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # decide if the settings should load or not

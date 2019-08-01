@@ -1,4 +1,42 @@
-# .NET Dependecy Conflicts
+# Release Checklist
+
+### Releasing pyRevit CLI
+
+- [ ] Increase CLI version
+- [ ] Compile CLI: `./build -rl`
+- [ ] Run CLI unit tests
+- [ ] Update CLI docs and increase version
+- [ ] Run pyRevit and test successful load
+- [ ] Check CLI version under pyRevit about
+- [ ] Build the CLI installer: `./build -y`
+- [ ] Grab the product code and add to the list
+- [ ] Commit binaries and release files
+- [ ] Push and tag
+- [ ] Create CLI release on github and add comments
+- [ ] Upload installer to github release
+
+### Releasing pyRevit
+
+- [ ] Run and test the changes
+- [ ] Build the docs and review: `./build -rdp`
+- [ ] Increase pyRevit version and build the installer: `./build -x -increment`
+- [ ] Grab the product code and add to the list
+- [ ] Commit changes and push
+- [ ] Merge release branch into master
+- [ ] Tag the merge
+- [ ] Create release on github and add comments
+- [ ] Upload installer to github release
+
+### Public Post
+
+- [ ] Create a post on blog, explain the changes, or make a video
+- [ ] Tweet the post
+
+&nbsp;
+
+# Custom Changes to Dependencies
+
+To avoid conflicts between libraries with similar name but different versions required by other Revit addons, a few changes has been done to some of the libraries and recompiled under a different namespace.
 
 ## Newtonsoft.Json
 
@@ -55,6 +93,11 @@ Changes listed here were made to the Visual Studio project
 - Changed Package settings to version 4.6.4
 - Renamed project assembly name to `pyRevitLabs.NLog`
 
+&nbsp;
+
+# Custom Changes to Python Modules
+
+Python modules shipped with pyRevit and mostly borrowed from cpython modules with minor changes to make them compatible with IronPython.
 
 ## natsort
 

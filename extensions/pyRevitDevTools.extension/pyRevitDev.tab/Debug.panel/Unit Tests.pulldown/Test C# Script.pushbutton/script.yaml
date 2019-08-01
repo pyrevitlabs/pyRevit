@@ -1,0 +1,8 @@
+title: Test C# Script (Custom Title)
+tooltip: Test C# Script Tooltip
+author: "{{author}}"
+context:
+  - Walls
+  - Text Notes
+modules:
+  - Markdown.dll

@@ -204,6 +204,11 @@ namespace pyRevitManager {
             Console.WriteLine(string.Format("pyRevit CLI {0}", PyRevitCLI.CLIVersion.ToString()));
         }
 
+        internal static void
+        InspectAndFixEnv() {
+
+        }
+
         // cli specific commands
         internal static void
         PrintVersion() {

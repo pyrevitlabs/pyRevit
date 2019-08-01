@@ -85,6 +85,9 @@ except Exception:
 from pyrevit import BIN_DIR
 
 
+ASSEMBLY_FILE_TYPE = 'dll'
+
+
 def get_type(fw_object):
     """Return CLR type of an object."""
     return clr.GetClrType(fw_object)

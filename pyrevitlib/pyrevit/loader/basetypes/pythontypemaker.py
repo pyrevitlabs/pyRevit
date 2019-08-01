@@ -1,20 +1,13 @@
 """Prepare and compile python script types."""
-from pyrevit.coreutils import create_type, create_ext_command_attrs, \
-                              join_strings
-from pyrevit.coreutils.logger import get_logger
-
-from pyrevit.loader.basetypes import CMD_EXECUTOR_TYPE
-from pyrevit.loader.basetypes import CMD_AVAIL_TYPE, CMD_AVAIL_TYPE_SELECTION,\
-    CMD_AVAIL_TYPE_EXTENDED
-
+from pyrevit import coreutils
+from pyrevit.coreutils import logger
+from pyrevit.loader import basetypes
 from pyrevit.userconfig import user_config
-
-import pyrevit.extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
 
 #pylint: disable=W0703,C0302,C0103
-mlogger = get_logger(__name__)
+mlogger = logger.get_logger(__name__)
 
 
 def _is_rocketmode_compat(ext_name):
@@ -38,37 +31,7 @@ def _is_rocketmode_compat(ext_name):
     return False
 
 
-def _make_python_avail_type(module_builder, cmd_component):
-    """
-
-    Args:
-        module_builder:
-        cmd_component (pyrevit.extensions.genericcomps.GenericUICommand):
-
-    Returns:
-
-    """
-
-    context_str = cmd_component.cmd_context.lower()
-
-    if context_str == exts.CTX_SELETION:
-        create_type(module_builder, CMD_AVAIL_TYPE_SELECTION,
-                    cmd_component.unique_avail_name, [],
-                    cmd_component.cmd_context)
-
-    elif context_str in exts.CTX_ZERODOC:
-        create_type(module_builder, CMD_AVAIL_TYPE,
-                    cmd_component.unique_avail_name, [])
-
-    else:
-        create_type(module_builder, CMD_AVAIL_TYPE_EXTENDED,
-                    cmd_component.unique_avail_name, [],
-                    cmd_component.cmd_context)
-
-    return cmd_component.unique_avail_name
-
-
-def _make_python_types(extension, module_builder, cmd_component):
+def create_executor_type(extension, module_builder, cmd_component):
     """
 
     Args:
@@ -97,40 +60,22 @@ def _make_python_types(extension, module_builder, cmd_component):
     mlogger.debug('%s requires Fullframe engine: %s',
                   cmd_component.name, cmd_component.requires_fullframe_engine)
 
-    create_type(module_builder, CMD_EXECUTOR_TYPE, cmd_component.unique_name,
-                create_ext_command_attrs(),
-                cmd_component.get_full_script_address(),
-                cmd_component.get_full_config_script_address(),
-                join_strings(cmd_component.get_search_paths()),
-                cmd_component.get_help_url() or '',
-                cmd_component.name,
-                cmd_component.bundle_name,
-                extension.name,
-                cmd_component.unique_name,
-                int(use_clean_engine),
-                int(cmd_component.requires_fullframe_engine))
+    coreutils.create_type(
+        module_builder,
+        basetypes.CMD_EXECUTOR_TYPE,
+        cmd_component.unique_name,
+        coreutils.create_ext_command_attrs(),
+        cmd_component.get_full_script_address(),
+        cmd_component.get_full_config_script_address(),
+        coreutils.join_strings(cmd_component.get_search_paths()),
+        cmd_component.get_help_url(),
+        cmd_component.name,
+        cmd_component.bundle_name,
+        extension.name,
+        cmd_component.unique_name,
+        int(use_clean_engine),
+        int(cmd_component.requires_fullframe_engine)
+        )
 
     mlogger.debug('Successfully created executor type for: %s', cmd_component)
     cmd_component.class_name = cmd_component.unique_name
-
-    # create command availability class for this command
-    if cmd_component.cmd_context:
-        try:
-            mlogger.debug('Creating availability type for: %s', cmd_component)
-            cmd_component.avail_class_name = \
-                _make_python_avail_type(module_builder, cmd_component)
-            mlogger.debug('Successfully created availability type for: %s',
-                          cmd_component)
-        except Exception as cmd_avail_err:
-            cmd_component.avail_class_name = None
-            mlogger.error('Error creating availability type: %s | %s',
-                          cmd_component, cmd_avail_err)
-
-
-def create_python_types(extension, cmd_component, module_builder=None):
-    if module_builder:
-        _make_python_types(extension, module_builder, cmd_component)
-    else:
-        cmd_component.class_name = cmd_component.unique_name
-        if cmd_component.cmd_context:
-            cmd_component.avail_class_name = cmd_component.unique_avail_name

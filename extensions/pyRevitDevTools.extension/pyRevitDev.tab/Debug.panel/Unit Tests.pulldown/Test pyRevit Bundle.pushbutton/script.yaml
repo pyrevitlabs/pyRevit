@@ -1,0 +1,16 @@
+icon: bundle_icon.png
+title: Test pyRevit Bundle (Custom Title)
+tooltip: Test pyRevit Bundle Tooltip
+help_url: "{{docpath}}"
+authors:
+  - "{{author}}"
+  - John Doe
+context:
+  - Walls
+  - Text Notes
+min_revit_version:
+max_revit_version:
+is_beta: false
+engine:
+  clean: false
+  full_frame: true

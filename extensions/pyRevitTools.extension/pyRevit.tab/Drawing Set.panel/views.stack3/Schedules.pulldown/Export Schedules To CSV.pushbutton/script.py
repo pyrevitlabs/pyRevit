@@ -46,23 +46,9 @@ else:
     basefolder = forms.pick_folder()
 
 
-def is_schedule(view):
-    """Filter schedule views."""
-    if isinstance(view, DB.ViewSchedule):
-        isrevsched = view.IsTitleblockRevisionSchedule
-        isintkeynote = view.IsInternalKeynoteSchedule
-        iskeynotelegend = view.Definition.CategoryId == \
-            revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags).Id
-
-        return not (isrevsched or isintkeynote or iskeynotelegend)
-
-    return False
-
-
 if basefolder:
     logger.debug(basefolder)
-    schedules_to_export = forms.select_views(title="Select Schedules",
-                                             filterfunc=is_schedule)
+    schedules_to_export = forms.select_schedules()
 
     if schedules_to_export:
         vseop = DB.ViewScheduleExportOptions()

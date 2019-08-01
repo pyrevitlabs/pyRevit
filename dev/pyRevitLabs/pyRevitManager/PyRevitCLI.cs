@@ -67,6 +67,7 @@ namespace pyRevitManager {
         Run,
         Init,
         Caches,
+        Doctor,
         Config,
         Configs,
         Cli
@@ -579,6 +580,14 @@ namespace pyRevitManager {
                         );
             }
 
+            else if (all("doctor")) {
+                if (IsHelpMode)
+                    PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Doctor);
+
+                else
+                    PyRevitCLIAppCmds.InspectAndFixEnv();
+            }
+
             else if (all("config")) {
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Config);
@@ -676,21 +685,21 @@ namespace pyRevitManager {
 
                 }
 
-                else if (all("usagelogging")) {
+                else if (all("telemetry")) {
                     if (all("enable", "file"))
-                        PyRevit.EnableUsageReporting(logFilePath: TryGetValue("<dest_path>"));
+                        PyRevit.EnableTelemetry(telemetryFilePath: TryGetValue("<dest_path>"));
 
                     else if (all("enable", "server"))
-                        PyRevit.EnableUsageReporting(logServerUrl: TryGetValue("<dest_path>"));
+                        PyRevit.EnableTelemetry(telemetryServerUrl: TryGetValue("<dest_path>"));
 
                     else if (all("disable"))
-                        PyRevit.DisableUsageReporting();
+                        PyRevit.DisableTelemetry();
 
                     else {
-                        Console.WriteLine(string.Format("Usage logging is {0}",
-                                                        PyRevit.GetUsageReporting() ? "Enabled" : "Disabled"));
-                        Console.WriteLine(string.Format("Log File Path: {0}", PyRevit.GetUsageLogFilePath()));
-                        Console.WriteLine(string.Format("Log Server Url: {0}", PyRevit.GetUsageLogServerUrl()));
+                        Console.WriteLine(string.Format("Telemetry is {0}",
+                                                        PyRevit.GetTelemetryStatus() ? "Enabled" : "Disabled"));
+                        Console.WriteLine(string.Format("Log File Path: {0}", PyRevit.GetTelemetryFilePath()));
+                        Console.WriteLine(string.Format("Log Server Url: {0}", PyRevit.GetTelemetryServerUrl()));
                     }
                 }
 

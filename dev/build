@@ -11,6 +11,8 @@ CLEAN=false
 OPENDOCS=false
 BUILDDOCS=false
 BUILDLABS=false
+BUILDINSTALLER=false
+BUILDINSTALLERCLI=false
 BUILDDEBUG=false
 REBUILD=false
 
@@ -29,8 +31,21 @@ DOCSINDEXPATH=$DOCSBUILDPATH/index.html
 
 LABS=$THISPATH/pyRevitLabs/pyRevitLabs.sln
 
-AUTOCOMP=$UTILSPATH/pyrevit-autocomplete.go
+# API file paths must be absolute otherwise advancedinstaller will mess up
+# the relative source paths defined inside the api file and fails
+PYREVIT_AIPFILE=$(realpath $THISPATH/../release/pyrevit.aip)
+PYREVIT_CLI_AIPFILE=$(realpath $THISPATH/../release/pyrevit-cli.aip)
+PYREVIT_VERSION=""
+PYREVIT_VERSION_FILE=$THISPATH/../pyrevitlib/pyrevit/version
+PYREVIT_CLI_VERSION=""
+
+AUTOCOMPPATH=$UTILSPATH
+AUTOCOMP=$AUTOCOMPPATH/pyrevit-autocomplete.go
 AUTOCOMPBIN=$BINPATH/pyrevit-autocomplete.exe
+
+TELEMETRYSERVERPATH=$THISPATH/pyRevitTelemetryServer
+TELEMETRYSERVER=$TELEMETRYSERVERPATH/main.go
+TELEMETRYSERVERBIN=$BINPATH/pyrevit-telemetryserver.exe
 
 TOASTURL='https://go-toast-downloads.s3.amazonaws.com/v1/toast64.exe'
 TOASTBIN=$BINPATH/toast64.exe
@@ -43,14 +58,20 @@ Usage: build OPTIONS
 | Build Tools:                                                                 |
 |                                                                              |
 |     Install these tools before starting the build process                    |
-|         cmder (full)          https://cmder.net/                             |
-|         choco (pkg manager)   https://chocolatey.org/install                 |
-|         Visual Studio (C#)    https://visualstudio.microsoft.com/vs/         |
-|         python 2.7 (docs)     https://www.python.org/downloads/              |
-|         pipenv (venv)         https://pipenv.readthedocs.io/en/latest/       |
+|         cmder (full)              https://cmder.net/                         |
+|         choco (pkg manager)       https://chocolatey.org/install             |
+|         Visual Studio (C#)        https://visualstudio.microsoft.com/vs/     |
+|         python 2.7 (docs)         https://www.python.org/downloads/          |
+|         pipenv (venv)             https://pipenv.readthedocs.io/en/latest/   |
+|         Advanced Installer v15.9 (installer builder)                         |
+|                                   https://www.advancedinstaller.com          |
 |                                                                              |
 |     Add the "Microsoft Visual Studio\2017\Community\Common7\IDE" path        |
 |     to system %PATH% env variable. Test 'devenv.exe' works from shell.       |
+|                                                                              |
+|     Add the "C:\Program Files (x86)\Caphyon\Advanced Installer 15.9\bin\x86" |
+|     path to system %PATH% env variable. Test 'advancedinstaller.com /help'   |
+|     works from shell.                                                        |
 |                                                                              |
 |     After successfully installing build tools, open bash and run command     |
 |     below. This will install other tools (listed below) using choco,         |
@@ -61,15 +82,25 @@ Usage: build OPTIONS
 |         golang                for building helper utilities                  |
 |         upx                   for compressing exe binaries                   |
 
+
 OPTIONS:
     -h                  print this help
+    -i                  install build-time dependencies
+    ----------------------------------------------------------------------- docs
     -d                  build documentation using sphinx.
+    -p                  open docs page after build
+    ----------------------------------------------------------------------- labs
     -l                  build pyrevit labs modules and cli tool using
                          Visual Studio C# compiler
-    -g                  build for debug
+    -g                  build pyrevit labs module for debug
+    ---------------------------------------------------------------- docs & labs
     -c                  clean build files and exit; use with -d or -l
-    -r                  re-build
-    -p                  open docs page after build
+    -r                  re-build; use with -d or -l
+    ----------------------------------------------------------------- installers
+    -x                  build pyrevit installer
+    -x -increment       increment version and build pyrevit installer
+    -x <version>        set version and build pyrevit installer
+    -y                  build cli admin utility installer
 
 Examples:
     build -dp           build and open docs
@@ -158,6 +189,10 @@ function install_opt() {
     choco install upx -y &>/dev/null
     echo "installing go..."
     choco install golang -y &>/dev/null
+    echo "installing gcc..."
+    choco install mingw -y &>/dev/null
+    echo "prepare git for go packages..."
+    git config --global http.https://pkg.re.followRedirects true
     # echo "installing python 2.7 ..."
     # choco install python2 -y &>/dev/null
     # echo "installing pipenv..."
@@ -167,7 +202,7 @@ function install_opt() {
 }
 
 function process_args() {
-    while getopts "hidlrpc" opt; do
+    while getopts ":hidplgcrx:y" opt; do
         case "$opt" in
         h|\?) print_help
             ;;
@@ -181,9 +216,18 @@ function process_args() {
             ;;
         g)  BUILDDEBUG=true
             ;;
+        c)  CLEAN=true
+            ;;
         r)  REBUILD=true
             ;;
-        c)  CLEAN=true
+        x)  BUILDINSTALLER=true;PYREVIT_VERSION=$OPTARG
+            ;;
+        y)  BUILDINSTALLERCLI=true;PYREVIT_CLI_VERSION=$OPTARG
+            ;;
+        # handle missing arguments
+        :)  if [[ $OPTARG == "x" ]]; then
+                BUILDINSTALLER=true;
+            fi
             ;;
         esac
     done
@@ -269,15 +313,49 @@ elif $BUILDLABS; then
     # build pyrevit cli auto complete helper
     echo "building autocomplete helper binary"
     rm -f $AUTOCOMPBIN
-    go get github.com/posener/complete/gocomplete
+    go get "github.com/posener/complete"
     go build -o=$AUTOCOMPBIN $AUTOCOMP
     upx --mono $AUTOCOMPBIN
+
+    # build pyrevit log server
+    rm -f $TELEMETRYSERVERBIN
+    go get "github.com/lib/pq"
+    go get "gopkg.in/mgo.v2"
+    go get "github.com/denisenkom/go-mssqldb"
+    go get "github.com/go-sql-driver/mysql"
+    go get "github.com/mattn/go-sqlite3"
+    go get "github.com/gorilla/mux"
+    go get "github.com/satori/go.uuid"
+    go get "pkg.re/essentialkaos/ek.v10/fmtc"
+    go build -o=$TELEMETRYSERVERBIN -ldflags "-w" $TELEMETRYSERVER
+    upx --mono $TELEMETRYSERVERBIN
 
     # pack utilities
     echo "packing other cli utilities"
     echo "downloading toast64 helper binary..."
     curl -o $TOASTBIN $TOASTURL
     upx --mono $TOASTBIN
+# build installers?
+# ------------------------------------------------------------------------------
+elif $BUILDINSTALLER || $BUILDINSTALLERCLI; then
+    # build installer for public pyrevit?
+    if $BUILDINSTALLER; then
+        echo "version: "$PYREVIT_VERSION
+        if [[ $PYREVIT_VERSION != "" ]]; then
+            echo "setting version "$PYREVIT_VERSION" on "$PYREVIT_AIPFILE
+            advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//SetVersion" $PYREVIT_VERSION
+            AIPVersion=$(advancedinstaller.com "//edit" $PYREVIT_AIPFILE "//GetProperty" "ProductVersion")
+            echo $AIPVersion > $PYREVIT_VERSION_FILE
+        fi
+        echo "building: "$PYREVIT_AIPFILE
+        advancedinstaller.com "//build" $PYREVIT_AIPFILE
+    fi
+
+    # build installer for cli admin utility?
+    if $BUILDINSTALLERCLI; then
+        echo "building: "$PYREVIT_CLI_AIPFILE
+        advancedinstaller.com "//build" $PYREVIT_CLI_AIPFILE
+    fi
 fi
 
 # done

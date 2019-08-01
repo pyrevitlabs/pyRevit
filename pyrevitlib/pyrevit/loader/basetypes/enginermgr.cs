@@ -194,13 +194,13 @@ namespace PyRevitBaseClasses
 
             // Adding information on the command being executed
             builtin.SetVariable("__commandpath__",          Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
-            builtin.SetVariable("__alternatecommandpath__", Path.GetDirectoryName(pyrvtCmd.AlternateScriptSourceFile));
+            builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(pyrvtCmd.ConfigScriptSourceFile));
             builtin.SetVariable("__commandname__",          pyrvtCmd.CommandName);
             builtin.SetVariable("__commandbundle__",        pyrvtCmd.CommandBundle);
             builtin.SetVariable("__commandextension__",     pyrvtCmd.CommandExtension);
             builtin.SetVariable("__commanduniqueid__",      pyrvtCmd.CommandUniqueId);
             builtin.SetVariable("__forceddebugmode__",      pyrvtCmd.DebugMode);
-            builtin.SetVariable("__shiftclick__",           pyrvtCmd.AlternateMode);
+            builtin.SetVariable("__shiftclick__",           pyrvtCmd.ConfigMode);
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
@@ -222,7 +222,7 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__commanddata__",          (Object)null);
             builtin.SetVariable("__elements__",             (Object)null);
             builtin.SetVariable("__commandpath__",          (Object)null);
-            builtin.SetVariable("__alternatecommandpath__", (Object)null);
+            builtin.SetVariable("__configcommandpath__",    (Object)null);
             builtin.SetVariable("__commandname__",          (Object)null);
             builtin.SetVariable("__commandbundle__",        (Object)null);
             builtin.SetVariable("__commandextension__",     (Object)null);

@@ -426,13 +426,13 @@ class _ExecutorParams(object):
             return op.dirname(self.pyrevit_command.ScriptSourceFile)
 
     @property   # read-only
-    def command_alt_path(self):
-        """str: Return current command alternate script path."""
-        if '__alternatecommandpath__' in __builtins__ \
-                and __builtins__['__alternatecommandpath__']:
-            return __builtins__['__alternatecommandpath__']
+    def command_config_path(self):
+        """str: Return current command config script path."""
+        if '__configcommandpath__' in __builtins__ \
+                and __builtins__['__configcommandpath__']:
+            return __builtins__['__configcommandpath__']
         elif self.pyrevit_command:
-            return op.dirname(self.pyrevit_command.AlternateScriptSourceFile)
+            return op.dirname(self.pyrevit_command.ConfigScriptSourceFile)
 
     @property   # read-only
     def command_name(self):

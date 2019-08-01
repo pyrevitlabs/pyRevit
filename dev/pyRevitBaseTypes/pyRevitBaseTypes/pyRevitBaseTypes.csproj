@@ -142,9 +142,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses.cs">
       <Link>baseclasses.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\baseclasses_dyno.cs">
-      <Link>baseclasses_dyno.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\enginermgr.cs">
       <Link>enginermgr.cs</Link>
     </Compile>
@@ -159,9 +156,6 @@
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\replctrl.cs">
-      <Link>replctrl.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
@@ -178,11 +172,11 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\telemetry.cs">
+      <Link>telemetry.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\unmanaged.cs">
       <Link>unmanaged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\usagelogger.cs">
-      <Link>usagelogger.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
       <Link>_config.cs</Link>

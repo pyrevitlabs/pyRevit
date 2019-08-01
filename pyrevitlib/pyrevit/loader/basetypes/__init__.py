@@ -7,18 +7,18 @@ from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 from pyrevit import framework
 from pyrevit.compat import safe_strtype
 from pyrevit import LOADER_DIR, ADDIN_RESOURCE_DIR
-from pyrevit.coreutils import make_canonical_name, find_loaded_asm,\
-    load_asm_file, calculate_dir_hash, get_str_hash, find_type_by_name
-from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.dotnetcompiler import compile_csharp
+from pyrevit import coreutils
+from pyrevit.coreutils import assmutils
+from pyrevit.coreutils import logger
+from pyrevit.coreutils import dotnetcompiler
 from pyrevit.coreutils import appdata
-from pyrevit.loader import ASSEMBLY_FILE_TYPE, HASH_CUTOFF_LENGTH
+from pyrevit.loader import HASH_CUTOFF_LENGTH
 
 from pyrevit.userconfig import user_config
 
 
 #pylint: disable=W0703,C0302,C0103
-mlogger = get_logger(__name__)
+mlogger = logger.get_logger(__name__)
 
 
 # C:\Windows\Microsoft.NET\Framework\
@@ -64,17 +64,13 @@ CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
 
 # template python command availability class
 CMD_AVAIL_TYPE_NAME = \
-    make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
+    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
 
 CMD_AVAIL_TYPE_NAME_EXTENDED = \
-    make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandExtendedAvail')
+    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandExtendedAvail')
 
 CMD_AVAIL_TYPE_NAME_SELECTION = \
-    make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
-
-# template dynamobim command class
-DYNOCMD_EXECUTOR_TYPE_NAME = '{}.{}'\
-    .format(LOADER_BASE_NAMESPACE, 'PyRevitCommandDynamoBIM')
+    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
 
 SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
@@ -85,7 +81,7 @@ if not EXEC_PARAMS.doc_mode:
     if CPYTHON_ENGINE:
         CPYTHON_ENGINE_ASSM = CPYTHON_ENGINE.AssemblyPath
         mlogger.debug('Loading cpython engine: %s', CPYTHON_ENGINE_ASSM)
-        load_asm_file(CPYTHON_ENGINE_ASSM)
+        assmutils.load_asm_file(CPYTHON_ENGINE_ASSM)
     else:
         raise PyRevitException('Can not find cpython engines.')
 
@@ -95,15 +91,16 @@ if not EXEC_PARAMS.doc_mode:
     # - runtime engine version
     # - cpython engine version
     BASE_TYPES_DIR_HASH = \
-        get_str_hash(
-            calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
+        coreutils.get_str_hash(
+            coreutils.calculate_dir_hash(INTERFACE_TYPES_DIR, '', SOURCE_FILE_FILTER)
             + EXEC_PARAMS.engine_ver
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, LOADER_BASE_NAMESPACE)
-    BASE_TYPES_ASM_FILE = appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
-                                                ASSEMBLY_FILE_TYPE)
+    BASE_TYPES_ASM_FILE = \
+        appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
+                              framework.ASSEMBLY_FILE_TYPE)
     # taking the name of the generated data file and use it as assembly name
     BASE_TYPES_ASM_NAME = op.splitext(op.basename(BASE_TYPES_ASM_FILE))[0]
     mlogger.debug('Interface types assembly file is: %s', BASE_TYPES_ASM_NAME)
@@ -148,10 +145,11 @@ def _get_framework_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
     for fw_folder in DOTNET_FRAMEWORK_DIRS:
-        fw_module_file = op.join(DOTNET_DIR,
-                                 fw_folder,
-                                 make_canonical_name(fw_module,
-                                                     ASSEMBLY_FILE_TYPE))
+        fw_module_file = op.join(
+            DOTNET_DIR,
+            fw_folder,
+            coreutils.make_canonical_name(fw_module,
+                                          framework.ASSEMBLY_FILE_TYPE))
         mlogger.debug('Searching for installed: %s', fw_module_file)
         if op.exists(fw_module_file):
             mlogger.debug('Found installed: %s', fw_module_file)
@@ -165,10 +163,11 @@ def _get_framework_sdk_module(fw_module):
     # start with the newest sdk folder and
     # work backwards trying to find the dll
     for sdk_folder in DOTNET_TARGETPACK_DIRS:
-        fw_module_file = op.join(DOTNET_SDK_DIR,
-                                 sdk_folder,
-                                 make_canonical_name(fw_module,
-                                                     ASSEMBLY_FILE_TYPE))
+        fw_module_file = op.join(
+            DOTNET_SDK_DIR,
+            sdk_folder,
+            coreutils.make_canonical_name(fw_module,
+                                          framework.ASSEMBLY_FILE_TYPE))
         mlogger.debug('Searching for sdk: %s', fw_module_file)
         if op.exists(fw_module_file):
             mlogger.debug('Found sdk: %s', fw_module_file)
@@ -183,13 +182,13 @@ def _get_reference_file(ref_name):
     # First try to find the dll in the project folder
     addin_file = framework.get_dll_file(ref_name)
     if addin_file:
-        load_asm_file(addin_file)
+        assmutils.load_asm_file(addin_file)
         return addin_file
 
     mlogger.debug('Dependency is not shipped: %s', ref_name)
     mlogger.debug('Searching for dependency in loaded assemblies: %s', ref_name)
     # Lastly try to find location of assembly if already loaded
-    loaded_asm = find_loaded_asm(ref_name)
+    loaded_asm = assmutils.find_loaded_asm(ref_name)
     if loaded_asm:
         return loaded_asm[0].Location
 
@@ -216,7 +215,8 @@ def _get_reference_file(ref_name):
     mlogger.critical('Can not find required reference assembly: %s', ref_name)
 
 
-def _get_references():
+def get_references():
+    # 'IronRuby', 'IronRuby.Libraries',
     ref_list = ['pyRevitLoader',
                 'RevitAPI', 'RevitAPIUI',
                 'IronPython', 'IronPython.Modules',
@@ -245,9 +245,12 @@ def _generate_base_classes_asm():
     # now try to compile
     try:
         mlogger.debug('Compiling base types to: %s', BASE_TYPES_ASM_FILE)
-        compile_csharp(source_list, BASE_TYPES_ASM_FILE,
-                       reference_list=_get_references(), resource_list=[])
-        return load_asm_file(BASE_TYPES_ASM_FILE)
+        dotnetcompiler.compile_csharp(
+            source_list,
+            BASE_TYPES_ASM_FILE,
+            reference_list=get_references(),
+            resource_list=[])
+        return assmutils.load_asm_file(BASE_TYPES_ASM_FILE)
 
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
@@ -258,8 +261,8 @@ def _generate_base_classes_asm():
 
 def _get_base_classes_asm():
     if appdata.is_data_file_available(file_id=BASE_TYPES_ASM_FILE_ID,
-                                      file_ext=ASSEMBLY_FILE_TYPE):
-        return load_asm_file(BASE_TYPES_ASM_FILE)
+                                      file_ext=framework.ASSEMBLY_FILE_TYPE):
+        return assmutils.load_asm_file(BASE_TYPES_ASM_FILE)
     else:
         return _generate_base_classes_asm()
 
@@ -268,24 +271,23 @@ if not EXEC_PARAMS.doc_mode:
     # compile or load the base types assembly
     # see it the assembly is already loaded
     BASE_TYPES_ASM = None
-    assm_list = find_loaded_asm(BASE_TYPES_ASM_NAME)
+    assm_list = assmutils.find_loaded_asm(BASE_TYPES_ASM_NAME)
     if assm_list:
         BASE_TYPES_ASM = assm_list[0]
     else:
         # else, let's generate the assembly and load it
         BASE_TYPES_ASM = _get_base_classes_asm()
 
-    CMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM,
-                                          CMD_EXECUTOR_TYPE_NAME)
-    CMD_AVAIL_TYPE = find_type_by_name(BASE_TYPES_ASM,
-                                       CMD_AVAIL_TYPE_NAME)
-    CMD_AVAIL_TYPE_EXTENDED = find_type_by_name(BASE_TYPES_ASM,
-                                                CMD_AVAIL_TYPE_NAME_EXTENDED)
-    CMD_AVAIL_TYPE_SELECTION = find_type_by_name(BASE_TYPES_ASM,
-                                                 CMD_AVAIL_TYPE_NAME_SELECTION)
-    DYNOCMD_EXECUTOR_TYPE = find_type_by_name(BASE_TYPES_ASM,
-                                              DYNOCMD_EXECUTOR_TYPE_NAME)
+    CMD_EXECUTOR_TYPE = \
+        assmutils.find_type_by_name(BASE_TYPES_ASM, CMD_EXECUTOR_TYPE_NAME)
+    CMD_AVAIL_TYPE = \
+        assmutils.find_type_by_name(BASE_TYPES_ASM, CMD_AVAIL_TYPE_NAME)
+    CMD_AVAIL_TYPE_EXTENDED = \
+        assmutils.find_type_by_name(BASE_TYPES_ASM,
+                                    CMD_AVAIL_TYPE_NAME_EXTENDED)
+    CMD_AVAIL_TYPE_SELECTION = \
+        assmutils.find_type_by_name(BASE_TYPES_ASM,
+                                    CMD_AVAIL_TYPE_NAME_SELECTION)
 else:
     BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = CMD_AVAIL_TYPE = None
     CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None
-    DYNOCMD_EXECUTOR_TYPE = None

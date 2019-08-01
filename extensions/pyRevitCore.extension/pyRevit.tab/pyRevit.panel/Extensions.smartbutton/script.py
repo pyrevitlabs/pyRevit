@@ -9,6 +9,8 @@ import pyrevit.extensions.extpackages as extpkgs
 
 from pyrevit.userconfig import user_config
 
+import pyrevitcore_globals
+
 
 __context__ = 'zerodoc'
 
@@ -448,12 +450,9 @@ def open_ext_dirs_in_explorer(ext_dirs_list):
         coreutils.open_folder_in_explorer(ext_dir)
 
 
-PYREVIT_CORE_RELOAD_COMMAND_NAME = 'pyRevitCorepyRevitpyRevittoolsReload'
-
-
 def call_reload():
     from pyrevit.loader.sessionmgr import execute_command
-    execute_command(PYREVIT_CORE_RELOAD_COMMAND_NAME)
+    execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
 # decide if the settings should load or not

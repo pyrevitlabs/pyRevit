@@ -12,6 +12,7 @@ from pyrevit.coreutils import logger
 clr.AddReference('Nett')
 clr.AddReference('MadMilkman.Ini')
 clr.AddReference('OpenMcdf')
+clr.AddReference('YamlDotNet')
 clr.AddReference('pyRevitLabs.NLog')
 clr.AddReference('pyRevitLabs.MahAppsMetro')
 clr.AddReference('pyRevitLabs.Common')
@@ -24,6 +25,7 @@ import Nett
 import pyRevitLabs.NLog as NLog
 import MadMilkman.Ini
 import OpenMcdf
+import YamlDotNet as libyaml
 import pyRevitLabs.MahAppsMetro
 from pyRevitLabs import Common
 from pyRevitLabs import CommonCLI

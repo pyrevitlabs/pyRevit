@@ -7,12 +7,23 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
 namespace PyRevitBaseClasses {
+    public enum EngineType {
+        IronPython,
+        CPython,
+        CSharp,
+        Invoke,
+        VisualBasic,
+        IronRuby,
+        Dynamo,
+        Grasshopper
+    }
+
     public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private ElementSet _elements = null;
 
         private string _scriptSource = null;
-        private string _alternateScriptSource = null;
+        private string _configScriptSource = null;
         private string _syspaths = null;
         private string[] _arguments = null;
         private string _helpSource = null;
@@ -25,7 +36,7 @@ namespace PyRevitBaseClasses {
 
         private bool _refreshEngine = false;
         private bool _forcedDebugMode = false;
-        private bool _altScriptMode = false;
+        private bool _configScriptMode = false;
         private bool _execFromUI = false;
 
         private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
@@ -35,15 +46,16 @@ namespace PyRevitBaseClasses {
         private EnvDictionary _envDict = new EnvDictionary();
 
         private int _execResults = 0;
-        private string _ipyTrace = "";
+        private string _ironLangTrace = "";
         private string _clrTrace = "";
+        private string _cpyTrace = "";
         private Dictionary<string, string> _resultsDict = null;
 
 
         public PyRevitCommandRuntime(ExternalCommandData cmdData,
                                      ElementSet elements,
                                      string scriptSource,
-                                     string alternateScriptSource,
+                                     string configScriptSource,
                                      string syspaths,
                                      string[] arguments,
                                      string helpSource,
@@ -55,13 +67,13 @@ namespace PyRevitBaseClasses {
                                      bool needsFullFrameEngine,
                                      bool refreshEngine,
                                      bool forcedDebugMode,
-                                     bool altScriptMode,
+                                     bool configScriptMode,
                                      bool executedFromUI) {
             _commandData = cmdData;
             _elements = elements;
 
             _scriptSource = scriptSource;
-            _alternateScriptSource = alternateScriptSource;
+            _configScriptSource = configScriptSource;
             _syspaths = syspaths;
             _arguments = arguments;
 
@@ -75,7 +87,7 @@ namespace PyRevitBaseClasses {
 
             _refreshEngine = refreshEngine;
             _forcedDebugMode = forcedDebugMode;
-            _altScriptMode = altScriptMode;
+            _configScriptMode = configScriptMode;
             _execFromUI = executedFromUI;
         }
 
@@ -91,16 +103,10 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string EngineVersion {
-            get {
-                return PyRevitLoader.ScriptExecutor.EngineVersion;
-            }
-        }
-
         public string ScriptSourceFile {
             get {
-                if (_altScriptMode)
-                    return _alternateScriptSource;
+                if (_configScriptMode)
+                    return _configScriptSource;
                 else
                     return _scriptSource;
             }
@@ -112,17 +118,49 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string AlternateScriptSourceFile {
+        public string ConfigScriptSourceFile {
             get {
-                return _alternateScriptSource;
+                return _configScriptSource;
             }
         }
 
-        public bool IsPython3 {
+        public EngineType EngineType {
             get {
-                using (StreamReader reader = new StreamReader(ScriptSourceFile)) {
-                    return reader.ReadLine().Contains("python3");
+                // determine engine necessary to run this script
+                var scriptFile = ScriptSourceFile.ToLower();
+                var bundleName = CommandBundle.ToLower();
+                if (scriptFile.EndsWith(".py")) {
+                    string firstLine = "";
+                    using (StreamReader reader = new StreamReader(scriptFile)) {
+                        firstLine = reader.ReadLine();
+                    }
+
+                    if (firstLine.Contains("python3") || firstLine.Contains("cpython"))
+                        return EngineType.CPython;
+                    else
+                        return EngineType.IronPython;
                 }
+                else if (scriptFile.EndsWith(".cs")) {
+                    return EngineType.CSharp;
+                }
+                else if (scriptFile.EndsWith(".vb")) {
+                    return EngineType.VisualBasic;
+                }
+                else if (scriptFile.EndsWith(".rb")) {
+                    return EngineType.IronRuby;
+                }
+                else if (scriptFile.EndsWith(".dyn")) {
+                    return EngineType.Dynamo;
+                }
+                else if (scriptFile.EndsWith(".gh")) {
+                    return EngineType.Grasshopper;
+                }
+                else if (bundleName.EndsWith(".invokebutton")) {
+                    return EngineType.Invoke;
+                }
+
+                // should not get here
+                throw new Exception("Unknown script type.");
             }
         }
 
@@ -201,15 +239,33 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public bool AlternateMode {
+        public bool ConfigMode {
             get {
-                return _altScriptMode;
+                return _configScriptMode;
             }
         }
 
         public bool ExecutedFromUI {
             get {
                 return _execFromUI;
+            }
+        }
+
+        public string DocumentName {
+            get {
+                if (UIApp != null && UIApp.ActiveUIDocument != null)
+                    return UIApp.ActiveUIDocument.Document.Title;
+                else
+                    return string.Empty;
+            }
+        }
+
+        public string DocumentPath {
+            get {
+                if (UIApp != null && UIApp.ActiveUIDocument != null)
+                    return UIApp.ActiveUIDocument.Document.PathName;
+                else
+                    return string.Empty;
             }
         }
 
@@ -231,12 +287,11 @@ namespace PyRevitBaseClasses {
                     newOutput.OutputId = _cmdUniqueName;
 
                     // set window app version header
-                    var envDict = new EnvDictionary();
                     newOutput.AppVersion = string.Format(
                         "{0}:{1}:{2}",
-                        envDict.pyRevitVersion,
-                        IsPython3 ? envDict.pyRevitCpyVersion : envDict.pyRevitIpyVersion,
-                        envDict.RevitVersion
+                        _envDict.pyRevitVersion,
+                        EngineType == EngineType.CPython ? _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion,
+                        _envDict.RevitVersion
                         );
 
                     _scriptOutput = new WeakReference<ScriptOutput>(newOutput);
@@ -270,12 +325,12 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string IronPythonTraceBack {
+        public string IronLanguageTraceBack {
             get {
-                return _ipyTrace;
+                return _ironLangTrace;
             }
             set {
-                _ipyTrace = value;
+                _ironLangTrace = value;
             }
         }
 
@@ -285,6 +340,29 @@ namespace PyRevitBaseClasses {
             }
             set {
                 _clrTrace = value;
+            }
+        }
+
+        public string CpythonTraceBack {
+            get {
+                return _cpyTrace;
+            }
+            set {
+                _cpyTrace = value;
+            }
+        }
+
+        public string TraceMessage {
+            get {
+                // return the trace message based on the engine type
+                if (EngineType == EngineType.CPython) {
+                    return CpythonTraceBack;
+                }
+                else if (IronLanguageTraceBack != string.Empty && ClrTraceBack != string.Empty) {
+                    return string.Format("{0}\n\n{1}", IronLanguageTraceBack, ClrTraceBack);
+                }
+                // or return empty if none
+                return string.Empty;
             }
         }
 
@@ -313,31 +391,52 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public string CloneName {
+            get {
+                return _envDict.pyRevitClone;
+            }
+        }
+
         public string SessionUUID {
             get {
                 return _envDict.sessionUUID;
             }
         }
 
-        public LogEntry MakeLogEntry() {
-            return new LogEntry(App.Username,
-                                App.VersionNumber,
-                                App.VersionBuild,
-                                SessionUUID,
-                                PyRevitVersion,
-                                DebugMode,
-                                AlternateMode,
-                                CommandName,
-                                CommandBundle,
-                                CommandExtension,
-                                CommandUniqueId,
-                                ScriptSourceFile,
-                                ExecutionResult,
-                                GetResultsDictionary(),
-                                EngineVersion,
-                                ModuleSearchPaths,
-                                IronPythonTraceBack,
-                                ClrTraceBack);
+        public TelemetryRecord MakeTelemetryRecord() {
+            // setup a new telemetry record
+            return new TelemetryRecord(
+                App.Username,
+                App.VersionNumber,
+                App.VersionBuild,
+                SessionUUID,
+                PyRevitVersion,
+                CloneName,
+                DebugMode,
+                ConfigMode,
+                ExecutedFromUI,
+                NeedsCleanEngine,
+                NeedsFullFrameEngine,
+                CommandName,
+                CommandBundle,
+                CommandExtension,
+                CommandUniqueId,
+                ScriptSourceFile,
+                DocumentName,
+                DocumentPath,
+                ExecutionResult,
+                GetResultsDictionary(),
+                new TraceInfo {
+                    engine = new EngineInfo {
+                        type = EngineType.ToString().ToLower(),
+                        version = Convert.ToString(
+                            EngineType == EngineType.CPython ?
+                                    _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion
+                                    ),
+                        syspath = ModuleSearchPaths
+                    },
+                    message = TraceMessage
+                });
         }
 
         public void Dispose() {

@@ -90,6 +90,9 @@
     <PackageReference Include="OpenMcdf">
       <Version>2.2.1.3</Version>
     </PackageReference>
+    <PackageReference Include="YamlDotNet">
+      <Version>6.1.2</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="IWshRuntimeLibrary">

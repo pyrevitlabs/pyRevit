@@ -72,6 +72,7 @@ Usage:
 	pyrevit init (tab | panel | panelopt | pull | split | splitpush | push | smart | command) <bundle_name> [--usetemplate] [--templates=<temps_path>]
 	pyrevit caches --help
 	pyrevit caches clear (--all | <revit_year>) [--log=<log_file>]
+	pyrevit doctor
 	pyrevit config --help
 	pyrevit config <template_config_path> [--log=<log_file>]
 	pyrevit configs --help
@@ -85,9 +86,9 @@ Usage:
 	pyrevit configs usercanupdate [(Yes | No)] [--log=<log_file>]
 	pyrevit configs usercanextend [(Yes | No)] [--log=<log_file>]
 	pyrevit configs usercanconfig [(Yes | No)] [--log=<log_file>]
-	pyrevit configs usagelogging
-	pyrevit configs usagelogging enable (file | server) <dest_path> [--log=<log_file>]
-	pyrevit configs usagelogging disable [--log=<log_file>]
+	pyrevit configs telemetry
+	pyrevit configs telemetry enable (file | server) <dest_path> [--log=<log_file>]
+	pyrevit configs telemetry disable [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]

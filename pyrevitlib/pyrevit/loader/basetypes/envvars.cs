@@ -11,6 +11,7 @@ namespace PyRevitBaseClasses
         public static string sessionUUID = string.Format("{0}_UUID", keyPrefix);
         public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);
         public static string pyRevitVersion = string.Format("{0}_VERSION", keyPrefix);
+        public static string pyRevitClone = string.Format("{0}_CLONE", keyPrefix);
         public static string pyRevitIpyVersion = string.Format("{0}_IPYVERSION", keyPrefix);
         public static string pyRevitCpyVersion = string.Format("{0}_CPYVERSION", keyPrefix);
 
@@ -19,14 +20,16 @@ namespace PyRevitBaseClasses
 
         public static string outputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
 
-        public static string usageLogState = string.Format("{0}_USAGELOGSTATE", keyPrefix);
-        public static string usageLogFilePath = string.Format("{0}_USAGELOGFILE", keyPrefix);
-        public static string usageLogServerUrl = string.Format("{0}_USAGELOGSERVER", keyPrefix);
+        public static string telemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
+        public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
+        public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
 
         public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);
 
         public static string autoupdating = string.Format("{0}_AUTOUPDATING", keyPrefix);
+
+        public static string refedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
     }
 
     public class EnvDictionary
@@ -34,14 +37,17 @@ namespace PyRevitBaseClasses
         public string sessionUUID;
         public string RevitVersion;
         public string pyRevitVersion;
+        public string pyRevitClone;
         public int pyRevitIpyVersion;
         public int pyRevitCpyVersion;
 
         public string activeStyleSheet;
 
-        public bool usageLogState;
-        public string usageLogFilePath;
-        public string usageLogServerUrl;
+        public bool telemetryState;
+        public string telemetryFilePath;
+        public string telemetryServerUrl;
+
+        public string[] referencedAssemblies;
 
         public EnvDictionary()
         {
@@ -53,6 +59,9 @@ namespace PyRevitBaseClasses
 
             if (_envData.Contains(EnvDictionaryKeys.pyRevitVersion))
                 pyRevitVersion = (string)_envData[EnvDictionaryKeys.pyRevitVersion];
+
+            if (_envData.Contains(EnvDictionaryKeys.pyRevitClone))
+                pyRevitClone = (string)_envData[EnvDictionaryKeys.pyRevitClone];
 
             if (_envData.Contains(EnvDictionaryKeys.pyRevitIpyVersion))
                 pyRevitIpyVersion = (int)_envData[EnvDictionaryKeys.pyRevitIpyVersion];
@@ -68,14 +77,19 @@ namespace PyRevitBaseClasses
                 activeStyleSheet = (string)_envData[EnvDictionaryKeys.outputStyleSheet];
 
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogState))
-                usageLogState = (bool)_envData[EnvDictionaryKeys.usageLogState];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryState))
+                telemetryState = (bool)_envData[EnvDictionaryKeys.telemetryState];
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogFilePath))
-                usageLogFilePath = (string)_envData[EnvDictionaryKeys.usageLogFilePath];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryFilePath))
+                telemetryFilePath = (string)_envData[EnvDictionaryKeys.telemetryFilePath];
 
-            if (_envData.Contains(EnvDictionaryKeys.usageLogServerUrl))
-                usageLogServerUrl = (string)_envData[EnvDictionaryKeys.usageLogServerUrl];
+            if (_envData.Contains(EnvDictionaryKeys.telemetryServerUrl))
+                telemetryServerUrl = (string)_envData[EnvDictionaryKeys.telemetryServerUrl];
+
+            if (_envData.Contains(EnvDictionaryKeys.refedAssms)) {
+                var assms = (string)_envData[EnvDictionaryKeys.refedAssms];
+                referencedAssemblies = assms.Split(ExternalConfig.defaultsep);
+            }
         }
     }
 }

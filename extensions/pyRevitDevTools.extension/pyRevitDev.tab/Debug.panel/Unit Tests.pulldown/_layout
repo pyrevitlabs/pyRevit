@@ -12,6 +12,7 @@ Test Engine Stability
 Test Cached Engines
 Test FullFrame Engine
 Test pyRevit Button
+Test pyRevit Bundle
 Test Output Stream
 Test Multiple Outputs
 Test Independent Logging
@@ -22,5 +23,12 @@ Test Vue
 Test Toast
 Test XML
 Test C# Script
+Test Direct Invoke
+Test Direct Class Invoke
+Test Link Button
+Test Legacy Link Button
+Test VisualBasic
+Test Ruby
 Test DynamoBIM
+Test Grasshopper
 Test FillPatternViewer

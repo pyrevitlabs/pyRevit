@@ -11,8 +11,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-
-from pyrevit.loader.basetypes import BASE_TYPES_ASM_NAME
+from pyrevit.loader import basetypes
 from pyrevit.loader.systemdiag import system_diag
 
 
@@ -23,9 +22,11 @@ mlogger = get_logger(__name__)
 PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
 PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
 PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
+PYREVIT_REFEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_REFEDASSMS'
 
 PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
 PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
+PYREVIT_CLONENAME_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CLONE'
 PYREVIT_IPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_IPYVERSION'
 PYREVIT_CSPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CPYVERSION'
 
@@ -59,14 +60,24 @@ def setup_runtime_vars():
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
     if attachment and attachment.Clone:
+        envvars.set_pyrevit_env_var(PYREVIT_CLONENAME_ENVVAR,
+                                    attachment.Clone.Name)
         envvars.set_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR,
                                     attachment.Engine.Version)
+    else:
+        pass
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
         envvars.set_pyrevit_env_var(PYREVIT_CSPYVERSION_ENVVAR,
                                     cpyengine.Version)
+
+    # set a list of important assemblies
+    # this is required for dotnet script execution
+    set_loaded_pyrevit_referenced_modules(
+        basetypes.get_references()
+        )
 
 
 def get_runtime_info():
@@ -175,6 +186,27 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
                                 + len(loaded_assm_name_list))
 
 
+def get_loaded_pyrevit_referenced_modules():
+    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_REFEDASSMS_ENVVAR)
+    if loaded_assms_str:
+        return set(loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR))
+    else:
+        return set()
+
+
+def set_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
+    envvars.set_pyrevit_env_var(
+        PYREVIT_REFEDASSMS_ENVVAR,
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
+        )
+
+
+def update_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
+    loaded_modules = get_loaded_pyrevit_referenced_modules()
+    loaded_modules.update(loaded_assm_name_list)
+    set_loaded_pyrevit_referenced_modules(loaded_modules)
+
+
 def report_env():
     """Report python version, home directory, config file, etc."""
     # run diagnostics
@@ -200,6 +232,6 @@ def report_env():
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())
-    mlogger.info('Base assembly is: %s', BASE_TYPES_ASM_NAME)
+    mlogger.info('Base assembly is: %s', basetypes.BASE_TYPES_ASM_NAME)
     mlogger.info('Config file is (%s): %s',
                  user_config.config_type, user_config.config_file)

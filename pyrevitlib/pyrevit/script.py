@@ -52,10 +52,10 @@ def get_script_path():
 
 
 def get_alt_script_path():
-    """Return alternate script path of the current pyRevit command.
+    """Return config script path of the current pyRevit command.
 
     Returns:
-        str: alternate script path
+        str: config script path
     """
     return EXEC_PARAMS.command_alt_path
 
@@ -91,10 +91,10 @@ def get_results():
     """Return command results dictionary for logging.
 
     Returns:
-        :obj:`pyrevit.usagelog.record.CommandCustomResults`:
+        :obj:`pyrevit.telemetry.record.CommandCustomResults`:
             Command results dict
     """
-    from pyrevit.usagelog.record import CommandCustomResults
+    from pyrevit.telemetry.record import CommandCustomResults
     return CommandCustomResults()
 
 

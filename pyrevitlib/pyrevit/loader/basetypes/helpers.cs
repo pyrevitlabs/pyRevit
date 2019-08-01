@@ -13,8 +13,7 @@ using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI.Events;
 using System.IO;
 
-namespace PyRevitBaseClasses
-{
+namespace PyRevitBaseClasses {
     //public static class HostApp
     //{
     //    public static Screen HostAppScreen
@@ -154,15 +153,20 @@ namespace PyRevitBaseClasses
         }
 
         private void CancelAllDialogs(object sender, DialogBoxShowingEventArgs e) {
-            if (e.Cancellable)
+            if (e.Cancellable) {
+#if (REVIT2013 || REVIT2014)
+                e.Cancel = true;
+#else
                 e.Cancel();
+#endif
+            }
             else
                 e.OverrideResult(1);
         }
 
         private void NewElementPropertyValueUpdater(object sender, IdlingEventArgs e) {
             // cancel if txn is completed
-            if(_txnCompleted) {
+            if (_txnCompleted) {
                 App.Idling -= new EventHandler<IdlingEventArgs>(NewElementPropertyValueUpdater);
                 EndCancellingAllDialogs();
                 EndTrackingElements();
@@ -181,7 +185,8 @@ namespace PyRevitBaseClasses
                     }
                 }
                 TXN.Commit();
-            } catch {
+            }
+            catch {
             }
 
             _txnCompleted = true;

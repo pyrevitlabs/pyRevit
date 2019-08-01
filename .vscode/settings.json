@@ -5,6 +5,7 @@
     "python.linting.pep8Enabled": false,
     "python.linting.flake8Enabled": false,
     "python.linting.pylamaEnabled": false,
+    "python.linting.mypyEnabled": false,
     "restructuredtext.confPath": "${workspaceFolder}/docs",
     "python.pythonPath": "${env:PYREVIT_VENV}",
 }

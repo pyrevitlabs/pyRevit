@@ -3,17 +3,17 @@ Keyboard Shortcuts
 
 .. _shiftclick:
 
-Shift-Click: Alternate/Config Script
+Shift-Click: Config Script
 ------------------------------------
 
 Each pyRevit command bundle can contain two scripts:
 
     ``*script.py`` is the main script.
 
-    ``*config.py`` is the Alternate/Config script.
+    ``*config.py`` is the Config script.
 
-SHIFT-clicking on a ui button will run the alternate/config script.
-This alternate script is generally used to configure the main tool.
+SHIFT-clicking on a ui button will run the config script.
+This config script is generally used to configure the main tool.
 Try Shift clicking on the Match tool in pyRevit > Modify panel and see the configuration window.
 Then try Shift clicking on the Settings tool in pyRevit panel slide-out and see what it does.
 

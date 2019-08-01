@@ -1,21 +1,17 @@
 """UI maker."""
+import sys
 import imp
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
-from pyrevit.coreutils import find_loaded_asm
+from pyrevit.coreutils import assmutils
 from pyrevit.coreutils.logger import get_logger
 
 if not EXEC_PARAMS.doc_mode:
     from pyrevit.coreutils import ribbon
 
 #pylint: disable=W0703,C0302,C0103,C0413
+import pyrevit.extensions as exts
 from pyrevit.extensions import components
-from pyrevit.extensions import TAB_POSTFIX, PANEL_POSTFIX,\
-    STACKTWO_BUTTON_POSTFIX, STACKTHREE_BUTTON_POSTFIX, \
-    PULLDOWN_BUTTON_POSTFIX, SPLIT_BUTTON_POSTFIX, SPLITPUSH_BUTTON_POSTFIX, \
-    PUSH_BUTTON_POSTFIX, TOGGLE_BUTTON_POSTFIX, SMART_BUTTON_POSTFIX,\
-    LINK_BUTTON_POSTFIX, SEPARATOR_IDENTIFIER, SLIDEOUT_IDENTIFIER,\
-    PANEL_PUSH_BUTTON_POSTFIX
 
 
 mlogger = get_logger(__name__)
@@ -66,8 +62,13 @@ def _make_button_tooltip_ext(button, asm_name):
                 .format(HOST_APP.proc_name,
                         button.min_revit_ver)
 
-    tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
-        .format(button.unique_name, asm_name)
+    if isinstance(button, (components.LinkButton, components.InvokeButton)):
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'.format(
+            button.command_class or 'Runs first matching DB.IExternalCommand',
+            button.assembly)
+    else:
+        tooltip_ext += 'Class Name:\n{}\n\nAssembly Name:\n{}'\
+            .format(button.unique_name, asm_name)
 
     return tooltip_ext
 
@@ -209,6 +210,12 @@ def _produce_ui_smartbutton(ui_maker_params):
         return new_uibutton
 
     try:
+        # setup sys.paths for the smart command
+        current_paths = list(sys.path)
+        for search_path in smartbutton.get_search_paths():
+            if search_path not in current_paths:
+                sys.path.append(search_path)
+
         # importing smart button script as a module
         importedscript = imp.load_source(smartbutton.unique_name,
                                          smartbutton.script_file)
@@ -219,6 +226,9 @@ def _produce_ui_smartbutton(ui_maker_params):
         __builtins__['__forceddebugmode__'] = prev_debugmode
         mlogger.debug('Import successful: %s', importedscript)
         mlogger.debug('Running self initializer: %s', smartbutton)
+
+        # reset sys.paths back to normal
+        sys.path = current_paths
 
         res = False
         try:
@@ -261,16 +271,22 @@ def _produce_ui_linkbutton(ui_maker_params):
     if linkbutton.beta_cmd and not ui_maker_params.create_beta_cmds:
         return None
 
-    if not linkbutton.command_class:
-        return None
-
     mlogger.debug('Producing button: %s', linkbutton)
     try:
-        linked_asm_list = find_loaded_asm(linkbutton.assembly)
-        if not linked_asm_list:
-            return None
-
-        linked_asm = linked_asm_list[0]
+        linked_asm = None
+        # attemp to find the assembly file
+        linked_asm_file = linkbutton.get_target_assembly()
+        # if not found, search the loaded assemblies
+        # this is usually a slower process
+        if linked_asm_file:
+            linked_asm = assmutils.load_asm_file(linked_asm_file)
+        else:
+            linked_asm_list = assmutils.find_loaded_asm(linkbutton.assembly)
+            # cancel button creation if not found
+            if not linked_asm_list:
+                mlogger.error("Can not find target assembly for %s", linkbutton)
+                return None
+            linked_asm = linked_asm_list[0]
 
         parent_ui_item.create_push_button(
             linkbutton.name,
@@ -410,9 +426,9 @@ def _produce_ui_stacks(ui_maker_params):
         mlogger.debug('Opened stack: %s', stack_cmp.name)
 
         if HOST_APP.is_older_than('2017'):
-            _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLIT_BUTTON_POSTFIX] = \
                 _produce_ui_pulldown
-            _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLITPUSH_BUTTON_POSTFIX] = \
                 _produce_ui_pulldown
 
         # capturing and logging any errors on stack item
@@ -426,9 +442,9 @@ def _produce_ui_stacks(ui_maker_params):
                           ui_maker_params.create_beta_cmds))
 
         if HOST_APP.is_older_than('2017'):
-            _component_creation_dict[SPLIT_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLIT_BUTTON_POSTFIX] = \
                 _produce_ui_split
-            _component_creation_dict[SPLITPUSH_BUTTON_POSTFIX] = \
+            _component_creation_dict[exts.SPLITPUSH_BUTTON_POSTFIX] = \
                 _produce_ui_splitpush
 
         try:
@@ -521,20 +537,21 @@ def _produce_ui_tab(ui_maker_params):
 
 
 _component_creation_dict = {
-    TAB_POSTFIX: _produce_ui_tab,
-    PANEL_POSTFIX: _produce_ui_panels,
-    STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
-    STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
-    PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
-    SPLIT_BUTTON_POSTFIX: _produce_ui_split,
-    SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
-    PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
-    TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
-    SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
-    LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
-    SEPARATOR_IDENTIFIER: _produce_ui_separator,
-    SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
-    PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
+    exts.TAB_POSTFIX: _produce_ui_tab,
+    exts.PANEL_POSTFIX: _produce_ui_panels,
+    exts.STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
+    exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
+    exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
+    exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,
+    exts.PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    exts.TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    exts.SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    exts.LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
+    exts.INVOKE_BUTTON_POSTFIX: _produce_ui_pushbutton,
+    exts.SEPARATOR_IDENTIFIER: _produce_ui_separator,
+    exts.SLIDEOUT_IDENTIFIER: _produce_ui_slideout,
+    exts.PANEL_PUSH_BUTTON_POSTFIX: _produce_ui_panelpushbutton,
     }
 
 

@@ -1,30 +1,33 @@
 """Finds and lists rooms with identical numbers."""
-
-import collections
+#pylint: disable=invalid-name,import-error,superfluous-parens
+from collections import Counter
 
 from pyrevit import revit, DB
+from pyrevit import script
 
-curview = revit.activeview
+output = script.get_output()
 
-rooms = DB.FilteredElementCollector(revit.doc, curview.Id)\
-          .OfCategory(DB.BuiltInCategory.OST_Rooms)\
-          .WhereElementIsNotElementType()\
-          .ToElementIds()
+if revit.activeview:
+    rooms = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
+            .OfCategory(DB.BuiltInCategory.OST_Rooms)\
+            .WhereElementIsNotElementType()\
+            .ToElementIds()
 
-roomnums = [revit.doc.GetElement(rmid).Number for rmid in rooms]
-duplicates = [item
-              for item, count in collections.Counter(roomnums).items()
-              if count > 1]
+    room_numbers = [revit.doc.GetElement(room_id).Number for room_id in rooms]
+    duplicates = \
+        [item for item, count in Counter(room_numbers).items() if count > 1]
 
-if len(duplicates) > 0:
-    for rn in duplicates:
-        print('IDENTICAL ROOM NUMBER:  {}'.format(rn))
-        for rmid in rooms:
-            rm = revit.doc.GetElement(rmid)
-            if rm.Number == rn:
-                print('\tROOM NAME:  {} LEVEL: {}'
-                      .format(rm.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString().ljust(30),
-                              rm.Level.Name))
-        print('\n')
-else:
-    print('No identical room numbers were found.')
+    if duplicates:
+        for room_number in duplicates:
+            print('IDENTICAL ROOM NUMBER:  {}'.format(room_number))
+            for room_id in rooms:
+                rm = revit.doc.GetElement(room_id)
+                if rm.Number == room_number:
+                    room_name = \
+                        rm.Parameter[DB.BuiltInParameter.ROOM_NAME].AsString()
+                    print('\t{} (@ {}) {}'.format(room_name.ljust(30),
+                                                  rm.Level.Name,
+                                                  output.linkify(rm.Id)))
+            print('\n')
+    else:
+        print('No identical room numbers were found.')
