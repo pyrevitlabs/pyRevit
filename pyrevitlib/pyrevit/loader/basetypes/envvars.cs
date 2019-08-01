@@ -91,5 +91,10 @@ namespace PyRevitBaseClasses
                 referencedAssemblies = assms.Split(ExternalConfig.defaultsep);
             }
         }
+
+        public string[] GetEventScripts(PyRevitEventTypes eventType) {
+            // TODO: implement event script info getter
+            return new string[] { };
+        }
     }
 }

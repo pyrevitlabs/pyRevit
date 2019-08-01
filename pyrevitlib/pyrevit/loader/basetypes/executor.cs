@@ -52,6 +52,37 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public static int ExecuteEventScript(string scriptPath, object eventArgs) {
+            var pyrvtCmdRuntime =
+                new PyRevitCommandRuntime(
+                    cmdData: null,
+                    elements: new ElementSet(),
+                    scriptSource: scriptPath,
+                    configScriptSource: scriptPath,
+                    syspaths: "", //?????????????????????????????????????
+                    arguments: new string[] { },
+                    helpSource: "",
+                    cmdName: "",
+                    cmdBundle: "",
+                    cmdExtension: "", //?????????????????????????????????????
+                    cmdUniqueName: "",
+                    needsCleanEngine: true,
+                    needsFullFrameEngine: false,
+                    refreshEngine: false,
+                    forcedDebugMode: false,
+                    configScriptMode: false,
+                    executedFromUI: false
+                    );
+
+            // set the event args object into globals
+            if (eventArgs != null)
+                pyrvtCmdRuntime.SetBuiltInVariables(new Dictionary<string, object> {
+                    { "__eventargs__", eventArgs }
+                });
+
+            return ExecuteScript(ref pyrvtCmdRuntime);
+        }
+
         /// Run the script using IronPython Engine
         private static int ExecuteIronPythonScript(ref PyRevitCommandRuntime pyrvtCmd) {
             // 1: ----------------------------------------------------------------------------------------------------

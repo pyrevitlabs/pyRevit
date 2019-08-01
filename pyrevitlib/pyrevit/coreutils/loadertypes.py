@@ -34,6 +34,10 @@ if not EXEC_PARAMS.doc_mode:
     # helpers.cs
     UIDocUtils = base_module.UIDocUtils
 
+    # listeners.cs
+    PyRevitEventTypes = base_module.PyRevitEventTypes
+    PyRevitEventListeners = base_module.PyRevitEventListeners
+
     # scriptoutput.cs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
     ScriptOutput = base_module.ScriptOutput

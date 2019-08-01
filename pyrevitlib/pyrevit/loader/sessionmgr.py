@@ -25,6 +25,7 @@ from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
+from pyrevit.loader import eventlisteners
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import extensionmgr
@@ -136,6 +137,9 @@ def _perform_onsessionloadcomplete_ops():
 
     # clean up temp app files between sessions.
     appdata.cleanup_appdata_folder()
+
+    # start event listeners
+    eventlisteners.register_listeners()
 
 
 def _new_session():
@@ -273,9 +277,20 @@ def load_session():
     _cleanup_output()
 
 
+def _perform_onsessionreload_ops():
+    # stop event listeners
+    eventlisteners.unregister_listerners()
+
+
+def _perform_onsessionreloadcomplete_ops():
+    pass
+
+
 def reload_pyrevit():
+    _perform_onsessionreload_ops()
     mlogger.info('Reloading....')
     load_session()
+    _perform_onsessionreloadcomplete_ops()
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing

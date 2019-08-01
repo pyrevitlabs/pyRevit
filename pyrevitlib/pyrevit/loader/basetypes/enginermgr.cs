@@ -10,6 +10,8 @@ namespace PyRevitBaseClasses
 {
     public class EngineManager
     {
+        private List<string> _commandBuiltins = new List<string>();
+
         public EngineManager() {}
 
         public ScriptEngine GetEngine(ref PyRevitCommandRuntime pyrvtCmd)
@@ -189,22 +191,30 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__revit__", pyrvtCmd.UIApp);
 
             // Adding data provided by IExternalCommand.Execute
-            builtin.SetVariable("__commanddata__",          pyrvtCmd.CommandData);
-            builtin.SetVariable("__elements__",             pyrvtCmd.SelectedElements);
+            builtin.SetVariable("__commanddata__", pyrvtCmd.CommandData);
+            builtin.SetVariable("__elements__", pyrvtCmd.SelectedElements);
 
             // Adding information on the command being executed
-            builtin.SetVariable("__commandpath__",          Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
+            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
             builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(pyrvtCmd.ConfigScriptSourceFile));
-            builtin.SetVariable("__commandname__",          pyrvtCmd.CommandName);
-            builtin.SetVariable("__commandbundle__",        pyrvtCmd.CommandBundle);
-            builtin.SetVariable("__commandextension__",     pyrvtCmd.CommandExtension);
-            builtin.SetVariable("__commanduniqueid__",      pyrvtCmd.CommandUniqueId);
-            builtin.SetVariable("__forceddebugmode__",      pyrvtCmd.DebugMode);
-            builtin.SetVariable("__shiftclick__",           pyrvtCmd.ConfigMode);
+            builtin.SetVariable("__commandname__", pyrvtCmd.CommandName);
+            builtin.SetVariable("__commandbundle__", pyrvtCmd.CommandBundle);
+            builtin.SetVariable("__commandextension__", pyrvtCmd.CommandExtension);
+            builtin.SetVariable("__commanduniqueid__", pyrvtCmd.CommandUniqueId);
+            builtin.SetVariable("__forceddebugmode__", pyrvtCmd.DebugMode);
+            builtin.SetVariable("__shiftclick__", pyrvtCmd.ConfigMode);
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
-            builtin.SetVariable("__result__",               pyrvtCmd.GetResultsDictionary());
+            builtin.SetVariable("__result__", pyrvtCmd.GetResultsDictionary());
+
+            // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
+            var commandBuiltins = pyrvtCmd.GetBuiltInVariables();
+            if (commandBuiltins != null)
+                foreach (KeyValuePair<string, object> data in commandBuiltins) {
+                    _commandBuiltins.Add(data.Key);
+                    builtin.SetVariable(data.Key, (object)data.Value);
+                }
         }
 
         private void SetupStreams(ScriptEngine engine, ScriptOutputStream outStream)
@@ -230,6 +240,11 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__forceddebugmode__",      (Object)null);
             builtin.SetVariable("__shiftclick__",           (Object)null);
             builtin.SetVariable("__result__",               (Object)null);
+
+            // cleanup all data set by command custom builtins
+            if (_commandBuiltins.Count > 0)
+                foreach(string builtinVarName in _commandBuiltins)
+                    builtin.SetVariable(builtinVarName, (Object)null);
         }
 
         private void CleanupStreams(ScriptEngine engine)

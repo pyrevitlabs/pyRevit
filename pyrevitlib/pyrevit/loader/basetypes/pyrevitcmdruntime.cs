@@ -51,6 +51,7 @@ namespace PyRevitBaseClasses {
         private string _cpyTrace = "";
         private Dictionary<string, string> _resultsDict = null;
 
+        private IDictionary<string, object> _builtins = new Dictionary<string, object>();
 
         public PyRevitCommandRuntime(ExternalCommandData cmdData,
                                      ElementSet elements,
@@ -105,7 +106,7 @@ namespace PyRevitBaseClasses {
 
         public string ScriptSourceFile {
             get {
-                if (_configScriptMode)
+                if (_configScriptMode && (_configScriptSource != null || _configScriptSource != string.Empty))
                     return _configScriptSource;
                 else
                     return _scriptSource;
@@ -128,7 +129,6 @@ namespace PyRevitBaseClasses {
             get {
                 // determine engine necessary to run this script
                 var scriptFile = ScriptSourceFile.ToLower();
-                var bundleName = CommandBundle.ToLower();
                 if (scriptFile.EndsWith(".py")) {
                     string firstLine = "";
                     using (StreamReader reader = new StreamReader(scriptFile)) {
@@ -155,8 +155,12 @@ namespace PyRevitBaseClasses {
                 else if (scriptFile.EndsWith(".gh")) {
                     return EngineType.Grasshopper;
                 }
-                else if (bundleName.EndsWith(".invokebutton")) {
-                    return EngineType.Invoke;
+
+                if (CommandBundle != null) {
+                    var bundleName = CommandBundle.ToLower();
+                    if (bundleName.EndsWith(".invokebutton")) {
+                        return EngineType.Invoke;
+                    }
                 }
 
                 // should not get here
@@ -375,13 +379,17 @@ namespace PyRevitBaseClasses {
 
         public UIApplication UIApp {
             get {
-                return _commandData.Application;
+                if (_commandData != null)
+                    return _commandData.Application;
+                return null;
             }
         }
 
         public Application App {
             get {
-                return _commandData.Application.Application;
+                if (_commandData != null)
+                    return _commandData.Application.Application;
+                return null;
             }
         }
 
@@ -439,10 +447,19 @@ namespace PyRevitBaseClasses {
                 });
         }
 
+        public IDictionary<string, object> GetBuiltInVariables() {
+            return _builtins;
+        }
+
+        public void SetBuiltInVariables(IDictionary<string, object> builtins) {
+            _builtins = builtins;
+        }
+
         public void Dispose() {
             _scriptOutput = null;
             _outputStream = null;
             _resultsDict = null;
+            _builtins = null;
         }
     }
 }

@@ -34,6 +34,6 @@ if res:
 
     # re-load pyrevit session.
     logger.info('Reloading....')
-    sessionmgr.load_session()
+    sessionmgr.reload_pyrevit()
 
     results.newsession = sessioninfo.get_session_uuid()
