@@ -10,7 +10,7 @@ from pyrevit import forms
 from pyrevit import script
 
 
-__author__ = "Ehsan Iran-Nejad\ntylerk"
+__authors__ = ["tylerk", "{{author}}"]
 
 logger = script.get_logger()
 output = script.get_output()

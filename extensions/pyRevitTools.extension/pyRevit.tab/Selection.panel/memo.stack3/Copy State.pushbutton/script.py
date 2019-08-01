@@ -13,8 +13,7 @@ __doc__ = 'Copies the state of desired parameter of the active'\
           ' view to memory. e.g. Visibility Graphics settings or'\
           ' Zoom state. Run it and see how it works.'
 
-__author__ = 'Gui Talarico\n'\
-             'Ehsan Iran-Nejad'
+__authors__ = ['Gui Talarico', '{{author}}']
 
 
 class Point:

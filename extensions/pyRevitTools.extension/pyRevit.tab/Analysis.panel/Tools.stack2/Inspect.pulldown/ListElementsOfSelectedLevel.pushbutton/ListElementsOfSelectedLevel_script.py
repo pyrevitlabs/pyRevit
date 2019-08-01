@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""List all Elements of the selected level(s).
-
-Copyright (c) 2017 Frederic Beaupere
-github.com/frederic-beaupere
-
---------------------------------------------------------
-PyRevit Notice:
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
-"""
+"""List all Elements of the selected level(s)."""
 from collections import defaultdict
 
 from pyrevit import script
@@ -21,7 +12,6 @@ __author__ = 'Frederic Beaupere'
 __context__ = 'selection'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-__doc__ = 'Lists all Elements of the selected level(s).'
 
 
 output = script.get_output()

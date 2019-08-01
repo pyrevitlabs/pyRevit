@@ -6,8 +6,7 @@ from pyrevit import script
 
 
 __title__ = 'Who did that??'
-__author__ = 'Ehsan Iran-Nejad\n'\
-             'Frederic Beaupere'
+__authors__ = ['{{author}}', 'Frederic Beaupere']
 
 
 def who_reloaded_keynotes():

@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""List all families and their sizes.
-
-Copyright (c) 2017 Frederic Beaupere
-github.com/frederic-beaupere
-
---------------------------------------------------------
-PyRevit Notice:
-Copyright (c) 2014-2017 Ehsan Iran-Nejad
-pyRevit: repository at https://github.com/eirannejad/pyRevit
-"""
+"""List all families and their sizes."""
 import os.path as op
 import math
 from collections import defaultdict
@@ -19,8 +10,6 @@ __title__ = 'Lists Family Sizes'
 __author__ = 'Frederic Beaupere'
 __contact__ = 'https://github.com/frederic-beaupere'
 __credits__ = 'http://eirannejad.github.io/pyRevit/credits/'
-
-__doc__ = 'Lists all families and their sizes.'
 
 
 def convert_size(size_bytes):
