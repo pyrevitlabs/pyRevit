@@ -207,4 +207,6 @@ if forms.check_modelview(revit.active_view):
     if selected_category:
         starting_number = ask_for_starting_number(selected_category)
         if starting_number:
-            pick_and_renumber(selected_category, starting_number)
+            with forms.WarningBar(title='Pick {} one by one. ESCAPE to end.'
+                                  .format(selected_category)):
+                pick_and_renumber(selected_category, starting_number)
