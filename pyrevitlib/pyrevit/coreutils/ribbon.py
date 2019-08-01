@@ -938,10 +938,15 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
-            if tooltip_image:
-                new_button.set_tooltip_image(tooltip_image)
-            if tooltip_video:
-                new_button.set_tooltip_video(tooltip_video)
+            if not self.itemdata_mode:
+                if tooltip_image:
+                    new_button.set_tooltip_image(tooltip_image)
+                if tooltip_video:
+                    new_button.set_tooltip_video(tooltip_video)
+            else:
+                # TODO : defer setting image and video and 
+                # apply when stack is being closed
+                pass
 
             new_button.set_contexthelp(ctxhelpurl)
             # if this is the first button being added
@@ -1169,10 +1174,15 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
-                if tooltip_image:
-                    new_button.set_tooltip_image(tooltip_image)
-                if tooltip_video:
-                    new_button.set_tooltip_video(tooltip_video)
+                if not self.itemdata_mode:
+                    if tooltip_image:
+                        new_button.set_tooltip_image(tooltip_image)
+                    if tooltip_video:
+                        new_button.set_tooltip_video(tooltip_video)
+                else:
+                    # TODO : defer setting image and video and 
+                    # apply when stack is being closed
+                    pass
 
                 new_button.set_contexthelp(ctxhelpurl)
 
