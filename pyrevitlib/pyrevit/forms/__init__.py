@@ -509,7 +509,7 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _prepare_context(self):
         if isinstance(self._context, dict) and self._context.keys():
-            self._update_ctx_groups(self._context.keys())
+            self._update_ctx_groups(sorted(self._context.keys()))
             new_ctx = {}
             for ctx_grp, ctx_items in self._context.items():
                 new_ctx[ctx_grp] = self._prepare_context_items(ctx_items)
@@ -1530,7 +1530,8 @@ def select_sheets(title='Select Sheets',
         button_name=button_name,
         width=width,
         multiselect=multiple,
-        checked_only=True
+        checked_only=True,
+        default_group='All Sheets'
         )
 
     return selected_sheets
