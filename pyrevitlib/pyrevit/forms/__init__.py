@@ -2286,6 +2286,28 @@ def check_modeldoc(doc=None, exitscript=False):
     return False
 
 
+def check_modelview(view, exitscript=False):
+    """Verify target view is a model view.
+
+    Args:
+        view (DB.View): target view
+        exitscript (bool): exit script if returning False
+
+    Returns:
+        bool: True if view is model view
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.check_modelview(view=revit.active_view)
+        ... True
+    """
+    if not isinstance(view, (DB.View3D, DB.ViewPlan, DB.ViewSection)):
+        alert("Active view must be a model view.", exitscript=exitscript)
+        return False
+    return True
+
+
+
 def toast(message, title='pyRevit', appid='pyRevit',
           icon=None, click=None, actions=None):
     """Show a Windows 10 notification.

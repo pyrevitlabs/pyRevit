@@ -193,14 +193,18 @@ def pick_and_renumber(category_name, starting_index):
 # [X] renumber existing
 # [X] renumber room
 
+if forms.check_modelview(revit.active_view):
+    options = ["Rooms", "Spaces", "Doors", "Walls", "Windows"]
+    if revit.active_view.ViewType == DB.ViewType.AreaPlan:
+        options.insert(1, "Areas")
 
-selected_category = \
-    forms.CommandSwitchWindow.show(
-        ["Rooms", "Areas", "Spaces", "Doors", "Walls", "Windows"],
-        message='Pick element type to renumber:'
-    )
+    selected_category = \
+        forms.CommandSwitchWindow.show(
+            options,
+            message='Pick element type to renumber:'
+        )
 
-if selected_category:
-    starting_number = ask_for_starting_number(selected_category)
-    if starting_number:
-        pick_and_renumber(selected_category, starting_number)
+    if selected_category:
+        starting_number = ask_for_starting_number(selected_category)
+        if starting_number:
+            pick_and_renumber(selected_category, starting_number)
