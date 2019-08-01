@@ -7,7 +7,7 @@ __doc__ = 'Selects elements similar to the currently '\
           'selected elements in the active view .'
 
 
-cl = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
+cl = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
        .WhereElementIsNotElementType()\
        .ToElementIds()
 

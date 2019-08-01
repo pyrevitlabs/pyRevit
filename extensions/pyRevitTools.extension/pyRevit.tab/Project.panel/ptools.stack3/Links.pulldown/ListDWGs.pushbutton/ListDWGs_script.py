@@ -61,7 +61,7 @@ def listdwgs(current_view_only=False):
                                                               dwg.Id).Creator
 
             if current_view_only \
-                    and revit.activeview.Id != dwg.OwnerViewId:
+                    and revit.active_view.Id != dwg.OwnerViewId:
                 continue
 
             print('\n\n')

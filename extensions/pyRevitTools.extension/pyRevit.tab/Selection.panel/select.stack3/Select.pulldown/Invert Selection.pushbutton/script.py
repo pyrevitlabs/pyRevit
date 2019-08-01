@@ -10,7 +10,7 @@ __context__ = 'selection'
 
 
 # get view elements
-viewelements = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
+viewelements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
                  .WhereElementIsNotElementType()\
                  .ToElements()
 # remove anything that is a direct DB.Element obj

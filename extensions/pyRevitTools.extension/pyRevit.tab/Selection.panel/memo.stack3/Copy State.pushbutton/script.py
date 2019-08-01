@@ -114,7 +114,7 @@ elif selected_option == '3D Section Box State':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
     avui = revit.uidoc.GetOpenUIViews()[0]
 
     if isinstance(av, DB.View3D):
@@ -163,7 +163,7 @@ elif selected_option == 'Viewport Placement on Sheet':
 
     selview = selvp = None
     vpboundaryoffset = 0.01
-    activeSheet = revit.activeview
+    activeSheet = revit.active_view
     transmatrix = TransformationMatrix()
     revtransmatrix = TransformationMatrix()
 
@@ -319,7 +319,7 @@ elif selected_option == 'Visibility Graphics':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
 
     f = open(datafile, 'w')
     pickle.dump(int(av.Id.IntegerValue), f)
@@ -331,7 +331,7 @@ elif selected_option == 'Crop Region':
                                       file_ext='pym',
                                       add_cmd_name=False)
 
-    av = revit.activeview
+    av = revit.active_view
     crsm = av.GetCropRegionShapeManager()
 
     crsm_valid = False

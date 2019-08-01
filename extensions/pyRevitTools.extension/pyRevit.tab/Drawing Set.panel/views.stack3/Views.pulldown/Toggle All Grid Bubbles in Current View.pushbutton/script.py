@@ -34,11 +34,11 @@ if selected_option:
         with revit.Transaction('Toggle Grid Bubbles'):
             for grid in grids:
                 if hide:
-                    grid.HideBubbleInView(DB.DatumEnds.End0, revit.activeview)
-                    grid.HideBubbleInView(DB.DatumEnds.End1, revit.activeview)
+                    grid.HideBubbleInView(DB.DatumEnds.End0, revit.active_view)
+                    grid.HideBubbleInView(DB.DatumEnds.End1, revit.active_view)
                 else:
-                    grid.ShowBubbleInView(DB.DatumEnds.End0, revit.activeview)
-                    grid.ShowBubbleInView(DB.DatumEnds.End1, revit.activeview)
+                    grid.ShowBubbleInView(DB.DatumEnds.End0, revit.active_view)
+                    grid.ShowBubbleInView(DB.DatumEnds.End1, revit.active_view)
 
     except Exception:
         pass

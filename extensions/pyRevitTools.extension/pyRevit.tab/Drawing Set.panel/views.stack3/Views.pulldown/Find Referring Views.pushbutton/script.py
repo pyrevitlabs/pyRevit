@@ -11,7 +11,7 @@ output = script.get_output()
 
 selection = revit.get_selection()
 if not selection:
-    activeview = revit.activeview
+    activeview = revit.active_view
     if revit.query.can_refer_other_views(activeview):
         selection = [activeview]
 

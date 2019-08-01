@@ -177,7 +177,7 @@ if selected_option:
     logger.debug('Collecting detail lines in current view...')
     detline_collector = \
         revit.query.get_elements_by_class(DB.CurveElement,
-                                        view_id=revit.activeview.Id)
+                                        view_id=revit.active_view.Id)
 
     # collect comparison info on each detail-lines geomtery
     logger.debug('Extracting 2d domains...')

@@ -10,7 +10,7 @@ __author__ = "{{author}}"
 
 output = script.get_output()
 
-curview = revit.activeview
+curview = revit.active_view
 count = 0
 
 

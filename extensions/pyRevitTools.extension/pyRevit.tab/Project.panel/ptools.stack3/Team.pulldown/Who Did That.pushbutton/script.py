@@ -64,7 +64,7 @@ def who_created_selection():
 
 
 def who_created_activeview():
-    active_view = revit.activeview
+    active_view = revit.active_view
     view_id = active_view.Id.ToString()
     view_name = active_view.Name
     view_creator = \

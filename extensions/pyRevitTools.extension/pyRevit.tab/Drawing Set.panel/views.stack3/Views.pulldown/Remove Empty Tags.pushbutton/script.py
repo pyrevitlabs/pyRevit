@@ -13,7 +13,7 @@ if __shiftclick__:  #pylint: disable=undefined-variable
     selected_views = \
         forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan))
 else:
-    selected_views = [revit.activeview]
+    selected_views = [revit.active_view]
 
 if selected_views:
     itags_ids_to_remove = []

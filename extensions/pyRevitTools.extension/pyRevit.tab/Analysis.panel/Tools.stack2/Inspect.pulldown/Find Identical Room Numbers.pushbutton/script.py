@@ -7,8 +7,8 @@ from pyrevit import script
 
 output = script.get_output()
 
-if revit.activeview:
-    rooms = DB.FilteredElementCollector(revit.doc, revit.activeview.Id)\
+if revit.active_view:
+    rooms = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
             .OfCategory(DB.BuiltInCategory.OST_Rooms)\
             .WhereElementIsNotElementType()\
             .ToElementIds()

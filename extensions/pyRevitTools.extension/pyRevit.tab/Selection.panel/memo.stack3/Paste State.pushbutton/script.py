@@ -136,7 +136,7 @@ elif selected_switch == '3D Section Box State':
                                           vo.forwardy,
                                           vo.forwardz))
 
-        av = revit.activeview
+        av = revit.active_view
         avui = revit.uidoc.GetOpenUIViews()[0]
         if isinstance(av, DB.View3D):
             with revit.Transaction('Paste Section Box Settings'):
@@ -384,7 +384,7 @@ elif selected_switch == 'Visibility Graphics':
         id = pickle.load(f)
         f.close()
         with revit.Transaction('Paste Visibility Graphics'):
-            revit.activeview.ApplyViewTemplateParameters(
+            revit.active_view.ApplyViewTemplateParameters(
                 revit.doc.GetElement(DB.ElementId(id))
                 )
     except Exception:
@@ -402,8 +402,8 @@ elif selected_switch == 'Crop Region':
         cloops_data = pickle.load(f)
         f.close()
         with revit.Transaction('Paste Crop Region'):
-            revit.activeview.CropBoxVisible = True
-            crsm = revit.activeview.GetCropRegionShapeManager()
+            revit.active_view.CropBoxVisible = True
+            crsm = revit.active_view.GetCropRegionShapeManager()
             all_cloops = unpickle_line_list(cloops_data)
             for cloop in all_cloops:
                 if HOST_APP.is_newer_than(2015):

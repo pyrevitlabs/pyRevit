@@ -18,10 +18,10 @@ viewlist = []
 selection = revit.get_selection()
 
 if revit.doc.IsWorkshared:
-    currentviewid = revit.activeview.Id
+    currentviewid = revit.active_view.Id
     viewlist.append(currentviewid)
-    if isinstance(revit.activeview, DB.ViewSheet):
-        vportids = revit.activeview.GetAllViewports()
+    if isinstance(revit.active_view, DB.ViewSheet):
+        vportids = revit.active_view.GetAllViewports()
         for vportid in vportids:
             viewlist.append(revit.doc.GetElement(vportid).ViewId)
     for view in viewlist:

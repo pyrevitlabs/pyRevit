@@ -24,7 +24,7 @@ selected_switch = \
 
 
 if selected_switch:
-    curview = revit.activeview
+    curview = revit.active_view
 
     if selected_switch == 'Room Tags':
         roomtags = DB.FilteredElementCollector(revit.doc, curview.Id)\
