@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Xml;
 using Microsoft.Win32;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 
-using NLog;
-using System.Xml;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.TargetApps.Revit {
     // EXCEPTIONS ====================================================================================================
@@ -88,12 +89,35 @@ namespace pyRevitLabs.TargetApps.Revit {
             else
                 throw new pyRevitException(string.Format("Target is not a valid Revit model \"{0}\"", filePath));
 
+            // extract ProjectInformation (Revit Project Files)
+            // ProjectInformation is a PK Zip stream
+            var rawProjectInformationData = CommonUtils.GetStructuredStorageStream(FilePath, "ProjectInformation");
+            if (rawProjectInformationData != null) {
+                Stream zipData = new MemoryStream(rawProjectInformationData);
+                var zipFile = new ZipArchive(zipData);
+                foreach (var entry in zipFile.Entries) {
+                    if (entry.FullName.ToLower().EndsWith(".project.xml")) {
+                        logger.Debug("Reading Project Info from: \"{0}\"", entry.FullName);
+                        using (Stream projectInfoXamlData = entry.Open()) {
+                            var projectInfoXmlData = new StreamReader(projectInfoXamlData).ReadToEnd();
+                            ProcessProjectInfo(projectInfoXmlData);
+                        }
+                    }
+                }
+            } else {
+                ProjectInfoProperties = new Dictionary<string, string>();
+            }
+
             // extract partatom (Revit Family Files) and prepare string
-            // throws exception if stream doesn't exist
+            // PartAtom is a Xml stream
+            // https://ein.sh/pyRevit/pyrevit/updates/2019/01/19/basicfileinfo.html
             var rawPartAtomData = CommonUtils.GetStructuredStorageStream(FilePath, "PartAtom");
             if (rawPartAtomData != null) {
                 IsFamily = true;
                 ProcessPartAtom(Encoding.ASCII.GetString(rawPartAtomData));
+            } else {
+                CategoryName = "";
+                HostCategoryName = "";
             }
         }
 
@@ -221,6 +245,37 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
+        private void ProcessProjectInfo(string rawProjectInfoData) {
+            logger.Debug("Parsing ProjctInformation Data: \"{0}\"", rawProjectInfoData);
+            var doc = new XmlDocument();
+            try {
+                doc.LoadXml(rawProjectInfoData);
+                XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                nsmgr.AddNamespace("rfa", @"http://www.w3.org/2005/Atom");
+                nsmgr.AddNamespace("A", @"urn:schemas-autodesk-com:partatom");
+
+                // extract project parameters
+                var projectInfoDict = new Dictionary<string, string>();
+                XmlNodeList propertyGroups = doc.SelectNodes("//rfa:entry/A:features/A:feature/A:group", nsmgr);
+                foreach(XmlElement properyGroup in propertyGroups) {
+                    foreach(XmlElement child in properyGroup.ChildNodes) {
+                        if (child.HasAttribute("displayName")) {
+                            string propertyName = child.GetAttribute("displayName");
+                            string propertyValue = child.InnerText;
+                            logger.Debug("\"{0}\" = \"{1}\"", propertyName, propertyValue);
+                            projectInfoDict.Add(propertyName, propertyValue);
+                        }
+                    }
+                }
+
+                // set the created info dict
+                ProjectInfoProperties = projectInfoDict;
+            }
+            catch (Exception ex) {
+                logger.Debug("Error parsing PartAtom XML. | {0}", ex.Message);
+            }
+        }
+
         public string FilePath { get; private set; }
 
         public bool IsFamily { get; private set; }
@@ -240,6 +295,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         public Guid LastReloadLatestUniqueId { get; private set; } = new Guid();
 
         public RevitProduct RevitProduct { get; private set; } = null;
+
+        public Dictionary<string, string> ProjectInfoProperties { get; private set; }
 
         public string CategoryName { get; private set; }
 
@@ -331,7 +388,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             {"20120221_2030", ("12.02.21203",   "2013 First Customer Ship")},
             {"20120716_1115", ("0.0.0.0",       "2013 Update Release 1")},
             {"20121003_2115", ("0.0.0.0",       "2013 Update Release 2")},
-            {"20130531_2115", ("0.0.0.0",       "2013 Update Release 3")},
+            {"20130531_2115", ("12.11.10090",   "2013 Update Release 3")},  // https://github.com/eirannejad/pyRevit/issues/622
             {"20120821_1330", ("0.0.0.0",       "2013 LT First Customer Ship")},
             {"20130531_0300", ("0.0.0.0",       "2013 LT Update Release 1")},
 
@@ -554,7 +611,16 @@ namespace pyRevitLabs.TargetApps.Revit {
         public int LanguageCode { get; set; }
 
         // static:
-        public static string GetBinaryLocation(string installPath) => Path.Combine(installPath, "Revit.exe");
+        public static string GetBinaryLocation(string installPath) {
+            var possibleLocations = new List<string>() {
+                Path.Combine(installPath, "Revit.exe"),
+                Path.Combine(installPath, "Program", "Revit.exe")
+            };
+            foreach (var binaryLoc in possibleLocations)
+                if (File.Exists(binaryLoc))
+                    return binaryLoc;
+            return null;
+        }
 
         public static string GetBinaryBuildNumber(string binaryPath) {
             var fileInfo = FileVersionInfo.GetVersionInfo(binaryPath);
@@ -622,9 +688,11 @@ namespace pyRevitLabs.TargetApps.Revit {
                             logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
                             // try to get product key from binary
                             var binaryLocation = GetBinaryLocation(regPath);
-                            var buildNumber = GetBinaryBuildNumber(binaryLocation);
-                            logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", buildNumber, binaryLocation);
-                            revitProduct = LookupRevitProduct(buildNumber);
+                            if (binaryLocation != null) {
+                                var buildNumber = GetBinaryBuildNumber(binaryLocation);
+                                logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", buildNumber, binaryLocation);
+                                revitProduct = LookupRevitProduct(buildNumber);
+                            }
                         }
 
                         logger.Debug("Revit Product is : {0}", revitProduct);

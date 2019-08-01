@@ -343,6 +343,12 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
         new_view = copy_view(activedoc, vport_view, dest_doc)
 
         if new_view:
+            ref_info = revit.query.get_view_sheetrefinfo(new_view)
+            if ref_info and ref_info.sheet_num != dest_sheet.SheetNumber:
+                logger.error('View is already placed on sheet \"%s - %s\"',
+                             ref_info.sheet_num, ref_info.sheet_name)
+                continue
+
             if new_view.Id not in existing_views:
                 print('\t\t\tPlacing copied view on sheet.')
                 with revit.Transaction('Place View on Sheet', doc=dest_doc):

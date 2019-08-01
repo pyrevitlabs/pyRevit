@@ -10,7 +10,9 @@ parameters:
 		type: <Autodesk.Revit.DB.ParameterType>
 		category: <Autodesk.Revit.DB.BuiltInParameterGroup>
 		instance: <true|false>
+		reporting: <true|false>
 		formula: <str>
+		default: <str>
 types:
 	<type-name>:
 		<parameter-name>: <value>
@@ -30,7 +32,8 @@ types:
 		Shelf Height (Upper): 3'-0"
 """
 #pylint: disable=import-error,invalid-name,broad-except
-# TODO: fix parameter ordering
+# TODO: import parameter ordering
+# TODO: merge configs on identical parameters
 from collections import namedtuple
 
 from pyrevit import coreutils
@@ -52,15 +55,24 @@ DEFAULT_TYPE = 'Text'
 DEFAULT_BIP_CATEGORY = 'PG_CONSTRUCTION'
 
 PARAM_SECTION_NAME = 'parameters'
+PARAM_SECTION_TYPE = 'type'
+PARAM_SECTION_CAT = 'category'
+PARAM_SECTION_GROUP = 'group'
+PARAM_SECTION_INST = 'instance'
+PARAM_SECTION_REPORT = 'reporting'
+PARAM_SECTION_FORMULA = 'formula'
+PARAM_SECTION_DEFAULT = 'default'
+
 TYPES_SECTION_NAME = 'types'
 
-
 FAMILY_SYMBOL_SEPARATOR = ' : '
+TEMP_TYPENAME = "Default"
 
 ParamConfig = \
     namedtuple(
         'ParamConfig',
-        ['name', 'bicat', 'bitype', 'isinst', 'formula']
+        ['name', 'bigroup', 'bitype', 'famcat',
+         'isinst', 'isreport', 'formula', 'default']
     )
 
 
@@ -78,7 +90,13 @@ TypeConfig = \
     )
 
 
-def get_symbol(symbol_name):
+failed_params = []
+
+
+def get_symbol_id(symbol_name):
+    # translate family-symbol formatted name and find the loaded symbol
+    # current implementation matches the repr to how Revit shows the value
+    # famil-name : symbol-name
     if FAMILY_SYMBOL_SEPARATOR not in symbol_name:
         logger.warning(
             'Family type parameter value must be formatted as '
@@ -102,14 +120,23 @@ def get_param_config(param_name, param_opts):
     # extract configured values
     param_bip_cat = coreutils.get_enum_value(
         DB.BuiltInParameterGroup,
-        param_opts.get('category', DEFAULT_BIP_CATEGORY)
+        param_opts.get(PARAM_SECTION_GROUP, DEFAULT_BIP_CATEGORY)
         )
     param_type = coreutils.get_enum_value(
         DB.ParameterType,
-        param_opts.get('type', DEFAULT_TYPE)
+        param_opts.get(PARAM_SECTION_TYPE, DEFAULT_TYPE)
         )
-    param_isinst = param_opts.get('instance', 'false').lower() == 'true'
-    param_formula = param_opts.get('formula', None)
+    param_famtype = None
+    if param_type == DB.ParameterType.FamilyType:
+        param_famtype = param_opts.get(PARAM_SECTION_CAT, None)
+        if param_famtype:
+            param_famtype = revit.query.get_category(param_famtype)
+    param_isinst = \
+        param_opts.get(PARAM_SECTION_INST, 'false').lower() == 'true'
+    param_isreport = \
+        param_opts.get(PARAM_SECTION_REPORT, 'false').lower() == 'true'
+    param_formula = param_opts.get(PARAM_SECTION_FORMULA, None)
+    param_default = param_opts.get(PARAM_SECTION_DEFAULT, None)
 
     if not param_bip_cat:
         logger.critical(
@@ -122,71 +149,22 @@ def get_param_config(param_name, param_opts):
             )
         return
 
+    # return a bundle with extracted values
     return ParamConfig(
         name=param_name,
-        bicat=param_bip_cat,
+        bigroup=param_bip_cat,
         bitype=param_type,
+        famcat=param_famtype,
         isinst=param_isinst,
-        formula=param_formula
+        isreport=param_isreport,
+        formula=param_formula,
+        default=param_default
         )
 
 
-def ensure_param(param_name, param_opts):
-    # Create family parameter based on name and options
-    fm = revit.doc.FamilyManager
-    if param_name and param_opts:
-        logger.debug('ensuring parameter: %s', param_name)
-
-        # extract param config from dict
-        pcfg = get_param_config(param_name, param_opts)
-
-        if pcfg:
-            logger.debug('%s %s %s', pcfg.bicat, pcfg.bitype, pcfg.isinst)
-            fparam = revit.query.get_family_parameter(param_name, revit.doc)
-            if not fparam:
-                # create param in family doc
-                fparam = fm.AddParameter(
-                    pcfg.name,
-                    pcfg.bicat,
-                    pcfg.bitype,
-                    pcfg.isinst
-                )
-
-            if pcfg.formula:
-                fm.SetFormula(fparam, pcfg.formula)
-
-            return fparam
-
-
-def ensure_params(fconfig):
-    param_cfgs = fconfig.get(PARAM_SECTION_NAME, None)
-    if param_cfgs:
-        for pname, popts in param_cfgs.items():
-            ensure_param(pname, popts)
-
-
-def get_type_config(type_name, type_opts):
-    if type_name and type_opts:
-        pvalue_cfgs = []
-        for pname, pvalue in type_opts.items():
-            pvalue_cfgs.append(ParamValueConfig(name=pname, value=pvalue))
-
-        return TypeConfig(name=type_name, param_values=pvalue_cfgs)
-
-
-def ensure_type(type_config):
-    fm = revit.doc.FamilyManager
-    # extract type config from dict
-    logger.debug('%s %s', type_config.name, type_config.param_values)
-    ftype = revit.query.get_family_type(type_config.name, revit.doc)
-    if not ftype:
-        # create type in family doc
-        ftype = fm.NewType(type_config.name)
-
-    return ftype
-
-
 def set_fparam_value(pvcfg, fparam):
+    # set param name:value on given param object
+    # it is smart about the type and can resolve FamilyType values
     fm = revit.doc.FamilyManager
 
     if fparam.Formula:
@@ -202,7 +180,8 @@ def set_fparam_value(pvcfg, fparam):
     if fparam.StorageType == DB.StorageType.ElementId \
             and fparam.Definition.ParameterType == \
                 DB.ParameterType.FamilyType:
-        fsym_id = get_symbol(pvcfg.value)
+        # resolve FamilyType value and get the symbol id
+        fsym_id = get_symbol_id(pvcfg.value)
         fm.Set(fparam, fsym_id)
     elif fparam.StorageType == DB.StorageType.String:
         fm.Set(fparam, pvcfg.value)
@@ -213,7 +192,120 @@ def set_fparam_value(pvcfg, fparam):
         fm.SetValueString(fparam, pvcfg.value)
 
 
+def ensure_param(param_name, param_opts):
+    # Create family parameter based on name and options
+    fm = revit.doc.FamilyManager
+    if param_name and param_opts:
+        logger.debug('ensuring parameter: %s', param_name)
+
+        # extract param config from dict
+        pcfg = get_param_config(param_name, param_opts)
+
+        if pcfg:
+            logger.debug(
+                '%s %s %s %s %s',
+                pcfg.bigroup,
+                pcfg.bitype,
+                '"%s"' % pcfg.famcat.Name if pcfg.famcat else None,
+                pcfg.isinst,
+                pcfg.formula
+            )
+            fparam = revit.query.get_family_parameter(param_name, revit.doc)
+            if not fparam:
+                # create param in family doc
+                try:
+                    fparam = fm.AddParameter(
+                        pcfg.name,
+                        pcfg.bigroup,
+                        pcfg.famcat if pcfg.famcat else pcfg.bitype,
+                        pcfg.isinst
+                    )
+                except Exception as addparam_ex:
+                    if pcfg.famcat:
+                        failed_params.append(pcfg.name)
+                        logger.error(
+                            'Error creating parameter: %s\n'
+                            'This parameter is a nested family selector. '
+                            'Make sure at least one nested family of type "%s" '
+                            'is already loaded in this family. | %s',
+                            pcfg.name,
+                            pcfg.famcat.Name,
+                            addparam_ex
+                            )
+
+            logger.debug('Created: %s', fparam)
+
+            # either set the formula
+            if pcfg.formula:
+                try:
+                    if any([x in pcfg.formula for x in failed_params]):
+                        logger.error(
+                            'Can not set formula for: %s\n'
+                            'One of the failed parameters is used in formula.',
+                            pcfg.name,
+                        )
+                    else:
+                        fm.SetFormula(fparam, pcfg.formula)
+                except Exception as formula_ex:
+                    logger.error('Failed to set formula on: %s | %s',
+                                 pcfg.name, formula_ex)
+            # or the default value if any
+            elif pcfg.default:
+                try:
+                    set_fparam_value(
+                        ParamValueConfig(name=pcfg.name, value=pcfg.default),
+                        fparam
+                        )
+                except Exception as defaultval_ex:
+                    logger.error('Failed to set default value for: %s | %s',
+                                 pcfg.name, defaultval_ex)
+
+            # is it reporting?
+            # if param has default value, it is already set
+            # value can not be set on reporting params
+            if pcfg.isreport and not pcfg.formula:
+                try:
+                    fm.MakeReporting(fparam)
+                except Exception as makereport_ex:
+                    logger.error('Failed to make reporting: %s | %s',
+                                 pcfg.name, makereport_ex)
+
+            return fparam
+
+
+def ensure_params(fconfig):
+    # ensure all defined parameters exist
+    param_cfgs = fconfig.get(PARAM_SECTION_NAME, None)
+    if param_cfgs:
+        for pname, popts in param_cfgs.items():
+            ensure_param(pname, popts)
+
+
+def get_type_config(type_name, type_opts):
+    # get defined param:value configs from input
+    if type_name and type_opts:
+        pvalue_cfgs = []
+        for pname, pvalue in type_opts.items():
+            pvalue_cfgs.append(ParamValueConfig(name=pname, value=pvalue))
+
+        return TypeConfig(name=type_name, param_values=pvalue_cfgs)
+
+
+def ensure_type(type_config):
+    # ensure given family type exist
+    fm = revit.doc.FamilyManager
+    # extract type config from dict
+    logger.debug('%s %s', type_config.name, type_config.param_values)
+    ftype = revit.query.get_family_type(type_config.name, revit.doc)
+    if not ftype:
+        # create type in family doc
+        ftype = fm.NewType(type_config.name)
+
+    return ftype
+
+
 def ensure_types(fconfig):
+    # ensure all defined family types exist
     fm = revit.doc.FamilyManager
     type_cfgs = fconfig.get(TYPES_SECTION_NAME, None)
     if type_cfgs:
@@ -255,14 +347,20 @@ if __name__ == '__main__':
 
     family_cfg_file = get_config_file()
     if family_cfg_file:
+        family_mgr = revit.doc.FamilyManager
         family_configs = load_configs(family_cfg_file)
         logger.debug(family_configs)
         with revit.Transaction('Import Params from Config'):
             # remember current type
-            ctype = revit.doc.FamilyManager.CurrentType
+            # if family does not have type, create a temp type
+            # otherwise setting formula will fail
+            ctype = family_mgr.CurrentType
+            if not ctype:
+                ctype = family_mgr.NewType(TEMP_TYPENAME)
 
             ensure_params(family_configs)
             ensure_types(family_configs)
 
             # restore current type
-            revit.doc.FamilyManager.CurrentType = ctype
+            if ctype.Name != TEMP_TYPENAME:
+                family_mgr.CurrentType = ctype

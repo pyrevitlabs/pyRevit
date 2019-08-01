@@ -24,6 +24,10 @@ if rvt_file:
     print("Open Workset Settings: {0}".format(mfile.OpenWorksetConfig))
     print("Document Increment: {0}".format(mfile.DocumentIncrement))
 
+    print("Project Information (Properties):")
+    for k, v in sorted(dict(mfile.ProjectInfoProperties).items()):
+        print('\t{} = {}'.format(k, v))
+
     if mfile.IsFamily:
         print("Model is a Revit Family!")
         print("Category Name: {0}".format(mfile.CategoryName))

@@ -9,7 +9,7 @@ using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using IWshRuntimeLibrary;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
     public static class CommonUtils {

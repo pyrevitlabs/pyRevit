@@ -14,9 +14,9 @@ using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 
 using DocoptNet;
-using NLog;
-using NLog.Config;
-using NLog.Targets;
+using pyRevitLabs.NLog;
+using pyRevitLabs.NLog.Config;
+using pyRevitLabs.NLog.Targets;
 
 using Console = Colorful.Console;
 
@@ -488,7 +488,11 @@ namespace pyRevitManager {
                 else if (all("fileinfo"))
                     PyRevitCLIRevitCmds.ProcessFileInfo(
                         targetPath: TryGetValue("<file_or_dir_path>"),
-                        outputCSV: TryGetValue("--csv")
+                        outputCSV: TryGetValue("--csv"),
+                        IncludeRVT: arguments["--rvt"].IsTrue,
+                        includeRTE: arguments["--rte"].IsTrue,
+                        includeRFA: arguments["--rfa"].IsTrue,
+                        includeRFT: arguments["--rft"].IsTrue
                         );
 
                 else if (all("addons")) {
@@ -510,7 +514,9 @@ namespace pyRevitManager {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Revits);
 
                 else if (arguments["--supported"].IsTrue)
-                    PyRevitCLIRevitCmds.PrintSupportedRevits();
+                    PyRevitCLIRevitCmds.ProcessBuildInfo(
+                        outputCSV: TryGetValue("--csv")
+                        );
 
                 else
                     PyRevitCLIRevitCmds.PrintLocalRevits(running: arguments["--installed"].IsFalse);

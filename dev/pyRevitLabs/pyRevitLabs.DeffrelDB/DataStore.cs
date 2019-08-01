@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 using pyRevitLabs.Common;
 
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.DeffrelDB {
     // datastore

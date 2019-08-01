@@ -36,24 +36,28 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering
-    ]
+]
 
 
-DETAIL_CURVES = (DB.DetailLine,
-                 DB.DetailArc,
-                 DB.DetailEllipse,
-                 DB.DetailNurbSpline)
+DETAIL_CURVES = (
+    DB.DetailLine,
+    DB.DetailArc,
+    DB.DetailEllipse,
+    DB.DetailNurbSpline
+)
 
-MODEL_CURVES = (DB.ModelLine,
-                DB.ModelArc,
-                DB.ModelEllipse,
-                DB.ModelNurbSpline)
+MODEL_CURVES = (
+    DB.ModelLine,
+    DB.ModelArc,
+    DB.ModelEllipse,
+    DB.ModelNurbSpline
+)
 
 BUILTINCATEGORIES_VIEW = [
-    int(DB.BuiltInCategory.OST_Views),
-    int(DB.BuiltInCategory.OST_ReferenceViewer),
-    int(DB.BuiltInCategory.OST_Viewers)
-    ]
+    DB.BuiltInCategory.OST_Views,
+    DB.BuiltInCategory.OST_ReferenceViewer,
+    DB.BuiltInCategory.OST_Viewers
+]
 
 GridPoint = namedtuple('GridPoint', ['point', 'grids'])
 
@@ -601,8 +605,7 @@ def get_all_referencing_elements(doc=None):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and el.Category \
-                and el.Category.Id.IntegerValue in BUILTINCATEGORIES_VIEW:
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements.append(el.Id)
     return all_referencing_elements
 
@@ -614,8 +617,7 @@ def get_all_referencing_elements_in_view(view):
                 .ToElements():
         if el.Category \
                 and isinstance(el, DB.Element) \
-                and el.Category \
-                and el.Category.Id.IntegerValue in BUILTINCATEGORIES_VIEW:
+                and get_builtincategory(el.Category) in BUILTINCATEGORIES_VIEW:
             all_referencing_elements_in_view.append(el.Id)
     return all_referencing_elements_in_view
 

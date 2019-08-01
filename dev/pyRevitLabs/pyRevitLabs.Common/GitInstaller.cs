@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using LibGit2Sharp;
-using NLog;
+using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.Common {
     // git exceptions

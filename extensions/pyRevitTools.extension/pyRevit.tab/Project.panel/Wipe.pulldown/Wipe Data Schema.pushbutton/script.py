@@ -19,6 +19,6 @@ sschema = \
 if sschema:
     with revit.Transaction("Remove Schema"):
         DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
-            sschema,
-            True
+            schema=sschema,
+            overrideWriteAccessWithUserPermission=True
             )

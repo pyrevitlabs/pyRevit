@@ -16,7 +16,7 @@ non-printable characters from the sheet numbers,
 in case an error in the tool causes these characters
 to remain.
 """
-
+import re
 import os.path as op
 import codecs
 
@@ -54,19 +54,15 @@ class PrintSheetsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        self.sheet_cat_id = None
-        for cat in revit.doc.Settings.Categories:
-            if cat.Id.IntegerValue == int(DB.BuiltInCategory.OST_Sheets):
-                self.sheet_cat_id = cat.Id
+        self.sheet_cat_id = \
+            revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
 
         self._setup_printers()
         self._setup_print_settings()
         self.schedules_cb.ItemsSource = self._get_sheet_index_list()
-        if len(self.schedules_cb.ItemsSource) == 0:
-            self.Close()
-            forms.alert("No Sheet Lists (Schedules) found in current project")
-            script.exit()
-            
+        if not self.schedules_cb.ItemsSource:
+            forms.alert("No Sheet Lists (Schedules) found in current project",
+                        exitscript=True)
         self.schedules_cb.SelectedIndex = 0
 
         item_cstyle = self.sheets_lb.ItemContainerStyle
@@ -159,9 +155,13 @@ class PrintSheetsWindow(forms.WPFWindow):
 
         ordered_sheets_dict = {}
         for sheet in sheet_list:
+            logger.debug('finding index for: %s', sheet.SheetNumber)
             for line_no, data_line in enumerate(sched_data):
+                match_pattern = r'(^|.*\t){}\t.*'.format(sheet.SheetNumber)
+                matches_sheet = re.match(match_pattern, data_line)
+                logger.debug('match: %s', matches_sheet)
                 try:
-                    if sheet.SheetNumber in data_line:
+                    if matches_sheet:
                         ordered_sheets_dict[line_no] = sheet
                         break
                     if not sheet.CanBePrinted:

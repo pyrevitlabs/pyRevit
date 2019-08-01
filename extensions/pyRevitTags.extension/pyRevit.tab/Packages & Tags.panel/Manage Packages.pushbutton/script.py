@@ -378,6 +378,7 @@ class ManagePackagesWindow(forms.WPFWindow):
             self.sheets_dg.CommitEdit()
             self.sheets_dg.Focus()
             self.sheets_dg.Items.Refresh()
+        args.Cancel = True
 
     def update_sheets(self, sender, args):
         self.Close()

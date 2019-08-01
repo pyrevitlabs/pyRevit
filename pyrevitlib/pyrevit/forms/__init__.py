@@ -71,7 +71,10 @@ class WPFWindow(framework.Windows.Window):
 
     Example:
         >>> from pyrevit import forms
-        >>> layout = '<Window ShowInTaskbar="False" ResizeMode="NoResize" ' \
+        >>> layout = '<Window ' \
+        >>>          'xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" ' \
+        >>>          'xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" ' \
+        >>>          'ShowInTaskbar="False" ResizeMode="NoResize" ' \
         >>>          'WindowStartupLocation="CenterScreen" ' \
         >>>          'HorizontalContentAlignment="Center">' \
         >>>          '</Window>'
@@ -127,7 +130,8 @@ class WPFWindow(framework.Windows.Window):
         self.Resources['pyRevitButtonForgroundBrush'] = \
             Media.SolidColorBrush(self.Resources['pyRevitButtonColor'])
 
-        self.Resources['pyRevitRecognizesAccessKey'] = DEFAULT_RECOGNIZE_ACCESS_KEY
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def handle_input_key(self, sender, args):    #pylint: disable=W0613
         """Handle keyboard input and close the window on Escape."""
@@ -279,8 +283,8 @@ class TemplateUserInputWindow(WPFWindow):
         Args:
             context (any): window context element(s)
             title (str): window title
-            width (str): window width
-            height (str): window height
+            width (int): window width
+            height (int): window height
             **kwargs (any): other arguments to be passed to window
         """
         dlg = cls(context, title, width, height, **kwargs)
@@ -694,7 +698,9 @@ class CommandSwitchWindow(TemplateUserInputWindow):
         self.message_label.Content = \
             message if message else 'Pick a command option:'
 
-        self.Resources['pyRevitRecognizesAccessKey'] = kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+        self.Resources['pyRevitRecognizesAccessKey'] = \
+            kwargs.get('recognize_access_key', DEFAULT_RECOGNIZE_ACCESS_KEY)
+
         # creates the switches first
         for switch, state in self._switches.items():
             my_togglebutton = framework.Controls.Primitives.ToggleButton()
