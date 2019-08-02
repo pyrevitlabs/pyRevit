@@ -27,7 +27,8 @@ if not open_docs:
 # get a list of selected legends
 legends = forms.select_views(
     title='Select Drafting Views',
-    filterfunc=lambda x: x.ViewType == DB.ViewType.Legend)
+    filterfunc=lambda x: x.ViewType == DB.ViewType.Legend,
+    use_selection=True)
 
 if legends:
     for dest_doc in open_docs:
