@@ -35,8 +35,7 @@ if not EXEC_PARAMS.doc_mode:
     UIDocUtils = base_module.UIDocUtils
 
     # listeners.cs
-    PyRevitEventTypes = base_module.PyRevitEventTypes
-    PyRevitEventListeners = base_module.PyRevitEventListeners
+    PyRevitHooks = base_module.PyRevitHooks
 
     # scriptoutput.cs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
@@ -49,7 +48,9 @@ if not EXEC_PARAMS.doc_mode:
     ScriptOutputStream = base_module.ScriptOutputStream
 
     # telemetry.cs
+    EventType = base_module.EventType
     ScriptTelemetry = base_module.ScriptTelemetry
+    EventTelemetry = base_module.EventTelemetry
 
     # unmanaged.cs
     RECT = base_module.RECT

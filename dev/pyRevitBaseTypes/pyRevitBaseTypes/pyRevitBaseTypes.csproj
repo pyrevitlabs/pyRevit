@@ -122,6 +122,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
@@ -148,14 +149,17 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\envvars.cs">
       <Link>envvars.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\events.cs">
+      <Link>events.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\executor.cs">
       <Link>executor.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\helpers.cs">
       <Link>helpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\listeners.cs">
-      <Link>listeners.cs</Link>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\hooks.cs">
+      <Link>hooks.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
       <Link>pyrevitcmdruntime.cs</Link>

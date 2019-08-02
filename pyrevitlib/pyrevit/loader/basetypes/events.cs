@@ -1,0 +1,128 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Web.Script.Serialization;
+using System.IO;
+using System.Threading.Tasks;
+using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.UI;
+
+using pyRevitLabs.Common;
+
+namespace PyRevitBaseClasses {
+    public enum EventType {
+        // Autodesk.Revit.ApplicationServices.Application Events
+        Application_ApplicationInitialized,
+        Application_DocumentChanged,
+        Application_DocumentClosed,
+        Application_DocumentClosing,
+        Application_DocumentCreated,
+        Application_DocumentCreating,
+        Application_DocumentOpened,
+        Application_DocumentOpening,
+        Application_DocumentPrinted,
+        Application_DocumentPrinting,
+        Application_DocumentSaved,
+        Application_DocumentSaving,
+        Application_DocumentSavedAs,
+        Application_DocumentSavingAs,
+        Application_DocumentSynchronizedWithCentral,
+        Application_DocumentSynchronizingWithCentral,
+        Application_DocumentWorksharingEnabled,
+        Application_ElementTypeDuplicated,
+        Application_ElementTypeDuplicating,
+        Application_FailuresProcessing,
+        Application_FamilyLoadedIntoDocument,
+        Application_FamilyLoadingIntoDocument,
+        Application_FileExported,
+        Application_FileExporting,
+        Application_FileImported,
+        Application_FileImporting,
+        Application_LinkedResourceOpened,
+        Application_LinkedResourceOpening,
+        Application_ProgressChanged,
+        Application_ViewExported,
+        Application_ViewExporting,
+        Application_ViewPrinted,
+        Application_ViewPrinting,
+        Application_WorksharedOperationProgressChanged,
+
+        // Autodesk.Revit.UI.UIApplication Events
+        UIApplication_ApplicationClosing,
+        UIApplication_DialogBoxShowing,
+        UIApplication_DisplayingOptionsDialog,
+        UIApplication_DockableFrameFocusChanged,
+        UIApplication_DockableFrameVisibilityChanged,
+        UIApplication_FabricationPartBrowserChanged,
+        UIApplication_FormulaEditing,
+        UIApplication_Idling,
+        UIApplication_TransferredProjectStandards,
+        UIApplication_TransferringProjectStandards,
+        UIApplication_ViewActivated,
+        UIApplication_ViewActivating,
+
+        // Autodesk.Revit.ApplicationServices.ControlledApplication Events
+        //ControlledApplication_ApplicationInitialized,
+        //ControlledApplication_DocumentChanged,
+        //ControlledApplication_DocumentClosed,
+        //ControlledApplication_DocumentClosing,
+        //ControlledApplication_DocumentCreated,
+        //ControlledApplication_DocumentCreating,
+        //ControlledApplication_DocumentOpened,
+        //ControlledApplication_DocumentOpening,
+        //ControlledApplication_DocumentPrinted,
+        //ControlledApplication_DocumentPrinting,
+        //ControlledApplication_DocumentSaved,
+        //ControlledApplication_DocumentSaving,
+        //ControlledApplication_DocumentSavedAs,
+        //ControlledApplication_DocumentSavingAs,
+        //ControlledApplication_DocumentSynchronizedWithCentral,
+        //ControlledApplication_DocumentSynchronizingWithCentral,
+        //ControlledApplication_DocumentWorksharingEnabled,
+        //ControlledApplication_ElementTypeDuplicated,
+        //ControlledApplication_ElementTypeDuplicating,
+        //ControlledApplication_FailuresProcessing,
+        //ControlledApplication_FamilyLoadedIntoDocument,
+        //ControlledApplication_FamilyLoadingIntoDocument,
+        //ControlledApplication_FileExported,
+        //ControlledApplication_FileExporting,
+        //ControlledApplication_FileImported,
+        //ControlledApplication_FileImporting,
+        //ControlledApplication_LinkedResourceOpened,
+        //ControlledApplication_LinkedResourceOpening,
+        //ControlledApplication_ProgressChanged,
+        //ControlledApplication_ViewExported,
+        //ControlledApplication_ViewExporting,
+        //ControlledApplication_ViewPrinted,
+        //ControlledApplication_ViewPrinting,
+        //ControlledApplication_WorksharedOperationProgressChanged,
+
+        // Autodesk.Revit.UI.UIControlledApplication Events
+        //UIControlledApplication_ApplicationClosing,
+        //UIControlledApplication_DialogBoxShowing,
+        //UIControlledApplication_DisplayingOptionsDialog,
+        //UIControlledApplication_DockableFrameFocusChanged,
+        //UIControlledApplication_DockableFrameVisibilityChanged,
+        //UIControlledApplication_FabricationPartBrowserChanged,
+        //UIControlledApplication_FormulaEditing,
+        //UIControlledApplication_Idling,
+        //UIControlledApplication_TransferredProjectStandards,
+        //UIControlledApplication_TransferringProjectStandards,
+        //UIControlledApplication_ViewActivated,
+        //UIControlledApplication_ViewActivating,
+
+        // Autodesk.Revit.UI.Macros.ApplicationEntryPoint Events
+        //ApplicationEntryPoint_ApplicationClosing,
+        //ApplicationEntryPoint_DialogBoxShowing,
+        //ApplicationEntryPoint_DisplayingOptionsDialog,
+        //ApplicationEntryPoint_DockableFrameFocusChanged,
+        //ApplicationEntryPoint_DockableFrameVisibilityChanged,
+        //ApplicationEntryPoint_FabricationPartBrowserChanged,
+        //ApplicationEntryPoint_FormulaEditing,
+        //ApplicationEntryPoint_Idling,
+        //ApplicationEntryPoint_TransferredProjectStandards,
+        //ApplicationEntryPoint_TransferringProjectStandards,
+        //ApplicationEntryPoint_ViewActivated,
+        //ApplicationEntryPoint_ViewActivating,
+    }
+}

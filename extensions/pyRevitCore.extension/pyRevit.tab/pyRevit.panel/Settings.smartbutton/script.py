@@ -183,9 +183,6 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""
-        # update from configs
-        telemetry.setup_telemetry()
-
         self.telemetry_cb.IsChecked = telemetry.get_telemetry_state()
         self.cur_telemetryfile_tb.Text = \
             telemetry.get_telemetry_file_path()
@@ -203,7 +200,12 @@ class SettingsWindow(forms.WPFWindow):
                 telemetry.get_apptelemetry_server_url()
         self.cur_apptelemetryserverurl_tb.IsReadOnly = True
 
-        # TODO: read the event config and apply to checkboxes
+        event_flags = telemetry.get_apptelemetry_event_flags(user_config)
+        for event_checkbox, event_type in zip(
+                self._get_event_telemetry_checkboxes(),
+                telemetry.get_apptelemetry_event_types()):
+            event_checkbox.IsChecked = \
+                telemetry.get_apptelemetry_event_state(event_flags, event_type)
 
     def _make_product_name(self, product, note):
         return '_{} | {}({}) {}'.format(
@@ -430,7 +432,23 @@ class SettingsWindow(forms.WPFWindow):
                                          configs=user_config)
         telemetry.set_apptelemetry_server_url(self.apptelemetryserver_tb.Text,
                                               configs=user_config)
-        # TODO: read the event config and save to settings
+
+        event_flags = telemetry.get_apptelemetry_event_flags(user_config)
+        for event_checkbox, event_type in zip(
+                self._get_event_telemetry_checkboxes(),
+                telemetry.get_apptelemetry_event_types()):
+            if event_checkbox.IsChecked:
+                event_flags = telemetry.set_apptelemetry_event_state(
+                    event_flags,
+                    event_type
+                    )
+            else:
+                event_flags = telemetry.unset_apptelemetry_event_state(
+                    event_flags,
+                    event_type
+                    )
+        telemetry.set_apptelemetry_event_flags(event_flags, user_config)
+        telemetry.setup_telemetry()
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)

@@ -20,6 +20,7 @@ import os.path as op
 from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR,\
                     PYREVIT_FILE_PREFIX
 from pyrevit import coreutils
+from pyrevit.coreutils.loadertypes import EventType
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 
@@ -27,6 +28,8 @@ from pyrevit.loader.sessioninfo import get_session_uuid
 from pyrevit.userconfig import user_config
 
 from pyrevit.labs import TargetApps
+
+from pyrevit.telemetry import events as telemetry_events
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -47,6 +50,8 @@ PYREVIT_APPTELEMETRYSTATE_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSTATE'
 PYREVIT_APPTELEMETRYSERVER_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSERVER'
+PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR = \
+    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYEVENTFLAGS'
 
 
 # templates for telemetry file naming
@@ -134,9 +139,14 @@ def get_apptelemetry_server_url():
     return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYSERVER_ENVVAR)
 
 
-def get_apptelemetry_event_config():
-    # TODO: get_apptelemetry_event_config
-    pass
+def get_apptelemetry_event_flags(config):
+    tc = _get_telemetry_configs(config)
+    # default value is 16 bytes of 0
+    flags_hex = tc.get_option(
+        consts.ConfigsAppTelemetryEventFlagsKey,
+        default_value='0x00000000000000000000000000000000'
+        )
+    return coreutils.hex2int_long(flags_hex)
 
 
 def set_apptelemetry_server_url(server_url, configs=None):
@@ -146,9 +156,12 @@ def set_apptelemetry_server_url(server_url, configs=None):
         tc.set_option(consts.ConfigsAppTelemetryServerUrlKey, server_url)
 
 
-def set_apptelemetry_event_config(event_config):
-    # TODO: set_apptelemetry_event_config
-    pass
+def set_apptelemetry_event_flags(event_flags, config):
+    tc = _get_telemetry_configs(config)
+    flags_hex = coreutils.int2hex_long(event_flags)
+    tc.set_option(consts.ConfigsAppTelemetryEventFlagsKey, flags_hex)
+    envvars.set_pyrevit_env_var(
+        PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
 
 
 def disable_apptelemetry():
@@ -157,6 +170,23 @@ def disable_apptelemetry():
 
 def disable_apptelemetry_to_server():
     set_apptelemetry_server_url('')
+
+
+def get_apptelemetry_event_types():
+    return list(coreutils.get_enum_values(EventType))
+
+
+def get_apptelemetry_event_state(flags, event_type):
+    event_idx = get_apptelemetry_event_types().index(event_type)
+    return flags & (1<<event_idx)
+
+
+def set_apptelemetry_event_state(flags, event_type):
+    return flags | (1<<int(event_type))
+
+
+def unset_apptelemetry_event_state(flags, event_type):
+    return flags & ~(1<<int(event_type))
 
 
 def _setup_default_logfile(telemetry_fullpath):
@@ -252,5 +282,10 @@ def setup_telemetry(session_id=None):
     else:
         # if config exists, setup server logging
         set_apptelemetry_server_url(apptelemetry_server_url)
+
+    # setup events
+    telemetry_events.unregister_all_event_telemetries()
+    apptelemetry_event_flags = get_apptelemetry_event_flags(user_config)
+    telemetry_events.register_event_telemetry(apptelemetry_event_flags)
 
     user_config.save_changes()

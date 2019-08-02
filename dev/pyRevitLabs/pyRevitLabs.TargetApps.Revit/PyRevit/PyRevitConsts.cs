@@ -114,6 +114,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
         public const string ConfigsAppTelemetryStatusKey = "active_app";
         public const string ConfigsAppTelemetryServerUrlKey = "apptelemetry_server_url";
+        public const string ConfigsAppTelemetryEventFlagsKey = "apptelemetry_event_flags";
         public const string ConfigsUserCanUpdateKey = "usercanupdate";
         public const string ConfigsUserCanExtendKey = "usercanextend";
         public const string ConfigsUserCanConfigKey = "usercanconfig";

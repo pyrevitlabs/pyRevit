@@ -25,7 +25,7 @@ from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
-from pyrevit.loader import eventlisteners
+from pyrevit.loader import hooks
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import extensionmgr
@@ -139,7 +139,7 @@ def _perform_onsessionloadcomplete_ops():
     appdata.cleanup_appdata_folder()
 
     # start event listeners
-    eventlisteners.register_listeners()
+    hooks.register_hooks()
 
 
 def _new_session():
@@ -279,7 +279,7 @@ def load_session():
 
 def _perform_onsessionreload_ops():
     # stop event listeners
-    eventlisteners.unregister_listerners()
+    hooks.unregister_hooks()
 
 
 def _perform_onsessionreloadcomplete_ops():

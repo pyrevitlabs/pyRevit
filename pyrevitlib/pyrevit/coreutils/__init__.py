@@ -1379,3 +1379,14 @@ def kill_tasks(task_name):
         >>> kill_tasks('Revit.exe')
     """
     os.system("taskkill /f /im %s" % task_name)
+
+
+def int2hex_long(number):
+    # python 2 fix of addin 'L' to long integers
+    return hex(number).replace('L', '')
+
+
+def hex2int_long(hex_string):
+    # python 2 fix of addin 'L' to long integers
+    hex_string.replace('L', '')
+    return int(hex_string, 16)

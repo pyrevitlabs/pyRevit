@@ -221,7 +221,7 @@ def get_references():
                 'RevitAPI', 'RevitAPIUI',
                 'IronPython', 'IronPython.Modules',
                 'Microsoft.Dynamic', 'Microsoft.Scripting', 'Microsoft.CSharp',
-                'System', 'System.Core', 'System.Drawing',
+                'System', 'System.Core', 'System.Numerics', 'System.Drawing',
                 'System.Xaml', 'System.Web', 'System.Xml',
                 'System.Windows.Forms', 'System.Web.Extensions',
                 'PresentationCore', 'PresentationFramework',

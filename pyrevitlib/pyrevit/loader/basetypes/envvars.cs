@@ -25,7 +25,8 @@ namespace PyRevitBaseClasses
         public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
         public static string appTelemetryFilePath = string.Format("{0}_APPTELEMETRYFILE", keyPrefix);
-        public static string appTtelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
+        public static string appTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
+        public static string appTelemetryEventFlags = string.Format("{0}_APPTELEMETRYEVENTFLAGS", keyPrefix);
 
         public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);
@@ -95,7 +96,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        public string[] GetEventScripts(PyRevitEventTypes eventType) {
+        public string[] GetEventScripts(EventType eventType) {
             // TODO: implement event script info getter
             return new string[] { };
         }
