@@ -27,7 +27,7 @@ def duplicate_views(viewlist, with_detailing=True):
                              .format(revit.query.get_name(el), duplerr))
 
 
-selected_views = forms.select_views(filterfunc=duplicableview)
+selected_views = forms.select_views(filterfunc=duplicableview, use_selection=True, use_active_view=True)
 
 if selected_views:
     selected_option = \

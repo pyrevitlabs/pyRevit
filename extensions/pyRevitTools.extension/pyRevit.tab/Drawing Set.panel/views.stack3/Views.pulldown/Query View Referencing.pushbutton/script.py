@@ -8,7 +8,7 @@ from pyrevit import script
 output = script.get_output()
 
 
-selected_views = forms.select_views(title="Select Views to List")
+selected_views = forms.select_views(title="Select Views to List", use_selection=True)
 
 if selected_views:
     selected_option, switches = \

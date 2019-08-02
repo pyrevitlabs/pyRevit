@@ -10,7 +10,7 @@ from pyrevit import forms
 
 
 selected_views = \
-    forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan))
+    forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan), use_selection=True)
 
 if selected_views:
     with revit.Transaction('Batch Set Underlay to None'):
