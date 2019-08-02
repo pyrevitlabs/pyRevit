@@ -13,6 +13,7 @@ __doc__ = 'Open the source sheet. Run this script and select destination '\
 selViewports = []
 
 dest_sheet = forms.select_sheets(title='Select Target Sheets',
+                                 filterfunc=lambda e: not e.IsPlaceholder,
                                  button_name='Select Sheets',
                                  multiple=False,
                                  use_selection=True)
