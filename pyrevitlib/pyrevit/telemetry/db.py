@@ -20,7 +20,7 @@ from pyrevit.coreutils import calculate_dir_hash
 from pyrevit.coreutils.logger import get_logger
 
 
-from pyrevit.telemetry import FILE_LOG_EXT, get_current_telemetry_path
+from pyrevit import telemetry
 from pyrevit.telemetry.record import TelemetryRecord
 from pyrevit.telemetry.filters import *
 
@@ -64,7 +64,7 @@ def _is_record_info_current(source_path):
     # calculates a hash from the log files in the directory and compares it
     # with the _current_path_hash
     # (to determine if the current _records list is up-to-date)
-    dir_hash = calculate_dir_hash(source_path, '', FILE_LOG_EXT)
+    dir_hash = calculate_dir_hash(source_path, '', telemetry.FILE_LOG_EXT)
     if dir_hash == _current_path_hash:
         return True
     return False
@@ -75,7 +75,7 @@ def _get_all_telemetry_files(telemetry_path=None):
     # default or provided directory
     telemetry_file_list = []
     for telemetry_file in os.listdir(telemetry_path):
-        if telemetry_file.endswith(FILE_LOG_EXT):
+        if telemetry_file.endswith(telemetry.FILE_LOG_EXT):
             telemetry_file_list.append(op.join(telemetry_path, telemetry_file))
     return telemetry_file_list
 
@@ -85,7 +85,7 @@ def _collect_all_records(source_path=None):
     global _records
 
     # use the default telemetry file path if source_path is not provided
-    current_log_path = get_current_telemetry_path() \
+    current_log_path = telemetry.get_telemetry_file_dir() \
         if not source_path else source_path
 
     if current_log_path:

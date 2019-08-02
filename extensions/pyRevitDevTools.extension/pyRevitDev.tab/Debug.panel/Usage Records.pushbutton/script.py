@@ -62,7 +62,7 @@ class TelemetryDataWindow(forms.WPFWindow):
 
     def _update_cur_logpath(self, logfile_path=None):
         self.cur_logfile_path = \
-            telemetry.get_current_telemetry_path() if not logfile_path \
+            telemetry.get_telemetry_file_dir() if not logfile_path \
             else logfile_path
 
     def _update_records(self):

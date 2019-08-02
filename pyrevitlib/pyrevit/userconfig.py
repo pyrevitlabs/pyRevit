@@ -329,21 +329,6 @@ def verify_configs(config_file_path=None):
     if not parser.core.has_option(consts.ConfigsUserCanConfigKey):
         parser.core.set_option(consts.ConfigsUserCanConfigKey, True)
 
-    # telemetry section
-    if not parser.has_section(consts.ConfigsTelemetrySection):
-        parser.add_section(consts.ConfigsTelemetrySection)
-    # telemetry active
-    if not parser.telemetry.has_option(consts.ConfigsTelemetryStatusKey):
-        parser.telemetry.set_option(
-            consts.ConfigsTelemetryStatusKey, False
-            )
-    # telemetry file
-    if not parser.telemetry.has_option(consts.ConfigsTelemetryFilePathKey):
-        parser.telemetry.set_option(consts.ConfigsTelemetryFilePathKey, "")
-    # telemetry server
-    if not parser.telemetry.has_option(consts.ConfigsTelemetryServerUrlKey):
-        parser.telemetry.set_option(consts.ConfigsTelemetryServerUrlKey, "")
-
     # save config into config file
     if config_file_path:
         parser.save_changes()

@@ -110,8 +110,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         public const string ConfigsOutputStyleSheet = "outputstylesheet";
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryStatusKey = "active";
-        public const string ConfigsTelemetryFilePathKey = "telemetrypath";
-        public const string ConfigsTelemetryServerUrlKey = "telemetryserverurl";
+        public const string ConfigsTelemetryFilePathKey = "telemetry_file_dir";
+        public const string ConfigsTelemetryServerUrlKey = "telemetry_server_url";
+        public const string ConfigsAppTelemetryStatusKey = "active_app";
+        public const string ConfigsAppTelemetryServerUrlKey = "apptelemetry_server_url";
         public const string ConfigsUserCanUpdateKey = "usercanupdate";
         public const string ConfigsUserCanExtendKey = "usercanextend";
         public const string ConfigsUserCanConfigKey = "usercanconfig";

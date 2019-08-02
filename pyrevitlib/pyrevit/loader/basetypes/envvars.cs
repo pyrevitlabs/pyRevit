@@ -21,8 +21,11 @@ namespace PyRevitBaseClasses
         public static string outputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
 
         public static string telemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
+        public static string telemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
         public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
+        public static string appTelemetryFilePath = string.Format("{0}_APPTELEMETRYFILE", keyPrefix);
+        public static string appTtelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
 
         public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string loadedAssmCount = string.Format("{0}_ASSMCOUNT", keyPrefix);

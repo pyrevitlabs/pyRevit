@@ -178,24 +178,32 @@ class SettingsWindow(forms.WPFWindow):
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
+    def _get_event_telemetry_checkboxes(self):
+        return list(self.event_telemetry_sp.Children)
+
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""
-        self.telemetry_cb.IsChecked = \
-            user_config.telemetry.get_option('active',
-                                             default_value=False)
-        self.telemetryfile_tb.Text = \
-            user_config.telemetry.get_option('telemetrypath',
-                                             default_value='')
-        self.telemetryserver_tb.Text = \
-            user_config.telemetry.get_option('telemetryserverurl',
-                                             default_value='')
+        # update from configs
+        telemetry.setup_telemetry()
 
+        self.telemetry_cb.IsChecked = telemetry.get_telemetry_state()
         self.cur_telemetryfile_tb.Text = \
-            telemetry.get_current_telemetry_file()
+            telemetry.get_telemetry_file_path()
         self.cur_telemetryfile_tb.IsReadOnly = True
-        self.cur_telemetryserverurl_tb.Text = \
-            telemetry.get_current_telemetry_serverurl()
+        self.telemetryfile_tb.Text = \
+            telemetry.get_telemetry_file_dir()
+
+        self.telemetryserver_tb.Text = self.cur_telemetryserverurl_tb.Text = \
+            telemetry.get_telemetry_server_url()
         self.cur_telemetryserverurl_tb.IsReadOnly = True
+
+        self.apptelemetry_cb.IsChecked = telemetry.get_apptelemetry_state()
+        self.apptelemetryserver_tb.Text = \
+            self.cur_apptelemetryserverurl_tb.Text = \
+                telemetry.get_apptelemetry_server_url()
+        self.cur_apptelemetryserverurl_tb.IsReadOnly = True
+
+        # TODO: read the event config and apply to checkboxes
 
     def _make_product_name(self, product, note):
         return '_{} | {}({}) {}'.format(
@@ -246,15 +254,6 @@ class SettingsWindow(forms.WPFWindow):
                         'Revit {} <Not installed>'.format(rvt_ver)
                     checkbox.IsEnabled = False
                     checkbox.IsChecked = False
-
-    @staticmethod
-    def update_telemetry():
-        """Updates the telemetry system per changes.
-
-        This is usually called after new settings are saved and before
-        pyRevit is reloaded.
-        """
-        telemetry.setup_telemetry_file()
 
     def is_same_version_as_running(self, version):
         return str(version) == EXEC_PARAMS.engine_ver
@@ -375,7 +374,7 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for resetting custom style sheet file"""
         self.cur_stylesheet_tb.Text = output.get_default_stylesheet()
 
-    def savesettings(self, sender, args):
+    def save_settings(self, sender, args):
         """Callback method for saving pyRevit settings"""
         # update the logging system changes first and update.
         if self.verbose_rb.IsChecked:
@@ -419,9 +418,19 @@ class SettingsWindow(forms.WPFWindow):
             user_config.set_thirdparty_ext_root_dirs([])
 
         # set telemetry configs
-        user_config.telemetry.active = self.telemetry_cb.IsChecked
-        user_config.telemetry.telemetrypath = self.telemetryfile_tb.Text
-        user_config.telemetry.telemetryserverurl = self.telemetryserver_tb.Text
+        # pyrevit telemetry
+        telemetry.set_telemetry_state(self.telemetry_cb.IsChecked,
+                                      configs=user_config)
+        telemetry.set_telemetry_file_dir(self.telemetryfile_tb.Text,
+                                         configs=user_config)
+        telemetry.set_telemetry_server_url(self.telemetryserver_tb.Text,
+                                           configs=user_config)
+        # host app telemetry
+        telemetry.set_apptelemetry_state(self.apptelemetry_cb.IsChecked,
+                                         configs=user_config)
+        telemetry.set_apptelemetry_server_url(self.apptelemetryserver_tb.Text,
+                                              configs=user_config)
+        # TODO: read the event config and save to settings
 
         # output settings
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
@@ -433,14 +442,13 @@ class SettingsWindow(forms.WPFWindow):
         # save all new values into config file
         user_config.save_changes()
 
-        # update telemetry and addin files
-        self.update_telemetry()
+        # update addin files
         self.update_addinfiles()
         self.Close()
 
-    def savesettingsandreload(self, sender, args):
+    def save_settings_and_reload(self, sender, args):
         """Callback method for saving pyRevit settings and reloading"""
-        self.savesettings(sender, args)
+        self.save_settings(sender, args)
         from pyrevit.loader.sessionmgr import execute_command
         execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 

@@ -125,7 +125,7 @@ def _perform_onsessionload_ops():
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
-    telemetry.setup_telemetry_file(uuid_str)
+    telemetry.setup_telemetry(uuid_str)
 
     # apply Upgrades
     upgrade.upgrade_existing_pyrevit()
