@@ -2488,5 +2488,5 @@ def ask_if_user_want_to_use_selection(type_name, filters, multiple=True, use_sel
         # ask user whether he wants to use preselected sheets or select them from a list
         result = alert("You have preselected %s. Do you want to use them?" % type_name,
                        options=options)
-        if results_dict in results_dict.keys():
+        if result in results_dict.keys():
             return results_dict[result]
