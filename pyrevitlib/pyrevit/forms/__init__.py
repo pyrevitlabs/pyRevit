@@ -1419,6 +1419,17 @@ class ViewOption(TemplateListItem):
                                 self.item.ViewType)
 
 
+class LevelOption(TemplateListItem):
+    """Level wrapper for :func:`select_levels`."""
+    def __init__(self, level_element):
+        super(LevelOption, self).__init__(level_element)
+
+    @property
+    def name(self):
+        """Level name."""
+        return revit.query.get_name(self.item)
+
+
 def select_revisions(title='Select Revision',
                      button_name='Select',
                      width=DEFAULT_INPUTWINDOW_WIDTH,
@@ -1609,6 +1620,62 @@ def select_views(title='Select Views',
         )
 
     return selected_views
+
+
+def select_levels(title='Select Levels',
+                  button_name='Select',
+                  width=DEFAULT_INPUTWINDOW_WIDTH,
+                  multiple=True,
+                  filterfunc=None,
+                  doc=None,
+                  use_selection=False):
+    """Standard form for selecting levels.
+
+    Args:
+        title (str, optional): list window title
+        button_name (str, optional): list window button caption
+        width (int, optional): width of list window
+        multiselect (bool, optional):
+            allow multi-selection (uses check boxes). defaults to True
+        filterfunc (function):
+            filter function to be applied to context items.
+        doc (DB.Document, optional):
+            source document for views; defaults to active document
+        use_selection (bool, optional):
+            ask user if he wants to use preselected sheets.
+            not available if doc is set, defaults to False
+    Returns:
+        list[DB.View]: list of selected views
+
+    Example:
+        >>> from pyrevit import forms
+        >>> forms.select_levels()
+        ... [<Autodesk.Revit.DB.Level object>,
+        ...  <Autodesk.Revit.DB.Level object>]
+    """
+    if not doc and  use_selection:
+        preselected = ask_if_user_want_to_use_selection("Levels", filters=[lambda e: isinstance(e, DB.Level), filterfunc],
+                                                        multiple=multiple,
+                                                        use_selection=use_selection)
+        if preselected:
+            return preselected
+    doc = doc or HOST_APP.doc
+    all_levels = revit.query.get_elements_by_category([DB.BuiltInCategory.OST_Levels], doc=doc)
+
+    if filterfunc:
+        all_levels = filter(filterfunc, all_levels)
+
+    selected_levels = SelectFromList.show(
+        sorted([LevelOption(x) for x in all_levels],
+               key=lambda x: x.Elevation),
+        title=title,
+        button_name=button_name,
+        width=width,
+        multiselect=multiple,
+        checked_only=True,
+        param_name="Name"
+        )
+    return selected_levels
 
 
 def select_viewtemplates(title='Select View Templates',
@@ -2463,7 +2530,7 @@ def ask_if_user_want_to_use_selection(type_name, filters, multiple=True, use_sel
     for filterfunc in filters:
         selected_elements = filter(filterfunc, selected_elements)
 
-    options = ["Use list to select %s" % type_name]
+    options = ["Select %s from list" % type_name]
     results_dict = {}
     if use_active_view:
         active_view = revit.activeview
@@ -2481,7 +2548,7 @@ def ask_if_user_want_to_use_selection(type_name, filters, multiple=True, use_sel
             results_dict[options[-1]] = [active_view]
 
     if use_selection and ((multiple and selected_elements) or len(selected_elements) == 1):
-        options += ["Continue with selected %d %s" % (len(selected_elements), type_name)]
+        options += ["Continue with %d selected %s" % (len(selected_elements), type_name)]
         results_dict[options[-1]] = selected_elements
 
     if len(options)>1:
