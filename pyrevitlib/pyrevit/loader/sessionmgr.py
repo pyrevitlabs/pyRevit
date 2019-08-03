@@ -138,9 +138,6 @@ def _perform_onsessionloadcomplete_ops():
     # clean up temp app files between sessions.
     appdata.cleanup_appdata_folder()
 
-    # start event listeners
-    hooks.register_hooks()
-
 
 def _new_session():
     """
@@ -199,6 +196,10 @@ def _new_session():
                 assm_ext.ext.startup_script,
                 sys_paths=sys_paths
                 )
+
+    # register extension hooks
+    for assm_ext in assembled_exts:
+        hooks.register_hooks(assm_ext.ext)
 
     # update/create ui (needs the assembly to link button actions
     # to commands saved in the dll)
@@ -279,7 +280,7 @@ def load_session():
 
 def _perform_onsessionreload_ops():
     # stop event listeners
-    hooks.unregister_hooks()
+    hooks.unregister_all_hooks()
 
 
 def _perform_onsessionreloadcomplete_ops():

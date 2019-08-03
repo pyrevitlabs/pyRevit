@@ -162,12 +162,12 @@ namespace PyRevitBaseClasses {
         public static void LogTelemetryRecord(TelemetryRecord record) {
             var envDict = new EnvDictionary();
 
-            if (envDict.telemetryState) {
-                if (envDict.telemetryState && envDict.telemetryServerUrl != null && !string.IsNullOrEmpty(envDict.telemetryServerUrl))
-                    new Task(() => PostTelemetryRecordToServer(envDict.telemetryServerUrl, record)).Start();
+            if (envDict.TelemetryState) {
+                if (envDict.TelemetryState && envDict.TelemetryServerUrl != null && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
+                    new Task(() => PostTelemetryRecordToServer(envDict.TelemetryServerUrl, record)).Start();
 
-                if (envDict.telemetryState && envDict.telemetryFilePath != null && !string.IsNullOrEmpty(envDict.telemetryFilePath))
-                    new Task(() => WriteTelemetryRecordToFile(envDict.telemetryFilePath, record)).Start();
+                if (envDict.TelemetryState && envDict.TelemetryFilePath != null && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
+                    new Task(() => WriteTelemetryRecordToFile(envDict.TelemetryFilePath, record)).Start();
             }
         }
     }

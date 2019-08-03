@@ -61,7 +61,7 @@ class GenericUIComponent(GenericComponent):
         self.unique_name = self._get_unique_name()
 
         # each component can store custom libraries under
-        # /lib inside the component folder
+        # lib/ inside the component folder
         lib_path = op.join(self.directory, exts.COMP_LIBRARY_DIR_NAME)
         self.library_path = lib_path if op.exists(lib_path) else None
 
@@ -71,7 +71,7 @@ class GenericUIComponent(GenericComponent):
             self.module_paths.append(self.library_path)
 
         # each component can store custom binaries under
-        # /bin inside the component folder
+        # bin/ inside the component folder
         bin_path = op.join(self.directory, exts.COMP_BIN_DIR_NAME)
         self.binary_path = bin_path if op.exists(bin_path) else None
 

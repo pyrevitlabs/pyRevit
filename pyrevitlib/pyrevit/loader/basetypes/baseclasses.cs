@@ -150,14 +150,14 @@ namespace PyRevitBaseClasses {
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
                 copySysPaths.Header = "Copy Sys Paths";
-                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_syspaths.Replace(";", "\r\n")); };
+                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_syspaths.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n")); };
                 pyRevitCmdContextMenu.Items.Add(copySysPaths);
 
                 // menu item to copy help url
                 MenuItem copyHelpSource = new MenuItem();
                 copyHelpSource.Header = "Copy Help Url";
                 copyHelpSource.ToolTip = baked_helpSource;
-                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource.Replace(";", "\r\n")); };
+                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n")); };
                 pyRevitCmdContextMenu.Items.Add(copyHelpSource);
                 if (baked_helpSource == null || baked_helpSource == string.Empty)
                     copyHelpSource.IsEnabled = false;
@@ -269,7 +269,7 @@ namespace PyRevitBaseClasses {
             // get the tokens out of the string (it could only have one token)
             // contextString in a ;-separated list of tokens
             List<string> contextTokens = new List<string>();
-            foreach (string contextToken in contextString.Split(';'))
+            foreach (string contextToken in contextString.Split(ExternalConfig.defaultsep))
                 contextTokens.Add(contextToken.ToLower());
             // keep them sorted for comparison
             contextTokens.Sort();

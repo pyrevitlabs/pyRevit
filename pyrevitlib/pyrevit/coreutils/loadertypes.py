@@ -34,7 +34,8 @@ if not EXEC_PARAMS.doc_mode:
     # helpers.cs
     UIDocUtils = base_module.UIDocUtils
 
-    # listeners.cs
+    # hooks.cs
+    EventHook = base_module.EventHook
     PyRevitHooks = base_module.PyRevitHooks
 
     # scriptoutput.cs

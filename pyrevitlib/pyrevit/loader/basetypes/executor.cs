@@ -52,20 +52,20 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public static int ExecuteEventScript(string scriptPath, object eventArgs) {
+        public static int ExecuteEventHook(EventHook eventHook, object eventSender, object eventArgs) {
             var pyrvtCmdRuntime =
                 new PyRevitCommandRuntime(
                     cmdData: null,
                     elements: new ElementSet(),
-                    scriptSource: scriptPath,
-                    configScriptSource: scriptPath,
-                    syspaths: "", //?????????????????????????????????????
+                    scriptSource: eventHook.Script,
+                    configScriptSource: eventHook.Script,
+                    syspaths: eventHook.SearchPaths,
                     arguments: new string[] { },
                     helpSource: "",
                     cmdName: "",
                     cmdBundle: "",
-                    cmdExtension: "", //?????????????????????????????????????
-                    cmdUniqueName: "",
+                    cmdExtension: eventHook.ExtensionName,
+                    cmdUniqueName: eventHook.UniqueId,
                     needsCleanEngine: true,
                     needsFullFrameEngine: false,
                     refreshEngine: false,
@@ -75,6 +75,7 @@ namespace PyRevitBaseClasses {
                     );
 
             // set the event args object into globals
+            pyrvtCmdRuntime.UIApp = (UIApplication)eventSender;
             if (eventArgs != null)
                 pyrvtCmdRuntime.SetBuiltInVariables(new Dictionary<string, object> {
                     { "__eventargs__", eventArgs }
@@ -388,12 +389,12 @@ namespace PyRevitBaseClasses {
             // pyrevit sets this when loading
             string[] refFiles;
             var envDic = new EnvDictionary();
-            if (envDic.referencedAssemblies.Count() == 0) {
+            if (envDic.ReferencedAssemblies.Count() == 0) {
                 var refs = AppDomain.CurrentDomain.GetAssemblies();
                 refFiles = refs.Where(a => !a.IsDynamic).Select(a => a.Location).ToArray();
             }
             else {
-                refFiles = envDic.referencedAssemblies;
+                refFiles = envDic.ReferencedAssemblies;
             }
 
             // create compiler parameters

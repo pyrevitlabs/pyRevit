@@ -20,6 +20,7 @@ namespace PyRevitBaseClasses {
 
     public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
+        private UIApplication _uiApp = null;
         private ElementSet _elements = null;
 
         private string _scriptSource = null;
@@ -170,7 +171,7 @@ namespace PyRevitBaseClasses {
 
         public List<string> ModuleSearchPaths {
             get {
-                return new List<string>(_syspaths.Split(';'));
+                return new List<string>(_syspaths.Split(ExternalConfig.defaultsep));
             }
         }
 
@@ -293,8 +294,8 @@ namespace PyRevitBaseClasses {
                     // set window app version header
                     newOutput.AppVersion = string.Format(
                         "{0}:{1}:{2}",
-                        _envDict.pyRevitVersion,
-                        EngineType == EngineType.CPython ? _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion,
+                        _envDict.PyRevitVersion,
+                        EngineType == EngineType.CPython ? _envDict.PyRevitCPYVersion : _envDict.PyRevitIPYVersion,
                         _envDict.RevitVersion
                         );
 
@@ -381,7 +382,13 @@ namespace PyRevitBaseClasses {
             get {
                 if (_commandData != null)
                     return _commandData.Application;
+                else if (_uiApp != null)
+                    return _uiApp;
                 return null;
+            }
+
+            set {
+                _uiApp = value;
             }
         }
 
@@ -389,25 +396,27 @@ namespace PyRevitBaseClasses {
             get {
                 if (_commandData != null)
                     return _commandData.Application.Application;
+                else if (_uiApp != null)
+                    return _uiApp.Application;
                 return null;
             }
         }
 
         public string PyRevitVersion {
             get {
-                return _envDict.pyRevitVersion;
+                return _envDict.PyRevitVersion;
             }
         }
 
         public string CloneName {
             get {
-                return _envDict.pyRevitClone;
+                return _envDict.PyRevitClone;
             }
         }
 
         public string SessionUUID {
             get {
-                return _envDict.sessionUUID;
+                return _envDict.SessionUUID;
             }
         }
 
@@ -439,7 +448,7 @@ namespace PyRevitBaseClasses {
                         type = EngineType.ToString().ToLower(),
                         version = Convert.ToString(
                             EngineType == EngineType.CPython ?
-                                    _envDict.pyRevitCpyVersion : _envDict.pyRevitIpyVersion
+                                    _envDict.PyRevitCPYVersion : _envDict.PyRevitIPYVersion
                                     ),
                         syspath = ModuleSearchPaths
                     },
@@ -456,6 +465,7 @@ namespace PyRevitBaseClasses {
         }
 
         public void Dispose() {
+            _uiApp = null;
             _scriptOutput = null;
             _outputStream = null;
             _resultsDict = null;

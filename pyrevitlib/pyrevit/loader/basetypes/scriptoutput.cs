@@ -280,7 +280,7 @@ namespace PyRevitBaseClasses {
 
         private string GetStyleSheetFile() {
             var envDict = new EnvDictionary();
-            return envDict.activeStyleSheet;
+            return envDict.ActiveStyleSheet;
         }
 
         public string GetFullHtml() {

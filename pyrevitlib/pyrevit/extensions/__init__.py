@@ -131,6 +131,7 @@ NOGUI_COMMAND_POSTFIX = '.nobutton'
 # known bundle sub-directories
 COMP_LIBRARY_DIR_NAME = 'lib'
 COMP_BIN_DIR_NAME = 'bin'
+COMP_HOOKS_DIR_NAME = 'hooks'
 
 # unique ids
 UNIQUE_ID_SEPARATOR = '-'

@@ -1,4 +1,5 @@
 """Base classes for pyRevit extension components."""
+import os
 import os.path as op
 import json
 import codecs
@@ -253,6 +254,11 @@ class Extension(GenericUIContainer):
         GenericUIContainer.__init_from_dir__(self, package_dir)
         self.pyrvt_version = get_pyrevit_version().get_formatted()
 
+        # extensions can store event hooks under
+        # hooks/ inside the component folder
+        hooks_path = op.join(self.directory, exts.COMP_HOOKS_DIR_NAME)
+        self.hooks_path = hooks_path if op.exists(hooks_path) else None
+
         self.dir_hash_value = self._read_dir_hash()
         if not self.dir_hash_value:
             self.dir_hash_value = self._calculate_extension_dir_hash()
@@ -355,6 +361,10 @@ class Extension(GenericUIContainer):
         for cmd in self.get_all_commands():
             referenced_modules.update(cmd.get_modules())
         return referenced_modules
+
+    def get_hooks(self):
+        hook_scripts = os.listdir(self.hooks_path) if self.hooks_path else []
+        return [op.join(self.hooks_path, x) for x in hook_scripts]
 
 
 # library extension class

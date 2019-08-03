@@ -7,6 +7,28 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 
 namespace PyRevitBaseClasses {
+    public class EventHook {
+        public const string script_key = "script";
+        public const string event_type_key = "event_type";
+        public const string syspaths_key = "syspaths";
+        public const string extension_name_key = "extension_name";
+        public const string id_key = "id";
+
+        public string Script;
+        public EventType EventType;
+        public string SearchPaths;
+        public string ExtensionName;
+        public string UniqueId;
+
+        public EventHook(string script, EventType event_type, string syspaths, string extension_name, string id) {
+            Script = script;
+            EventType = event_type;
+            SearchPaths = syspaths;
+            ExtensionName = extension_name;
+            UniqueId = id;
+        }
+    }
+
     public static class PyRevitHooks {
         private static void toggleHooks(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
             switch (eventType) {
@@ -361,290 +383,325 @@ namespace PyRevitBaseClasses {
 
         // event management ------------------------------------------------------------------------------------------
 
-        public static void RegisterHook(UIApplication uiApp, EventType eventType) {
+        public static List<EventHook> GetEventHooks(EventType eventType) {
+            var env = new EnvDictionary();
+            var eventHooks = new List<EventHook>();
+            foreach (Dictionary<string, object> eventHook in env.EventHooks)
+                if ((EventType)eventHook[EventHook.event_type_key] == eventType)
+                    eventHooks.Add(
+                        new EventHook(
+                            script: (string)eventHook[EventHook.script_key],
+                            event_type: (EventType)eventHook[EventHook.event_type_key],
+                            syspaths: (string)eventHook[EventHook.syspaths_key],
+                            extension_name: (string)eventHook[EventHook.extension_name_key],
+                            id: (string)eventHook[EventHook.id_key]
+                            )
+                        );
+            return eventHooks;
+        }
+
+        public static List<EventHook> GetAllEventHooks() {
+            var env = new EnvDictionary();
+            var eventHooks = new List<EventHook>();
+            foreach (Dictionary<string, object> eventHook in env.EventHooks)
+                eventHooks.Add(
+                    new EventHook(
+                        script: (string)eventHook[EventHook.script_key],
+                        event_type: (EventType)eventHook[EventHook.event_type_key],
+                        syspaths: (string)eventHook[EventHook.syspaths_key],
+                        extension_name: (string)eventHook[EventHook.extension_name_key],
+                        id: (string)eventHook[EventHook.id_key]
+                        )
+                    );
+            return eventHooks;
+        }
+
+        public static void ClearEventHooks() {
+            var env = new EnvDictionary();
+            env.ResetEventHooks();
+        }
+
+        public static void AddEventHook(EventHook eventHook) {
+            var env = new EnvDictionary();
+            env.EventHooks.Add(
+                new Dictionary<string, object> {
+                    { EventHook.script_key, eventHook.Script },
+                    { EventHook.event_type_key, eventHook.EventType },
+                    { EventHook.syspaths_key, eventHook.SearchPaths },
+                    { EventHook.extension_name_key, eventHook.ExtensionName },
+                    { EventHook.id_key, eventHook.UniqueId },
+                }
+            );
+        }
+
+        public static void RemoveEventHook(EventHook eventHook) {
+            var env = new EnvDictionary();
+            env.EventHooks.Remove(
+                 new Dictionary<string, object> {
+                    { EventHook.script_key, eventHook.Script },
+                    { EventHook.event_type_key, eventHook.EventType },
+                    { EventHook.syspaths_key, eventHook.SearchPaths },
+                    { EventHook.extension_name_key, eventHook.ExtensionName },
+                    { EventHook.id_key, eventHook.UniqueId },
+                });
+        }
+
+        public static void RegisterEventType(UIApplication uiApp, EventType eventType) {
             toggleHooks(uiApp, eventType);
         }
 
-        public static void UnRegisterHook(UIApplication uiApp, EventType eventType) {
+        public static void UnRegisterEventType(UIApplication uiApp, EventType eventType) {
             toggleHooks(uiApp, eventType, toggle_on: false);
         }
 
+        public static void RegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
+            var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
+            AddEventHook(eventHook);
+            RegisterEventType(uiApp, eventHook.EventType);
+        }
+
+        public static void UnRegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
+            var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
+            UnRegisterEventType(uiApp, eventHook.EventType);
+            RemoveEventHook(eventHook);
+        }
+
+        public static void UnRegisterAllHooks(UIApplication uiApp) {
+            foreach (EventHook eventHook in GetAllEventHooks())
+                UnRegisterEventType(uiApp, eventHook.EventType);
+            ClearEventHooks();
+        }
+        
         // event handlers --------------------------------------------------------------------------------------------
 
         private static void UiApp_ViewActivating(object sender, Autodesk.Revit.UI.Events.ViewActivatingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_ViewActivating))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_ViewActivating))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_ViewActivated))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_ViewActivated))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_TransferringProjectStandards))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_TransferringProjectStandards))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_TransferredProjectStandards))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_TransferredProjectStandards))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_Idling))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_Idling))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_FormulaEditing))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_FormulaEditing))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_FabricationPartBrowserChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_FabricationPartBrowserChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_DockableFrameVisibilityChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_DockableFrameVisibilityChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_DockableFrameFocusChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameFocusChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_DockableFrameFocusChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_DockableFrameFocusChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_DisplayingOptionsDialog))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_DisplayingOptionsDialog))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_DialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_DialogBoxShowing))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_DialogBoxShowing))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void UiApp_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.UIApplication_ApplicationClosing))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.UIApplication_ApplicationClosing))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_WorksharedOperationProgressChanged(object sender, Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_WorksharedOperationProgressChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_WorksharedOperationProgressChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ViewPrinting(object sender, Autodesk.Revit.DB.Events.ViewPrintingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ViewPrinting))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ViewPrinting))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ViewPrinted(object sender, Autodesk.Revit.DB.Events.ViewPrintedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ViewPrinted))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ViewPrinted))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ViewExporting(object sender, Autodesk.Revit.DB.Events.ViewExportingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ViewExporting))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ViewExporting))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ViewExported(object sender, Autodesk.Revit.DB.Events.ViewExportedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ViewExported))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ViewExported))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ProgressChanged(object sender, Autodesk.Revit.DB.Events.ProgressChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ProgressChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ProgressChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_LinkedResourceOpening(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpeningEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_LinkedResourceOpening))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_LinkedResourceOpening))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_LinkedResourceOpened(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpenedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_LinkedResourceOpened))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_LinkedResourceOpened))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FileImporting(object sender, Autodesk.Revit.DB.Events.FileImportingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FileImporting))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FileImporting))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FileImported(object sender, Autodesk.Revit.DB.Events.FileImportedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FileImported))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FileImported))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FileExporting(object sender, Autodesk.Revit.DB.Events.FileExportingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FileExporting))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FileExporting))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FileExported(object sender, Autodesk.Revit.DB.Events.FileExportedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FileExported))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FileExported))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FamilyLoadingIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadingIntoDocumentEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FamilyLoadingIntoDocument))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FamilyLoadingIntoDocument))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FamilyLoadedIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadedIntoDocumentEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FamilyLoadedIntoDocument))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FamilyLoadedIntoDocument))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_FailuresProcessing(object sender, Autodesk.Revit.DB.Events.FailuresProcessingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_FailuresProcessing))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_FailuresProcessing))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ElementTypeDuplicating(object sender, Autodesk.Revit.DB.Events.ElementTypeDuplicatingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ElementTypeDuplicating))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ElementTypeDuplicating))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ElementTypeDuplicated(object sender, Autodesk.Revit.DB.Events.ElementTypeDuplicatedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ElementTypeDuplicated))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ElementTypeDuplicated))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentWorksharingEnabled(object sender, Autodesk.Revit.DB.Events.DocumentWorksharingEnabledEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentWorksharingEnabled))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentWorksharingEnabled))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSynchronizingWithCentral(object sender, Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSynchronizingWithCentral))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSynchronizingWithCentral))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSynchronizedWithCentral(object sender, Autodesk.Revit.DB.Events.DocumentSynchronizedWithCentralEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSynchronizedWithCentral))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSynchronizedWithCentral))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSavingAs(object sender, Autodesk.Revit.DB.Events.DocumentSavingAsEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSavingAs))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSavingAs))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSavedAs(object sender, Autodesk.Revit.DB.Events.DocumentSavedAsEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSavedAs))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSavedAs))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSaving(object sender, Autodesk.Revit.DB.Events.DocumentSavingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSaving))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSaving))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentSaved(object sender, Autodesk.Revit.DB.Events.DocumentSavedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentSaved))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentSaved))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentPrinting(object sender, Autodesk.Revit.DB.Events.DocumentPrintingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentPrinting))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentPrinting))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentPrinted(object sender, Autodesk.Revit.DB.Events.DocumentPrintedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentPrinted))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentPrinted))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentOpening(object sender, Autodesk.Revit.DB.Events.DocumentOpeningEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentOpening))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentOpening))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentOpened(object sender, Autodesk.Revit.DB.Events.DocumentOpenedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentOpened))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentOpened))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentCreating(object sender, Autodesk.Revit.DB.Events.DocumentCreatingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentCreating))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentCreating))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentCreated(object sender, Autodesk.Revit.DB.Events.DocumentCreatedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentCreated))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentCreated))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentClosing(object sender, Autodesk.Revit.DB.Events.DocumentClosingEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentClosing))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentClosing))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentClosed(object sender, Autodesk.Revit.DB.Events.DocumentClosedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentClosed))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentClosed))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_DocumentChanged(object sender, Autodesk.Revit.DB.Events.DocumentChangedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_DocumentChanged))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_DocumentChanged))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
 
         private static void Application_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e) {
-                var env = new EnvDictionary();
-                foreach (string scriptPath in env.GetEventScripts(EventType.Application_ApplicationInitialized))
-                    ScriptExecutor.ExecuteEventScript(scriptPath: scriptPath, eventArgs: e);
+            foreach (EventHook hook in GetEventHooks(EventType.Application_ApplicationInitialized))
+                ScriptExecutor.ExecuteEventHook(eventHook: hook, eventSender: sender, eventArgs: e);
         }
     }
 }
