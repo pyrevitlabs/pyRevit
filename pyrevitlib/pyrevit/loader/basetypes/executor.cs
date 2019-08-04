@@ -66,7 +66,7 @@ namespace PyRevitBaseClasses {
                     cmdBundle: "",
                     cmdExtension: eventHook.ExtensionName,
                     cmdUniqueName: eventHook.UniqueId,
-                    needsCleanEngine: true,
+                    needsCleanEngine: false,
                     needsFullFrameEngine: false,
                     refreshEngine: false,
                     forcedDebugMode: false,
