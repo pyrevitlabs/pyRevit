@@ -22,6 +22,7 @@ import Autodesk.Private as AdPrivate
 import Autodesk.Windows as AdWindows
 
 from Autodesk.Revit import Attributes
+from Autodesk.Revit import ApplicationServices
 from Autodesk.Revit import DB
 from Autodesk.Revit import UI
 

@@ -21,6 +21,7 @@ namespace PyRevitBaseClasses {
     public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private UIApplication _uiApp = null;
+        private Application _app = null;
         private ElementSet _elements = null;
 
         private string _scriptSource = null;
@@ -398,7 +399,13 @@ namespace PyRevitBaseClasses {
                     return _commandData.Application.Application;
                 else if (_uiApp != null)
                     return _uiApp.Application;
+                else if (_app != null)
+                    return _app;
                 return null;
+            }
+
+            set {
+                _app = value;
             }
         }
 

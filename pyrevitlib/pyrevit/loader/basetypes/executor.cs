@@ -6,6 +6,7 @@ using System.Runtime.Remoting;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.ApplicationServices;
 
 // iron languages
 using Microsoft.Scripting;
@@ -52,7 +53,20 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public static int ExecuteEventHook(EventHook eventHook, object eventSender, object eventArgs) {
+        public static int ExecuteEventHook(EventHook eventHook, UIApplication eventSender, object eventArgs) {
+            var pyrvtCmdRuntime = CreateEventScripRuntime(eventHook, eventArgs);
+            pyrvtCmdRuntime.UIApp = eventSender;
+            return ExecuteScript(ref pyrvtCmdRuntime);
+        }
+
+        public static int ExecuteEventHook(EventHook eventHook, Application eventSender, object eventArgs) {
+            var pyrvtCmdRuntime = CreateEventScripRuntime(eventHook, eventArgs);
+            pyrvtCmdRuntime.App = eventSender;
+            return ExecuteScript(ref pyrvtCmdRuntime);
+        }
+
+        /// Events
+        private static PyRevitCommandRuntime CreateEventScripRuntime(EventHook eventHook, object eventArgs) {
             var pyrvtCmdRuntime =
                 new PyRevitCommandRuntime(
                     cmdData: null,
@@ -74,14 +88,12 @@ namespace PyRevitBaseClasses {
                     executedFromUI: false
                     );
 
-            // set the event args object into globals
-            pyrvtCmdRuntime.UIApp = (UIApplication)eventSender;
             if (eventArgs != null)
                 pyrvtCmdRuntime.SetBuiltInVariables(new Dictionary<string, object> {
                     { "__eventargs__", eventArgs }
                 });
 
-            return ExecuteScript(ref pyrvtCmdRuntime);
+            return pyrvtCmdRuntime;
         }
 
         /// Run the script using IronPython Engine

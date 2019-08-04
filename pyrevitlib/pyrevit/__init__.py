@@ -99,7 +99,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
-from pyrevit.api import DB, UI, AdWindows
+from pyrevit.api import DB, UI, ApplicationServices, AdWindows
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -175,18 +175,22 @@ class _HostApplication(object):
     """
 
     def __init__(self, host_uiapp):
-        self._uiapp = host_uiapp
+        self.__host__ = host_uiapp
         self._postable_cmds = []
 
     @property
     def uiapp(self):
         """Return UIApplication provided to the running command."""
-        return self._uiapp
+        if isinstance(self.__host__, UI.UIApplication):
+            return self.__host__
 
     @property
     def app(self):
         """Return Application provided to the running command."""
-        return self.uiapp.Application
+        if self.uiapp:
+            return self.uiapp.Application
+        elif isinstance(self.__host__, ApplicationServices.Application):
+            return self.__host__
 
     @property
     def uidoc(self):

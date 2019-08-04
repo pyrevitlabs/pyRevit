@@ -7,5 +7,11 @@ if revit.doc:
     count = len(revit.query.get_all_elements(doc=revit.doc))
 
 with open(op.join(USER_DESKTOP, 'hooks.txt'), 'a') as f:
-    f.write('\n{}\n{}\n'.format(__eventargs__, count))
+    f.write('\n'.join([
+        'View Activating '.ljust(80, '-'),
+        'Cancellable? ' + str(__eventargs__.Cancellable),
+        'CurrentActiveView: ' + str(__eventargs__.CurrentActiveView),
+        'Document: ' + str(__eventargs__.Document),
+        'NewActiveView: ' + str(__eventargs__.NewActiveView),
+        'Element Count: ' + str(count)]) + '\n')
 
