@@ -40,8 +40,6 @@ HOOK_TYPES = {
     'doc-synced': EventType.Application_DocumentSynchronizedWithCentral,
     'doc-syncing': EventType.Application_DocumentSynchronizingWithCentral,
     'doc-worksharing-enabled': EventType.Application_DocumentWorksharingEnabled,
-    'doc-worksharing-progress-changed':
-        EventType.Application_WorksharedOperationProgressChanged,
     'dock-focus-changed': EventType.UIApplication_DockableFrameFocusChanged,
     'dock-visibility-changed':
         EventType.UIApplication_DockableFrameVisibilityChanged,
@@ -71,6 +69,8 @@ HOOK_TYPES = {
     'view-exporting': EventType.Application_ViewExporting,
     'view-printed': EventType.Application_ViewPrinted,
     'view-printing': EventType.Application_ViewPrinting,
+    'worksharing-ops-progress-changed':
+        EventType.Application_WorksharedOperationProgressChanged,
 }
 
 
