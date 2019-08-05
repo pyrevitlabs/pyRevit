@@ -7,6 +7,11 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.ApplicationServices;
 
 namespace PyRevitBaseClasses {
+    public enum InterfaceType {
+        ExternalCommand,
+        EventHandler,
+    }
+
     public enum EngineType {
         IronPython,
         CPython,
@@ -34,6 +39,10 @@ namespace PyRevitBaseClasses {
         private string _cmdBundle = null;
         private string _cmdExtension = null;
         private string _cmdUniqueName = null;
+
+        private object _eventSender = null;
+        private object _eventArgs = null;
+
         private bool _needsCleanEngine = false;
         private bool _needsFullFrameEngine = false;
 
@@ -56,23 +65,24 @@ namespace PyRevitBaseClasses {
 
         private IDictionary<string, object> _builtins = new Dictionary<string, object>();
 
-        public PyRevitScriptRuntime(ExternalCommandData cmdData,
-                                     ElementSet elements,
-                                     string scriptSource,
-                                     string configScriptSource,
-                                     string syspaths,
-                                     string[] arguments,
-                                     string helpSource,
-                                     string cmdName,
-                                     string cmdBundle,
-                                     string cmdExtension,
-                                     string cmdUniqueName,
-                                     bool needsCleanEngine,
-                                     bool needsFullFrameEngine,
-                                     bool refreshEngine,
-                                     bool forcedDebugMode,
-                                     bool configScriptMode,
-                                     bool executedFromUI) {
+        public PyRevitScriptRuntime(
+                ExternalCommandData cmdData,
+                ElementSet elements,
+                string scriptSource,
+                string configScriptSource,
+                string syspaths,
+                string[] arguments,
+                string helpSource,
+                string cmdName,
+                string cmdBundle,
+                string cmdExtension,
+                string cmdUniqueName,
+                bool needsCleanEngine,
+                bool needsFullFrameEngine,
+                bool refreshEngine,
+                bool forcedDebugMode,
+                bool configScriptMode,
+                bool executedFromUI) {
             _commandData = cmdData;
             _elements = elements;
 
@@ -86,6 +96,7 @@ namespace PyRevitBaseClasses {
             _cmdBundle = cmdBundle;
             _cmdExtension = cmdExtension;
             _cmdUniqueName = cmdUniqueName;
+
             _needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
             _needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
 
@@ -125,6 +136,15 @@ namespace PyRevitBaseClasses {
         public string ConfigScriptSourceFile {
             get {
                 return _configScriptSource;
+            }
+        }
+
+        public InterfaceType InterfaceType {
+            get {
+                if (_eventSender != null || _eventArgs != null)
+                    return InterfaceType.EventHandler;
+
+                return InterfaceType.ExternalCommand;
             }
         }
 
@@ -219,6 +239,32 @@ namespace PyRevitBaseClasses {
         public string CommandExtension {
             get {
                 return _cmdExtension;
+            }
+        }
+
+        public object EventSender {
+            get {
+                return _eventSender;
+            }
+
+            set {
+                // detemine sender type
+                _eventSender = value;
+                if (_eventSender.GetType() == typeof(UIControlledApplication))
+                   UIControlledApp = (UIControlledApplication)_eventSender;
+                else if (_eventSender.GetType() == typeof(UIApplication))
+                    UIApp = (UIApplication)_eventSender;
+                else if (_eventSender.GetType() == typeof(Application))
+                    App = (Application)_eventSender;
+            }
+        }
+
+        public object EventArgs {
+            get {
+                return _eventArgs;
+            }
+            set {
+                _eventArgs = value;
             }
         }
 
@@ -341,7 +387,7 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public string ClrTraceBack {
+        public string CLRTraceBack {
             get {
                 return _clrTrace;
             }
@@ -365,8 +411,8 @@ namespace PyRevitBaseClasses {
                 if (EngineType == EngineType.CPython) {
                     return CpythonTraceBack;
                 }
-                else if (IronLanguageTraceBack != string.Empty && ClrTraceBack != string.Empty) {
-                    return string.Format("{0}\n\n{1}", IronLanguageTraceBack, ClrTraceBack);
+                else if (IronLanguageTraceBack != string.Empty && CLRTraceBack != string.Empty) {
+                    return string.Format("{0}\n\n{1}", IronLanguageTraceBack, CLRTraceBack);
                 }
                 // or return empty if none
                 return string.Empty;
@@ -483,7 +529,11 @@ namespace PyRevitBaseClasses {
         }
 
         public void Dispose() {
+            _uiCtrldApp = null;
             _uiApp = null;
+            _app = null;
+            _eventSender = null;
+            _eventArgs = null;
             _scriptOutput = null;
             _outputStream = null;
             _resultsDict = null;

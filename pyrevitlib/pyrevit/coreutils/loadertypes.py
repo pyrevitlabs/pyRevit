@@ -13,7 +13,7 @@ if not EXEC_PARAMS.doc_mode:
     # _config.cs
     DomainStorageKeys = base_module.DomainStorageKeys
     ExternalConfig = base_module.ExternalConfig
-    ExecutionErrorCodes = base_module.ExecutionErrorCodes
+    ExecutionResultCodes = base_module.ExecutionResultCodes
 
     # envvars.cs
     EnvDictionaryKeys = base_module.EnvDictionaryKeys
@@ -58,7 +58,7 @@ if not EXEC_PARAMS.doc_mode:
     User32 = base_module.User32
     GDI32 = base_module.GDI32
 else:
-    DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
+    DomainStorageKeys = ExternalConfig = ExecutionResultCodes = \
         EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
         PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
         PyRevitCommandDefaultAvail = PyRevitScriptRuntime = \

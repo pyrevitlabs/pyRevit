@@ -27,7 +27,7 @@ namespace PyRevitBaseClasses
         public static string errordiv = "<div class=\"errorentry\"></div>";
         public static string ipyerrtitle = "<strong>IronPython Traceback:</strong>";
         public static string irubyerrtitle = "<strong>IronRuby Traceback:</strong>";
-        public static string dotneterrtitle = "<strong>Script Executor Traceback:</strong>";
+        public static string clrerrtitle = "<strong>Script Executor Traceback:</strong>";
         public static string progressindicator = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";
         public static string progressindicatorid = "pbarcontainer";
         public static string progressbar = "<div class=\"progressbar\" id=\"pbar\"></div>";
@@ -46,14 +46,14 @@ namespace PyRevitBaseClasses
         };
     }
 
-    public static class ExecutionErrorCodes
+    public static class ExecutionResultCodes
     {
         public static int Succeeded = 0;
         public static int SysExited = 1;
         public static int ExecutionException = 2;
         public static int CompileException = 3;
         public static int EngineNotImplementedException = 4;
-        public static int ExternalCommandNotImplementedException = 5;
+        public static int ExternalInterfaceNotImplementedException = 5;
         public static int UnknownException = 9;
     }
 }

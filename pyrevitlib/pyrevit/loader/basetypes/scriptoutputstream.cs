@@ -10,7 +10,7 @@ namespace PyRevitBaseClasses
     /// Only a minimal subset is actually implemented - this is all we really expect to use.
     public class ScriptOutputStream: Stream, IDisposable
     {
-        private WeakReference<PyRevitScriptRuntime> _pyrvtCmd;
+        private WeakReference<PyRevitScriptRuntime> _pyrvtScript;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
         private bool _errored = false;
@@ -18,10 +18,10 @@ namespace PyRevitBaseClasses
         public bool PrintDebugInfo = false;
 
 
-        public ScriptOutputStream(PyRevitScriptRuntime pyrvtCmd)
+        public ScriptOutputStream(PyRevitScriptRuntime pyrvtScript)
         {
             _outputBuffer = string.Empty;
-            _pyrvtCmd = new WeakReference<PyRevitScriptRuntime>(pyrvtCmd);
+            _pyrvtScript = new WeakReference<PyRevitScriptRuntime>(pyrvtScript);
             _gui = new WeakReference<ScriptOutput>(null);
         }
 
@@ -29,17 +29,17 @@ namespace PyRevitBaseClasses
         public ScriptOutputStream(ScriptOutput gui)
         {
             _outputBuffer = string.Empty;
-            _pyrvtCmd = new WeakReference<PyRevitScriptRuntime>(null);
+            _pyrvtScript = new WeakReference<PyRevitScriptRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
 
 
         public ScriptOutput GetOutput()
         {
-            PyRevitScriptRuntime pyrvtCmd;
-            var re = _pyrvtCmd.TryGetTarget(out pyrvtCmd);
-            if (re && pyrvtCmd != null)
-               return pyrvtCmd.OutputWindow;
+            PyRevitScriptRuntime pyrvtScript;
+            var re = _pyrvtScript.TryGetTarget(out pyrvtScript);
+            if (re && pyrvtScript != null)
+               return pyrvtScript.OutputWindow;
 
             ScriptOutput output;
             re = _gui.TryGetTarget(out output);
@@ -220,7 +220,7 @@ namespace PyRevitBaseClasses
 
         new public void Dispose()
         {
-            _pyrvtCmd = null;
+            _pyrvtScript = null;
             _gui = null;
             Dispose(true);
         }

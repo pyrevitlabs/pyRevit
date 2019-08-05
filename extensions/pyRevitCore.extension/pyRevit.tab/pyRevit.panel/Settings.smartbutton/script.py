@@ -3,6 +3,7 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit.loader import hooks
 from pyrevit import coreutils
 from pyrevit import telemetry
 from pyrevit import script
@@ -36,11 +37,21 @@ class EnvVariable:
 
     def __init__(self, var_id, value):
         self.Id = var_id
-        self.Value = value
+        self._value = value
+
+    @property
+    def Value(self):
+        # if its the hook, get a list of hooks and display in human-readable
+        if self.Id == hooks.PYREVIT_HOOKS_ENVVAR:
+            return coreutils.join_strings(
+                [x.UniqueId for x in hooks.get_event_hooks()]
+            )
+        else:
+            return self._value
 
     def __repr__(self):
         return '<EnvVariable Name: {} Value: {}>' \
-                .format(self.Id, self.Value)
+                .format(self.Id, self._value)
 
 
 class PyRevitEngineConfig(object):

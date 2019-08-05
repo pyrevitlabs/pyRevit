@@ -69,7 +69,7 @@ namespace PyRevitBaseClasses {
 
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements) {
-            // 1: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 1: ----------------------------------------------------------------------------------------------------
             #region Processing modifier keys
             // Processing modifier keys
             // Default script is the main script unless it is changed by modifier buttons
@@ -197,40 +197,42 @@ namespace PyRevitBaseClasses {
             }
             #endregion
 
-            // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 2: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtCmdRuntime = new PyRevitScriptRuntime(cmdData: commandData,
-                                                            elements: elements,
-                                                            scriptSource: baked_scriptSource,
-                                                            configScriptSource: baked_configScriptSource,
-                                                            syspaths: baked_syspaths,
-                                                            arguments: argumentList,
-                                                            helpSource: baked_helpSource,
-                                                            cmdName: baked_cmdName,
-                                                            cmdBundle: baked_cmdBundle,
-                                                            cmdExtension: baked_cmdExtension,
-                                                            cmdUniqueName: baked_cmdUniqueName,
-                                                            needsCleanEngine: baked_needsCleanEngine,
-                                                            needsFullFrameEngine: baked_needsFullFrameEngine,
-                                                            refreshEngine: _refreshEngine,
-                                                            forcedDebugMode: _forcedDebugMode,
-                                                            configScriptMode: _configScriptMode,
-                                                            executedFromUI: ExecutedFromUI);
+            var pyrvtScript = new PyRevitScriptRuntime(
+                cmdData: commandData,
+                elements: elements,
+                scriptSource: baked_scriptSource,
+                configScriptSource: baked_configScriptSource,
+                syspaths: baked_syspaths,
+                arguments: argumentList,
+                helpSource: baked_helpSource,
+                cmdName: baked_cmdName,
+                cmdBundle: baked_cmdBundle,
+                cmdExtension: baked_cmdExtension,
+                cmdUniqueName: baked_cmdUniqueName,
+                needsCleanEngine: baked_needsCleanEngine,
+                needsFullFrameEngine: baked_needsFullFrameEngine,
+                refreshEngine: _refreshEngine,
+                forcedDebugMode: _forcedDebugMode,
+                configScriptMode: _configScriptMode,
+                executedFromUI: ExecutedFromUI
+                );
             #endregion
 
-            // 3: ---------------------------------------------------------------------------------------------------------------------------------------------
+            // 3: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
             // Executing the script and logging the results
             // Get script executor and Execute the script
-            pyrvtCmdRuntime.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtCmdRuntime);
+            pyrvtScript.ExecutionResult = ScriptExecutor.ExecuteScript(ref pyrvtScript);
 
             // Log results
-            ScriptTelemetry.LogTelemetryRecord(pyrvtCmdRuntime.MakeTelemetryRecord());
+            ScriptTelemetry.LogTelemetryRecord(pyrvtScript.MakeTelemetryRecord());
 
             // GC cleanups
-            var re = pyrvtCmdRuntime.ExecutionResult;
-            pyrvtCmdRuntime.Dispose();
-            pyrvtCmdRuntime = null;
+            var re = pyrvtScript.ExecutionResult;
+            pyrvtScript.Dispose();
+            pyrvtScript = null;
 
             // Return results to Revit. Don't report errors since we don't want Revit popup with error results
             if (re == 0)

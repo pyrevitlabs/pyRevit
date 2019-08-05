@@ -8,41 +8,41 @@ using IronPython.Hosting;
 
 namespace PyRevitBaseClasses
 {
-    public class EngineManager
+    public class IronPythonEngineManager
     {
         private List<string> _commandBuiltins = new List<string>();
 
-        public EngineManager() {}
+        public IronPythonEngineManager() {}
 
-        public ScriptEngine GetEngine(ref PyRevitScriptRuntime pyrvtCmd)
+        public ScriptEngine GetEngine(ref PyRevitScriptRuntime pyrvtScript)
         {
             ScriptEngine engine;
             bool cachedEngine = false;
 
             // If the command required a fullframe engine
-            if (pyrvtCmd.NeedsFullFrameEngine)
-                engine = CreateNewEngine(ref pyrvtCmd, fullframe: true);
+            if (pyrvtScript.NeedsFullFrameEngine)
+                engine = CreateNewEngine(ref pyrvtScript, fullframe: true);
 
             // If the command required a clean engine
-            else if (pyrvtCmd.NeedsCleanEngine)
-                engine = CreateNewEngine(ref pyrvtCmd);
+            else if (pyrvtScript.NeedsCleanEngine)
+                engine = CreateNewEngine(ref pyrvtScript);
 
             // if the user is asking to refresh the cached engine for the command,
             // then update the engine and save in cache
-            else if (pyrvtCmd.NeedsRefreshedEngine)
-                engine = RefreshCachedEngine(ref pyrvtCmd);
+            else if (pyrvtScript.NeedsRefreshedEngine)
+                engine = RefreshCachedEngine(ref pyrvtScript);
 
             // if not above, get/create cached engine
             else {
-                engine = GetCachedEngine(ref pyrvtCmd);
+                engine = GetCachedEngine(ref pyrvtScript);
                 cachedEngine = true;
             }
 
             // now that the engine is ready, setup the builtins and io streams
-            SetupStreams(engine, pyrvtCmd.OutputStream);
-            SetupBuiltins(engine, ref pyrvtCmd, cachedEngine);
-            SetupSearchPaths(engine, pyrvtCmd.ModuleSearchPaths);
-            SetupArguments(engine, pyrvtCmd.Arguments);
+            SetupStreams(engine, pyrvtScript.OutputStream);
+            SetupBuiltins(engine, ref pyrvtScript, cachedEngine);
+            SetupSearchPaths(engine, pyrvtScript.ModuleSearchPaths);
+            SetupArguments(engine, pyrvtScript.Arguments);
 
             return engine;
         }
@@ -87,7 +87,7 @@ namespace PyRevitBaseClasses
             CleanupStreams(engine);
         }
 
-        private ScriptEngine CreateNewEngine(ref PyRevitScriptRuntime pyrvtCmd, bool fullframe=false)
+        private ScriptEngine CreateNewEngine(ref PyRevitScriptRuntime pyrvtScript, bool fullframe=false)
         {
             var flags = new Dictionary<string, object>();
 
@@ -121,29 +121,29 @@ namespace PyRevitBaseClasses
             return engine;
         }
 
-        private ScriptEngine CreateNewCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
+        private ScriptEngine CreateNewCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
         {
-            var newEngine = CreateNewEngine(ref pyrvtCmd);
-            this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
+            var newEngine = CreateNewEngine(ref pyrvtScript);
+            this.EngineDict[pyrvtScript.CommandExtension] = newEngine;
             return newEngine;
         }
 
-        private ScriptEngine GetCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
+        private ScriptEngine GetCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
         {
-            if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
+            if (this.EngineDict.ContainsKey(pyrvtScript.CommandExtension))
             {
-                var existingEngine = this.EngineDict[pyrvtCmd.CommandExtension];
+                var existingEngine = this.EngineDict[pyrvtScript.CommandExtension];
                 return existingEngine;
             }
             else
             {
-                return CreateNewCachedEngine(ref pyrvtCmd);
+                return CreateNewCachedEngine(ref pyrvtScript);
             }
         }
 
-        private ScriptEngine RefreshCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
+        private ScriptEngine RefreshCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
         {
-            return CreateNewCachedEngine(ref pyrvtCmd);
+            return CreateNewCachedEngine(ref pyrvtScript);
         }
 
         private void SetupStdlib(ScriptEngine engine)
@@ -171,7 +171,7 @@ namespace PyRevitBaseClasses
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
-        private void SetupBuiltins(ScriptEngine engine, ref PyRevitScriptRuntime pyrvtCmd, bool cachedEngine)
+        private void SetupBuiltins(ScriptEngine engine, ref PyRevitScriptRuntime pyrvtScript, bool cachedEngine)
         {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
@@ -185,38 +185,44 @@ namespace PyRevitBaseClasses
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
-            builtin.SetVariable("__externalcommand__", pyrvtCmd);
+            builtin.SetVariable("__externalcommand__", pyrvtScript);
 
             // Add host application handle to the builtin to be globally visible everywhere
-            if (pyrvtCmd.UIApp != null)
-                builtin.SetVariable("__revit__", pyrvtCmd.UIApp);
-            else if (pyrvtCmd.UIControlledApp != null)
-                builtin.SetVariable("__revit__", pyrvtCmd.UIControlledApp);
-            else if (pyrvtCmd.App != null)
-                builtin.SetVariable("__revit__", pyrvtCmd.App);
+            if (pyrvtScript.UIApp != null)
+                builtin.SetVariable("__revit__", pyrvtScript.UIApp);
+            else if (pyrvtScript.UIControlledApp != null)
+                builtin.SetVariable("__revit__", pyrvtScript.UIControlledApp);
+            else if (pyrvtScript.App != null)
+                builtin.SetVariable("__revit__", pyrvtScript.App);
             else
                 builtin.SetVariable("__revit__", null);
 
             // Adding data provided by IExternalCommand.Execute
-            builtin.SetVariable("__commanddata__", pyrvtCmd.CommandData);
-            builtin.SetVariable("__elements__", pyrvtCmd.SelectedElements);
+            builtin.SetVariable("__commanddata__", pyrvtScript.CommandData);
+            builtin.SetVariable("__elements__", pyrvtScript.SelectedElements);
 
             // Adding information on the command being executed
-            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtCmd.OriginalScriptSourceFile));
-            builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(pyrvtCmd.ConfigScriptSourceFile));
-            builtin.SetVariable("__commandname__", pyrvtCmd.CommandName);
-            builtin.SetVariable("__commandbundle__", pyrvtCmd.CommandBundle);
-            builtin.SetVariable("__commandextension__", pyrvtCmd.CommandExtension);
-            builtin.SetVariable("__commanduniqueid__", pyrvtCmd.CommandUniqueId);
-            builtin.SetVariable("__forceddebugmode__", pyrvtCmd.DebugMode);
-            builtin.SetVariable("__shiftclick__", pyrvtCmd.ConfigMode);
+            builtin.SetVariable("__commandpath__", Path.GetDirectoryName(pyrvtScript.OriginalScriptSourceFile));
+            builtin.SetVariable("__configcommandpath__", Path.GetDirectoryName(pyrvtScript.ConfigScriptSourceFile));
+            builtin.SetVariable("__commandname__", pyrvtScript.CommandName);
+            builtin.SetVariable("__commandbundle__", pyrvtScript.CommandBundle);
+            builtin.SetVariable("__commandextension__", pyrvtScript.CommandExtension);
+            builtin.SetVariable("__commanduniqueid__", pyrvtScript.CommandUniqueId);
+            builtin.SetVariable("__forceddebugmode__", pyrvtScript.DebugMode);
+            builtin.SetVariable("__shiftclick__", pyrvtScript.ConfigMode);
 
             // Add reference to the results dictionary
             // so the command can add custom values for logging
-            builtin.SetVariable("__result__", pyrvtCmd.GetResultsDictionary());
+            builtin.SetVariable("__result__", pyrvtScript.GetResultsDictionary());
+
+            // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
+            // set event arguments for engine
+            if (pyrvtScript.InterfaceType == InterfaceType.EventHandler)
+                builtin.SetVariable("__eventargs__", pyrvtScript.EventArgs);
+
 
             // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
-            var commandBuiltins = pyrvtCmd.GetBuiltInVariables();
+            var commandBuiltins = pyrvtScript.GetBuiltInVariables();
             if (commandBuiltins != null)
                 foreach (KeyValuePair<string, object> data in commandBuiltins) {
                     _commandBuiltins.Add(data.Key);

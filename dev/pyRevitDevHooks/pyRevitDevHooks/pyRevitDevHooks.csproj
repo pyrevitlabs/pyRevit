@@ -55,5 +55,10 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\extensions\pyRevitDevTools.extension\hooks\view-activated.vb">
+      <Link>view-activated.vb</Link>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

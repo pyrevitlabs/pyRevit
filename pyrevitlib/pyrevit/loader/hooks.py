@@ -3,7 +3,6 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import HOST_APP
-from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.loadertypes import EventType, PyRevitHooks
 from pyrevit.coreutils import envvars
@@ -84,16 +83,18 @@ EventHook = namedtuple('EventHook', [
 
 
 def _create_hook_id(extension, hook_script):
-    hook_script_id = op.splitext(op.basename(hook_script))[0]
-    return exts.UNIQUE_ID_SEPARATOR.join(
-        [extension.unique_name, hook_script_id]
-        )
+    hook_script_id = op.basename(hook_script)
+    pieces = [extension.unique_name, hook_script_id]
+    return coreutils.cleanup_string(
+        exts.UNIQUE_ID_SEPARATOR.join(pieces),
+        skip=[exts.UNIQUE_ID_SEPARATOR]
+        ).lower()
 
 
 def get_hook_script_type(hook_script):
-    hook_script_name = op.basename(hook_script).lower()
+    hook_script_name = op.splitext(op.basename(hook_script))[0].lower()
     for hook_type in HOOK_TYPES:
-        if hook_script_name == hook_type + exts.PYTHON_SCRIPT_FILE_FORMAT:
+        if hook_script_name == hook_type:
             return HOOK_TYPES[hook_type]
 
 
@@ -117,7 +118,7 @@ def get_extension_hooks(extension):
 
 
 def get_event_hooks():
-    return envvars.get_pyrevit_env_var(PYREVIT_HOOKS_ENVVAR)
+    return PyRevitHooks.GetAllEventHooks()
 
 
 def register_hooks(extension):
@@ -154,3 +155,11 @@ def unregister_hooks(extension):
 
 def unregister_all_hooks():
     PyRevitHooks.UnRegisterAllHooks(uiApp=HOST_APP.uiapp)
+
+
+def activate():
+    PyRevitHooks.ActivateEventHooks(uiApp=HOST_APP.uiapp)
+
+
+def deactivate():
+    PyRevitHooks.DeactivateEventHooks(uiApp=HOST_APP.uiapp)

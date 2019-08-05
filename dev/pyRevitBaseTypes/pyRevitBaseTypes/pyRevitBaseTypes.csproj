@@ -161,9 +161,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\hooks.cs">
       <Link>hooks.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\pyrevitcmdruntime.cs">
-      <Link>pyrevitcmdruntime.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutput.cs">
       <Link>scriptoutput.cs</Link>
     </Compile>
@@ -178,6 +175,9 @@
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptoutputstream.cs">
       <Link>scriptoutputstream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\scriptruntime.cs">
+      <Link>scriptruntime.cs</Link>
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\telemetry.cs">
       <Link>telemetry.cs</Link>

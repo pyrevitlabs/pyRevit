@@ -371,7 +371,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_mgr(self):
-        """``PyRevitBaseClasses.EngineManager``: Return engine manager."""
+        """``PyRevitBaseClasses.IronPythonEngineManager``: Return engine manager."""
         try:
             return __ipyenginemanager__
         except NameError:

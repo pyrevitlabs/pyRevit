@@ -12,10 +12,10 @@ namespace MyEvents {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             File.AppendAllText(
                 Path.Combine(desktopPath, "hooks.log"),
-                string.Format("[view-activate-csharp] doc:\"{0}\" active_view:\"{1}\" prev_view:\"{2}\" status:\"{3}\"",
-                    e.Document.ToString(),
-                    e.CurrentActiveView.ToString(),
-                    e.PreviousActiveView.ToString(),
+                string.Format("00000000000000000 [view-activated-csharp] doc:\"{0}\" active_view:\"{1}\" prev_view:\"{2}\" status:\"{3}\"\n",
+                    e.Document != null ? e.Document.ToString() : "",
+                    e.CurrentActiveView != null ? e.CurrentActiveView.ToString() : "",
+                    e.PreviousActiveView != null ? e.PreviousActiveView.ToString() : "",
                     e.Status.ToString()
                 )
             );

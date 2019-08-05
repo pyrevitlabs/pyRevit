@@ -58,7 +58,7 @@ namespace PyRevitBaseClasses
 
         public string[] ReferencedAssemblies;
 
-        public List<Dictionary<string, object>> EventHooks = new List<Dictionary<string, object>>();
+        public HashSet<Dictionary<string, object>> EventHooks = new HashSet<Dictionary<string, object>>();
 
         public EnvDictionary()
         {
@@ -103,13 +103,13 @@ namespace PyRevitBaseClasses
             }
 
             if (_envData.Contains(EnvDictionaryKeys.hooks))
-                EventHooks = (List<Dictionary<string, object>>)_envData[EnvDictionaryKeys.hooks];
+                EventHooks = (HashSet<Dictionary<string, object>>)_envData[EnvDictionaryKeys.hooks];
             else
                 _envData[EnvDictionaryKeys.hooks] = EventHooks;
         }
 
         public void ResetEventHooks() {
-            EventHooks = new List<Dictionary<string, object>>();
+            EventHooks = new HashSet<Dictionary<string, object>>();
             _envData[EnvDictionaryKeys.hooks] = EventHooks;
         }
     }

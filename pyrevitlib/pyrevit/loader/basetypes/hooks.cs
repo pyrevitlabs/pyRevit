@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
 
 namespace PyRevitBaseClasses {
     public class EventHook {
@@ -26,6 +27,10 @@ namespace PyRevitBaseClasses {
             SearchPaths = syspaths;
             ExtensionName = extension_name;
             UniqueId = id;
+        }
+
+        public override int GetHashCode() {
+            return UniqueId.GetHashCode();
         }
     }
 
@@ -381,11 +386,46 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        // event management ------------------------------------------------------------------------------------------
+        public static void Execute(EventHook eventHook, object eventSender, object eventArgs) {
+            // 1: ----------------------------------------------------------------------------------------------------
+            #region Setup pyRevit Command Runtime
+            var pyrvtScript =
+                new PyRevitScriptRuntime(
+                    cmdData: null,
+                    elements: new ElementSet(),
+                    scriptSource: eventHook.Script,
+                    configScriptSource: eventHook.Script,
+                    syspaths: eventHook.SearchPaths,
+                    arguments: new string[] { },
+                    helpSource: "",
+                    cmdName: "",
+                    cmdBundle: "",
+                    cmdExtension: eventHook.ExtensionName,
+                    cmdUniqueName: eventHook.UniqueId,
+                    needsCleanEngine: false,
+                    needsFullFrameEngine: false,
+                    refreshEngine: false,
+                    forcedDebugMode: false,
+                    configScriptMode: false,
+                    executedFromUI: false
+                    );
 
-        public static List<EventHook> GetEventHooks(EventType eventType) {
+            // set sender and args for events
+            pyrvtScript.EventSender = eventSender;
+            pyrvtScript.EventArgs = eventArgs;
+            #endregion
+
+            // 2: ----------------------------------------------------------------------------------------------------
+            #region Execute and log results
+            var res = ScriptExecutor.ExecuteScript(ref pyrvtScript);
+
+            // TODO: log results into command execution telemetry?
+            #endregion
+        }
+
+        public static HashSet<EventHook> GetEventHooks(EventType eventType) {
             var env = new EnvDictionary();
-            var eventHooks = new List<EventHook>();
+            var eventHooks = new HashSet<EventHook>();
             foreach (Dictionary<string, object> eventHook in env.EventHooks)
                 if ((EventType)eventHook[EventHook.event_type_key] == eventType)
                     eventHooks.Add(
@@ -400,9 +440,9 @@ namespace PyRevitBaseClasses {
             return eventHooks;
         }
 
-        public static List<EventHook> GetAllEventHooks() {
+        public static HashSet<EventHook> GetAllEventHooks() {
             var env = new EnvDictionary();
-            var eventHooks = new List<EventHook>();
+            var eventHooks = new HashSet<EventHook>();
             foreach (Dictionary<string, object> eventHook in env.EventHooks)
                 eventHooks.Add(
                     new EventHook(
@@ -457,38 +497,34 @@ namespace PyRevitBaseClasses {
         public static void RegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
             var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
             AddEventHook(eventHook);
-            RegisterEventType(uiApp, eventHook.EventType);
         }
 
         public static void UnRegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
             var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
-            UnRegisterEventType(uiApp, eventHook.EventType);
             RemoveEventHook(eventHook);
         }
 
         public static void UnRegisterAllHooks(UIApplication uiApp) {
-            foreach (EventHook eventHook in GetAllEventHooks())
-                UnRegisterEventType(uiApp, eventHook.EventType);
             ClearEventHooks();
         }
 
         public static void ExecuteEventHooks(EventType eventType, object eventSender, object eventArgs) {
-            foreach (EventHook eventHook in GetEventHooks(eventType)) {
-                //try {
-                    ScriptExecutor.ExecuteEventHook(
-                        eventHook: eventHook,
-                        eventSender: eventSender,
-                        eventArgs: eventArgs
-                        );
-                //}
-                //catch (Exception ex) {
-                //    File.AppendAllText(
-                //        @"C:\Users\LeoW10\Desktop\hooks_exec.txt",
-                //        string.Format("Script: {0}\n", eventHook.Script) +
-                //        string.Format("{0}\n{1}\n\n", ex.Message, ex.StackTrace)
-                //        );
-                //}
-            }
+            foreach (EventHook eventHook in GetEventHooks(eventType))
+                Execute(
+                    eventHook: eventHook,
+                    eventSender: eventSender,
+                    eventArgs: eventArgs
+                    );
+        }
+
+        public static void ActivateEventHooks(UIApplication uiApp) {
+            foreach (EventHook eventHook in GetAllEventHooks())
+                RegisterEventType(uiApp, eventHook.EventType);
+        }
+
+        public static void DeactivateEventHooks(UIApplication uiApp) {
+            foreach (EventHook eventHook in GetAllEventHooks())
+                UnRegisterEventType(uiApp, eventHook.EventType);
         }
 
         // event handlers --------------------------------------------------------------------------------------------

@@ -138,6 +138,9 @@ def _perform_onsessionloadcomplete_ops():
     # clean up temp app files between sessions.
     appdata.cleanup_appdata_folder()
 
+    # activate hooks now
+    hooks.activate()
+
 
 def _new_session():
     """
@@ -280,7 +283,7 @@ def load_session():
 
 def _perform_onsessionreload_ops():
     # stop event listeners
-    hooks.unregister_all_hooks()
+    hooks.deactivate()
 
 
 def _perform_onsessionreloadcomplete_ops():
@@ -541,7 +544,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
     else:
         sys_paths = core_syspaths
 
-    cmd_runtime = \
+    script_runtime = \
         loadertypes.PyRevitScriptRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
@@ -563,7 +566,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             )
 
     loadertypes.ScriptExecutor.ExecuteScript(
-        clr.Reference[loadertypes.PyRevitScriptRuntime](cmd_runtime)
+        clr.Reference[loadertypes.PyRevitScriptRuntime](script_runtime)
         )
 
-    return cmd_runtime.GetResultsDictionary()
+    return script_runtime.GetResultsDictionary()
