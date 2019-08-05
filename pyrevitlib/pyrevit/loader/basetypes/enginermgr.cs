@@ -190,6 +190,8 @@ namespace PyRevitBaseClasses
             // Add host application handle to the builtin to be globally visible everywhere
             if (pyrvtCmd.UIApp != null)
                 builtin.SetVariable("__revit__", pyrvtCmd.UIApp);
+            else if (pyrvtCmd.UIControlledApp != null)
+                builtin.SetVariable("__revit__", pyrvtCmd.UIControlledApp);
             else if (pyrvtCmd.App != null)
                 builtin.SetVariable("__revit__", pyrvtCmd.App);
             else

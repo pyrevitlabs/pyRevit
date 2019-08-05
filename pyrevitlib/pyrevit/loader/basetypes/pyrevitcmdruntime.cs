@@ -21,6 +21,7 @@ namespace PyRevitBaseClasses {
     public class PyRevitCommandRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private UIApplication _uiApp = null;
+        private UIControlledApplication _uiCtrldApp = null;
         private Application _app = null;
         private ElementSet _elements = null;
 
@@ -135,12 +136,12 @@ namespace PyRevitBaseClasses {
                     string firstLine = "";
                     using (StreamReader reader = new StreamReader(scriptFile)) {
                         firstLine = reader.ReadLine();
-                    }
 
-                    if (firstLine.Contains("python3") || firstLine.Contains("cpython"))
-                        return EngineType.CPython;
-                    else
-                        return EngineType.IronPython;
+                        if (firstLine != null && (firstLine.Contains("python3") || firstLine.Contains("cpython")))
+                            return EngineType.CPython;
+                        else
+                            return EngineType.IronPython;
+                    }
                 }
                 else if (scriptFile.EndsWith(".cs")) {
                     return EngineType.CSharp;
@@ -390,6 +391,16 @@ namespace PyRevitBaseClasses {
 
             set {
                 _uiApp = value;
+            }
+        }
+
+        public UIControlledApplication UIControlledApp {
+            get {
+                return _uiCtrldApp;
+            }
+
+            set {
+                _uiCtrldApp = value;
             }
         }
 

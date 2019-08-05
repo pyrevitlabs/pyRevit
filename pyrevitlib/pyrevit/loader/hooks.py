@@ -14,6 +14,11 @@ PYREVIT_HOOKS_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_HOOKS'
 
 
+RUNTIME_HOOKS = [
+    EventType.Application_ApplicationInitialized
+]
+
+
 HOOK_TYPES = {
     'app-closing': EventType.UIApplication_ApplicationClosing,
     'app-idling': EventType.UIApplication_Idling,
@@ -68,6 +73,7 @@ HOOK_TYPES = {
     'view-printing': EventType.Application_ViewPrinting,
 }
 
+
 EventHook = namedtuple('EventHook', [
     'script',
     'event_type',
@@ -85,9 +91,9 @@ def _create_hook_id(extension, hook_script):
 
 
 def get_hook_script_type(hook_script):
+    hook_script_name = op.basename(hook_script).lower()
     for hook_type in HOOK_TYPES:
-        if hook_script.lower().endswith(hook_type
-                                        + exts.PYTHON_SCRIPT_FILE_FORMAT):
+        if hook_script_name == hook_type + exts.PYTHON_SCRIPT_FILE_FORMAT:
             return HOOK_TYPES[hook_type]
 
 
@@ -124,6 +130,14 @@ def register_hooks(extension):
             extName=ext_hook.extension_name,
             uniqueId=ext_hook.id
         )
+
+        # # run the app initialized hook
+        # if ext_hook.event_type in RUNTIME_HOOKS:
+        #     PyRevitHooks.ExecuteEventHooks(
+        #         ext_hook.event_type,
+        #         __revit__,
+        #         None
+        #         )
 
 
 def unregister_hooks(extension):

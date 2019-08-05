@@ -53,20 +53,7 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public static int ExecuteEventHook(EventHook eventHook, UIApplication eventSender, object eventArgs) {
-            var pyrvtCmdRuntime = CreateEventScripRuntime(eventHook, eventArgs);
-            pyrvtCmdRuntime.UIApp = eventSender;
-            return ExecuteScript(ref pyrvtCmdRuntime);
-        }
-
-        public static int ExecuteEventHook(EventHook eventHook, Application eventSender, object eventArgs) {
-            var pyrvtCmdRuntime = CreateEventScripRuntime(eventHook, eventArgs);
-            pyrvtCmdRuntime.App = eventSender;
-            return ExecuteScript(ref pyrvtCmdRuntime);
-        }
-
-        /// Events
-        private static PyRevitCommandRuntime CreateEventScripRuntime(EventHook eventHook, object eventArgs) {
+        public static int ExecuteEventHook(EventHook eventHook, object eventSender, object eventArgs) {
             var pyrvtCmdRuntime =
                 new PyRevitCommandRuntime(
                     cmdData: null,
@@ -93,7 +80,16 @@ namespace PyRevitBaseClasses {
                     { "__eventargs__", eventArgs }
                 });
 
-            return pyrvtCmdRuntime;
+
+            // detemine sender type
+            if (eventSender.GetType() == typeof(UIControlledApplication))
+                pyrvtCmdRuntime.UIControlledApp = (UIControlledApplication)eventSender;
+            else if (eventSender.GetType() == typeof(UIApplication))
+                pyrvtCmdRuntime.UIApp = (UIApplication)eventSender;
+            else if (eventSender.GetType() == typeof(Application))
+                pyrvtCmdRuntime.App = (Application)eventSender;
+
+            return ExecuteScript(ref pyrvtCmdRuntime);
         }
 
         /// Run the script using IronPython Engine
