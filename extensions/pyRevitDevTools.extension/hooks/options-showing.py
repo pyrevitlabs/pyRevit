@@ -1,13 +1,9 @@
 # pylint: skip-file
-import os.path as op
-from pyrevit import revit, USER_DESKTOP
-
-count = 0
-if revit.doc:
-    count = len(revit.query.get_all_elements(doc=revit.doc))
-
-with open(op.join(USER_DESKTOP, 'hooks.txt'), 'a') as f:
-    f.write('\n'.join([
-        'Displaying Options Dialog '.ljust(80, '-'),
-        'PagesCount: ' + str(__eventargs__.PagesCount),
-        'Element Count: ' + str(count)]) + '\n')
+import hooks_logger as hl
+hl.log_hook(__file__,
+    {
+        "cancellable?": str(__eventargs__.Cancellable),
+        "page_count": str(__eventargs__.PagesCount),
+    },
+    log_doc_access=True
+)
