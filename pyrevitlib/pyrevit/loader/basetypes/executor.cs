@@ -29,7 +29,7 @@ namespace PyRevitBaseClasses {
     /// Executes a script
     public class ScriptExecutor {
         /// Run the script and print the output to a new output window.
-        public static int ExecuteScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        public static int ExecuteScript(ref PyRevitScriptRuntime pyrvtCmd) {
             switch (pyrvtCmd.EngineType) {
                 case EngineType.IronPython:
                     return ExecuteIronPythonScript(ref pyrvtCmd);
@@ -55,7 +55,7 @@ namespace PyRevitBaseClasses {
 
         public static int ExecuteEventHook(EventHook eventHook, object eventSender, object eventArgs) {
             var pyrvtCmdRuntime =
-                new PyRevitCommandRuntime(
+                new PyRevitScriptRuntime(
                     cmdData: null,
                     elements: new ElementSet(),
                     scriptSource: eventHook.Script,
@@ -93,7 +93,7 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using IronPython Engine
-        private static int ExecuteIronPythonScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteIronPythonScript(ref PyRevitScriptRuntime pyrvtCmd) {
             // 1: ----------------------------------------------------------------------------------------------------
             // get new engine manager (EngineManager manages document-specific engines)
             // and ask for an engine (EngineManager return either new engine or an already active one)
@@ -172,7 +172,7 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using CPython Engine
-        private static int ExecuteCPythonScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteCPythonScript(ref PyRevitScriptRuntime pyrvtCmd) {
             using (Py.GIL()) {
                 // initialize
                 if (!PythonEngine.IsInitialized)
@@ -211,12 +211,12 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using C# script engine
-        private static int ExecuteCSharpScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteCSharpScript(ref PyRevitScriptRuntime pyrvtCmd) {
             return CompileAndRun(ref pyrvtCmd);
         }
 
         /// Run the script by directly invoking the IExternalCommand type from given dll
-        private static int ExecuteInvokableDLL(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteInvokableDLL(ref PyRevitScriptRuntime pyrvtCmd) {
             try {
                 if (pyrvtCmd.ConfigScriptSourceFile != null || pyrvtCmd.ConfigScriptSourceFile != string.Empty) {
                     // load the binary data from the DLL
@@ -253,12 +253,12 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using visualbasic script engine
-        private static int ExecuteVisualBasicScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteVisualBasicScript(ref PyRevitScriptRuntime pyrvtCmd) {
             return CompileAndRun(ref pyrvtCmd);
         }
 
         /// Run the script using ruby script engine
-        private static int ExecuteRubyScript(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteRubyScript(ref PyRevitScriptRuntime pyrvtCmd) {
             // TODO
             TaskDialog.Show("pyRevit", "Ruby-Script Execution Engine Not Yet Implemented.");
             return ExecutionErrorCodes.EngineNotImplementedException;
@@ -305,7 +305,7 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using DynamoBIM
-        private static int ExecuteDynamoDefinition(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteDynamoDefinition(ref PyRevitScriptRuntime pyrvtCmd) {
             var journalData = new Dictionary<string, string>() {
                 // Specifies the path to the Dynamo workspace to execute.
                 { "dynPath", pyrvtCmd.ScriptSourceFile },
@@ -361,7 +361,7 @@ namespace PyRevitBaseClasses {
         }
 
         /// Run the script using Grasshopper
-        private static int ExecuteGrasshopperDocument(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteGrasshopperDocument(ref PyRevitScriptRuntime pyrvtCmd) {
             // TODO
             TaskDialog.Show("pyRevit", "Grasshopper Execution Engine Not Yet Implemented.");
             return ExecutionErrorCodes.EngineNotImplementedException;
@@ -387,7 +387,7 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        private static int CompileAndRun(ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int CompileAndRun(ref PyRevitScriptRuntime pyrvtCmd) {
             // https://stackoverflow.com/a/3188953
 
             // read the script
@@ -446,7 +446,7 @@ namespace PyRevitBaseClasses {
 
         }
 
-        private static int ExecuteExternalCommand(Assembly assmObj, string className, ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteExternalCommand(Assembly assmObj, string className, ref PyRevitScriptRuntime pyrvtCmd) {
             foreach (Type assmType in GetTypesSafely(assmObj)) {
                 if (assmType.IsClass) {
                     // find the appropriate type and execute
@@ -472,7 +472,7 @@ namespace PyRevitBaseClasses {
             return ExecutionErrorCodes.ExternalCommandNotImplementedException;
         }
 
-        private static int ExecuteExternalCommandType(Type extCommandType, ref PyRevitCommandRuntime pyrvtCmd) {
+        private static int ExecuteExternalCommandType(Type extCommandType, ref PyRevitScriptRuntime pyrvtCmd) {
             // execute
             object extCommandInstance = Activator.CreateInstance(extCommandType);
             string commandMessage = string.Empty;

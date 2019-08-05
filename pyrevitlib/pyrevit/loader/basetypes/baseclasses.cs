@@ -199,7 +199,7 @@ namespace PyRevitBaseClasses {
 
             // 2: ---------------------------------------------------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtCmdRuntime = new PyRevitCommandRuntime(cmdData: commandData,
+            var pyrvtCmdRuntime = new PyRevitScriptRuntime(cmdData: commandData,
                                                             elements: elements,
                                                             scriptSource: baked_scriptSource,
                                                             configScriptSource: baked_configScriptSource,

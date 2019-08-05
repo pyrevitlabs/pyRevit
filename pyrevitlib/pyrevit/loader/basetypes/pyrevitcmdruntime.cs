@@ -18,7 +18,7 @@ namespace PyRevitBaseClasses {
         Grasshopper
     }
 
-    public class PyRevitCommandRuntime : IDisposable {
+    public class PyRevitScriptRuntime : IDisposable {
         private ExternalCommandData _commandData = null;
         private UIApplication _uiApp = null;
         private UIControlledApplication _uiCtrldApp = null;
@@ -56,7 +56,7 @@ namespace PyRevitBaseClasses {
 
         private IDictionary<string, object> _builtins = new Dictionary<string, object>();
 
-        public PyRevitCommandRuntime(ExternalCommandData cmdData,
+        public PyRevitScriptRuntime(ExternalCommandData cmdData,
                                      ElementSet elements,
                                      string scriptSource,
                                      string configScriptSource,

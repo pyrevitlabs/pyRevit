@@ -392,7 +392,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def pyrevit_command(self):
-        """``PyRevitBaseClasses.PyRevitCommandRuntime``: Return command."""
+        """``PyRevitBaseClasses.PyRevitScriptRuntime``: Return command."""
         try:
             return __externalcommand__
         except NameError:

@@ -542,7 +542,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
         sys_paths = core_syspaths
 
     cmd_runtime = \
-        loadertypes.PyRevitCommandRuntime(
+        loadertypes.PyRevitScriptRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
             scriptSource=script_path,
@@ -563,7 +563,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             )
 
     loadertypes.ScriptExecutor.ExecuteScript(
-        clr.Reference[loadertypes.PyRevitCommandRuntime](cmd_runtime)
+        clr.Reference[loadertypes.PyRevitScriptRuntime](cmd_runtime)
         )
 
     return cmd_runtime.GetResultsDictionary()

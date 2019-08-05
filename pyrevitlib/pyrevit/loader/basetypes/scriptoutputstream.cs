@@ -10,7 +10,7 @@ namespace PyRevitBaseClasses
     /// Only a minimal subset is actually implemented - this is all we really expect to use.
     public class ScriptOutputStream: Stream, IDisposable
     {
-        private WeakReference<PyRevitCommandRuntime> _pyrvtCmd;
+        private WeakReference<PyRevitScriptRuntime> _pyrvtCmd;
         private WeakReference<ScriptOutput> _gui;
         private string _outputBuffer;
         private bool _errored = false;
@@ -18,10 +18,10 @@ namespace PyRevitBaseClasses
         public bool PrintDebugInfo = false;
 
 
-        public ScriptOutputStream(PyRevitCommandRuntime pyrvtCmd)
+        public ScriptOutputStream(PyRevitScriptRuntime pyrvtCmd)
         {
             _outputBuffer = string.Empty;
-            _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(pyrvtCmd);
+            _pyrvtCmd = new WeakReference<PyRevitScriptRuntime>(pyrvtCmd);
             _gui = new WeakReference<ScriptOutput>(null);
         }
 
@@ -29,14 +29,14 @@ namespace PyRevitBaseClasses
         public ScriptOutputStream(ScriptOutput gui)
         {
             _outputBuffer = string.Empty;
-            _pyrvtCmd = new WeakReference<PyRevitCommandRuntime>(null);
+            _pyrvtCmd = new WeakReference<PyRevitScriptRuntime>(null);
             _gui = new WeakReference<ScriptOutput>(gui);
         }
 
 
         public ScriptOutput GetOutput()
         {
-            PyRevitCommandRuntime pyrvtCmd;
+            PyRevitScriptRuntime pyrvtCmd;
             var re = _pyrvtCmd.TryGetTarget(out pyrvtCmd);
             if (re && pyrvtCmd != null)
                return pyrvtCmd.OutputWindow;

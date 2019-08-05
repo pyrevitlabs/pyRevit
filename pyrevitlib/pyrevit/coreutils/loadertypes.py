@@ -26,7 +26,7 @@ if not EXEC_PARAMS.doc_mode:
     PyRevitCommandDefaultAvail = base_module.PyRevitCommandDefaultAvail
 
     # pyrevitcmdruntime.cs
-    PyRevitCommandRuntime = base_module.PyRevitCommandRuntime
+    PyRevitScriptRuntime = base_module.PyRevitScriptRuntime
 
     # executor.cs
     ScriptExecutor = base_module.ScriptExecutor
@@ -61,7 +61,7 @@ else:
     DomainStorageKeys = ExternalConfig = ExecutionErrorCodes = \
         EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
         PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
-        PyRevitCommandDefaultAvail = PyRevitCommandRuntime = \
+        PyRevitCommandDefaultAvail = PyRevitScriptRuntime = \
         ScriptExecutor = ScriptOutput = ScriptOutputManager = \
         ScriptOutputStream = ScriptTelemetry = \
         RECT = User32 = GDI32 = None

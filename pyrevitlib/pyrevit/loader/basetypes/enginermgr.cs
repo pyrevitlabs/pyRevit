@@ -14,7 +14,7 @@ namespace PyRevitBaseClasses
 
         public EngineManager() {}
 
-        public ScriptEngine GetEngine(ref PyRevitCommandRuntime pyrvtCmd)
+        public ScriptEngine GetEngine(ref PyRevitScriptRuntime pyrvtCmd)
         {
             ScriptEngine engine;
             bool cachedEngine = false;
@@ -87,7 +87,7 @@ namespace PyRevitBaseClasses
             CleanupStreams(engine);
         }
 
-        private ScriptEngine CreateNewEngine(ref PyRevitCommandRuntime pyrvtCmd, bool fullframe=false)
+        private ScriptEngine CreateNewEngine(ref PyRevitScriptRuntime pyrvtCmd, bool fullframe=false)
         {
             var flags = new Dictionary<string, object>();
 
@@ -121,14 +121,14 @@ namespace PyRevitBaseClasses
             return engine;
         }
 
-        private ScriptEngine CreateNewCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
+        private ScriptEngine CreateNewCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
         {
             var newEngine = CreateNewEngine(ref pyrvtCmd);
             this.EngineDict[pyrvtCmd.CommandExtension] = newEngine;
             return newEngine;
         }
 
-        private ScriptEngine GetCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
+        private ScriptEngine GetCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
         {
             if (this.EngineDict.ContainsKey(pyrvtCmd.CommandExtension))
             {
@@ -141,7 +141,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        private ScriptEngine RefreshCachedEngine(ref PyRevitCommandRuntime pyrvtCmd)
+        private ScriptEngine RefreshCachedEngine(ref PyRevitScriptRuntime pyrvtCmd)
         {
             return CreateNewCachedEngine(ref pyrvtCmd);
         }
@@ -171,7 +171,7 @@ namespace PyRevitBaseClasses
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
-        private void SetupBuiltins(ScriptEngine engine, ref PyRevitCommandRuntime pyrvtCmd, bool cachedEngine)
+        private void SetupBuiltins(ScriptEngine engine, ref PyRevitScriptRuntime pyrvtCmd, bool cachedEngine)
         {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
