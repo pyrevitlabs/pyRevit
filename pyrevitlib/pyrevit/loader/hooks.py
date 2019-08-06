@@ -13,11 +13,6 @@ PYREVIT_HOOKS_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_HOOKS'
 
 
-RUNTIME_HOOKS = [
-    EventType.Application_ApplicationInitialized
-]
-
-
 HOOK_TYPES = {
     'app-closing': EventType.UIApplication_ApplicationClosing,
     'app-idling': EventType.UIApplication_Idling,
@@ -102,7 +97,9 @@ def get_extension_hooks(extension):
     event_hooks = []
     for hook_script in extension.get_hooks():
         hook_type = get_hook_script_type(hook_script)
-        if hook_type:
+        # hook_type is a C# enum and first item is 0 == False
+        # check for nullness
+        if hook_type is not None:
             event_hooks.append(
                 EventHook(
                     script=hook_script,
@@ -131,14 +128,6 @@ def register_hooks(extension):
             extName=ext_hook.extension_name,
             uniqueId=ext_hook.id
         )
-
-        # # run the app initialized hook
-        # if ext_hook.event_type in RUNTIME_HOOKS:
-        #     PyRevitHooks.ExecuteEventHooks(
-        #         ext_hook.event_type,
-        #         __revit__,
-        #         None
-        #         )
 
 
 def unregister_hooks(extension):
