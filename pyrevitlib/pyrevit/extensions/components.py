@@ -152,6 +152,17 @@ class ContentButton(GenericUICommand):
 
     def __init_from_dir__(self, cmd_dir):
         GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
+        # find script file
+        self.script_file = \
+            self._find_bundle_file([
+                exts.CONTENT_POSTFIX,
+                ])
+
+        # find if any alternate content is specified
+        if self.meta:
+            self.config_script_file = \
+                self.meta.get(exts.MDATA_CONTENT_BUTTON_ALT_CONTENT,
+                              self.config_script_file)
 
 
 # Command groups only include commands. these classes can include
@@ -335,7 +346,7 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.CONTENT_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
