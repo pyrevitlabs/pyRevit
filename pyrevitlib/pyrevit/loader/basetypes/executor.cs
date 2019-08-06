@@ -407,27 +407,28 @@ namespace PyRevitBaseClasses {
                 Document doc = uidoc.Document;
 
                 // find or load family first
-                Family loadedFamily = null;
+                Family contentFamily = null;
 
                 // attempt to find previously loaded family
+                Element existingFamily = null;
                 string familyName = Path.GetFileNameWithoutExtension(familySourceFile);
+                var currentFamilies = 
+                    new FilteredElementCollector(doc).OfClass(typeof(Family)).Where(q => q.Name == familyName);
+                if (currentFamilies.Count() > 0)
+                    existingFamily = currentFamilies.First();
 
-                var family = new FilteredElementCollector(doc)
-                                 .OfClass(typeof(Family))
-                                 .Where(q => q.Name == familyName)
-                                 .First();
-                if (family != null)
-                    loadedFamily = (Family)family;
+                if (existingFamily != null)
+                    contentFamily = (Family)existingFamily;
 
                 // if not found, attemt to load
-                if (loadedFamily == null) {
+                if (contentFamily == null) {
                     try {
                         var txn = new Transaction(doc, "Load pyRevit Content");
                         txn.Start();
                         doc.LoadFamily(
                             familySourceFile,
                             new ContentLoaderOptions(),
-                            out loadedFamily
+                            out contentFamily
                             );
                         txn.Commit();
                     }
@@ -438,14 +439,14 @@ namespace PyRevitBaseClasses {
                     }
                 }
 
-                if (loadedFamily == null) {
+                if (contentFamily == null) {
                     TaskDialog.Show("pyRevit",
                         string.Format("Failed finding or loading bundle content at:\n{0}", familySourceFile));
                     return ExecutionResultCodes.FailedLoadingContent;
                 }
 
                 // now ask ui to place an instance
-                ElementId firstSymbolId = loadedFamily.GetFamilySymbolIds().First();
+                ElementId firstSymbolId = contentFamily.GetFamilySymbolIds().First();
                 if (firstSymbolId != null && firstSymbolId != ElementId.InvalidElementId) {
                     FamilySymbol firstSymbol = (FamilySymbol)doc.GetElement(firstSymbolId);
                     if (firstSymbol != null)
