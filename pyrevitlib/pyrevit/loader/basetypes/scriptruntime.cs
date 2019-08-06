@@ -20,7 +20,8 @@ namespace PyRevitBaseClasses {
         VisualBasic,
         IronRuby,
         Dynamo,
-        Grasshopper
+        Grasshopper,
+        Content,
     }
 
     public class PyRevitScriptRuntime : IDisposable {
@@ -177,6 +178,9 @@ namespace PyRevitBaseClasses {
                 }
                 else if (scriptFile.EndsWith(".gh")) {
                     return EngineType.Grasshopper;
+                }
+                else if (scriptFile.EndsWith(".rfa")) {
+                    return EngineType.Content;
                 }
 
                 if (CommandBundle != null) {

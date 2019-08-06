@@ -54,6 +54,7 @@ namespace PyRevitBaseClasses
         public static int CompileException = 3;
         public static int EngineNotImplementedException = 4;
         public static int ExternalInterfaceNotImplementedException = 5;
+        public static int FailedLoadingContent = 6;
         public static int UnknownException = 9;
     }
 }

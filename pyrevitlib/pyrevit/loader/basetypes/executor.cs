@@ -47,6 +47,8 @@ namespace PyRevitBaseClasses {
                     return ExecuteDynamoDefinition(ref pyrvtScript);
                 case EngineType.Grasshopper:
                     return ExecuteGrasshopperDocument(ref pyrvtScript);
+                case EngineType.Content:
+                    return ExecuteContentLoader(ref pyrvtScript);
                 default:
                     // should not get here
                     throw new Exception("Unknown engine type.");
@@ -397,6 +399,78 @@ namespace PyRevitBaseClasses {
             return ExecutionResultCodes.EngineNotImplementedException;
         }
 
+        /// Run the content bundle and place in active document
+        private static int ExecuteContentLoader(ref PyRevitScriptRuntime pyrvtScript) {
+            if (pyrvtScript.UIApp != null && pyrvtScript.UIApp.ActiveUIDocument != null) {
+                string familySourceFile = pyrvtScript.ScriptSourceFile;
+                UIDocument uidoc = pyrvtScript.UIApp.ActiveUIDocument;
+                Document doc = uidoc.Document;
+
+                // find or load family first
+                Family loadedFamily = null;
+
+                // attempt to find previously loaded family
+                string familyName = Path.GetFileNameWithoutExtension(familySourceFile);
+
+                var family = new FilteredElementCollector(doc)
+                                 .OfClass(typeof(Family))
+                                 .Where(q => q.Name == familyName)
+                                 .First();
+                if (family != null)
+                    loadedFamily = (Family)family;
+
+                // if not found, attemt to load
+                if (loadedFamily == null) {
+                    try {
+                        var txn = new Transaction(doc, "Load pyRevit Content");
+                        txn.Start();
+                        doc.LoadFamily(
+                            familySourceFile,
+                            new ContentLoaderOptions(),
+                            out loadedFamily
+                            );
+                        txn.Commit();
+                    }
+                    catch (Exception loadEx) {
+                        TaskDialog.Show("pyRevit",
+                            string.Format("Failed loading content.\n{0}\n{1}", loadEx.Message, loadEx.StackTrace));
+                        return ExecutionResultCodes.FailedLoadingContent;
+                    }
+                }
+
+                if (loadedFamily == null) {
+                    TaskDialog.Show("pyRevit",
+                        string.Format("Failed finding or loading bundle content at:\n{0}", familySourceFile));
+                    return ExecutionResultCodes.FailedLoadingContent;
+                }
+
+                // now ask ui to place an instance
+                ElementId firstSymbolId = loadedFamily.GetFamilySymbolIds().First();
+                if (firstSymbolId != null && firstSymbolId != ElementId.InvalidElementId) {
+                    FamilySymbol firstSymbol = (FamilySymbol)doc.GetElement(firstSymbolId);
+                    if (firstSymbol != null)
+                        try {
+                            var placeOps = new PromptForFamilyInstancePlacementOptions();
+                            uidoc.PromptForFamilyInstancePlacement(firstSymbol, placeOps);
+                            return ExecutionResultCodes.Succeeded;
+                        }
+                        catch (Autodesk.Revit.Exceptions.OperationCanceledException) {
+                            // user cancelled placement
+                            return ExecutionResultCodes.Succeeded;
+                        }
+                        catch (Exception promptEx) {
+                            TaskDialog.Show("pyRevit",
+                                string.Format("Failed placing content.\n{0}\n{1}",
+                                              promptEx.Message, promptEx.StackTrace));
+                            return ExecutionResultCodes.FailedLoadingContent;
+                        }
+                }
+            }
+
+            TaskDialog.Show("pyRevit", "Failed accessing Appication.");
+            return ExecutionResultCodes.FailedLoadingContent;
+        }
+
         // utility methods -------------------------------------------------------------------------------------------
         // clr scripts
         private static IEnumerable<Type> GetTypesSafely(Assembly assembly) {
@@ -525,4 +599,14 @@ namespace PyRevitBaseClasses {
         }
     }
 
+    public class ContentLoaderOptions : IFamilyLoadOptions {
+        public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues) {
+            overwriteParameterValues = true;
+            return overwriteParameterValues;
+        }
+
+        public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues) {
+            throw new NotImplementedException();
+        }
+    }
 }

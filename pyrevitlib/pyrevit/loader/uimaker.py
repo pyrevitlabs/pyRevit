@@ -547,6 +547,7 @@ _component_creation_dict = {
     exts.PUSH_BUTTON_POSTFIX: _produce_ui_pushbutton,
     exts.TOGGLE_BUTTON_POSTFIX: _produce_ui_smartbutton,
     exts.SMART_BUTTON_POSTFIX: _produce_ui_smartbutton,
+    exts.CONTENT_BUTTON_POSTFIX: _produce_ui_pushbutton,
     exts.LINK_BUTTON_POSTFIX: _produce_ui_linkbutton,
     exts.INVOKE_BUTTON_POSTFIX: _produce_ui_pushbutton,
     exts.SEPARATOR_IDENTIFIER: _produce_ui_separator,

@@ -373,7 +373,8 @@ class GenericUICommand(GenericUIComponent):
                 exts.VB_SCRIPT_POSTFIX,
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
-                exts.GRASSHOPPER_SCRIPT_POSTFIX
+                exts.GRASSHOPPER_SCRIPT_POSTFIX,
+                exts.CONTENT_SCRIPT_POSTFIX,
                 ])
 
         if needs_script and not self.script_file:

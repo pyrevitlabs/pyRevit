@@ -147,6 +147,13 @@ class SmartButton(GenericUICommand):
     type_id = exts.SMART_BUTTON_POSTFIX
 
 
+class ContentButton(GenericUICommand):
+    type_id = exts.CONTENT_BUTTON_POSTFIX
+
+    def __init_from_dir__(self, cmd_dir):
+        GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
+
+
 # Command groups only include commands. these classes can include
 # GenericUICommand as sub components
 class GenericUICommandGroup(GenericUIContainer):
@@ -317,7 +324,8 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.NOGUI_COMMAND_POSTFIX + ')'
+        pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
         # tnteresting directories
         pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
         # search for scripts, setting files (future support), and layout files
@@ -327,6 +335,7 @@ class Extension(GenericUIContainer):
         patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
+        patfile += '|(\\' + exts.CONTENT_SCRIPT_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
         patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
