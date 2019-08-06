@@ -1,7 +1,11 @@
 """Event telemetry management."""
-#pylint: disable=invalid-name
+#pylint: disable=invalid-name,broad-except
 from pyrevit import HOST_APP
+from pyrevit.coreutils import logger
 from pyrevit.coreutils.loadertypes import EventTelemetry
+
+
+mlogger = logger.get_logger(__name__)
 
 
 # event telemetry configurations are controlled by a binary flag
@@ -17,7 +21,13 @@ def register_event_telemetry(flags):
     Args:
         flags (int): event flags
     """
-    EventTelemetry.RegisterEventTelemetry(HOST_APP.uiapp, flags)
+    try:
+        EventTelemetry.RegisterEventTelemetry(HOST_APP.uiapp, flags)
+    except Exception as ex:
+        mlogger.debug(
+            "Error registering event telementry with flags: %s | %s",
+            str(flags), ex)
+
 
 
 def unregister_event_telemetry(flags):
@@ -26,7 +36,12 @@ def unregister_event_telemetry(flags):
     Args:
         flags (int): event flags
     """
-    EventTelemetry.UnRegisterEventTelemetry(HOST_APP.uiapp, flags)
+    try:
+        EventTelemetry.UnRegisterEventTelemetry(HOST_APP.uiapp, flags)
+    except Exception as ex:
+        mlogger.debug(
+            "Error unregistering event telementry with flags: %s | %s",
+            str(flags), ex)
 
 
 def unregister_all_event_telemetries():

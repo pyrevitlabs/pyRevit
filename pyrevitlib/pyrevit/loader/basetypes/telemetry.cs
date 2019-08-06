@@ -529,13 +529,19 @@ namespace PyRevitBaseClasses {
         public static void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
-                    toggleEventListeners(uiApp, eventType);
+                    try { toggleEventListeners(uiApp, eventType); }
+                    catch (Exception registerEx) {
+                        //TODO: log failure
+                    }
         }
 
         public static void UnRegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
-                    toggleEventListeners(uiApp, eventType, toggle_on: false);
+                    try { toggleEventListeners(uiApp, eventType, toggle_on: false); }
+                    catch (Exception registerEx) {
+                        //TODO: log failure
+                    }
         }
 
         // event handlers --------------------------------------------------------------------------------------------
@@ -545,20 +551,26 @@ namespace PyRevitBaseClasses {
         private static void UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         private static void UiApp_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
         }
 
         private static void UiApp_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
         }
+#endif
 
         private static void UiApp_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         private static void UiApp_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
         }
+#endif
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         private static void UiApp_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
         }
+#endif
 
         private static void UiApp_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
         }
@@ -569,8 +581,10 @@ namespace PyRevitBaseClasses {
         private static void UiApp_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         private static void UiApp_DialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e) {
         }
+#endif
 
         private static void UiApp_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
         }

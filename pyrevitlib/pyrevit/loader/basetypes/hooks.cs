@@ -537,6 +537,7 @@ namespace PyRevitBaseClasses {
             ExecuteEventHooks(EventType.UIApplication_ViewActivated, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         private static void UiApp_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_TransferringProjectStandards, sender, e);
         }
@@ -544,18 +545,23 @@ namespace PyRevitBaseClasses {
         private static void UiApp_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_TransferredProjectStandards, sender, e);
         }
+#endif
 
         private static void UiApp_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_Idling, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         private static void UiApp_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_FormulaEditing, sender, e);
         }
+#endif
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         private static void UiApp_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_FabricationPartBrowserChanged, sender, e);
         }
+#endif
 
         private static void UiApp_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_DockableFrameVisibilityChanged, sender, e);
@@ -569,9 +575,11 @@ namespace PyRevitBaseClasses {
             ExecuteEventHooks(EventType.UIApplication_DisplayingOptionsDialog, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         private static void UiApp_DialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_DialogBoxShowing, sender, e);
         }
+#endif
 
         private static void UiApp_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_ApplicationClosing, sender, e);
