@@ -100,6 +100,14 @@ def create_types(extension, cmd_component, module_builder=None):
             # link buttons don't need types
             mlogger.debug('Skipped creating executor type for: %s',
                           cmd_component)
+        # if content
+        elif cmd_component.type_id == exts.CONTENT_BUTTON_POSTFIX:
+            # link buttons don't need types
+            create_executor_type(
+                extension,
+                module_builder,
+                cmd_component
+                )
         ## now language based button types
         # if python
         elif cmd_component.script_language == exts.PYTHON_LANG:

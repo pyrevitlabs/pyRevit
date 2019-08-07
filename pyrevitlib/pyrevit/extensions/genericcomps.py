@@ -360,7 +360,10 @@ class GenericUICommand(GenericUIComponent):
                       self, self.ttvideo_file)
 
         # find meta file
-        self.meta_file = self._find_bundle_file([exts.BUNDLEMATA_POSTFIX])
+        self.meta_file = self._find_bundle_file([
+            exts.BUNDLEMATA_POSTFIX,
+            exts.ALT_BUNDLEMATA_POSTFIX
+            ])
         if self.meta_file:
             # sets up self.meta
             self._read_bundle_metadata()
@@ -373,7 +376,7 @@ class GenericUICommand(GenericUIComponent):
                 exts.VB_SCRIPT_POSTFIX,
                 exts.RUBY_SCRIPT_POSTFIX,
                 exts.DYNAMO_SCRIPT_POSTFIX,
-                exts.GRASSHOPPER_SCRIPT_POSTFIX
+                exts.GRASSHOPPER_SCRIPT_POSTFIX,
                 ])
 
         if needs_script and not self.script_file:

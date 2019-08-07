@@ -170,7 +170,6 @@ namespace PyRevitBaseClasses {
 
             // If Ctrl+Shift clicking on button, run the script in debug mode and run config script instead.
             else if (CTRL && (SHIFT || ConfigScriptMode)) {
-                _script = baked_configScriptSource;
                 _configScriptMode = true;
                 _forcedDebugMode = true;
             }
@@ -187,7 +186,6 @@ namespace PyRevitBaseClasses {
 
             // If Shift clicking on button, run config script instead
             else if (SHIFT || ConfigScriptMode) {
-                _script = baked_configScriptSource;
                 _configScriptMode = true;
             }
 
