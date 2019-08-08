@@ -23,7 +23,7 @@ DEVENV='devenv.exe'
 LOGFILE="./build.log"
 
 BINPATH=$THISPATH/../bin
-UTILSPATH=$THISPATH/utils
+UTILSPATH=$THISPATH/pyRevitUtils
 
 DOCSPATH=$THISPATH/../docs
 DOCSBUILDPATH=$THISPATH/../docs/_build

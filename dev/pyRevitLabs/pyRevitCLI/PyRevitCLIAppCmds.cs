@@ -19,7 +19,7 @@ using pyRevitLabs.Json.Serialization;
 
 using Console = Colorful.Console;
 
-namespace pyRevitManager {
+namespace pyRevitCLI {
     public class JsonVersionConverter : JsonConverter<Version> {
         public override Version ReadJson(JsonReader reader, Type objectType, Version existingValue, bool hasExistingValue, JsonSerializer serializer) {
             throw new NotImplementedException();
@@ -34,7 +34,6 @@ namespace pyRevitManager {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         // consts:
-        private const string updaterBinaryName = "pyrevit-updater";
         private const string autocompleteBinaryName = "pyrevit-autocomplete";
         private const string shortcutIconName = "pyrevit.ico";
         private const string templatesDirName = "templates";
@@ -55,36 +54,6 @@ namespace pyRevitManager {
 
         internal static bool IsRunningInsideClone(PyRevitClone clone) =>
             GetProcessPath().NormalizeAsPath().Contains(clone.ClonePath.NormalizeAsPath());
-
-        internal static void UpdateFromOutsideAndClose(PyRevitClone clone) {
-            logger.Debug("Updating clone \"{0}\" using outside process", clone.Name);
-
-            // prepare outside updater
-            var updaterTempBinary = updaterBinaryName + ".exe";
-            var updaterBinaryPath = Path.Combine(GetProcessPath(), updaterBinaryName);
-            var updaterTempPath = Path.Combine(UserEnv.UserTemp, updaterTempBinary);
-            logger.Debug("Setting up \"{0}\" to \"{1}\"", updaterBinaryPath, updaterTempPath);
-            File.Copy(updaterBinaryPath, updaterTempPath, overwrite: true);
-
-            // make a updater bat file
-            var updaterBATFile = Path.Combine(UserEnv.UserTemp, updaterBinaryName + ".bat");
-            using (var batFile = new StreamWriter(File.Create(updaterBATFile))) {
-                batFile.WriteLine("@ECHO OFF");
-                batFile.WriteLine("TIMEOUT /t 1 /nobreak >NUL  2>NUL");
-                batFile.WriteLine("TASKKILL /IM \"{0}\" >NUL  2>NUL", Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName));
-                batFile.WriteLine("START \"\" /B \"{0}\" \"{1}\"", updaterTempPath, clone.ClonePath);
-            }
-
-            // launch update
-            ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(updaterBATFile);
-            updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(updaterTempPath);
-            updaterProcessInfo.UseShellExecute = false;
-            updaterProcessInfo.CreateNoWindow = true;
-            logger.Debug("Calling outside update and exiting...");
-            Process.Start(updaterProcessInfo);
-            // and exit self
-            Environment.Exit(0);
-        }
 
         internal static void
         ClearCaches(bool allCaches, string revitYear) {
@@ -249,22 +218,6 @@ namespace pyRevitManager {
                     allUsers: allUsers
                 );
             }
-        }
-
-        internal static void
-        ActivateAutoComplete() {
-            var processPath = GetProcessPath();
-
-            var autoCompleteHelperPath = Path.Combine(processPath, autocompleteBinaryName + ".exe");
-            logger.Debug("Autocomplete helper binary is \"{0}\"", autoCompleteHelperPath);
-
-            ProcessStartInfo updaterProcessInfo = new ProcessStartInfo(autoCompleteHelperPath);
-            updaterProcessInfo.Arguments = "-install -y";
-            updaterProcessInfo.WorkingDirectory = Path.GetDirectoryName(processPath);
-            updaterProcessInfo.UseShellExecute = false;
-            updaterProcessInfo.CreateNoWindow = true;
-            logger.Debug("Calling autocomplete installer and exiting...");
-            Process.Start(updaterProcessInfo);
         }
     }
 }

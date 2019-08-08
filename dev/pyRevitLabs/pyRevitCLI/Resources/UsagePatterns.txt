@@ -20,7 +20,7 @@ Usage:
 	pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
 	pyrevit clones origin <clone_name> --reset [--log=<log_file>]
 	pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
-	pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [--gui]
+	pyrevit clones update (--all | <clone_name>) [--log=<log_file>]
 	pyrevit clones deployments <clone_name>
 	pyrevit clones engines <clone_name>
 	pyrevit attach --help

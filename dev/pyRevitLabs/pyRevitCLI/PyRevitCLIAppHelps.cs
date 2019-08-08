@@ -5,7 +5,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.TargetApps.Revit;
 
-namespace pyRevitManager {
+namespace pyRevitCLI {
     internal static class PyRevitCLIAppHelps {
 
         internal static void

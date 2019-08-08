@@ -19,7 +19,7 @@ using pyRevitLabs.Json.Serialization;
 
 using Console = Colorful.Console;
 
-namespace pyRevitManager {
+namespace pyRevitCLI {
     internal static class PyRevitCLIReleaseCmds {
         static Logger logger = LogManager.GetCurrentClassLogger();
 

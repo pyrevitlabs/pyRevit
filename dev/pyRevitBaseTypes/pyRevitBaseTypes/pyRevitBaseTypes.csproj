@@ -186,12 +186,14 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
       <Link>_config.cs</Link>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AirspaceFixer">
       <Version>1.0.5</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.IO;
 using System.Diagnostics;
 
-using pyRevitManager.Properties;
+using pyRevitCLI.Properties;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.CommonCLI;
@@ -32,7 +32,7 @@ using Console = Colorful.Console;
 // 7) Update the pyrevit-complete.go file with command completion suggestions
 
 
-namespace pyRevitManager {
+namespace pyRevitCLI {
 
     internal enum PyRevitCLILogLevel {
         Quiet,
@@ -764,9 +764,6 @@ namespace pyRevitManager {
                         shortcutDesc: TryGetValue("--desc"),
                         allUsers: arguments["--allusers"].IsTrue
                     );
-
-                else if (all("installautocomplete"))
-                    PyRevitCLIAppCmds.ActivateAutoComplete();
             }
 
             else if (IsHelpMode) PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);

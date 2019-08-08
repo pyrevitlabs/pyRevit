@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace pyRevitManager.Properties {
+namespace pyRevitCLI.Properties {
     using System;
     
     

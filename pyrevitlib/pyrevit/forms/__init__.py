@@ -140,7 +140,7 @@ class WPFWindow(framework.Windows.Window):
 
     def setup_icon(self):
         """Setup default window icon."""
-        iconpath = op.join(BIN_DIR, 'window_icon.png')
+        iconpath = op.join(BIN_DIR, 'pyrevit_settings.png')
         self.Icon = utils.bitmap_from_file(iconpath)
 
     def show(self, modal=False):

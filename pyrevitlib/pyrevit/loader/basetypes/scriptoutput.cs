@@ -92,7 +92,7 @@ namespace PyRevitBaseClasses {
         public void ResetIcon() {
             var iconPath = Path.Combine(
                 Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location),
-                "outputwindow_icon.png"
+                "pyrevit_outputwindow.png"
                 );
             SetIcon(iconPath);
         }

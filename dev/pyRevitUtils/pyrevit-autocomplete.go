@@ -29,7 +29,11 @@ func main() {
 				Sub: complete.Commands{
 					"info": complete.Command{},
 					"open": complete.Command{},
-					"add":  complete.Command{},
+					"add": complete.Command{
+						Flags: complete.Flags{
+							"--force": complete.PredictAnything,
+						},
+					},
 					"forget": complete.Command{
 						Flags: complete.Flags{
 							"--all": complete.PredictAnything,
@@ -38,7 +42,8 @@ func main() {
 					"rename": complete.Command{},
 					"delete": complete.Command{
 						Flags: complete.Flags{
-							"--all": complete.PredictAnything,
+							"--all":          complete.PredictAnything,
+							"--clearconfigs": complete.PredictAnything,
 						},
 					},
 					"branch":  complete.Command{},
@@ -132,7 +137,8 @@ func main() {
 				Sub: complete.Commands{
 					"latest": complete.Command{
 						Flags: complete.Flags{
-							"--pre": complete.PredictAnything,
+							"--pre":   complete.PredictAnything,
+							"--notes": complete.PredictAnything,
 						},
 					},
 					"open": complete.Command{
@@ -170,6 +176,10 @@ func main() {
 					"fileinfo": complete.Command{
 						Flags: complete.Flags{
 							"--csv=": complete.PredictAnything,
+							"--rvt":  complete.PredictAnything,
+							"--rte":  complete.PredictAnything,
+							"--rfa":  complete.PredictAnything,
+							"--rft":  complete.PredictAnything,
 						},
 					},
 					"addons": complete.Command{
@@ -196,9 +206,9 @@ func main() {
 			},
 			"run": complete.Command{
 				Flags: complete.Flags{
-					"--revit=": complete.PredictAnything,
-					"--purge":  complete.PredictAnything,
-					"--import": complete.PredictAnything,
+					"--revit=":  complete.PredictAnything,
+					"--purge":   complete.PredictAnything,
+					"--import=": complete.PredictAnything,
 				},
 			},
 			"init": complete.Command{
@@ -295,7 +305,7 @@ func main() {
 							"No":  complete.Command{},
 						},
 					},
-					"usagelogging": complete.Command{
+					"telemetry": complete.Command{
 						Sub: complete.Commands{
 							"enable": complete.Command{
 								Sub: complete.Commands{
@@ -312,6 +322,8 @@ func main() {
 							"--lock": complete.PredictAnything,
 						},
 					},
+					"enable":  complete.Command{},
+					"disable": complete.Command{},
 				},
 				Flags: complete.Flags{
 					"--all": complete.PredictAnything,
@@ -325,7 +337,6 @@ func main() {
 							"--allusers": complete.PredictAnything,
 						},
 					},
-					"installautocomplete": complete.Command{},
 				},
 			},
 		},
