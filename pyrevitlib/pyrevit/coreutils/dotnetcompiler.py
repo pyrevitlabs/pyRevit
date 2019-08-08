@@ -28,7 +28,10 @@ def _compile_dotnet(code_provider,
     compiler_params.TreatWarningsAsErrors = False
     compiler_params.GenerateExecutable = False
     compiler_params.CompilerOptions = \
-        "/optimize -define:REVIT{}".format(HOST_APP.version)
+        "/optimize " \
+        "/langversion:Default " \
+        "/platform:x64 " \
+        "/define:REVIT{}".format(HOST_APP.version)
 
     for reference in reference_list or []:
         mlogger.debug('Adding reference to compiler: %s', reference)

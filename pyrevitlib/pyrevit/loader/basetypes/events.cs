@@ -130,6 +130,18 @@ namespace PyRevitBaseClasses {
         //ApplicationEntryPoint_ViewActivating,
     }
 
+    public class AppEventUtils {
+        public Application App { get; private set; }
+
+        public AppEventUtils(Application app) {
+            if (app != null) {
+                App = app;
+            }
+            else
+                throw new Exception("Application can not be null.");
+        }
+    }
+
     public class UIEventUtils {
         private bool _txnCompleted = false;
         private Document _doc = null;
@@ -137,16 +149,16 @@ namespace PyRevitBaseClasses {
         private BuiltInParameter _paramToUpdate;
         private string _paramToUpdateStringValue = null;
 
-        public UIApplication App { get; private set; }
+        public UIApplication UIApp { get; private set; }
         public List<ElementId> NewElements { get; private set; }
 
-        public UIEventUtils(UIApplication app) {
-            if (app != null) {
-                App = app;
+        public UIEventUtils(UIApplication uiApp) {
+            if (uiApp != null) {
+                UIApp = uiApp;
                 NewElements = new List<ElementId>();
             }
             else
-                throw new Exception("Application can not be null.");
+                throw new Exception("UIApplication can not be null.");
         }
 
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
@@ -168,7 +180,7 @@ namespace PyRevitBaseClasses {
         private void NewElementPropertyValueUpdater(object sender, IdlingEventArgs e) {
             // cancel if txn is completed
             if (_txnCompleted) {
-                App.Idling -= new EventHandler<IdlingEventArgs>(NewElementPropertyValueUpdater);
+                UIApp.Idling -= new EventHandler<IdlingEventArgs>(NewElementPropertyValueUpdater);
                 EndCancellingAllDialogs();
                 EndTrackingElements();
             }
@@ -194,19 +206,19 @@ namespace PyRevitBaseClasses {
         }
 
         public void StartTrackingElements() {
-            App.Application.DocumentChanged += new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
+            UIApp.Application.DocumentChanged += new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
         }
 
         public void EndTrackingElements() {
-            App.Application.DocumentChanged -= new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
+            UIApp.Application.DocumentChanged -= new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
         }
 
         public void StartCancellingAllDialogs() {
-            App.DialogBoxShowing += new EventHandler<DialogBoxShowingEventArgs>(CancelAllDialogs);
+            UIApp.DialogBoxShowing += new EventHandler<DialogBoxShowingEventArgs>(CancelAllDialogs);
         }
 
         public void EndCancellingAllDialogs() {
-            App.DialogBoxShowing -= new EventHandler<DialogBoxShowingEventArgs>(CancelAllDialogs);
+            UIApp.DialogBoxShowing -= new EventHandler<DialogBoxShowingEventArgs>(CancelAllDialogs);
         }
 
         public void PostElementPropertyUpdateRequest(Document doc,
@@ -217,7 +229,7 @@ namespace PyRevitBaseClasses {
             _txnName = txnName;
             _paramToUpdate = bip;
             _paramToUpdateStringValue = value;
-            App.Idling += new EventHandler<IdlingEventArgs>(NewElementPropertyValueUpdater);
+            UIApp.Idling += new EventHandler<IdlingEventArgs>(NewElementPropertyValueUpdater);
         }
 
         public void PostCommandAndUpdateNewElementProperties(Document doc,
@@ -226,7 +238,7 @@ namespace PyRevitBaseClasses {
             StartTrackingElements();
             StartCancellingAllDialogs();
             var postableCommandId = RevitCommandId.LookupPostableCommandId(postableCommand);
-            App.PostCommand(postableCommandId);
+            UIApp.PostCommand(postableCommandId);
             PostElementPropertyUpdateRequest(doc, transactionName, bip, value);
         }
     }

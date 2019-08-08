@@ -25,46 +25,22 @@ namespace PyRevitBaseClasses {
     }
 
     public class PyRevitScriptRuntime : IDisposable {
-        private ExternalCommandData _commandData = null;
-        private UIApplication _uiApp = null;
-        private UIControlledApplication _uiCtrldApp = null;
+        // app handles
         private Application _app = null;
-        private ElementSet _elements = null;
-
-        private string _scriptSource = null;
-        private string _configScriptSource = null;
-        private string[] _syspaths = null;
-        private string[] _arguments = null;
-        private string _helpSource = null;
-        private string _cmdName = null;
-        private string _cmdBundle = null;
-        private string _cmdExtension = null;
-        private string _cmdUniqueName = null;
-
+        private UIApplication _uiApp = null;
+        // for commands that are events
         private object _eventSender = null;
-        private object _eventArgs = null;
 
-        private bool _needsCleanEngine = false;
-        private bool _needsFullFrameEngine = false;
-        private bool _needsPersistentEngine = false;
-
-        private bool _refreshEngine = false;
-        private bool _forcedDebugMode = false;
-        private bool _configScriptMode = false;
-        private bool _execFromUI = false;
-
+        // output window and stream
         private WeakReference<ScriptOutput> _scriptOutput = new WeakReference<ScriptOutput>(null);
         private WeakReference<ScriptOutputStream> _outputStream = new WeakReference<ScriptOutputStream>(null);
 
         // get the state of variables before command execution; the command could potentially change the values
         private EnvDictionary _envDict = new EnvDictionary();
-
-        private int _execResults = 0;
-        private string _ironLangTrace = "";
-        private string _clrTrace = "";
-        private string _cpyTrace = "";
+        // dict for command result data
         private Dictionary<string, string> _resultsDict = null;
-
+        // dict to store custom builtin variables
+        // engine reads this and sets the vars in scope
         private IDictionary<string, object> _builtins = new Dictionary<string, object>();
 
         public PyRevitScriptRuntime(
@@ -72,7 +48,7 @@ namespace PyRevitBaseClasses {
                 ElementSet elements,
                 string scriptSource,
                 string configScriptSource,
-                string[] syspaths,
+                string[] searchpaths,
                 string[] arguments,
                 string helpSource,
                 string cmdName,
@@ -86,66 +62,75 @@ namespace PyRevitBaseClasses {
                 bool forcedDebugMode,
                 bool configScriptMode,
                 bool executedFromUI) {
-            _commandData = cmdData;
-            _elements = elements;
+            // set exec parameters
+            NeedsRefreshedEngine = refreshEngine;
+            DebugMode = forcedDebugMode;
+            ConfigMode = configScriptMode;
+            ExecutedFromUI = executedFromUI;
 
-            _scriptSource = scriptSource;
-            _configScriptSource = configScriptSource;
-            _syspaths = syspaths;
-            _arguments = arguments;
+            // set IronPython engine configs
+            NeedsCleanEngine = needsCleanEngine;
+            NeedsFullFrameEngine = needsFullFrameEngine;
+            NeedsPersistentEngine = needsPersistentEngine;
 
-            _helpSource = helpSource;
-            _cmdName = cmdName;
-            _cmdBundle = cmdBundle;
-            _cmdExtension = cmdExtension;
-            _cmdUniqueName = cmdUniqueName;
+            // set execution hooks
+            CommandData = cmdData;
+            SelectedElements = elements;
+            // event info
+            EventSender = null;
+            EventArgs = null;
 
-            _needsCleanEngine = needsCleanEngine;
-            _needsFullFrameEngine = needsFullFrameEngine;
-            _needsPersistentEngine = needsPersistentEngine;
+            // set metadata
+            HelpSource = helpSource;
+            CommandName = cmdName;
+            CommandBundle = cmdBundle;
+            CommandExtension = cmdExtension;
+            CommandUniqueId = cmdUniqueName;
 
-            _refreshEngine = refreshEngine;
-            _forcedDebugMode = forcedDebugMode;
-            _configScriptMode = configScriptMode;
-            _execFromUI = executedFromUI;
+            // set source
+            OriginalScriptSourceFile = scriptSource;
+            ConfigScriptSourceFile = configScriptSource;
+
+            // set search paths
+            ModuleSearchPaths = new List<string>();
+            if (searchpaths != null)
+                ModuleSearchPaths.AddRange(searchpaths);
+
+            // set argument list
+            var argv = new List<string>();
+            // add script source as the first argument
+            argv.Add(ScriptSourceFile);
+            // if other arguments are available, add those as well
+            if (arguments != null)
+                argv.AddRange(arguments);
+            Arguments = argv;
+
+            ExecutionResult = ExecutionResultCodes.Succeeded;
+            IronLanguageTraceBack = string.Empty;
+            CLRTraceBack = string.Empty;
+            CpythonTraceBack = string.Empty;
         }
 
-        public ExternalCommandData CommandData {
-            get {
-                return _commandData;
-            }
-        }
+        public ExternalCommandData CommandData { get; private set; }
 
-        public ElementSet SelectedElements {
-            get {
-                return _elements;
-            }
-        }
+        public ElementSet SelectedElements { get; private set; }
 
         public string ScriptSourceFile {
             get {
-                if (_configScriptMode && (_configScriptSource != null || _configScriptSource != string.Empty))
-                    return _configScriptSource;
+                if (ConfigMode && (ConfigScriptSourceFile != null || ConfigScriptSourceFile != string.Empty))
+                    return ConfigScriptSourceFile;
                 else
-                    return _scriptSource;
+                    return OriginalScriptSourceFile;
             }
         }
 
-        public string OriginalScriptSourceFile {
-            get {
-                return _scriptSource;
-            }
-        }
+        public string OriginalScriptSourceFile { get; private set; }
 
-        public string ConfigScriptSourceFile {
-            get {
-                return _configScriptSource;
-            }
-        }
+        public string ConfigScriptSourceFile { get; private set; }
 
         public InterfaceType InterfaceType {
             get {
-                if (_eventSender != null || _eventArgs != null)
+                if (_eventSender != null || EventArgs != null)
                     return InterfaceType.EventHandler;
 
                 return InterfaceType.ExternalCommand;
@@ -198,56 +183,19 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public List<string> ModuleSearchPaths {
-            get {
-                return new List<string>(_syspaths);
-            }
-        }
+        public List<string> ModuleSearchPaths { get; private set; }
 
-        public List<string> Arguments {
-            get {
-                var argv = new List<string>();
+        public List<string> Arguments { get; private set; }
 
-                // add script source as the first argument
-                argv.Add(ScriptSourceFile);
+        public string HelpSource { get; private set; }
 
-                // if other arguments are available, add those as well
-                if (_arguments != null)
-                    argv.AddRange(_arguments);
+        public string CommandName { get; private set; }
 
-                return argv;
-            }
-        }
+        public string CommandBundle { get; private set; }
 
-        public string HelpSource {
-            get {
-                return _helpSource;
-            }
-        }
+        public string CommandExtension { get; private set; }
 
-        public string CommandName {
-            get {
-                return _cmdName;
-            }
-        }
-
-        public string CommandUniqueId {
-            get {
-                return _cmdUniqueName;
-            }
-        }
-
-        public string CommandBundle {
-            get {
-                return _cmdBundle;
-            }
-        }
-
-        public string CommandExtension {
-            get {
-                return _cmdExtension;
-            }
-        }
+        public string CommandUniqueId { get; private set; }
 
         public object EventSender {
             get {
@@ -255,67 +203,34 @@ namespace PyRevitBaseClasses {
             }
 
             set {
-                // detemine sender type
-                _eventSender = value;
-                if (_eventSender.GetType() == typeof(UIControlledApplication))
-                   UIControlledApp = (UIControlledApplication)_eventSender;
-                else if (_eventSender.GetType() == typeof(UIApplication))
-                    UIApp = (UIApplication)_eventSender;
-                else if (_eventSender.GetType() == typeof(Application))
-                    App = (Application)_eventSender;
+                if (value != null) {
+                    // detemine sender type
+                    _eventSender = value;
+                    if (_eventSender.GetType() == typeof(UIControlledApplication))
+                        UIControlledApp = (UIControlledApplication)_eventSender;
+                    else if (_eventSender.GetType() == typeof(UIApplication))
+                        _uiApp = (UIApplication)_eventSender;
+                    else if (_eventSender.GetType() == typeof(Application))
+                        _app = (Application)_eventSender;
+                }
             }
         }
 
-        public object EventArgs {
-            get {
-                return _eventArgs;
-            }
-            set {
-                _eventArgs = value;
-            }
-        }
+        public object EventArgs { get; set; }
 
-        public bool NeedsCleanEngine {
-            get {
-                return _needsCleanEngine;
-            }
-        }
+        public bool NeedsCleanEngine { get; private set; }
 
-        public bool NeedsFullFrameEngine {
-            get {
-                return _needsFullFrameEngine;
-            }
-        }
+        public bool NeedsFullFrameEngine { get; private set; }
 
-        public bool NeedsPersistentEngine {
-            get {
-                return _needsPersistentEngine;
-            }
-        }
+        public bool NeedsPersistentEngine { get; private set; }
 
-        public bool NeedsRefreshedEngine {
-            get {
-                return _refreshEngine;
-            }
-        }
+        public bool NeedsRefreshedEngine { get; private set; }
 
-        public bool DebugMode {
-            get {
-                return _forcedDebugMode;
-            }
-        }
+        public bool DebugMode { get; private set; }
 
-        public bool ConfigMode {
-            get {
-                return _configScriptMode;
-            }
-        }
+        public bool ConfigMode { get; private set; }
 
-        public bool ExecutedFromUI {
-            get {
-                return _execFromUI;
-            }
-        }
+        public bool ExecutedFromUI { get; private set; }
 
         public string DocumentName {
             get {
@@ -347,10 +262,10 @@ namespace PyRevitBaseClasses {
                     var newOutput = new ScriptOutput(DebugMode, UIApp);
 
                     // Set output window title to command name
-                    newOutput.OutputTitle = _cmdName;
+                    newOutput.OutputTitle = CommandName;
 
                     // Set window identity to the command unique identifier
-                    newOutput.OutputId = _cmdUniqueName;
+                    newOutput.OutputId = CommandUniqueId;
 
                     // set window app version header
                     newOutput.AppVersion = string.Format(
@@ -382,41 +297,13 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public int ExecutionResult {
-            get {
-                return _execResults;
-            }
-            set {
-                _execResults = value;
-            }
-        }
+        public int ExecutionResult { get; set; }
 
-        public string IronLanguageTraceBack {
-            get {
-                return _ironLangTrace;
-            }
-            set {
-                _ironLangTrace = value;
-            }
-        }
+        public string IronLanguageTraceBack { get;  set; }
 
-        public string CLRTraceBack {
-            get {
-                return _clrTrace;
-            }
-            set {
-                _clrTrace = value;
-            }
-        }
+        public string CLRTraceBack { get; set; }
 
-        public string CpythonTraceBack {
-            get {
-                return _cpyTrace;
-            }
-            set {
-                _cpyTrace = value;
-            }
-        }
+        public string CpythonTraceBack { get; set; }
 
         public string TraceMessage {
             get {
@@ -441,8 +328,8 @@ namespace PyRevitBaseClasses {
 
         public UIApplication UIApp {
             get {
-                if (_commandData != null)
-                    return _commandData.Application;
+                if (CommandData != null)
+                    return CommandData.Application;
                 else if (_uiApp != null)
                     return _uiApp;
                 return null;
@@ -453,22 +340,14 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public UIControlledApplication UIControlledApp {
-            get {
-                return _uiCtrldApp;
-            }
-
-            set {
-                _uiCtrldApp = value;
-            }
-        }
+        public UIControlledApplication UIControlledApp { get; set; }
 
         public Application App {
             get {
-                if (_commandData != null)
-                    return _commandData.Application.Application;
-                else if (_uiApp != null)
-                    return _uiApp.Application;
+                if (CommandData != null)
+                    return CommandData.Application.Application;
+                else if (UIApp != null)
+                    return UIApp.Application;
                 else if (_app != null)
                     return _app;
                 return null;
@@ -542,11 +421,11 @@ namespace PyRevitBaseClasses {
         }
 
         public void Dispose() {
-            _uiCtrldApp = null;
+            UIControlledApp = null;
             _uiApp = null;
             _app = null;
             _eventSender = null;
-            _eventArgs = null;
+            EventArgs = null;
             _scriptOutput = null;
             _outputStream = null;
             _resultsDict = null;

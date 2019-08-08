@@ -506,7 +506,7 @@ namespace PyRevitBaseClasses {
 
             // create compiler parameters
             var compileParams = new CompilerParameters(refFiles);
-            compileParams.CompilerOptions = string.Format("/optimize -define:REVIT{0}", pyrvtScript.App.VersionNumber);
+            compileParams.CompilerOptions = string.Format("/optimize /define:REVIT{0}", pyrvtScript.App.VersionNumber);
             compileParams.GenerateInMemory = true;
             compileParams.GenerateExecutable = false;
 

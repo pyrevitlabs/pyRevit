@@ -218,7 +218,7 @@ namespace PyRevitBaseClasses {
                 elements: elements,
                 scriptSource: baked_scriptSource,
                 configScriptSource: baked_configScriptSource,
-                syspaths: baked_syspaths.Split(ExternalConfig.defaultsep),
+                searchpaths: baked_syspaths.Split(ExternalConfig.defaultsep),
                 arguments: baked_arguments.Split(ExternalConfig.defaultsep),
                 helpSource: baked_helpSource,
                 cmdName: baked_cmdName,
