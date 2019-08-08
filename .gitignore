@@ -2,6 +2,7 @@
 extensions/*
 !extensions/pyRevitCore.extension/
 !extensions/pyRevitDevTools.extension/
+!extensions/pyRevitDevHooks.extension/
 !extensions/pyRevitRun.run/
 !extensions/pyRevitTemplates.extension/
 !extensions/pyRevitTags.extension/
