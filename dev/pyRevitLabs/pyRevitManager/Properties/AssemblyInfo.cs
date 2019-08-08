@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("pyRevitManager")]
-[assembly: AssemblyCopyright("Copyright © eirannejad 2018-2019")]
+[assembly: AssemblyCopyright("Copyright © 2014-2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
