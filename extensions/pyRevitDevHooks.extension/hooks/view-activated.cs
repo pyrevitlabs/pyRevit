@@ -7,8 +7,8 @@ using Autodesk.Revit.UI;
 
 
 namespace MyEvents {
-    public static class MyEventMgr {
-        public static void MyEventMgr_UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
+    public class MyEventMgr {
+        public void MyEventMgr_UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             File.AppendAllText(
                 Path.Combine(desktopPath, "hooks.log"),

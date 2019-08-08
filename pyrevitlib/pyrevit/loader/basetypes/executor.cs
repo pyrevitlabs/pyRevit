@@ -574,10 +574,14 @@ namespace PyRevitBaseClasses {
                 foreach (MethodInfo methodInfo in assmType.GetMethods()) {
                     var methodParams = methodInfo.GetParameters();
                     if (methodParams.Count() == 2
-                                && methodParams[0].Name == "sender"
-                                && (methodParams[1].Name == "e" || methodParams[1].Name == "args")) {
-                        methodInfo.Invoke(
+                            && methodParams[0].Name == "sender"
+                            && (methodParams[1].Name == "e" || methodParams[1].Name == "args")) {
+                        object extEventInstance = Activator.CreateInstance(assmType);
+                        assmType.InvokeMember(
+                            methodInfo.Name,
+                            BindingFlags.Default | BindingFlags.InvokeMethod,
                             null,
+                            extEventInstance,
                             new object[] {
                                     pyrvtScript.EventSender,
                                     pyrvtScript.EventArgs
