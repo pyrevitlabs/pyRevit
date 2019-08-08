@@ -245,7 +245,7 @@ def get_elements_by_param_value(param_name, param_value,
         return []
 
 
-def get_elements_by_category(element_bicats, elements=None, doc=None):
+def get_elements_by_categories(element_bicats, elements=None, doc=None):
     # if source elements is provided
     if elements:
         return [x for x in elements
@@ -920,8 +920,8 @@ def get_rev_number(revision):
 
 def get_pointclouds(doc=None):
     doc = doc or HOST_APP.doc
-    return get_elements_by_category([DB.BuiltInCategory.OST_PointClouds],
-                                    doc=doc)
+    return get_elements_by_categories([DB.BuiltInCategory.OST_PointClouds],
+                                      doc=doc)
 
 
 def get_mep_connections(element):
@@ -1235,3 +1235,31 @@ def get_family_parameter(param_name, family_doc):
     else:
         raise PyRevitException('Document is not a family')
 
+
+def get_doors(elements=None, doc=None, room_id=None):
+    """Get all doors in active or given document.
+
+    Args:
+        elements (list[DB.Element]): find rooms in given elements instead
+        doc (DB.Document): target document; default is active document
+        room_id (DB.ElementId): only doors associated with given room
+
+    Returns:
+        list[DB.Element]: room instances
+    """
+    doc = doc or HOST_APP.doc
+    all_doors = get_elements_by_categories([DB.BuiltInCategory.OST_Doors],
+                                           elements=elements,
+                                           doc=doc)
+    if room_id:
+        room_doors = []
+        for door in all_doors:
+            door_phase = doc.GetElement(door.CreatedPhaseId)
+            from_room = door.FromRoom[door_phase]
+            to_room = door.ToRoom[door_phase]
+            if (from_room and from_room.Id == room_id) \
+                    or (to_room and to_room.Id == room_id):
+                room_doors.append(door)
+        return room_doors
+    else:
+        return list(all_doors)

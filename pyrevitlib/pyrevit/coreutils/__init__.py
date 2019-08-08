@@ -869,6 +869,29 @@ def decrement_str(input_str, step=1):
     return _inc_or_dec_string(input_str, -abs(step))
 
 
+def extend_counter(input_str, upper=True, use_zero=False):
+    """Add a new level to identifier. e.g. A310 -> A310A
+
+    Args:
+        input_str (str): identifier e.g. A310
+        upper (bool): use UPPERCASE characters for extension
+        use_zero (bool): start from 0 for numeric extension
+
+    Returns:
+        str: extended identifier
+
+    Example:
+        >>> extend_counter('A310')
+        'A310A'
+        >>> extend_counter('A310A', use_zero=True)
+        'A310A0'
+    """
+    if input_str[-1].isdigit():
+        return input_str + ("A" if upper else "a")
+    else:
+        return input_str + ("0" if use_zero else "1")
+
+
 def filter_null_items(src_list):
     """Remove None items in the given list.
 
@@ -1381,11 +1404,13 @@ def kill_tasks(task_name):
 
 
 def int2hex_long(number):
+    """Integer to hexadecimal string."""
     # python 2 fix of addin 'L' to long integers
     return hex(number).replace('L', '')
 
 
 def hex2int_long(hex_string):
+    """Hexadecimal string to Integer."""
     # python 2 fix of addin 'L' to long integers
     hex_string.replace('L', '')
     return int(hex_string, 16)
