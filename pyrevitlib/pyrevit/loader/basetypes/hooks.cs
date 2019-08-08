@@ -17,11 +17,11 @@ namespace PyRevitBaseClasses {
 
         public string Script;
         public EventType EventType;
-        public string SearchPaths;
+        public string[] SearchPaths;
         public string ExtensionName;
         public string UniqueId;
 
-        public EventHook(string script, EventType event_type, string syspaths, string extension_name, string id) {
+        public EventHook(string script, EventType event_type, string[] syspaths, string extension_name, string id) {
             Script = script;
             EventType = event_type;
             SearchPaths = syspaths;
@@ -404,6 +404,7 @@ namespace PyRevitBaseClasses {
                     cmdUniqueName: eventHook.UniqueId,
                     needsCleanEngine: false,
                     needsFullFrameEngine: false,
+                    needsPersistentEngine: false,
                     refreshEngine: false,
                     forcedDebugMode: false,
                     configScriptMode: false,
@@ -432,7 +433,7 @@ namespace PyRevitBaseClasses {
                         new EventHook(
                             script: (string)eventHook[EventHook.script_key],
                             event_type: (EventType)eventHook[EventHook.event_type_key],
-                            syspaths: (string)eventHook[EventHook.syspaths_key],
+                            syspaths: (string[])eventHook[EventHook.syspaths_key],
                             extension_name: (string)eventHook[EventHook.extension_name_key],
                             id: (string)eventHook[EventHook.id_key]
                             )
@@ -448,7 +449,7 @@ namespace PyRevitBaseClasses {
                     new EventHook(
                         script: (string)eventHook[EventHook.script_key],
                         event_type: (EventType)eventHook[EventHook.event_type_key],
-                        syspaths: (string)eventHook[EventHook.syspaths_key],
+                        syspaths: (string[])eventHook[EventHook.syspaths_key],
                         extension_name: (string)eventHook[EventHook.extension_name_key],
                         id: (string)eventHook[EventHook.id_key]
                         )
@@ -494,12 +495,12 @@ namespace PyRevitBaseClasses {
             toggleHooks(uiApp, eventType, toggle_on: false);
         }
 
-        public static void RegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
+        public static void RegisterHook(UIApplication uiApp, string script, EventType eventType, string[] searchPaths, string extName, string uniqueId) {
             var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
             AddEventHook(eventHook);
         }
 
-        public static void UnRegisterHook(UIApplication uiApp, string script, EventType eventType, string searchPaths, string extName, string uniqueId) {
+        public static void UnRegisterHook(UIApplication uiApp, string script, EventType eventType, string[] searchPaths, string extName, string uniqueId) {
             var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
             RemoveEventHook(eventHook);
         }

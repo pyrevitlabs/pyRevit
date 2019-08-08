@@ -23,7 +23,7 @@ if not EXEC_PARAMS.doc_mode:
     PyRevitCommand = base_module.PyRevitCommand
     PyRevitCommandExtendedAvail = base_module.PyRevitCommandExtendedAvail
     PyRevitCommandSelectionAvail = base_module.PyRevitCommandSelectionAvail
-    PyRevitCommandDefaultAvail = base_module.PyRevitCommandDefaultAvail
+    PyRevitCommandZeroDocAvail = base_module.PyRevitCommandZeroDocAvail
 
     # pyrevitcmdruntime.cs
     PyRevitScriptRuntime = base_module.PyRevitScriptRuntime
@@ -32,7 +32,9 @@ if not EXEC_PARAMS.doc_mode:
     ScriptExecutor = base_module.ScriptExecutor
 
     # helpers.cs
-    UIDocUtils = base_module.UIDocUtils
+    UIEventUtils = base_module.UIEventUtils
+    PlaceKeynoteExternalEventHandler = \
+        base_module.PlaceKeynoteExternalEventHandler
 
     # hooks.cs
     EventHook = base_module.EventHook

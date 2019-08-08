@@ -125,18 +125,19 @@ namespace PyRevitBaseClasses {
                 return ExecutionResultCodes.ExecutionException;
             }
             finally {
-                // clean the scope unless the script is requesting clean engine
-                // this is a temporary convention to allow users to keep global references in the scope
-                if (!pyrvtScript.NeedsCleanEngine) {
+                // clean the scope unless the script is requesting persistent engine
+                if (!pyrvtScript.NeedsPersistentEngine) {
+                    // cleaning removes all references to revit content that's been casualy stored in global-level
+                    // variables and prohibit the GC from cleaning them up and releasing memory
                     var cleanupScript = engine.CreateScriptSourceFromString(
                         "for __deref in dir():\n" +
                         "    if not __deref.startswith('__'):\n" +
                         "        del globals()[__deref]");
                     cleanupScript.Compile();
                     cleanupScript.Execute(scope);
-                }
 
-                engineMgr.CleanupEngine(engine);
+                    engineMgr.CleanupEngine(engine);
+                }
             }
         }
 
@@ -247,21 +248,24 @@ namespace PyRevitBaseClasses {
         /// Run the script by directly invoking the IExternalCommand type from given dll
         private static int ExecuteInvokableDLL(ref PyRevitScriptRuntime pyrvtScript) {
             try {
-                if (pyrvtScript.ConfigScriptSourceFile != null || pyrvtScript.ConfigScriptSourceFile != string.Empty) {
+                // first argument is the script name
+                // script.py assmFile:className
+                if (pyrvtScript.Arguments.Count == 2) {
                     // load the binary data from the DLL
                     // Direct invoke commands use the config script source file to point
                     // to the target dll assembly location
-                    string assmFile = pyrvtScript.ConfigScriptSourceFile;
+                    string argumentString = pyrvtScript.Arguments[1];
+                    string assmFile = argumentString;
                     string className = null;
-                    if (pyrvtScript.ConfigScriptSourceFile.Contains("::")) {
-                        var parts = pyrvtScript.ConfigScriptSourceFile.Split(
+                    if (argumentString.Contains("::")) {
+                        var parts = argumentString.Split(
                             new string[] { "::" },
                             StringSplitOptions.RemoveEmptyEntries
                             );
+
                         assmFile = parts[0];
                         className = parts[1];
                     }
-
                     byte[] assmBin = File.ReadAllBytes(assmFile);
                     Assembly assmObj = Assembly.Load(assmBin);
 

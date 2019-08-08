@@ -3,6 +3,7 @@ import os.path as op
 from collections import namedtuple
 
 from pyrevit import HOST_APP
+from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.loadertypes import EventType, PyRevitHooks
 from pyrevit.coreutils import envvars
@@ -104,9 +105,7 @@ def get_extension_hooks(extension):
                 EventHook(
                     script=hook_script,
                     event_type=hook_type,
-                    syspaths=coreutils.join_strings(
-                        extension.get_search_paths()
-                        ),
+                    syspaths=extension.module_paths,
                     extension_name=extension.name,
                     id=_create_hook_id(extension, hook_script)
                 )
@@ -124,7 +123,7 @@ def register_hooks(extension):
             uiApp=HOST_APP.uiapp,
             script=ext_hook.script,
             eventType=ext_hook.event_type,
-            searchPaths=ext_hook.syspaths,
+            searchPaths=framework.Array[str](ext_hook.syspaths),
             extName=ext_hook.extension_name,
             uniqueId=ext_hook.id
         )
@@ -136,7 +135,7 @@ def unregister_hooks(extension):
             uiApp=HOST_APP.uiapp,
             script=ext_hook.script,
             eventType=ext_hook.event_type,
-            searchPaths=ext_hook.syspaths,
+            searchPaths=framework.Array[str](ext_hook.syspaths),
             extName=ext_hook.extension_name,
             uniqueId=ext_hook.id
         )

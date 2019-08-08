@@ -48,10 +48,10 @@ mlogger = get_logger(__name__)
 
 def _update_extension_search_paths(ui_ext, lib_ext_list, pyrvt_paths):
     for lib_ext in lib_ext_list:
-        ui_ext.add_search_path(lib_ext.directory)
+        ui_ext.add_module_path(lib_ext.directory)
 
     for pyrvt_path in pyrvt_paths:
-        ui_ext.add_search_path(pyrvt_path)
+        ui_ext.add_module_path(pyrvt_path)
 
 
 def _is_extension_enabled(ext_info):

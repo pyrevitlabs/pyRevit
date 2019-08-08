@@ -63,14 +63,14 @@ CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
     .format(LOADER_BASE_NAMESPACE, 'PyRevitCommand')
 
 # template python command availability class
-CMD_AVAIL_TYPE_NAME = \
-    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandDefaultAvail')
-
 CMD_AVAIL_TYPE_NAME_EXTENDED = \
     coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandExtendedAvail')
-
 CMD_AVAIL_TYPE_NAME_SELECTION = \
     coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
+CMD_AVAIL_TYPE_NAME_ZERODOC = \
+    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandZeroDocAvail')
+
+CMD_AVAIL_NAME_POSTFIX = '-avail'
 
 SOURCE_FILE_EXT = '.cs'
 SOURCE_FILE_FILTER = r'(\.cs)'
@@ -281,14 +281,17 @@ if not EXEC_PARAMS.doc_mode:
 
     CMD_EXECUTOR_TYPE = \
         assmutils.find_type_by_name(BASE_TYPES_ASM, CMD_EXECUTOR_TYPE_NAME)
-    CMD_AVAIL_TYPE = \
-        assmutils.find_type_by_name(BASE_TYPES_ASM, CMD_AVAIL_TYPE_NAME)
+
     CMD_AVAIL_TYPE_EXTENDED = \
-        assmutils.find_type_by_name(BASE_TYPES_ASM,
-                                    CMD_AVAIL_TYPE_NAME_EXTENDED)
+            assmutils.find_type_by_name(BASE_TYPES_ASM,
+                                        CMD_AVAIL_TYPE_NAME_EXTENDED)
     CMD_AVAIL_TYPE_SELECTION = \
+            assmutils.find_type_by_name(BASE_TYPES_ASM,
+                                        CMD_AVAIL_TYPE_NAME_SELECTION)
+    CMD_AVAIL_TYPE_ZERODOC = \
         assmutils.find_type_by_name(BASE_TYPES_ASM,
-                                    CMD_AVAIL_TYPE_NAME_SELECTION)
+                                    CMD_AVAIL_TYPE_NAME_ZERODOC)
 else:
-    BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = CMD_AVAIL_TYPE = None
-    CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None
+    BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = None
+    CMD_AVAIL_TYPE_ZERODOC = \
+        CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None

@@ -33,7 +33,7 @@ namespace PyRevitBaseClasses {
 
         private string _scriptSource = null;
         private string _configScriptSource = null;
-        private string _syspaths = null;
+        private string[] _syspaths = null;
         private string[] _arguments = null;
         private string _helpSource = null;
         private string _cmdName = null;
@@ -46,6 +46,7 @@ namespace PyRevitBaseClasses {
 
         private bool _needsCleanEngine = false;
         private bool _needsFullFrameEngine = false;
+        private bool _needsPersistentEngine = false;
 
         private bool _refreshEngine = false;
         private bool _forcedDebugMode = false;
@@ -71,7 +72,7 @@ namespace PyRevitBaseClasses {
                 ElementSet elements,
                 string scriptSource,
                 string configScriptSource,
-                string syspaths,
+                string[] syspaths,
                 string[] arguments,
                 string helpSource,
                 string cmdName,
@@ -80,6 +81,7 @@ namespace PyRevitBaseClasses {
                 string cmdUniqueName,
                 bool needsCleanEngine,
                 bool needsFullFrameEngine,
+                bool needsPersistentEngine,
                 bool refreshEngine,
                 bool forcedDebugMode,
                 bool configScriptMode,
@@ -98,8 +100,9 @@ namespace PyRevitBaseClasses {
             _cmdExtension = cmdExtension;
             _cmdUniqueName = cmdUniqueName;
 
-            _needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
-            _needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
+            _needsCleanEngine = needsCleanEngine;
+            _needsFullFrameEngine = needsFullFrameEngine;
+            _needsPersistentEngine = needsPersistentEngine;
 
             _refreshEngine = refreshEngine;
             _forcedDebugMode = forcedDebugMode;
@@ -197,7 +200,7 @@ namespace PyRevitBaseClasses {
 
         public List<string> ModuleSearchPaths {
             get {
-                return new List<string>(_syspaths.Split(ExternalConfig.defaultsep));
+                return new List<string>(_syspaths);
             }
         }
 
@@ -281,6 +284,12 @@ namespace PyRevitBaseClasses {
         public bool NeedsFullFrameEngine {
             get {
                 return _needsFullFrameEngine;
+            }
+        }
+
+        public bool NeedsPersistentEngine {
+            get {
+                return _needsPersistentEngine;
             }
         }
 

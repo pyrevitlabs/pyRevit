@@ -13,7 +13,7 @@ import pyrevit.extensions as exts
 from pyrevit.extensions.genericcomps import GenericComponent
 from pyrevit.extensions.genericcomps import GenericUIContainer
 from pyrevit.extensions.genericcomps import GenericUICommand
-from pyrevit.versionmgr import get_pyrevit_version
+from pyrevit import versionmgr
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -30,12 +30,9 @@ class NoButton(GenericUICommand):
 
 
 class NoScriptButton(GenericUICommand):
-    def __init__(self):
-        GenericUICommand.__init__(self)
-        self.assembly = self.command_class = None
-
-    def __init_from_dir__(self, cmd_dir, needs_commandclass=False):
-        GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
+    def __init__(self, cmp_path=None, needs_commandclass=False):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
         self.assembly = self.command_class = None
         # to support legacy linkbutton types using python global var convention
         # if has python script, read metadata
@@ -43,7 +40,7 @@ class NoScriptButton(GenericUICommand):
             try:
                 # reading script file content to extract parameters
                 script_content = \
-                    coreutils.ScriptFileParser(self.get_full_script_address())
+                    coreutils.ScriptFileParser(self.script_file)
 
                 self.assembly = \
                     script_content.extract_param(exts.LINK_BUTTON_ASSEMBLY)
@@ -83,7 +80,7 @@ class NoScriptButton(GenericUICommand):
         assm_file = self.assembly.lower()
         if not assm_file.endswith(framework.ASSEMBLY_FILE_TYPE):
             assm_file += '.' + framework.ASSEMBLY_FILE_TYPE
-        target_asm = self.find_in_search_paths(assm_file)
+        target_asm = self.find_bundle_module(assm_file)
         if not target_asm and required:
             mlogger.error("%s can not find target assembly.", self)
         return target_asm or ''
@@ -92,15 +89,21 @@ class NoScriptButton(GenericUICommand):
 class LinkButton(NoScriptButton):
     type_id = exts.LINK_BUTTON_POSTFIX
 
-    def __init_from_dir__(self, cmd_dir):
-        NoScriptButton.__init_from_dir__(self, cmd_dir, needs_commandclass=True)
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        NoScriptButton.__init__(
+            self,
+            cmp_path=cmp_path,
+            needs_commandclass=True
+            )
 
 
 class InvokeButton(NoScriptButton):
     type_id = exts.INVOKE_BUTTON_POSTFIX
 
-    def __init_from_dir__(self, cmd_dir):
-        NoScriptButton.__init_from_dir__(self, cmd_dir)
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        NoScriptButton.__init__(self, cmp_path=cmp_path)
 
 
 class PushButton(GenericUICommand):
@@ -111,38 +114,6 @@ class PanelPushButton(GenericUICommand):
     type_id = exts.PANEL_PUSH_BUTTON_POSTFIX
 
 
-class ToggleButton(GenericUICommand):
-    type_id = exts.TOGGLE_BUTTON_POSTFIX
-
-    def __init__(self):
-        GenericUICommand.__init__(self)
-        self.icon_on_file = self.icon_off_file = None
-        if self.name:
-            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
-                              'removed soon. Please use SmartButton bundle, '
-                              'or any other bundle and use script.toggle_icon '
-                              'method to toggle the tool icon.'
-                              .format(self.name))
-
-    def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir)
-
-        full_file_path = op.join(self.directory, exts.DEFAULT_ON_ICON_FILE)
-        self.icon_on_file = \
-            full_file_path if op.exists(full_file_path) else None
-
-        full_file_path = op.join(self.directory, exts.DEFAULT_OFF_ICON_FILE)
-        self.icon_off_file = \
-            full_file_path if op.exists(full_file_path) else None
-
-        if self.name:
-            mlogger.deprecate('{} | Toggle bundle is deprecated and will be '
-                              'removed soon. Please use SmartButton bundle, '
-                              'or any other bundle and use script.toggle_icon '
-                              'method to toggle the tool icon.'
-                              .format(self.name))
-
-
 class SmartButton(GenericUICommand):
     type_id = exts.SMART_BUTTON_POSTFIX
 
@@ -150,19 +121,27 @@ class SmartButton(GenericUICommand):
 class ContentButton(GenericUICommand):
     type_id = exts.CONTENT_BUTTON_POSTFIX
 
-    def __init_from_dir__(self, cmd_dir):
-        GenericUICommand.__init_from_dir__(self, cmd_dir, needs_script=False)
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUICommand.__init__(
+            self,
+            cmp_path=cmp_path,
+            needs_script=False
+            )
         # find script file
         self.script_file = \
-            self._find_bundle_file([
+            self.find_bundle_file([
                 exts.CONTENT_POSTFIX,
                 ])
 
         # find if any alternate content is specified
         if self.meta:
-            self.config_script_file = \
-                self.meta.get(exts.MDATA_CONTENT_BUTTON_ALT_CONTENT,
-                              self.config_script_file)
+            alt_content = \
+                self.meta.get(exts.MDATA_CONTENT_BUTTON_ALT_CONTENT, None)
+            if alt_content:
+                self.config_script_file = \
+                    self.get_bundle_file(alt_content) \
+                        or self.config_script_file
 
 
 # Command groups only include commands. these classes can include
@@ -172,7 +151,7 @@ class GenericUICommandGroup(GenericUIContainer):
 
     def has_commands(self):
         for component in self:
-            if component.is_valid_cmd():
+            if isinstance(component, GenericUICommand):
                 return True
 
 
@@ -196,7 +175,7 @@ class GenericStack(GenericUIContainer):
     def has_commands(self):
         for component in self:
             if not component.is_container:
-                if component.is_valid_cmd():
+                if isinstance(component, GenericUICommand):
                     return True
             else:
                 if component.has_commands():
@@ -220,7 +199,7 @@ class Panel(GenericUIContainer):
     def has_commands(self):
         for component in self:
             if not component.is_container:
-                if component.is_valid_cmd():
+                if isinstance(component, GenericUICommand):
                     return True
             else:
                 if component.has_commands():
@@ -238,7 +217,7 @@ class Panel(GenericUIContainer):
             return True
         else:
             # if child is a stack item, check its children too
-            for component in self._sub_components:
+            for component in self:
                 if isinstance(component, GenericStack) \
                         and component.contains(item_name):
                     return True
@@ -262,60 +241,11 @@ class Extension(GenericUIContainer):
     type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
-    def __init__(self):
-        GenericUIContainer.__init__(self)
-        self.author = None
-        self.version = None
-        self.pyrvt_version = self.dir_hash_value = None
-
-    def __init_from_dir__(self, package_dir):   #pylint: disable=W0221
-        GenericUIContainer.__init_from_dir__(self, package_dir)
-        self.pyrvt_version = get_pyrevit_version().get_formatted()
-
-        # extensions can store event hooks under
-        # hooks/ inside the component folder
-        hooks_path = op.join(self.directory, exts.COMP_HOOKS_DIR_NAME)
-        self.hooks_path = hooks_path if op.exists(hooks_path) else None
-
-        self.dir_hash_value = self._read_dir_hash()
-        if not self.dir_hash_value:
-            self.dir_hash_value = self._calculate_extension_dir_hash()
-
-    @property
-    def hash_cache(self):
-        hash_file = op.join(self.directory, exts.EXTENSION_HASH_CACHE_FILENAME)
-        if op.isfile(hash_file):
-            return hash_file
-        else:
-            return ''
-
-    @property
-    def ext_hash_value(self):
-        return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
-
-    @property
-    def startup_script(self):
-        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
-
-    # def _write_dir_hash(self, hash_value):
-    #     if os.access(self.hash_cache, os.W_OK):
-    #         try:
-    #             with open(self.hash_cache, 'w') as hash_file:
-    #                 hash_file.writeline(hash_value)
-    #                 return True
-    #         except Exception:
-    #             return False
-    #     return False
-
-    def _read_dir_hash(self):
-        if self.hash_cache:
-            try:
-                with open(self.hash_cache, 'r') as hash_file:
-                    return hash_file.readline().rstrip()
-            except Exception:
-                return ''
-        else:
-            return ''
+    def __init__(self, cmp_path=None):
+        self.pyrvt_version = None
+        self.dir_hash_value = None
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUIContainer.__init__(self, cmp_path=cmp_path)
 
     def _calculate_extension_dir_hash(self):
         """Creates a unique hash # to represent state of directory."""
@@ -352,8 +282,27 @@ class Extension(GenericUIContainer):
         patfile += '|(' + exts.DEFAULT_LAYOUT_FILE_NAME + ')'
         return coreutils.calculate_dir_hash(self.directory, pat, patfile)
 
+    def _update_from_directory(self):   #pylint: disable=W0221
+        # using classname otherwise exceptions in superclasses won't show
+        GenericUIContainer._update_from_directory(self)
+        self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
+
+        # extensions can store event hooks under
+        # hooks/ inside the component folder
+        hooks_path = op.join(self.directory, exts.COMP_HOOKS_DIR_NAME)
+        self.hooks_path = hooks_path if op.exists(hooks_path) else None
+
+        self.dir_hash_value = self._calculate_extension_dir_hash()
+
+    @property
+    def startup_script(self):
+        return self.get_bundle_file(exts.EXT_STARTUP_FILE)
+
+    def get_hash(self):
+        return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
+
     def get_all_commands(self):
-        return self.get_components_of_type(GenericUICommand)
+        return self.find_components_of_type(GenericUICommand)
 
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
@@ -379,7 +328,10 @@ class Extension(GenericUIContainer):
     def get_all_modules(self):
         referenced_modules = set()
         for cmd in self.get_all_commands():
-            referenced_modules.update(cmd.get_modules())
+            for module in cmd.modules:
+                cmd_module = cmd.find_bundle_module(module)
+                if cmd_module:
+                    referenced_modules.add(cmd_module)
         return referenced_modules
 
     def get_hooks(self):
@@ -392,17 +344,18 @@ class Extension(GenericUIContainer):
 class LibraryExtension(GenericComponent):
     type_id = exts.ExtensionTypes.LIB_EXTENSION.POSTFIX
 
-    def __init__(self):
+    def __init__(self, cmp_path=None):
+        # using classname otherwise exceptions in superclasses won't show
         GenericComponent.__init__(self)
-        self.directory = None
+        self.directory = cmp_path
 
-    def __init_from_dir__(self, ext_dir):
-        if not ext_dir.endswith(self.type_id):
-            raise PyRevitException('Can not initialize from directory: {}'
-                                   .format(ext_dir))
-        self.directory = ext_dir
-        self.name = op.splitext(op.basename(self.directory))[0]
+        if self.directory:
+            self.name = op.splitext(op.basename(self.directory))[0]
 
     def __repr__(self):
         return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
             .format(self.type_id, self.name, self.directory)
+
+    @classmethod
+    def matches(cls, component_path):
+        return component_path.lower().endswith(cls.type_id)
