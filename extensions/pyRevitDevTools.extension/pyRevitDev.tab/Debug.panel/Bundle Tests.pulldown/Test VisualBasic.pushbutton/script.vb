@@ -11,8 +11,8 @@ Implements IExternalCommand
                                 ByVal elements As ElementSet) As Autodesk.Revit.UI.Result _
                                 Implements IExternalCommand.Execute
 
-                MsgBox("Hello World from VB.Net!!")
-                TaskDialog.Show("Revit", "Hello World from VB.Net!!")
+                MsgBox("Hello World from Visual Basic!!")
+                TaskDialog.Show("Revit", "Hello World from Visual Basic!!")
                 Return Autodesk.Revit.UI.Result.Succeeded
         End Function
 End Class
