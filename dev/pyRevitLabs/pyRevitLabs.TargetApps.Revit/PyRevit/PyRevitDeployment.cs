@@ -18,5 +18,4 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string Name { get; private set; }
         public List<string> Paths { get; private set; }
     }
-
 }

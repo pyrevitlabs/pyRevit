@@ -26,7 +26,7 @@ namespace pyRevitCLI {
         internal static void
         PrintClones() {
             PyRevitCLIAppCmds.PrintHeader("Registered Clones (full git repos)");
-            var clones = PyRevit.GetRegisteredClones().OrderBy(x => x.Name);
+            var clones = PyRevitClones.GetRegisteredClones().OrderBy(x => x.Name);
             foreach (var clone in clones.Where(c => c.IsRepoDeploy))
                 Console.WriteLine(clone);
 
@@ -38,7 +38,7 @@ namespace pyRevitCLI {
         internal static void
         PrintAttachments(int revitYear = 0) {
             PyRevitCLIAppCmds.PrintHeader("Attachments");
-            foreach (var attachment in PyRevit.GetAttachments().OrderByDescending(x => x.Product.Version)) {
+            foreach (var attachment in PyRevitAttachments.GetAttachments().OrderByDescending(x => x.Product.Version)) {
                 if (revitYear == 0)
                     Console.WriteLine(attachment);
                 else if (revitYear == attachment.Product.ProductYear)
@@ -52,7 +52,7 @@ namespace pyRevitCLI {
             if (cloneName != null) {
                 // if deployment requested or image path is provided
                 if (imagePath != null || deployName != null)
-                    PyRevit.DeployFromImage(
+                    PyRevitClones.DeployFromImage(
                         cloneName,
                         deploymentName: deployName,
                         branchName: branchName,
@@ -61,7 +61,7 @@ namespace pyRevitCLI {
                         );
                 // otherwise clone the full repo
                 else
-                    PyRevit.DeployFromRepo(
+                    PyRevitClones.DeployFromRepo(
                         cloneName,
                         deploymentName: deployName,
                         branchName: branchName,
@@ -74,51 +74,51 @@ namespace pyRevitCLI {
         internal static void
         PrintCloneInfo(string cloneName) {
             PyRevitCLIAppCmds.PrintHeader("Clone info");
-            Console.WriteLine(PyRevit.GetRegisteredClone(cloneName));
+            Console.WriteLine(PyRevitClones.GetRegisteredClone(cloneName));
         }
 
         internal static void
         OpenClone(string cloneName) {
-            CommonUtils.OpenInExplorer(PyRevit.GetRegisteredClone(cloneName).ClonePath);
+            CommonUtils.OpenInExplorer(PyRevitClones.GetRegisteredClone(cloneName).ClonePath);
         }
 
         internal static void
         RegisterClone(string cloneName, string clonePath, bool force) {
             if (clonePath != null)
-                PyRevit.RegisterClone(cloneName, clonePath, forceUpdate: force);
+                PyRevitClones.RegisterClone(cloneName, clonePath, forceUpdate: force);
         }
 
         internal static void
         ForgetClone(bool allClones, string cloneName) {
             if (allClones)
-                PyRevit.UnregisterAllClones();
+                PyRevitClones.UnregisterAllClones();
             else
-                PyRevit.UnregisterClone(
-                    PyRevit.GetRegisteredClone(cloneName)
+                PyRevitClones.UnregisterClone(
+                    PyRevitClones.GetRegisteredClone(cloneName)
                     );
         }
 
         internal static void
         RenameClone(string cloneName, string cloneNewName) {
             if (cloneNewName != null) {
-                PyRevit.RenameClone(cloneName, cloneNewName);
+                PyRevitClones.RenameClone(cloneName, cloneNewName);
             }
         }
 
         internal static void
         DeleteClone(bool allClones, string cloneName, bool clearConfigs) {
             if (allClones)
-                PyRevit.DeleteAllClones(clearConfigs: clearConfigs);
+                PyRevitClones.DeleteAllClones(clearConfigs: clearConfigs);
             else {
                 if (cloneName != null)
-                    PyRevit.Delete(PyRevit.GetRegisteredClone(cloneName), clearConfigs: clearConfigs);
+                    PyRevitClones.Delete(PyRevitClones.GetRegisteredClone(cloneName), clearConfigs: clearConfigs);
             }
         }
 
         internal static void
         GetSetCloneBranch(string cloneName, string branchName) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 if (clone != null) {
                     if (clone.IsRepoDeploy) {
                         if (branchName != null) {
@@ -138,7 +138,7 @@ namespace pyRevitCLI {
         internal static void
         GetSetCloneTag(string cloneName, string tagName) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 // get version for git clones
                 if (clone.IsRepoDeploy) {
                     if (tagName != null) {
@@ -165,7 +165,7 @@ namespace pyRevitCLI {
         internal static void
         GetSetCloneCommit(string cloneName, string commitHash) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 if (clone.IsRepoDeploy) {
                     if (commitHash != null) {
                         clone.SetCommit(commitHash);
@@ -183,11 +183,11 @@ namespace pyRevitCLI {
         internal static void
         GetSetCloneOrigin(string cloneName, string originUrl, bool reset) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 if (clone.IsRepoDeploy) {
                     if (originUrl != null || reset) {
                         string newUrl =
-                            reset ? PyRevitConsts.OriginalRepoPath : originUrl;
+                            reset ? PyRevit.OriginalRepoPath : originUrl;
                         clone.SetOrigin(newUrl);
                     }
                     else {
@@ -203,7 +203,7 @@ namespace pyRevitCLI {
         internal static void
         PrintCloneDeployments(string cloneName) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 PyRevitCLIAppCmds.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
                 foreach (var dep in clone.GetConfiguredDeployments()) {
                     Console.WriteLine(string.Format("\"{0}\" deploys:", dep.Name));
@@ -217,7 +217,7 @@ namespace pyRevitCLI {
         internal static void
         PrintCloneEngines(string cloneName) {
             if (cloneName != null) {
-                var clone = PyRevit.GetRegisteredClone(cloneName);
+                var clone = PyRevitClones.GetRegisteredClone(cloneName);
                 PyRevitCLIAppCmds.PrintHeader(string.Format("Deployments for \"{0}\"", clone.Name));
                 foreach (var engine in clone.GetConfiguredEngines()) {
                     Console.WriteLine(engine);
@@ -237,7 +237,7 @@ namespace pyRevitCLI {
 
             // all clones
             if (allClones) {
-                foreach (var clone in PyRevit.GetRegisteredClones())
+                foreach (var clone in PyRevitClones.GetRegisteredClones())
                     if (PyRevitCLIAppCmds.IsRunningInsideClone(clone))
                         myClone = clone;
                     else
@@ -246,7 +246,7 @@ namespace pyRevitCLI {
             // or single clone
             else {
                 if (cloneName != null) {
-                    var clone = PyRevit.GetRegisteredClone(cloneName);
+                    var clone = PyRevitClones.GetRegisteredClone(cloneName);
                     if (PyRevitCLIAppCmds.IsRunningInsideClone(clone))
                         myClone = clone;
                     else
@@ -257,12 +257,12 @@ namespace pyRevitCLI {
             // update clones that do not include this process
             foreach (var clone in targetClones) {
                 logger.Debug("Updating clone \"{0}\"", clone.Name);
-                PyRevit.Update(clone);
+                PyRevitClones.Update(clone);
             }
 
             // now update myClone if any, as last step
             if (myClone != null)
-                throw new pyRevitException("Can not update clone that contains this command line utility. "
+                throw new PyRevitException("Can not update clone that contains this command line utility. "
                                            + "Use installer to update.");
 
         }
@@ -272,7 +272,7 @@ namespace pyRevitCLI {
                     bool latest, bool dynamoSafe, string engineVersion,
                     string revitYear, bool installed, bool attached,
                     bool allUsers) {
-            var clone = PyRevit.GetRegisteredClone(cloneName);
+            var clone = PyRevitClones.GetRegisteredClone(cloneName);
 
             // grab engine version
             int engineVer = 0;
@@ -286,23 +286,23 @@ namespace pyRevitCLI {
                 if (latestCloneEngine != null)
                     engineVer = latestCloneEngine.Version;
                 else
-                    throw new pyRevitException("Can not determine latest runtime engine for this clone.");
+                    throw new PyRevitException("Can not determine latest runtime engine for this clone.");
             }
             else if (dynamoSafe) {
                 logger.Debug("Attaching on dynamo-safe engine");
-                engineVer = PyRevitConsts.ConfigsDynamoCompatibleEnginerVer;
+                engineVer = PyRevit.ConfigsDynamoCompatibleEnginerVer;
             }
 
             // decide targets revits to attach to
             int revitYearNumber = 0;
             if (installed)
                 foreach (var revit in RevitProduct.ListInstalledProducts())
-                    PyRevit.Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                    PyRevitAttachments.Attach(revit.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
             else if (attached)
-                foreach (var attachment in PyRevit.GetAttachments())
-                    PyRevit.Attach(attachment.Product.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
+                foreach (var attachment in PyRevitAttachments.GetAttachments())
+                    PyRevitAttachments.Attach(attachment.Product.ProductYear, clone, engineVer: engineVer, allUsers: allUsers);
             else if (int.TryParse(revitYear, out revitYearNumber))
-                PyRevit.Attach(revitYearNumber, clone, engineVer: engineVer, allUsers: allUsers);
+                PyRevitAttachments.Attach(revitYearNumber, clone, engineVer: engineVer, allUsers: allUsers);
         }
 
         internal static void
@@ -310,12 +310,12 @@ namespace pyRevitCLI {
             if (revitYear != null) {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevit.Detach(revitYearNumber);
+                    PyRevitAttachments.Detach(revitYearNumber);
                 else
-                    throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
+                    throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
             else if (all)
-                PyRevit.DetachAll();
+                PyRevitAttachments.DetachAll();
         }
 
         internal static void
@@ -325,7 +325,7 @@ namespace pyRevitCLI {
                 if (int.TryParse(revitYear, out revitYearNumber))
                     PrintAttachments(revitYear: revitYearNumber);
                 else
-                    throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
+                    throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
             else
                 PrintAttachments();
@@ -333,45 +333,45 @@ namespace pyRevitCLI {
 
         internal static void
         SwitchAttachment(string cloneName, string revitYear) {
-            var clone = PyRevit.GetRegisteredClone(cloneName);
+            var clone = PyRevitClones.GetRegisteredClone(cloneName);
             if (revitYear != null) {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber)) {
-                    var attachment = PyRevit.GetAttached(revitYearNumber);
+                    var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
                     if (attachment != null) {
                         if (attachment.Engine != null) {
-                            PyRevit.Attach(attachment.Product.ProductYear,
+                            PyRevitAttachments.Attach(attachment.Product.ProductYear,
                                            clone,
                                            engineVer: attachment.Engine.Version,
                                            allUsers: attachment.AllUsers);
                         }
                         else
-                            throw new pyRevitException(
+                            throw new PyRevitException(
                                 string.Format("Can not determine attachment engine for Revit \"{0}\"",
                                               revitYear)
                                 );
                     }
                     else
-                        throw new pyRevitException(
+                        throw new PyRevitException(
                             string.Format("Can not determine existing attachment for Revit \"{0}\"",
                                           revitYear)
                             );
                 }
                 else
-                    throw new pyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
+                    throw new PyRevitException(string.Format("Invalid Revit year \"{0}\"", revitYear));
             }
             else {
                 // read current attachments and reattach using the same config with the new clone
-                foreach (var attachment in PyRevit.GetAttachments()) {
+                foreach (var attachment in PyRevitAttachments.GetAttachments()) {
                     if (attachment.Engine != null) {
-                        PyRevit.Attach(
+                        PyRevitAttachments.Attach(
                             attachment.Product.ProductYear,
                             clone,
                             engineVer: attachment.Engine.Version,
                             allUsers: attachment.AllUsers);
                     }
                     else
-                        throw new pyRevitException("Can not determine attachment engine.");
+                        throw new PyRevitException("Can not determine attachment engine.");
                 }
             }
         }
@@ -379,17 +379,17 @@ namespace pyRevitCLI {
         internal static void
         BuildImage(string cloneName, string configFile, string imageFilePath) {
             if (configFile == null || configFile == string.Empty)
-                throw new pyRevitException("Config file must be specified.");
+                throw new PyRevitException("Config file must be specified.");
             else {
                 var paths = File.ReadAllLines(configFile);
 
                 var destPath = Path.GetDirectoryName(imageFilePath);
                 if (!CommonUtils.VerifyPath(destPath))
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("Destination path does not exist: \"{0}\"", destPath)
                         );
 
-                PyRevit.CreateImageFromClone(PyRevit.GetRegisteredClone(cloneName), paths, imageFilePath);
+                PyRevitClones.CreateImageFromClone(PyRevitClones.GetRegisteredClone(cloneName), paths, imageFilePath);
             }
         }
     }

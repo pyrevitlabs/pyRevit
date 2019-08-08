@@ -21,7 +21,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
             // check if clone is compatible
             if (!CommonUtils.VerifyFile(PyRevitCloneRunner))
-                throw new pyRevitException("Clone does not have Run feature. Update your clone to latest.");
+                throw new PyRevitException("Clone does not have Run feature. Update your clone to latest.");
 
             // generate unique id for this execution
             ExecutionId = Guid.NewGuid().ToString();
@@ -112,13 +112,13 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         }
 
         private void GenerateManifest() {
-            Addons.CreateManifestFile(Revit.ProductYear,
+            RevitAddons.CreateManifestFile(Revit.ProductYear,
                                       Path.GetFileName(PyRevitRunnerManifestFile),
                                       "pyRevitRunner",
                                       PyRevitCloneRunner,
                                       "D49D3677-61C4-47A8-BFFF-49E6616D54C1",
                                       "PyRevitRunner.PyRevitRunnerApplication",
-                                      PyRevitConsts.VendorId,
+                                      PyRevit.VendorId,
                                       addinPath: WorkingDirectory);
         }
 
@@ -147,15 +147,12 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
         }
     }
 
-
     public class PyRevitRunnerOptions {
         public PyRevitRunnerOptions() { }
 
         public bool PurgeTempFiles = false;
         public string ImportPath;
     }
-
-
 
     public static class PyRevitRunner {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();

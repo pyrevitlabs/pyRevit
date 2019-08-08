@@ -35,7 +35,7 @@ from pyrevit.telemetry import events as telemetry_events
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
-consts = TargetApps.Revit.PyRevitConsts
+consts = TargetApps.Revit.PyRevit
 
 PYREVIT_TELEMETRYSTATE_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYSTATE'

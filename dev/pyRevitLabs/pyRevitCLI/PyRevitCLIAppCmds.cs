@@ -58,11 +58,11 @@ namespace pyRevitCLI {
         internal static void
         ClearCaches(bool allCaches, string revitYear) {
             if (allCaches)
-                PyRevit.ClearAllCaches();
+                PyRevitCaches.ClearAllCaches();
             else {
                 int revitYearNumber = 0;
                 if (int.TryParse(revitYear, out revitYearNumber))
-                    PyRevit.ClearCache(revitYearNumber);
+                    PyRevitCaches.ClearCache(revitYearNumber);
             }
         }
 
@@ -71,11 +71,11 @@ namespace pyRevitCLI {
         CreateEnvJson() {
             // collecet search paths
             var searchPaths = new List<string>() { PyRevit.pyRevitDefaultExtensionsPath };
-            searchPaths.AddRange(PyRevit.GetRegisteredExtensionSearchPaths());
+            searchPaths.AddRange(PyRevitExtensions.GetRegisteredExtensionSearchPaths());
 
             // collect list of lookup sources
-            var lookupSrc = new List<string>() { PyRevit.GetDefaultExtensionLookupSource() };
-            lookupSrc.AddRange(PyRevit.GetRegisteredExtensionLookupSources());
+            var lookupSrc = new List<string>() { PyRevitExtensions.GetDefaultExtensionLookupSource() };
+            lookupSrc.AddRange(PyRevitExtensions.GetRegisteredExtensionLookupSources());
 
             // create json data object
             var jsonData = new Dictionary<string, object>() {
@@ -83,9 +83,9 @@ namespace pyRevitCLI {
                                 { "version", "0.1.0"}
                             }
                         },
-                        { "clones", PyRevit.GetRegisteredClones() },
-                        { "attachments", PyRevit.GetAttachments() },
-                        { "extensions", PyRevit.GetInstalledExtensions() },
+                        { "clones", PyRevitClones.GetRegisteredClones() },
+                        { "attachments", PyRevitAttachments.GetAttachments() },
+                        { "extensions", PyRevitExtensions.GetInstalledExtensions() },
                         { "searchPaths", searchPaths },
                         { "lookupSources", lookupSrc },
                         { "installed", RevitProduct.ListInstalledProducts() },
@@ -183,7 +183,7 @@ namespace pyRevitCLI {
         PrintVersion() {
             Console.WriteLine(string.Format(StringLib.ConsoleVersionFormat, PyRevitCLI.CLIVersion.ToString()));
             if (CommonUtils.CheckInternetConnection()) {
-                var latestVersion = PyRevitRelease.GetLatestCLIReleaseVersion();
+                var latestVersion = PyRevitReleases.GetLatestCLIReleaseVersion();
                 if (latestVersion != null) {
                     logger.Debug("Latest release: {0}", latestVersion);
                     if (PyRevitCLI.CLIVersion < latestVersion) {
@@ -191,7 +191,7 @@ namespace pyRevitCLI {
                             string.Format(
                                 "Newer v{0} is available.\nGo to {1} to download the installer.",
                                 latestVersion,
-                                PyRevitConsts.ReleasesUrl)
+                                PyRevit.ReleasesUrl)
                             );
                     }
                     else
@@ -209,7 +209,7 @@ namespace pyRevitCLI {
                 var iconPath = Path.Combine(processPath, shortcutIconName);
                 CommonUtils.AddShortcut(
                     shortcutName,
-                    PyRevitConsts.ProductName,
+                    PyRevit.ProductName,
                     GetProcessFileName(),
                     shortcutArgs,
                     processPath,

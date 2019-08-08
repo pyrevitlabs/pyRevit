@@ -42,16 +42,16 @@ namespace pyRevitLabs.Common {
     // exceptions to be used for all breaking, critical errors
 
     // base exception
-    public class pyRevitException : Exception {
-        public pyRevitException() { }
+    public class PyRevitException : Exception {
+        public PyRevitException() { }
 
-        public pyRevitException(string message) : base(message) { }
+        public PyRevitException(string message) : base(message) { }
 
-        public pyRevitException(string message, Exception innerException) : base(message, innerException) { }
+        public PyRevitException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     // resource exceptions
-    public class pyRevitResourceMissingException : pyRevitException {
+    public class pyRevitResourceMissingException : PyRevitException {
         public pyRevitResourceMissingException() { }
 
         public pyRevitResourceMissingException(string resoucePath) { Path = resoucePath; }
@@ -65,7 +65,7 @@ namespace pyRevitLabs.Common {
         }
     }
 
-    public class pyRevitNoInternetConnectionException : pyRevitException {
+    public class pyRevitNoInternetConnectionException : PyRevitException {
         public pyRevitNoInternetConnectionException() { }
 
         public override string Message {

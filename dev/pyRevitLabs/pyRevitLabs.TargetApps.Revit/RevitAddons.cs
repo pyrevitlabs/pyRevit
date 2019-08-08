@@ -1,9 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 using pyRevitLabs.Common;
@@ -33,7 +29,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public string VendorId { get; set; }
     }
 
-    public static class Addons {
+    public static class RevitAddons {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // TODO: generate this using xml module so other metadata could be added inside <AddIn> (tested)
@@ -88,7 +84,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 allUsers ? "(All Users)" : "(Current User)"
                 );
 
-            return GetManifest(revitYear, PyRevitConsts.AddinName, allUsers: allUsers);
+            return GetManifest(revitYear, PyRevit.AddinName, allUsers: allUsers);
         }
 
         public static void RemoveManifestFile(int revitYear, string addinName, bool currentAndAllUsers = true) {

@@ -233,7 +233,7 @@ class SettingsWindow(forms.WPFWindow):
              for x in Revit.RevitProduct.ListInstalledProducts()}
         attachments = \
             {str(x.Product.ProductYear):x
-             for x in Revit.PyRevit.GetAttachments()}
+             for x in Revit.PyRevitAttachments.GetAttachments()}
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
             if rvt_ver in attachments:
@@ -286,7 +286,7 @@ class SettingsWindow(forms.WPFWindow):
                     forms.alert('Active engine has changed. '
                                 'Restart Revit for this change to take effect.')
                 # configure the engine on this version
-                Revit.PyRevit.Attach(
+                Revit.PyRevitAttachments.Attach(
                     int(HOST_APP.version),
                     attachment.Clone,
                     new_engine,
@@ -297,14 +297,14 @@ class SettingsWindow(forms.WPFWindow):
                 for rvt_ver, checkbox in self._addinfiles_cboxes.items():
                     if checkbox.IsEnabled:
                         if checkbox.IsChecked:
-                            Revit.PyRevit.Attach(
+                            Revit.PyRevitAttachments.Attach(
                                 int(rvt_ver),
                                 attachment.Clone,
                                 new_engine,
                                 all_users
                                 )
                         else:
-                            Revit.PyRevit.Detach(int(rvt_ver))
+                            Revit.PyRevitAttachments.Detach(int(rvt_ver))
         else:
             logger.error('Error determining current attached clone.')
 

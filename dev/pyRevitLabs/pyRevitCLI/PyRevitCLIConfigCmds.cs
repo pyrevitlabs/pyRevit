@@ -25,7 +25,7 @@ namespace pyRevitCLI {
 
         internal static void
         SeedConfigs(string templateConfigFilePath) {
-            PyRevit.SeedConfig(setupFromTemplate: templateConfigFilePath);
+            PyRevitConfigs.SeedConfig(setupFromTemplate: templateConfigFilePath);
         }
     }
 }

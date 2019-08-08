@@ -1,11 +1,11 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("pyRevitManager")]
+[assembly: AssemblyTitle("PyRevitCLI")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("pyRevitManager")]
+[assembly: AssemblyProduct("PyRevitCLI")]
 [assembly: AssemblyCopyright("Copyright © 2014-2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

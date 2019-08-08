@@ -204,7 +204,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
                     max(cpy_engines_dict.values(), key=lambda x: x.Version)
 
                 # grab cpython engine configured to be used by user
-                consts = TargetApps.Revit.PyRevitConsts
+                consts = TargetApps.Revit.PyRevit
                 cpyengine_cfg = \
                     self.core.get_option(consts.ConfigsCPythonEngine, 0)
                 try:
@@ -250,12 +250,12 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def get_current_attachment():
         """Return current pyRevit attachment."""
         hostver = int(HOST_APP.version)
-        return TargetApps.Revit.PyRevit.GetAttached(hostver)
+        return TargetApps.Revit.PyRevitAttachments.GetAttached(hostver)
 
 
 def find_config_file(target_path):
     """Find config file in target path."""
-    return TargetApps.Revit.PyRevit.FindConfigFileInDirectory(target_path)
+    return TargetApps.Revit.PyRevitConfigs.FindConfigFileInDirectory(target_path)
 
 
 def verify_configs(config_file_path=None):
@@ -282,7 +282,7 @@ def verify_configs(config_file_path=None):
         parser = PyRevitConfig()
 
     # set hard-coded values
-    consts = TargetApps.Revit.PyRevitConsts
+    consts = TargetApps.Revit.PyRevit
     # core section
     if not parser.has_section(consts.ConfigsCoreSection):
         parser.add_section(consts.ConfigsCoreSection)
@@ -356,7 +356,7 @@ if not EXEC_PARAMS.doc_mode:
         # if yes, copy that and use as default
         if os.access(ADMIN_CONFIG_FILE, os.W_OK):
             CONFIG_TYPE = 'Seed'
-            TargetApps.Revit.PyRevit.SeedConfig(False, ADMIN_CONFIG_FILE)
+            TargetApps.Revit.PyRevitConfigs.SeedConfig(False, ADMIN_CONFIG_FILE)
             CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
         # unless it's locked. then read that config file and set admin-mode
         else:

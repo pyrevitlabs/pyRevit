@@ -31,18 +31,18 @@ namespace pyRevitCLI {
 
             // determine latest release
             if (latest) {
-                var latestRelease = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
+                var latestRelease = PyRevitReleases.GetLatestRelease(includePreRelease: listPreReleases);
 
                 if (latestRelease == null)
-                    throw new pyRevitException("Can not determine latest release.");
+                    throw new PyRevitException("Can not determine latest release.");
 
                 releasesToList.Add(latestRelease);
             }
             else {
                 if (searchPattern != null)
-                    releasesToList = PyRevitRelease.FindReleases(searchPattern, includePreRelease: listPreReleases);
+                    releasesToList = PyRevitReleases.FindReleases(searchPattern, includePreRelease: listPreReleases);
                 else
-                    releasesToList = PyRevitRelease.GetReleases().Where(r => r.IsPyRevitRelease).ToList();
+                    releasesToList = PyRevitReleases.GetReleases().Where(r => r.IsPyRevitRelease).ToList();
             }
 
             foreach (var prelease in releasesToList) {
@@ -58,16 +58,16 @@ namespace pyRevitCLI {
             PyRevitRelease matchedRelease = null;
             // determine latest release
             if (latest) {
-                matchedRelease = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
+                matchedRelease = PyRevitReleases.GetLatestRelease(includePreRelease: listPreReleases);
 
                 if (matchedRelease == null)
-                    throw new pyRevitException("Can not determine latest release.");
+                    throw new PyRevitException("Can not determine latest release.");
             }
             // or find first release matching given pattern
             else if (searchPattern != null) {
-                matchedRelease = PyRevitRelease.FindReleases(searchPattern, includePreRelease: listPreReleases).First();
+                matchedRelease = PyRevitReleases.FindReleases(searchPattern, includePreRelease: listPreReleases).First();
                 if (matchedRelease == null)
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("No release matching \"{0}\" were found.", searchPattern)
                         );
             }
@@ -84,19 +84,19 @@ namespace pyRevitCLI {
             PyRevitRelease matchedRelease = null;
             // determine latest release
             if (latest) {
-                matchedRelease = PyRevitRelease.GetLatestRelease(includePreRelease: listPreReleases);
+                matchedRelease = PyRevitReleases.GetLatestRelease(includePreRelease: listPreReleases);
 
                 if (matchedRelease == null)
-                    throw new pyRevitException("Can not determine latest release.");
+                    throw new PyRevitException("Can not determine latest release.");
 
             }
             // or find first release matching given pattern
             else {
                 if (searchPattern != null)
-                    matchedRelease = PyRevitRelease.FindReleases(searchPattern, includePreRelease: listPreReleases).First();
+                    matchedRelease = PyRevitReleases.FindReleases(searchPattern, includePreRelease: listPreReleases).First();
 
                 if (matchedRelease == null)
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("No release matching \"{0}\" were found.", searchPattern)
                         );
             }

@@ -21,7 +21,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         public void DeployFromImage_Full_Test() {
             var testCloneBranch = "master";
 
-            PyRevit.DeployFromImage(
+            PyRevitClones.DeployFromImage(
                 cloneName: testCloneName,
                 deploymentName: null,
                 branchName: null,
@@ -29,8 +29,8 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 destPath: TempPath
                 );
 
-            var clone = PyRevit.GetRegisteredClone(testCloneName);
-            PyRevit.UnregisterClone(clone);
+            var clone = PyRevitClones.GetRegisteredClone(testCloneName);
+            PyRevitClones.UnregisterClone(clone);
 
             Assert.AreEqual(testCloneBranch, clone.Branch, string.Format("{0} != {1}", testCloneBranch, clone.Branch));
         }
@@ -40,7 +40,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             var testCloneDeployment = "core";
             var testCloneBranch = "develop";
 
-            PyRevit.DeployFromImage(
+            PyRevitClones.DeployFromImage(
                 cloneName: testCloneName,
                 deploymentName: testCloneDeployment,
                 branchName: testCloneBranch,
@@ -48,8 +48,8 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 destPath: TempPath
                 );
 
-            var clone = PyRevit.GetRegisteredClone(testCloneName);
-            PyRevit.UnregisterClone(clone);
+            var clone = PyRevitClones.GetRegisteredClone(testCloneName);
+            PyRevitClones.UnregisterClone(clone);
 
             Assert.AreEqual(testCloneDeployment, clone.Deployment.Name, string.Format("{0} != {1}", testCloneDeployment, clone.Deployment.Name));
             Assert.AreEqual(testCloneBranch, clone.Branch, string.Format("{0} != {1}", testCloneBranch, clone.Branch));
@@ -59,7 +59,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         public void DeployFromRepo_Full_Test() {
             var testCloneBranch = "master";
 
-            PyRevit.DeployFromRepo(
+            PyRevitClones.DeployFromRepo(
                 cloneName: testCloneName,
                 deploymentName: null,
                 branchName: null,
@@ -67,8 +67,8 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 destPath: TempPath
                 );
 
-            var clone = PyRevit.GetRegisteredClone(testCloneName);
-            PyRevit.UnregisterClone(clone);
+            var clone = PyRevitClones.GetRegisteredClone(testCloneName);
+            PyRevitClones.UnregisterClone(clone);
 
             Assert.IsTrue(clone.IsRepoDeploy);
             Assert.AreEqual(testCloneBranch, clone.Branch);
@@ -78,7 +78,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
         public void DeployFromRepo_Develop_Test() {
             var testCloneBranch = "develop";
 
-            PyRevit.DeployFromRepo(
+            PyRevitClones.DeployFromRepo(
                 cloneName: testCloneName,
                 deploymentName: null,
                 branchName: testCloneBranch,
@@ -86,8 +86,8 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
                 destPath: TempPath
                 );
 
-            var clone = PyRevit.GetRegisteredClone(testCloneName);
-            PyRevit.UnregisterClone(clone);
+            var clone = PyRevitClones.GetRegisteredClone(testCloneName);
+            PyRevitClones.UnregisterClone(clone);
 
             Assert.IsTrue(clone.IsRepoDeploy);
             Assert.AreEqual(testCloneBranch, clone.Branch);
@@ -99,7 +99,7 @@ namespace pyRevitLabs.TargetApps.Revit.Tests {
             var testCloneBranch = "develop";
 
             try {
-                PyRevit.DeployFromRepo(
+                PyRevitClones.DeployFromRepo(
                     cloneName: testCloneName,
                     deploymentName: testCloneDeployment,
                     branchName: testCloneBranch,

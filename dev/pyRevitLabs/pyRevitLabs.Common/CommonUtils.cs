@@ -51,7 +51,7 @@ namespace pyRevitLabs.Common {
                     Directory.Delete(targetDir, false);
                 }
                 catch (Exception ex) {
-                    throw new pyRevitException(string.Format("Error recursive deleting directory \"{0}\" | {1}",
+                    throw new PyRevitException(string.Format("Error recursive deleting directory \"{0}\" | {1}",
                                                              targetDir, ex.Message));
                 }
             }
@@ -74,7 +74,7 @@ namespace pyRevitLabs.Common {
                     System.IO.File.Copy(newPath, newPath.Replace(sourceDir, destDir), true);
             }
             catch (Exception ex) {
-                throw new pyRevitException(
+                throw new PyRevitException(
                     string.Format("Error copying \"{0}\" to \"{1}\" | {2}", sourceDir, destDir, ex.Message)
                     );
             }

@@ -183,15 +183,15 @@ namespace pyRevitCLI {
 
             else if (all("help")) PyRevitCLIAppHelps.OpenHelp();
 
-            else if (all("blog")) CommonUtils.OpenUrl(PyRevitConsts.BlogsUrl);
+            else if (all("blog")) CommonUtils.OpenUrl(PyRevit.BlogsUrl);
 
-            else if (all("docs")) CommonUtils.OpenUrl(PyRevitConsts.DocsUrl);
+            else if (all("docs")) CommonUtils.OpenUrl(PyRevit.DocsUrl);
 
-            else if (all("source")) CommonUtils.OpenUrl(PyRevitConsts.SourceRepoUrl);
+            else if (all("source")) CommonUtils.OpenUrl(PyRevit.SourceRepoUrl);
 
-            else if (all("youtube")) CommonUtils.OpenUrl(PyRevitConsts.YoutubeUrl);
+            else if (all("youtube")) CommonUtils.OpenUrl(PyRevit.YoutubeUrl);
 
-            else if (all("support")) CommonUtils.OpenUrl(PyRevitConsts.SupportRepoUrl);
+            else if (all("support")) CommonUtils.OpenUrl(PyRevit.SupportRepoUrl);
 
             else if (all("env")) {
                 if (IsHelpMode)
@@ -602,16 +602,16 @@ namespace pyRevitCLI {
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
 
                 else if (all("logs"))
-                    Console.WriteLine(string.Format("Logging Level is {0}", PyRevit.GetLoggingLevel().ToString()));
+                    Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
 
                 else if (all("logs", "none"))
-                    PyRevit.SetLoggingLevel(PyRevitLogLevels.None);
+                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.None);
 
                 else if (all("logs", "verbose"))
-                    PyRevit.SetLoggingLevel(PyRevitLogLevels.Verbose);
+                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
 
                 else if (all("logs", "debug"))
-                    PyRevit.SetLoggingLevel(PyRevitLogLevels.Debug);
+                    PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
 
                 // TODO: Implement allowremotedll
                 else if (all("allowremotedll"))
@@ -619,100 +619,100 @@ namespace pyRevitCLI {
 
                 else if (all("checkupdates")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetCheckUpdates(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetCheckUpdates(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("Check Updates is {0}",
-                                                        PyRevit.GetCheckUpdates() ? "Enabled" : "Disabled"));
+                                                        PyRevitConfigs.GetCheckUpdates() ? "Enabled" : "Disabled"));
                 }
 
                 else if (all("autoupdate")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetAutoUpdate(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetAutoUpdate(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("Auto Update is {0}",
-                                                        PyRevit.GetAutoUpdate() ? "Enabled" : "Disabled"));
+                                                        PyRevitConfigs.GetAutoUpdate() ? "Enabled" : "Disabled"));
                 }
 
                 else if (all("rocketmode")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetRocketMode(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetRocketMode(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("Rocket Mode is {0}",
-                                                        PyRevit.GetRocketMode() ? "Enabled" : "Disabled"));
+                                                        PyRevitConfigs.GetRocketMode() ? "Enabled" : "Disabled"));
                 }
 
                 else if (all("filelogging")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetFileLogging(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetFileLogging(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("File Logging is {0}",
-                                                        PyRevit.GetFileLogging() ? "Enabled" : "Disabled"));
+                                                        PyRevitConfigs.GetFileLogging() ? "Enabled" : "Disabled"));
                 }
 
 
                 else if (all("loadbeta")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetLoadBetaTools(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetLoadBetaTools(arguments["enable"].IsTrue);
                     else
                         Console.WriteLine(string.Format("Load Beta is {0}",
-                                                        PyRevit.GetLoadBetaTools() ? "Enabled" : "Disabled"));
+                                                        PyRevitConfigs.GetLoadBetaTools() ? "Enabled" : "Disabled"));
                 }
 
                 else if (all("usercanupdate")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetUserCanUpdate(arguments["Yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanUpdate(arguments["Yes"].IsTrue);
                     else
                         Console.WriteLine(string.Format("User {0} update.",
-                                                        PyRevit.GetUserCanUpdate() ? "CAN" : "CAN NOT"));
+                                                        PyRevitConfigs.GetUserCanUpdate() ? "CAN" : "CAN NOT"));
                 }
 
 
                 else if (all("usercanextend")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetUserCanExtend(arguments["Yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanExtend(arguments["Yes"].IsTrue);
                     else
                         Console.WriteLine(string.Format("User {0} extend.",
-                                                        PyRevit.GetUserCanExtend() ? "CAN" : "CAN NOT"));
+                                                        PyRevitConfigs.GetUserCanExtend() ? "CAN" : "CAN NOT"));
                 }
 
 
                 else if (all("usercanconfig")) {
                     if (any("enable", "disable"))
-                        PyRevit.SetUserCanConfig(arguments["Yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanConfig(arguments["Yes"].IsTrue);
                     else
                         Console.WriteLine(string.Format("User {0} config.",
-                                                        PyRevit.GetUserCanConfig() ? "CAN" : "CAN NOT"));
+                                                        PyRevitConfigs.GetUserCanConfig() ? "CAN" : "CAN NOT"));
 
                 }
 
                 else if (all("telemetry")) {
                     if (all("enable", "file"))
-                        PyRevit.EnableTelemetry(telemetryFilePath: TryGetValue("<dest_path>"));
+                        PyRevitConfigs.EnableTelemetry(telemetryFilePath: TryGetValue("<dest_path>"));
 
                     else if (all("enable", "server"))
-                        PyRevit.EnableTelemetry(telemetryServerUrl: TryGetValue("<dest_path>"));
+                        PyRevitConfigs.EnableTelemetry(telemetryServerUrl: TryGetValue("<dest_path>"));
 
                     else if (all("disable"))
-                        PyRevit.DisableTelemetry();
+                        PyRevitConfigs.DisableTelemetry();
 
                     else {
                         Console.WriteLine(string.Format("Telemetry is {0}",
-                                                        PyRevit.GetTelemetryStatus() ? "Enabled" : "Disabled"));
-                        Console.WriteLine(string.Format("Log File Path: {0}", PyRevit.GetTelemetryFilePath()));
-                        Console.WriteLine(string.Format("Log Server Url: {0}", PyRevit.GetTelemetryServerUrl()));
+                                                        PyRevitConfigs.GetTelemetryStatus() ? "Enabled" : "Disabled"));
+                        Console.WriteLine(string.Format("Log File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
+                        Console.WriteLine(string.Format("Log Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
                     }
                 }
 
                 else if (all("outputcss")) {
                     if (arguments["<css_path>"] == null)
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
-                                                        PyRevit.GetOutputStyleSheet()));
+                                                        PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevit.SetOutputStyleSheet(TryGetValue("<css_path>"));
+                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"));
                 }
 
                 else if (all("seed"))
-                    PyRevit.SeedConfig(makeCurrentUserAsOwner: arguments["--lock"].IsTrue);
+                    PyRevitConfigs.SeedConfig(makeCurrentUserAsOwner: arguments["--lock"].IsTrue);
 
                 else if (all("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {
@@ -722,7 +722,7 @@ namespace pyRevitCLI {
                             string configSection = orignalOptionValue.Split(':')[0];
                             string configOption = orignalOptionValue.Split(':')[1];
 
-                            PyRevit.SetConfig(configSection, configOption, arguments["enable"].IsTrue);
+                            PyRevitConfigs.SetConfig(configSection, configOption, arguments["enable"].IsTrue);
                         }
                     }
                 }
@@ -737,7 +737,7 @@ namespace pyRevitCLI {
 
                             // if no value provided, read the value
                             if (arguments["<option_value>"] != null)
-                                PyRevit.SetConfig(
+                                PyRevitConfigs.SetConfig(
                                     configSection,
                                     configOption,
                                     TryGetValue("<option_value>")
@@ -746,7 +746,7 @@ namespace pyRevitCLI {
                                 Console.WriteLine(
                                     string.Format("{0} = {1}",
                                     configOption,
-                                    PyRevit.GetConfig(configSection, configOption)
+                                    PyRevitConfigs.GetConfig(configSection, configOption)
                                     ));
                         }
                     }

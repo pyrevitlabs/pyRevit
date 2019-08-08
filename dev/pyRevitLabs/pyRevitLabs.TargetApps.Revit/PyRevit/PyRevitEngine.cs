@@ -8,7 +8,7 @@ namespace pyRevitLabs.TargetApps.Revit {
     public class PyRevitEngine {
         // create engine from engine info
         public PyRevitEngine(int engineVer, bool runtime,
-                             string enginePath, string assemblyName = PyRevitConsts.LegacyEngineDllName,
+                             string enginePath, string assemblyName = PyRevit.LegacyEngineDllName,
                              string kernelName = "", string engineDescription = "",
                              IEnumerable<string> compatibleProducts = null) {
             Version = engineVer;
@@ -43,13 +43,6 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public bool IsCompatibleWith(string productName) {
             return CompatibleProducts.Contains(productName);
-        }
-
-        public static PyRevitEngine GetEngineFromManifest(RevitAddonManifest manifest, PyRevitClone clone) {
-            foreach (var engine in clone.GetEngines())
-                if (manifest.Assembly.Contains(engine.Path))
-                    return engine;
-            return null;
         }
     }
 }

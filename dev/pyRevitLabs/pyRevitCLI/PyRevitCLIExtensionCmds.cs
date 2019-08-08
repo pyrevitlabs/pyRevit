@@ -26,7 +26,7 @@ namespace pyRevitCLI {
         internal static void
         PrintExtensions(IEnumerable<PyRevitExtension> extList = null, string headerPrefix = "Installed") {
             if (extList == null)
-                extList = PyRevit.GetInstalledExtensions();
+                extList = PyRevitExtensions.GetInstalledExtensions();
 
             PyRevitCLIAppCmds.PrintHeader(string.Format("{0} Extensions", headerPrefix));
             foreach (PyRevitExtension ext in extList.OrderBy(x => x.Name))
@@ -36,7 +36,7 @@ namespace pyRevitCLI {
         internal static void
         PrintExtensionDefinitions(string searchPattern, string headerPrefix = "Registered") {
             PyRevitCLIAppCmds.PrintHeader(string.Format("{0} Extensions", headerPrefix));
-            foreach (PyRevitExtensionDefinition ext in PyRevit.LookupRegisteredExtensions(searchPattern))
+            foreach (PyRevitExtensionDefinition ext in PyRevitExtensions.LookupRegisteredExtensions(searchPattern))
                 Console.WriteLine(ext);
         }
 
@@ -45,33 +45,33 @@ namespace pyRevitCLI {
             PyRevitCLIAppCmds.PrintHeader("Default Extension Search Path");
             Console.WriteLine(PyRevit.pyRevitDefaultExtensionsPath);
             PyRevitCLIAppCmds.PrintHeader("Extension Search Paths");
-            foreach (var searchPath in PyRevit.GetRegisteredExtensionSearchPaths())
+            foreach (var searchPath in PyRevitExtensions.GetRegisteredExtensionSearchPaths())
                 Console.WriteLine(searchPath);
         }
 
         internal static void
         PrintExtensionLookupSources() {
             PyRevitCLIAppCmds.PrintHeader("Extension Sources - Default");
-            Console.WriteLine(PyRevit.GetDefaultExtensionLookupSource());
+            Console.WriteLine(PyRevitExtensions.GetDefaultExtensionLookupSource());
             PyRevitCLIAppCmds.PrintHeader("Extension Sources - Additional");
-            foreach (var extLookupSrc in PyRevit.GetRegisteredExtensionLookupSources())
+            foreach (var extLookupSrc in PyRevitExtensions.GetRegisteredExtensionLookupSources())
                 Console.WriteLine(extLookupSrc);
         }
 
         internal static void
         Extend(string extName, string destPath, string branchName) {
-            var ext = PyRevit.FindRegisteredExtension(extName);
+            var ext = PyRevitExtensions.FindRegisteredExtension(extName);
             if (ext != null) {
                 logger.Debug("Matching extension found \"{0}\"", ext.Name);
-                PyRevit.InstallExtension(ext, destPath, branchName);
+                PyRevitExtensions.InstallExtension(ext, destPath, branchName);
             }
             else {
                 if (Errors.LatestError == ErrorCodes.MoreThanOneItemMatched)
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("More than one extension matches the name \"{0}\"",
                                         extName));
                 else
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("Not valid extension name or repo url \"{0}\"",
                                         extName));
             }
@@ -88,13 +88,13 @@ namespace pyRevitCLI {
             else if (run)
                 extType = PyRevitExtensionTypes.RunnerExtension;
 
-            PyRevit.InstallExtension(extName, extType, repoUrl, destPath, branchName);
+            PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName);
         }
 
         internal static void
         ProcessExtensionInfoCommands(string extName, bool info, bool help, bool open) {
             if (extName != null) {
-                var ext = PyRevit.FindRegisteredExtension(extName);
+                var ext = PyRevitExtensions.FindRegisteredExtension(extName);
                 if (Errors.LatestError == ErrorCodes.MoreThanOneItemMatched)
                     logger.Warn("More than one extension matches the search pattern \"{0}\"", extName);
                 else {
@@ -103,7 +103,7 @@ namespace pyRevitCLI {
                     else if (help)
                         Process.Start(ext.Website);
                     else if (open) {
-                        var instExt = PyRevit.GetInstalledExtension(extName);
+                        var instExt = PyRevitExtensions.GetInstalledExtension(extName);
                         CommonUtils.OpenInExplorer(instExt.InstallPath);
                     }
                 }
@@ -112,20 +112,20 @@ namespace pyRevitCLI {
 
         internal static void
         DeleteExtension(string extName) {
-            PyRevit.UninstallExtension(extName);
+            PyRevitExtensions.UninstallExtension(extName);
         }
 
         internal static void
         GetSetExtensionOrigin(string extName, string originUrl, bool reset) {
             if (extName != null) {
-                var extension = PyRevit.GetInstalledExtension(extName);
+                var extension = PyRevitExtensions.GetInstalledExtension(extName);
                 if (extension != null) {
                     if (reset) {
-                        var ext = PyRevit.FindRegisteredExtension(extension.Name);
+                        var ext = PyRevitExtensions.FindRegisteredExtension(extension.Name);
                         if (ext != null)
                             extension.SetOrigin(ext.Url);
                         else
-                            throw new pyRevitException(
+                            throw new PyRevitException(
                                 string.Format("Can not find the original url in the extension " +
                                               "database for extension \"{0}\"",
                                               extension.Name));
@@ -144,48 +144,48 @@ namespace pyRevitCLI {
         internal static void
         ForgetAllExtensionPaths(bool all, string searchPath) {
             if (all)
-                foreach (string regSearchPath in PyRevit.GetRegisteredExtensionSearchPaths())
-                    PyRevit.UnregisterExtensionSearchPath(regSearchPath);
+                foreach (string regSearchPath in PyRevitExtensions.GetRegisteredExtensionSearchPaths())
+                    PyRevitExtensions.UnregisterExtensionSearchPath(regSearchPath);
             else
-                PyRevit.UnregisterExtensionSearchPath(searchPath);
+                PyRevitExtensions.UnregisterExtensionSearchPath(searchPath);
         }
 
         internal static void
         AddExtensionPath(string searchPath) {
             if (searchPath != null)
-                PyRevit.RegisterExtensionSearchPath(searchPath);
+                PyRevitExtensions.RegisterExtensionSearchPath(searchPath);
         }
 
         internal static void
         ToggleExtension(bool enable, string extName) {
             if (extName != null) {
                 if (enable)
-                    PyRevit.EnableExtension(extName);
+                    PyRevitExtensions.EnableExtension(extName);
                 else
-                    PyRevit.DisableExtension(extName);
+                    PyRevitExtensions.DisableExtension(extName);
             }
         }
 
         internal static void
         ForgetExtensionLookupSources(bool all, string lookupPath) {
             if (all)
-                PyRevit.UnregisterAllExtensionLookupSources();
+                PyRevitExtensions.UnregisterAllExtensionLookupSources();
             else if (lookupPath != null)
-                PyRevit.UnregisterExtensionLookupSource(lookupPath);
+                PyRevitExtensions.UnregisterExtensionLookupSource(lookupPath);
         }
 
         internal static void
         AddExtensionLookupSource(string lookupPath) {
             if (lookupPath != null)
-                PyRevit.RegisterExtensionLookupSource(lookupPath);
+                PyRevitExtensions.RegisterExtensionLookupSource(lookupPath);
         }
 
         internal static void
         UpdateExtension(bool all, string extName) {
             if (all)
-                PyRevit.UpdateAllInstalledExtensions();
+                PyRevitExtensions.UpdateAllInstalledExtensions();
             else if (extName != null)
-                PyRevit.UpdateExtension(extName);
+                PyRevitExtensions.UpdateExtension(extName);
         }
     }
 }

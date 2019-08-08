@@ -58,12 +58,12 @@ namespace pyRevitCLI {
                             Console.WriteLine(string.Format("{0} directory created: \"{1}\"", extType, extDir));
                         }
                         else
-                            throw new pyRevitException("Directory already exists.");
+                            throw new PyRevitException("Directory already exists.");
                     }
 
                 }
                 else
-                    throw new pyRevitException(
+                    throw new PyRevitException(
                         string.Format("Another extension with name \"{0}\" already exists.", extensionName)
                         );
             }
@@ -118,12 +118,12 @@ namespace pyRevitCLI {
                                 Console.WriteLine(string.Format("Bundle directory created: \"{0}\"", bundleDir));
                             }
                             else
-                                throw new pyRevitException("Directory already exists.");
+                                throw new PyRevitException("Directory already exists.");
                         }
 
                     }
                     else
-                        throw new pyRevitException(
+                        throw new PyRevitException(
                             string.Format("Another bundle with name \"{0}\" already exists.", bundleName)
                             );
                 }
@@ -140,7 +140,7 @@ namespace pyRevitCLI {
                     return extTempPath;
             }
             else
-                throw new pyRevitException(
+                throw new PyRevitException(
                     string.Format("Templates directory does not exist at \"{0}\"", templatesDir)
                     );
 
@@ -157,7 +157,7 @@ namespace pyRevitCLI {
                     return bundleTempPath;
             }
             else
-                throw new pyRevitException(
+                throw new PyRevitException(
                     string.Format("Templates directory does not exist at \"{0}\"", templatesDir)
                     );
 

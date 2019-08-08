@@ -10,6 +10,11 @@ using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.TargetApps.Revit {
+    public enum PyRevitAttachmentType {
+        AllUsers,
+        CurrentUser
+    }
+
     public class PyRevitAttachment {
         private PyRevitClone _clone = null;
 
@@ -66,7 +71,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         public PyRevitEngine Engine {
             get {
                 if (_clone != null)
-                    return PyRevitEngine.GetEngineFromManifest(Manifest, _clone);
+                    return PyRevitEngines.GetEngineFromManifest(Manifest, _clone);
                 else
                     return null;
             }

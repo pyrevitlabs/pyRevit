@@ -128,7 +128,7 @@ namespace pyRevitCLI {
         PrepareAddonsDir(string revitYear, bool allUses) {
             int revitYearNumber = 0;
             if (int.TryParse(revitYear, out revitYearNumber))
-                Addons.PrepareAddonPath(revitYearNumber, allUsers: allUses);
+                RevitAddons.PrepareAddonPath(revitYearNumber, allUsers: allUses);
         }
 
 
@@ -200,7 +200,7 @@ namespace pyRevitCLI {
                 // now run
                 if (revitYearNumber != 0) {
                     // determine attached clone
-                    var attachment = PyRevit.GetAttached(revitYearNumber);
+                    var attachment = PyRevitAttachments.GetAttached(revitYearNumber);
                     if (attachment == null)
                         logger.Error("pyRevit is not attached to Revit \"{0}\". " +
                                      "Runner needs to use the attached clone and engine to execute the script.",
@@ -219,7 +219,7 @@ namespace pyRevitCLI {
                             if (attachment.Clone != null) {
                                 targetExtensions.AddRange(attachment.Clone.GetExtensions());
                             }
-                            targetExtensions.AddRange(PyRevit.GetInstalledExtensions());
+                            targetExtensions.AddRange(PyRevitExtensions.GetInstalledExtensions());
 
                             foreach (PyRevitExtension ext in targetExtensions) {
                                 logger.Debug("Searching for run command in: \"{0}\"", ext.ToString());
@@ -245,7 +245,7 @@ namespace pyRevitCLI {
 
                         // if command is not found, stop
                         if (commandScriptPath == null)
-                            throw new pyRevitException(
+                            throw new PyRevitException(
                                 string.Format("Run command not found: \"{0}\"", inputCommand)
                                 );
 

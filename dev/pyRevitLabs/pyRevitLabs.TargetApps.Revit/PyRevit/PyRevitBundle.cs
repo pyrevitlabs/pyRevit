@@ -5,22 +5,39 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace pyRevitLabs.TargetApps.Revit {
+    public enum PyRevitBundleTypes {
+        Unknown,
+        Tab,
+        Panel,
+        LinkButton,
+        PushButton,
+        ToggleButton,
+        SmartButton,
+        PullDown,
+        Stack3,
+        Stack2,
+        SplitButton,
+        SplitPushButton,
+        PanelButton,
+        NoButton,
+    }
+
     public class PyRevitBundle {
         public static string GetBundleDirExt(PyRevitBundleTypes bundleType) {
             switch (bundleType) {
-                case PyRevitBundleTypes.Tab: return PyRevitConsts.BundleTabPostfix;
-                case PyRevitBundleTypes.Panel: return PyRevitConsts.BundlePanelPostfix;
-                case PyRevitBundleTypes.LinkButton: return PyRevitConsts.BundleLinkButtonPostfix;
-                case PyRevitBundleTypes.PushButton: return PyRevitConsts.BundlePushButtonPostfix;
-                case PyRevitBundleTypes.ToggleButton: return PyRevitConsts.BundleToggleButtonPostfix;
-                case PyRevitBundleTypes.SmartButton: return PyRevitConsts.BundleSmartButtonPostfix;
-                case PyRevitBundleTypes.PullDown: return PyRevitConsts.BundlePulldownButtonPostfix;
-                case PyRevitBundleTypes.Stack3: return PyRevitConsts.BundleStack3Postfix;
-                case PyRevitBundleTypes.Stack2: return PyRevitConsts.BundleStack2Postfix;
-                case PyRevitBundleTypes.SplitButton: return PyRevitConsts.BundleSplitButtonPostfix;
-                case PyRevitBundleTypes.SplitPushButton: return PyRevitConsts.BundleSplitPushButtonPostfix;
-                case PyRevitBundleTypes.PanelButton: return PyRevitConsts.BundlePanelButtonPostfix;
-                case PyRevitBundleTypes.NoButton: return PyRevitConsts.BundleNoButtonPostfix;
+                case PyRevitBundleTypes.Tab: return PyRevit.BundleTabPostfix;
+                case PyRevitBundleTypes.Panel: return PyRevit.BundlePanelPostfix;
+                case PyRevitBundleTypes.LinkButton: return PyRevit.BundleLinkButtonPostfix;
+                case PyRevitBundleTypes.PushButton: return PyRevit.BundlePushButtonPostfix;
+                case PyRevitBundleTypes.ToggleButton: return PyRevit.BundleToggleButtonPostfix;
+                case PyRevitBundleTypes.SmartButton: return PyRevit.BundleSmartButtonPostfix;
+                case PyRevitBundleTypes.PullDown: return PyRevit.BundlePulldownButtonPostfix;
+                case PyRevitBundleTypes.Stack3: return PyRevit.BundleStack3Postfix;
+                case PyRevitBundleTypes.Stack2: return PyRevit.BundleStack2Postfix;
+                case PyRevitBundleTypes.SplitButton: return PyRevit.BundleSplitButtonPostfix;
+                case PyRevitBundleTypes.SplitPushButton: return PyRevit.BundleSplitPushButtonPostfix;
+                case PyRevitBundleTypes.PanelButton: return PyRevit.BundlePanelButtonPostfix;
+                case PyRevitBundleTypes.NoButton: return PyRevit.BundleNoButtonPostfix;
                 default: return null;
             }
         }

@@ -8,14 +8,14 @@ using pyRevitLabs.TargetApps.Revit;
 
 namespace pyRevitLabs.Tests {
     [TestClass()]
-    public class pyRevitManager: TemplateUnitTest {
+    public class PyRevitCLI: TemplateUnitTest {
 
         private const string cliBinaryName = "pyrevit.exe";
         private const string testCloneName = "TestClone";
         private string TestClonePath => Path.Combine(TempPath, testCloneName);
 
         public override string TempPath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PyRevitManager-Tests");
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PyRevitCLI-Tests");
 
         // helper function to run cli commands ang log results
         private void RunCommand(string arguments) {
@@ -42,8 +42,8 @@ namespace pyRevitLabs.Tests {
 
             RunCommand(string.Format("clone \"{0}\" core --dest=\"{1}\"", testCloneName, TempPath));
 
-            var clone = PyRevit.GetRegisteredClone(testCloneName);
-            PyRevit.UnregisterClone(clone);
+            var clone = PyRevitClones.GetRegisteredClone(testCloneName);
+            PyRevitClones.UnregisterClone(clone);
             Assert.AreEqual(testCloneBranch, clone.Branch, string.Format("{0} != {1}", testCloneBranch, clone.Branch));
         }
     }
