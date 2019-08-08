@@ -48,7 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\extensions\pyRevitDevTools.extension\hooks\view-activated.cs">
+    <Compile Include="..\..\..\extensions\pyRevitDevHooks.extension\hooks\view-activated.cs">
       <Link>view-activated.cs</Link>
     </Compile>
   </ItemGroup>
@@ -56,7 +56,7 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\..\extensions\pyRevitDevTools.extension\hooks\view-activated.vb">
+    <Content Include="..\..\..\extensions\pyRevitDevHooks.extension\hooks\view-activated.vb">
       <Link>view-activated.vb</Link>
     </Content>
   </ItemGroup>
