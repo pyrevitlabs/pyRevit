@@ -19,6 +19,7 @@ class NonModalWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self.ext_event = ext_event
         self.ext_event_handler = ext_event_handler
+        self.prev_title = "Title Changed..."
 
     def action(self, sender, args):
         if __shiftclick__:
@@ -28,6 +29,9 @@ class NonModalWindow(forms.WPFWindow):
             self.ext_event_handler.KeynoteKey = "12"
             self.ext_event_handler.KeynoteType = UI.PostableCommand.UserKeynote
             self.ext_event.Raise()
+
+    def other_action(self, sender, args):
+        self.Title, self.prev_title = self.prev_title, self.Title
 
 
 handler = loadertypes.PlaceKeynoteExternalEventHandler()

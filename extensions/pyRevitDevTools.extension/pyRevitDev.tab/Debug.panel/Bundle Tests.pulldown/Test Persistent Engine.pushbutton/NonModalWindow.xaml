@@ -3,9 +3,11 @@
 		ShowInTaskbar="False"
 		WindowStartupLocation="CenterScreen"
 		HorizontalContentAlignment="Center"
-        Height="400" Width="500"
+        SizeToContent="Height"
+        Width="500"
         Title="Test Non-Modal Window">
-    <Grid>
-        <Button Content="Action" Click="action" HorizontalAlignment="Center" VerticalAlignment="Center" Height="50" Width="100"/> 
-    </Grid>
+    <StackPanel Margin="20">
+        <Button Content="Action" Click="action" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="50"/>
+        <Button Content="Action" Click="other_action" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="50" Margin="0,10,0,0"/>
+    </StackPanel>
 </Window>
