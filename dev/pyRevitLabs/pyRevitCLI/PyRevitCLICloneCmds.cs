@@ -262,7 +262,8 @@ namespace pyRevitCLI {
 
             // now update myClone if any, as last step
             if (myClone != null)
-                PyRevitCLIAppCmds.UpdateFromOutsideAndClose(myClone);
+                throw new pyRevitException("Can not update clone that contains this command line utility. "
+                                           + "Use installer to update.");
 
         }
 
