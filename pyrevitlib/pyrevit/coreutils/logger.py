@@ -7,14 +7,15 @@ import logging
 from pyrevit import EXEC_PARAMS
 from pyrevit.compat import safe_strtype
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
-from pyrevit.coreutils import prepare_html_str
+from pyrevit import coreutils
 from pyrevit.coreutils import envvars
 
 LOG_REC_FORMAT = "%(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s: [%(name)s] %(message)s"
 LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s: [<{}> %(name)s] %(message)s"
 
-LOG_REC_FORMAT_HTML = prepare_html_str('<div class="logdefault {0}">{1}</div>')
+LOG_REC_FORMAT_HTML = \
+    coreutils.prepare_html_str('<div class="logdefault {0}">{1}</div>')
 
 LOG_REC_CLASS_ERROR = 'logerror'
 LOG_REC_FORMAT_ERROR = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_ERROR,
@@ -178,6 +179,20 @@ class LoggerWrapper(logging.Logger):
     def get_level(self):
         """Return current logging level."""
         return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+
+    def log_parse_except(self, parsed_file, parse_ex):
+        err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
+                  '<strong>Error type:</strong> {type}\n' \
+                  '<strong>Error Message:</strong> {errmsg}\n' \
+                  '<strong>Line/Column:</strong> {lineno}/{colno}\n' \
+                  '<strong>Line Text:</strong> {linetext}' \
+                  .format(file=parsed_file,
+                          type=parse_ex.__class__.__name__,
+                          errmsg=parse_ex.msg,
+                          lineno=parse_ex.lineno,
+                          colno=parse_ex.offset,
+                          linetext=parse_ex.text)
+        self.error(coreutils.prepare_html_str(err_msg))
 
     def deprecate(self, *args):
         """Log message with custom Deprecate level."""

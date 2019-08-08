@@ -15,7 +15,7 @@ import sys
 from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
-from pyrevit import coreutils
+from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
 from pyrevit import framework
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils import assmutils
@@ -27,13 +27,12 @@ from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
 from pyrevit.userconfig import user_config
-from pyrevit.extensions import COMMAND_AVAILABILITY_NAME_POSTFIX
 from pyrevit.extensions import extensionmgr
 from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the basetypes first to get all the c-sharp code to compile
-from pyrevit.loader.basetypes import LOADER_BASE_NAMESPACE
+from pyrevit.loader import basetypes
 from pyrevit.coreutils import loadertypes
 # now load the rest of module that could depend on the compiled basetypes
 from pyrevit import output
@@ -394,11 +393,11 @@ def find_all_commands(category_set=None, cache=True):
                 for pyrvt_type in all_exported_types:
                     tname = pyrvt_type.FullName
                     availtname = pyrvt_type.Name \
-                                 + COMMAND_AVAILABILITY_NAME_POSTFIX
+                                 + basetypes.CMD_AVAIL_NAME_POSTFIX
                     pyrvt_availtype = None
 
-                    if not tname.endswith(COMMAND_AVAILABILITY_NAME_POSTFIX)\
-                            and LOADER_BASE_NAMESPACE not in tname:
+                    if not tname.endswith(basetypes.CMD_AVAIL_NAME_POSTFIX)\
+                            and basetypes.LOADER_BASE_NAMESPACE not in tname:
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
@@ -522,8 +521,12 @@ def execute_command(pyrevitcmd_unique_id):
         execute_command_cls(cmd_class)
 
 
-def execute_script(script_path, arguments=None, sys_paths=None,
-                   clean_engine=True, fullframe_engine=True):
+def execute_script(script_path,
+                   arguments=None,
+                   sys_paths=None,
+                   clean_engine=True,
+                   fullframe_engine=True,
+                   persistent_engine=True):
     """Executes a script using pyRevit script executor.
 
     Args:
@@ -532,11 +535,6 @@ def execute_script(script_path, arguments=None, sys_paths=None,
     Returns:
         results dictionary from the executed script
     """
-
-    from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
-    from pyrevit.coreutils import DEFAULT_SEPARATOR
-    from pyrevit.framework import clr
-
     script_name = op.basename(script_path)
     core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
     if sys_paths:
@@ -550,8 +548,8 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             elements=None,
             scriptSource=script_path,
             configScriptSource=None,
-            syspaths=DEFAULT_SEPARATOR.join(sys_paths),
-            arguments=arguments,
+            syspaths=framework.Array[str](sys_paths or []),
+            arguments=framework.Array[str](arguments or []),
             helpSource='',
             cmdName=script_name,
             cmdBundle='',
@@ -559,6 +557,7 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             cmdUniqueName='',
             needsCleanEngine=clean_engine,
             needsFullFrameEngine=fullframe_engine,
+            needsPersistentEngine=persistent_engine,
             refreshEngine=False,
             forcedDebugMode=False,
             configScriptMode=False,
@@ -566,7 +565,9 @@ def execute_script(script_path, arguments=None, sys_paths=None,
             )
 
     loadertypes.ScriptExecutor.ExecuteScript(
-        clr.Reference[loadertypes.PyRevitScriptRuntime](script_runtime)
+        framework.clr.Reference[loadertypes.PyRevitScriptRuntime](
+            script_runtime
+            )
         )
 
     return script_runtime.GetResultsDictionary()

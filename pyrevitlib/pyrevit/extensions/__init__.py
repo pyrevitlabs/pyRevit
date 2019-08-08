@@ -94,6 +94,7 @@ MDATA_BETA_SCRIPT = 'is_beta'
 MDATA_ENGINE = 'engine'
 MDATA_ENGINE_CLEAN = 'clean'
 MDATA_ENGINE_FULLFRAME = 'full_frame'
+MDATA_ENGINE_PERSISTENT = 'persistent'
 MDATA_LINK_BUTTON_MODULES = 'modules'
 MDATA_LINK_BUTTON_ASSEMBLY = 'assembly'
 MDATA_LINK_BUTTON_COMMAND_CLASS = 'command_class'
@@ -112,6 +113,7 @@ SHIFT_CLICK_PARAM = '__shiftclick__'
 BETA_SCRIPT_PARAM = '__beta__'
 CLEAN_ENGINE_SCRIPT_PARAM = '__cleanengine__'
 FULLFRAME_ENGINE_PARAM = '__fullframeengine__'
+PERSISTENT_ENGINE_PARAM = '__persistentengine__'
 LINK_BUTTON_ASSEMBLY = '__assembly__'
 LINK_BUTTON_COMMAND_CLASS = '__commandclass__'
 
@@ -174,11 +176,7 @@ GRASSHOPPER_SCRIPT_POSTFIX = \
 CONFIG_SCRIPT_POSTFIX = DEFAULT_CONFIG_NAME + PYTHON_SCRIPT_FILE_FORMAT
 CONTENT_POSTFIX = CONTENT_FILE_FORMAT
 
-# Hash file for caching directory state hash value
-EXTENSION_HASH_CACHE_FILENAME = 'ext_hash'
-
 # -----------------------------------------------------------------------------
 # Command bundle defaults
-COMMAND_AVAILABILITY_NAME_POSTFIX = 'Availab'
 CTX_SELETION = 'selection'
 CTX_ZERODOC = ['zero-doc', 'zerodoc']

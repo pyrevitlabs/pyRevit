@@ -175,7 +175,7 @@ def _produce_ui_smartbutton(ui_maker_params):
                                                  ext_asm_info.name),
             tooltip_image=smartbutton.ttimage_file,
             tooltip_video=smartbutton.ttvideo_file,
-            ctxhelpurl=smartbutton.get_help_url() or '',
+            ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(smartbutton))
@@ -202,7 +202,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             if '__forceddebugmode__' in __builtins__ else False
 
         __builtins__['__commandname__'] = smartbutton.name
-        __builtins__['__commandpath__'] = smartbutton.get_full_script_address()
+        __builtins__['__commandpath__'] = smartbutton.script_file
         __builtins__['__shiftclick__'] = False
         __builtins__['__forceddebugmode__'] = False
     except Exception as err:
@@ -212,7 +212,7 @@ def _produce_ui_smartbutton(ui_maker_params):
     try:
         # setup sys.paths for the smart command
         current_paths = list(sys.path)
-        for search_path in smartbutton.get_search_paths():
+        for search_path in smartbutton.module_paths:
             if search_path not in current_paths:
                 sys.path.append(search_path)
 
@@ -336,7 +336,7 @@ def _produce_ui_pushbutton(ui_maker_params):
                                                  ext_asm_info.name),
             tooltip_image=pushbutton.ttimage_file,
             tooltip_video=pushbutton.ttvideo_file,
-            ctxhelpurl=pushbutton.get_help_url() or '',
+            ctxhelpurl=pushbutton.help_url,
             avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
             ui_title=_make_ui_title(pushbutton))
@@ -484,7 +484,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
                                                  ext_asm_info.name),
             tooltip_image=paneldlgbutton.ttimage_file,
             tooltip_video=paneldlgbutton.ttvideo_file,
-            ctxhelpurl=paneldlgbutton.get_help_url() or '',
+            ctxhelpurl=paneldlgbutton.help_url,
             avail_class_name=paneldlgbutton.avail_class_name,
             update_if_exists=True)
 
@@ -614,24 +614,17 @@ def update_pyrevit_ui(ui_ext, ext_asm_info, create_beta=False):
 def sort_pyrevit_ui(ui_ext):
     # only works on panels so far
     # re-ordering of ui components deeper than panels have not been implemented
-    layout_directives = []
-    for item in ui_ext:
-        layout_directives.extend(item.get_layout_directives())
-
     for tab in current_ui.get_pyrevit_tabs():
-        for ldir in layout_directives:
-            if ldir.type == 'before':
-                tab.reorder_before(ldir.item, ldir.target)
-                layout_directives.remove(ldir)
-            elif ldir.type == 'after':
-                tab.reorder_after(ldir.item, ldir.target)
-                layout_directives.remove(ldir)
-            elif ldir.type == 'afterall':
-                tab.reorder_afterall(ldir.item)
-                layout_directives.remove(ldir)
-            elif ldir.type == 'beforeall':
-                tab.reorder_beforeall(ldir.item)
-                layout_directives.remove(ldir)
+        for litem in ui_ext.find_layout_items():
+            if litem.directive:
+                if litem.directive.directive_type == 'before':
+                    tab.reorder_before(litem.name, litem.directive.target)
+                elif litem.directive.directive_type == 'after':
+                    tab.reorder_after(litem.name, litem.directive.target)
+                elif litem.directive.directive_type == 'afterall':
+                    tab.reorder_afterall(litem.name)
+                elif litem.directive.directive_type == 'beforeall':
+                    tab.reorder_beforeall(litem.name)
 
 
 def cleanup_pyrevit_ui():

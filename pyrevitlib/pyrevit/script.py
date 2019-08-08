@@ -57,7 +57,7 @@ def get_alt_script_path():
     Returns:
         str: config script path
     """
-    return EXEC_PARAMS.command_alt_path
+    return EXEC_PARAMS.command_config_path
 
 
 def get_bundle_name():

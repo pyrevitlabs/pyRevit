@@ -1,0 +1,11 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		ShowInTaskbar="False"
+		WindowStartupLocation="CenterScreen"
+		HorizontalContentAlignment="Center"
+        Height="400" Width="500"
+        Title="Test Non-Modal Window">
+    <Grid>
+        <Button Content="Action" Click="action" HorizontalAlignment="Center" VerticalAlignment="Center" Height="50" Width="100"/> 
+    </Grid>
+</Window>

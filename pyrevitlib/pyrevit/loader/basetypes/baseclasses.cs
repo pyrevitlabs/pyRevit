@@ -8,19 +8,15 @@ using System.Windows.Input;
 using System.Windows.Controls;
 
 namespace PyRevitBaseClasses {
-    public enum ExtendedAvailabilityTypes {
-        ZeroDocuments,
-        ActiveView,
-        Selection,
-    }
-
-
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
     public abstract class PyRevitCommand : IExternalCommand {
         public string baked_scriptSource = null;
         public string baked_configScriptSource = null;
         public string baked_syspaths = null;
+        // list of string arguments to be passed to executor.
+        // executor then sets the sys.argv with these arguments
+        public string baked_arguments = null;
         public string baked_helpSource = null;
         public string baked_cmdName = null;
         public string baked_cmdBundle = null;
@@ -28,6 +24,7 @@ namespace PyRevitBaseClasses {
         public string baked_cmdUniqueName = null;
         public bool baked_needsCleanEngine = false;
         public bool baked_needsFullFrameEngine = false;
+        public bool baked_needsPersistentEngine = false;
 
         // unlike fullframe or clean engine modes, the config script mode is determined at
         // script execution by using a shortcut key combination. This parameter is created to
@@ -40,24 +37,23 @@ namespace PyRevitBaseClasses {
         // pyrevit command from python code. (e.g when executing reload after update)
         public bool ExecutedFromUI = true;
 
-        // list of string arguments to be passed to executor.
-        // executor then sets the sys.argv with these arguments
-        public string[] argumentList = null;
-
 
         public PyRevitCommand(string scriptSource,
                               string configScriptSource,
                               string syspaths,
+                              string arguments,
                               string helpSource,
                               string cmdName,
                               string cmdBundle,
                               string cmdExtension,
                               string cmdUniqueName,
                               int needsCleanEngine,
-                              int needsFullFrameEngine) {
+                              int needsFullFrameEngine,
+                              int needsPersistentEngine) {
             baked_scriptSource = scriptSource;
             baked_configScriptSource = configScriptSource;
             baked_syspaths = syspaths;
+            baked_arguments = arguments;
             baked_helpSource = helpSource;
             baked_cmdName = cmdName;
             baked_cmdBundle = cmdBundle;
@@ -65,6 +61,7 @@ namespace PyRevitBaseClasses {
             baked_cmdUniqueName = cmdUniqueName;
             baked_needsCleanEngine = Convert.ToBoolean(needsCleanEngine);
             baked_needsFullFrameEngine = Convert.ToBoolean(needsFullFrameEngine);
+            baked_needsPersistentEngine = Convert.ToBoolean(needsPersistentEngine);
         }
 
 
@@ -116,6 +113,12 @@ namespace PyRevitBaseClasses {
                 fullFrameEngineStatus.IsEnabled = false;
                 pyRevitCmdContextMenu.Items.Add(fullFrameEngineStatus);
 
+                // use a disabled menu item to show if the command requires full frame engine
+                MenuItem persistentEngineStatus = new MenuItem();
+                persistentEngineStatus.Header = string.Format("Requests Persistent Engine: {0}", baked_needsPersistentEngine ? "Yes" : "No");
+                persistentEngineStatus.IsEnabled = false;
+                pyRevitCmdContextMenu.Items.Add(persistentEngineStatus);
+
                 // menu item to copy script path to clipboard
                 MenuItem copyScriptPath = new MenuItem();
                 copyScriptPath.Header = "Copy Script Path";
@@ -143,21 +146,34 @@ namespace PyRevitBaseClasses {
                 // menu item to copy command unique name (assigned by pyRevit) to clipboard
                 MenuItem copyUniqueName = new MenuItem();
                 copyUniqueName.Header = string.Format("Copy Unique Id ({0})", baked_cmdUniqueName);
+                copyUniqueName.ToolTip = baked_cmdUniqueName;
                 copyUniqueName.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_cmdUniqueName); };
                 pyRevitCmdContextMenu.Items.Add(copyUniqueName);
 
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
+                var sysPathsText = baked_syspaths.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n");
                 copySysPaths.Header = "Copy Sys Paths";
-                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_syspaths.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n")); };
+                copySysPaths.ToolTip = sysPathsText;
+                copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(sysPathsText); };
                 pyRevitCmdContextMenu.Items.Add(copySysPaths);
+
+                // menu item to copy ;-separated arguments to clipboard
+                // Example: "path1;path2;path3"
+                MenuItem copyArguments = new MenuItem();
+                copyArguments.Header = "Copy Arguments";
+                copyArguments.ToolTip = baked_arguments;
+                copyArguments.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_arguments); };
+                pyRevitCmdContextMenu.Items.Add(copyArguments);
+                if (baked_arguments == null || baked_arguments == string.Empty)
+                    copyArguments.IsEnabled = false;
 
                 // menu item to copy help url
                 MenuItem copyHelpSource = new MenuItem();
                 copyHelpSource.Header = "Copy Help Url";
                 copyHelpSource.ToolTip = baked_helpSource;
-                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n")); };
+                copyHelpSource.Click += delegate { System.Windows.Forms.Clipboard.SetText(baked_helpSource); };
                 pyRevitCmdContextMenu.Items.Add(copyHelpSource);
                 if (baked_helpSource == null || baked_helpSource == string.Empty)
                     copyHelpSource.IsEnabled = false;
@@ -202,8 +218,8 @@ namespace PyRevitBaseClasses {
                 elements: elements,
                 scriptSource: baked_scriptSource,
                 configScriptSource: baked_configScriptSource,
-                syspaths: baked_syspaths,
-                arguments: argumentList,
+                syspaths: baked_syspaths.Split(ExternalConfig.defaultsep),
+                arguments: baked_arguments.Split(ExternalConfig.defaultsep),
                 helpSource: baked_helpSource,
                 cmdName: baked_cmdName,
                 cmdBundle: baked_cmdBundle,
@@ -211,6 +227,7 @@ namespace PyRevitBaseClasses {
                 cmdUniqueName: baked_cmdUniqueName,
                 needsCleanEngine: baked_needsCleanEngine,
                 needsFullFrameEngine: baked_needsFullFrameEngine,
+                needsPersistentEngine: baked_needsPersistentEngine,
                 refreshEngine: _refreshEngine,
                 forcedDebugMode: _forcedDebugMode,
                 configScriptMode: _configScriptMode,
@@ -445,8 +462,8 @@ namespace PyRevitBaseClasses {
     }
 
 
-    public abstract class PyRevitCommandDefaultAvail : IExternalCommandAvailability {
-        public PyRevitCommandDefaultAvail() {
+    public abstract class PyRevitCommandZeroDocAvail : IExternalCommandAvailability {
+        public PyRevitCommandZeroDocAvail() {
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {

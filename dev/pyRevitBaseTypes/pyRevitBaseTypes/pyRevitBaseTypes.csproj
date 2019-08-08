@@ -155,9 +155,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\executor.cs">
       <Link>executor.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\helpers.cs">
-      <Link>helpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\hooks.cs">
       <Link>hooks.cs</Link>
     </Compile>

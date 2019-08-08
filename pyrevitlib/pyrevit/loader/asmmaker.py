@@ -14,7 +14,7 @@ from pyrevit.versionmgr import get_pyrevit_version
 
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.loader.basetypes import BASE_TYPES_DIR_HASH
-from pyrevit.loader.basetypes.typemaker import make_cmd_types, make_shared_types
+from pyrevit.loader.basetypes import typemaker
 from pyrevit.userconfig import user_config
 
 
@@ -30,10 +30,11 @@ mlogger = logger.get_logger(__name__)
 def _make_extension_hash(extension):
     # creates a hash based on hash of baseclasses module that
     # the extension is based upon and also the user configuration version
-    return coreutils.get_str_hash(BASE_TYPES_DIR_HASH
-                        + EXEC_PARAMS.engine_ver
-                        + user_config.get_config_version()
-                        + extension.ext_hash_value)[:HASH_CUTOFF_LENGTH]
+    return coreutils.get_str_hash(
+        BASE_TYPES_DIR_HASH
+        + EXEC_PARAMS.engine_ver
+        + user_config.get_config_version()
+        + extension.get_hash())[:HASH_CUTOFF_LENGTH]
 
 
 def _make_ext_asm_fileid(extension):
@@ -63,7 +64,11 @@ def _is_any_ext_asm_loaded(extension):
 
 def _update_component_cmd_types(extension):
     for cmd_component in extension.get_all_commands():
-        make_cmd_types(extension, cmd_component, module_builder=None)
+        typemaker.make_bundle_types(
+            extension,
+            cmd_component,
+            module_builder=None
+            )
 
 
 def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
@@ -100,18 +105,11 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     module_builder = asm_builder.DefineDynamicModule(ext_asm_file_name,
                                                      ext_asm_full_file_name)
 
-    # create classes that could be called from any button (shared classes)
-    # currently only default availability class is implemented.
-    # Default availability class is for resetting buttons back to normal
-    # context state (when reloading and after their context
-    # has changed during a session).
-    make_shared_types(module_builder)
-
     # create command classes
     for cmd_component in extension.get_all_commands():
         # create command executor class for this command
         mlogger.debug('Creating types for command: %s', cmd_component)
-        make_cmd_types(extension, cmd_component, module_builder)
+        typemaker.make_bundle_types(extension, cmd_component, module_builder)
 
     # save final assembly
     asm_builder.Save(ext_asm_full_file_name)

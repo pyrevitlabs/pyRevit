@@ -638,8 +638,7 @@ def create_ext_command_attrs():
     return [regen_attr_builder, trans_attrib_builder]
 
 
-def create_type(modulebuilder,
-                type_class, class_name, custom_attr_list, *args):
+def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
     """Create a dotnet type for a pyRevit command.
 
     See ``baseclasses.cs`` code for the template pyRevit command dotnet type
