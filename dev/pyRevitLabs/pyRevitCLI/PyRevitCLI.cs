@@ -192,7 +192,7 @@ namespace pyRevitCLI {
 
             else if (all("youtube")) CommonUtils.OpenUrl(PyRevit.YoutubeUrl);
 
-            else if (all("support")) CommonUtils.OpenUrl(PyRevit.SupportRepoUrl);
+            else if (all("support")) CommonUtils.OpenUrl(PyRevit.SupportUrl);
 
             else if (all("env")) {
                 if (IsHelpMode)

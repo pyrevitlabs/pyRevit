@@ -24,12 +24,15 @@ namespace pyRevitLabs.PyRevit {
                 );
 
         // urls
+        public const string LicenseUrl = @"https://choosealicense.com/licenses/gpl-3.0/";
+        public const string CreditsUrl = @"https://github.com/eirannejad/pyRevit/blob/master/CREDITS.md";
         public const string BlogsUrl = @"https://eirannejad.github.io/pyRevit/";
         public const string DocsUrl = @"https://pyrevit.readthedocs.io/en/latest/";
         public const string SourceRepoUrl = @"https://github.com/eirannejad/pyRevit";
-        public const string YoutubeUrl = @"https://www.youtube.com/pyrevit";
-        public const string SupportRepoUrl = @"https://www.patreon.com/pyrevit";
+        public const string IssuesUrl = @"https://github.com/eirannejad/pyRevit/issues";
         public const string ReleasesUrl = @"https://github.com/eirannejad/pyRevit/releases";
+        public const string YoutubeUrl = @"https://www.youtube.com/pyrevit";
+        public const string SupportUrl = @"https://www.patreon.com/pyrevit";
 
         // cli
         public const string CLIHelpUrl = @"https://github.com/eirannejad/pyRevit/blob/cli-v{0}/docs/cli.md";

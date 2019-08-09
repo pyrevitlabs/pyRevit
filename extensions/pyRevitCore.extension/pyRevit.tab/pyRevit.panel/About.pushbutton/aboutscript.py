@@ -94,7 +94,7 @@ class AboutWindow(forms.WPFWindow):
         script.open_url(urls.PYREVIT_YOUTUBE)
 
     def opensupportpage(self, sender, args):
-        script.open_url(urls.PYREVIT_PATREON)
+        script.open_url(urls.PYREVIT_SUPPORT)
 
     def opengithubcommits(self, sender, args):
         if self.branch_name:
