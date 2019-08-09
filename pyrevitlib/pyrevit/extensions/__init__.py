@@ -84,6 +84,7 @@ EXT_MANIFEST_TEMPLATES_KEY = 'templates'
 MDATA_ICON_FILE = 'icon'
 MDATA_UI_TITLE = 'title'
 MDATA_TOOLTIP = 'tooltip'
+MDATA_MEDIA = 'media'
 MDATA_AUTHOR = 'author'
 MDATA_AUTHORS = 'authors'
 MDATA_COMMAND_HELP_URL = 'help_url'
@@ -154,12 +155,8 @@ DEFAULT_ICON_FILE = 'icon' + ICON_FILE_FORMAT
 DEFAULT_ON_ICON_FILE = 'on' + ICON_FILE_FORMAT
 DEFAULT_OFF_ICON_FILE = 'off' + ICON_FILE_FORMAT
 
-# bundle image for tooltips
-DEFAULT_TOOLTIP_IMAGE_FILE = 'tooltip.png'
-# bundle video for tooltips
-DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.swf'
-if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
-    DEFAULT_TOOLTIP_VIDEO_FILE = 'tooltip.mp4'
+# bundle media for tooltips
+DEFAULT_MEDIA_FILENAME = 'tooltip'
 
 # bundle scripts
 DEFAULT_SCRIPT_NAME = 'script'

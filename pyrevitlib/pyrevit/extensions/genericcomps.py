@@ -57,7 +57,8 @@ class GenericUIComponent(GenericComponent):
         self.unique_name = None
         self.icon_file = None
         self.ui_title = None
-        self.doc_string = self.author = self.help_url = ""
+        self.tooltip = self.author = self.help_url = ""
+        self.media_file = None
         self.min_revit_ver = self.max_revit_ver = None
         self.version = None
 
@@ -114,8 +115,11 @@ class GenericUIComponent(GenericComponent):
 
         full_file_path = op.join(self.directory, exts.DEFAULT_ICON_FILE)
         self.icon_file = full_file_path if op.exists(full_file_path) else None
-        if self.icon_file:
-            mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
+        mlogger.debug('Icon file is: %s:%s', self.name, self.icon_file)
+
+        self.media_file = \
+            self.find_bundle_file([exts.DEFAULT_MEDIA_FILENAME], as_name=True)
+        mlogger.debug('Media file is: %s:%s', self.name, self.media_file)
 
         # each component can store custom libraries under
         # lib/ inside the component folder
@@ -159,7 +163,11 @@ class GenericUIComponent(GenericComponent):
             ) or self.icon_file
 
         self.ui_title = self.meta.get(exts.MDATA_UI_TITLE, self.ui_title)
-        self.doc_string = self.meta.get(exts.MDATA_TOOLTIP, self.doc_string)
+        self.tooltip = self.meta.get(exts.MDATA_TOOLTIP, self.tooltip)
+
+        self.media_file = self.get_bundle_file(
+            self.meta.get(exts.MDATA_MEDIA, self.media_file)
+            ) or self.media_file
 
         # authors could be a list or single value
         self.author = self.meta.get(exts.MDATA_AUTHOR, self.author)
@@ -212,11 +220,21 @@ class GenericUIComponent(GenericComponent):
             file_addr = op.join(self.directory, file_name)
             return file_addr if op.exists(file_addr) else None
 
-    def find_bundle_file(self, file_postfixes):
+    def find_bundle_file(self, patterns,
+                         as_name=False, as_postfix=True, as_regex=False):
         for bundle_file in os.listdir(self.directory):
-            for file_postfix in file_postfixes:
-                if bundle_file.endswith(file_postfix):
-                    return op.join(self.directory, bundle_file)
+            if as_name:
+                for file_name in patterns:
+                    if op.splitext(bundle_file)[0] == file_name:
+                        return op.join(self.directory, bundle_file)
+            elif as_postfix:
+                for file_postfix in patterns:
+                    if bundle_file.endswith(file_postfix):
+                        return op.join(self.directory, bundle_file)
+            elif as_regex:
+                for regex_pattern in patterns:
+                    if re.match(regex_pattern, bundle_file):
+                        return op.join(self.directory, bundle_file)
         return None
 
     def find_bundle_module(self, module):
@@ -383,7 +401,6 @@ class GenericUICommand(GenericUIComponent):
         self.script_file = self.config_script_file = None
         self.arguments = []
         self.context = None
-        self.ttimage_file = self.ttvideo_file = None
         self.class_name = self.avail_class_name = None
         self.beta_cmd = False
         self.requires_clean_engine = False
@@ -394,7 +411,7 @@ class GenericUICommand(GenericUIComponent):
 
         mlogger.debug('Maximum host version: %s', self.max_revit_ver)
         mlogger.debug('Minimum host version: %s', self.min_revit_ver)
-        mlogger.debug('command tooltip: %s', self.doc_string)
+        mlogger.debug('command tooltip: %s', self.tooltip)
         mlogger.debug('Command author: %s', self.author)
         mlogger.debug('Command help url: %s', self.help_url)
 
@@ -404,16 +421,6 @@ class GenericUICommand(GenericUIComponent):
     def _update_from_directory(self):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIComponent._update_from_directory(self)
-
-        ttimage_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_IMAGE_FILE)
-        self.ttimage_file = ttimage_path if op.exists(ttimage_path) else None
-        mlogger.debug('Command %s: Tooltip image file is: %s',
-                      self, self.ttimage_file)
-
-        ttvideo_path = op.join(self.directory, exts.DEFAULT_TOOLTIP_VIDEO_FILE)
-        self.ttvideo_file = ttvideo_path if op.exists(ttvideo_path) else None
-        mlogger.debug('Command %s: Tooltip video file is: %s',
-                      self, self.ttvideo_file)
 
         # find script file
         self.script_file = \
@@ -487,8 +494,8 @@ class GenericUICommand(GenericUIComponent):
             script_docstring = script_content.get_docstring()
             custom_docstring = \
                 script_content.extract_param(exts.DOCSTRING_PARAM)
-            self.doc_string = \
-                custom_docstring or script_docstring or self.doc_string
+            self.tooltip = \
+                custom_docstring or script_docstring or self.tooltip
 
             script_author = script_content.extract_param(exts.AUTHOR_PARAM)
             script_author = script_content.extract_param(exts.AUTHORS_PARAM)
@@ -544,7 +551,7 @@ class GenericUICommand(GenericUIComponent):
 
     @property
     def configurable_params(self):
-        return ['ui_title', 'doc_string', 'author', 'help_url']
+        return ['ui_title', 'tooltip', 'author', 'help_url', 'media_file']
 
     @property
     def script_language(self):

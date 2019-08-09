@@ -30,7 +30,7 @@ class UIMakerParams:
 
 
 def _make_button_tooltip(button):
-    tooltip = button.doc_string + '\n\n' if button.doc_string else ''
+    tooltip = button.tooltip + '\n\n' if button.tooltip else ''
     tooltip += 'Bundle Name:\n{} ({})'\
         .format(button.name, button.type_id.replace('.', ''))
     if button.author:
@@ -173,8 +173,7 @@ def _produce_ui_smartbutton(ui_maker_params):
             tooltip=_make_button_tooltip(smartbutton),
             tooltip_ext=_make_button_tooltip_ext(smartbutton,
                                                  ext_asm_info.name),
-            tooltip_image=smartbutton.ttimage_file,
-            tooltip_video=smartbutton.ttvideo_file,
+            tooltip_media=smartbutton.media_file,
             ctxhelpurl=smartbutton.help_url,
             avail_class_name=smartbutton.avail_class_name,
             update_if_exists=True,
@@ -334,8 +333,7 @@ def _produce_ui_pushbutton(ui_maker_params):
             tooltip=_make_button_tooltip(pushbutton),
             tooltip_ext=_make_button_tooltip_ext(pushbutton,
                                                  ext_asm_info.name),
-            tooltip_image=pushbutton.ttimage_file,
-            tooltip_video=pushbutton.ttvideo_file,
+            tooltip_media=pushbutton.media_file,
             ctxhelpurl=pushbutton.help_url,
             avail_class_name=pushbutton.avail_class_name,
             update_if_exists=True,
@@ -482,8 +480,7 @@ def _produce_ui_panelpushbutton(ui_maker_params):
             tooltip=_make_button_tooltip(paneldlgbutton),
             tooltip_ext=_make_button_tooltip_ext(paneldlgbutton,
                                                  ext_asm_info.name),
-            tooltip_image=paneldlgbutton.ttimage_file,
-            tooltip_video=paneldlgbutton.ttvideo_file,
+            tooltip_media=paneldlgbutton.media_file,
             ctxhelpurl=paneldlgbutton.help_url,
             avail_class_name=paneldlgbutton.avail_class_name,
             update_if_exists=True)

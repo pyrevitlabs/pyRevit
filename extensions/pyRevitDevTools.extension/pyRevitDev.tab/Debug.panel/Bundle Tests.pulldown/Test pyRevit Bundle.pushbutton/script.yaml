@@ -1,6 +1,7 @@
 icon: bundle_icon.png
 title: Test pyRevit Bundle (Custom Title)
 tooltip: Test pyRevit Bundle Tooltip
+media: tooltip.mp4
 help_url: "{{docpath}}"
 authors:
   - "{{author}}"

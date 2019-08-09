@@ -24,6 +24,11 @@ ICON_LARGE = 32
 
 DEFAULT_DPI = 96
 
+DEFAULT_TOOLTIP_IMAGE_FORMAT = '.png'
+DEFAULT_TOOLTIP_VIDEO_FORMAT = '.swf'
+if not EXEC_PARAMS.doc_mode and HOST_APP.is_newer_than(2019, or_equal=True):
+    DEFAULT_TOOLTIP_VIDEO_FORMAT = '.mp4'
+
 
 def load_bitmapimage(image_file):
     """Load given png file.
@@ -714,6 +719,12 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
             raise PyRevitUIError('Error setting tooltip video {} | {} '
                                  .format(tooltip_video, ttvideo_err))
 
+    def set_tooltip_media(self, tooltip_media):
+        if tooltip_media.endswith(DEFAULT_TOOLTIP_IMAGE_FORMAT):
+            self.set_tooltip_image(tooltip_media)
+        elif tooltip_media.endswith(DEFAULT_TOOLTIP_VIDEO_FORMAT):
+            self.set_tooltip_video(tooltip_media)
+
     def process_deferred_tooltips(self):
         try:
             if self.tooltip_image:
@@ -864,8 +875,7 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
-                           tooltip='', tooltip_ext='',
-                           tooltip_image='', tooltip_video='',
+                           tooltip='', tooltip_ext='', tooltip_media='',
                            ctxhelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
@@ -902,10 +912,8 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
-                if tooltip_image:
-                    existing_item.set_tooltip_image(tooltip_image)
-                if tooltip_video:
-                    existing_item.set_tooltip_video(tooltip_video)
+                if tooltip_media:
+                    existing_item.set_tooltip_media(tooltip_media)
 
                 # if ctx help on this group matches the existing,
                 # update self ctx before changing the existing item ctx help
@@ -965,10 +973,8 @@ class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
 
             new_button.set_tooltip(tooltip)
             new_button.set_tooltip_ext(tooltip_ext)
-            if tooltip_image:
-                new_button.set_tooltip_image(tooltip_image)
-            if tooltip_video:
-                new_button.set_tooltip_video(tooltip_video)
+            if tooltip_media:
+                new_button.set_tooltip_media(tooltip_media)
 
             new_button.set_contexthelp(ctxhelpurl)
             # if this is the first button being added
@@ -1121,8 +1127,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
     def create_push_button(self, button_name, asm_location, class_name,
                            icon_path='',
-                           tooltip='', tooltip_ext='',
-                           tooltip_image='', tooltip_video='',
+                           tooltip='', tooltip_ext='', tooltip_media='',
                            ctxhelpurl=None,
                            avail_class_name=None,
                            update_if_exists=False, ui_title=None):
@@ -1144,10 +1149,8 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
                 existing_item.set_tooltip(tooltip)
                 existing_item.set_tooltip_ext(tooltip_ext)
-                if tooltip_image:
-                    existing_item.set_tooltip_image(tooltip_image)
-                if tooltip_video:
-                    existing_item.set_tooltip_video(tooltip_video)
+                if tooltip_media:
+                    existing_item.set_tooltip_media(tooltip_media)
 
                 existing_item.set_contexthelp(ctxhelpurl)
 
@@ -1201,10 +1204,8 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
 
                 new_button.set_tooltip(tooltip)
                 new_button.set_tooltip_ext(tooltip_ext)
-                if tooltip_image:
-                    new_button.set_tooltip_image(tooltip_image)
-                if tooltip_video:
-                    new_button.set_tooltip_video(tooltip_video)
+                if tooltip_media:
+                    new_button.set_tooltip_media(tooltip_media)
 
                 new_button.set_contexthelp(ctxhelpurl)
 
@@ -1287,8 +1288,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             self.ribbon_item(item_name).sync_with_current_item(False)
 
     def create_panel_push_button(self, button_name, asm_location, class_name,
-                                 tooltip='', tooltip_ext='',
-                                 tooltip_image='', tooltip_video='',
+                                 tooltip='', tooltip_ext='', tooltip_media='',
                                  ctxhelpurl=None,
                                  avail_class_name=None,
                                  update_if_exists=False):
@@ -1298,8 +1298,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                                 icon_path=None,
                                 tooltip=tooltip,
                                 tooltip_ext=tooltip_ext,
-                                tooltip_image=tooltip_image,
-                                tooltip_video=tooltip_video,
+                                tooltip_media=tooltip_media,
                                 ctxhelpurl=ctxhelpurl,
                                 avail_class_name=avail_class_name,
                                 update_if_exists=update_if_exists,
