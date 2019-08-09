@@ -77,14 +77,14 @@ namespace pyRevitLabs.TargetApps.Revit {
             f.Close();
         }
 
-        public static RevitAddonManifest GetAttachedManifest(int revitYear, bool allUsers) {
+        public static RevitAddonManifest GetAttachedManifest(string addinName, int revitYear, bool allUsers) {
             logger.Debug(
                 "Querying clone attached to Revit {0} {1}",
                 revitYear,
                 allUsers ? "(All Users)" : "(Current User)"
                 );
 
-            return GetManifest(revitYear, PyRevit.AddinName, allUsers: allUsers);
+            return GetManifest(revitYear, addinName, allUsers: allUsers);
         }
 
         public static void RemoveManifestFile(int revitYear, string addinName, bool currentAndAllUsers = true) {

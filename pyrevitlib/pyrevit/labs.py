@@ -21,6 +21,7 @@ clr.AddReference('pyRevitLabs.CommonWPF')
 clr.AddReference('pyRevitLabs.Language')
 clr.AddReference('pyRevitLabs.DeffrelDB')
 clr.AddReference('pyRevitLabs.TargetApps.Revit')
+clr.AddReference('pyRevitLabs.PyRevit')
 import Nett
 import pyRevitLabs.NLog as NLog
 import MadMilkman.Ini
@@ -33,6 +34,7 @@ from pyRevitLabs import CommonWPF
 from pyRevitLabs import Language
 from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
+from pyRevitLabs import PyRevit
 
 
 mlogger = logger.get_logger(__name__)
@@ -72,7 +74,7 @@ class PyRevitOutputTarget(NLog.Targets.TargetWithLayout):
 # activate binding resolver
 if not EXEC_PARAMS.doc_mode:
     if HOST_APP.is_older_than(2019):
-        TargetApps.Revit.PyRevitBindings.ActivateResolver()
+        PyRevit.PyRevitBindings.ActivateResolver()
 
     # configure NLog
     #pylint: disable=W0201

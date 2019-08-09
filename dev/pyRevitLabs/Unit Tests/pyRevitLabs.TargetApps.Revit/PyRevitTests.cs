@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 using pyRevitLabs.Tests;
 using pyRevitLabs.TargetApps.Revit;
+using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.TargetApps.Revit.Tests {
     [TestClass()]

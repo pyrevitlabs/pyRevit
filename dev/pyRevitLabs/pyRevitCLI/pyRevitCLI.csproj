@@ -147,6 +147,10 @@
       <Project>{269fe01f-093a-4774-8017-fefc2342abf5}</Project>
       <Name>pyRevitLabs.Language</Name>
     </ProjectReference>
+    <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj">
+      <Project>{595c5fc1-ea26-47a6-b78f-3a04d222963d}</Project>
+      <Name>pyRevitLabs.PyRevit</Name>
+    </ProjectReference>
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj">
       <Project>{ed0fb7a2-e4a8-4490-a020-73140bfbce0b}</Project>
       <Name>pyRevitLabs.TargetApps.Revit</Name>

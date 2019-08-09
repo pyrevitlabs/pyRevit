@@ -27,7 +27,7 @@ from pyrevit.coreutils import envvars
 from pyrevit.loader.sessioninfo import get_session_uuid
 from pyrevit.userconfig import user_config
 
-from pyrevit.labs import TargetApps
+from pyrevit.labs import PyRevit
 
 from pyrevit.telemetry import events as telemetry_events
 
@@ -35,7 +35,6 @@ from pyrevit.telemetry import events as telemetry_events
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
-consts = TargetApps.Revit.PyRevit
 
 PYREVIT_TELEMETRYSTATE_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYSTATE'
@@ -61,8 +60,8 @@ FILE_LOG_FILENAME_TEMPLATE = '{}_{}_telemetry.{}'
 
 def _get_telemetry_configs(configs):
     # setup config section if does not exist
-    if not configs.has_section(consts.ConfigsTelemetrySection):
-        configs.add_section(consts.ConfigsTelemetrySection)
+    if not configs.has_section(PyRevit.PyRevit.ConfigsTelemetrySection):
+        configs.add_section(PyRevit.PyRevit.ConfigsTelemetrySection)
     return configs.telemetry
 
 
@@ -90,7 +89,7 @@ def set_telemetry_state(state, configs=None):
     envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYSTATE_ENVVAR, state)
     if configs:
         tc = _get_telemetry_configs(configs)
-        tc.set_option(consts.ConfigsTelemetryStatusKey, state)
+        tc.set_option(PyRevit.PyRevit.ConfigsTelemetryStatusKey, state)
 
 
 def set_telemetry_file_dir(file_dir, configs=None):
@@ -98,7 +97,7 @@ def set_telemetry_file_dir(file_dir, configs=None):
         envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYDIR_ENVVAR, file_dir)
         if configs:
             tc = _get_telemetry_configs(configs)
-            tc.set_option(consts.ConfigsTelemetryFilePathKey, file_dir)
+            tc.set_option(PyRevit.PyRevit.ConfigsTelemetryFilePathKey, file_dir)
 
 
 def set_telemetry_file_path(file_path):
@@ -109,7 +108,7 @@ def set_telemetry_server_url(server_url, configs=None):
     envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYSERVER_ENVVAR, server_url)
     if configs:
         tc = _get_telemetry_configs(configs)
-        tc.set_option(consts.ConfigsTelemetryServerUrlKey, server_url)
+        tc.set_option(PyRevit.PyRevit.ConfigsTelemetryServerUrlKey, server_url)
 
 
 def disable_telemetry():
@@ -132,7 +131,7 @@ def set_apptelemetry_state(state, configs=None):
     envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYSTATE_ENVVAR, state)
     if configs:
         tc = _get_telemetry_configs(configs)
-        tc.set_option(consts.ConfigsAppTelemetryStatusKey, state)
+        tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryStatusKey, state)
 
 
 def get_apptelemetry_server_url():
@@ -143,7 +142,7 @@ def get_apptelemetry_event_flags(config):
     tc = _get_telemetry_configs(config)
     # default value is 16 bytes of 0
     flags_hex = tc.get_option(
-        consts.ConfigsAppTelemetryEventFlagsKey,
+        PyRevit.PyRevit.ConfigsAppTelemetryEventFlagsKey,
         default_value='0x00000000000000000000000000000000'
         )
     return coreutils.hex2int_long(flags_hex)
@@ -153,13 +152,13 @@ def set_apptelemetry_server_url(server_url, configs=None):
     envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYSERVER_ENVVAR, server_url)
     if configs:
         tc = _get_telemetry_configs(configs)
-        tc.set_option(consts.ConfigsAppTelemetryServerUrlKey, server_url)
+        tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryServerUrlKey, server_url)
 
 
 def set_apptelemetry_event_flags(event_flags, config):
     tc = _get_telemetry_configs(config)
     flags_hex = coreutils.int2hex_long(event_flags)
-    tc.set_option(consts.ConfigsAppTelemetryEventFlagsKey, flags_hex)
+    tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryEventFlagsKey, flags_hex)
     envvars.set_pyrevit_env_var(
         PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
 
@@ -209,7 +208,7 @@ def setup_telemetry(session_id=None):
     # PYREVIT TELEMETRY -------------------------------------------------------
     # global state
     telemetry_state = \
-        telemetry_config.get_option(consts.ConfigsTelemetryStatusKey,
+        telemetry_config.get_option(PyRevit.PyRevit.ConfigsTelemetryStatusKey,
                                     default_value=False)
     set_telemetry_state(telemetry_state)
 
@@ -217,7 +216,7 @@ def setup_telemetry(session_id=None):
     # default file path and name for telemetry
     telemetry_file_dir = \
         telemetry_config.get_option(
-            consts.ConfigsTelemetryFilePathKey,
+            PyRevit.PyRevit.ConfigsTelemetryFilePathKey,
             default_value=get_default_telemetry_filepath())
     set_telemetry_file_dir(telemetry_file_dir)
 
@@ -251,7 +250,7 @@ def setup_telemetry(session_id=None):
 
     # read or setup default values for server telemetry
     telemetry_server_url = \
-        telemetry_config.get_option(consts.ConfigsTelemetryServerUrlKey,
+        telemetry_config.get_option(PyRevit.PyRevit.ConfigsTelemetryServerUrlKey,
                                     default_value='')
 
     # check server telemetry config and setup destination
@@ -265,13 +264,13 @@ def setup_telemetry(session_id=None):
     # APP TELEMETRY ------------------------------------------------------------
     # setup default value for telemetry global switch
     apptelemetry_state = \
-        telemetry_config.get_option(consts.ConfigsAppTelemetryStatusKey,
+        telemetry_config.get_option(PyRevit.PyRevit.ConfigsAppTelemetryStatusKey,
                                     default_value=False)
     set_apptelemetry_state(apptelemetry_state)
 
     # read or setup default values for server telemetry
     apptelemetry_server_url = \
-        telemetry_config.get_option(consts.ConfigsAppTelemetryServerUrlKey,
+        telemetry_config.get_option(PyRevit.PyRevit.ConfigsAppTelemetryServerUrlKey,
                                     default_value='')
 
     # check server telemetry config and setup destination

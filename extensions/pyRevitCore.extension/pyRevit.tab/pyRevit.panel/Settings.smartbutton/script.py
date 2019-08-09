@@ -9,7 +9,7 @@ from pyrevit import telemetry
 from pyrevit import script
 from pyrevit import forms
 from pyrevit import output
-from pyrevit.labs import TargetApps
+from pyrevit.labs import TargetApps, PyRevit
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
 
@@ -24,7 +24,6 @@ __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
 
 
 logger = script.get_logger()
-Revit = TargetApps.Revit
 
 
 class EnvVariable:
@@ -230,10 +229,10 @@ class SettingsWindow(forms.WPFWindow):
         """Gets the installed Revit versions and sets up the ui"""
         installed_revits = \
             {str(x.ProductYear):x
-             for x in Revit.RevitProduct.ListInstalledProducts()}
+             for x in TargetApps.Revit.RevitProduct.ListInstalledProducts()}
         attachments = \
             {str(x.Product.ProductYear):x
-             for x in Revit.PyRevitAttachments.GetAttachments()}
+             for x in PyRevit.PyRevitAttachments.GetAttachments()}
 
         for rvt_ver, checkbox in self._addinfiles_cboxes.items():
             if rvt_ver in attachments:
@@ -277,7 +276,7 @@ class SettingsWindow(forms.WPFWindow):
         attachment = user_config.get_current_attachment()
         if attachment:
             all_users = attachment.AttachmentType == \
-                Revit.PyRevitAttachmentType.AllUsers
+                PyRevit.PyRevitAttachmentType.AllUsers
 
             # notify use to restart if engine has changed
             if self.availableEngines.SelectedItem:
@@ -286,7 +285,7 @@ class SettingsWindow(forms.WPFWindow):
                     forms.alert('Active engine has changed. '
                                 'Restart Revit for this change to take effect.')
                 # configure the engine on this version
-                Revit.PyRevitAttachments.Attach(
+                PyRevit.PyRevitAttachments.Attach(
                     int(HOST_APP.version),
                     attachment.Clone,
                     new_engine,
@@ -297,14 +296,14 @@ class SettingsWindow(forms.WPFWindow):
                 for rvt_ver, checkbox in self._addinfiles_cboxes.items():
                     if checkbox.IsEnabled:
                         if checkbox.IsChecked:
-                            Revit.PyRevitAttachments.Attach(
+                            PyRevit.PyRevitAttachments.Attach(
                                 int(rvt_ver),
                                 attachment.Clone,
                                 new_engine,
                                 all_users
                                 )
                         else:
-                            Revit.PyRevitAttachments.Detach(int(rvt_ver))
+                            PyRevit.PyRevitAttachments.Detach(int(rvt_ver))
         else:
             logger.error('Error determining current attached clone.')
 
