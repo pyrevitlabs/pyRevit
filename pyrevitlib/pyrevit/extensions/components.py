@@ -190,6 +190,10 @@ class StackTwoButtonGroup(GenericStack):
     type_id = exts.STACKTWO_BUTTON_POSTFIX
 
 
+class StackButtonGroup(GenericStack):
+    type_id = exts.STACK_BUTTON_POSTFIX
+
+
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
 class Panel(GenericUIContainer):
     type_id = exts.PANEL_POSTFIX
