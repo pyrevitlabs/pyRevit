@@ -1236,6 +1236,19 @@ def get_family_parameter(param_name, family_doc):
         raise PyRevitException('Document is not a family')
 
 
+def get_door_rooms(door):
+    """Get from/to rooms associated with given door element.
+
+    Args:
+        door (DB.FamilyInstance): door instance
+
+    Returns:
+        tuple(DB.Architecture.Room, DB.Architecture.Room): from/to rooms
+    """
+    door_phase = door.Document.GetElement(door.CreatedPhaseId)
+    return (door.FromRoom[door_phase], door.ToRoom[door_phase])
+
+
 def get_doors(elements=None, doc=None, room_id=None):
     """Get all doors in active or given document.
 
@@ -1254,9 +1267,7 @@ def get_doors(elements=None, doc=None, room_id=None):
     if room_id:
         room_doors = []
         for door in all_doors:
-            door_phase = doc.GetElement(door.CreatedPhaseId)
-            from_room = door.FromRoom[door_phase]
-            to_room = door.ToRoom[door_phase]
+            from_room, to_room = get_door_rooms(door)
             if (from_room and from_room.Id == room_id) \
                     or (to_room and to_room.Id == room_id):
                 room_doors.append(door)

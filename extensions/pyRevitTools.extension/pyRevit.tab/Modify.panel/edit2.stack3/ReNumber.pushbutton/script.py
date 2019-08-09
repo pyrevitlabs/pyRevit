@@ -194,29 +194,38 @@ def door_by_room_renumber():
                 if not picked_door:
                     # user cancelled
                     return
+                # grab the associated rooms
+                from_room, to_room = revit.query.get_door_rooms(picked_door)
 
-                # pick room
-                picked_room = \
-                    revit.pick_element_by_category("Rooms",
-                                                   message="Select a room")
-                if not picked_room:
-                    # user cancelled
-                    return
+                # if more than one option for room, ask to pick
+                if all([from_room, to_room]):
+                    # pick room
+                    picked_room = \
+                        revit.pick_element_by_category("Rooms",
+                                                       message="Select a room")
+                    if not picked_room:
+                        # user cancelled
+                        return
+                else:
+                    picked_room = from_room or to_room
 
                 # get data on doors associated with picked room
                 room_doors = revit.query.get_doors(room_id=picked_room.Id)
                 room_number = get_number(picked_room)
                 with revit.Transaction("Renumber Door"):
-                    if len(room_doors) == 1:
+                    door_count = len(room_doors)
+                    if door_count == 1:
                         # match door number to room number
                         renumber_element(picked_door,
                                          room_number,
                                          existing_doors_data)
-                    elif len(room_doors) > 1:
+                    elif door_count > 1:
                         # match door number to extended room number e.g. 100A
                         # check numbers of existing room doors and pick the next
                         room_door_numbers = [get_number(x) for x in room_doors]
                         new_number = coreutils.extend_counter(room_number)
+                        # attempts = 1
+                        # max_attempts = len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
                             new_number = coreutils.increment_str(new_number)
                         renumber_element(picked_door,
