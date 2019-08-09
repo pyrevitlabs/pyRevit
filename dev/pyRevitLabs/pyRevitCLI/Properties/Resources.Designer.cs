@@ -39,7 +39,7 @@ namespace pyRevitCLI.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PyRevitCLI.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("pyRevitCLI.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -60,6 +60,19 @@ namespace pyRevitCLI.Properties {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Usage:
+        ///	pyrevit help
+        ///	pyrevit (-h | --help)
+        ///	pyrevit (-V | --version)
+        ///	pyrevit --usage
+        ///	pyrevit (blog | docs | source | youtube | support)
+        ///	pyrevit env [--json] [--help] [--log=&lt;log_file&gt;]
+        ///	pyrevit clone --help
+        ///	pyrevit clone &lt;clone_name&gt; &lt;deployment_name&gt; [--dest=&lt;dest_path&gt;] [--branch=&lt;branch_name&gt;] [--log=&lt;log_file&gt;]
+        ///	pyrevit clone &lt;clone_name&gt; --image=&lt;image_url&gt; [--dest=&lt;dest_path&gt;] [--log=&lt;log_file&gt;]
+        ///	pyrevit clone &lt;clone_name&gt; [--dest=&lt;dest_path&gt;] [--source=&lt;repo_url&gt;] [--branch=&lt;branch_nam [rest of string was truncated]&quot;;.
+        /// </summary>
         internal static string UsagePatterns {
             get {
                 return ResourceManager.GetString("UsagePatterns", resourceCulture);
