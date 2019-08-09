@@ -7,7 +7,7 @@ __context__ = 'zerodoc'
 output = script.get_output()
 
 
-output.set_width(600)
+output.set_width(900)
 
 
 test1_types = [charts.LINE_CHART,

@@ -1,9 +1,6 @@
-"""Unit Tests for scriptutils module."""
+"""Unit Tests for pyrevit.script module."""
 
 
 __context__ = 'zerodoc'
 
 
-import pyrevit.unittests as prtests
-
-prtests.perform_script_tests()

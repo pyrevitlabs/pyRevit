@@ -1,5 +1,3 @@
-"""Unit Tests for revitutils module."""
+"""Unit Tests for pyrevit.revit module."""
 
-import pyrevit.unittests as prtests
-
-prtests.perform_revit_tests()
+__context__ = 'zerodoc'

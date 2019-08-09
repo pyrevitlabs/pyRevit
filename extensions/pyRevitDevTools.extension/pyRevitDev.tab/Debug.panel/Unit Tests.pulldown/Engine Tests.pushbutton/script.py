@@ -2,8 +2,3 @@
 
 
 __context__ = 'zerodoc'
-
-
-import pyrevit.unittests as prtests
-
-prtests.perform_engine_tests()
