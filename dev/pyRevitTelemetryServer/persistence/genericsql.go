@@ -22,9 +22,31 @@ type GenericSQLConnection struct {
 	DatabaseConnection
 }
 
-func (w GenericSQLConnection) Write(logrec *TelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w GenericSQLConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord, logger *cli.Logger) (*Result, error) {
+	// generate generic sql insert query
+	logger.Debug("generating query")
+	query, qErr := generateScriptInsertQuery(w.Config.ScriptTarget, logrec, logger)
+	if qErr != nil {
+		return nil, qErr
+	}
+
+	return commitSQL(w.Config.Backend, w.Config.ConnString, query, logger)
+}
+
+func (w GenericSQLConnection) WriteEventTelemetry(logrec *EventTelemetryRecord, logger *cli.Logger) (*Result, error) {
+	// generate generic sql insert query
+	logger.Debug("generating query")
+	query, qErr := generateEventInsertQuery(w.Config.EventTarget, logrec, logger)
+	if qErr != nil {
+		return nil, qErr
+	}
+
+	return commitSQL(w.Config.Backend, w.Config.ConnString, query, logger)
+}
+
+func commitSQL(backend DBBackendName, connStr string, query string, logger *cli.Logger) (*Result, error) {
 	// open connection
-	db, err := openConnection(&w, logger)
+	db, err := openConnection(backend, connStr, logger)
 	if err != nil {
 		logger.Debug("error opening connection")
 		return nil, err
@@ -39,13 +61,6 @@ func (w GenericSQLConnection) Write(logrec *TelemetryRecord, logger *cli.Logger)
 		return nil, beginErr
 	}
 	defer tx.Rollback()
-
-	// generate generic sql insert query
-	logger.Debug("generating query")
-	query, qErr := generateInsertQuery(w.Config.Target, logrec, logger)
-	if qErr != nil {
-		return nil, qErr
-	}
 
 	// run the insert query
 	logger.Debug("executing insert query")
@@ -67,17 +82,17 @@ func (w GenericSQLConnection) Write(logrec *TelemetryRecord, logger *cli.Logger)
 	}, nil
 }
 
-func openConnection(w *GenericSQLConnection, logger *cli.Logger) (*sql.DB, error) {
+func openConnection(backend DBBackendName, connStr string, logger *cli.Logger) (*sql.DB, error) {
 	// open connection
-	logger.Debug(fmt.Sprintf("opening %s connection", w.Config.Backend))
-	cleanConnStr := w.Config.ConnString
-	if w.Config.Backend == Sqlite || w.Config.Backend == MySql {
-		cleanConnStr = strings.Replace(w.Config.ConnString, string(w.Config.Backend)+":", "", 1)
+	logger.Debug(fmt.Sprintf("opening %s connection", backend))
+	cleanConnStr := connStr
+	if backend == Sqlite || backend == MySql {
+		cleanConnStr = strings.Replace(connStr, string(backend)+":", "", 1)
 	}
-	return sql.Open(string(w.Config.Backend), cleanConnStr)
+	return sql.Open(string(backend), cleanConnStr)
 }
 
-func generateInsertQuery(table string, logrec *TelemetryRecord, logger *cli.Logger) (string, error) {
+func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logger *cli.Logger) (string, error) {
 	// read csv file and build sql insert query
 	var querystr strings.Builder
 
@@ -150,6 +165,46 @@ func generateInsertQuery(table string, logrec *TelemetryRecord, logger *cli.Logg
 			logrec.TraceInfo.EngineInfo.Type,
 			logrec.TraceInfo.EngineInfo.Version,
 			logrec.TraceInfo.Message,
+		}
+	}
+	datalines = append(datalines, ToSql(&record, true))
+
+	// add csv records to query string
+	all_datalines := strings.Join(datalines, ", ")
+	logger.Trace(all_datalines)
+	querystr.WriteString(all_datalines)
+	querystr.WriteString(";\n")
+	logger.Debug("building query completed")
+
+	// execute query
+	full_query := querystr.String()
+	logger.Trace(full_query)
+	return full_query, nil
+}
+
+func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger *cli.Logger) (string, error) {
+	// read csv file and build sql insert query
+	var querystr strings.Builder
+
+	logger.Debug("generating insert query with-out headers")
+	querystr.WriteString(fmt.Sprintf("INSERT INTO %s values ", table))
+
+	// build sql data info
+	logger.Debug("building insert query for data")
+	datalines := make([]string, 0)
+
+	// create record based on schema
+	var record []string
+
+	// generate record id, panic if error
+	recordId := uuid.Must(uuid.NewV4())
+
+	if logrec.LogMeta.SchemaVersion == "2.0" {
+		record = []string{
+			recordId.String(),
+			logrec.TimeStamp,
+			logrec.EventType,
+			logrec.UserName,
 		}
 	}
 	datalines = append(datalines, ToSql(&record, true))

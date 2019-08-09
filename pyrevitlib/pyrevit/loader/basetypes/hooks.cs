@@ -35,7 +35,7 @@ namespace PyRevitBaseClasses {
     }
 
     public static class PyRevitHooks {
-        private static void toggleHooks(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
+        private static void ToggleHooks(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
             switch (eventType) {
                 case EventType.Application_ApplicationInitialized:
                     if (toggle_on)
@@ -488,11 +488,11 @@ namespace PyRevitBaseClasses {
         }
 
         public static void RegisterEventType(UIApplication uiApp, EventType eventType) {
-            toggleHooks(uiApp, eventType);
+            ToggleHooks(uiApp, eventType);
         }
 
         public static void UnRegisterEventType(UIApplication uiApp, EventType eventType) {
-            toggleHooks(uiApp, eventType, toggle_on: false);
+            ToggleHooks(uiApp, eventType, toggle_on: false);
         }
 
         public static void RegisterHook(UIApplication uiApp, string script, EventType eventType, string[] searchPaths, string extName, string uniqueId) {

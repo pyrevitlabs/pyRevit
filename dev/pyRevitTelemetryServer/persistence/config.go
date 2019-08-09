@@ -18,11 +18,12 @@ const (
 )
 
 type Config struct {
-	Backend    DBBackendName
-	ConnString string
-	Target     string
-	Username   string
-	Password   string
+	Backend      DBBackendName
+	ConnString   string
+	ScriptTarget string
+	EventTarget  string
+	Username     string
+	Password     string
 }
 
 func NewConfig(options *cli.Options) (*Config, error) {
@@ -32,9 +33,10 @@ func NewConfig(options *cli.Options) (*Config, error) {
 	}
 
 	return &Config{
-		Backend:    backend,
-		ConnString: options.ConnString,
-		Target:     options.Table,
+		Backend:      backend,
+		ConnString:   options.ConnString,
+		ScriptTarget: options.ScriptTable,
+		EventTarget:  options.EventTable,
 	}, nil
 }
 

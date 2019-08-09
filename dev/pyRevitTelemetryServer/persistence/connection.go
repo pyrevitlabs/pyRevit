@@ -19,8 +19,9 @@ type DatabaseConnection struct {
 }
 
 type Connection interface {
-	Write(*TelemetryRecord, *cli.Logger) (*Result, error)
-	// Read([]TelemetryRecord, *cli.Logger) (*Result, error)
+	WriteScriptTelemetry(*ScriptTelemetryRecord, *cli.Logger) (*Result, error)
+	WriteEventTelemetry(*EventTelemetryRecord, *cli.Logger) (*Result, error)
+	// Read([]ScriptTelemetryRecord, *cli.Logger) (*Result, error)
 }
 
 func NewConnection(dbcfg *Config) (Connection, error) {

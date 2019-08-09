@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.IO;
@@ -130,6 +131,70 @@ namespace PyRevitBaseClasses {
         //ApplicationEntryPoint_ViewActivating,
     }
 
+
+    public static class EventUtils {
+        private static Dictionary<EventType, string> eventNames = new Dictionary<EventType, string> {
+            { EventType.UIApplication_ApplicationClosing,  "app-closing" },
+            { EventType.UIApplication_Idling, "app-idling" },
+            { EventType.Application_ApplicationInitialized, "app-init" },
+            { EventType.UIApplication_DialogBoxShowing, "dialog-showing" },
+            { EventType.Application_DocumentChanged, "doc-changed" },
+            { EventType.Application_DocumentClosed, "doc-closed" },
+            { EventType.Application_DocumentClosing, "doc-closing" },
+            { EventType.Application_DocumentCreated, "doc-created" },
+            { EventType.Application_DocumentCreating, "doc-creating" },
+            { EventType.Application_DocumentOpened, "doc-opened" },
+            { EventType.Application_DocumentOpening, "doc-opening" },
+            { EventType.Application_DocumentPrinted, "doc-printed" },
+            { EventType.Application_DocumentPrinting, "doc-printing" },
+            { EventType.Application_DocumentSavedAs, "doc-saved-as" },
+            { EventType.Application_DocumentSaved, "doc-saved" },
+            { EventType.Application_DocumentSavingAs, "doc-saving-as" },
+            { EventType.Application_DocumentSaving, "doc-saving" },
+            { EventType.Application_DocumentSynchronizedWithCentral, "doc-synced" },
+            { EventType.Application_DocumentSynchronizingWithCentral, "doc-syncing" },
+            { EventType.Application_DocumentWorksharingEnabled, "doc-worksharing-enabled" },
+            { EventType.UIApplication_DockableFrameFocusChanged, "dock-focus-changed" },
+            { EventType.UIApplication_DockableFrameVisibilityChanged, "dock-visibility-changed" },
+            { EventType.UIApplication_FabricationPartBrowserChanged, "fabparts-browser-changed" },
+            { EventType.Application_FailuresProcessing, "failure-processing" },
+            { EventType.Application_FamilyLoadedIntoDocument, "family-loaded" },
+            { EventType.Application_FamilyLoadingIntoDocument, "family-loading" },
+            { EventType.Application_FileExported, "file-exported" },
+            { EventType.Application_FileExporting, "file-exporting" },
+            { EventType.Application_FileImported, "file-imported" },
+            { EventType.Application_FileImporting, "file-importing" },
+            { EventType.UIApplication_FormulaEditing, "formula-editing" },
+            { EventType.Application_LinkedResourceOpened, "link-opened" },
+            { EventType.Application_LinkedResourceOpening, "link-opening" },
+            { EventType.UIApplication_DisplayingOptionsDialog, "options-showing" },
+            { EventType.Application_ProgressChanged, "progress-changed" },
+            { EventType.UIApplication_TransferredProjectStandards, "transferred_project_standards" },
+            { EventType.UIApplication_TransferringProjectStandards, "transferring_project_standards" },
+            { EventType.Application_ElementTypeDuplicated, "type-duplicated" },
+            { EventType.Application_ElementTypeDuplicating, "type-duplicating" },
+            { EventType.UIApplication_ViewActivated, "view-activated" },
+            { EventType.UIApplication_ViewActivating, "view-activating" },
+            { EventType.Application_ViewExported, "view-exported" },
+            { EventType.Application_ViewExporting, "view-exporting" },
+            { EventType.Application_ViewPrinted, "view-printed" },
+            { EventType.Application_ViewPrinting, "view-printing" },
+            { EventType.Application_WorksharedOperationProgressChanged, "worksharing-ops-progress-changed" },
+        };
+
+        public static string GetEventName(EventType eventType) {
+            string eventName = null;
+            eventNames.TryGetValue(eventType, out eventName);
+            return eventName;
+        }
+
+        public static EventType GetEventType(string eventName) {
+            return eventNames.FirstOrDefault(x => x.Value == eventName).Key;
+        }
+
+    }
+
+
     public class AppEventUtils {
         public Application App { get; private set; }
 
@@ -141,6 +206,7 @@ namespace PyRevitBaseClasses {
                 throw new Exception("Application can not be null.");
         }
     }
+
 
     public class UIEventUtils {
         private bool _txnCompleted = false;

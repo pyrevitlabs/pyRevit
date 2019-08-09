@@ -10,10 +10,18 @@ type MongoDBConnection struct {
 	DatabaseConnection
 }
 
-func (w MongoDBConnection) Write(logrec *TelemetryRecord, logger *cli.Logger) (*Result, error) {
+func (w MongoDBConnection) WriteScriptTelemetry(logrec *ScriptTelemetryRecord, logger *cli.Logger) (*Result, error) {
+	return commitMongo(w.Config.ConnString, w.Config.ScriptTarget, logrec, logger)
+}
+
+func (w MongoDBConnection) WriteEventTelemetry(logrec *EventTelemetryRecord, logger *cli.Logger) (*Result, error) {
+	return commitMongo(w.Config.ConnString, w.Config.EventTarget, logrec, logger)
+}
+
+func commitMongo(connStr string, targetCollection string, logrec interface{}, logger *cli.Logger) (*Result, error) {
 	// parse and grab database name from uri
 	logger.Debug("grabbing db name from connection string")
-	dialinfo, err := mgo.ParseURL(w.Config.ConnString)
+	dialinfo, err := mgo.ParseURL(connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +40,7 @@ func (w MongoDBConnection) Write(logrec *TelemetryRecord, logger *cli.Logger) (*
 
 	logger.Debug("getting target collection")
 	db := session.DB(dialinfo.Database)
-	c := db.C(w.Config.Target)
+	c := db.C(targetCollection)
 	logger.Trace(c)
 
 	logger.Debug("opening bulk operation")

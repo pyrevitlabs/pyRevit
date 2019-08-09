@@ -24,7 +24,7 @@ type TraceInfo struct {
 	Message             string     `json:"message" bson:"message"` // schema 2.0
 }
 
-type TelemetryRecord struct {
+type ScriptTelemetryRecord struct {
 	LogMeta              LogMeta           `json:"meta" bson:"meta"`           // schema 2.0
 	Date                 string            `json:"date" bson:"date"`           // initial schema
 	Time                 string            `json:"time" bson:"time"`           // initial schema
@@ -52,7 +52,7 @@ type TelemetryRecord struct {
 	TraceInfo            TraceInfo         `json:"trace" bson:"trace"`
 }
 
-func (logrec TelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
+func (logrec ScriptTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
 	if logrec.LogMeta.SchemaVersion == "" {
 		logger.Print(fmt.Sprintf(
 			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
@@ -84,9 +84,46 @@ func (logrec TelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string
 	}
 }
 
-func (logrec TelemetryRecord) Validate() {
+func (logrec ScriptTelemetryRecord) Validate() {
 	// todo: validate by schema version
 	if logrec.LogMeta.SchemaVersion == "" {
 	} else if logrec.LogMeta.SchemaVersion == "2.0" {
+	}
+}
+
+type EventTelemetryRecord struct {
+	LogMeta   LogMeta                `json:"meta" bson:"meta"`           // schema 2.0
+	TimeStamp string                 `json:"timestamp" bson:"timestamp"` // schema 2.0
+	EventType string                 `json:"type" bson:"type"`
+	EventArgs map[string]interface{} `json:"args" bson:"args"`
+	UserName  string                 `json:"username" bson:"username"`
+
+	// general
+	Cancellable      bool   `json:"cancellable" bson:"cancellable"`
+	Cancelled        bool   `json:"cancelled" bson:"cancelled"`
+	DocumentId       int    `json:"docid" bson:"docid"`             // schema 2.0
+	DocumentType     string `json:"doctype" bson:"doctype"`         // schema 2.0
+	DocumentTemplate string `json:"doctemplate" bson:"doctemplate"` // schema 2.0
+	DocumentName     string `json:"docname" bson:"docname"`         // schema 2.0
+	DocumentPath     string `json:"docpath" bson:"docpath"`         // schema 2.0
+}
+
+func (logrec EventTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
+	if logrec.LogMeta.SchemaVersion == "2.0" {
+		logger.Print(fmt.Sprintf(
+			"%s %s [%s] %q doc=%q @ %s",
+			message,
+			logrec.TimeStamp,
+			logrec.EventType,
+			logrec.UserName,
+			logrec.DocumentName,
+			logrec.DocumentPath,
+		))
+	}
+}
+
+func (logrec EventTelemetryRecord) Validate() {
+	// todo: validate by schema version
+	if logrec.LogMeta.SchemaVersion == "2.0" {
 	}
 }

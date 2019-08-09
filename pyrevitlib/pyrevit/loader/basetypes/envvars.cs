@@ -25,7 +25,7 @@ namespace PyRevitBaseClasses
         public static string telemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
         public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
-        public static string appTelemetryFilePath = string.Format("{0}_APPTELEMETRYFILE", keyPrefix);
+        public static string appTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
         public static string appTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
         public static string appTelemetryEventFlags = string.Format("{0}_APPTELEMETRYEVENTFLAGS", keyPrefix);
 
@@ -55,6 +55,10 @@ namespace PyRevitBaseClasses
         public bool TelemetryState;
         public string TelemetryFilePath;
         public string TelemetryServerUrl;
+
+        public bool AppTelemetryState;
+        public string AppTelemetryServerUrl;
+        public string AppTelemetryEventFlags;
 
         public string[] ReferencedAssemblies;
 
@@ -87,7 +91,7 @@ namespace PyRevitBaseClasses
             if (_envData.Contains(EnvDictionaryKeys.outputStyleSheet))
                 ActiveStyleSheet = (string)_envData[EnvDictionaryKeys.outputStyleSheet];
 
-
+            // script telemetry
             if (_envData.Contains(EnvDictionaryKeys.telemetryState))
                 TelemetryState = (bool)_envData[EnvDictionaryKeys.telemetryState];
 
@@ -97,10 +101,15 @@ namespace PyRevitBaseClasses
             if (_envData.Contains(EnvDictionaryKeys.telemetryServerUrl))
                 TelemetryServerUrl = (string)_envData[EnvDictionaryKeys.telemetryServerUrl];
 
-            if (_envData.Contains(EnvDictionaryKeys.refedAssms)) {
-                var assms = (string)_envData[EnvDictionaryKeys.refedAssms];
-                ReferencedAssemblies = assms.Split(ExternalConfig.defaultsep);
-            }
+            // app events telemetry
+            if (_envData.Contains(EnvDictionaryKeys.appTelemetryState))
+                AppTelemetryState = (bool)_envData[EnvDictionaryKeys.appTelemetryState];
+
+            if (_envData.Contains(EnvDictionaryKeys.appTelemetryServerUrl))
+                AppTelemetryServerUrl = (string)_envData[EnvDictionaryKeys.appTelemetryServerUrl];
+
+            if (_envData.Contains(EnvDictionaryKeys.appTelemetryEventFlags))
+                AppTelemetryEventFlags = (string)_envData[EnvDictionaryKeys.appTelemetryEventFlags];
 
             if (_envData.Contains(EnvDictionaryKeys.hooks))
                 EventHooks = (HashSet<Dictionary<string, object>>)_envData[EnvDictionaryKeys.hooks];

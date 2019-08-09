@@ -299,7 +299,7 @@ namespace PyRevitBaseClasses {
 
         public int ExecutionResult { get; set; }
 
-        public string IronLanguageTraceBack { get;  set; }
+        public string IronLanguageTraceBack { get; set; }
 
         public string CLRTraceBack { get; set; }
 
@@ -376,30 +376,30 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public TelemetryRecord MakeTelemetryRecord() {
+        public ScriptTelemetryRecord MakeTelemetryRecord() {
             // setup a new telemetry record
-            return new TelemetryRecord(
-                App.Username,
-                App.VersionNumber,
-                App.VersionBuild,
-                SessionUUID,
-                PyRevitVersion,
-                CloneName,
-                DebugMode,
-                ConfigMode,
-                ExecutedFromUI,
-                NeedsCleanEngine,
-                NeedsFullFrameEngine,
-                CommandName,
-                CommandBundle,
-                CommandExtension,
-                CommandUniqueId,
-                ScriptSourceFile,
-                DocumentName,
-                DocumentPath,
-                ExecutionResult,
-                GetResultsDictionary(),
-                new TraceInfo {
+            return new ScriptTelemetryRecord {
+                username = App.Username,
+                revit = App.VersionNumber,
+                revitbuild = App.VersionBuild,
+                sessionid = SessionUUID,
+                pyrevit = PyRevitVersion,
+                clone = CloneName,
+                debug = DebugMode,
+                config = ConfigMode,
+                from_gui = ExecutedFromUI,
+                clean_engine = NeedsCleanEngine,
+                fullframe_engine = NeedsFullFrameEngine,
+                commandname = CommandName,
+                commandbundle = CommandBundle,
+                commandextension = CommandExtension,
+                commanduniquename = CommandUniqueId,
+                scriptpath = ScriptSourceFile,
+                docname = DocumentName,
+                docpath = DocumentPath,
+                resultcode = ExecutionResult,
+                commandresults = GetResultsDictionary(),
+                trace = new TraceInfo {
                     engine = new EngineInfo {
                         type = EngineType.ToString().ToLower(),
                         version = Convert.ToString(
@@ -409,7 +409,8 @@ namespace PyRevitBaseClasses {
                         syspath = ModuleSearchPaths
                     },
                     message = TraceMessage
-                });
+                }
+            };
         }
 
         public IDictionary<string, object> GetBuiltInVariables() {

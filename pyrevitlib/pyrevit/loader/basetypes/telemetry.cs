@@ -1,11 +1,14 @@
 using System;
 using System.Numerics;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Web.Script.Serialization;
 using System.IO;
 using System.Threading.Tasks;
 using Autodesk.Revit.ApplicationServices;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Common;
@@ -17,14 +20,12 @@ namespace PyRevitBaseClasses {
         public List<string> syspath { get; set; }
     }
 
-
     public class TraceInfo {
         public EngineInfo engine { get; set; }
         public string message { get; set; }
     }
 
-
-    public class TelemetryRecord {
+    public class ScriptTelemetryRecord {
         // schema
         public Dictionary<string, string> meta { get; private set; }
 
@@ -60,73 +61,29 @@ namespace PyRevitBaseClasses {
         // any errors?
         public TraceInfo trace { get; set; }
 
-        public TelemetryRecord(
-                string revitUsername,
-                string revitVersion,
-                string revitBuild,
-                string revitProcessId,
-                string pyRevitVersion,
-                string cloneName,
-                bool debugModeEnabled,
-                bool configModeEnabled,
-                bool execFromGUI,
-                bool cleanEngine,
-                bool fullframeEngine,
-                string pyRevitCommandName,
-                string pyRevitCommandBundle,
-                string pyRevitCommandExtension,
-                string pyRevitCommandUniqueName,
-                string pyRevitCommandPath,
-                string docName,
-                string docPath,
-                int executorResultCode,
-                Dictionary<string, string> resultDict,
-                TraceInfo traceInfo) {
+        public ScriptTelemetryRecord() {
             meta = new Dictionary<string, string> {
                 { "schema", "2.0"},
             };
 
             timestamp = CommonUtils.GetISOTimeStampNow();
-
-            username = revitUsername;
-            revit = revitVersion;
-            revitbuild = revitBuild;
-            sessionid = revitProcessId;
-            pyrevit = pyRevitVersion;
-            clone = cloneName;
-            debug = debugModeEnabled;
-            config = configModeEnabled;
-            from_gui = execFromGUI;
-            clean_engine = cleanEngine;
-            fullframe_engine = fullframeEngine;
-            commandname = pyRevitCommandName;
-            commandbundle = pyRevitCommandBundle;
-            commandextension = pyRevitCommandExtension;
-            commanduniquename = pyRevitCommandUniqueName;
-            scriptpath = pyRevitCommandPath;
-            docname = docName;
-            docpath = docPath;
-            resultcode = executorResultCode;
-            commandresults = resultDict;
-            trace = traceInfo;
         }
     }
 
-
-    public class ScriptTelemetry {
-        public static string MakeTelemetryRecord(TelemetryRecord record) {
-            return new JavaScriptSerializer().Serialize(record);
+    public static class Telemetry {
+        public static string SerializeTelemetryRecord(object telemetryRecord) {
+            return new JavaScriptSerializer().Serialize(telemetryRecord);
         }
 
-        public static void PostTelemetryRecordToServer(string _telemetryServerUrl, TelemetryRecord record) {
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(_telemetryServerUrl);
+        public static string PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(telemetryServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
             httpWebRequest.UserAgent = "pyrevit";
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
-                string json = MakeTelemetryRecord(record);
-
+                // serialize and write
+                string json = SerializeTelemetryRecord(telemetryRecord);
                 streamWriter.Write(json);
                 streamWriter.Flush();
                 streamWriter.Close();
@@ -134,47 +91,82 @@ namespace PyRevitBaseClasses {
 
             var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream())) {
-                var result = streamReader.ReadToEnd();
+                return streamReader.ReadToEnd();
             }
         }
 
-        public static void WriteTelemetryRecordToFile(string _telemetryFilePath, TelemetryRecord record) {
-            // Read existing json data
-            string jsonData = "[]";
-            if (File.Exists(_telemetryFilePath)) {
-                jsonData = File.ReadAllText(_telemetryFilePath);
+        public static void WriteTelemetryRecord<T>(string telemetryFilePath, T telemetryRecord) {
+            string existingTelemetryData = "[]";
+            if (File.Exists(telemetryFilePath)) {
+                existingTelemetryData = File.ReadAllText(telemetryFilePath);
             }
             else {
-                File.WriteAllText(_telemetryFilePath, jsonData);
+                File.WriteAllText(telemetryFilePath, existingTelemetryData);
             }
 
-            // De-serialize to object or create new list
-            var logData = new JavaScriptSerializer().Deserialize<List<TelemetryRecord>>(jsonData);
+            var telemetryData = new JavaScriptSerializer().Deserialize<List<T>>(existingTelemetryData);
 
-            // Add any new employees
-            logData.Add(record);
+            telemetryData.Add(telemetryRecord);
 
-            // Update json data string
-            jsonData = new JavaScriptSerializer().Serialize(logData);
-            File.WriteAllText(_telemetryFilePath, jsonData);
+            existingTelemetryData = new JavaScriptSerializer().Serialize(telemetryData);
+            File.WriteAllText(telemetryFilePath, existingTelemetryData);
         }
+    }
 
-        public static void LogTelemetryRecord(TelemetryRecord record) {
+    public static class ScriptTelemetry {
+        public static void LogScriptTelemetryRecord(ScriptTelemetryRecord scriptTelemetryRecord) {
             var envDict = new EnvDictionary();
 
             if (envDict.TelemetryState) {
-                if (envDict.TelemetryState && envDict.TelemetryServerUrl != null && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
-                    new Task(() => PostTelemetryRecordToServer(envDict.TelemetryServerUrl, record)).Start();
+                if (envDict.TelemetryState
+                        && envDict.TelemetryServerUrl != null
+                        && !string.IsNullOrEmpty(envDict.TelemetryServerUrl))
+                    new Task(() =>
+                        Telemetry.PostTelemetryRecord(envDict.TelemetryServerUrl, scriptTelemetryRecord)).Start();
 
-                if (envDict.TelemetryState && envDict.TelemetryFilePath != null && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
-                    new Task(() => WriteTelemetryRecordToFile(envDict.TelemetryFilePath, record)).Start();
+                if (envDict.TelemetryState
+                        && envDict.TelemetryFilePath != null
+                        && !string.IsNullOrEmpty(envDict.TelemetryFilePath))
+                    new Task(() =>
+                        Telemetry.WriteTelemetryRecord(envDict.TelemetryFilePath, scriptTelemetryRecord)).Start();
             }
         }
     }
 
+    public class EventTelemetryRecord {
+        // schema
+        public Dictionary<string, string> meta { get; private set; }
+
+        // which event?
+        public string type { get; set; }
+        public Dictionary<string, object> args { get; set; }
+        public string status { get; set; }
+
+        // when?
+        public string timestamp { get; set; }
+        // by who?
+        public string username { get; set; }
+
+        public bool cancellable { get; set; }
+        public bool cancelled { get; set; }
+        public int docid { get; set; }
+        public string doctype { get; set; }
+        public string doctemplate { get; set; }
+        public string docname { get; set; }
+        public string docpath { get; set; }
+
+
+        public EventTelemetryRecord() {
+            meta = new Dictionary<string, string> {
+                { "schema", "2.0"},
+            };
+
+            timestamp = CommonUtils.GetISOTimeStampNow();
+        }
+    }
 
     public class EventTelemetry {
-        private static void toggleEventListeners(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
+        private static void ToggleEventListeners(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
             switch (eventType) {
                 case EventType.Application_ApplicationInitialized:
                     if (toggle_on)
@@ -525,30 +517,135 @@ namespace PyRevitBaseClasses {
             }
         }
 
+        public static void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
+            var envDict = new EnvDictionary();
+
+            // update general properties on record
+            eventTelemetryRecord.username = TryGetActiveUserName(sender);
+            eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
+            eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
+
+            if (envDict.TelemetryState) {
+                if (envDict.AppTelemetryState
+                        && envDict.AppTelemetryServerUrl != null
+                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
+                    new Task(() =>
+                        Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
+            }
+        }
+
+        public static string TryGetActiveUserName(object sender) {
+            UIControlledApplication uictrlapp = null;
+            UIApplication uiapp = null;
+            ControlledApplication ctrlapp = null;
+            Application app = null;
+
+            Type senderType = sender.GetType();
+            if (senderType == typeof(UIControlledApplication))
+                uictrlapp = (UIControlledApplication)sender;
+            else if (senderType == typeof(UIApplication))
+                uiapp = (UIApplication)sender;
+            else if (senderType == typeof(ControlledApplication))
+                ctrlapp = (ControlledApplication)sender;
+            else if (senderType == typeof(Application))
+                app = (Application)sender;
+
+            if (uiapp != null
+                    && uiapp.Application != null
+                    && (uiapp.Application.Username != null || uiapp.Application.Username != string.Empty))
+                return uiapp.Application.Username;
+            else
+                return string.Empty;
+        }
+
+        public static List<Element> GetElements(Document doc, IEnumerable<ElementId> elementIds) {
+            var elements = new List<Element>();
+            if (doc != null) {
+                foreach (var eid in elementIds) {
+                    if (eid != ElementId.InvalidElementId) {
+                        var element = doc.GetElement(eid);
+                        if (element != null)
+                            elements.Add(element);
+                    }
+                }
+            }
+            return elements;
+        }
+
+        public static List<Dictionary<string,string>> GetViewData(IEnumerable<Element> elements) {
+            var viewNames = new List<Dictionary<string, string>>();
+            foreach (var element in elements)
+                if (element is View) {
+                    View view = (View)element;
+                    string viewFamilyName = string.Empty;
+                    if (view.Document != null) {
+                        var viewamily = view.Document.GetElement(view.GetTypeId());
+                        if (viewamily != null)
+                            viewFamilyName = viewamily.Name;
+                    }
+
+                    viewNames.Add(new Dictionary<string, string> {
+                        { "type", view.ViewType.ToString() },
+                        { "family",  viewFamilyName },
+                        { "name", view.Name },
+                        { "title", view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION).AsString() },
+                    });
+                }
+            return viewNames;
+        }
+
         // event management ------------------------------------------------------------------------------------------
         public static void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
-                    try { toggleEventListeners(uiApp, eventType); }
+                    try {
+                        ToggleEventListeners(uiApp, eventType);
+                    }
                     catch (Exception registerEx) {
-                        //TODO: log failure
+                        throw new Exception(
+                            string.Format("Failed registering {0}, {1}",
+                                          eventType.ToString(), registerEx.StackTrace)
+                            );
                     }
         }
 
         public static void UnRegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
-                    try { toggleEventListeners(uiApp, eventType, toggle_on: false); }
-                    catch (Exception registerEx) {
-                        //TODO: log failure
+                    try {
+                        ToggleEventListeners(uiApp, eventType, toggle_on: false);
+                    }
+                    catch (Exception unregisterEx) {
+                        throw new Exception(
+                            string.Format("Failed unregistering {0}, {1}",
+                                          eventType.ToString(), unregisterEx.StackTrace)
+                            );
                     }
         }
 
         // event handlers --------------------------------------------------------------------------------------------
         private static void UiApp_ViewActivating(object sender, Autodesk.Revit.UI.Events.ViewActivatingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_ViewActivating),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "from_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
+                    { "to_view",  e.NewActiveView != null ? e.NewActiveView.Name : "" },
+                }
+            }, sender, e);
         }
 
         private static void UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_ViewActivated),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "from_view",  e.PreviousActiveView != null ? e.PreviousActiveView.Name : "" },
+                    { "to_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
+                }
+            }, sender, e);
         }
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
@@ -587,108 +684,221 @@ namespace PyRevitBaseClasses {
 #endif
 
         private static void UiApp_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_ApplicationClosing),
+            }, sender, e);
         }
 
-        private static void Application_WorksharedOperationProgressChanged(object sender, Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs e) {
+        private static void Application_WorksharedOperationProgressChanged(object sender, WorksharedOperationProgressChangedEventArgs e) {
         }
 
-        private static void Application_ViewPrinting(object sender, Autodesk.Revit.DB.Events.ViewPrintingEventArgs e) {
+        private static void Application_ViewPrinting(object sender, ViewPrintingEventArgs e) {
         }
 
-        private static void Application_ViewPrinted(object sender, Autodesk.Revit.DB.Events.ViewPrintedEventArgs e) {
+        private static void Application_ViewPrinted(object sender, ViewPrintedEventArgs e) {
         }
 
-        private static void Application_ViewExporting(object sender, Autodesk.Revit.DB.Events.ViewExportingEventArgs e) {
+        private static void Application_ViewExporting(object sender, ViewExportingEventArgs e) {
         }
 
-        private static void Application_ViewExported(object sender, Autodesk.Revit.DB.Events.ViewExportedEventArgs e) {
+        private static void Application_ViewExported(object sender, ViewExportedEventArgs e) {
         }
 
-        private static void Application_ProgressChanged(object sender, Autodesk.Revit.DB.Events.ProgressChangedEventArgs e) {
+        private static void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
         }
 
-        private static void Application_LinkedResourceOpening(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpeningEventArgs e) {
+        private static void Application_LinkedResourceOpening(object sender, LinkedResourceOpeningEventArgs e) {
         }
 
-        private static void Application_LinkedResourceOpened(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpenedEventArgs e) {
+        private static void Application_LinkedResourceOpened(object sender, LinkedResourceOpenedEventArgs e) {
         }
 
-        private static void Application_FileImporting(object sender, Autodesk.Revit.DB.Events.FileImportingEventArgs e) {
+        private static void Application_FileImporting(object sender, FileImportingEventArgs e) {
         }
 
-        private static void Application_FileImported(object sender, Autodesk.Revit.DB.Events.FileImportedEventArgs e) {
+        private static void Application_FileImported(object sender, FileImportedEventArgs e) {
         }
 
-        private static void Application_FileExporting(object sender, Autodesk.Revit.DB.Events.FileExportingEventArgs e) {
+        private static void Application_FileExporting(object sender, FileExportingEventArgs e) {
         }
 
-        private static void Application_FileExported(object sender, Autodesk.Revit.DB.Events.FileExportedEventArgs e) {
+        private static void Application_FileExported(object sender, FileExportedEventArgs e) {
         }
 
-        private static void Application_FamilyLoadingIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadingIntoDocumentEventArgs e) {
+        private static void Application_FamilyLoadingIntoDocument(object sender, FamilyLoadingIntoDocumentEventArgs e) {
         }
 
-        private static void Application_FamilyLoadedIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadedIntoDocumentEventArgs e) {
+        private static void Application_FamilyLoadedIntoDocument(object sender, FamilyLoadedIntoDocumentEventArgs e) {
         }
 
-        private static void Application_FailuresProcessing(object sender, Autodesk.Revit.DB.Events.FailuresProcessingEventArgs e) {
+        private static void Application_FailuresProcessing(object sender, FailuresProcessingEventArgs e) {
         }
 
-        private static void Application_ElementTypeDuplicating(object sender, Autodesk.Revit.DB.Events.ElementTypeDuplicatingEventArgs e) {
+        private static void Application_ElementTypeDuplicating(object sender, ElementTypeDuplicatingEventArgs e) {
         }
 
-        private static void Application_ElementTypeDuplicated(object sender, Autodesk.Revit.DB.Events.ElementTypeDuplicatedEventArgs e) {
+        private static void Application_ElementTypeDuplicated(object sender, ElementTypeDuplicatedEventArgs e) {
         }
 
-        private static void Application_DocumentWorksharingEnabled(object sender, Autodesk.Revit.DB.Events.DocumentWorksharingEnabledEventArgs e) {
+        private static void Application_DocumentWorksharingEnabled(object sender, DocumentWorksharingEnabledEventArgs e) {
         }
 
-        private static void Application_DocumentSynchronizingWithCentral(object sender, Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs e) {
+        private static void Application_DocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
         }
 
-        private static void Application_DocumentSynchronizedWithCentral(object sender, Autodesk.Revit.DB.Events.DocumentSynchronizedWithCentralEventArgs e) {
+        private static void Application_DocumentSynchronizedWithCentral(object sender, DocumentSynchronizedWithCentralEventArgs e) {
         }
 
-        private static void Application_DocumentSavingAs(object sender, Autodesk.Revit.DB.Events.DocumentSavingAsEventArgs e) {
+        private static void Application_DocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
         }
 
-        private static void Application_DocumentSavedAs(object sender, Autodesk.Revit.DB.Events.DocumentSavedAsEventArgs e) {
+        private static void Application_DocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
         }
 
-        private static void Application_DocumentSaving(object sender, Autodesk.Revit.DB.Events.DocumentSavingEventArgs e) {
+        private static void Application_DocumentSaving(object sender, DocumentSavingEventArgs e) {
         }
 
-        private static void Application_DocumentSaved(object sender, Autodesk.Revit.DB.Events.DocumentSavedEventArgs e) {
+        private static void Application_DocumentSaved(object sender, DocumentSavedEventArgs e) {
         }
 
-        private static void Application_DocumentPrinting(object sender, Autodesk.Revit.DB.Events.DocumentPrintingEventArgs e) {
+        private static void Application_DocumentPrinting(object sender, DocumentPrintingEventArgs e) {
+            double marginx, marginy;
+            int zoom;
+            string zoom_type;
+            var printParams = e.GetSettings().PrintParameters;
+
+            // some print parameters throw exceptions
+            try {
+                marginx = printParams.UserDefinedMarginX;
+                marginy = printParams.UserDefinedMarginY;
+            } catch {
+                marginx = marginy = 0.0;
+            }
+
+            try {
+                zoom = printParams.Zoom;
+                zoom_type = printParams.ZoomType.ToString();
+            }
+            catch {
+                zoom = 0;
+                zoom_type = string.Empty;
+            }
+
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentPrinting),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                { "views", GetViewData(GetElements(e.Document, e.GetViewElementIds())) },
+                { "settings", new Dictionary<string,object> {
+                    { "color_depth", printParams.ColorDepth.ToString() },
+                    { "hidden_line_view_type", printParams.HiddenLineViews.ToString() },
+                    { "hide_cropbounds", printParams.HideCropBoundaries },
+                    { "hide_refplanes", printParams.HideReforWorkPlanes },
+                    { "hide_scopeboxes", printParams.HideScopeBoxes },
+                    { "hide_unref_vewtags", printParams.HideUnreferencedViewTags },
+                    { "margin_type", printParams.MarginType.ToString() },
+                    { "mask_lines", printParams.MaskCoincidentLines },
+                    { "page_orientation", printParams.PageOrientation.ToString() },
+                    { "paper_placement", printParams.PaperPlacement.ToString() },
+                    { "paper_size", printParams.PaperSize.Name },
+                    { "paper_source", printParams.PaperSource.Name },
+                    { "raster_quality", printParams.RasterQuality.ToString() },
+                    { "halftone_thinlines", printParams.ReplaceHalftoneWithThinLines },
+                    { "user_margin_x",  marginx },
+                    { "user_margin_y",  marginy },
+                    { "blue_hyperlinks", printParams.ViewLinksinBlue },
+                    { "zoom", zoom },
+                    { "zoom_type", zoom_type },
+                }},
+            }
+            }, sender, e);
         }
 
-        private static void Application_DocumentPrinted(object sender, Autodesk.Revit.DB.Events.DocumentPrintedEventArgs e) {
+        private static void Application_DocumentPrinted(object sender, DocumentPrintedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentPrinted),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "print_pass_views", GetViewData(GetElements(e.Document, e.GetPrintedViewElementIds())) },
+                    { "print_fail_views",  GetViewData(GetElements(e.Document, e.GetFailedViewElementIds())) },
+                }
+            }, sender, e);
         }
 
-        private static void Application_DocumentOpening(object sender, Autodesk.Revit.DB.Events.DocumentOpeningEventArgs e) {
+        private static void Application_DocumentOpening(object sender, DocumentOpeningEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentOpening),
+                doctype = e.DocumentType.ToString(),
+                docpath = e.PathName,
+            }, sender, e);
         }
 
-        private static void Application_DocumentOpened(object sender, Autodesk.Revit.DB.Events.DocumentOpenedEventArgs e) {
+        private static void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentOpened),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+            }, sender, e);
         }
 
-        private static void Application_DocumentCreating(object sender, Autodesk.Revit.DB.Events.DocumentCreatingEventArgs e) {
+        private static void Application_DocumentCreating(object sender, DocumentCreatingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentCreating),
+                doctype = e.DocumentType.ToString(),
+                doctemplate = e.Template,
+            }, sender, e);
         }
 
-        private static void Application_DocumentCreated(object sender, Autodesk.Revit.DB.Events.DocumentCreatedEventArgs e) {
+        private static void Application_DocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentCreated),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+            }, sender, e);
         }
 
-        private static void Application_DocumentClosing(object sender, Autodesk.Revit.DB.Events.DocumentClosingEventArgs e) {
+        private static void Application_DocumentClosing(object sender, DocumentClosingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentClosing),
+                docid = e.DocumentId,
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+            }, sender, e);
         }
 
-        private static void Application_DocumentClosed(object sender, Autodesk.Revit.DB.Events.DocumentClosedEventArgs e) {
+        private static void Application_DocumentClosed(object sender, DocumentClosedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentClosed),
+                docid = e.DocumentId,
+                status = e.Status.ToString(),
+            }, sender, e);
         }
 
-        private static void Application_DocumentChanged(object sender, Autodesk.Revit.DB.Events.DocumentChangedEventArgs e) {
+        private static void Application_DocumentChanged(object sender, DocumentChangedEventArgs e) {
+            var doc = e.GetDocument();
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentChanged),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "operation",  e.Operation.ToString() },
+                    { "added",  e.GetAddedElementIds().Count },
+                    { "deleted",  e.GetDeletedElementIds().Count },
+                    { "modified",  e.GetModifiedElementIds().Count },
+                    { "txn_names",  e.GetTransactionNames().ToList() },
+                }
+            }, sender, e);
         }
 
-        public static void Application_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e) {
+        public static void Application_ApplicationInitialized(object sender, ApplicationInitializedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ApplicationInitialized),
+            }, sender, e);
         }
     }
 }

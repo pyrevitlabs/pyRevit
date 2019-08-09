@@ -31,7 +31,8 @@ if not EXEC_PARAMS.doc_mode:
     # executor.cs
     ScriptExecutor = base_module.ScriptExecutor
 
-    # helpers.cs
+    # events.cs
+    EventUtils = base_module.EventUtils
     AppEventUtils = base_module.AppEventUtils
     UIEventUtils = base_module.UIEventUtils
     PlaceKeynoteExternalEventHandler = \
