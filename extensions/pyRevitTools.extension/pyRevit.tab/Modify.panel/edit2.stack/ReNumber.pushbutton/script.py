@@ -198,7 +198,7 @@ def door_by_room_renumber():
                 from_room, to_room = revit.query.get_door_rooms(picked_door)
 
                 # if more than one option for room, ask to pick
-                if all([from_room, to_room]):
+                if all([from_room, to_room]) or not any([from_room, to_room]):
                     # pick room
                     picked_room = \
                         revit.pick_element_by_category("Rooms",
