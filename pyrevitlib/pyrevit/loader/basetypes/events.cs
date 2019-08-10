@@ -142,9 +142,9 @@ namespace PyRevitBaseClasses {
         void Application_ElementTypeDuplicating(object sender, ElementTypeDuplicatingEventArgs e);
         void Application_ElementTypeDuplicated(object sender, ElementTypeDuplicatedEventArgs e);
         void Application_DocumentWorksharingEnabled(object sender, DocumentWorksharingEnabledEventArgs e);
-        void UiApp_DockableFrameVisibilityChanged(object sender, DockableFrameVisibilityChangedEventArgs e);
-        void UiApp_DockableFrameFocusChanged(object sender, DockableFrameFocusChangedEventArgs e);
-        void UiApp_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
+        void UIApplication_DockableFrameVisibilityChanged(object sender, DockableFrameVisibilityChangedEventArgs e);
+        void UIApplication_DockableFrameFocusChanged(object sender, DockableFrameFocusChangedEventArgs e);
+        void UIApplication_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015)
@@ -160,8 +160,8 @@ namespace PyRevitBaseClasses {
         void Application_LinkedResourceOpening(object sender, LinkedResourceOpeningEventArgs e);
         void Application_LinkedResourceOpened(object sender, LinkedResourceOpenedEventArgs e);
         void Application_WorksharedOperationProgressChanged(object sender, WorksharedOperationProgressChangedEventArgs e);
-        void UiApp_TransferringProjectStandards(object sender, TransferringProjectStandardsEventArgs e);
-        void UiApp_TransferredProjectStandards(object sender, TransferredProjectStandardsEventArgs e);
+        void UIApplication_TransferringProjectStandards(object sender, TransferringProjectStandardsEventArgs e);
+        void UIApplication_TransferredProjectStandards(object sender, TransferredProjectStandardsEventArgs e);
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
@@ -192,11 +192,11 @@ namespace PyRevitBaseClasses {
         void Application_DocumentClosed(object sender, DocumentClosedEventArgs e);
         void Application_DocumentChanged(object sender, DocumentChangedEventArgs e);
         void Application_ApplicationInitialized(object sender, ApplicationInitializedEventArgs e);
-        void UiApp_ViewActivating(object sender, ViewActivatingEventArgs e);
-        void UiApp_ViewActivated(object sender, ViewActivatedEventArgs e);
-        void UiApp_Idling(object sender, IdlingEventArgs e);
-        void UiApp_DisplayingOptionsDialog(object sender, DisplayingOptionsDialogEventArgs e);
-        void UiApp_ApplicationClosing(object sender, ApplicationClosingEventArgs e);
+        void UIApplication_ViewActivating(object sender, ViewActivatingEventArgs e);
+        void UIApplication_ViewActivated(object sender, ViewActivatedEventArgs e);
+        void UIApplication_Idling(object sender, IdlingEventArgs e);
+        void UIApplication_DisplayingOptionsDialog(object sender, DisplayingOptionsDialogEventArgs e);
+        void UIApplication_ApplicationClosing(object sender, ApplicationClosingEventArgs e);
     }
 
     public static class EventUtils {
@@ -265,9 +265,10 @@ namespace PyRevitBaseClasses {
 
         public static List<EventType> GetSupportedEventTypes(int productYear) {
             var supTypes = new List<EventType>();
+            var supportedHandlers = typeof(IEventTypeHandler).GetMembers().Select(m => m.Name);
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
-                // FIXME: 
-                supTypes.Add(eventType);
+                if (supportedHandlers.Contains(eventType.ToString()))
+                    supTypes.Add(eventType);
             return supTypes;
         }
 
@@ -553,34 +554,34 @@ namespace PyRevitBaseClasses {
 
                 case EventType.UIApplication_ApplicationClosing:
                     if (toggle_on)
-                        uiApp.ApplicationClosing += hndlr.UiApp_ApplicationClosing;
+                        uiApp.ApplicationClosing += hndlr.UIApplication_ApplicationClosing;
                     else
-                        uiApp.ApplicationClosing -= hndlr.UiApp_ApplicationClosing;
+                        uiApp.ApplicationClosing -= hndlr.UIApplication_ApplicationClosing;
                     break;
 
                 case EventType.UIApplication_DialogBoxShowing:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                     if (toggle_on)
-                        uiApp.DialogBoxShowing += hndlr.UiApp_DialogBoxShowing;
+                        uiApp.DialogBoxShowing += hndlr.UIApplication_DialogBoxShowing;
                     else
-                        uiApp.DialogBoxShowing -= hndlr.UiApp_DialogBoxShowing;
+                        uiApp.DialogBoxShowing -= hndlr.UIApplication_DialogBoxShowing;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
 #endif
                 case EventType.UIApplication_DisplayingOptionsDialog:
                     if (toggle_on)
-                        uiApp.DisplayingOptionsDialog += hndlr.UiApp_DisplayingOptionsDialog;
+                        uiApp.DisplayingOptionsDialog += hndlr.UIApplication_DisplayingOptionsDialog;
                     else
-                        uiApp.DisplayingOptionsDialog -= hndlr.UiApp_DisplayingOptionsDialog;
+                        uiApp.DisplayingOptionsDialog -= hndlr.UIApplication_DisplayingOptionsDialog;
                     break;
 
                 case EventType.UIApplication_DockableFrameFocusChanged:
 #if !(REVIT2013 || REVIT2014)
                     if (toggle_on)
-                        uiApp.DockableFrameFocusChanged += hndlr.UiApp_DockableFrameFocusChanged;
+                        uiApp.DockableFrameFocusChanged += hndlr.UIApplication_DockableFrameFocusChanged;
                     else
-                        uiApp.DockableFrameFocusChanged -= hndlr.UiApp_DockableFrameFocusChanged;
+                        uiApp.DockableFrameFocusChanged -= hndlr.UIApplication_DockableFrameFocusChanged;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -589,9 +590,9 @@ namespace PyRevitBaseClasses {
                 case EventType.UIApplication_DockableFrameVisibilityChanged:
 #if !(REVIT2013 || REVIT2014)
                     if (toggle_on)
-                        uiApp.DockableFrameVisibilityChanged += hndlr.UiApp_DockableFrameVisibilityChanged;
+                        uiApp.DockableFrameVisibilityChanged += hndlr.UIApplication_DockableFrameVisibilityChanged;
                     else
-                        uiApp.DockableFrameVisibilityChanged -= hndlr.UiApp_DockableFrameVisibilityChanged;
+                        uiApp.DockableFrameVisibilityChanged -= hndlr.UIApplication_DockableFrameVisibilityChanged;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -621,18 +622,18 @@ namespace PyRevitBaseClasses {
 
                 case EventType.UIApplication_Idling:
                     if (toggle_on)
-                        uiApp.Idling += hndlr.UiApp_Idling;
+                        uiApp.Idling += hndlr.UIApplication_Idling;
                     else
-                        uiApp.Idling -= hndlr.UiApp_Idling;
+                        uiApp.Idling -= hndlr.UIApplication_Idling;
                     break;
 
 
                 case EventType.UIApplication_TransferredProjectStandards:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
                     if (toggle_on)
-                        uiApp.TransferredProjectStandards += hndlr.UiApp_TransferredProjectStandards;
+                        uiApp.TransferredProjectStandards += hndlr.UIApplication_TransferredProjectStandards;
                     else
-                        uiApp.TransferredProjectStandards -= hndlr.UiApp_TransferredProjectStandards;
+                        uiApp.TransferredProjectStandards -= hndlr.UIApplication_TransferredProjectStandards;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -641,9 +642,9 @@ namespace PyRevitBaseClasses {
                 case EventType.UIApplication_TransferringProjectStandards:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
                     if (toggle_on)
-                        uiApp.TransferringProjectStandards += hndlr.UiApp_TransferringProjectStandards;
+                        uiApp.TransferringProjectStandards += hndlr.UIApplication_TransferringProjectStandards;
                     else
-                        uiApp.TransferringProjectStandards -= hndlr.UiApp_TransferringProjectStandards;
+                        uiApp.TransferringProjectStandards -= hndlr.UIApplication_TransferringProjectStandards;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -651,16 +652,16 @@ namespace PyRevitBaseClasses {
 
                 case EventType.UIApplication_ViewActivated:
                     if (toggle_on)
-                        uiApp.ViewActivated += hndlr.UiApp_ViewActivated;
+                        uiApp.ViewActivated += hndlr.UIApplication_ViewActivated;
                     else
-                        uiApp.ViewActivated -= hndlr.UiApp_ViewActivated;
+                        uiApp.ViewActivated -= hndlr.UIApplication_ViewActivated;
                     break;
 
                 case EventType.UIApplication_ViewActivating:
                     if (toggle_on)
-                        uiApp.ViewActivating += hndlr.UiApp_ViewActivating;
+                        uiApp.ViewActivating += hndlr.UIApplication_ViewActivating;
                     else
-                        uiApp.ViewActivating -= hndlr.UiApp_ViewActivating;
+                        uiApp.ViewActivating -= hndlr.UIApplication_ViewActivating;
                     break;
             }
         }

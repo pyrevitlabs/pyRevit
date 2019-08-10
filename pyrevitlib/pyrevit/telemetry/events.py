@@ -29,7 +29,6 @@ def register_event_telemetry(flags):
             str(flags), ex)
 
 
-
 def unregister_event_telemetry(flags):
     """Unregisters application event telemetry handlers based on given flags.
 

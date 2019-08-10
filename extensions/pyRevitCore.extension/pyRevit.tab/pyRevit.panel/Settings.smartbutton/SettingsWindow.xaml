@@ -415,52 +415,6 @@
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
-                                <CheckBox x:Name="event_applicationinitialized_cb" Margin="0,10,0,0" IsChecked="False">ApplicationInitialized (ApplicationServices.Application.ApplicationInitialized)</CheckBox>
-                                <CheckBox x:Name="event_documentchanged_cb" Margin="0,10,0,0" IsChecked="False">DocumentChanged (ApplicationServices.Application.DocumentChanged)</CheckBox>
-                                <CheckBox x:Name="event_documentclosed_cb" Margin="0,10,0,0" IsChecked="False">DocumentClosed (ApplicationServices.Application.DocumentClosed)</CheckBox>
-                                <CheckBox x:Name="event_documentclosing_cb" Margin="0,10,0,0" IsChecked="False">DocumentClosing (ApplicationServices.Application.DocumentClosing)</CheckBox>
-                                <CheckBox x:Name="event_documentcreated_cb" Margin="0,10,0,0" IsChecked="False">DocumentCreated (ApplicationServices.Application.DocumentCreated)</CheckBox>
-                                <CheckBox x:Name="event_documentcreating_cb" Margin="0,10,0,0" IsChecked="False">DocumentCreating (ApplicationServices.Application.DocumentCreating)</CheckBox>
-                                <CheckBox x:Name="event_documentopened_cb" Margin="0,10,0,0" IsChecked="False">DocumentOpened (ApplicationServices.Application.DocumentOpened)</CheckBox>
-                                <CheckBox x:Name="event_documentopening_cb" Margin="0,10,0,0" IsChecked="False">DocumentOpening (ApplicationServices.Application.DocumentOpening)</CheckBox>
-                                <CheckBox x:Name="event_documentprinted_cb" Margin="0,10,0,0" IsChecked="False">DocumentPrinted (ApplicationServices.Application.DocumentPrinted)</CheckBox>
-                                <CheckBox x:Name="event_documentprinting_cb" Margin="0,10,0,0" IsChecked="False">DocumentPrinting (ApplicationServices.Application.DocumentPrinting)</CheckBox>
-                                <CheckBox x:Name="event_documentsaved_cb" Margin="0,10,0,0" IsChecked="False">DocumentSaved (ApplicationServices.Application.DocumentSaved)</CheckBox>
-                                <CheckBox x:Name="event_documentsaving_cb" Margin="0,10,0,0" IsChecked="False">DocumentSaving (ApplicationServices.Application.DocumentSaving)</CheckBox>
-                                <CheckBox x:Name="event_documentsavedas_cb" Margin="0,10,0,0" IsChecked="False">DocumentSavedAs (ApplicationServices.Application.DocumentSavedAs)</CheckBox>
-                                <CheckBox x:Name="event_documentsavingas_cb" Margin="0,10,0,0" IsChecked="False">DocumentSavingAs (ApplicationServices.Application.DocumentSavingAs)</CheckBox>
-                                <CheckBox x:Name="event_documentsynchronizedwithcentral_cb" Margin="0,10,0,0" IsChecked="False">DocumentSynchronizedWithCentral (ApplicationServices.Application.DocumentSynchronizedWithCentral)</CheckBox>
-                                <CheckBox x:Name="event_documentsynchronizingwithcentral_cb" Margin="0,10,0,0" IsChecked="False">DocumentSynchronizingWithCentral (ApplicationServices.Application.DocumentSynchronizingWithCentral)</CheckBox>
-                                <CheckBox x:Name="event_documentworksharingenabled_cb" Margin="0,10,0,0" IsChecked="False">DocumentWorksharingEnabled (ApplicationServices.Application.DocumentWorksharingEnabled)</CheckBox>
-                                <CheckBox x:Name="event_elementtypeduplicated_cb" Margin="0,10,0,0" IsChecked="False">ElementTypeDuplicated (ApplicationServices.Application.ElementTypeDuplicated)</CheckBox>
-                                <CheckBox x:Name="event_elementtypeduplicating_cb" Margin="0,10,0,0" IsChecked="False">ElementTypeDuplicating (ApplicationServices.Application.ElementTypeDuplicating)</CheckBox>
-                                <CheckBox x:Name="event_failuresprocessing_cb" Margin="0,10,0,0" IsChecked="False">FailuresProcessing (ApplicationServices.Application.FailuresProcessing)</CheckBox>
-                                <CheckBox x:Name="event_familyloadedintodocument_cb" Margin="0,10,0,0" IsChecked="False">FamilyLoadedIntoDocument (ApplicationServices.Application.FamilyLoadedIntoDocument)</CheckBox>
-                                <CheckBox x:Name="event_familyloadingintodocument_cb" Margin="0,10,0,0" IsChecked="False">FamilyLoadingIntoDocument (ApplicationServices.Application.FamilyLoadingIntoDocument)</CheckBox>
-                                <CheckBox x:Name="event_fileexported_cb" Margin="0,10,0,0" IsChecked="False">FileExported (ApplicationServices.Application.FileExported)</CheckBox>
-                                <CheckBox x:Name="event_fileexporting_cb" Margin="0,10,0,0" IsChecked="False">FileExporting (ApplicationServices.Application.FileExporting)</CheckBox>
-                                <CheckBox x:Name="event_fileimported_cb" Margin="0,10,0,0" IsChecked="False">FileImported (ApplicationServices.Application.FileImported)</CheckBox>
-                                <CheckBox x:Name="event_fileimporting_cb" Margin="0,10,0,0" IsChecked="False">FileImporting (ApplicationServices.Application.FileImporting)</CheckBox>
-                                <CheckBox x:Name="event_linkedresourceopened_cb" Margin="0,10,0,0" IsChecked="False">LinkedResourceOpened (ApplicationServices.Application.LinkedResourceOpened)</CheckBox>
-                                <CheckBox x:Name="event_linkedresourceopening_cb" Margin="0,10,0,0" IsChecked="False">LinkedResourceOpening (ApplicationServices.Application.LinkedResourceOpening)</CheckBox>
-                                <CheckBox x:Name="event_progresschanged_cb" Margin="0,10,0,0" IsChecked="False">ProgressChanged (ApplicationServices.Application.ProgressChanged)</CheckBox>
-                                <CheckBox x:Name="event_viewexported_cb" Margin="0,10,0,0" IsChecked="False">ViewExported (ApplicationServices.Application.ViewExported)</CheckBox>
-                                <CheckBox x:Name="event_viewexporting_cb" Margin="0,10,0,0" IsChecked="False">ViewExporting (ApplicationServices.Application.ViewExporting)</CheckBox>
-                                <CheckBox x:Name="event_viewprinted_cb" Margin="0,10,0,0" IsChecked="False">ViewPrinted (ApplicationServices.Application.ViewPrinted)</CheckBox>
-                                <CheckBox x:Name="event_viewprinting_cb" Margin="0,10,0,0" IsChecked="False">ViewPrinting (ApplicationServices.Application.ViewPrinting)</CheckBox>
-                                <CheckBox x:Name="event_worksharedoperationprogresschanged_cb" Margin="0,10,0,0" IsChecked="False">WorksharedOperationProgressChanged (ApplicationServices.Application.WorksharedOperationProgressChanged)</CheckBox>
-                                <CheckBox x:Name="event_applicationclosing_cb" Margin="0,10,0,0" IsChecked="False">ApplicationClosing (UI.UIApplication.ApplicationClosing)</CheckBox>
-                                <CheckBox x:Name="event_dialogboxshowing_cb" Margin="0,10,0,0" IsChecked="False">DialogBoxShowing (UI.UIApplication.DialogBoxShowing)</CheckBox>
-                                <CheckBox x:Name="event_displayingoptionsdialog_cb" Margin="0,10,0,0" IsChecked="False">DisplayingOptionsDialog (UI.UIApplication.DisplayingOptionsDialog)</CheckBox>
-                                <CheckBox x:Name="event_dockableframefocuschanged_cb" Margin="0,10,0,0" IsChecked="False">DockableFrameFocusChanged (UI.UIApplication.DockableFrameFocusChanged)</CheckBox>
-                                <CheckBox x:Name="event_dockableframevisibilitychanged_cb" Margin="0,10,0,0" IsChecked="False">DockableFrameVisibilityChanged (UI.UIApplication.DockableFrameVisibilityChanged)</CheckBox>
-                                <CheckBox x:Name="event_fabricationpartbrowserchanged_cb" Margin="0,10,0,0" IsChecked="False">FabricationPartBrowserChanged (UI.UIApplication.FabricationPartBrowserChanged)</CheckBox>
-                                <CheckBox x:Name="event_formulaediting_cb" Margin="0,10,0,0" IsChecked="False">FormulaEditing (UI.UIApplication.FormulaEditing)</CheckBox>
-                                <CheckBox x:Name="event_idling_cb" Margin="0,10,0,0" IsChecked="False">Idling (UI.UIApplication.Idling)</CheckBox>
-                                <CheckBox x:Name="event_transferredprojectstandards_cb" Margin="0,10,0,0" IsChecked="False">TransferredProjectStandards (UI.UIApplication.TransferredProjectStandards)</CheckBox>
-                                <CheckBox x:Name="event_transferringprojectstandards_cb" Margin="0,10,0,0" IsChecked="False">TransferringProjectStandards (UI.UIApplication.TransferringProjectStandards)</CheckBox>
-                                <CheckBox x:Name="event_viewactivated_cb" Margin="0,10,0,0" IsChecked="False">ViewActivated (UI.UIApplication.ViewActivated)</CheckBox>
-                                <CheckBox x:Name="event_viewactivating_cb" Margin="0,10,0,0" IsChecked="False">ViewActivating (UI.UIApplication.ViewActivating)</CheckBox>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

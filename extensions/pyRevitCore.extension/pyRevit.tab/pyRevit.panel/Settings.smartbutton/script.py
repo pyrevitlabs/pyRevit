@@ -3,6 +3,8 @@ import os
 import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit.framework import Windows, Controls
+from pyrevit.coreutils.loadertypes import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
 from pyrevit import telemetry
@@ -191,8 +193,26 @@ class SettingsWindow(forms.WPFWindow):
     def _get_event_telemetry_checkboxes(self):
         return list(self.event_telemetry_sp.Children)
 
+    def _setup_event_telemetry_checkboxes(self):
+        supportedEvents = \
+            EventUtils.GetSupportedEventTypes(int(HOST_APP.version))
+        for event_type in coreutils.get_enum_values(EventType):
+            cbox = Controls.CheckBox()
+            cbox.Margin = Windows.Thickness(0, 10, 0, 0)
+            cbox.IsChecked = False
+            cbox.IsEnabled = event_type in supportedEvents
+            cbox.Content = "{} ({} | {})".format(
+                ' '.join(coreutils.split_words(str(event_type))[1:]),
+                event_type,
+                EventUtils.GetEventName(event_type))
+            if not cbox.IsEnabled:
+                cbox.Content += "\nNot Supported in this Revit Version"
+            self.event_telemetry_sp.Children.Add(cbox)
+
     def _setup_telemetry(self):
         """Reads the pyRevit telemetry config and updates the ui"""
+        self._setup_event_telemetry_checkboxes()
+
         self.telemetry_cb.IsChecked = telemetry.get_telemetry_state()
         self.cur_telemetryfile_tb.Text = \
             telemetry.get_telemetry_file_path()

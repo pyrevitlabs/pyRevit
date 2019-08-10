@@ -1414,3 +1414,30 @@ def hex2int_long(hex_string):
     # python 2 fix of addin 'L' to long integers
     hex_string.replace('L', '')
     return int(hex_string, 16)
+
+
+def split_words(input_string):
+    """Splits given string by uppercase characters
+
+    Args:
+        input_string (str): input string
+
+    Returns:
+        list[str]: split string
+
+    Example:
+        >>> split_words("UIApplication_ApplicationClosing")
+        ... ['UIApplication', 'Application', 'Closing']
+    """
+    parts = []
+    part = ""
+    for c in input_string:
+        if c.isalpha():
+            if c.isupper() and part and part[-1].islower():
+                if part:
+                    parts.append(part.strip())
+                part = c
+            else:
+                part += c
+    parts.append(part)
+    return parts
