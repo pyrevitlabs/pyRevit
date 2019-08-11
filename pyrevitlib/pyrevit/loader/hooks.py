@@ -14,6 +14,9 @@ PYREVIT_HOOKS_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_HOOKS'
 
 
+PYREVIT_HOOKS = PyRevitHooks()
+
+
 EventHook = namedtuple('EventHook', [
     'script',
     'event_type',
@@ -56,13 +59,23 @@ def get_extension_hooks(extension):
     return event_hooks
 
 
+def get_active_hooks():
+    return PYREVIT_HOOKS
+
+
+def get_all_active_hooks():
+    return [PYREVIT_HOOKS]
+
+
 def get_event_hooks():
-    return PyRevitHooks.GetAllEventHooks()
+    active_hooks = get_active_hooks()
+    return active_hooks.GetAllEventHooks()
 
 
 def register_hooks(extension):
+    active_hooks = get_active_hooks()
     for ext_hook in get_extension_hooks(extension):
-        PyRevitHooks.RegisterHook(
+        active_hooks.RegisterHook(
             uiApp=HOST_APP.uiapp,
             script=ext_hook.script,
             eventType=ext_hook.event_type,
@@ -85,12 +98,15 @@ def unregister_hooks(extension):
 
 
 def unregister_all_hooks():
-    PyRevitHooks.UnRegisterAllHooks(uiApp=HOST_APP.uiapp)
+    active_hooks = get_active_hooks()
+    active_hooks.UnRegisterAllHooks(uiApp=HOST_APP.uiapp)
 
 
 def activate():
-    PyRevitHooks.ActivateEventHooks(uiApp=HOST_APP.uiapp)
+    active_hooks = get_active_hooks()
+    active_hooks.ActivateEventHooks(uiApp=HOST_APP.uiapp)
 
 
 def deactivate():
-    PyRevitHooks.DeactivateEventHooks(uiApp=HOST_APP.uiapp)
+    for active_hooks in get_all_active_hooks():
+        active_hooks.DeactivateEventHooks(uiApp=HOST_APP.uiapp)

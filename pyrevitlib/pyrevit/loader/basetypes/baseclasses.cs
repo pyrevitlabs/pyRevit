@@ -477,7 +477,7 @@ namespace PyRevitBaseClasses {
 
         public override string Message {
             get {
-                return "This feature is not supported under this Revit version."
+                return "This feature is not supported under this Revit version.";
             }
         }
     }

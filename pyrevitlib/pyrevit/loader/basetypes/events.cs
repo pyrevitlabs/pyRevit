@@ -144,14 +144,13 @@ namespace PyRevitBaseClasses {
         void Application_DocumentWorksharingEnabled(object sender, DocumentWorksharingEnabledEventArgs e);
         void UIApplication_DockableFrameVisibilityChanged(object sender, DockableFrameVisibilityChangedEventArgs e);
         void UIApplication_DockableFrameFocusChanged(object sender, DockableFrameFocusChangedEventArgs e);
-        void UIApplication_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015)
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-        void UiApp_FabricationPartBrowserChanged(object sender, FabricationPartBrowserChangedEventArgs e);
+        void UIApplication_FabricationPartBrowserChanged(object sender, FabricationPartBrowserChangedEventArgs e);
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
@@ -165,7 +164,7 @@ namespace PyRevitBaseClasses {
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
-        void UiApp_FormulaEditing(object sender, FormulaEditingEventArgs e);
+        void UIApplication_FormulaEditing(object sender, FormulaEditingEventArgs e);
 #endif
 
         void Application_ViewPrinting(object sender, ViewPrintingEventArgs e);
@@ -197,6 +196,7 @@ namespace PyRevitBaseClasses {
         void UIApplication_Idling(object sender, IdlingEventArgs e);
         void UIApplication_DisplayingOptionsDialog(object sender, DisplayingOptionsDialogEventArgs e);
         void UIApplication_ApplicationClosing(object sender, ApplicationClosingEventArgs e);
+        void UIApplication_DialogBoxShowing(object sender, DialogBoxShowingEventArgs e);
     }
 
     public static class EventUtils {
@@ -601,9 +601,9 @@ namespace PyRevitBaseClasses {
                 case EventType.UIApplication_FabricationPartBrowserChanged:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                     if (toggle_on)
-                        uiApp.FabricationPartBrowserChanged += hndlr.UiApp_FabricationPartBrowserChanged;
+                        uiApp.FabricationPartBrowserChanged += hndlr.UIApplication_FabricationPartBrowserChanged;
                     else
-                        uiApp.FabricationPartBrowserChanged -= hndlr.UiApp_FabricationPartBrowserChanged;
+                        uiApp.FabricationPartBrowserChanged -= hndlr.UIApplication_FabricationPartBrowserChanged;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -612,9 +612,9 @@ namespace PyRevitBaseClasses {
                 case EventType.UIApplication_FormulaEditing:
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
                     if (toggle_on)
-                        uiApp.FormulaEditing += hndlr.UiApp_FormulaEditing;
+                        uiApp.FormulaEditing += hndlr.UIApplication_FormulaEditing;
                     else
-                        uiApp.FormulaEditing -= hndlr.UiApp_FormulaEditing;
+                        uiApp.FormulaEditing -= hndlr.UIApplication_FormulaEditing;
                     break;
 #else
                     throw new PyRevitNotSupportedFeatureException();
@@ -667,7 +667,6 @@ namespace PyRevitBaseClasses {
         }
     }
 
-
     public class AppEventUtils {
         public Application App { get; private set; }
 
@@ -679,7 +678,6 @@ namespace PyRevitBaseClasses {
                 throw new Exception("Application can not be null.");
         }
     }
-
 
     public class UIEventUtils {
         private bool _txnCompleted = false;
@@ -783,7 +781,6 @@ namespace PyRevitBaseClasses {
         }
 #endif
     }
-
 
     public class PlaceKeynoteExternalEventHandler : IExternalEventHandler {
         public string KeynoteKey = null;

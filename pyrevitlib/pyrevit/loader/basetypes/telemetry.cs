@@ -146,6 +146,9 @@ namespace PyRevitBaseClasses {
         public string timestamp { get; set; }
         // by who?
         public string username { get; set; }
+        // on what?
+        public string revit { get; set; }
+        public string revitbuild { get; set; }
 
         public bool cancellable { get; set; }
         public bool cancelled { get; set; }
@@ -165,366 +168,18 @@ namespace PyRevitBaseClasses {
         }
     }
 
-    public class EventTelemetry {
-        private static void ToggleEventListeners(UIApplication uiApp, EventType eventType, bool toggle_on = true) {
-            switch (eventType) {
-                case EventType.Application_ApplicationInitialized:
-                    if (toggle_on)
-                        uiApp.Application.ApplicationInitialized += Application_ApplicationInitialized;
-                    else
-                        uiApp.Application.ApplicationInitialized -= Application_ApplicationInitialized;
-                    break;
-
-                case EventType.Application_DocumentChanged:
-                    if (toggle_on)
-                        uiApp.Application.DocumentChanged += Application_DocumentChanged;
-                    else
-                        uiApp.Application.DocumentChanged -= Application_DocumentChanged;
-                    break;
-
-                case EventType.Application_DocumentClosed:
-                    if (toggle_on)
-                        uiApp.Application.DocumentClosed += Application_DocumentClosed;
-                    else
-                        uiApp.Application.DocumentClosed -= Application_DocumentClosed;
-                    break;
-
-                case EventType.Application_DocumentClosing:
-                    if (toggle_on)
-                        uiApp.Application.DocumentClosing += Application_DocumentClosing;
-                    else
-                        uiApp.Application.DocumentClosing -= Application_DocumentClosing;
-                    break;
-
-                case EventType.Application_DocumentCreated:
-                    if (toggle_on)
-                        uiApp.Application.DocumentCreated += Application_DocumentCreated;
-                    else
-                        uiApp.Application.DocumentCreated -= Application_DocumentCreated;
-                    break;
-
-                case EventType.Application_DocumentCreating:
-                    if (toggle_on)
-                        uiApp.Application.DocumentCreating += Application_DocumentCreating;
-                    else
-                        uiApp.Application.DocumentCreating -= Application_DocumentCreating;
-                    break;
-
-                case EventType.Application_DocumentOpened:
-                    if (toggle_on)
-                        uiApp.Application.DocumentOpened += Application_DocumentOpened;
-                    else
-                        uiApp.Application.DocumentOpened -= Application_DocumentOpened;
-                    break;
-
-                case EventType.Application_DocumentOpening:
-                    if (toggle_on)
-                        uiApp.Application.DocumentOpening += Application_DocumentOpening;
-                    else
-                        uiApp.Application.DocumentOpening -= Application_DocumentOpening;
-                    break;
-
-                case EventType.Application_DocumentPrinted:
-                    if (toggle_on)
-                        uiApp.Application.DocumentPrinted += Application_DocumentPrinted;
-                    else
-                        uiApp.Application.DocumentPrinted -= Application_DocumentPrinted;
-                    break;
-
-                case EventType.Application_DocumentPrinting:
-                    if (toggle_on)
-                        uiApp.Application.DocumentPrinting += Application_DocumentPrinting;
-                    else
-                        uiApp.Application.DocumentPrinting -= Application_DocumentPrinting;
-                    break;
-
-                case EventType.Application_DocumentSaved:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSaved += Application_DocumentSaved;
-                    else
-                        uiApp.Application.DocumentSaved -= Application_DocumentSaved;
-                    break;
-
-                case EventType.Application_DocumentSaving:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSaving += Application_DocumentSaving;
-                    else
-                        uiApp.Application.DocumentSaving -= Application_DocumentSaving;
-                    break;
-
-                case EventType.Application_DocumentSavedAs:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSavedAs += Application_DocumentSavedAs;
-                    else
-                        uiApp.Application.DocumentSavedAs -= Application_DocumentSavedAs;
-                    break;
-
-                case EventType.Application_DocumentSavingAs:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSavingAs += Application_DocumentSavingAs;
-                    else
-                        uiApp.Application.DocumentSavingAs -= Application_DocumentSavingAs;
-                    break;
-
-                case EventType.Application_DocumentSynchronizedWithCentral:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSynchronizedWithCentral += Application_DocumentSynchronizedWithCentral;
-                    else
-                        uiApp.Application.DocumentSynchronizedWithCentral -= Application_DocumentSynchronizedWithCentral;
-                    break;
-
-                case EventType.Application_DocumentSynchronizingWithCentral:
-                    if (toggle_on)
-                        uiApp.Application.DocumentSynchronizingWithCentral += Application_DocumentSynchronizingWithCentral;
-                    else
-                        uiApp.Application.DocumentSynchronizingWithCentral -= Application_DocumentSynchronizingWithCentral;
-                    break;
-
-                case EventType.Application_DocumentWorksharingEnabled:
-                    if (toggle_on)
-                        uiApp.Application.DocumentWorksharingEnabled += Application_DocumentWorksharingEnabled;
-                    else
-                        uiApp.Application.DocumentWorksharingEnabled -= Application_DocumentWorksharingEnabled;
-                    break;
-
-                case EventType.Application_ElementTypeDuplicated:
-                    if (toggle_on)
-                        uiApp.Application.ElementTypeDuplicated += Application_ElementTypeDuplicated;
-                    else
-                        uiApp.Application.ElementTypeDuplicated -= Application_ElementTypeDuplicated;
-                    break;
-
-                case EventType.Application_ElementTypeDuplicating:
-                    if (toggle_on)
-                        uiApp.Application.ElementTypeDuplicating += Application_ElementTypeDuplicating;
-                    else
-                        uiApp.Application.ElementTypeDuplicating -= Application_ElementTypeDuplicating;
-                    break;
-
-                case EventType.Application_FailuresProcessing:
-                    if (toggle_on)
-                        uiApp.Application.FailuresProcessing += Application_FailuresProcessing;
-                    else
-                        uiApp.Application.FailuresProcessing -= Application_FailuresProcessing;
-                    break;
-
-                case EventType.Application_FamilyLoadedIntoDocument:
-                    if (toggle_on)
-                        uiApp.Application.FamilyLoadedIntoDocument += Application_FamilyLoadedIntoDocument;
-                    else
-                        uiApp.Application.FamilyLoadedIntoDocument -= Application_FamilyLoadedIntoDocument;
-                    break;
-
-                case EventType.Application_FamilyLoadingIntoDocument:
-                    if (toggle_on)
-                        uiApp.Application.FamilyLoadingIntoDocument += Application_FamilyLoadingIntoDocument;
-                    else
-                        uiApp.Application.FamilyLoadingIntoDocument -= Application_FamilyLoadingIntoDocument;
-                    break;
-
-                case EventType.Application_FileExported:
-                    if (toggle_on)
-                        uiApp.Application.FileExported += Application_FileExported;
-                    else
-                        uiApp.Application.FileExported -= Application_FileExported;
-                    break;
-
-                case EventType.Application_FileExporting:
-                    if (toggle_on)
-                        uiApp.Application.FileExporting += Application_FileExporting;
-                    else
-                        uiApp.Application.FileExporting -= Application_FileExporting;
-                    break;
-
-                case EventType.Application_FileImported:
-                    if (toggle_on)
-                        uiApp.Application.FileImported += Application_FileImported;
-                    else
-                        uiApp.Application.FileImported -= Application_FileImported;
-                    break;
-
-                case EventType.Application_FileImporting:
-                    if (toggle_on)
-                        uiApp.Application.FileImporting += Application_FileImporting;
-                    else
-                        uiApp.Application.FileImporting -= Application_FileImporting;
-                    break;
-
-                case EventType.Application_LinkedResourceOpened:
-                    if (toggle_on)
-                        uiApp.Application.LinkedResourceOpened += Application_LinkedResourceOpened;
-                    else
-                        uiApp.Application.LinkedResourceOpened -= Application_LinkedResourceOpened;
-                    break;
-
-                case EventType.Application_LinkedResourceOpening:
-                    if (toggle_on)
-                        uiApp.Application.LinkedResourceOpening += Application_LinkedResourceOpening;
-                    else
-                        uiApp.Application.LinkedResourceOpening -= Application_LinkedResourceOpening;
-                    break;
-
-                case EventType.Application_ProgressChanged:
-                    if (toggle_on)
-                        uiApp.Application.ProgressChanged += Application_ProgressChanged;
-                    else
-                        uiApp.Application.ProgressChanged -= Application_ProgressChanged;
-                    break;
-
-                case EventType.Application_ViewExported:
-                    if (toggle_on)
-                        uiApp.Application.ViewExported += Application_ViewExported;
-                    else
-                        uiApp.Application.ViewExported -= Application_ViewExported;
-                    break;
-
-                case EventType.Application_ViewExporting:
-                    if (toggle_on)
-                        uiApp.Application.ViewExporting += Application_ViewExporting;
-                    else
-                        uiApp.Application.ViewExporting -= Application_ViewExporting;
-                    break;
-
-                case EventType.Application_ViewPrinted:
-                    if (toggle_on)
-                        uiApp.Application.ViewPrinted += Application_ViewPrinted;
-                    else
-                        uiApp.Application.ViewPrinted -= Application_ViewPrinted;
-                    break;
-
-                case EventType.Application_ViewPrinting:
-                    if (toggle_on)
-                        uiApp.Application.ViewPrinting += Application_ViewPrinting;
-                    else
-                        uiApp.Application.ViewPrinting -= Application_ViewPrinting;
-                    break;
-
-                case EventType.Application_WorksharedOperationProgressChanged:
-                    if (toggle_on)
-                        uiApp.Application.WorksharedOperationProgressChanged += Application_WorksharedOperationProgressChanged;
-                    else
-                        uiApp.Application.WorksharedOperationProgressChanged -= Application_WorksharedOperationProgressChanged;
-                    break;
-
-                case EventType.UIApplication_ApplicationClosing:
-                    if (toggle_on)
-                        uiApp.ApplicationClosing += UiApp_ApplicationClosing;
-                    else
-                        uiApp.ApplicationClosing -= UiApp_ApplicationClosing;
-                    break;
-
-                case EventType.UIApplication_DialogBoxShowing:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-                    if (toggle_on)
-                        uiApp.DialogBoxShowing += UiApp_DialogBoxShowing;
-                    else
-                        uiApp.DialogBoxShowing -= UiApp_DialogBoxShowing;
-                    break;
-#else
-                                        throw new Exception("Event not supported under this Revit version.");
-                                        break;
-#endif
-                case EventType.UIApplication_DisplayingOptionsDialog:
-                    if (toggle_on)
-                        uiApp.DisplayingOptionsDialog += UiApp_DisplayingOptionsDialog;
-                    else
-                        uiApp.DisplayingOptionsDialog -= UiApp_DisplayingOptionsDialog;
-                    break;
-
-                case EventType.UIApplication_DockableFrameFocusChanged:
-                    if (toggle_on)
-                        uiApp.DockableFrameFocusChanged += UiApp_DockableFrameFocusChanged;
-                    else
-                        uiApp.DockableFrameFocusChanged -= UiApp_DockableFrameFocusChanged;
-                    break;
-
-                case EventType.UIApplication_DockableFrameVisibilityChanged:
-                    if (toggle_on)
-                        uiApp.DockableFrameVisibilityChanged += UiApp_DockableFrameVisibilityChanged;
-                    else
-                        uiApp.DockableFrameVisibilityChanged -= UiApp_DockableFrameVisibilityChanged;
-                    break;
-
-                case EventType.UIApplication_FabricationPartBrowserChanged:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-                    if (toggle_on)
-                        uiApp.FabricationPartBrowserChanged += UiApp_FabricationPartBrowserChanged;
-                    else
-                        uiApp.FabricationPartBrowserChanged -= UiApp_FabricationPartBrowserChanged;
-                    break;
-#else
-                                        throw new Exception("Event not supported under this Revit version.");
-                                        break;
-#endif
-
-                case EventType.UIApplication_FormulaEditing:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
-                    if (toggle_on)
-                        uiApp.FormulaEditing += UiApp_FormulaEditing;
-                    else
-                        uiApp.FormulaEditing -= UiApp_FormulaEditing;
-                    break;
-#else
-                                        throw new Exception("Event not supported under this Revit version.");
-                                        break;
-#endif
-
-                case EventType.UIApplication_Idling:
-                    if (toggle_on)
-                        uiApp.Idling += UiApp_Idling;
-                    else
-                        uiApp.Idling -= UiApp_Idling;
-                    break;
-
-
-                case EventType.UIApplication_TransferredProjectStandards:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
-                    if (toggle_on)
-                        uiApp.TransferredProjectStandards += UiApp_TransferredProjectStandards;
-                    else
-                        uiApp.TransferredProjectStandards -= UiApp_TransferredProjectStandards;
-                    break;
-#else
-                                        throw new Exception("Event not supported under this Revit version.");
-                                        break;
-#endif
-
-                case EventType.UIApplication_TransferringProjectStandards:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
-                    if (toggle_on)
-                        uiApp.TransferringProjectStandards += UiApp_TransferringProjectStandards;
-                    else
-                        uiApp.TransferringProjectStandards -= UiApp_TransferringProjectStandards;
-                    break;
-#else
-                                        throw new Exception("Event not supported under this Revit version.");
-                                        break;
-#endif
-
-                case EventType.UIApplication_ViewActivated:
-                    if (toggle_on)
-                        uiApp.ViewActivated += UiApp_ViewActivated;
-                    else
-                        uiApp.ViewActivated -= UiApp_ViewActivated;
-                    break;
-
-                case EventType.UIApplication_ViewActivating:
-                    if (toggle_on)
-                        uiApp.ViewActivating += UiApp_ViewActivating;
-                    else
-                        uiApp.ViewActivating -= UiApp_ViewActivating;
-                    break;
-            }
-        }
-
+    public class EventTelemetry : IEventTypeHandler {
         public static void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
             var envDict = new EnvDictionary();
 
             // update general properties on record
-            eventTelemetryRecord.username = TryGetActiveUserName(sender);
+            // host info
+            SetHostInfo(sender, ref eventTelemetryRecord);
+            // event general info
             eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
             eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
 
+            // now post the telemetry record
             if (envDict.TelemetryState) {
                 if (envDict.AppTelemetryState
                         && envDict.AppTelemetryServerUrl != null
@@ -534,7 +189,8 @@ namespace PyRevitBaseClasses {
             }
         }
 
-        public static string TryGetActiveUserName(object sender) {
+        public static void SetHostInfo(object sender, ref EventTelemetryRecord record) {
+            // figure out who is the sender
             UIControlledApplication uictrlapp = null;
             UIApplication uiapp = null;
             ControlledApplication ctrlapp = null;
@@ -550,12 +206,21 @@ namespace PyRevitBaseClasses {
             else if (senderType == typeof(Application))
                 app = (Application)sender;
 
-            if (uiapp != null
-                    && uiapp.Application != null
-                    && (uiapp.Application.Username != null || uiapp.Application.Username != string.Empty))
-                return uiapp.Application.Username;
-            else
-                return string.Empty;
+            // set the host info based on the sender type
+            record.username = string.Empty;
+            record.revit = string.Empty;
+            record.revitbuild = string.Empty;
+
+            if (uiapp != null && uiapp.Application != null) {
+                record.username = uiapp.Application.Username;
+                record.revit = uiapp.Application.VersionNumber;
+                record.revitbuild = uiapp.Application.VersionBuild;
+            }
+            else if (app != null) {
+                record.username = app.Username;
+                record.revit = app.VersionNumber;
+                record.revitbuild = app.VersionBuild;
+            }
         }
 
         public static List<Element> GetElements(Document doc, IEnumerable<ElementId> elementIds) {
@@ -572,7 +237,7 @@ namespace PyRevitBaseClasses {
             return elements;
         }
 
-        public static List<Dictionary<string,string>> GetViewData(IEnumerable<Element> elements) {
+        public static List<Dictionary<string, string>> GetViewData(IEnumerable<Element> elements) {
             var viewNames = new List<Dictionary<string, string>>();
             foreach (var element in elements)
                 if (element is View) {
@@ -594,12 +259,67 @@ namespace PyRevitBaseClasses {
             return viewNames;
         }
 
+        public static Dictionary<string,object> GetPrintSettings(PrintParameters printParams) {
+            double marginx, marginy;
+            int zoom;
+            string zoom_type;
+
+            // some print parameters throw exceptions
+            try {
+                marginx = printParams.UserDefinedMarginX;
+                marginy = printParams.UserDefinedMarginY;
+            }
+            catch {
+                marginx = marginy = 0.0;
+            }
+
+            try {
+                zoom = printParams.Zoom;
+                zoom_type = printParams.ZoomType.ToString();
+            }
+            catch {
+                zoom = 0;
+                zoom_type = string.Empty;
+            }
+            var settings = new Dictionary<string, object> {
+            { "color_depth", printParams.ColorDepth.ToString() },
+                    { "hidden_line_view_type", printParams.HiddenLineViews.ToString() },
+                    { "hide_cropbounds", printParams.HideCropBoundaries },
+                    { "hide_refplanes", printParams.HideReforWorkPlanes },
+                    { "hide_scopeboxes", printParams.HideScopeBoxes },
+#if !(REVIT2013)
+                    { "hide_unref_vewtags", printParams.HideUnreferencedViewTags },
+#else
+                    { "hide_unref_vewtags", null },
+#endif
+                    { "margin_type", printParams.MarginType.ToString() },
+#if !(REVIT2013 || REVIT2014)
+                    { "mask_lines", printParams.MaskCoincidentLines },
+#else
+                    { "mask_lines", null },
+#endif
+                    { "page_orientation", printParams.PageOrientation.ToString() },
+                    { "paper_placement", printParams.PaperPlacement.ToString() },
+                    { "paper_size", printParams.PaperSize.Name },
+                    { "paper_source", printParams.PaperSource.Name },
+                    { "raster_quality", printParams.RasterQuality.ToString() },
+                    { "halftone_thinlines", printParams.ReplaceHalftoneWithThinLines },
+                    { "user_margin_x",  marginx },
+                    { "user_margin_y",  marginy },
+                    { "blue_hyperlinks", printParams.ViewLinksinBlue },
+                    { "zoom", zoom },
+                    { "zoom_type", zoom_type },
+            };
+
+            return settings;
+        }
+
         // event management ------------------------------------------------------------------------------------------
-        public static void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
+        public void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
                     try {
-                        ToggleEventListeners(uiApp, eventType);
+                        EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType);
                     }
                     catch (Exception registerEx) {
                         throw new Exception(
@@ -609,11 +329,11 @@ namespace PyRevitBaseClasses {
                     }
         }
 
-        public static void UnRegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
+        public void UnRegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
                     try {
-                        ToggleEventListeners(uiApp, eventType, toggle_on: false);
+                        EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType, toggle_on: false);
                     }
                     catch (Exception unregisterEx) {
                         throw new Exception(
@@ -624,7 +344,7 @@ namespace PyRevitBaseClasses {
         }
 
         // event handlers --------------------------------------------------------------------------------------------
-        private static void UiApp_ViewActivating(object sender, Autodesk.Revit.UI.Events.ViewActivatingEventArgs e) {
+        public void UIApplication_ViewActivating(object sender, Autodesk.Revit.UI.Events.ViewActivatingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_ViewActivating),
                 docname = e.Document != null ? e.Document.Title : "",
@@ -636,7 +356,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void UiApp_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
+        public void UIApplication_ViewActivated(object sender, Autodesk.Revit.UI.Events.ViewActivatedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_ViewActivated),
                 docname = e.Document != null ? e.Document.Title : "",
@@ -649,173 +369,580 @@ namespace PyRevitBaseClasses {
         }
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
-        private static void UiApp_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
+        public void UIApplication_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
+            var extItems = new Dictionary<string, string>();
+            foreach (var kvpair in e.GetExternalItems())
+                extItems.Add(kvpair.Key.ToString(), kvpair.Value);
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_TransferringProjectStandards),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "from_document",  new Dictionary<string,string>{
+                        { "docname", e.SourceDocument != null ? e.SourceDocument.Title : "" },
+                        { "docpath", e.SourceDocument != null ? e.SourceDocument.PathName : "" }
+                    } },
+                    { "to_document",  new Dictionary<string,string>{
+                        { "docname", e.TargetDocument != null ? e.TargetDocument.Title : "" },
+                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" }
+                    } },
+                    { "external_items",  extItems },
+                }
+            }, sender, e);
         }
 
-        private static void UiApp_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
+        public void UIApplication_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
+            var extItems = new Dictionary<string, string>();
+            foreach (var kvpair in e.GetSelectedExternalItems())
+                extItems.Add(kvpair.Key.ToString(), kvpair.Value);
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_TransferredProjectStandards),
+                docname = e.SourceDocument != null ? e.SourceDocument.Title : "",
+                docpath = e.SourceDocument != null ? e.SourceDocument.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "to_document",  new Dictionary<string,string>{
+                        { "docname", e.TargetDocument != null ? e.TargetDocument.Title : "" },
+                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" }
+                    } },
+                    { "external_items",  extItems },
+                }
+            }, sender, e);
         }
 #endif
 
-        private static void UiApp_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
+        public void UIApplication_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_Idling),
+            }, sender, e);
         }
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
-        private static void UiApp_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
+        public void UIApplication_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
+            var paramId = e.ParameterId;
+            int paramIdInt = 0;
+            string paramName = string.Empty;
+            Element param = null;
+            if (paramId != null && paramId != ElementId.InvalidElementId) {
+                param = e.CurrentDocument != null ? e.CurrentDocument.GetElement(paramId) : param;
+                paramIdInt = paramId.IntegerValue;
+                paramName = ((ParameterElement)param).Name;
+            }
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_FormulaEditing),
+                docname = e.CurrentDocument != null ? e.CurrentDocument.Title : "",
+                docpath = e.CurrentDocument != null ? e.CurrentDocument.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "param_id", paramIdInt },
+                    { "param_name", paramName },
+                    { "formula", e.Formula },
+                }
+            }, sender, e);
         }
 #endif
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-        private static void UiApp_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
+        public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
+            // TODO: implement
+                //e.GetAllSolutionsPartsTypeCounts
+                //e.GetCurrentSolutionPartTypeIds
+                //e.GetFabricationPartTypeIds
+                //e.GetFilteredSolutionsPartsTypeCounts
+                //e.GetRequiredFabricationPartTypeIds
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_FabricationPartBrowserChanged),
+                args = new Dictionary<string, object> {
+                    { "operation", e.Operation.ToString() },
+                    { "service_id", e.ServiceId },
+                    { "solutions_count", e.NumberOfSolutions },
+                }
+            }, sender, e);
         }
 #endif
 
-        private static void UiApp_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
+#if !(REVIT2013 || REVIT2014)
+        public void UIApplication_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_DockableFrameVisibilityChanged),
+                args = new Dictionary<string, object> {
+                    { "pane_id", e.PaneId },
+                    { "frame_dhown", e.DockableFrameShown },
+                }
+            }, sender, e);
         }
 
-        private static void UiApp_DockableFrameFocusChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameFocusChangedEventArgs e) {
+        public void UIApplication_DockableFrameFocusChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameFocusChangedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_DockableFrameFocusChanged),
+                args = new Dictionary<string, object> {
+                    { "pane_id", e.PaneId },
+                    { "focus_gained", e.FocusGained },
+                }
+            }, sender, e);
+        }
+#endif
+
+        public void UIApplication_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_DisplayingOptionsDialog),
+                args = new Dictionary<string, object> {
+                    { "page_count", e.PagesCount },
+                }
+            }, sender, e);
         }
 
-        private static void UiApp_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
-        }
-
+        public void UIApplication_DialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.UIApplication_DialogBoxShowing),
+                args = new Dictionary<string, object> {
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
-        private static void UiApp_DialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e) {
-        }
+                    { "dialog_id", e.DialogId },
+#else
+                    { "dialog_id", null },
 #endif
+                }
+            }, sender, e);
+        }
 
-        private static void UiApp_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
+        public void UIApplication_ApplicationClosing(object sender, Autodesk.Revit.UI.Events.ApplicationClosingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_ApplicationClosing),
             }, sender, e);
         }
 
-        private static void Application_WorksharedOperationProgressChanged(object sender, WorksharedOperationProgressChangedEventArgs e) {
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
+        public void Application_WorksharedOperationProgressChanged(object sender, WorksharedOperationProgressChangedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_WorksharedOperationProgressChanged),
+                docpath = e.Location,
+                status = e.Status.ToString(),
+            }, sender, e);
+        }
+#endif
+
+        public void Application_ViewPrinting(object sender, ViewPrintingEventArgs e) {
+            var views = new List<Element>() { e.View };
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ViewPrinting),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "view", GetViewData(views) },
+                    { "view_index", e.Index },
+                    { "total_views", e.TotalViews },
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
+                    { "settings", GetPrintSettings(e.GetSettings().PrintParameters) },
+#else
+                    { "settings", null },
+#endif
+                }
+            }, sender, e);
         }
 
-        private static void Application_ViewPrinting(object sender, ViewPrintingEventArgs e) {
+        public void Application_ViewPrinted(object sender, ViewPrintedEventArgs e) {
+            var views = new List<Element>() { e.View };
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ViewPrinted),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "view", GetViewData(views) },
+                    { "view_index", e.Index },
+                    { "total_views", e.TotalViews },
+                }
+            }, sender, e);
         }
 
-        private static void Application_ViewPrinted(object sender, ViewPrintedEventArgs e) {
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
+        public void Application_ViewExporting(object sender, ViewExportingEventArgs e) {
+            var views = new List<Element>();
+            if (e.Document != null)
+                views.Add(e.Document.GetElement(e.ViewId));
+
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ViewExporting),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "view", GetViewData(views) },
+                }
+            }, sender, e);
         }
 
-        private static void Application_ViewExporting(object sender, ViewExportingEventArgs e) {
+        public void Application_ViewExported(object sender, ViewExportedEventArgs e) {
+            var views = new List<Element>();
+            if (e.Document != null)
+                views.Add(e.Document.GetElement(e.ViewId));
+
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ViewExported),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "view", GetViewData(views) },
+                }
+            }, sender, e);
+        }
+#endif
+
+        public void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ProgressChanged),
+                args = new Dictionary<string, object> {
+                    { "stage", e.Stage.ToString() },
+                    { "caption", e.Caption },
+                    { "position", e.Position },
+                    { "lower", e.LowerRange },
+                    { "upper",  e.UpperRange },
+                }
+            }, sender, e);
         }
 
-        private static void Application_ViewExported(object sender, ViewExportedEventArgs e) {
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
+        public void Application_LinkedResourceOpening(object sender, LinkedResourceOpeningEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_LinkedResourceOpening),
+                args = new Dictionary<string, object> {
+                    { "link_path", e.LinkedResourcePathName },
+                    { "link_type",  e.ResourceType.ToString() },
+                }
+            }, sender, e);
         }
 
-        private static void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
+        public void Application_LinkedResourceOpened(object sender, LinkedResourceOpenedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_LinkedResourceOpened),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "link_path", e.LinkedResourcePathName },
+                    { "link_type",  e.ResourceType.ToString() },
+                }
+            }, sender, e);
+        }
+#endif
+
+        public void Application_FileImporting(object sender, FileImportingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FileImporting),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "export_path", e.Path },
+                    { "export_format",  e.Format },
+                }
+            }, sender, e);
         }
 
-        private static void Application_LinkedResourceOpening(object sender, LinkedResourceOpeningEventArgs e) {
+        public void Application_FileImported(object sender, FileImportedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FileImported),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "export_path", e.Path },
+                    { "export_format",  e.Format },
+                }
+            }, sender, e);
         }
 
-        private static void Application_LinkedResourceOpened(object sender, LinkedResourceOpenedEventArgs e) {
+        public void Application_FileExporting(object sender, FileExportingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FileExporting),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "export_path", e.Path },
+                    { "export_format",  e.Format },
+                }
+            }, sender, e);
         }
 
-        private static void Application_FileImporting(object sender, FileImportingEventArgs e) {
+        public void Application_FileExported(object sender, FileExportedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FileExported),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "export_path", e.Path },
+                    { "export_format",  e.Format },
+                }
+            }, sender, e);
         }
 
-        private static void Application_FileImported(object sender, FileImportedEventArgs e) {
+#if !(REVIT2013 || REVIT2014)
+        public void Application_FamilyLoadingIntoDocument(object sender, FamilyLoadingIntoDocumentEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FamilyLoadingIntoDocument),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "family_name", e.FamilyName },
+                    { "family_path", e.FamilyPath },
+                }
+            }, sender, e);
         }
 
-        private static void Application_FileExporting(object sender, FileExportingEventArgs e) {
-        }
+        public void Application_FamilyLoadedIntoDocument(object sender, FamilyLoadedIntoDocumentEventArgs e) {
+            var doc = e.Document;
+            string familyCategory = string.Empty;
+            string originalFamilyName = string.Empty;
 
-        private static void Application_FileExported(object sender, FileExportedEventArgs e) {
-        }
+            if (doc != null) {
+                // grab original name and category
+                if (e.OriginalFamilyId != ElementId.InvalidElementId) {
+                    var origFamily = doc.GetElement(e.OriginalFamilyId);
+                    if (origFamily != null) {
+                        originalFamilyName = origFamily.Name;
+                        familyCategory = origFamily.Category != null ? origFamily.Category.Name : "";
+                    }
+                }
 
-        private static void Application_FamilyLoadingIntoDocument(object sender, FamilyLoadingIntoDocumentEventArgs e) {
-        }
-
-        private static void Application_FamilyLoadedIntoDocument(object sender, FamilyLoadedIntoDocumentEventArgs e) {
-        }
-
-        private static void Application_FailuresProcessing(object sender, FailuresProcessingEventArgs e) {
-        }
-
-        private static void Application_ElementTypeDuplicating(object sender, ElementTypeDuplicatingEventArgs e) {
-        }
-
-        private static void Application_ElementTypeDuplicated(object sender, ElementTypeDuplicatedEventArgs e) {
-        }
-
-        private static void Application_DocumentWorksharingEnabled(object sender, DocumentWorksharingEnabledEventArgs e) {
-        }
-
-        private static void Application_DocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
-        }
-
-        private static void Application_DocumentSynchronizedWithCentral(object sender, DocumentSynchronizedWithCentralEventArgs e) {
-        }
-
-        private static void Application_DocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
-        }
-
-        private static void Application_DocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
-        }
-
-        private static void Application_DocumentSaving(object sender, DocumentSavingEventArgs e) {
-        }
-
-        private static void Application_DocumentSaved(object sender, DocumentSavedEventArgs e) {
-        }
-
-        private static void Application_DocumentPrinting(object sender, DocumentPrintingEventArgs e) {
-            double marginx, marginy;
-            int zoom;
-            string zoom_type;
-            var printParams = e.GetSettings().PrintParameters;
-
-            // some print parameters throw exceptions
-            try {
-                marginx = printParams.UserDefinedMarginX;
-                marginy = printParams.UserDefinedMarginY;
-            } catch {
-                marginx = marginy = 0.0;
+                // grab category from new family
+                if (familyCategory == string.Empty && e.NewFamilyId != ElementId.InvalidElementId) {
+                    var newFamily = doc.GetElement(e.NewFamilyId);
+                    if (newFamily != null)
+                        familyCategory = newFamily.Category != null ? newFamily.Category.Name : "";
+                }
             }
 
-            try {
-                zoom = printParams.Zoom;
-                zoom_type = printParams.ZoomType.ToString();
-            }
-            catch {
-                zoom = 0;
-                zoom_type = string.Empty;
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FamilyLoadedIntoDocument),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "family_name", e.FamilyName },
+                    { "family_path", e.FamilyPath },
+                    { "family_category",  familyCategory},
+                    { "original_family_name", originalFamilyName },
+                }
+            }, sender, e);
+        }
+#endif
+
+        public void Application_FailuresProcessing(object sender, FailuresProcessingEventArgs e) {
+            Document doc = null;
+            var failAcc = e.GetFailuresAccessor();
+
+            var args = new Dictionary<string, object>();
+            var failMessages = new Dictionary<string, object>();
+            if (failAcc != null) {
+                doc = failAcc.GetDocument();
+                var failOptions = failAcc.GetFailureHandlingOptions();
+                // collect failure information
+
+                foreach (var fMsg in failAcc.GetFailureMessages()) {
+                    var attemptedResTypes = new List<string>();
+                    foreach (var aResType in failAcc.GetAttemptedResolutionTypes(fMsg))
+                        attemptedResTypes.Add(aResType.ToString());
+                    failMessages.Add(
+                        fMsg.GetFailureDefinitionId().Guid.ToString(),
+                        new Dictionary<string, object> {
+                            { "description" , fMsg.GetDescriptionText() },
+                            { "severity" , fMsg.GetSeverity().ToString() },
+                            { "failing_elements_count" , fMsg.GetFailingElementIds().Count },
+                            { "has_resolutions" , fMsg.HasResolutions() },
+                            { "resolutions_count" , fMsg.GetNumberOfResolutions() },
+                            { "current_resolution" , fMsg.GetCurrentResolutionType().ToString() },
+                            { "default_resolution" , fMsg.GetDefaultResolutionCaption() },
+                            { "attempted_resolutions" , attemptedResTypes },
+                        });
+                }
+
+                args = new Dictionary<string, object> {
+                    { "txn_committing", failAcc.IsTransactionBeingCommitted() },
+                    { "pending", failAcc.IsPending() },
+                    { "permits_resolution", failAcc.IsFailureResolutionPermitted() },
+                    { "permits_deletion", failAcc.IsElementsDeletionPermitted() },
+                    { "active", failAcc.IsActive() },
+                    { "txn_name", failAcc.GetTransactionName() },
+                    { "severity", failAcc.GetSeverity().ToString() },
+                    { "messages", failMessages },
+                    { "can_rollback", failAcc.CanRollBackPendingTransaction() },
+                    { "can_commit", failAcc.CanCommitPendingTransaction() },
+                };
             }
 
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_FailuresProcessing),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                args = args,
+            }, sender, e);
+        }
+
+#if !(REVIT2013 || REVIT2014)
+        public void Application_ElementTypeDuplicating(object sender, ElementTypeDuplicatingEventArgs e) {
+            var doc = e.Document;
+            string typeCategory = string.Empty;
+            string origTypeName = string.Empty;
+
+            if (doc != null) {
+                if (e.ElementTypeId != ElementId.InvalidElementId) {
+                    var origType = doc.GetElement(e.ElementTypeId);
+                    if (origType != null) {
+                        origTypeName = origType.Name;
+                        typeCategory = origType.Category != null ? origType.Category.Name : "";
+                    }
+                }
+            }
+
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ElementTypeDuplicating),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "category", typeCategory },
+                    { "from_typename", origTypeName },
+                }
+            }, sender, e);
+        }
+
+        public void Application_ElementTypeDuplicated(object sender, ElementTypeDuplicatedEventArgs e) {
+            var doc = e.Document;
+            string typeCategory = string.Empty;
+            string origTypeName = string.Empty;
+
+            if (doc != null) {
+                if (e.OriginalElementTypeId != ElementId.InvalidElementId) {
+                    var origType = doc.GetElement(e.OriginalElementTypeId);
+                    if (origType != null) {
+                        origTypeName = origType.Name;
+                        typeCategory = origType.Category != null ? origType.Category.Name : "";
+                    }
+                }
+            }
+
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_ElementTypeDuplicated),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "category", typeCategory },
+                    { "from_typename", origTypeName },
+                    { "to_typename", e.NewName },
+                    { "to_typeid", e.NewElementTypeId.IntegerValue },
+                }
+            }, sender, e);
+        }
+
+        public void Application_DocumentWorksharingEnabled(object sender, DocumentWorksharingEnabledEventArgs e) {
+            var doc = e.GetDocument();
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentWorksharingEnabled),
+                docname = doc != null ? doc.Title : "",
+                docpath = doc != null ? doc.PathName : "",
+            }, sender, e);
+        }
+#endif
+
+        public void Application_DocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
+            var syncOpts = e.Options;
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSynchronizingWithCentral),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "comments", e.Comments },
+                    { "location", e.Location },
+                    { "options", new Dictionary<string,object> {
+#if !(REVIT2013)
+                        { "comment", syncOpts.Comment },
+                        { "compact", syncOpts.Compact },
+#else
+                        { "comment", null },
+                        { "compact", null },
+#endif
+                        { "relinquish_borrowed", syncOpts.RelinquishBorrowedElements },
+                        { "relinquish_family_worksets", syncOpts.RelinquishFamilyWorksets },
+                        { "relinquish_projectstd_worksets", syncOpts.RelinquishProjectStandardWorksets },
+                        { "relinquish_user_worksets", syncOpts.RelinquishUserCreatedWorksets },
+                        { "relinquish_view_worksets", syncOpts.RelinquishViewWorksets },
+#if !(REVIT2013)
+                        { "save_local_after", syncOpts.SaveLocalAfter },
+                        { "save_local_before", syncOpts.SaveLocalBefore },
+#else
+                        { "save_local_after", null },
+                        { "save_local_before", null },
+#endif
+                    } },
+                }
+            }, sender, e);
+        }
+
+        public void Application_DocumentSynchronizedWithCentral(object sender, DocumentSynchronizedWithCentralEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSynchronizedWithCentral),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+            }, sender, e);
+        }
+
+        public void Application_DocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSavingAs),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                args = new Dictionary<string, object> {
+                    { "as_master_file", e.IsSavingAsMasterFile },
+                    { "path", e.PathName },
+                }
+            }, sender, e);
+        }
+
+        public void Application_DocumentSavedAs(object sender, DocumentSavedAsEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSavedAs),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "as_master_file", e.IsSavingAsMasterFile },
+                    { "original_path",  e.OriginalPath },
+                }
+            }, sender, e);
+        }
+
+        public void Application_DocumentSaving(object sender, DocumentSavingEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSaving),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+            }, sender, e);
+        }
+
+        public void Application_DocumentSaved(object sender, DocumentSavedEventArgs e) {
+            LogEventTelemetryRecord(new EventTelemetryRecord {
+                type = EventUtils.GetEventName(EventType.Application_DocumentSaved),
+                docname = e.Document != null ? e.Document.Title : "",
+                docpath = e.Document != null ? e.Document.PathName : "",
+                status = e.Status.ToString(),
+            }, sender, e);
+        }
+
+        public void Application_DocumentPrinting(object sender, DocumentPrintingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentPrinting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
                 args = new Dictionary<string, object> {
                 { "views", GetViewData(GetElements(e.Document, e.GetViewElementIds())) },
-                { "settings", new Dictionary<string,object> {
-                    { "color_depth", printParams.ColorDepth.ToString() },
-                    { "hidden_line_view_type", printParams.HiddenLineViews.ToString() },
-                    { "hide_cropbounds", printParams.HideCropBoundaries },
-                    { "hide_refplanes", printParams.HideReforWorkPlanes },
-                    { "hide_scopeboxes", printParams.HideScopeBoxes },
-                    { "hide_unref_vewtags", printParams.HideUnreferencedViewTags },
-                    { "margin_type", printParams.MarginType.ToString() },
-                    { "mask_lines", printParams.MaskCoincidentLines },
-                    { "page_orientation", printParams.PageOrientation.ToString() },
-                    { "paper_placement", printParams.PaperPlacement.ToString() },
-                    { "paper_size", printParams.PaperSize.Name },
-                    { "paper_source", printParams.PaperSource.Name },
-                    { "raster_quality", printParams.RasterQuality.ToString() },
-                    { "halftone_thinlines", printParams.ReplaceHalftoneWithThinLines },
-                    { "user_margin_x",  marginx },
-                    { "user_margin_y",  marginy },
-                    { "blue_hyperlinks", printParams.ViewLinksinBlue },
-                    { "zoom", zoom },
-                    { "zoom_type", zoom_type },
-                }},
-            }
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
+                { "settings", GetPrintSettings(e.GetSettings().PrintParameters) },
+#else
+                { "settings", null },
+#endif
+                }
             }, sender, e);
         }
 
-        private static void Application_DocumentPrinted(object sender, DocumentPrintedEventArgs e) {
+        public void Application_DocumentPrinted(object sender, DocumentPrintedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentPrinted),
                 docname = e.Document != null ? e.Document.Title : "",
@@ -828,7 +955,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentOpening(object sender, DocumentOpeningEventArgs e) {
+        public void Application_DocumentOpening(object sender, DocumentOpeningEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentOpening),
                 doctype = e.DocumentType.ToString(),
@@ -836,7 +963,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e) {
+        public void Application_DocumentOpened(object sender, DocumentOpenedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentOpened),
                 docname = e.Document != null ? e.Document.Title : "",
@@ -845,7 +972,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentCreating(object sender, DocumentCreatingEventArgs e) {
+        public void Application_DocumentCreating(object sender, DocumentCreatingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentCreating),
                 doctype = e.DocumentType.ToString(),
@@ -853,7 +980,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentCreated(object sender, DocumentCreatedEventArgs e) {
+        public void Application_DocumentCreated(object sender, DocumentCreatedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentCreated),
                 docname = e.Document != null ? e.Document.Title : "",
@@ -862,7 +989,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentClosing(object sender, DocumentClosingEventArgs e) {
+        public void Application_DocumentClosing(object sender, DocumentClosingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentClosing),
                 docid = e.DocumentId,
@@ -871,7 +998,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentClosed(object sender, DocumentClosedEventArgs e) {
+        public void Application_DocumentClosed(object sender, DocumentClosedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentClosed),
                 docid = e.DocumentId,
@@ -879,7 +1006,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        private static void Application_DocumentChanged(object sender, DocumentChangedEventArgs e) {
+        public void Application_DocumentChanged(object sender, DocumentChangedEventArgs e) {
             var doc = e.GetDocument();
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_DocumentChanged),
@@ -895,7 +1022,7 @@ namespace PyRevitBaseClasses {
             }, sender, e);
         }
 
-        public static void Application_ApplicationInitialized(object sender, ApplicationInitializedEventArgs e) {
+        public void Application_ApplicationInitialized(object sender, ApplicationInitializedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_ApplicationInitialized),
             }, sender, e);
