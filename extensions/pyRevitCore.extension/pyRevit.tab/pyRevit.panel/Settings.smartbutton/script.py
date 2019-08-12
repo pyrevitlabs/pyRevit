@@ -200,9 +200,12 @@ class SettingsWindow(forms.WPFWindow):
         for event_type in coreutils.get_enum_values(EventType):
             cbox = Controls.CheckBox()
             cbox.Margin = Windows.Thickness(0, 10, 0, 0)
+            cbox.FontFamily = Windows.Media.FontFamily("Consolas")
             cbox.IsChecked = False
             cbox.IsEnabled = event_type in supportedEvents
-            cbox.Content = "{} ({} | {})".format(
+            cbox.Content = "{}\n" \
+                           "API Event Type:      {}\n" \
+                           "pyRevit Event Name:  {}".format(
                 ' '.join(coreutils.split_words(str(event_type))[1:]),
                 event_type,
                 EventUtils.GetEventName(event_type))
