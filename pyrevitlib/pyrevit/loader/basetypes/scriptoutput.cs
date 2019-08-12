@@ -4,15 +4,11 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
-using System.Net.Cache;
 using System.Diagnostics;
 
-using pyRevitLabs.MahAppsMetro.Controls;
 using pyRevitLabs.CommonWPF.Controls;
 
 namespace PyRevitBaseClasses {

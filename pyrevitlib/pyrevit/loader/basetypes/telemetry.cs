@@ -11,6 +11,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 
+using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
 namespace PyRevitBaseClasses {
@@ -137,6 +138,8 @@ namespace PyRevitBaseClasses {
         // schema
         public Dictionary<string, string> meta { get; private set; }
 
+        public string handlerId { get; set; }
+
         // which event?
         public string type { get; set; }
         public Dictionary<string, object> args { get; set; }
@@ -145,6 +148,7 @@ namespace PyRevitBaseClasses {
         // when?
         public string timestamp { get; set; }
         // by who?
+        public string host_user { get; set; }
         public string username { get; set; }
         // on what?
         public string revit { get; set; }
@@ -169,24 +173,14 @@ namespace PyRevitBaseClasses {
     }
 
     public class EventTelemetry : IEventTypeHandler {
-        public static void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
-            var envDict = new EnvDictionary();
+        static Logger logger = LogManager.GetCurrentClassLogger();
 
-            // update general properties on record
-            // host info
-            SetHostInfo(sender, ref eventTelemetryRecord);
-            // event general info
-            eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
-            eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
+        public string HandlerId;
 
-            // now post the telemetry record
-            if (envDict.TelemetryState) {
-                if (envDict.AppTelemetryState
-                        && envDict.AppTelemetryServerUrl != null
-                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
-                    new Task(() =>
-                        Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
-            }
+        public EventTelemetry(string handlerId) {
+            if (handlerId == null)
+                handlerId = Guid.NewGuid().ToString();
+            HandlerId = handlerId;
         }
 
         public static void SetHostInfo(object sender, ref EventTelemetryRecord record) {
@@ -207,14 +201,23 @@ namespace PyRevitBaseClasses {
                 app = (Application)sender;
 
             // set the host info based on the sender type
+            record.host_user = UserEnv.GetLoggedInUserName();
             record.username = string.Empty;
             record.revit = string.Empty;
             record.revitbuild = string.Empty;
 
-            if (uiapp != null && uiapp.Application != null) {
+            if (uictrlapp != null) {
+                record.revit = uictrlapp.ControlledApplication.VersionNumber;
+                record.revitbuild = uictrlapp.ControlledApplication.VersionBuild;
+            }
+            else if (uiapp != null && uiapp.Application != null) {
                 record.username = uiapp.Application.Username;
                 record.revit = uiapp.Application.VersionNumber;
                 record.revitbuild = uiapp.Application.VersionBuild;
+            }
+            else if (ctrlapp != null) {
+                record.revit = ctrlapp.VersionNumber;
+                record.revitbuild = ctrlapp.VersionBuild;
             }
             else if (app != null) {
                 record.username = app.Username;
@@ -315,17 +318,44 @@ namespace PyRevitBaseClasses {
         }
 
         // event management ------------------------------------------------------------------------------------------
+        public void LogEventTelemetryRecord(EventTelemetryRecord eventTelemetryRecord, object sender, object args) {
+            var envDict = new EnvDictionary();
+
+            // update general properties on record
+            // host info
+            SetHostInfo(sender, ref eventTelemetryRecord);
+            // set pyrevit info
+            eventTelemetryRecord.handlerId = HandlerId;
+            // event general info
+            eventTelemetryRecord.cancellable = ((RevitAPIEventArgs)args).Cancellable;
+            eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
+
+            // now post the telemetry record
+            if (envDict.TelemetryState) {
+                if (envDict.AppTelemetryState
+                        && envDict.AppTelemetryServerUrl != null
+                        && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
+                    new Task(() =>
+                        Telemetry.PostTelemetryRecord(envDict.AppTelemetryServerUrl, eventTelemetryRecord)).Start();
+            }
+        }
+
         public void RegisterEventTelemetry(UIApplication uiApp, BigInteger flags) {
-            foreach (EventType eventType in Enum.GetValues(typeof(EventType)))
+            foreach (EventType eventType in EventUtils.GetAllEventTypes())
                 if ((flags & (new BigInteger(1) << (int)eventType)) > 0)
                     try {
+                        // remove first
+                        EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType, toggle_on: false);
+                        // then add again
                         EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType);
                     }
-                    catch (Exception registerEx) {
-                        throw new Exception(
-                            string.Format("Failed registering {0}, {1}",
-                                          eventType.ToString(), registerEx.StackTrace)
-                            );
+                    catch (PyRevitNotSupportedFeatureException) {
+                        logger.Debug(
+                            string.Format("Event telemetry {0} not supported under this Revit version. Skipped.",
+                                          eventType.ToString()));
+                    }
+                    catch {
+                        logger.Debug(string.Format("Failed registering event telemetry {0}", eventType.ToString()));
                     }
         }
 
@@ -335,11 +365,13 @@ namespace PyRevitBaseClasses {
                     try {
                         EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType, toggle_on: false);
                     }
-                    catch (Exception unregisterEx) {
-                        throw new Exception(
-                            string.Format("Failed unregistering {0}, {1}",
-                                          eventType.ToString(), unregisterEx.StackTrace)
-                            );
+                    catch (PyRevitNotSupportedFeatureException) {
+                        logger.Debug(
+                            string.Format("Event telemetry {0} not supported under this Revit version. Skipped.",
+                                          eventType.ToString()));
+                    }
+                    catch {
+                        logger.Debug(string.Format("Failed unregistering event telemetry {0}", eventType.ToString()));
                     }
         }
 

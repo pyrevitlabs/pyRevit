@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Web.Script.Serialization;
-using System.IO;
-using System.Threading.Tasks;
 
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
@@ -12,7 +8,6 @@ using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 
-using pyRevitLabs.Common;
 using pyRevitLabs.TargetApps.Revit;
 
 namespace PyRevitBaseClasses {
@@ -255,15 +250,15 @@ namespace PyRevitBaseClasses {
             return eventName;
         }
 
-        public static EventType GetEventType(string eventName) {
+        public static EventType? GetEventType(string eventName) {
             return eventNames.FirstOrDefault(x => x.Value == eventName).Key;
         }
 
-        public static List<EventType> GetSupportedEventTypes(RevitProduct revit) {
-            return GetSupportedEventTypes(revit.ProductYear);
+        public static Array GetAllEventTypes() {
+            return Enum.GetValues(typeof(EventType));
         }
 
-        public static List<EventType> GetSupportedEventTypes(int productYear) {
+        public static List<EventType> GetSupportedEventTypes() {
             var supTypes = new List<EventType>();
             var supportedHandlers = typeof(IEventTypeHandler).GetMembers().Select(m => m.Name);
             foreach (EventType eventType in Enum.GetValues(typeof(EventType)))

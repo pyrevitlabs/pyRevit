@@ -191,11 +191,12 @@ class SettingsWindow(forms.WPFWindow):
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
 
     def _get_event_telemetry_checkboxes(self):
-        return list(self.event_telemetry_sp.Children)
+        return list([x for x in self.event_telemetry_sp.Children
+                     if isinstance(x, Controls.CheckBox)])
 
     def _setup_event_telemetry_checkboxes(self):
         supportedEvents = \
-            EventUtils.GetSupportedEventTypes(int(HOST_APP.version))
+            EventUtils.GetSupportedEventTypes()
         for event_type in coreutils.get_enum_values(EventType):
             cbox = Controls.CheckBox()
             cbox.Margin = Windows.Thickness(0, 10, 0, 0)
@@ -395,6 +396,10 @@ class SettingsWindow(forms.WPFWindow):
         cur_log_folder = op.dirname(self.cur_telemetryfile_tb.Text)
         if cur_log_folder:
             coreutils.open_folder_in_explorer(cur_log_folder)
+
+    def toggle_event_cbs(self, sender, args):
+        for event_db in self._get_event_telemetry_checkboxes():
+            event_db.IsChecked = not event_db.IsChecked
 
     def pick_stylesheet(self, sender, args):
         """Callback method for picking custom style sheet file"""

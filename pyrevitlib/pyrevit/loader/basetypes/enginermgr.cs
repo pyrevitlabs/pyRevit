@@ -217,8 +217,8 @@ namespace PyRevitBaseClasses
 
             // EVENT HOOKS BUILTINS ----------------------------------------------------------------------------------
             // set event arguments for engine
-            if (pyrvtScript.InterfaceType == InterfaceType.EventHandler)
-                builtin.SetVariable("__eventargs__", pyrvtScript.EventArgs);
+            builtin.SetVariable("__eventsender__", pyrvtScript.EventSender);
+            builtin.SetVariable("__eventargs__", pyrvtScript.EventArgs);
 
 
             // CUSTOM BUILTINS ---------------------------------------------------------------------------------------
@@ -252,7 +252,11 @@ namespace PyRevitBaseClasses
             builtin.SetVariable("__commanduniqueid__",      (Object)null);
             builtin.SetVariable("__forceddebugmode__",      (Object)null);
             builtin.SetVariable("__shiftclick__",           (Object)null);
+
             builtin.SetVariable("__result__",               (Object)null);
+
+            builtin.SetVariable("__eventsender__",          (Object)null);
+            builtin.SetVariable("__eventargs__",            (Object)null);
 
             // cleanup all data set by command custom builtins
             if (_commandBuiltins.Count > 0)

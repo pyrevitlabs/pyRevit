@@ -21,7 +21,6 @@ mlogger = get_logger(__name__)
 
 PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
 PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
-PYREVIT_LOADEDASSMCOUNT_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_ASSMCOUNT'
 PYREVIT_REFEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_REFEDASSMS'
 
 PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
@@ -126,36 +125,6 @@ def new_session_uuid():
     return uuid_str
 
 
-def get_total_loaded_assm_count():
-    """Returns the total number of pyRevit assemblies loaded under current
-    Revit session. This value is stored in an environment variable and is kept
-    updated during the multiple pyRevit sessions. Notice that not all of these
-    assemblies belong to current pyRevit session as pyRevit could be reloaded
-    multiple times under the same Revit session.
-
-    Returns:
-        int: Total number of loaded assemblies.
-    """
-    assm_count = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR)
-    if not assm_count:
-        return 0
-    else:
-        return assm_count
-
-
-def set_total_loaded_assm_count(assm_count):
-    """Sets the total number of pyRevit assemblies loaded under current
-    Revit session. This value is stored in an environment variable and is kept
-    updated during the multiple pyRevit sessions.
-
-    This value should not be updated by pyRevit users.
-
-    Args:
-        assm_count (int): assembly count
-    """
-    envvars.set_pyrevit_env_var(PYREVIT_LOADEDASSMCOUNT_ENVVAR, assm_count)
-
-
 def get_loaded_pyrevit_assemblies():
     """Return list of loaded pyRevit assemblies from environment variable.
 
@@ -181,9 +150,6 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
         PYREVIT_LOADEDASSMS_ENVVAR,
         coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
         )
-
-    set_total_loaded_assm_count(get_total_loaded_assm_count()
-                                + len(loaded_assm_name_list))
 
 
 def get_loaded_pyrevit_referenced_modules():

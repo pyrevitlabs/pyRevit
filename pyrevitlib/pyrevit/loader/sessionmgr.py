@@ -129,6 +129,9 @@ def _perform_onsessionload_ops():
     # apply Upgrades
     upgrade.upgrade_existing_pyrevit()
 
+    # setup hooks
+    hooks.setup_hooks()
+
 
 def _perform_onsessionloadcomplete_ops():
     # cleanup old assembly files.
@@ -281,8 +284,7 @@ def load_session():
 
 
 def _perform_onsessionreload_ops():
-    # stop event listeners
-    hooks.deactivate()
+    pass
 
 
 def _perform_onsessionreloadcomplete_ops():

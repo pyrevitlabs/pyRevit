@@ -415,6 +415,9 @@
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
                             <StackPanel x:Name="event_telemetry_sp" Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">
+                                <WrapPanel Orientation="Horizontal" FlowDirection="RightToLeft">
+                                    <Button Content="Toggle All" Width="80" Height="25" Click="toggle_event_cbs" ></Button>
+                                </WrapPanel>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

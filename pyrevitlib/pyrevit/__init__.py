@@ -94,6 +94,7 @@ sys.path.append(ENGINES_DIR)
 
 PYREVIT_CLI_PATH = op.join(BIN_DIR, PYREVIT_CLI_NAME)
 
+
 # now we can start importing stuff
 from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
@@ -603,3 +604,8 @@ else:
     PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
         r'^' + PYREVIT_ADDON_NAME \
         + r'_(?P<version>\d{4})_(?P<user>.+)_(?P<pid>\d+)_(?P<fname>.+)'
+
+# -----------------------------------------------------------------------------
+# config labs modules
+# -----------------------------------------------------------------------------
+from pyrevit import labs

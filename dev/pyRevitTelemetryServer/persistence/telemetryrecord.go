@@ -55,7 +55,7 @@ type ScriptTelemetryRecord struct {
 func (logrec ScriptTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
 	if logrec.LogMeta.SchemaVersion == "" {
 		logger.Print(fmt.Sprintf(
-			"%s %s-%s %q %s:%s [%s.%s] code=%d info=%v",
+			"%s %s-%s %q @ %s:%s [%s.%s] code=%d info=%v",
 			message,
 			logrec.Date,
 			logrec.Time,
@@ -92,11 +92,14 @@ func (logrec ScriptTelemetryRecord) Validate() {
 }
 
 type EventTelemetryRecord struct {
-	LogMeta   LogMeta                `json:"meta" bson:"meta"`           // schema 2.0
-	TimeStamp string                 `json:"timestamp" bson:"timestamp"` // schema 2.0
-	EventType string                 `json:"type" bson:"type"`
-	EventArgs map[string]interface{} `json:"args" bson:"args"`
-	UserName  string                 `json:"username" bson:"username"`
+	LogMeta      LogMeta                `json:"meta" bson:"meta"`           // schema 2.0
+	TimeStamp    string                 `json:"timestamp" bson:"timestamp"` // schema 2.0
+	EventType    string                 `json:"type" bson:"type"`
+	EventArgs    map[string]interface{} `json:"args" bson:"args"`
+	UserName     string                 `json:"username" bson:"username"`
+	HostUserName string                 `json:"host_user" bson:"host_user"`
+	RevitVersion string                 `json:"revit" bson:"revit"`
+	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild"`
 
 	// general
 	Cancellable      bool   `json:"cancellable" bson:"cancellable"`
@@ -111,11 +114,12 @@ type EventTelemetryRecord struct {
 func (logrec EventTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {
 	if logrec.LogMeta.SchemaVersion == "2.0" {
 		logger.Print(fmt.Sprintf(
-			"%s %s [%s] %q doc=%q @ %s",
+			"%s %s [%s] %q @ %s doc=%q @ %s",
 			message,
 			logrec.TimeStamp,
 			logrec.EventType,
-			logrec.UserName,
+			logrec.HostUserName,
+			logrec.RevitBuild,
 			logrec.DocumentName,
 			logrec.DocumentPath,
 		))

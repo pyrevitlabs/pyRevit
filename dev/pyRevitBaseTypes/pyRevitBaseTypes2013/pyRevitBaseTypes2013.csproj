@@ -77,6 +77,9 @@
     <Reference Include="pyRevitLabs.MahAppsMetro">
       <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\..\bin\pyRevitLabs.NLog.dll</HintPath>
+    </Reference>
     <Reference Include="pyRevitLabs.TargetApps.Revit">
       <HintPath>..\..\..\bin\pyRevitLabs.TargetApps.Revit.dll</HintPath>
     </Reference>

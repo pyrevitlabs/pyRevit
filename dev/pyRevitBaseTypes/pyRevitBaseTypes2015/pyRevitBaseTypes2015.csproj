@@ -74,6 +74,9 @@
     <Reference Include="pyRevitLabs.CommonWPF">
       <HintPath>..\..\..\bin\pyRevitLabs.CommonWPF.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\..\bin\pyRevitLabs.NLog.dll</HintPath>
+    </Reference>
     <Reference Include="pyRevitLabs.MahAppsMetro">
       <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
     </Reference>

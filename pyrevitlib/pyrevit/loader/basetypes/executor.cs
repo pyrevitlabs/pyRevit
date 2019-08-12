@@ -6,7 +6,6 @@ using System.Runtime.Remoting;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
-using Autodesk.Revit.ApplicationServices;
 
 // iron languages
 using Microsoft.Scripting;
@@ -89,7 +88,9 @@ namespace PyRevitBaseClasses {
             if (command == null) {
                 // compilation failed, print errors and return
                 pyrvtScript.OutputStream.WriteError(
-                    string.Join("\n", ExternalConfig.ipyerrtitle, string.Join("\n", errors.Errors.ToArray()))
+                    string.Join(Environment.NewLine,
+                                ExternalConfig.ipyerrtitle,
+                                string.Join(Environment.NewLine, errors.Errors.ToArray()))
                     );
                 return ExecutionResultCodes.CompileException;
             }
@@ -112,14 +113,14 @@ namespace PyRevitBaseClasses {
                 // Print all errors to stdout and return cancelled to Revit.
                 // This is to avoid getting window prompts from Revit.
                 // Those pop ups are small and errors are hard to read.
-                _ipy_err_messages = _ipy_err_messages.Replace("\r\n", "\n");
+                _ipy_err_messages = _ipy_err_messages.Replace("\r\n", Environment.NewLine);
                 pyrvtScript.IronLanguageTraceBack = _ipy_err_messages;
 
-                _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
+                _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
                 pyrvtScript.CLRTraceBack = _clr_err_message;
 
-                _ipy_err_messages = string.Join("\n", ExternalConfig.ipyerrtitle, _ipy_err_messages);
-                _clr_err_message = string.Join("\n", ExternalConfig.clrerrtitle, _clr_err_message);
+                _ipy_err_messages = string.Join(Environment.NewLine, ExternalConfig.ipyerrtitle, _ipy_err_messages);
+                _clr_err_message = string.Join(Environment.NewLine, ExternalConfig.clrerrtitle, _clr_err_message);
 
                 pyrvtScript.OutputStream.WriteError(_ipy_err_messages + "\n\n" + _clr_err_message);
                 return ExecutionResultCodes.ExecutionException;
@@ -167,7 +168,7 @@ namespace PyRevitBaseClasses {
                     // Print all errors to stdout and return cancelled to Revit.
                     // This is to avoid getting window prompts from Revit.
                     // Those pop ups are small and errors are hard to read.
-                    _cpy_err_message = _cpy_err_message.Replace("\r\n", "\n");
+                    _cpy_err_message = _cpy_err_message.Replace("\r\n", Environment.NewLine);
                     pyrvtScript.CpythonTraceBack = _cpy_err_message;
 
                     pyrvtScript.OutputStream.WriteError(_cpy_err_message);
@@ -190,7 +191,7 @@ namespace PyRevitBaseClasses {
             }
             catch (Exception compileEx) {
                 string _clr_err_message = compileEx.ToString();
-                _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
+                _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
                 pyrvtScript.CLRTraceBack = _clr_err_message;
 
                 // TODO: change to script output for all script types
@@ -218,7 +219,7 @@ namespace PyRevitBaseClasses {
                     }
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
+                        _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
                         pyrvtScript.CLRTraceBack = _clr_err_message;
                         // TODO: same outp
                         TaskDialog.Show("pyRevit", _clr_err_message);
@@ -233,7 +234,7 @@ namespace PyRevitBaseClasses {
                     }
                     catch (Exception execEx) {
                         string _clr_err_message = execEx.ToString();
-                        _clr_err_message = _clr_err_message.Replace("\r\n", "\n");
+                        _clr_err_message = _clr_err_message.Replace("\r\n", Environment.NewLine);
                         pyrvtScript.CLRTraceBack = _clr_err_message;
 
                         TaskDialog.Show("pyRevit", pyrvtScript.CLRTraceBack);
@@ -323,14 +324,14 @@ namespace PyRevitBaseClasses {
             //    // Print all errors to stdout and return cancelled to Revit.
             //    // This is to avoid getting window prompts from Revit.
             //    // Those pop ups are small and errors are hard to read.
-            //    _ruby_err_messages = _ruby_err_messages.Replace("\r\n", "\n");
+            //    _ruby_err_messages = _ruby_err_messages.Replace("\r\n", Environment.NewLine);
             //    pyrvtScript.IronLanguageTraceBack = _ruby_err_messages;
 
-            //    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", "\n");
+            //    _dotnet_err_message = _dotnet_err_message.Replace("\r\n", Environment.NewLine);
             //    pyrvtScript.ClrTraceBack = _dotnet_err_message;
 
-            //    _ruby_err_messages = string.Join("\n", ExternalConfig.irubyerrtitle, _ruby_err_messages);
-            //    _dotnet_err_message = string.Join("\n", ExternalConfig.dotneterrtitle, _dotnet_err_message);
+            //    _ruby_err_messages = string.Join(Environment.NewLine, ExternalConfig.irubyerrtitle, _ruby_err_messages);
+            //    _dotnet_err_message = string.Join(Environment.NewLine, ExternalConfig.dotneterrtitle, _dotnet_err_message);
 
             //    pyrvtScript.OutputStream.WriteError(_ruby_err_messages + "\n\n" + _dotnet_err_message);
             //    return ExecutionErrorCodes.ExecutionException;
@@ -496,7 +497,7 @@ namespace PyRevitBaseClasses {
             // pyrevit sets this when loading
             string[] refFiles;
             var envDic = new EnvDictionary();
-            if (envDic.ReferencedAssemblies.Count() == 0) {
+            if (envDic.ReferencedAssemblies.Length == 0) {
                 var refs = AppDomain.CurrentDomain.GetAssemblies();
                 refFiles = refs.Select(a => a.Location).ToArray();
             }

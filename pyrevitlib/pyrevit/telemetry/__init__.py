@@ -20,11 +20,11 @@ import os.path as op
 from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR,\
                     PYREVIT_FILE_PREFIX
 from pyrevit import coreutils
-from pyrevit.coreutils.loadertypes import EventType
+from pyrevit.coreutils.loadertypes import EventType, EventTelemetry
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 
-from pyrevit.loader.sessioninfo import get_session_uuid
+from pyrevit.loader import sessioninfo
 from pyrevit.userconfig import user_config
 
 from pyrevit.labs import PyRevit
@@ -47,6 +47,8 @@ PYREVIT_TELEMETRYSERVER_ENVVAR = \
 
 PYREVIT_APPTELEMETRYSTATE_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSTATE'
+PYREVIT_APPTELEMETRYHANDLER_ENVVAR = \
+    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYHANDLER'
 PYREVIT_APPTELEMETRYSERVER_ENVVAR = \
     envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSERVER'
 PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR = \
@@ -134,6 +136,14 @@ def set_apptelemetry_state(state, configs=None):
         tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryStatusKey, state)
 
 
+def get_apptelemetry_handler():
+    return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYHANDLER_ENVVAR)
+
+
+def set_apptelemetry_handler(handler):
+    envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYHANDLER_ENVVAR, handler)
+
+
 def get_apptelemetry_server_url():
     return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYSERVER_ENVVAR)
 
@@ -201,7 +211,7 @@ def setup_telemetry(session_id=None):
 
     # make sure session id is availabe
     if not session_id:
-        session_id = get_session_uuid()
+        session_id = sessioninfo.get_session_uuid()
 
     telemetry_config = _get_telemetry_configs(user_config)
 
@@ -283,8 +293,17 @@ def setup_telemetry(session_id=None):
         set_apptelemetry_server_url(apptelemetry_server_url)
 
     # setup events
-    telemetry_events.unregister_all_event_telemetries()
+    telemetry_handler = get_apptelemetry_handler()
+    if telemetry_handler:
+        # clear existing
+        telemetry_events.unregister_all_event_telemetries(telemetry_handler)
+    else:
+        # setup new
+        telemetry_handler = EventTelemetry(session_id)
+        set_apptelemetry_handler(telemetry_handler)
     apptelemetry_event_flags = get_apptelemetry_event_flags(user_config)
-    telemetry_events.register_event_telemetry(apptelemetry_event_flags)
+    # re-register events with new telemetry_handler
+    telemetry_events.register_event_telemetry(telemetry_handler,
+                                              apptelemetry_event_flags)
 
     user_config.save_changes()

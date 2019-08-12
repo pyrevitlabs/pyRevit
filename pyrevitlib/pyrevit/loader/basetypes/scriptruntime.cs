@@ -26,8 +26,8 @@ namespace PyRevitBaseClasses {
 
     public class PyRevitScriptRuntime : IDisposable {
         // app handles
-        private Application _app = null;
         private UIApplication _uiApp = null;
+        private Application _app = null;
         // for commands that are events
         private object _eventSender = null;
 
@@ -130,7 +130,7 @@ namespace PyRevitBaseClasses {
 
         public InterfaceType InterfaceType {
             get {
-                if (_eventSender != null || EventArgs != null)
+                if (EventSender != null || EventArgs != null)
                     return InterfaceType.EventHandler;
 
                 return InterfaceType.ExternalCommand;
@@ -203,15 +203,17 @@ namespace PyRevitBaseClasses {
             }
 
             set {
-                if (value != null) {
+                _eventSender = value;
+                if (_eventSender != null) {
                     // detemine sender type
-                    _eventSender = value;
                     if (_eventSender.GetType() == typeof(UIControlledApplication))
                         UIControlledApp = (UIControlledApplication)_eventSender;
                     else if (_eventSender.GetType() == typeof(UIApplication))
-                        _uiApp = (UIApplication)_eventSender;
+                        UIApp = (UIApplication)_eventSender;
+                    else if (_eventSender.GetType() == typeof(ControlledApplication))
+                        ControlledApp = (ControlledApplication)_eventSender;
                     else if (_eventSender.GetType() == typeof(Application))
-                        _app = (Application)_eventSender;
+                        App = (Application)_eventSender;
                 }
             }
         }
@@ -326,21 +328,7 @@ namespace PyRevitBaseClasses {
             return _resultsDict;
         }
 
-        public UIApplication UIApp {
-            get {
-                if (CommandData != null)
-                    return CommandData.Application;
-                else if (_uiApp != null)
-                    return _uiApp;
-                return null;
-            }
-
-            set {
-                _uiApp = value;
-            }
-        }
-
-        public UIControlledApplication UIControlledApp { get; set; }
+        public ControlledApplication ControlledApp { get; set; }
 
         public Application App {
             get {
@@ -355,6 +343,22 @@ namespace PyRevitBaseClasses {
 
             set {
                 _app = value;
+            }
+        }
+
+        public UIControlledApplication UIControlledApp { get; set; }
+
+        public UIApplication UIApp {
+            get {
+                if (CommandData != null)
+                    return CommandData.Application;
+                else if (_uiApp != null)
+                    return _uiApp;
+                return null;
+            }
+
+            set {
+                _uiApp = value;
             }
         }
 

@@ -1,41 +1,62 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
 
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
+using pyRevitLabs.NLog;
+
 namespace PyRevitBaseClasses {
     public class EventHook {
+        public const string id_key = "id";
+        public const string name_key = "name";
         public const string script_key = "script";
-        public const string event_type_key = "event_type";
         public const string syspaths_key = "syspaths";
         public const string extension_name_key = "extension_name";
-        public const string id_key = "id";
 
+        public string EventName;
         public string Script;
-        public EventType EventType;
         public string[] SearchPaths;
         public string ExtensionName;
         public string UniqueId;
 
-        public EventHook(string script, EventType event_type, string[] syspaths, string extension_name, string id) {
-            Script = script;
-            EventType = event_type;
-            SearchPaths = syspaths;
+        public EventType? EventType {
+            get {
+                return EventUtils.GetEventType(EventName);
+            }
+        }
+
+        public EventHook(string uniqueId, string eventName, string scriptPath, string syspaths, string extension_name) {
+            UniqueId = uniqueId;
+            EventName = eventName;
+            Script = scriptPath;
+            SearchPaths = syspaths.Split(Path.PathSeparator);
             ExtensionName = extension_name;
-            UniqueId = id;
         }
 
         public override int GetHashCode() {
             return UniqueId.GetHashCode();
         }
+
+        public static bool IsValid(string eventName) {
+            return EventUtils.GetEventType(eventName) != null;
+        }
     }
 
     public class PyRevitHooks : IEventTypeHandler {
-        public static void Execute(EventHook eventHook, object eventSender, object eventArgs) {
+        static Logger logger = LogManager.GetCurrentClassLogger();
+
+        public string HandlerId;
+
+        public PyRevitHooks(string handlerId) {
+            if (handlerId == null)
+                handlerId = Guid.NewGuid().ToString();
+            HandlerId = handlerId;
+        }
+
+        public static int Execute(EventHook eventHook, object eventSender, object eventArgs) {
             // 1: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
             var pyrvtScript =
@@ -67,114 +88,116 @@ namespace PyRevitBaseClasses {
 
             // 2: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
-            var res = ScriptExecutor.ExecuteScript(ref pyrvtScript);
+            return ScriptExecutor.ExecuteScript(ref pyrvtScript);
 
             // TODO: log results into command execution telemetry?
             #endregion
         }
 
-        public static HashSet<EventHook> GetEventHooks(EventType eventType) {
+        public static List<EventHook> GetAllEventHooks() {
             var env = new EnvDictionary();
-            var eventHooks = new HashSet<EventHook>();
-            foreach (Dictionary<string, object> eventHook in env.EventHooks)
-                if ((EventType)eventHook[EventHook.event_type_key] == eventType)
-                    eventHooks.Add(
-                        new EventHook(
-                            script: (string)eventHook[EventHook.script_key],
-                            event_type: (EventType)eventHook[EventHook.event_type_key],
-                            syspaths: (string[])eventHook[EventHook.syspaths_key],
-                            extension_name: (string)eventHook[EventHook.extension_name_key],
-                            id: (string)eventHook[EventHook.id_key]
-                            )
-                        );
+            var eventHooks = new List<EventHook>();
+            foreach (KeyValuePair<string, Dictionary<string, string>> eventHookInfo in env.EventHooks) {
+                var eventName = eventHookInfo.Value[EventHook.name_key];
+                if (EventHook.IsValid(eventName)) {
+                    eventHooks.Add(new EventHook(
+                        uniqueId: eventHookInfo.Value[EventHook.id_key],
+                        eventName: eventName,
+                        scriptPath: eventHookInfo.Value[EventHook.script_key],
+                        syspaths: eventHookInfo.Value[EventHook.syspaths_key],
+                        extension_name: eventHookInfo.Value[EventHook.extension_name_key]
+                    ));
+                }
+            }
             return eventHooks;
         }
 
-        public static HashSet<EventHook> GetAllEventHooks() {
-            var env = new EnvDictionary();
-            var eventHooks = new HashSet<EventHook>();
-            foreach (Dictionary<string, object> eventHook in env.EventHooks)
-                eventHooks.Add(
-                    new EventHook(
-                        script: (string)eventHook[EventHook.script_key],
-                        event_type: (EventType)eventHook[EventHook.event_type_key],
-                        syspaths: (string[])eventHook[EventHook.syspaths_key],
-                        extension_name: (string)eventHook[EventHook.extension_name_key],
-                        id: (string)eventHook[EventHook.id_key]
-                        )
-                    );
-            return eventHooks;
+        public static List<EventHook> GetEventHooks(EventType eventType) {
+            var eventName = EventUtils.GetEventName(eventType);
+            return GetAllEventHooks().Where(x => x.EventName == eventName).ToList();
         }
 
-        public static void ClearEventHooks() {
+        public void ExecuteEventHooks(EventType eventType, object eventSender, object eventArgs) {
+            try {
+                //var logMsg = string.Format("Executing event hook {0}", eventType.ToString());
+                foreach (EventHook eventHook in GetEventHooks(eventType))
+                    Execute(eventHook: eventHook,
+                            eventSender: eventSender,
+                            eventArgs: eventArgs);
+            }
+            catch (Exception ex) {
+                //var logMsg = string.Join(Environment.NewLine, ex.Message, ex.StackTrace, SessionUUID);
+            }
+        }
+
+        public void ActivateEventType(UIApplication uiApp, EventType eventType) {
+            try {
+                // remove first
+                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
+                // then add again
+                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType);
+            }
+            catch (PyRevitNotSupportedFeatureException) {
+                logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
+                                           eventType.ToString()));
+            }
+            catch (Exception) {
+                logger.Debug(string.Format("Failed registering hook type {0}", eventType.ToString()));
+            }
+        }
+
+        public void DeactivateEventType(UIApplication uiApp, EventType eventType) {
+            try {
+                EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
+            }
+            catch (PyRevitNotSupportedFeatureException) {
+                logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
+                                           eventType.ToString()));
+            }
+            catch (Exception) {
+                logger.Debug(string.Format("Failed unregistering hook type {0}", eventType.ToString()));
+            }
+        }
+
+        public void RegisterHook(string uniqueId, string eventName, string scriptPath, string[] searchPaths, string extensionName) {
+            if (EventHook.IsValid(eventName)) {
+                var env = new EnvDictionary();
+                env.EventHooks[uniqueId] = new Dictionary<string, string> {
+                    { EventHook.id_key, uniqueId },
+                    { EventHook.name_key, eventName },
+                    { EventHook.script_key, scriptPath },
+                    { EventHook.syspaths_key, string.Join(Path.PathSeparator.ToString(), searchPaths) },
+                    { EventHook.extension_name_key, extensionName },
+                };
+            }
+        }
+
+        public void UnRegisterHook(string uniqueId) {
+            var env = new EnvDictionary();
+            if (env.EventHooks.ContainsKey(uniqueId))
+                env.EventHooks.Remove(uniqueId);
+        }
+
+        public void UnRegisterAllHooks(UIApplication uiApp) {
             var env = new EnvDictionary();
             env.ResetEventHooks();
         }
 
-        public static void AddEventHook(EventHook eventHook) {
-            var env = new EnvDictionary();
-            env.EventHooks.Add(
-                new Dictionary<string, object> {
-                    { EventHook.script_key, eventHook.Script },
-                    { EventHook.event_type_key, eventHook.EventType },
-                    { EventHook.syspaths_key, eventHook.SearchPaths },
-                    { EventHook.extension_name_key, eventHook.ExtensionName },
-                    { EventHook.id_key, eventHook.UniqueId },
-                }
-            );
-        }
-
-        public static void RemoveEventHook(EventHook eventHook) {
-            var env = new EnvDictionary();
-            env.EventHooks.Remove(
-                 new Dictionary<string, object> {
-                    { EventHook.script_key, eventHook.Script },
-                    { EventHook.event_type_key, eventHook.EventType },
-                    { EventHook.syspaths_key, eventHook.SearchPaths },
-                    { EventHook.extension_name_key, eventHook.ExtensionName },
-                    { EventHook.id_key, eventHook.UniqueId },
-                });
-        }
-
-        public static void ExecuteEventHooks(EventType eventType, object eventSender, object eventArgs) {
-            foreach (EventHook eventHook in GetEventHooks(eventType))
-                Execute(
-                    eventHook: eventHook,
-                    eventSender: eventSender,
-                    eventArgs: eventArgs
-                    );
-        }
-
-        public void RegisterEventType(UIApplication uiApp, EventType eventType) {
-            EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType);
-        }
-
-        public void UnRegisterEventType(UIApplication uiApp, EventType eventType) {
-            EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
-        }
-
-        public void RegisterHook(UIApplication uiApp, string script, EventType eventType, string[] searchPaths, string extName, string uniqueId) {
-            var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
-            AddEventHook(eventHook);
-        }
-
-        public void UnRegisterHook(UIApplication uiApp, string script, EventType eventType, string[] searchPaths, string extName, string uniqueId) {
-            var eventHook = new EventHook(script, eventType, searchPaths, extName, uniqueId);
-            RemoveEventHook(eventHook);
-        }
-
-        public void UnRegisterAllHooks(UIApplication uiApp) {
-            ClearEventHooks();
-        }
-
         public void ActivateEventHooks(UIApplication uiApp) {
-            foreach (EventHook eventHook in GetAllEventHooks())
-                RegisterEventType(uiApp, eventHook.EventType);
+            foreach (var eventHook in GetAllEventHooks())
+                if (eventHook.EventType != null)
+                    ActivateEventType(uiApp, (EventType)eventHook.EventType);
         }
 
         public void DeactivateEventHooks(UIApplication uiApp) {
-            foreach (EventHook eventHook in GetAllEventHooks())
-                UnRegisterEventType(uiApp, eventHook.EventType);
+            foreach (var eventHook in GetAllEventHooks())
+                if (eventHook.EventType != null)
+                    DeactivateEventType(uiApp, (EventType)eventHook.EventType);
+        }
+
+        public void DeactivateAllEventHooks(UIApplication uiApp) {
+            foreach (EventType eventType in EventUtils.GetSupportedEventTypes())
+                DeactivateEventType(uiApp, eventType);
         }
 
         // event handlers --------------------------------------------------------------------------------------------
