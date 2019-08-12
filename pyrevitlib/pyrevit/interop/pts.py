@@ -5,7 +5,7 @@ def load(inputfile):
     """Read list of point tuple from PTS file."""
     points = []
     with open(inputfile, 'r') as ptsfile:
-        point_count = int(ptsfile.readline())   #noqa
+        # point_count = int(ptsfile.readline())   #noqa
         for line in ptsfile:
             data = line.split(' ')
             points.append(((float(data[0]), float(data[1]), float(data[2])),

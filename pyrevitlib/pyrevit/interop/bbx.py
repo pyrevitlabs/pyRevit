@@ -4,7 +4,7 @@
 def load(inputfile):
     bboxes = []
     with open(inputfile, 'r') as bbxfile:
-        bbox_count = int(bbxfile.readline())   #noqa
+        # bbox_count = int(bbxfile.readline())   #noqa
         for line in bbxfile:
             data = line.split(' ')
             bboxes.append(
