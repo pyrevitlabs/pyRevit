@@ -6,6 +6,8 @@ import (
 	"../cli"
 )
 
+var OkMessage = "[ {g}OK{!} ]"
+
 type LogMeta struct {
 	// for initial schema, the value will be ""; there is no 1.0
 	SchemaVersion string `json:"schema" bson:"schema"` // schema 2.0
@@ -84,6 +86,10 @@ func (logrec ScriptTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message 
 	}
 }
 
+func (logrec ScriptTelemetryRecord) PrintOKRecordInfo(logger *cli.Logger) {
+	logrec.PrintRecordInfo(logger, OkMessage)
+}
+
 func (logrec ScriptTelemetryRecord) Validate() {
 	// todo: validate by schema version
 	if logrec.LogMeta.SchemaVersion == "" {
@@ -124,6 +130,10 @@ func (logrec EventTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message s
 			logrec.DocumentPath,
 		))
 	}
+}
+
+func (logrec EventTelemetryRecord) PrintOKRecordInfo(logger *cli.Logger) {
+	logrec.PrintRecordInfo(logger, OkMessage)
 }
 
 func (logrec EventTelemetryRecord) Validate() {

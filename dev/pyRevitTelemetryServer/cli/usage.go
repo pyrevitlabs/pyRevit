@@ -5,17 +5,17 @@ import (
 	"os"
 )
 
-const version string = "0.7"
+const version string = "0.8"
 const help string = `Record pyRevit usage logs to database
 
 Usage:
-	pyrevit-logserver <db_uri> --script=<script_table> --event=<event_table> --port=<port> [--debug] [--trace]
+	pyrevit-logserver <db_uri> [--scripts=<script_table>] [--events=<event_table>] --port=<port> [--debug] [--trace]
 
 Options:
 	-h --help                    show this screen
 	-V --version                 show version
-	--script=<script_table>      target table or collection for script logs
-	--event=<event_table>        target table or collection for app event logs
+	--scripts=<script_table>      target table or collection for script logs
+	--events=<event_table>        target table or collection for app event logs
 	--port=<port>                server port number to listen on
 	--debug                      print debug info
 	--trace                      print trace info e.g. full json logs and sql queries

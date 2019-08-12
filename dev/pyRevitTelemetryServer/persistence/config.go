@@ -35,8 +35,8 @@ func NewConfig(options *cli.Options) (*Config, error) {
 	return &Config{
 		Backend:      backend,
 		ConnString:   options.ConnString,
-		ScriptTarget: options.ScriptTable,
-		EventTarget:  options.EventTable,
+		ScriptTarget: options.ScriptsTable,
+		EventTarget:  options.EventsTable,
 	}, nil
 }
 
