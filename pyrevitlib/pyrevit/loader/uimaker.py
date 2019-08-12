@@ -415,11 +415,6 @@ def _produce_ui_stacks(ui_maker_params):
     stack_cmp = ui_maker_params.component
     ext_asm_info = ui_maker_params.asm_info
 
-    # deprecation warning for stack2 and stack3
-    if stack_cmp.type_id in [exts.STACKTWO_BUTTON_POSTFIX,
-                             exts.STACKTHREE_BUTTON_POSTFIX]:
-        mlogger.deprecate(".stack2 and .stack3 bundles are deprecated. "
-                          "Use .stack instead | %s", stack_cmp.directory)
     # if sub_cmp is a stack, ask parent_ui_item to open a stack
     # (parent_ui_item.open_stack).
     # All subsequent items will be placed under this stack. Close the stack
@@ -542,8 +537,6 @@ _component_creation_dict = {
     exts.TAB_POSTFIX: _produce_ui_tab,
     exts.PANEL_POSTFIX: _produce_ui_panels,
     exts.STACK_BUTTON_POSTFIX: _produce_ui_stacks,
-    exts.STACKTWO_BUTTON_POSTFIX: _produce_ui_stacks,
-    exts.STACKTHREE_BUTTON_POSTFIX: _produce_ui_stacks,
     exts.PULLDOWN_BUTTON_POSTFIX: _produce_ui_pulldown,
     exts.SPLIT_BUTTON_POSTFIX: _produce_ui_split,
     exts.SPLITPUSH_BUTTON_POSTFIX: _produce_ui_splitpush,

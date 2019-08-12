@@ -61,18 +61,6 @@ class RevitWrapper(types.ModuleType):
         return HOST_APP.docs
 
     @property
-    def activeview(self):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        return HOST_APP.active_view
-
-    @activeview.setter
-    def activeview(self, value):
-        mlogger.deprecate(
-            "revit.active_view is deprecated. use revit.active_view instead.")
-        HOST_APP.active_view = value
-
-    @property
     def active_view(self):
         return HOST_APP.active_view
 

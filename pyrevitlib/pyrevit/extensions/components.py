@@ -169,6 +169,8 @@ class SplitButtonGroup(GenericUICommandGroup):
 
 # Stacks include GenericUICommand, or GenericUICommandGroup
 class GenericStack(GenericUIContainer):
+    type_id = exts.STACK_BUTTON_POSTFIX
+
     allowed_sub_cmps = \
         [GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
@@ -180,18 +182,6 @@ class GenericStack(GenericUIContainer):
             else:
                 if component.has_commands():
                     return True
-
-
-class StackThreeButtonGroup(GenericStack):
-    type_id = exts.STACKTHREE_BUTTON_POSTFIX
-
-
-class StackTwoButtonGroup(GenericStack):
-    type_id = exts.STACKTWO_BUTTON_POSTFIX
-
-
-class StackButtonGroup(GenericStack):
-    type_id = exts.STACK_BUTTON_POSTFIX
 
 
 # Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
@@ -262,8 +252,7 @@ class Extension(GenericUIContainer):
         pat += '|(\\' + exts.PULLDOWN_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.SPLIT_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.SPLITPUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.STACKTWO_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.STACKTHREE_BUTTON_POSTFIX + ')'
+        pat += '|(\\' + exts.STACK_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.PUSH_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
         pat += '|(\\' + exts.TOGGLE_BUTTON_POSTFIX + ')'
