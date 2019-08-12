@@ -90,4 +90,4 @@ if not EXEC_PARAMS.doc_mode:
         rule.EnableLoggingForLevel(NLog.LogLevel.Info)
         rule.EnableLoggingForLevel(NLog.LogLevel.Debug)
 
-    NLog.LogManager.GetLogger(__name__)
+    nlog_mlogger = NLog.LogManager.GetLogger(__name__)
