@@ -57,3 +57,25 @@ CREATE TABLE public.pyrevitusage (
 	CONSTRAINT pyrevitusage2_pk PRIMARY KEY (recordid)
 );
 ```
+
+
+```sql
+CREATE TABLE public.revitevents (
+	recordid uuid NOT NULL,
+	"timestamp" timestamp NULL,
+	eventtype varchar(255) NULL,
+	eventargs json NULL,
+	username varchar(255) NULL,
+	host_user varchar(255) NULL,
+	revit varchar(255) NULL,
+	revitbuild varchar(255) NULL,
+	cancellable bool NULL,
+	cancelled bool NULL,
+	docid int4 NULL,
+	doctype int4 NULL,
+	doctemplate text NULL,
+	docname text NULL,
+	docpath text NULL,
+	CONSTRAINT revitevents2_pk PRIMARY KEY (recordid)
+);
+```

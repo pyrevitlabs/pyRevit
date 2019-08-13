@@ -103,6 +103,7 @@ func generateScriptInsertQuery(table string, logrec *ScriptTelemetryRecord, logg
 	logger.Debug("building insert query for data")
 	datalines := make([]string, 0)
 
+	// marshal json data
 	cresults, merr := json.Marshal(logrec.CommandResults)
 	if merr != nil {
 		logger.Debug("error logging command results")
@@ -193,6 +194,12 @@ func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger
 	logger.Debug("building insert query for data")
 	datalines := make([]string, 0)
 
+	// marshal json data
+	cresults, merr := json.Marshal(logrec.EventArgs)
+	if merr != nil {
+		logger.Debug("error logging command results")
+	}
+
 	// create record based on schema
 	var record []string
 
@@ -204,7 +211,18 @@ func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger
 			recordId.String(),
 			logrec.TimeStamp,
 			logrec.EventType,
+			string(cresults),
 			logrec.UserName,
+			logrec.HostUserName,
+			logrec.RevitVersion,
+			logrec.RevitBuild,
+			strconv.FormatBool(logrec.Cancellable),
+			strconv.FormatBool(logrec.Cancelled),
+			strconv.Itoa(logrec.DocumentId),
+			logrec.DocumentType,
+			logrec.DocumentTemplate,
+			logrec.DocumentName,
+			logrec.DocumentPath,
 		}
 	}
 	datalines = append(datalines, ToSql(&record, true))
