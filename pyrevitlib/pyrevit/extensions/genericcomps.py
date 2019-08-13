@@ -550,15 +550,11 @@ class GenericUICommand(GenericUIComponent):
         except Exception as parse_err:
             mlogger.log_parse_except(self.script_file, parse_err)
 
-    def _update_configurable_params(self, config_dict):
-        for pname in self.configurable_params:
-            pval = getattr(self, pname)
-            if pval:
-                for k, v in config_dict.items():
-                    liquidtag = '{{' + k + '}}'
-                    if liquidtag in pval:   #pylint: disable=E1135
-                        pval = pval.replace(liquidtag, v)
-                        setattr(self, pname, pval)
+    def _update_configurable_param(self, param_name, param_tag, param_value):
+        exst_val = getattr(self, param_name)
+        if exst_val and (param_tag in exst_val):   #pylint: disable=E1135
+            new_value = exst_val.replace(param_tag, param_value)
+            setattr(self, param_name, new_value)
 
     @property
     def configurable_params(self):
@@ -586,6 +582,13 @@ class GenericUICommand(GenericUIComponent):
         return self.config_script_file != self.script_file
 
     def configure(self, config_dict):
-        templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, None)
-        if templates:
-            self._update_configurable_params(templates)
+        for key, value in config_dict.items():
+            liquid_tag = '{{' + key + '}}'
+            for param_name in self.configurable_params:
+                self._update_configurable_param(param_name, liquid_tag, value)
+
+        templates = config_dict.get(exts.EXT_MANIFEST_TEMPLATES_KEY, {})
+        for key, value in templates.items():
+            liquid_tag = '{{' + key + '}}'
+            for param_name in self.configurable_params:
+                self._update_configurable_param(param_name, liquid_tag, value)
