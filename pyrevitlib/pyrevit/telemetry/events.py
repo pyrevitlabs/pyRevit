@@ -15,7 +15,7 @@ mlogger = logger.get_logger(__name__)
 ALL_EVENTS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
 # flag for a suggested configuration for event telementry
-SUGGESTED_EVENTS = 0x1d17eff7fffd
+SUGGESTED_EVENTS = 0x1d17e7f7fffd
 
 
 def register_event_telemetry(handler, flags):
