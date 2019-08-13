@@ -14,6 +14,9 @@ mlogger = logger.get_logger(__name__)
 # the flags are sorted by the index of EventType enum values
 ALL_EVENTS = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
+# flag for a suggested configuration for event telementry
+SUGGESTED_EVENTS = 0x1d17eff7fffd
+
 
 def register_event_telemetry(handler, flags):
     """Registers application event telemetry handlers based on given flags.
