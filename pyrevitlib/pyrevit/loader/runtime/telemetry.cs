@@ -228,6 +228,16 @@ namespace PyRevitRuntime {
             }
         }
 
+        public static string GetParameterValue(Parameter param) {
+            switch (param.StorageType) {
+                case StorageType.Double: return param.AsValueString();
+                case StorageType.ElementId: return param.AsValueString();
+                case StorageType.Integer: return param.AsValueString();
+                case StorageType.String: return param.AsString();
+                default: return null;
+            }
+        }
+
         public static List<Element> GetElements(Document doc, IEnumerable<ElementId> elementIds) {
             var elements = new List<Element>();
             if (doc != null) {
@@ -317,6 +327,30 @@ namespace PyRevitRuntime {
             };
 
             return settings;
+        }
+
+        public static Dictionary<string,object> GetProjectInfo(Document doc) {
+            var docProps = new Dictionary<string, object>();
+            if (doc != null) {
+                var pinfo = doc.ProjectInformation;
+                docProps = new Dictionary<string, object> {
+                    { "org_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_NAME).AsString() },
+                    { "org_description", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_DESCRIPTION).AsString() },
+                    { "project_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_NAME).AsString() },
+                    { "project_number", pinfo.get_Parameter(BuiltInParameter.PROJECT_NUMBER).AsString() },
+                    { "project_client_name", pinfo.get_Parameter(BuiltInParameter.CLIENT_NAME).AsString() },
+                    { "project_building_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_BUILDING_NAME).AsString() },
+                    { "project_issue_date", pinfo.get_Parameter(BuiltInParameter.PROJECT_ISSUE_DATE).AsString() },
+                    { "project_status", pinfo.get_Parameter(BuiltInParameter.PROJECT_STATUS).AsString() },
+                    { "project_author", pinfo.get_Parameter(BuiltInParameter.PROJECT_AUTHOR).AsString() },
+                    { "project_address", pinfo.get_Parameter(BuiltInParameter.PROJECT_ADDRESS).AsString() },
+                };
+
+                foreach (Parameter param in pinfo.Parameters)
+                    if (param.Id.IntegerValue > 0)
+                        docProps.Add(param.Definition.Name, GetParameterValue(param));
+            }
+            return docProps;
         }
 
         // event management ------------------------------------------------------------------------------------------
@@ -939,6 +973,7 @@ namespace PyRevitRuntime {
                 args = new Dictionary<string, object> {
                     { "as_master_file", e.IsSavingAsMasterFile },
                     { "original_path",  e.OriginalPath },
+                    { "project_info", GetProjectInfo(e.Document) }
                 }
             }, sender, e);
         }
@@ -957,6 +992,9 @@ namespace PyRevitRuntime {
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
                 status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "project_info", GetProjectInfo(e.Document) }
+                }
             }, sender, e);
         }
 
@@ -1020,6 +1058,9 @@ namespace PyRevitRuntime {
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
                 status = e.Status.ToString(),
+                args = new Dictionary<string, object> {
+                    { "project_info", GetProjectInfo(e.Document) }
+                }
             }, sender, e);
         }
 
