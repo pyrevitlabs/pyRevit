@@ -96,17 +96,17 @@ if not EXEC_PARAMS.doc_mode:
             + EXEC_PARAMS.engine_ver
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
-    BASE_TYPES_ASM_FILE_ID = '{}_{}'\
+    RUNTIME_ASSM_FILE_ID = '{}_{}'\
         .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
-    BASE_TYPES_ASM_FILE = \
-        appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
+    RUNTIME_ASSM_FILE = \
+        appdata.get_data_file(RUNTIME_ASSM_FILE_ID,
                               framework.ASSEMBLY_FILE_TYPE)
     # taking the name of the generated data file and use it as assembly name
-    BASE_TYPES_ASM_NAME = op.splitext(op.basename(BASE_TYPES_ASM_FILE))[0]
-    mlogger.debug('Interface types assembly file is: %s', BASE_TYPES_ASM_NAME)
+    RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
+    mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
 else:
-    BASE_TYPES_DIR_HASH = BASE_TYPES_ASM_FILE_ID = None
-    BASE_TYPES_ASM_FILE = BASE_TYPES_ASM_NAME = None
+    BASE_TYPES_DIR_HASH = RUNTIME_ASSM_FILE_ID = None
+    RUNTIME_ASSM_FILE = RUNTIME_ASSM_NAME = None
 
 
 def _get_source_files_in(source_files_path):
@@ -239,20 +239,20 @@ def get_references():
     return refs
 
 
-def _generate_base_classes_asm():
+def _generate_runtime_asm():
     source_list = []
     for source_file in _get_source_files():
         source_list.append(source_file)
 
     # now try to compile
     try:
-        mlogger.debug('Compiling base types to: %s', BASE_TYPES_ASM_FILE)
+        mlogger.debug('Compiling base types to: %s', RUNTIME_ASSM_FILE)
         dotnetcompiler.compile_csharp(
             source_list,
-            BASE_TYPES_ASM_FILE,
+            RUNTIME_ASSM_FILE,
             reference_list=get_references(),
             resource_list=[])
-        return assmutils.load_asm_file(BASE_TYPES_ASM_FILE)
+        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
 
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
@@ -261,38 +261,38 @@ def _generate_base_classes_asm():
         raise compile_err
 
 
-def _get_base_classes_asm():
-    if appdata.is_data_file_available(file_id=BASE_TYPES_ASM_FILE_ID,
+def _get_runtime_asm():
+    if appdata.is_data_file_available(file_id=RUNTIME_ASSM_FILE_ID,
                                       file_ext=framework.ASSEMBLY_FILE_TYPE):
-        return assmutils.load_asm_file(BASE_TYPES_ASM_FILE)
+        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
     else:
-        return _generate_base_classes_asm()
+        return _generate_runtime_asm()
 
 
 if not EXEC_PARAMS.doc_mode:
     # compile or load the base types assembly
     # see it the assembly is already loaded
-    BASE_TYPES_ASM = None
-    assm_list = assmutils.find_loaded_asm(BASE_TYPES_ASM_NAME)
+    RUNTIME_ASSM = None
+    assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
     if assm_list:
-        BASE_TYPES_ASM = assm_list[0]
+        RUNTIME_ASSM = assm_list[0]
     else:
         # else, let's generate the assembly and load it
-        BASE_TYPES_ASM = _get_base_classes_asm()
+        RUNTIME_ASSM = _get_runtime_asm()
 
     CMD_EXECUTOR_TYPE = \
-        assmutils.find_type_by_name(BASE_TYPES_ASM, CMD_EXECUTOR_TYPE_NAME)
+        assmutils.find_type_by_name(RUNTIME_ASSM, CMD_EXECUTOR_TYPE_NAME)
 
     CMD_AVAIL_TYPE_EXTENDED = \
-            assmutils.find_type_by_name(BASE_TYPES_ASM,
+            assmutils.find_type_by_name(RUNTIME_ASSM,
                                         CMD_AVAIL_TYPE_NAME_EXTENDED)
     CMD_AVAIL_TYPE_SELECTION = \
-            assmutils.find_type_by_name(BASE_TYPES_ASM,
+            assmutils.find_type_by_name(RUNTIME_ASSM,
                                         CMD_AVAIL_TYPE_NAME_SELECTION)
     CMD_AVAIL_TYPE_ZERODOC = \
-        assmutils.find_type_by_name(BASE_TYPES_ASM,
+        assmutils.find_type_by_name(RUNTIME_ASSM,
                                     CMD_AVAIL_TYPE_NAME_ZERODOC)
 else:
-    BASE_TYPES_ASM = CMD_EXECUTOR_TYPE = None
+    RUNTIME_ASSM = CMD_EXECUTOR_TYPE = None
     CMD_AVAIL_TYPE_ZERODOC = \
         CMD_AVAIL_TYPE_EXTENDED = CMD_AVAIL_TYPE_SELECTION = None

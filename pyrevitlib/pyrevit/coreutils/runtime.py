@@ -2,59 +2,59 @@
 
 from pyrevit import EXEC_PARAMS
 from pyrevit.framework import clr
-from pyrevit.loader.runtime import BASE_TYPES_ASM, RUNTIME_NAMESPACE
+from pyrevit.loader.runtime import RUNTIME_ASSM, RUNTIME_NAMESPACE
 
 #pylint: disable=W0703,C0302,C0103
 if not EXEC_PARAMS.doc_mode:
     # import base classes module
-    clr.AddReference(BASE_TYPES_ASM)
-    base_module = __import__(RUNTIME_NAMESPACE)
+    clr.AddReference(RUNTIME_ASSM)
+    runtime_module = __import__(RUNTIME_NAMESPACE)
 
     # envvars.cs
-    DomainStorageKeys = base_module.DomainStorageKeys
-    EnvDictionaryKeys = base_module.EnvDictionaryKeys
-    EnvDictionary = base_module.EnvDictionary
+    DomainStorageKeys = runtime_module.DomainStorageKeys
+    EnvDictionaryKeys = runtime_module.EnvDictionaryKeys
+    EnvDictionary = runtime_module.EnvDictionary
 
     # baseclasses.cs
-    CommandType = base_module.CommandType
-    CommandExtendedAvail = base_module.CommandExtendedAvail
-    CommandSelectionAvail = base_module.CommandSelectionAvail
-    CommandZeroDocAvail = base_module.CommandZeroDocAvail
+    CommandType = runtime_module.CommandType
+    CommandExtendedAvail = runtime_module.CommandExtendedAvail
+    CommandSelectionAvail = runtime_module.CommandSelectionAvail
+    CommandZeroDocAvail = runtime_module.CommandZeroDocAvail
 
     # scriptruntime.cs
-    ScriptData = base_module.ScriptData
-    ScriptRuntime = base_module.ScriptRuntime
+    ScriptData = runtime_module.ScriptData
+    ScriptRuntime = runtime_module.ScriptRuntime
 
     # executor.cs
-    ExecutionResultCodes = base_module.ExecutionResultCodes
-    ScriptExecutor = base_module.ScriptExecutor
+    ExecutionResultCodes = runtime_module.ExecutionResultCodes
+    ScriptExecutor = runtime_module.ScriptExecutor
 
     # events.cs
-    EventUtils = base_module.EventUtils
-    AppEventUtils = base_module.AppEventUtils
-    UIEventUtils = base_module.UIEventUtils
+    EventUtils = runtime_module.EventUtils
+    AppEventUtils = runtime_module.AppEventUtils
+    UIEventUtils = runtime_module.UIEventUtils
     PlaceKeynoteExternalEventHandler = \
-        base_module.PlaceKeynoteExternalEventHandler
+        runtime_module.PlaceKeynoteExternalEventHandler
 
     # hooks.cs
-    EventHook = base_module.EventHook
-    PyRevitHooks = base_module.PyRevitHooks
+    EventHook = runtime_module.EventHook
+    PyRevitHooks = runtime_module.PyRevitHooks
 
     # scriptoutput.cs
-    ScriptOutputConfigs = base_module.ScriptOutputConfigs
-    PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
-    ScriptOutput = base_module.ScriptOutput
+    ScriptOutputConfigs = runtime_module.ScriptOutputConfigs
+    PyRevitTemplateWindow = runtime_module.PyRevitTemplateWindow
+    ScriptOutput = runtime_module.ScriptOutput
     # scriptoutputemojis.cs
-    ScriptOutputEmojis = base_module.ScriptOutputEmojis
+    ScriptOutputEmojis = runtime_module.ScriptOutputEmojis
     # scriptoutputmgr.cs
-    ScriptOutputManager = base_module.ScriptOutputManager
+    ScriptOutputManager = runtime_module.ScriptOutputManager
     # scriptoutputstream.cs
-    ScriptOutputStream = base_module.ScriptOutputStream
+    ScriptOutputStream = runtime_module.ScriptOutputStream
 
     # telemetry.cs
-    EventType = base_module.EventType
-    ScriptTelemetry = base_module.ScriptTelemetry
-    EventTelemetry = base_module.EventTelemetry
+    EventType = runtime_module.EventType
+    ScriptTelemetry = runtime_module.ScriptTelemetry
+    EventTelemetry = runtime_module.EventTelemetry
 else:
     DomainStorageKeys = ExternalConfig = ExecutionResultCodes = \
         EnvDictionaryKeys = EnvDictionary = CommandType = \
