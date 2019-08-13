@@ -190,19 +190,19 @@ namespace pyRevitLabs.PyRevit {
 
         // get extensions path
         public static string GetExtensionsPath(string clonePath) =>
-            Path.Combine(clonePath, PyRevit.PyRevitExtensionsDirName).NormalizeAsPath();
+            Path.Combine(clonePath, PyRevit.ExtensionsDirName).NormalizeAsPath();
 
         // get pyrevitlib path
         public static string GetPyRevitLibPath(string clonePath) =>
-            Path.Combine(clonePath, PyRevit.PyRevitLibDirName).NormalizeAsPath();
+            Path.Combine(clonePath, PyRevit.LibDirName).NormalizeAsPath();
 
         // get pyrevitlib/pyrevit path
         public static string GetPyRevitPath(string clonePath) =>
-            Path.Combine(GetPyRevitLibPath(clonePath), PyRevit.PyRevitModuleDirName).NormalizeAsPath();
+            Path.Combine(GetPyRevitLibPath(clonePath), PyRevit.ModuleDirName).NormalizeAsPath();
 
         // get pyrevitlib/pyrevit/version path
         public static string GetPyRevitVersionFilePath(string clonePath) =>
-            Path.Combine(GetPyRevitPath(clonePath), PyRevit.PyRevitVersionFilename).NormalizeAsPath();
+            Path.Combine(GetPyRevitPath(clonePath), PyRevit.VersionFilename).NormalizeAsPath();
 
         // get pyRevitFile path
         public static string GetPyRevitFilePath(string clonePath) {
@@ -584,14 +584,14 @@ namespace pyRevitLabs.PyRevit {
         private static string FindEnginesDirectory(string clonePath) {
             // determine repo version based on directory availability
             string enginesDir = Path.Combine(clonePath,
-                                             PyRevit.PyRevitBinDirName,
-                                             PyRevit.PyRevitBinEnginesDirName);
+                                             PyRevit.BinDirName,
+                                             PyRevit.BinEnginesDirName);
             if (!CommonUtils.VerifyPath(enginesDir)) {
                 enginesDir = Path.Combine(clonePath,
-                                          PyRevit.PyRevitLibDirName,
-                                          PyRevit.PyRevitModuleDirName,
-                                          PyRevit.PyRevitModuleLoaderDirName,
-                                          PyRevit.PyRevitModuleAddinDirName);
+                                          PyRevit.LibDirName,
+                                          PyRevit.ModuleDirName,
+                                          PyRevit.ModuleLoaderDirName,
+                                          PyRevit.ModuleAddinDirName);
                 if (!CommonUtils.VerifyPath(enginesDir))
                     throw new pyRevitInvalidGitCloneException(clonePath);
             }

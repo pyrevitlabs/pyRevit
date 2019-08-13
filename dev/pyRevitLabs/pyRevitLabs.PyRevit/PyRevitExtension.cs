@@ -163,7 +163,7 @@ namespace pyRevitLabs.PyRevit {
         }
 
         public static string GetExtensionDefFilePath(string extPath) =>
-            Path.Combine(extPath, PyRevit.PyRevitExtensionDefFileName);
+            Path.Combine(extPath, PyRevit.ExtensionDefFileName);
 
         public static string GetRunCommand(string extPath, string commandName) {
             foreach (var filePath in Directory.GetFiles(extPath)) {

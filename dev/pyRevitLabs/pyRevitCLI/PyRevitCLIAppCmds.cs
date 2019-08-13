@@ -71,7 +71,7 @@ namespace pyRevitCLI {
         internal static string
         CreateEnvJson() {
             // collecet search paths
-            var searchPaths = new List<string>() { PyRevit.pyRevitDefaultExtensionsPath };
+            var searchPaths = new List<string>() { PyRevit.DefaultExtensionsPath };
             searchPaths.AddRange(PyRevitExtensions.GetRegisteredExtensionSearchPaths());
 
             // collect list of lookup sources
@@ -91,7 +91,7 @@ namespace pyRevitCLI {
                         { "lookupSources", lookupSrc },
                         { "installed", RevitProduct.ListInstalledProducts() },
                         { "running", RevitController.ListRunningRevits() },
-                        { "pyrevitDataDir", PyRevit.pyRevitAppDataPath },
+                        { "pyrevitDataDir", PyRevit.pyRevitPath },
                         { "userEnv", new Dictionary<string, object>() {
                                 { "osVersion", UserEnv.GetWindowsVersion() },
                                 { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
@@ -136,7 +136,7 @@ namespace pyRevitCLI {
         internal static void
         PrintPyRevitPaths() {
             PrintHeader("Cache Directory");
-            Console.WriteLine(string.Format("\"{0}\"", PyRevit.pyRevitAppDataPath));
+            Console.WriteLine(string.Format("\"{0}\"", PyRevit.pyRevitPath));
         }
 
         internal static void

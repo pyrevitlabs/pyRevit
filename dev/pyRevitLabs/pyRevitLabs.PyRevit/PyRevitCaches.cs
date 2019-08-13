@@ -21,14 +21,14 @@ namespace pyRevitLabs.PyRevit {
         // pyrevit cache folder 
         // @reviewed
         public static string GetCacheDirectory(int revitYear) {
-            return Path.Combine(PyRevit.pyRevitAppDataPath, revitYear.ToString());
+            return Path.Combine(PyRevit.pyRevitPath, revitYear.ToString());
         }
 
         // clear cache
         // @handled @logs
         public static void ClearCache(int revitYear) {
             // make sure all revit instances are closed
-            if (CommonUtils.VerifyPath(PyRevit.pyRevitAppDataPath)) {
+            if (CommonUtils.VerifyPath(PyRevit.pyRevitPath)) {
                 RevitController.KillRunningRevits(revitYear);
                 CommonUtils.DeleteDirectory(GetCacheDirectory(revitYear));
             }
@@ -42,15 +42,15 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static void ClearAllCaches() {
             var cacheDirFinder = new Regex(@"\d\d\d\d");
-            if (CommonUtils.VerifyPath(PyRevit.pyRevitAppDataPath)) {
-                foreach (string subDir in Directory.GetDirectories(PyRevit.pyRevitAppDataPath)) {
+            if (CommonUtils.VerifyPath(PyRevit.pyRevitPath)) {
+                foreach (string subDir in Directory.GetDirectories(PyRevit.pyRevitPath)) {
                     var dirName = Path.GetFileName(subDir);
                     if (cacheDirFinder.IsMatch(dirName))
                         ClearCache(int.Parse(dirName));
                 }
             }
             else
-                throw new pyRevitResourceMissingException(PyRevit.pyRevitAppDataPath);
+                throw new pyRevitResourceMissingException(PyRevit.pyRevitPath);
         }
 
 

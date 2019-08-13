@@ -99,10 +99,8 @@ namespace pyRevitLabs.PyRevit {
             var validatedClones = new List<PyRevitClone>();
 
             // safely get clone list
-            var clonesList = PyRevitConfigs.GetKeyValueAsDict(PyRevit.EnvConfigsSectionName,
-                                               PyRevit.EnvConfigsInstalledClonesKey,
-                                               defaultValue: new List<string>(),
-                                               throwNotSetException: false);
+            var cfg = PyRevitConfigs.GetConfigFile();
+            var clonesList = cfg.GetKeyValueAsDict(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsInstalledClonesKey, defaultValue: new List<string>(), throwNotSetException: false);
 
             // verify all registered clones, protect against tampering
             foreach (var cloneKeyValue in clonesList) {
@@ -193,7 +191,7 @@ namespace pyRevitLabs.PyRevit {
 
             // determine destination path if not provided
             if (destPath == null)
-                destPath = Path.Combine(PyRevit.pyRevitAppDataPath, PyRevit.DefaultCloneInstallName);
+                destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCloneInstallName);
             logger.Debug("Destination path determined as \"{0}\"", destPath);
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
@@ -263,7 +261,7 @@ namespace pyRevitLabs.PyRevit {
 
             // determine destination path if not provided
             if (destPath == null)
-                destPath = Path.Combine(PyRevit.pyRevitAppDataPath, PyRevit.DefaultCopyInstallName);
+                destPath = Path.Combine(PyRevit.pyRevitPath, PyRevit.DefaultCopyInstallName);
 
             // check existing destination path
             if (CommonUtils.VerifyPath(destPath)) {
@@ -497,7 +495,7 @@ namespace pyRevitLabs.PyRevit {
             CommonUtils.DeleteDirectory(clone.ClonePath);
 
             if (clearConfigs)
-                PyRevitConfigs.DeleteConfigs();
+                PyRevitConfigs.DeleteConfig();
         }
 
         // uninstall all registered clones
@@ -507,7 +505,7 @@ namespace pyRevitLabs.PyRevit {
                 Delete(clone, clearConfigs: false);
 
             if (clearConfigs)
-                PyRevitConfigs.DeleteConfigs();
+                PyRevitConfigs.DeleteConfig();
         }
 
         // force update given or all registered clones

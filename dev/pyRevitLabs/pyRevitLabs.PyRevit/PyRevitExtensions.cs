@@ -134,7 +134,7 @@ namespace pyRevitLabs.PyRevit {
             string extDestDirName = PyRevitExtension.MakeConfigName(extensionName, extensionType);
 
             // determine destination
-            destPath = destPath ?? PyRevit.pyRevitDefaultExtensionsPath;
+            destPath = destPath ?? PyRevit.DefaultExtensionsPath;
             string finalExtRepoPath = Path.Combine(destPath, extDestDirName).NormalizeAsPath();
 
             // determine branch name
@@ -238,7 +238,7 @@ namespace pyRevitLabs.PyRevit {
         private static void ToggleExtension(string extName, bool state) {
             var ext = GetInstalledExtension(extName);
             logger.Debug("{0} extension \"{1}\"", state ? "Enabling" : "Disabling", ext.Name);
-            PyRevitConfigs.SetKeyValue(ext.ConfigName, PyRevit.ExtensionJsonDisabledKey, !state);
+            PyRevitConfigs.SetConfig(ext.ConfigName, PyRevit.ExtensionDisabledKey, !state);
         }
 
         // disable extension in config
@@ -257,8 +257,7 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
             var validatedPaths = new List<string>();
-            var searchPaths = PyRevitConfigs.GetKeyValueAsList(PyRevit.ConfigsCoreSection,
-                                                PyRevit.ConfigsUserExtensionsKey);
+            var searchPaths = PyRevitConfigs.GetListConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey);
             // make sure paths exist
             foreach (var path in searchPaths) {
                 var normPath = path.NormalizeAsPath();
@@ -269,9 +268,7 @@ namespace pyRevitLabs.PyRevit {
             }
 
             // rewrite verified list
-            PyRevitConfigs.SetKeyValue(PyRevit.ConfigsCoreSection,
-                        PyRevit.ConfigsUserExtensionsKey,
-                        validatedPaths);
+            PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, validatedPaths);
 
             return validatedPaths;
         }
@@ -283,9 +280,7 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug("Adding extension search path \"{0}\"", searchPath);
                 var searchPaths = GetRegisteredExtensionSearchPaths();
                 searchPaths.Add(searchPath.NormalizeAsPath());
-                PyRevitConfigs.SetKeyValue(PyRevit.ConfigsCoreSection,
-                            PyRevit.ConfigsUserExtensionsKey,
-                            searchPaths);
+                PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
             }
             else
                 throw new pyRevitResourceMissingException(searchPath);
@@ -298,9 +293,7 @@ namespace pyRevitLabs.PyRevit {
             logger.Debug("Removing extension search path \"{0}\"", normPath);
             var searchPaths = GetRegisteredExtensionSearchPaths();
             searchPaths.Remove(normPath);
-            PyRevitConfigs.SetKeyValue(PyRevit.ConfigsCoreSection,
-                        PyRevit.ConfigsUserExtensionsKey,
-                        searchPaths);
+            PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
         }
 
         // managing extension sources ================================================================================
@@ -313,9 +306,7 @@ namespace pyRevitLabs.PyRevit {
         // get extension lookup sources
         // @handled @logs
         public static List<string> GetRegisteredExtensionLookupSources() {
-            var sources = PyRevitConfigs.GetKeyValueAsList(PyRevit.EnvConfigsSectionName,
-                                            PyRevit.EnvConfigsExtensionLookupSourcesKey,
-                                            throwNotSetException: false);
+            var sources = PyRevitConfigs.GetListConfig(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsExtensionLookupSourcesKey);
             var normSources = new List<string>();
             foreach (var src in sources) {
                 var normSrc = src.NormalizeAsPath();
