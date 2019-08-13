@@ -687,11 +687,14 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("telemetry")) {
-                    if (all("enable", "file"))
+                    if (all("set", "file"))
                         PyRevitConfigs.EnableTelemetry(telemetryFilePath: TryGetValue("<dest_path>"));
 
-                    else if (all("enable", "server"))
+                    else if (all("set", "server"))
                         PyRevitConfigs.EnableTelemetry(telemetryServerUrl: TryGetValue("<dest_path>"));
+
+                    else if (all("enable"))
+                        PyRevitConfigs.EnableTelemetry();
 
                     else if (all("disable"))
                         PyRevitConfigs.DisableTelemetry();
@@ -699,8 +702,30 @@ namespace pyRevitCLI {
                     else {
                         Console.WriteLine(string.Format("Telemetry is {0}",
                                                         PyRevitConfigs.GetTelemetryStatus() ? "Enabled" : "Disabled"));
-                        Console.WriteLine(string.Format("Log File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
-                        Console.WriteLine(string.Format("Log Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
+                        Console.WriteLine(string.Format("File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
+                        Console.WriteLine(string.Format("Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
+                    }
+                }
+
+                else if (all("apptelemetry")) {
+                    if (all("set", "flags"))
+                        PyRevitConfigs.SetAppTelemetryFlags(flags: TryGetValue("<flags>"));
+
+                    else if (all("set", "server"))
+                        PyRevitConfigs.EnableAppTelemetry(apptelemetryServerUrl: TryGetValue("<server_path>"));
+
+                    else if (all("enable"))
+                        PyRevitConfigs.EnableAppTelemetry();
+
+                    else if (all("disable"))
+                        PyRevitConfigs.DisableAppTelemetry();
+
+                    else {
+                        Console.WriteLine(string.Format("App Telemetry is {0}",
+                                                        PyRevitConfigs.GetAppTelemetryStatus() ? "Enabled" : "Disabled"));
+                        Console.WriteLine(string.Format("Server Url: {0}", PyRevitConfigs.GetAppTelemetryServerUrl()));
+                        Console.WriteLine(string.Format("App Telemetry flag is {0}",
+                                                        PyRevitConfigs.GetAppTelemetryFlags()));
                     }
                 }
 

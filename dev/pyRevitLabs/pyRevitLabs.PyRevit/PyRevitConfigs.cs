@@ -96,6 +96,49 @@ namespace pyRevitLabs.PyRevit {
                         false);
         }
 
+        // app telemetry
+        public static bool GetAppTelemetryStatus() {
+            return bool.Parse(GetKeyValue(PyRevit.ConfigsTelemetrySection,
+                                          PyRevit.ConfigsAppTelemetryStatusKey));
+        }
+
+        public static string GetAppTelemetryServerUrl() {
+            return GetKeyValue(PyRevit.ConfigsTelemetrySection,
+                               PyRevit.ConfigsAppTelemetryServerUrlKey);
+        }
+
+        public static void EnableAppTelemetry(string apptelemetryServerUrl = null) {
+            logger.Debug(string.Format("Enabling app telemetry... server: {0}", apptelemetryServerUrl));
+            SetKeyValue(PyRevit.ConfigsTelemetrySection,
+                        PyRevit.ConfigsAppTelemetryStatusKey,
+                        true);
+
+            if (apptelemetryServerUrl != null)
+                SetKeyValue(PyRevit.ConfigsTelemetrySection,
+                            PyRevit.ConfigsAppTelemetryServerUrlKey,
+                            apptelemetryServerUrl);
+        }
+
+        public static void DisableAppTelemetry() {
+            logger.Debug("Disabling app telemetry...");
+            SetKeyValue(PyRevit.ConfigsTelemetrySection,
+                        PyRevit.ConfigsAppTelemetryStatusKey,
+                        false);
+        }
+
+        public static string GetAppTelemetryFlags() {
+            return GetKeyValue(PyRevit.ConfigsTelemetrySection,
+                               PyRevit.ConfigsAppTelemetryEventFlagsKey);
+        }
+
+        public static void SetAppTelemetryFlags(string flags) {
+            logger.Debug("Setting app telemetry flags...");
+            if (flags != null)
+                SetKeyValue(PyRevit.ConfigsTelemetrySection,
+                            PyRevit.ConfigsAppTelemetryEventFlagsKey,
+                            flags);
+        }
+
         // update checking config
         // @handled @logs
         public static bool GetCheckUpdates() {

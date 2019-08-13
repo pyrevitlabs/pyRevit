@@ -407,6 +407,7 @@ namespace pyRevitCLI {
                             { "usercanextend",          "Enable/Disable Extensions button in pyRevit" },
                             { "usercanconfig",          "Enable/Disable Settings button in pyRevit" },
                             { "telemetry",              "Telemetry" },
+                            { "apptelemetry",           "Application Telemetry" },
                             { "outputcss",              "Output window styling" },
                         },
                         options: new Dictionary<string, string>() {

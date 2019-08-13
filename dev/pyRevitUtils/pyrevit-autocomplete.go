@@ -307,12 +307,25 @@ func main() {
 					},
 					"telemetry": complete.Command{
 						Sub: complete.Commands{
-							"enable": complete.Command{
+							"set": complete.Command{
 								Sub: complete.Commands{
 									"file":   complete.Command{},
 									"server": complete.Command{},
 								},
 							},
+							"enable":  complete.Command{},
+							"disable": complete.Command{},
+						},
+					},
+					"apptelemetry": complete.Command{
+						Sub: complete.Commands{
+							"set": complete.Command{
+								Sub: complete.Commands{
+									"flags":  complete.Command{},
+									"server": complete.Command{},
+								},
+							},
+							"enable":  complete.Command{},
 							"disable": complete.Command{},
 						},
 					},
