@@ -28,11 +28,11 @@ Supports:
 	sqlite3:             using github.com/mattn/go-sqlite3
 
 Examples:
-	pyrevit-logserver postgres://user:pass@data.mycompany.com/mydb pyrevitlogs --port=8080 --debug
-	pyrevit-logserver mongodb://user:pass@localhost:27017/mydb pyrevitlogs --port=8080
-	pyrevit-logserver "mysql:user:pass@tcp(localhost:3306)/tests" pyrevitlogs --port=8080
-	pyrevit-logserver sqlserver://user:pass@my-azure-db.database.windows.net?database=mydb pyrevitlogs --port=8080
-	pyrevit-logserver sqlite3:data.db pyrevitlogs --port=8080
+	pyrevit-logserver postgres://user:pass@data.mycompany.com/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080 --debug
+	pyrevit-logserver mongodb://user:pass@localhost:27017/mydb --scripts="pyrevitlogs" --events="appevents" --port=8080
+	pyrevit-logserver "mysql:user:pass@tcp(localhost:3306)/tests" --scripts="pyrevitlogs" --port=8080
+	pyrevit-logserver sqlserver://user:pass@my-azure-db.database.windows.net?database=mydb --scripts="pyrevitlogs" --port=8080
+	pyrevit-logserver sqlite3:data.db --scripts="pyrevitlogs" --port=8080
 `
 
 var printHelpAndExit = func(err error, docoptMessage string) {
