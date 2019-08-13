@@ -223,6 +223,8 @@ func generateEventInsertQuery(table string, logrec *EventTelemetryRecord, logger
 			logrec.DocumentTemplate,
 			logrec.DocumentName,
 			logrec.DocumentPath,
+			logrec.ProjectNumber,
+			logrec.ProjectName,
 		}
 	}
 	datalines = append(datalines, ToSql(&record, true))

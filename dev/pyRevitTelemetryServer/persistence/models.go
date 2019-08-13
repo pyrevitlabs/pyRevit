@@ -98,23 +98,25 @@ func (logrec ScriptTelemetryRecord) Validate() {
 }
 
 type EventTelemetryRecord struct {
-	LogMeta      LogMeta                `json:"meta" bson:"meta"`           // schema 2.0
-	TimeStamp    string                 `json:"timestamp" bson:"timestamp"` // schema 2.0
-	EventType    string                 `json:"type" bson:"type"`
-	EventArgs    map[string]interface{} `json:"args" bson:"args"`
-	UserName     string                 `json:"username" bson:"username"`
-	HostUserName string                 `json:"host_user" bson:"host_user"`
-	RevitVersion string                 `json:"revit" bson:"revit"`
-	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild"`
+	LogMeta      LogMeta                `json:"meta" bson:"meta"`             // schema 2.0
+	TimeStamp    string                 `json:"timestamp" bson:"timestamp"`   // schema 2.0
+	EventType    string                 `json:"type" bson:"type"`             // schema 2.0
+	EventArgs    map[string]interface{} `json:"args" bson:"args"`             // schema 2.0
+	UserName     string                 `json:"username" bson:"username"`     // schema 2.0
+	HostUserName string                 `json:"host_user" bson:"host_user"`   // schema 2.0
+	RevitVersion string                 `json:"revit" bson:"revit"`           // schema 2.0
+	RevitBuild   string                 `json:"revitbuild" bson:"revitbuild"` // schema 2.0
 
 	// general
-	Cancellable      bool   `json:"cancellable" bson:"cancellable"`
-	Cancelled        bool   `json:"cancelled" bson:"cancelled"`
+	Cancellable      bool   `json:"cancellable" bson:"cancellable"` // schema 2.0
+	Cancelled        bool   `json:"cancelled" bson:"cancelled"`     // schema 2.0
 	DocumentId       int    `json:"docid" bson:"docid"`             // schema 2.0
 	DocumentType     string `json:"doctype" bson:"doctype"`         // schema 2.0
 	DocumentTemplate string `json:"doctemplate" bson:"doctemplate"` // schema 2.0
 	DocumentName     string `json:"docname" bson:"docname"`         // schema 2.0
 	DocumentPath     string `json:"docpath" bson:"docpath"`         // schema 2.0
+	ProjectNumber    string `json:"projectnum" bson:"projectnum"`   // schema 2.0
+	ProjectName      string `json:"projectname" bson:"projectname"` // schema 2.0
 }
 
 func (logrec EventTelemetryRecord) PrintRecordInfo(logger *cli.Logger, message string) {

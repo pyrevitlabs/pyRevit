@@ -164,6 +164,9 @@ namespace PyRevitRuntime {
         public string docname { get; set; }
         public string docpath { get; set; }
 
+        public string projectnum { get; set; }
+        public string projectname { get; set; }
+
 
         public EventTelemetryRecord() {
             meta = new Dictionary<string, string> {
@@ -274,7 +277,7 @@ namespace PyRevitRuntime {
             return viewNames;
         }
 
-        public static Dictionary<string,object> GetPrintSettings(PrintParameters printParams) {
+        public static Dictionary<string, object> GetPrintSettings(PrintParameters printParams) {
             double marginx, marginy;
             int zoom;
             string zoom_type;
@@ -329,15 +332,29 @@ namespace PyRevitRuntime {
             return settings;
         }
 
-        public static Dictionary<string,object> GetProjectInfo(Document doc) {
+        public static string GetProjectNumber(Document doc) {
+            if (doc != null)
+                return doc.ProjectInformation.get_Parameter(BuiltInParameter.PROJECT_NUMBER).AsString();
+            else
+                return null;
+        }
+
+        public static string GetProjectName(Document doc) {
+            if (doc != null)
+                return doc.ProjectInformation.get_Parameter(BuiltInParameter.PROJECT_NAME).AsString();
+            else
+                return null;
+        }
+
+        public static Dictionary<string, object> GetProjectInfo(Document doc) {
             var docProps = new Dictionary<string, object>();
             if (doc != null) {
                 var pinfo = doc.ProjectInformation;
                 docProps = new Dictionary<string, object> {
                     { "org_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_NAME).AsString() },
                     { "org_description", pinfo.get_Parameter(BuiltInParameter.PROJECT_ORGANIZATION_DESCRIPTION).AsString() },
-                    { "project_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_NAME).AsString() },
-                    { "project_number", pinfo.get_Parameter(BuiltInParameter.PROJECT_NUMBER).AsString() },
+                    { "project_number", GetProjectNumber(doc) },
+                    { "project_name", GetProjectName(doc) },
                     { "project_client_name", pinfo.get_Parameter(BuiltInParameter.CLIENT_NAME).AsString() },
                     { "project_building_name", pinfo.get_Parameter(BuiltInParameter.PROJECT_BUILDING_NAME).AsString() },
                     { "project_issue_date", pinfo.get_Parameter(BuiltInParameter.PROJECT_ISSUE_DATE).AsString() },
@@ -417,6 +434,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.UIApplication_ViewActivating),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "from_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
                     { "to_view",  e.NewActiveView != null ? e.NewActiveView.Name : "" },
@@ -429,6 +448,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.UIApplication_ViewActivated),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "from_view",  e.PreviousActiveView != null ? e.PreviousActiveView.Name : "" },
                     { "to_view",  e.CurrentActiveView != null ? e.CurrentActiveView.Name : "" },
@@ -445,14 +466,20 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.UIApplication_TransferringProjectStandards),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "from_document",  new Dictionary<string,string>{
                         { "docname", e.SourceDocument != null ? e.SourceDocument.Title : "" },
-                        { "docpath", e.SourceDocument != null ? e.SourceDocument.PathName : "" }
+                        { "docpath", e.SourceDocument != null ? e.SourceDocument.PathName : "" },
+                        { "projectnum", GetProjectNumber(e.SourceDocument) },
+                        { "projectname", GetProjectName(e.SourceDocument) },
                     } },
                     { "to_document",  new Dictionary<string,string>{
                         { "docname", e.TargetDocument != null ? e.TargetDocument.Title : "" },
-                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" }
+                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" },
+                        { "projectnum", GetProjectNumber(e.TargetDocument) },
+                        { "projectname", GetProjectName(e.TargetDocument) },
                     } },
                     { "external_items",  extItems },
                 }
@@ -467,10 +494,14 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.UIApplication_TransferredProjectStandards),
                 docname = e.SourceDocument != null ? e.SourceDocument.Title : "",
                 docpath = e.SourceDocument != null ? e.SourceDocument.PathName : "",
+                projectnum = GetProjectNumber(e.SourceDocument),
+                projectname = GetProjectName(e.SourceDocument),
                 args = new Dictionary<string, object> {
                     { "to_document",  new Dictionary<string,string>{
                         { "docname", e.TargetDocument != null ? e.TargetDocument.Title : "" },
-                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" }
+                        { "docpath", e.TargetDocument != null ? e.TargetDocument.PathName : "" },
+                        { "projectnum", GetProjectNumber(e.TargetDocument) },
+                        { "projectname", GetProjectName(e.TargetDocument) },
                     } },
                     { "external_items",  extItems },
                 }
@@ -499,6 +530,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.UIApplication_FormulaEditing),
                 docname = e.CurrentDocument != null ? e.CurrentDocument.Title : "",
                 docpath = e.CurrentDocument != null ? e.CurrentDocument.PathName : "",
+                projectnum = GetProjectNumber(e.CurrentDocument),
+                projectname = GetProjectName(e.CurrentDocument),
                 args = new Dictionary<string, object> {
                     { "param_id", paramIdInt },
                     { "param_name", paramName },
@@ -511,11 +544,11 @@ namespace PyRevitRuntime {
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             // TODO: implement
-                //e.GetAllSolutionsPartsTypeCounts
-                //e.GetCurrentSolutionPartTypeIds
-                //e.GetFabricationPartTypeIds
-                //e.GetFilteredSolutionsPartsTypeCounts
-                //e.GetRequiredFabricationPartTypeIds
+            //e.GetAllSolutionsPartsTypeCounts
+            //e.GetCurrentSolutionPartTypeIds
+            //e.GetFabricationPartTypeIds
+            //e.GetFilteredSolutionsPartsTypeCounts
+            //e.GetRequiredFabricationPartTypeIds
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_FabricationPartBrowserChanged),
                 args = new Dictionary<string, object> {
@@ -593,6 +626,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_ViewPrinting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "view", GetViewData(views) },
                     { "view_index", e.Index },
@@ -612,6 +647,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_ViewPrinted),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "view", GetViewData(views) },
@@ -631,6 +668,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_ViewExporting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "view", GetViewData(views) },
                 }
@@ -646,6 +685,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_ViewExported),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "view", GetViewData(views) },
@@ -683,6 +724,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_LinkedResourceOpened),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "link_path", e.LinkedResourcePathName },
@@ -697,6 +740,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FileImporting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "export_path", e.Path },
                     { "export_format",  e.Format },
@@ -709,6 +754,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FileImported),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "export_path", e.Path },
@@ -722,6 +769,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FileExporting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "export_path", e.Path },
                     { "export_format",  e.Format },
@@ -734,6 +783,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FileExported),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "export_path", e.Path },
@@ -748,6 +799,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FamilyLoadingIntoDocument),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "family_name", e.FamilyName },
                     { "family_path", e.FamilyPath },
@@ -782,6 +835,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FamilyLoadedIntoDocument),
                 docname = doc != null ? doc.Title : "",
                 docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "family_name", e.FamilyName },
@@ -840,6 +895,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_FailuresProcessing),
                 docname = doc != null ? doc.Title : "",
                 docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
                 args = args,
             }, sender, e);
         }
@@ -890,6 +947,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_ElementTypeDuplicated),
                 docname = doc != null ? doc.Title : "",
                 docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "category", typeCategory },
@@ -906,6 +965,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentWorksharingEnabled),
                 docname = doc != null ? doc.Title : "",
                 docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
             }, sender, e);
         }
 #endif
@@ -916,6 +977,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSynchronizingWithCentral),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "comments", e.Comments },
                     { "location", e.Location },
@@ -949,6 +1012,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSynchronizedWithCentral),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
             }, sender, e);
         }
 
@@ -957,6 +1022,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSavingAs),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                     { "as_master_file", e.IsSavingAsMasterFile },
                     { "path", e.PathName },
@@ -969,6 +1036,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSavedAs),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "as_master_file", e.IsSavingAsMasterFile },
@@ -983,6 +1052,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSaving),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
             }, sender, e);
         }
 
@@ -991,6 +1062,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentSaved),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "project_info", GetProjectInfo(e.Document) }
@@ -1003,6 +1076,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentPrinting),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                 { "views", GetViewData(GetElements(e.Document, e.GetViewElementIds())) },
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
@@ -1019,6 +1094,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentPrinted),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "print_pass_views", GetViewData(GetElements(e.Document, e.GetPrintedViewElementIds())) },
@@ -1040,6 +1117,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentOpened),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "project_info", GetProjectInfo(e.Document) }
@@ -1060,6 +1139,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentCreated),
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
                     { "project_info", GetProjectInfo(e.Document) }
@@ -1073,6 +1154,8 @@ namespace PyRevitRuntime {
                 docid = e.DocumentId,
                 docname = e.Document != null ? e.Document.Title : "",
                 docpath = e.Document != null ? e.Document.PathName : "",
+                projectnum = GetProjectNumber(e.Document),
+                projectname = GetProjectName(e.Document),
             }, sender, e);
         }
 
@@ -1090,6 +1173,8 @@ namespace PyRevitRuntime {
                 type = EventUtils.GetEventName(EventType.Application_DocumentChanged),
                 docname = doc != null ? doc.Title : "",
                 docpath = doc != null ? doc.PathName : "",
+                projectnum = GetProjectNumber(doc),
+                projectname = GetProjectName(doc),
                 args = new Dictionary<string, object> {
                     { "operation",  e.Operation.ToString() },
                     { "added",  e.GetAddedElementIds().Count },

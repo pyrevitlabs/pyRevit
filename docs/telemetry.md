@@ -76,6 +76,8 @@ CREATE TABLE public.revitevents (
 	doctemplate text NULL,
 	docname text NULL,
 	docpath text NULL,
+	projectnum text NULL,
+	projectname text NULL,
 	CONSTRAINT revitevents2_pk PRIMARY KEY (recordid)
 );
 ```
