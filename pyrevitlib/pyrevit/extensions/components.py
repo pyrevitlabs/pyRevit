@@ -20,6 +20,10 @@ from pyrevit import versionmgr
 mlogger = get_logger(__name__)
 
 
+EXT_HASH_VALUE_KEY = 'dir_hash_value'
+EXT_HASH_VERSION_KEY = 'pyrvt_version'
+
+
 # Derived classes here correspond to similar elements in Revit ui.
 # Under Revit UI:
 # Packages contain Tabs, Tabs contain, Panels, Panels contain Stacks,

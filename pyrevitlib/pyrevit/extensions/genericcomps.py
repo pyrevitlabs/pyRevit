@@ -14,21 +14,41 @@ import pyrevit.extensions as exts
 mlogger = coreutils.logger.get_logger(__name__)
 
 
-class LayoutDirective(object):
+EXT_DIR_KEY = 'directory'
+SUB_CMP_KEY = 'sub_components'
+TYPE_ID_KEY = 'type_id'
+NAME_KEY = 'name'
+
+
+class TypedComponent(object):
+    type_id = None
+
+
+class CachableComponent(TypedComponent):
+    def get_cache_data(self):
+        cache_dict = self.__dict__.copy()
+        if TYPE_ID_KEY in cache_dict:
+            cache_dict[TYPE_ID_KEY] = self.type_id
+        return cache_dict
+
+    def load_cache_data(self, cache_dict):
+        for k, v in cache_dict.items():
+            self.__dict__[k] = v
+
+
+class LayoutDirective(CachableComponent):
     def __init__(self, directive_type, target):
         self.directive_type = directive_type
         self.target = target
 
 
-class LayoutItem(object):
+class LayoutItem(CachableComponent):
     def __init__(self, name, directive):
         self.name = name
         self.directive = directive
 
 
-class GenericComponent(object):
-    type_id = None
-
+class GenericComponent(CachableComponent):
     def __init__(self):
         self.name = None
 
@@ -38,15 +58,6 @@ class GenericComponent(object):
     @property
     def is_container(self):
         return hasattr(self, '__iter__')
-
-    def get_cache_data(self):
-        cache_dict = self.__dict__.copy()
-        cache_dict['type_id'] = self.type_id
-        return cache_dict
-
-    def load_cache_data(self, cache_dict):
-        for k, v in cache_dict.items():
-            self.__dict__[k] = v
 
 
 class GenericUIComponent(GenericComponent):
