@@ -333,7 +333,7 @@ namespace PyRevitRuntime {
             eventTelemetryRecord.cancelled = ((RevitAPIEventArgs)args).IsCancelled();
 
             // now post the telemetry record
-            if (envDict.TelemetryState) {
+            if (envDict.AppTelemetryState) {
                 if (envDict.AppTelemetryState
                         && envDict.AppTelemetryServerUrl != null
                         && !string.IsNullOrEmpty(envDict.AppTelemetryServerUrl))
