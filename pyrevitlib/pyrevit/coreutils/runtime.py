@@ -55,16 +55,10 @@ if not EXEC_PARAMS.doc_mode:
     EventType = base_module.EventType
     ScriptTelemetry = base_module.ScriptTelemetry
     EventTelemetry = base_module.EventTelemetry
-
-    # unmanaged.cs
-    RECT = base_module.RECT
-    User32 = base_module.User32
-    GDI32 = base_module.GDI32
 else:
     DomainStorageKeys = ExternalConfig = ExecutionResultCodes = \
         EnvDictionaryKeys = EnvDictionary = CommandType = \
         CommandExtendedAvail = CommandSelectionAvail = \
         CommandDefaultAvail = ScriptRuntime = \
         ScriptExecutor = ScriptOutput = ScriptOutputManager = \
-        ScriptOutputStream = ScriptTelemetry = \
-        RECT = User32 = GDI32 = None
+        ScriptOutputStream = ScriptTelemetry = None

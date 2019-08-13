@@ -157,7 +157,7 @@ function clean_docs() {
 function clean_labs() {
     # function to clean labs build files
     echo "cleaning labs..."
-    rm -f ../bin/*.exe
+    # rm -f ../bin/*.exe
     # rm -f ../bin/*.dll
     "$DEVENV" "$LABS" "//Clean" "Debug" "//out" $LOGFILE
 }

@@ -158,9 +158,6 @@
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\runtime\telemetry.cs">
       <Link>telemetry.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\runtime\unmanaged.cs">
-      <Link>unmanaged.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AirspaceFixer">

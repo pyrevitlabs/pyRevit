@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="OSVersionInfo.cs" />
+    <Compile Include="Unmanaged.cs" />
     <Compile Include="UserEnv.cs" />
     <Compile Include="GlobalConfigs.cs" />
     <Compile Include="Errors.cs" />
