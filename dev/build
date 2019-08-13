@@ -46,9 +46,6 @@ AUTOCOMPBIN=$BINPATH/pyrevit-autocomplete.exe
 TELEMETRYSERVERPATH=$THISPATH/pyRevitTelemetryServer
 TELEMETRYSERVER=$TELEMETRYSERVERPATH/main.go
 TELEMETRYSERVERBIN=$BINPATH/pyrevit-telemetryserver.exe
-
-TOASTURL='https://go-toast-downloads.s3.amazonaws.com/v1/toast64.exe'
-TOASTBIN=$BINPATH/toast64.exe
 # ==============================================================================
 
 function print_help() {
@@ -330,11 +327,6 @@ elif $BUILDLABS; then
     go build -o=$TELEMETRYSERVERBIN -ldflags "-w" $TELEMETRYSERVER
     upx --mono $TELEMETRYSERVERBIN
 
-    # pack utilities
-    echo "packing other cli utilities"
-    echo "downloading toast64 helper binary..."
-    curl -o $TOASTBIN $TOASTURL
-    upx --mono $TOASTBIN
 # build installers?
 # ------------------------------------------------------------------------------
 elif $BUILDINSTALLER || $BUILDINSTALLERCLI; then
