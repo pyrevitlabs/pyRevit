@@ -4,7 +4,7 @@ import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.framework import Windows, Controls
-from pyrevit.coreutils.basetypes import EventType, EventUtils
+from pyrevit.coreutils.runtime import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
 from pyrevit import telemetry
@@ -28,7 +28,7 @@ __doc__ = 'Shows the preferences window for pyRevit. You can customize how ' \
 logger = script.get_logger()
 
 
-class EnvVariable:
+class EnvVariable(object):
     """List item for an environment variable.
 
     Attributes:
@@ -43,7 +43,7 @@ class EnvVariable:
     @property
     def Value(self):
         # if its the hook, get a list of hooks and display in human-readable
-        if self.Id == hooks.PYREVIT_HOOKS_ENVVAR:
+        if self.Id == envvars.HOOKS_ENVVAR:
             return coreutils.join_strings(
                 [x.UniqueId for x in hooks.get_event_hooks()]
             )

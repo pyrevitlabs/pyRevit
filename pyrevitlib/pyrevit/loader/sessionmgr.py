@@ -31,10 +31,10 @@ from pyrevit.extensions import extensionmgr
 from pyrevit import telemetry
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
-# import the basetypes first to get all the c-sharp code to compile
-from pyrevit.loader import basetypes
-from pyrevit.coreutils import basetypes
-# now load the rest of module that could depend on the compiled basetypes
+# import the runtime first to get all the c-sharp code to compile
+from pyrevit.loader import runtime
+from pyrevit.coreutils import runtime
+# now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
 from pyrevit import DB, UI, revit
@@ -61,7 +61,7 @@ def _clear_running_engines():
 
 def _setup_output():
     # create output window and assign handle
-    out_window = basetypes.ScriptOutput()
+    out_window = runtime.ScriptOutput()
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
@@ -72,7 +72,7 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = basetypes.ScriptOutputStream(out_window)
+    outstr = runtime.ScriptOutputStream(out_window)
     sys.stdout = outstr
     # sys.stderr = outstr
     stdout_hndlr = logger.get_stdout_hndlr()
@@ -391,11 +391,11 @@ def find_all_commands(category_set=None, cache=True):
                 for pyrvt_type in all_exported_types:
                     tname = pyrvt_type.FullName
                     availtname = pyrvt_type.Name \
-                                 + basetypes.CMD_AVAIL_NAME_POSTFIX
+                                 + runtime.CMD_AVAIL_NAME_POSTFIX
                     pyrvt_availtype = None
 
-                    if not tname.endswith(basetypes.CMD_AVAIL_NAME_POSTFIX)\
-                            and basetypes.BASE_NAMESPACE not in tname:
+                    if not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)\
+                            and runtime.RUNTIME_NAMESPACE not in tname:
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
@@ -540,19 +540,22 @@ def execute_script(script_path,
     else:
         sys_paths = core_syspaths
 
+    script_data = runtime.ScriptData()
+    script_data.ScriptPath = script_path
+    script_data.ConfigScriptPath = None
+    script_data.CommandUniqueId = ''
+    script_data.CommandName = script_name
+    script_data.CommandBundle = ''
+    script_data.CommandExtension = ''
+    script_data.HelpSource = ''
+
     script_runtime = \
-        basetypes.ScriptRuntime(
+        runtime.ScriptRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
-            scriptSource=script_path,
-            configScriptSource=None,
+            scriptData=script_data,
             searchpaths=framework.Array[str](sys_paths or []),
             arguments=framework.Array[str](arguments or []),
-            helpSource='',
-            cmdName=script_name,
-            cmdBundle='',
-            cmdExtension='',
-            cmdUniqueName='',
             needsCleanEngine=clean_engine,
             needsFullFrameEngine=fullframe_engine,
             needsPersistentEngine=persistent_engine,
@@ -562,8 +565,8 @@ def execute_script(script_path,
             executedFromUI=False
             )
 
-    basetypes.ScriptExecutor.ExecuteScript(
-        framework.clr.Reference[basetypes.ScriptRuntime](
+    runtime.ScriptExecutor.ExecuteScript(
+        framework.clr.Reference[runtime.ScriptRuntime](
             script_runtime
             )
         )

@@ -11,7 +11,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 from pyrevit.userconfig import user_config
-from pyrevit.loader import basetypes
+from pyrevit.loader import runtime
 from pyrevit.loader.systemdiag import system_diag
 
 
@@ -64,7 +64,7 @@ def setup_runtime_vars():
     # set a list of important assemblies
     # this is required for dotnet script execution
     set_loaded_pyrevit_referenced_modules(
-        basetypes.get_references()
+        runtime.get_references()
         )
 
 
@@ -187,6 +187,6 @@ def report_env():
     mlogger.info('User is: %s', HOST_APP.username)
     mlogger.info('Home Directory is: %s', HOME_DIR)
     mlogger.info('Session uuid is: %s', get_session_uuid())
-    mlogger.info('Base assembly is: %s', basetypes.BASE_TYPES_ASM_NAME)
+    mlogger.info('Base assembly is: %s', runtime.BASE_TYPES_ASM_NAME)
     mlogger.info('Config file is (%s): %s',
                  user_config.config_type, user_config.config_file)

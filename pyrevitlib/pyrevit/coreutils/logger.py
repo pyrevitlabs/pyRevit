@@ -34,7 +34,7 @@ LOG_REC_FORMAT_CRITICAL = LOG_REC_FORMAT_HTML.format(LOG_REC_CLASS_CRITICAL,
 # Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 
-# must be the same in this file and pyrevit/loader/basetypes/envdict.cs
+# must be the same in this file and pyrevit/loader/runtime/envdict.cs
 # this is because the csharp code hasn't been compiled when the
 # logger module is imported in the other modules
 if not EXEC_PARAMS.doc_mode:

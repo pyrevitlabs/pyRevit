@@ -372,7 +372,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def engine_mgr(self):
-        """``PyRevitBaseClasses.IronPythonEngineManager``: Return engine manager."""
+        """``PyRevitRuntime.IronPythonEngineManager``: Return engine manager."""
         try:
             return __ipyenginemanager__
         except NameError:
@@ -393,7 +393,7 @@ class _ExecutorParams(object):
 
     @property   # read-only
     def pyrevit_command(self):
-        """``PyRevitBaseClasses.ScriptRuntime``: Return command."""
+        """``PyRevitRuntime.ScriptRuntime``: Return command."""
         try:
             return __externalcommand__
         except NameError:
@@ -417,7 +417,7 @@ class _ExecutorParams(object):
 
     @property   # read
     def window_handle(self):
-        """``PyRevitBaseClasses.ScriptOutput``: Return output window."""
+        """``PyRevitRuntime.ScriptOutput``: Return output window."""
         if self.pyrevit_command:
             return self.pyrevit_command.OutputWindow
 

@@ -1,4 +1,4 @@
-from pyrevit.coreutils.basetypes import ScriptOutputManager
+from pyrevit.coreutils.runtime import ScriptOutputManager
 
 
 __context__ = 'zerodoc'

@@ -19,7 +19,7 @@ import os.path as op
 
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
 from pyrevit import coreutils
-from pyrevit.coreutils.basetypes import EventType, EventTelemetry
+from pyrevit.coreutils.runtime import EventType, EventTelemetry
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 

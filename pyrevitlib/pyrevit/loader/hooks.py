@@ -6,7 +6,7 @@ from pyrevit import HOST_APP
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.basetypes import PyRevitHooks
+from pyrevit.coreutils.runtime import PyRevitHooks
 from pyrevit.coreutils import envvars
 import pyrevit.extensions as exts
 

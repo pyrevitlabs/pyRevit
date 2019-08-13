@@ -663,7 +663,7 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         ... )
         >>> create_type(
         ...     module_builder,
-        ...     basetypes.CommandType,
+        ...     runtime.CommandType,
         ...     "PyRevitSomeCommandUniqueName",
         ...     coreutils.create_ext_command_attrs(),
         ...     [scriptpath, atlscriptpath, searchpath, helpurl, name,

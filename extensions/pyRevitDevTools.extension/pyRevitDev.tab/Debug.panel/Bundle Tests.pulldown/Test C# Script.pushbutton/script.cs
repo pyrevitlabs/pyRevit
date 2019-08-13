@@ -2,6 +2,8 @@ using System;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.DB;
 
+using PyRevitRuntime;
+
 using HeyRed.MarkdownSharp;
 
 namespace HelloWorld
@@ -9,14 +11,14 @@ namespace HelloWorld
    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
    public class Test2 : IExternalCommand
    {
-      public PyRevitCommandData commandData;
+      public ScriptData myScriptData;
 
       public Result Execute(ExternalCommandData revit, ref string message, ElementSet elements)
       {
          TaskDialog.Show("Revit", "Hello World from C#!!!");
 
          // test access to bundle path
-         TaskDialog.Show("PyRevitCommandData", commandData.ScriptPath);  
+         TaskDialog.Show("ScriptData", myScriptData.ScriptPath);  
          // Create new markdown instance
          Markdown mark = new Markdown();
          // Run parser
