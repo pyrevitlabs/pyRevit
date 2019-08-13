@@ -9,13 +9,13 @@ using pyRevitLabs.NLog;
 
 
 namespace pyRevitLabs.PyRevit {
-    public struct PyRevitConfig {
+    public class PyRevitConfig {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private IniFile _config;
 
         public string ConfigFilePath { get; private set; }
-   
+
         public PyRevitConfig(string cfgFilePath) {
             if (cfgFilePath != null) {
                 if (CommonUtils.VerifyFile(cfgFilePath)) {
@@ -49,39 +49,41 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // get config key value
-        public string GetKeyValue(string sectionName, string keyName, string defaultValue = null, bool throwNotSetException = true) {
-            logger.Debug(string.Format("Try getting config \"{0}:{1}\" ?? {2}", sectionName, keyName, defaultValue ?? "NULL"));
-            if (_config.Sections.Contains(sectionName) && _config.Sections[sectionName].Keys.Contains(keyName))
-                return _config.Sections[sectionName].Keys[keyName].Value as string;
+        public string GetValue(string sectionName, string keyName) {
+            logger.Debug(string.Format("Try getting config \"{0}:{1}\"", sectionName, keyName));
+            if (_config.Sections.Contains(sectionName) && _config.Sections[sectionName].Keys.Contains(keyName)) {
+                var cfgValue = _config.Sections[sectionName].Keys[keyName].Value as string;
+                logger.Debug(string.Format("Config \"{0}:{1}\" = \"{2}\"", sectionName, keyName, cfgValue));
+                return cfgValue;
+            }
             else {
-                if (defaultValue == null && throwNotSetException)
-                    throw new PyRevitConfigValueNotSet(sectionName, keyName);
-                else {
-                    logger.Debug(string.Format("Config is not set. Returning default value \"{0}\"", defaultValue ?? "NULL"));
-                    return defaultValue;
-                }
+                logger.Debug(string.Format("Config \"{0}:{1}\" not set.", sectionName, keyName));
+                return null;
             }
         }
 
         // get config key value and make a string list out of it
-        public List<string> GetKeyValueAsList(string sectionName, string keyName, bool throwNotSetException = true) {
+        public List<string> GetListValue(string sectionName, string keyName) {
             logger.Debug("Try getting config as list \"{0}:{1}\"", sectionName, keyName);
-            var stringValue = GetKeyValue(sectionName, keyName, "[]", throwNotSetException: throwNotSetException);
-
-            return stringValue.ConvertFromTomlListString();
+            var stringValue = GetValue(sectionName, keyName);
+            if (stringValue != null)
+                return stringValue.ConvertFromTomlListString();
+            else
+                return null;
         }
 
         // get config key value and make a string dictionary out of it
-        public  Dictionary<string, string> GetKeyValueAsDict(string sectionName, string keyName, IEnumerable<string> defaultValue = null, bool throwNotSetException = true) {
+        public Dictionary<string, string> GetDictValue(string sectionName, string keyName, IEnumerable<string> defaultValue = null) {
             logger.Debug("Try getting config as dict \"{0}:{1}\"", sectionName, keyName);
-            var stringValue = GetKeyValue(sectionName,
-                                          keyName, defaultValue: "{}",
-                                          throwNotSetException: throwNotSetException);
-            return stringValue.ConvertFromTomlDictString();
+            var stringValue = GetValue(sectionName, keyName);
+            if (stringValue != null)
+                return stringValue.ConvertFromTomlDictString();
+            else
+                return null;
         }
 
         // set config key value, creates the config if not set yet
-        public void SetKeyValue(string sectionName, string keyName, string stringValue) {
+        public void SetValue(string sectionName, string keyName, string stringValue) {
             if (stringValue != null) {
                 if (!_config.Sections.Contains(sectionName)) {
                     logger.Debug("Adding config section \"{0}\"", sectionName);
@@ -103,23 +105,23 @@ namespace pyRevitLabs.PyRevit {
         }
 
         // sets config key value as bool
-        public void SetKeyValue(string sectionName, string keyName, bool boolValue) {
-            SetKeyValue(sectionName, keyName, boolValue.ConvertToTomlBoolString());
+        public void SetValue(string sectionName, string keyName, bool boolValue) {
+            SetValue(sectionName, keyName, boolValue.ConvertToTomlBoolString());
         }
 
         // sets config key value as int
-        public void SetKeyValue(string sectionName, string keyName, int intValue) {
-            SetKeyValue(sectionName, keyName, intValue.ConvertToTomlIntString());
+        public void SetValue(string sectionName, string keyName, int intValue) {
+            SetValue(sectionName, keyName, intValue.ConvertToTomlIntString());
         }
 
         // sets config key value as string list
-        public void SetKeyValue(string sectionName, string keyName, IEnumerable<string> listString) {
-            SetKeyValue(sectionName, keyName, listString.ConvertToTomlListString());
+        public void SetValue(string sectionName, string keyName, IEnumerable<string> listString) {
+            SetValue(sectionName, keyName, listString.ConvertToTomlListString());
         }
 
         // sets config key value as string dictionary
-        public void SetKeyValue(string sectionName, string keyName, IDictionary<string, string> dictString) {
-            SetKeyValue(sectionName, keyName, dictString.ConvertToTomlDictString());
+        public void SetValue(string sectionName, string keyName, IDictionary<string, string> dictString) {
+            SetValue(sectionName, keyName, dictString.ConvertToTomlDictString());
         }
     }
 }

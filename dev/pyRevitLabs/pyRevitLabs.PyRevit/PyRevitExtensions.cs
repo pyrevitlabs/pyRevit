@@ -238,7 +238,8 @@ namespace pyRevitLabs.PyRevit {
         private static void ToggleExtension(string extName, bool state) {
             var ext = GetInstalledExtension(extName);
             logger.Debug("{0} extension \"{1}\"", state ? "Enabling" : "Disabling", ext.Name);
-            PyRevitConfigs.SetConfig(ext.ConfigName, PyRevit.ExtensionDisabledKey, !state);
+            var cfg = PyRevitConfigs.GetConfigFile();
+            cfg.SetValue(ext.ConfigName, PyRevit.ExtensionDisabledKey, !state);
         }
 
         // disable extension in config
@@ -253,34 +254,40 @@ namespace pyRevitLabs.PyRevit {
             ToggleExtension(extName, false);
         }
 
+        public static void SaveExtensionLookupSources(IEnumerable<string> sourcesList) {
+        }
+
         // get list of registered extension search paths
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
             var validatedPaths = new List<string>();
-            var searchPaths = PyRevitConfigs.GetListConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey);
-            // make sure paths exist
-            foreach (var path in searchPaths) {
-                var normPath = path.NormalizeAsPath();
-                if (CommonUtils.VerifyPath(path) && !validatedPaths.Contains(normPath)) {
-                    logger.Debug("Verified extension search path \"{0}\"", normPath);
-                    validatedPaths.Add(normPath);
+            var cfg = PyRevitConfigs.GetConfigFile();
+            var searchPaths = cfg.GetListValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey);
+            if (searchPaths != null) {
+                // make sure paths exist
+                foreach (var path in searchPaths) {
+                    var normPath = path.NormalizeAsPath();
+                    if (CommonUtils.VerifyPath(path) && !validatedPaths.Contains(normPath)) {
+                        logger.Debug("Verified extension search path \"{0}\"", normPath);
+                        validatedPaths.Add(normPath);
+                    }
                 }
+
+                // rewrite verified list
+                cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, validatedPaths);
             }
-
-            // rewrite verified list
-            PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, validatedPaths);
-
             return validatedPaths;
         }
 
         // add extension search path
         // @handled @logs
         public static void RegisterExtensionSearchPath(string searchPath) {
+            var cfg = PyRevitConfigs.GetConfigFile();
             if (CommonUtils.VerifyPath(searchPath)) {
                 logger.Debug("Adding extension search path \"{0}\"", searchPath);
                 var searchPaths = GetRegisteredExtensionSearchPaths();
                 searchPaths.Add(searchPath.NormalizeAsPath());
-                PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
+                cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
             }
             else
                 throw new pyRevitResourceMissingException(searchPath);
@@ -289,11 +296,12 @@ namespace pyRevitLabs.PyRevit {
         // remove extension search path
         // @handled @logs
         public static void UnregisterExtensionSearchPath(string searchPath) {
+            var cfg = PyRevitConfigs.GetConfigFile();
             var normPath = searchPath.NormalizeAsPath();
             logger.Debug("Removing extension search path \"{0}\"", normPath);
             var searchPaths = GetRegisteredExtensionSearchPaths();
             searchPaths.Remove(normPath);
-            PyRevitConfigs.SetConfig(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
+            cfg.SetValue(PyRevit.ConfigsCoreSection, PyRevit.ConfigsUserExtensionsKey, searchPaths);
         }
 
         // managing extension sources ================================================================================
@@ -306,12 +314,16 @@ namespace pyRevitLabs.PyRevit {
         // get extension lookup sources
         // @handled @logs
         public static List<string> GetRegisteredExtensionLookupSources() {
-            var sources = PyRevitConfigs.GetListConfig(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsExtensionLookupSourcesKey);
+            var cfg = PyRevitConfigs.GetConfigFile();
             var normSources = new List<string>();
-            foreach (var src in sources) {
-                var normSrc = src.NormalizeAsPath();
-                logger.Debug("Extension lookup source \"{0}\"", normSrc);
-                normSources.Add(normSrc);
+            var sources = cfg.GetListValue(PyRevit.EnvConfigsSectionName, PyRevit.EnvConfigsExtensionLookupSourcesKey);
+            if (sources != null) {
+                foreach (var src in sources) {
+                    var normSrc = src.NormalizeAsPath();
+                    logger.Debug("Extension lookup source \"{0}\"", normSrc);
+                    normSources.Add(normSrc);
+                    SaveExtensionLookupSources(normSources);
+                }
             }
             return normSources;
         }
@@ -324,7 +336,7 @@ namespace pyRevitLabs.PyRevit {
             if (!sources.Contains(normSource)) {
                 logger.Debug("Registering extension lookup source \"{0}\"", normSource);
                 sources.Add(normSource);
-                PyRevitConfigs.SaveExtensionLookupSources(sources);
+                SaveExtensionLookupSources(sources);
             }
             else
                 logger.Debug("Extension lookup source already exists. Skipping registration.");
@@ -338,7 +350,7 @@ namespace pyRevitLabs.PyRevit {
             if (sources.Contains(normSource)) {
                 logger.Debug("Unregistering extension lookup source \"{0}\"", normSource);
                 sources.Remove(normSource);
-                PyRevitConfigs.SaveExtensionLookupSources(sources);
+                SaveExtensionLookupSources(sources);
             }
             else
                 logger.Debug("Extension lookup source does not exist. Skipping unregistration.");

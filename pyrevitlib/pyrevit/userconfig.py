@@ -254,7 +254,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
 def find_config_file(target_path):
     """Find config file in target path."""
-    return PyRevit.PyRevitConfigs.FindConfigFileInDirectory(target_path)
+    return PyRevit.PyRevit.FindConfigFileInDirectory(target_path)
 
 
 def verify_configs(config_file_path=None):
@@ -286,22 +286,28 @@ def verify_configs(config_file_path=None):
         parser.add_section(PyRevit.PyRevit.ConfigsCoreSection)
     # checkupates
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsCheckUpdatesKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsCheckUpdatesKey, False)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsCheckUpdatesKey,
+                               PyRevit.PyRevit.ConfigsCheckUpdatesDefault)
     # autoupdate
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsAutoUpdateKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsAutoUpdateKey, False)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsAutoUpdateKey,
+                               PyRevit.PyRevit.ConfigsAutoUpdateDefault)
     # verbose
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsVerboseKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsVerboseKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsVerboseKey,
+                               PyRevit.PyRevit.ConfigsVerboseDefault)
     # debug
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsDebugKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsDebugKey, False)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsDebugKey,
+                               PyRevit.PyRevit.ConfigsDebugDefault)
     # filelogging
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsFileLoggingKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsFileLoggingKey, False)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsFileLoggingKey,
+                               PyRevit.PyRevit.ConfigsFileLoggingDefault)
     # startuplogtimeout
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsStartupLogTimeoutKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsStartupLogTimeoutKey, 10)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsStartupLogTimeoutKey,
+                               PyRevit.PyRevit.ConfigsStartupLogTimeoutDefault)
     # userextensions
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsUserExtensionsKey):
         parser.core.set_option(PyRevit.PyRevit.ConfigsUserExtensionsKey, [])
@@ -310,22 +316,28 @@ def verify_configs(config_file_path=None):
 
     # loadbeta
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsLoadBetaKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsLoadBetaKey, False)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsLoadBetaKey,
+                               PyRevit.PyRevit.ConfigsLoadBetaDefault)
     # rocketmode
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsRocketModeKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsRocketModeKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsRocketModeKey,
+                               PyRevit.PyRevit.ConfigsRocketModeDefault)
     # bincache
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsBinaryCacheKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsBinaryCacheKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsBinaryCacheKey,
+                               PyRevit.PyRevit.ConfigsBinaryCacheDefault)
     # usercanupdate
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsUserCanUpdateKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanUpdateKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanUpdateKey,
+                               PyRevit.PyRevit.ConfigsUserCanUpdateDefault)
     # usercanextend
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsUserCanExtendKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanExtendKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanExtendKey,
+                               PyRevit.PyRevit.ConfigsUserCanExtendDefault)
     # usercanconfig
     if not parser.core.has_option(PyRevit.PyRevit.ConfigsUserCanConfigKey):
-        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanConfigKey, True)
+        parser.core.set_option(PyRevit.PyRevit.ConfigsUserCanConfigKey,
+                               PyRevit.PyRevit.ConfigsUserCanConfigDefault)
 
     # save config into config file
     if config_file_path:

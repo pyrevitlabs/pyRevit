@@ -198,8 +198,9 @@ def setup_telemetry(session_id=None):
     # PYREVIT TELEMETRY -------------------------------------------------------
     # global state
     telemetry_state = \
-        telemetry_config.get_option(PyRevit.PyRevit.ConfigsTelemetryStatusKey,
-                                    default_value=False)
+        telemetry_config.get_option(
+            PyRevit.PyRevit.ConfigsTelemetryStatusKey,
+            default_value=PyRevit.PyRevit.ConfigsTelemetryStatusDefault)
     set_telemetry_state(telemetry_state)
 
     # read or setup default values for file telemetry
@@ -254,8 +255,9 @@ def setup_telemetry(session_id=None):
     # APP TELEMETRY ------------------------------------------------------------
     # setup default value for telemetry global switch
     apptelemetry_state = \
-        telemetry_config.get_option(PyRevit.PyRevit.ConfigsAppTelemetryStatusKey,
-                                    default_value=False)
+        telemetry_config.get_option(
+            PyRevit.PyRevit.ConfigsAppTelemetryStatusKey,
+            default_value=PyRevit.PyRevit.ConfigsAppTelemetryStatusDefault)
     set_apptelemetry_state(apptelemetry_state)
 
     # read or setup default values for server telemetry

@@ -650,7 +650,6 @@ namespace pyRevitCLI {
                                                         PyRevitConfigs.GetFileLogging() ? "Enabled" : "Disabled"));
                 }
 
-
                 else if (all("loadbeta")) {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetLoadBetaTools(arguments["enable"].IsTrue);
@@ -667,7 +666,6 @@ namespace pyRevitCLI {
                                                         PyRevitConfigs.GetUserCanUpdate() ? "CAN" : "CAN NOT"));
                 }
 
-
                 else if (all("usercanextend")) {
                     if (any("enable", "disable"))
                         PyRevitConfigs.SetUserCanExtend(arguments["Yes"].IsTrue);
@@ -675,7 +673,6 @@ namespace pyRevitCLI {
                         Console.WriteLine(string.Format("User {0} extend.",
                                                         PyRevitConfigs.GetUserCanExtend() ? "CAN" : "CAN NOT"));
                 }
-
 
                 else if (all("usercanconfig")) {
                     if (any("enable", "disable"))
@@ -748,7 +745,8 @@ namespace pyRevitCLI {
                             string configSection = orignalOptionValue.Split(':')[0];
                             string configOption = orignalOptionValue.Split(':')[1];
 
-                            PyRevitConfigs.SetConfig(configSection, configOption, arguments["enable"].IsTrue);
+                            var cfg = PyRevitConfigs.GetConfigFile();
+                            cfg.SetValue(configSection, configOption, arguments["enable"].IsTrue);
                         }
                     }
                 }
@@ -761,19 +759,19 @@ namespace pyRevitCLI {
                             string configSection = orignalOptionValue.Split(':')[0];
                             string configOption = orignalOptionValue.Split(':')[1];
 
+                            var cfg = PyRevitConfigs.GetConfigFile();
+
                             // if no value provided, read the value
-                            if (arguments["<option_value>"] != null)
-                                PyRevitConfigs.SetConfig(
-                                    configSection,
-                                    configOption,
-                                    TryGetValue("<option_value>")
-                                    );
-                            else if (arguments["<option_value>"] == null)
-                                Console.WriteLine(
-                                    string.Format("{0} = {1}",
-                                    configOption,
-                                    PyRevitConfigs.GetConfig(configSection, configOption)
-                                    ));
+                            var optValue = TryGetValue("<option_value>");
+                            if (optValue != null)
+                                cfg.SetValue(configSection, configOption, optValue);
+                            else if (optValue == null) {
+                                var existingVal = cfg.GetValue(configSection, configOption);
+                                if (existingVal != null)
+                                    Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
+                                else
+                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set.", configOption));
+                            }
                         }
                     }
                 }
