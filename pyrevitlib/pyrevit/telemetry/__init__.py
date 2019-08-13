@@ -275,16 +275,16 @@ def setup_telemetry(session_id=None):
         set_apptelemetry_server_url(apptelemetry_server_url)
 
     # setup events
+    new_telemetry_handler = EventTelemetry(session_id)
     telemetry_handler = get_apptelemetry_handler()
     if telemetry_handler:
         # clear existing
         telemetry_events.unregister_all_event_telemetries(telemetry_handler)
-        telemetry_handler = EventTelemetry(session_id)
 
-    set_apptelemetry_handler(telemetry_handler)
+    set_apptelemetry_handler(new_telemetry_handler)
     apptelemetry_event_flags = get_apptelemetry_event_flags(user_config)
     # re-register events with new telemetry_handler
-    telemetry_events.register_event_telemetry(telemetry_handler,
+    telemetry_events.register_event_telemetry(new_telemetry_handler,
                                               apptelemetry_event_flags)
 
     user_config.save_changes()
