@@ -194,10 +194,6 @@
                                 <Button Content="Reset Caching to default" Height="24" Click="resetcache" HorizontalAlignment="Right" Width="200px" Margin="0,10,10,10"/>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Runtime Compiler" Margin="0,10,0,0">
-                            <StackPanel Margin="10px">
-                            </StackPanel>
-                        </GroupBox>
                     </StackPanel>
                 </Expander>
                 <Separator Margin="10,0,10,0" Background="#dfdfdf"/>
