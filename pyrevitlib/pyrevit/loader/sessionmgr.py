@@ -33,7 +33,7 @@ from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit.loader import runtime
-from pyrevit.coreutils import runtime
+from pyrevit.coreutils import runtime as runtime_types
 # now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
@@ -61,7 +61,7 @@ def _clear_running_engines():
 
 def _setup_output():
     # create output window and assign handle
-    out_window = runtime.ScriptOutput()
+    out_window = runtime_types.ScriptOutput()
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
@@ -72,7 +72,7 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = runtime.ScriptOutputStream(out_window)
+    outstr = runtime_types.ScriptOutputStream(out_window)
     sys.stdout = outstr
     # sys.stderr = outstr
     stdout_hndlr = logger.get_stdout_hndlr()
@@ -540,7 +540,7 @@ def execute_script(script_path,
     else:
         sys_paths = core_syspaths
 
-    script_data = runtime.ScriptData()
+    script_data = runtime_types.ScriptData()
     script_data.ScriptPath = script_path
     script_data.ConfigScriptPath = None
     script_data.CommandUniqueId = ''
@@ -550,7 +550,7 @@ def execute_script(script_path,
     script_data.HelpSource = ''
 
     script_runtime = \
-        runtime.ScriptRuntime(
+        runtime_types.ScriptRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
             scriptData=script_data,
@@ -565,8 +565,8 @@ def execute_script(script_path,
             executedFromUI=False
             )
 
-    runtime.ScriptExecutor.ExecuteScript(
-        framework.clr.Reference[runtime.ScriptRuntime](
+    runtime_types.ScriptExecutor.ExecuteScript(
+        framework.clr.Reference[runtime_types.ScriptRuntime](
             script_runtime
             )
         )
