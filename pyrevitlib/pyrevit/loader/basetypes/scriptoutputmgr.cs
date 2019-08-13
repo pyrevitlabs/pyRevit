@@ -57,11 +57,11 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                var outputWindowList = (List<Object>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitOutputWindowsDictKey);
+                var outputWindowList = (List<Object>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.OutputWindowsDictKey);
                 if (outputWindowList == null)
                 {
                     var newOutputWindowList = new List<Object>();
-                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitOutputWindowsDictKey, newOutputWindowList);
+                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.OutputWindowsDictKey, newOutputWindowList);
                     return newOutputWindowList;
                 }
                 else
@@ -70,7 +70,7 @@ namespace PyRevitBaseClasses
 
             set
             {
-                AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitOutputWindowsDictKey, value);
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.OutputWindowsDictKey, value);
             }
         }
 

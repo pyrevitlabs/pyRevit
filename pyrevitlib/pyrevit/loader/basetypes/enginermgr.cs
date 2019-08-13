@@ -14,7 +14,7 @@ namespace PyRevitBaseClasses
 
         public IronPythonEngineManager() {}
 
-        public ScriptEngine GetEngine(ref PyRevitScriptRuntime pyrvtScript)
+        public ScriptEngine GetEngine(ref ScriptRuntime pyrvtScript)
         {
             ScriptEngine engine;
             bool cachedEngine = false;
@@ -51,7 +51,7 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitIpyEnginesDictKey);
+                var engineDict = (Dictionary<string, ScriptEngine>) AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEnginesDictKey);
 
                 if (engineDict == null)
                     engineDict = ClearEngines();
@@ -64,19 +64,19 @@ namespace PyRevitBaseClasses
         {
             get
             {
-                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitIpyEngineDefaultStreamCfgKey);
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultStreamCfgKey);
             }
 
             set
             {
-                AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitIpyEngineDefaultStreamCfgKey, value);
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEngineDefaultStreamCfgKey, value);
             }
         }
 
         public Dictionary<string, ScriptEngine> ClearEngines()
         {
             var newEngineDict = new Dictionary<string, ScriptEngine>();
-            AppDomain.CurrentDomain.SetData(DomainStorageKeys.pyRevitIpyEnginesDictKey, newEngineDict);
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEnginesDictKey, newEngineDict);
 
             return newEngineDict;
         }
@@ -87,7 +87,7 @@ namespace PyRevitBaseClasses
             CleanupStreams(engine);
         }
 
-        private ScriptEngine CreateNewEngine(ref PyRevitScriptRuntime pyrvtScript, bool fullframe=false)
+        private ScriptEngine CreateNewEngine(ref ScriptRuntime pyrvtScript, bool fullframe=false)
         {
             var flags = new Dictionary<string, object>();
 
@@ -121,14 +121,14 @@ namespace PyRevitBaseClasses
             return engine;
         }
 
-        private ScriptEngine CreateNewCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
+        private ScriptEngine CreateNewCachedEngine(ref ScriptRuntime pyrvtScript)
         {
             var newEngine = CreateNewEngine(ref pyrvtScript);
             this.EngineDict[pyrvtScript.CommandExtension] = newEngine;
             return newEngine;
         }
 
-        private ScriptEngine GetCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
+        private ScriptEngine GetCachedEngine(ref ScriptRuntime pyrvtScript)
         {
             if (this.EngineDict.ContainsKey(pyrvtScript.CommandExtension))
             {
@@ -141,7 +141,7 @@ namespace PyRevitBaseClasses
             }
         }
 
-        private ScriptEngine RefreshCachedEngine(ref PyRevitScriptRuntime pyrvtScript)
+        private ScriptEngine RefreshCachedEngine(ref ScriptRuntime pyrvtScript)
         {
             return CreateNewCachedEngine(ref pyrvtScript);
         }
@@ -171,7 +171,7 @@ namespace PyRevitBaseClasses
             sysmodule.SetVariable("argv", pythonArgv);
         }
 
-        private void SetupBuiltins(ScriptEngine engine, ref PyRevitScriptRuntime pyrvtScript, bool cachedEngine)
+        private void SetupBuiltins(ScriptEngine engine, ref ScriptRuntime pyrvtScript, bool cachedEngine)
         {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables

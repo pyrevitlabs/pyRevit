@@ -19,17 +19,6 @@ from pyrevit.loader.systemdiag import system_diag
 mlogger = get_logger(__name__)
 
 
-PYREVIT_SESSIONUUID_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_UUID'
-PYREVIT_LOADEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOADEDASSMS'
-PYREVIT_REFEDASSMS_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_REFEDASSMS'
-
-PYREVIT_VERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_VERSION'
-PYREVIT_APPVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_APPVERSION'
-PYREVIT_CLONENAME_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CLONE'
-PYREVIT_IPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_IPYVERSION'
-PYREVIT_CSPYVERSION_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_CPYVERSION'
-
-
 RuntimeInfo = namedtuple('RuntimeInfo', ['pyrevit_version',
                                          'engine_version',
                                          'host_version'])
@@ -46,22 +35,22 @@ def setup_runtime_vars():
     """Setup runtime environment variables with session information."""
     # set pyrevit version
     pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
-    envvars.set_pyrevit_env_var(PYREVIT_VERSION_ENVVAR, pyrvt_ver)
+    envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, pyrvt_ver)
 
     # set app version env var
     if HOST_APP.is_newer_than(2017):
-        envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR,
+        envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
                                     HOST_APP.subversion)
     else:
-        envvars.set_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR,
+        envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
                                     HOST_APP.version)
 
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
     if attachment and attachment.Clone:
-        envvars.set_pyrevit_env_var(PYREVIT_CLONENAME_ENVVAR,
+        envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR,
                                     attachment.Clone.Name)
-        envvars.set_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR,
+        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR,
                                     attachment.Engine.Version)
     else:
         pass
@@ -69,7 +58,7 @@ def setup_runtime_vars():
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
-        envvars.set_pyrevit_env_var(PYREVIT_CSPYVERSION_ENVVAR,
+        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
                                     cpyengine.Version)
 
     # set a list of important assemblies
@@ -90,9 +79,9 @@ def get_runtime_info():
     """
     # FIXME: add example output
     return RuntimeInfo(
-        pyrevit_version=envvars.get_pyrevit_env_var(PYREVIT_VERSION_ENVVAR),
-        engine_version=envvars.get_pyrevit_env_var(PYREVIT_IPYVERSION_ENVVAR),
-        host_version=envvars.get_pyrevit_env_var(PYREVIT_APPVERSION_ENVVAR)
+        pyrevit_version=envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
+        engine_version=envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR),
+        host_version=envvars.get_pyrevit_env_var(envvars.APPVERSION_ENVVAR)
         )
 
 
@@ -102,7 +91,7 @@ def set_session_uuid(uuid_str):
     Args:
         uuid_str (str): session uuid string
     """
-    envvars.set_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR, uuid_str)
+    envvars.set_pyrevit_env_var(envvars.SESSIONUUID_ENVVAR, uuid_str)
 
 
 def get_session_uuid():
@@ -111,7 +100,7 @@ def get_session_uuid():
     Returns:
         str: session uuid string
     """
-    return envvars.get_pyrevit_env_var(PYREVIT_SESSIONUUID_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.SESSIONUUID_ENVVAR)
 
 
 def new_session_uuid():
@@ -132,7 +121,7 @@ def get_loaded_pyrevit_assemblies():
         list[str]: list of loaded assemblies
     """
     # FIXME: verify and document return type
-    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_LOADEDASSMS_ENVVAR)
+    loaded_assms_str = envvars.get_pyrevit_env_var(envvars.LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)
     else:
@@ -147,13 +136,13 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
         val (type): desc
     """
     envvars.set_pyrevit_env_var(
-        PYREVIT_LOADEDASSMS_ENVVAR,
+        envvars.LOADEDASSMS_ENVVAR,
         coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
         )
 
 
 def get_loaded_pyrevit_referenced_modules():
-    loaded_assms_str = envvars.get_pyrevit_env_var(PYREVIT_REFEDASSMS_ENVVAR)
+    loaded_assms_str = envvars.get_pyrevit_env_var(envvars.REFEDASSMS_ENVVAR)
     if loaded_assms_str:
         return set(loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR))
     else:
@@ -162,7 +151,7 @@ def get_loaded_pyrevit_referenced_modules():
 
 def set_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
     envvars.set_pyrevit_env_var(
-        PYREVIT_REFEDASSMS_ENVVAR,
+        envvars.REFEDASSMS_ENVVAR,
         coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
         )
 
@@ -180,7 +169,7 @@ def report_env():
 
     # get python version that includes last commit hash
     mlogger.info('pyRevit version: %s - </> with :growing_heart: in %s',
-                 envvars.get_pyrevit_env_var(PYREVIT_VERSION_ENVVAR),
+                 envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
                  about.get_pyrevit_about().madein)
 
     if user_config.core.get_option('rocketmode', False):

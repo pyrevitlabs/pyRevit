@@ -32,19 +32,49 @@ Example:
     {'someconfig': True}
 """
 
-from pyrevit import PYREVIT_ADDON_NAME
 from pyrevit.framework import AppDomain
+from pyrevit.labs import PyRevit
 
 # root env var dictionary key.
-# must be the same in this file and pyrevit/loader/basetypes/_config.cs
-# DomainStorageKeys.pyRevitEnvVarsDictKey
-PYREVIT_ENV_VAR_DICT_NAME = 'pyRevitEnvVarsDict'
-PYREVIT_ENVVAR_PREFIX = PYREVIT_ADDON_NAME.upper()
+# must be the same in this file and pyrevit/loader/basetypes/envvars.cs
+ENV_VAR_DICT_NAME = PyRevit.PyRevit.ProductName + "EnvVarsDict"
+
+SESSIONUUID_ENVVAR = PyRevit.PyRevit.ProductName + "_UUID"
+APPVERSION_ENVVAR = PyRevit.PyRevit.ProductName + "_APPVERSION"
+VERSION_ENVVAR = PyRevit.PyRevit.ProductName + "_VERSION"
+CLONENAME_ENVVAR = PyRevit.PyRevit.ProductName + "_CLONE"
+IPYVERSION_ENVVAR = PyRevit.PyRevit.ProductName + "_IPYVERSION"
+CPYVERSION_ENVVAR = PyRevit.PyRevit.ProductName + "_CPYVERSION"
+
+LOGGING_LEVEL_ENVVAR = PyRevit.PyRevit.ProductName + "_LOGGINGLEVEL"
+FILELOGGING_ENVVAR = PyRevit.PyRevit.ProductName + "_FILELOGGING"
+
+LOADEDASSMS_ENVVAR = PyRevit.PyRevit.ProductName + "_LOADEDASSMS"
+REFEDASSMS_ENVVAR = PyRevit.PyRevit.ProductName + "_REFEDASSMS"
+
+TELEMETRYSTATE_ENVVAR = PyRevit.PyRevit.ProductName + "_TELEMETRYSTATE"
+TELEMETRYDIR_ENVVAR = PyRevit.PyRevit.ProductName + "_TELEMETRYDIR"
+TELEMETRYFILE_ENVVAR = PyRevit.PyRevit.ProductName + "_TELEMETRYFILE"
+TELEMETRYSERVER_ENVVAR = PyRevit.PyRevit.ProductName + "_TELEMETRYSERVER"
+
+APPTELEMETRYSTATE_ENVVAR = PyRevit.PyRevit.ProductName + "_APPTELEMETRYSTATE"
+APPTELEMETRYHANDLER_ENVVAR = \
+    PyRevit.PyRevit.ProductName + "_APPTELEMETRYHANDLER"
+APPTELEMETRYSERVER_ENVVAR = \
+    PyRevit.PyRevit.ProductName + "_APPTELEMETRYSERVER"
+APPTELEMETRYEVENTFLAGS_ENVVAR = \
+    PyRevit.PyRevit.ProductName + "_APPTELEMETRYEVENTFLAGS"
+
+HOOKS_ENVVAR = PyRevit.PyRevit.ProductName + "_HOOKS"
+HOOKSHANDLER_ENVVAR = PyRevit.PyRevit.ProductName + "_HOOKSHANDLER"
+
+AUTOUPDATING_ENVVAR = PyRevit.PyRevit.ProductName + "_AUTOUPDATE"
+OUTPUT_STYLESHEET_ENVVAR = PyRevit.PyRevit.ProductName + "_STYLESHEET"
 
 
 def get_pyrevit_env_vars():
     """Get the root dictionary, holding all environment variables."""
-    return AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    return AppDomain.CurrentDomain.GetData(ENV_VAR_DICT_NAME)
 
 
 def get_pyrevit_env_var(param_name):
@@ -59,7 +89,7 @@ def get_pyrevit_env_var(param_name):
     # This function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
 
-    data_dict = AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    data_dict = AppDomain.CurrentDomain.GetData(ENV_VAR_DICT_NAME)
 
     if data_dict:
         try:
@@ -79,11 +109,11 @@ def set_pyrevit_env_var(param_name, param_value):
     """
     # Get function returns None if it can not find the parameter.
     # Thus value of None should not be used for params
-    data_dict = AppDomain.CurrentDomain.GetData(PYREVIT_ENV_VAR_DICT_NAME)
+    data_dict = AppDomain.CurrentDomain.GetData(ENV_VAR_DICT_NAME)
 
     if data_dict:
         data_dict[param_name] = param_value
     else:
         data_dict = {param_name: param_value}
 
-    AppDomain.CurrentDomain.SetData(PYREVIT_ENV_VAR_DICT_NAME, data_dict)
+    AppDomain.CurrentDomain.SetData(ENV_VAR_DICT_NAME, data_dict)

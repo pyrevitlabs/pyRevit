@@ -33,7 +33,7 @@ from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 # import the basetypes first to get all the c-sharp code to compile
 from pyrevit.loader import basetypes
-from pyrevit.coreutils import loadertypes
+from pyrevit.coreutils import basetypes
 # now load the rest of module that could depend on the compiled basetypes
 from pyrevit import output
 
@@ -61,7 +61,7 @@ def _clear_running_engines():
 
 def _setup_output():
     # create output window and assign handle
-    out_window = loadertypes.ScriptOutput()
+    out_window = basetypes.ScriptOutput()
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = '{}:{}:{}'.format(
         runtime_info.pyrevit_version,
@@ -72,7 +72,7 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = loadertypes.ScriptOutputStream(out_window)
+    outstr = basetypes.ScriptOutputStream(out_window)
     sys.stdout = outstr
     # sys.stderr = outstr
     stdout_hndlr = logger.get_stdout_hndlr()
@@ -91,15 +91,11 @@ def _cleanup_output():
 # Functions related to creating/loading a new pyRevit session
 # -----------------------------------------------------------------------------
 def _check_autoupdate_inprogress():
-    return envvars.get_pyrevit_env_var(
-        loadertypes.EnvDictionaryKeys.autoupdating
-        )
+    return envvars.get_pyrevit_env_var(envvars.AUTOUPDATING_ENVVAR)
 
 
 def _set_autoupdate_inprogress(state):
-    envvars.set_pyrevit_env_var(
-        loadertypes.EnvDictionaryKeys.autoupdating, state
-        )
+    envvars.set_pyrevit_env_var(envvars.AUTOUPDATING_ENVVAR, state)
 
 
 def _perform_onsessionload_ops():
@@ -399,7 +395,7 @@ def find_all_commands(category_set=None, cache=True):
                     pyrvt_availtype = None
 
                     if not tname.endswith(basetypes.CMD_AVAIL_NAME_POSTFIX)\
-                            and basetypes.LOADER_BASE_NAMESPACE not in tname:
+                            and basetypes.BASE_NAMESPACE not in tname:
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
@@ -545,7 +541,7 @@ def execute_script(script_path,
         sys_paths = core_syspaths
 
     script_runtime = \
-        loadertypes.PyRevitScriptRuntime(
+        basetypes.ScriptRuntime(
             cmdData=create_tmp_commanddata(),
             elements=None,
             scriptSource=script_path,
@@ -566,8 +562,8 @@ def execute_script(script_path,
             executedFromUI=False
             )
 
-    loadertypes.ScriptExecutor.ExecuteScript(
-        framework.clr.Reference[loadertypes.PyRevitScriptRuntime](
+    basetypes.ScriptExecutor.ExecuteScript(
+        framework.clr.Reference[basetypes.ScriptRuntime](
             script_runtime
             )
         )

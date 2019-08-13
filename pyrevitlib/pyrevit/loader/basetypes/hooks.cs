@@ -60,7 +60,7 @@ namespace PyRevitBaseClasses {
             // 1: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
             var pyrvtScript =
-                new PyRevitScriptRuntime(
+                new ScriptRuntime(
                     cmdData: null,
                     elements: new ElementSet(),
                     scriptSource: eventHook.Script,
@@ -125,7 +125,7 @@ namespace PyRevitBaseClasses {
                             eventSender: eventSender,
                             eventArgs: eventArgs);
             }
-            catch (Exception ex) {
+            catch {
                 //var logMsg = string.Join(Environment.NewLine, ex.Message, ex.StackTrace, SessionUUID);
             }
         }
@@ -137,7 +137,7 @@ namespace PyRevitBaseClasses {
                 // then add again
                 EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType);
             }
-            catch (PyRevitNotSupportedFeatureException) {
+            catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
                                            eventType.ToString()));
             }
@@ -150,7 +150,7 @@ namespace PyRevitBaseClasses {
             try {
                 EventUtils.ToggleHooks<PyRevitHooks>(this, uiApp, eventType, toggle_on: false);
             }
-            catch (PyRevitNotSupportedFeatureException) {
+            catch (NotSupportedFeatureException) {
                 logger.Debug(string.Format("Hook type {0} not supported under this Revit version. Skipped.",
                                            eventType.ToString()));
             }

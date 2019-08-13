@@ -14,6 +14,8 @@ using Autodesk.Revit.UI;
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
+using pyRevitLabs.PyRevit;
+
 namespace PyRevitBaseClasses {
     public class EngineInfo {
         public string type { get; set; }
@@ -80,7 +82,7 @@ namespace PyRevitBaseClasses {
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(telemetryServerUrl);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
-            httpWebRequest.UserAgent = "pyrevit";
+            httpWebRequest.UserAgent = PyRevit.ProductName;
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream())) {
                 // serialize and write
@@ -349,7 +351,7 @@ namespace PyRevitBaseClasses {
                         // then add again
                         EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType);
                     }
-                    catch (PyRevitNotSupportedFeatureException) {
+                    catch (NotSupportedFeatureException) {
                         logger.Debug(
                             string.Format("Event telemetry {0} not supported under this Revit version. Skipped.",
                                           eventType.ToString()));
@@ -365,7 +367,7 @@ namespace PyRevitBaseClasses {
                     try {
                         EventUtils.ToggleHooks<EventTelemetry>(this, uiApp, eventType, toggle_on: false);
                     }
-                    catch (PyRevitNotSupportedFeatureException) {
+                    catch (NotSupportedFeatureException) {
                         logger.Debug(
                             string.Format("Event telemetry {0} not supported under this Revit version. Skipped.",
                                           eventType.ToString()));

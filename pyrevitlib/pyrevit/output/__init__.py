@@ -27,8 +27,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import markdown, charts
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils.loadertypes import EnvDictionaryKeys
-from pyrevit.coreutils.loadertypes import ScriptOutputManager
+from pyrevit.coreutils.basetypes import ScriptOutputManager
 from pyrevit.output import linkmaker
 from pyrevit.userconfig import user_config
 from pyrevit import DB
@@ -60,13 +59,13 @@ def set_stylesheet(stylesheet):
     Args:
         stylesheet (str): full path to stylesheet file
     """
-    envvars.set_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet,
+    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
                                 stylesheet)
 
 
 def get_stylesheet():
     """Return active css stylesheet used by output window."""
-    return envvars.get_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet)
+    return envvars.get_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR)
 
 
 def get_default_stylesheet():
@@ -76,7 +75,7 @@ def get_default_stylesheet():
 
 def reset_stylesheet():
     """Reset active stylesheet to default."""
-    envvars.set_pyrevit_env_var(EnvDictionaryKeys.outputStyleSheet,
+    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
                                 get_default_stylesheet())
 
 

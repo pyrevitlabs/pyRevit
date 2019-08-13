@@ -389,7 +389,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.DocumentWorksharingEnabled -= hndlr.Application_DocumentWorksharingEnabled;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_ElementTypeDuplicated:
@@ -400,7 +400,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.ElementTypeDuplicated -= hndlr.Application_ElementTypeDuplicated;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_ElementTypeDuplicating:
@@ -411,7 +411,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.ElementTypeDuplicating -= hndlr.Application_ElementTypeDuplicating;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_FailuresProcessing:
@@ -429,7 +429,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.FamilyLoadedIntoDocument -= hndlr.Application_FamilyLoadedIntoDocument;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_FamilyLoadingIntoDocument:
@@ -440,7 +440,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.FamilyLoadingIntoDocument -= hndlr.Application_FamilyLoadingIntoDocument;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_FileExported:
@@ -479,7 +479,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.LinkedResourceOpened -= hndlr.Application_LinkedResourceOpened;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_LinkedResourceOpening:
@@ -490,7 +490,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.LinkedResourceOpening -= hndlr.Application_LinkedResourceOpening;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_ProgressChanged:
@@ -508,7 +508,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.ViewExported -= hndlr.Application_ViewExported;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_ViewExporting:
@@ -519,7 +519,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.ViewExporting -= hndlr.Application_ViewExporting;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.Application_ViewPrinted:
@@ -544,7 +544,7 @@ namespace PyRevitBaseClasses {
                         uiApp.Application.WorksharedOperationProgressChanged -= hndlr.Application_WorksharedOperationProgressChanged;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_ApplicationClosing:
@@ -562,7 +562,7 @@ namespace PyRevitBaseClasses {
                         uiApp.DialogBoxShowing -= hndlr.UIApplication_DialogBoxShowing;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
                 case EventType.UIApplication_DisplayingOptionsDialog:
                     if (toggle_on)
@@ -579,7 +579,7 @@ namespace PyRevitBaseClasses {
                         uiApp.DockableFrameFocusChanged -= hndlr.UIApplication_DockableFrameFocusChanged;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_DockableFrameVisibilityChanged:
@@ -590,7 +590,7 @@ namespace PyRevitBaseClasses {
                         uiApp.DockableFrameVisibilityChanged -= hndlr.UIApplication_DockableFrameVisibilityChanged;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_FabricationPartBrowserChanged:
@@ -601,7 +601,7 @@ namespace PyRevitBaseClasses {
                         uiApp.FabricationPartBrowserChanged -= hndlr.UIApplication_FabricationPartBrowserChanged;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_FormulaEditing:
@@ -612,7 +612,7 @@ namespace PyRevitBaseClasses {
                         uiApp.FormulaEditing -= hndlr.UIApplication_FormulaEditing;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_Idling:
@@ -631,7 +631,7 @@ namespace PyRevitBaseClasses {
                         uiApp.TransferredProjectStandards -= hndlr.UIApplication_TransferredProjectStandards;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_TransferringProjectStandards:
@@ -642,7 +642,7 @@ namespace PyRevitBaseClasses {
                         uiApp.TransferringProjectStandards -= hndlr.UIApplication_TransferringProjectStandards;
                     break;
 #else
-                    throw new PyRevitNotSupportedFeatureException();
+                    throw new NotSupportedFeatureException();
 #endif
 
                 case EventType.UIApplication_ViewActivated:
@@ -795,7 +795,7 @@ namespace PyRevitBaseClasses {
                 KeynoteKey
                 );
 #else
-            throw new PyRevitNotSupportedFeatureException();
+            throw new NotSupportedFeatureException();
 #endif
         }
 

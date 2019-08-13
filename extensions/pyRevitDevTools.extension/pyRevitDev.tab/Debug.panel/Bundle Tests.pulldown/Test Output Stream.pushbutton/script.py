@@ -2,7 +2,7 @@
 from pyrevit import DB
 from pyrevit import script
 
-from pyrevit.coreutils.loadertypes import ScriptOutputEmojis
+from pyrevit.coreutils.basetypes import ScriptOutputEmojis
 
 __context__ = 'zerodoc'
 

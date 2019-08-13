@@ -26,7 +26,7 @@ mlogger = logger.get_logger(__name__)
 if not EXEC_PARAMS.doc_mode:
     INTERFACE_TYPES_DIR = op.join(LOADER_DIR, 'basetypes')
 
-    DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET','Framework')
+    DOTNET_DIR = op.join(os.getenv('windir'), 'Microsoft.NET', 'Framework')
 
     DOTNET_SDK_DIR = op.join(os.getenv('programfiles(x86)'),
                              'Reference Assemblies',
@@ -56,19 +56,19 @@ else:
 
 
 # base classes for pyRevit commands --------------------------------------------
-LOADER_BASE_NAMESPACE = 'PyRevitBaseClasses'
+BASE_NAMESPACE = 'PyRevitBaseClasses'
 
 # template python command class
 CMD_EXECUTOR_TYPE_NAME = '{}.{}'\
-    .format(LOADER_BASE_NAMESPACE, 'PyRevitCommand')
+    .format(BASE_NAMESPACE, 'CommandType')
 
 # template python command availability class
 CMD_AVAIL_TYPE_NAME_EXTENDED = \
-    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandExtendedAvail')
+    coreutils.make_canonical_name(BASE_NAMESPACE, 'CommandExtendedAvail')
 CMD_AVAIL_TYPE_NAME_SELECTION = \
-    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandSelectionAvail')
+    coreutils.make_canonical_name(BASE_NAMESPACE, 'CommandSelectionAvail')
 CMD_AVAIL_TYPE_NAME_ZERODOC = \
-    coreutils.make_canonical_name(LOADER_BASE_NAMESPACE, 'PyRevitCommandZeroDocAvail')
+    coreutils.make_canonical_name(BASE_NAMESPACE, 'CommandZeroDocAvail')
 
 CMD_AVAIL_NAME_POSTFIX = '-avail'
 
@@ -97,7 +97,7 @@ if not EXEC_PARAMS.doc_mode:
             + str(CPYTHON_ENGINE.Version)
             )[:HASH_CUTOFF_LENGTH]
     BASE_TYPES_ASM_FILE_ID = '{}_{}'\
-        .format(BASE_TYPES_DIR_HASH, LOADER_BASE_NAMESPACE)
+        .format(BASE_TYPES_DIR_HASH, BASE_NAMESPACE)
     BASE_TYPES_ASM_FILE = \
         appdata.get_data_file(BASE_TYPES_ASM_FILE_ID,
                               framework.ASSEMBLY_FILE_TYPE)
@@ -228,8 +228,8 @@ def get_references():
                 'PresentationCore', 'PresentationFramework',
                 'WindowsBase', 'WindowsFormsIntegration',
                 'pyRevitLabs.Common', 'pyRevitLabs.CommonWPF',
-                'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.TargetApps.Revit',
-                'pyRevitLabs.NLog']
+                'pyRevitLabs.MahAppsMetro', 'pyRevitLabs.NLog',
+                'pyRevitLabs.TargetApps.Revit', 'pyRevitLabs.PyRevit']
 
     refs = [_get_reference_file(ref_name) for ref_name in ref_list]
 

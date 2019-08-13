@@ -18,7 +18,7 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 from pyrevit import script
 
-from pyrevit.coreutils.loadertypes import UIEventUtils
+from pyrevit.coreutils.basetypes import UIEventUtils
 
 import keynotesdb as kdb
 

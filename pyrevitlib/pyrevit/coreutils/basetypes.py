@@ -2,33 +2,31 @@
 
 from pyrevit import EXEC_PARAMS
 from pyrevit.framework import clr
-from pyrevit.loader.basetypes import BASE_TYPES_ASM, LOADER_BASE_NAMESPACE
+from pyrevit.loader.basetypes import BASE_TYPES_ASM, BASE_NAMESPACE
 
 #pylint: disable=W0703,C0302,C0103
 if not EXEC_PARAMS.doc_mode:
     # import base classes module
     clr.AddReference(BASE_TYPES_ASM)
-    base_module = __import__(LOADER_BASE_NAMESPACE)
-
-    # _config.cs
-    DomainStorageKeys = base_module.DomainStorageKeys
-    ExternalConfig = base_module.ExternalConfig
-    ExecutionResultCodes = base_module.ExecutionResultCodes
+    base_module = __import__(BASE_NAMESPACE)
 
     # envvars.cs
+    DomainStorageKeys = base_module.DomainStorageKeys
     EnvDictionaryKeys = base_module.EnvDictionaryKeys
     EnvDictionary = base_module.EnvDictionary
 
     # baseclasses.cs
-    PyRevitCommand = base_module.PyRevitCommand
-    PyRevitCommandExtendedAvail = base_module.PyRevitCommandExtendedAvail
-    PyRevitCommandSelectionAvail = base_module.PyRevitCommandSelectionAvail
-    PyRevitCommandZeroDocAvail = base_module.PyRevitCommandZeroDocAvail
+    CommandType = base_module.CommandType
+    CommandExtendedAvail = base_module.CommandExtendedAvail
+    CommandSelectionAvail = base_module.CommandSelectionAvail
+    CommandZeroDocAvail = base_module.CommandZeroDocAvail
 
     # pyrevitcmdruntime.cs
-    PyRevitScriptRuntime = base_module.PyRevitScriptRuntime
+    ScriptRuntime = base_module.ScriptRuntime
 
     # executor.cs
+    ExecutionResultCodes = base_module.ExecutionResultCodes
+    ExecutionConfigs = base_module.ExecutionConfigs
     ScriptExecutor = base_module.ScriptExecutor
 
     # events.cs
@@ -43,6 +41,7 @@ if not EXEC_PARAMS.doc_mode:
     PyRevitHooks = base_module.PyRevitHooks
 
     # scriptoutput.cs
+    ScriptOutputConfigs = base_module.ScriptOutputConfigs
     PyRevitTemplateWindow = base_module.PyRevitTemplateWindow
     ScriptOutput = base_module.ScriptOutput
     # scriptoutputemojis.cs
@@ -63,9 +62,9 @@ if not EXEC_PARAMS.doc_mode:
     GDI32 = base_module.GDI32
 else:
     DomainStorageKeys = ExternalConfig = ExecutionResultCodes = \
-        EnvDictionaryKeys = EnvDictionary = PyRevitCommand = \
-        PyRevitCommandExtendedAvail = PyRevitCommandSelectionAvail = \
-        PyRevitCommandDefaultAvail = PyRevitScriptRuntime = \
+        EnvDictionaryKeys = EnvDictionary = CommandType = \
+        CommandExtendedAvail = CommandSelectionAvail = \
+        CommandDefaultAvail = ScriptRuntime = \
         ScriptExecutor = ScriptOutput = ScriptOutputManager = \
         ScriptOutputStream = ScriptTelemetry = \
         RECT = User32 = GDI32 = None

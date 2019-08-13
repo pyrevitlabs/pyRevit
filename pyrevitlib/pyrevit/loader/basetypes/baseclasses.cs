@@ -10,7 +10,7 @@ using System.Windows.Controls;
 namespace PyRevitBaseClasses {
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    public abstract class PyRevitCommand : IExternalCommand {
+    public abstract class CommandType : IExternalCommand {
         public string baked_scriptSource = null;
         public string baked_configScriptSource = null;
         public string baked_syspaths = null;
@@ -38,7 +38,7 @@ namespace PyRevitBaseClasses {
         public bool ExecutedFromUI = true;
 
 
-        public PyRevitCommand(string scriptSource,
+        public CommandType(string scriptSource,
                               string configScriptSource,
                               string syspaths,
                               string arguments,
@@ -153,7 +153,7 @@ namespace PyRevitBaseClasses {
                 // menu item to copy ;-separated sys paths to clipboard
                 // Example: "path1;path2;path3"
                 MenuItem copySysPaths = new MenuItem();
-                var sysPathsText = baked_syspaths.Replace(new string(ExternalConfig.defaultsep, 1), "\r\n");
+                var sysPathsText = baked_syspaths.Replace(new string(Path.PathSeparator, 1), "\r\n");
                 copySysPaths.Header = "Copy Sys Paths";
                 copySysPaths.ToolTip = sysPathsText;
                 copySysPaths.Click += delegate { System.Windows.Forms.Clipboard.SetText(sysPathsText); };
@@ -213,13 +213,13 @@ namespace PyRevitBaseClasses {
 
             // 2: ----------------------------------------------------------------------------------------------------
             #region Setup pyRevit Command Runtime
-            var pyrvtScript = new PyRevitScriptRuntime(
+            var pyrvtScript = new ScriptRuntime(
                 cmdData: commandData,
                 elements: elements,
                 scriptSource: baked_scriptSource,
                 configScriptSource: baked_configScriptSource,
-                searchpaths: baked_syspaths.Split(ExternalConfig.defaultsep),
-                arguments: baked_arguments.Split(ExternalConfig.defaultsep),
+                searchpaths: baked_syspaths.Split(Path.PathSeparator),
+                arguments: baked_arguments.Split(Path.PathSeparator),
                 helpSource: baked_helpSource,
                 cmdName: baked_cmdName,
                 cmdBundle: baked_cmdBundle,
@@ -259,7 +259,7 @@ namespace PyRevitBaseClasses {
     }
 
 
-    public abstract class PyRevitCommandExtendedAvail : IExternalCommandAvailability {
+    public abstract class CommandExtendedAvail : IExternalCommandAvailability {
         // category name separator for comparisons
         const string SEP = "|";
 
@@ -274,7 +274,7 @@ namespace PyRevitBaseClasses {
         // builtin category comparison list
         private HashSet<int> _contextCatIdsHash = new HashSet<int>();
 
-        public PyRevitCommandExtendedAvail(string contextString) {
+        public CommandExtendedAvail(string contextString) {
             // NOTE:
             // docs have builtin categories
             // docs might have custom categories with non-english names
@@ -286,7 +286,7 @@ namespace PyRevitBaseClasses {
             // get the tokens out of the string (it could only have one token)
             // contextString in a ;-separated list of tokens
             List<string> contextTokens = new List<string>();
-            foreach (string contextToken in contextString.Split(ExternalConfig.defaultsep))
+            foreach (string contextToken in contextString.Split(Path.PathSeparator))
                 contextTokens.Add(contextToken.ToLower());
             // keep them sorted for comparison
             contextTokens.Sort();
@@ -446,10 +446,10 @@ namespace PyRevitBaseClasses {
     }
 
 
-    public abstract class PyRevitCommandSelectionAvail : IExternalCommandAvailability {
+    public abstract class CommandSelectionAvail : IExternalCommandAvailability {
         private string _categoryName = "";
 
-        public PyRevitCommandSelectionAvail(string contextString) {
+        public CommandSelectionAvail(string contextString) {
             _categoryName = contextString;
         }
 
@@ -462,8 +462,8 @@ namespace PyRevitBaseClasses {
     }
 
 
-    public abstract class PyRevitCommandZeroDocAvail : IExternalCommandAvailability {
-        public PyRevitCommandZeroDocAvail() {
+    public abstract class CommandZeroDocAvail : IExternalCommandAvailability {
+        public CommandZeroDocAvail() {
         }
 
         public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
@@ -472,12 +472,14 @@ namespace PyRevitBaseClasses {
     }
 
 
-    public class PyRevitNotSupportedFeatureException : Exception {
-        public PyRevitNotSupportedFeatureException() { }
+    public class NotSupportedFeatureException : Exception {
+        public static string NotSupportedMessage = "This feature is not supported under this Revit version.";
+
+        public NotSupportedFeatureException() { }
 
         public override string Message {
             get {
-                return "This feature is not supported under this Revit version.";
+                return NotSupportedMessage;
             }
         }
     }

@@ -2,8 +2,8 @@ import os.path as op
 
 from pyrevit import PyRevitException
 from pyrevit import framework
-from pyrevit.coreutils import logger
 from pyrevit.compat import safe_strtype
+from pyrevit.coreutils import logger
 
 
 mlogger = logger.get_logger(__name__)

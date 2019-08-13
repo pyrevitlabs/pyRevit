@@ -80,6 +80,9 @@
     <Reference Include="pyRevitLabs.MahAppsMetro">
       <HintPath>..\..\..\bin\pyRevitLabs.MahAppsMetro.dll</HintPath>
     </Reference>
+    <Reference Include="pyRevitLabs.PyRevit">
+      <HintPath>..\..\..\bin\pyRevitLabs.PyRevit.dll</HintPath>
+    </Reference>
     <Reference Include="pyRevitLabs.TargetApps.Revit">
       <HintPath>..\..\..\bin\pyRevitLabs.TargetApps.Revit.dll</HintPath>
     </Reference>
@@ -157,9 +160,6 @@
     </Compile>
     <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\unmanaged.cs">
       <Link>unmanaged.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\pyrevitlib\pyrevit\loader\basetypes\_config.cs">
-      <Link>_config.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

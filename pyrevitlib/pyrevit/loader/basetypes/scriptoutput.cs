@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.IO;
+using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -9,9 +10,44 @@ using Autodesk.Revit.UI;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
+using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitBaseClasses {
+    public static class ScriptOutputConfigs {
+        public static string doctype = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+        public static string dochead = "<head>" +
+                                       "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />" +
+                                       "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />" +
+                                       "<meta name=\"appversion\" content=\"{0}\" />" +
+                                       "<meta name=\"rendererversion\" content=\"{1}\" />" +
+                                       "<link rel=\"stylesheet\" href=\"file:///{2}\">" +
+                                       "</head>";
+        public static string defaultelement = "<div class=\"entry\"></div>";
+        public static string errordiv = "<div class=\"errorentry\"></div>";
+        public static string ipyerrtitle = "<strong>IronPython Traceback:</strong>";
+        public static string irubyerrtitle = "<strong>IronRuby Traceback:</strong>";
+        public static string clrerrtitle = "<strong>Script Executor Traceback:</strong>";
+        public static string progressindicator = "<div class=\"progressindicator\" id=\"pbarcontainer\"></div>";
+        public static string progressindicatorid = "pbarcontainer";
+        public static string progressbar = "<div class=\"progressbar\" id=\"pbar\"></div>";
+        public static string progressbarid = "pbar";
+        public static string inlinewait = "<div class=\"inlinewait\" id=\"inlnwait\">\u280b Preparing results...</div>";
+        public static string inlinewaitid = "inlnwait";
+        public static List<string> inlinewaitsequence = new List<string>(){
+            "\u280b Preparing results...",
+            "\u2819 Preparing results...",
+            "\u2838 Preparing results...",
+            "\u28B0 Preparing results...",
+            "\u28e0 Preparing results...",
+            "\u28c4 Preparing results...",
+            "\u2846 Preparing results...",
+            "\u2807 Preparing results..."
+        };
+    }
+
+
     public partial class PyRevitTemplateWindow : pyRevitLabs.CommonWPF.Windows.AppWindow {
         public PyRevitTemplateWindow() {
             // setup window styles
@@ -253,7 +289,7 @@ namespace PyRevitBaseClasses {
             this.Activated += ScriptOutput_GotFocus;
             this.Deactivated += ScriptOutput_LostFocus;
 
-            this.OutputTitle = "pyRevit";
+            this.OutputTitle = PyRevit.ProductName;
         }
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
@@ -281,7 +317,7 @@ namespace PyRevitBaseClasses {
 
         public string GetFullHtml() {
             var head = ActiveDocument.GetElementsByTagName("head")[0];
-            return ExternalConfig.doctype + head.OuterHtml + ActiveDocument.Body.OuterHtml;
+            return ScriptOutputConfigs.doctype + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
 
         private void SetupDefaultPage(string styleSheetFilePath = null) {
@@ -293,7 +329,7 @@ namespace PyRevitBaseClasses {
 
             // create the head with default styling
             var dochead = string.Format(
-                ExternalConfig.doctype + ExternalConfig.dochead,
+                ScriptOutputConfigs.doctype + ScriptOutputConfigs.dochead,
                 AppVersion,
                 RendererVersion,
                 cssFilePath
@@ -422,7 +458,7 @@ namespace PyRevitBaseClasses {
             WaitReadyBrowser();
             if (ActiveDocument != null) {
                 var cssdisplay = visibility ? "" : "display: none;";
-                var pbarcontainer = ActiveDocument.GetElementById(ExternalConfig.progressindicatorid);
+                var pbarcontainer = ActiveDocument.GetElementById(ScriptOutputConfigs.progressindicatorid);
                 if (pbarcontainer.Style != null) {
                     if (pbarcontainer.Style.Contains("display:"))
                         pbarcontainer.Style = Regex.Replace(pbarcontainer.Style, "display:.+?;",
@@ -499,16 +535,16 @@ namespace PyRevitBaseClasses {
                     }
                 }
 
-                var pbargraph = ActiveDocument.GetElementById(ExternalConfig.progressbarid);
+                var pbargraph = ActiveDocument.GetElementById(ScriptOutputConfigs.progressbarid);
                 if (pbargraph == null) {
                     if (ActiveDocument != null) {
-                        var pbar = ActiveDocument.CreateElement(ExternalConfig.progressindicator);
-                        var newpbargraph = ActiveDocument.CreateElement(ExternalConfig.progressbar);
+                        var pbar = ActiveDocument.CreateElement(ScriptOutputConfigs.progressindicator);
+                        var newpbargraph = ActiveDocument.CreateElement(ScriptOutputConfigs.progressbar);
                         pbar.AppendChild(newpbargraph);
                         ActiveDocument.Body.AppendChild(pbar);
                     }
 
-                    pbargraph = ActiveDocument.GetElementById(ExternalConfig.progressbarid);
+                    pbargraph = ActiveDocument.GetElementById(ScriptOutputConfigs.progressbarid);
                 }
 
                 SetProgressBarVisibility(true);
@@ -553,22 +589,22 @@ namespace PyRevitBaseClasses {
                     }
                 }
 
-                var inlinewait = ActiveDocument.GetElementById(ExternalConfig.inlinewaitid);
+                var inlinewait = ActiveDocument.GetElementById(ScriptOutputConfigs.inlinewaitid);
                 if (inlinewait == null) {
                     if (ActiveDocument != null) {
-                        inlinewait = ActiveDocument.CreateElement(ExternalConfig.inlinewait);
+                        inlinewait = ActiveDocument.CreateElement(ScriptOutputConfigs.inlinewait);
                         ActiveDocument.Body.AppendChild(inlinewait);
                     }
 
-                    inlinewait = ActiveDocument.GetElementById(ExternalConfig.inlinewaitid);
+                    inlinewait = ActiveDocument.GetElementById(ScriptOutputConfigs.inlinewaitid);
                 }
 
-                SetElementVisibility(true, ExternalConfig.inlinewaitid);
+                SetElementVisibility(true, ScriptOutputConfigs.inlinewaitid);
 
-                int idx = ExternalConfig.inlinewaitsequence.IndexOf(inlinewait.InnerText);
-                if (idx + 1 > ExternalConfig.inlinewaitsequence.Count - 1)
+                int idx = ScriptOutputConfigs.inlinewaitsequence.IndexOf(inlinewait.InnerText);
+                if (idx + 1 > ScriptOutputConfigs.inlinewaitsequence.Count - 1)
                     idx = 0;
-                inlinewait.InnerText = ExternalConfig.inlinewaitsequence[idx + 1];
+                inlinewait.InnerText = ScriptOutputConfigs.inlinewaitsequence[idx + 1];
                 ScrollToBottom();
             }
         }
@@ -673,7 +709,7 @@ namespace PyRevitBaseClasses {
         }
 
         private string SaveContentsToTemp() {
-            string tempHtml = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), string.Format("{0}.html", OutputTitle));
+            string tempHtml = Path.Combine(UserEnv.UserTemp, string.Format("{0}.html", OutputTitle));
             var f = File.CreateText(tempHtml);
             f.Write(GetFullHtml());
             f.Close();

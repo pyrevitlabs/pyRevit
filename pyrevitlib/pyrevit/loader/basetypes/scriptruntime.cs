@@ -24,7 +24,7 @@ namespace PyRevitBaseClasses {
         Content,
     }
 
-    public class PyRevitScriptRuntime : IDisposable {
+    public class ScriptRuntime : IDisposable {
         // app handles
         private UIApplication _uiApp = null;
         private Application _app = null;
@@ -43,7 +43,7 @@ namespace PyRevitBaseClasses {
         // engine reads this and sets the vars in scope
         private IDictionary<string, object> _builtins = new Dictionary<string, object>();
 
-        public PyRevitScriptRuntime(
+        public ScriptRuntime(
                 ExternalCommandData cmdData,
                 ElementSet elements,
                 string scriptSource,

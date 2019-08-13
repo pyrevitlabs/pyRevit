@@ -1,5 +1,5 @@
 """Prints all available emojis with shorthand codes."""
-from pyrevit.coreutils.loadertypes import ScriptOutputEmojis
+from pyrevit.coreutils.basetypes import ScriptOutputEmojis
 
 from pyrevit import script
 

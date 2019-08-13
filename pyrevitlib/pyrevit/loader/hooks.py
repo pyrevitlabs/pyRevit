@@ -6,7 +6,7 @@ from pyrevit import HOST_APP
 from pyrevit import framework
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
-from pyrevit.coreutils.loadertypes import EventUtils, PyRevitHooks
+from pyrevit.coreutils.basetypes import PyRevitHooks
 from pyrevit.coreutils import envvars
 import pyrevit.extensions as exts
 
@@ -15,12 +15,6 @@ from pyrevit.loader import sessioninfo
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
-
-
-PYREVIT_HOOKS_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_HOOKS'
-PYREVIT_HOOKSHANDLER_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_HOOKSHANDLER'
 
 
 ExtensionEventHook = namedtuple('ExtensionEventHook', [
@@ -33,11 +27,11 @@ ExtensionEventHook = namedtuple('ExtensionEventHook', [
 
 
 def get_hooks_handler():
-    return envvars.get_pyrevit_env_var(PYREVIT_HOOKSHANDLER_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR)
 
 
 def set_hooks_handler(handler):
-    envvars.set_pyrevit_env_var(PYREVIT_HOOKSHANDLER_ENVVAR, handler)
+    envvars.set_pyrevit_env_var(envvars.HOOKSHANDLER_ENVVAR, handler)
 
 
 def _create_hook_id(extension, hook_script):

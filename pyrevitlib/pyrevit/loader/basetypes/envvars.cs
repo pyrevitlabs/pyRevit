@@ -3,40 +3,48 @@ using System.IO;
 using System.Collections.Generic;
 using IronPython.Runtime;
 
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitBaseClasses
 {
+    public static class DomainStorageKeys {
+        public static string EnvVarsDictKey = PyRevit.ProductName + "EnvVarsDict";
+        public static string IronPythonEnginesDictKey = PyRevit.ProductName + "IPYEngines";
+        public static string IronPythonEngineDefaultStreamCfgKey = PyRevit.ProductName + "IPYEngineDefaultStreamCfg";
+        public static string OutputWindowsDictKey = PyRevit.ProductName + "OutputWindowsDict";
+    }
+
     public static class EnvDictionaryKeys
     {
-        public static string keyPrefix = "PYREVIT";
+        public static string keyPrefix = PyRevit.ProductName;
 
-        public static string sessionUUID = string.Format("{0}_UUID", keyPrefix);
+        public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
         public static string RevitVersion = string.Format("{0}_APPVERSION", keyPrefix);
-        public static string pyRevitVersion = string.Format("{0}_VERSION", keyPrefix);
-        public static string pyRevitClone = string.Format("{0}_CLONE", keyPrefix);
-        public static string pyRevitIpyVersion = string.Format("{0}_IPYVERSION", keyPrefix);
-        public static string pyRevitCpyVersion = string.Format("{0}_CPYVERSION", keyPrefix);
+        public static string Version = string.Format("{0}_VERSION", keyPrefix);
+        public static string Clone = string.Format("{0}_CLONE", keyPrefix);
+        public static string IPYVersion = string.Format("{0}_IPYVERSION", keyPrefix);
+        public static string CPYVersion = string.Format("{0}_CPYVERSION", keyPrefix);
 
-        public static string loggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
-        public static string fileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
+        public static string LoggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
+        public static string FileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
 
-        public static string loadedAssm = string.Format("{0}_LOADEDASSMS", keyPrefix);
-        public static string refedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
+        public static string LoadedAssms = string.Format("{0}_LOADEDASSMS", keyPrefix);
+        public static string RefedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
 
-        public static string telemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
-        public static string telemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
-        public static string telemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
-        public static string telemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
-        public static string appTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
-        public static string appTelemetryHandler = string.Format("{0}_APPTELEMETRYHANDLER", keyPrefix);
-        public static string appTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
-        public static string appTelemetryEventFlags = string.Format("{0}_APPTELEMETRYEVENTFLAGS", keyPrefix);
+        public static string TelemetryState = string.Format("{0}_TELEMETRYSTATE", keyPrefix);
+        public static string TelemetryFileDir = string.Format("{0}_TELEMETRYDIR", keyPrefix);
+        public static string TelemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
+        public static string TelemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
+        public static string AppTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
+        public static string AppTelemetryHandler = string.Format("{0}_APPTELEMETRYHANDLER", keyPrefix);
+        public static string AppTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
+        public static string AppTelemetryEventFlags = string.Format("{0}_APPTELEMETRYEVENTFLAGS", keyPrefix);
 
-        public static string hooks = string.Format("{0}_HOOKS", keyPrefix);
-        public static string hooksHandler = string.Format("{0}_HOOKSHANDLER", keyPrefix);
+        public static string Hooks = string.Format("{0}_HOOKS", keyPrefix);
+        public static string HooksHandler = string.Format("{0}_HOOKSHANDLER", keyPrefix);
 
-        public static string autoupdating = string.Format("{0}_AUTOUPDATING", keyPrefix);
-        public static string outputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
+        public static string AutoUpdating = string.Format("{0}_AUTOUPDATE", keyPrefix);
+        public static string OutputStyleSheet = string.Format("{0}_STYLESHEET", keyPrefix);
 
     }
 
@@ -75,75 +83,75 @@ namespace PyRevitBaseClasses
         public EnvDictionary()
         {
             // get the dictionary from appdomain
-            _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.pyRevitEnvVarsDictKey);
+            _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
 
             // base info
-            if (_envData.Contains(EnvDictionaryKeys.sessionUUID))
-                SessionUUID = (string)_envData[EnvDictionaryKeys.sessionUUID];
+            if (_envData.Contains(EnvDictionaryKeys.SessionUUID))
+                SessionUUID = (string)_envData[EnvDictionaryKeys.SessionUUID];
 
             if (_envData.Contains(EnvDictionaryKeys.RevitVersion))
                 RevitVersion = (string)_envData[EnvDictionaryKeys.RevitVersion];
 
-            if (_envData.Contains(EnvDictionaryKeys.pyRevitVersion))
-                PyRevitVersion = (string)_envData[EnvDictionaryKeys.pyRevitVersion];
+            if (_envData.Contains(EnvDictionaryKeys.Version))
+                PyRevitVersion = (string)_envData[EnvDictionaryKeys.Version];
 
-            if (_envData.Contains(EnvDictionaryKeys.pyRevitClone))
-                PyRevitClone = (string)_envData[EnvDictionaryKeys.pyRevitClone];
+            if (_envData.Contains(EnvDictionaryKeys.Clone))
+                PyRevitClone = (string)_envData[EnvDictionaryKeys.Clone];
 
-            if (_envData.Contains(EnvDictionaryKeys.pyRevitIpyVersion))
-                PyRevitIPYVersion = (int)_envData[EnvDictionaryKeys.pyRevitIpyVersion];
+            if (_envData.Contains(EnvDictionaryKeys.IPYVersion))
+                PyRevitIPYVersion = (int)_envData[EnvDictionaryKeys.IPYVersion];
 
-            if (_envData.Contains(EnvDictionaryKeys.pyRevitCpyVersion))
-                PyRevitCPYVersion = (int)_envData[EnvDictionaryKeys.pyRevitCpyVersion];
+            if (_envData.Contains(EnvDictionaryKeys.CPYVersion))
+                PyRevitCPYVersion = (int)_envData[EnvDictionaryKeys.CPYVersion];
 
             // logging
-            if (_envData.Contains(EnvDictionaryKeys.loggingLevel))
-                LoggingLevel = (int)_envData[EnvDictionaryKeys.loggingLevel];
-            if (_envData.Contains(EnvDictionaryKeys.fileLogging))
-                FileLogging = (bool)_envData[EnvDictionaryKeys.fileLogging];
+            if (_envData.Contains(EnvDictionaryKeys.LoggingLevel))
+                LoggingLevel = (int)_envData[EnvDictionaryKeys.LoggingLevel];
+            if (_envData.Contains(EnvDictionaryKeys.FileLogging))
+                FileLogging = (bool)_envData[EnvDictionaryKeys.FileLogging];
 
             // assemblies
-            if (_envData.Contains(EnvDictionaryKeys.loadedAssm))
-                LoadedAssemblies = ((string)_envData[EnvDictionaryKeys.loadedAssm]).Split(Path.PathSeparator);
-            if (_envData.Contains(EnvDictionaryKeys.refedAssms))
-                ReferencedAssemblies = ((string)_envData[EnvDictionaryKeys.refedAssms]).Split(Path.PathSeparator);
+            if (_envData.Contains(EnvDictionaryKeys.LoadedAssms))
+                LoadedAssemblies = ((string)_envData[EnvDictionaryKeys.LoadedAssms]).Split(Path.PathSeparator);
+            if (_envData.Contains(EnvDictionaryKeys.RefedAssms))
+                ReferencedAssemblies = ((string)_envData[EnvDictionaryKeys.RefedAssms]).Split(Path.PathSeparator);
 
             // script telemetry
-            if (_envData.Contains(EnvDictionaryKeys.telemetryState))
-                TelemetryState = (bool)_envData[EnvDictionaryKeys.telemetryState];
+            if (_envData.Contains(EnvDictionaryKeys.TelemetryState))
+                TelemetryState = (bool)_envData[EnvDictionaryKeys.TelemetryState];
 
-            if (_envData.Contains(EnvDictionaryKeys.telemetryFilePath))
-                TelemetryFilePath = (string)_envData[EnvDictionaryKeys.telemetryFilePath];
+            if (_envData.Contains(EnvDictionaryKeys.TelemetryFilePath))
+                TelemetryFilePath = (string)_envData[EnvDictionaryKeys.TelemetryFilePath];
 
-            if (_envData.Contains(EnvDictionaryKeys.telemetryServerUrl))
-                TelemetryServerUrl = (string)_envData[EnvDictionaryKeys.telemetryServerUrl];
+            if (_envData.Contains(EnvDictionaryKeys.TelemetryServerUrl))
+                TelemetryServerUrl = (string)_envData[EnvDictionaryKeys.TelemetryServerUrl];
 
             // app events telemetry
-            if (_envData.Contains(EnvDictionaryKeys.appTelemetryState))
-                AppTelemetryState = (bool)_envData[EnvDictionaryKeys.appTelemetryState];
+            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryState))
+                AppTelemetryState = (bool)_envData[EnvDictionaryKeys.AppTelemetryState];
 
-            if (_envData.Contains(EnvDictionaryKeys.appTelemetryServerUrl))
-                AppTelemetryServerUrl = (string)_envData[EnvDictionaryKeys.appTelemetryServerUrl];
+            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryServerUrl))
+                AppTelemetryServerUrl = (string)_envData[EnvDictionaryKeys.AppTelemetryServerUrl];
 
-            if (_envData.Contains(EnvDictionaryKeys.appTelemetryEventFlags))
-                AppTelemetryEventFlags = (string)_envData[EnvDictionaryKeys.appTelemetryEventFlags];
+            if (_envData.Contains(EnvDictionaryKeys.AppTelemetryEventFlags))
+                AppTelemetryEventFlags = (string)_envData[EnvDictionaryKeys.AppTelemetryEventFlags];
 
             // hooks
-            if (_envData.Contains(EnvDictionaryKeys.hooks))
-                EventHooks = (Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.hooks];
+            if (_envData.Contains(EnvDictionaryKeys.Hooks))
+                EventHooks = (Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks];
             else
-                _envData[EnvDictionaryKeys.hooks] = EventHooks;
+                _envData[EnvDictionaryKeys.Hooks] = EventHooks;
 
-            // misc
-            if (_envData.Contains(EnvDictionaryKeys.autoupdating))
-                AutoUpdate = (bool)_envData[EnvDictionaryKeys.autoupdating];
+            // misc 
+            if (_envData.Contains(EnvDictionaryKeys.AutoUpdating))
+                AutoUpdate = (bool)_envData[EnvDictionaryKeys.AutoUpdating];
 
-            if (_envData.Contains(EnvDictionaryKeys.outputStyleSheet))
-                ActiveStyleSheet = (string)_envData[EnvDictionaryKeys.outputStyleSheet];
+            if (_envData.Contains(EnvDictionaryKeys.OutputStyleSheet))
+                ActiveStyleSheet = (string)_envData[EnvDictionaryKeys.OutputStyleSheet];
         }
 
         public void ResetEventHooks() {
-            ((Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.hooks]).Clear();
+            ((Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks]).Clear();
         }
     }
 }

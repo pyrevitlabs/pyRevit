@@ -17,10 +17,9 @@ This module manages the telemetry system.
 """
 import os.path as op
 
-from pyrevit import PYREVIT_ADDON_NAME, PYREVIT_VERSION_APP_DIR,\
-                    PYREVIT_FILE_PREFIX
+from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX
 from pyrevit import coreutils
-from pyrevit.coreutils.loadertypes import EventType, EventTelemetry
+from pyrevit.coreutils.basetypes import EventType, EventTelemetry
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import envvars
 
@@ -34,25 +33,6 @@ from pyrevit.telemetry import events as telemetry_events
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
-
-
-PYREVIT_TELEMETRYSTATE_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYSTATE'
-PYREVIT_TELEMETRYDIR_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYDIR'
-PYREVIT_TELEMETRYFILE_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYFILE'
-PYREVIT_TELEMETRYSERVER_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_TELEMETRYSERVER'
-
-PYREVIT_APPTELEMETRYSTATE_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSTATE'
-PYREVIT_APPTELEMETRYHANDLER_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYHANDLER'
-PYREVIT_APPTELEMETRYSERVER_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYSERVER'
-PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR = \
-    envvars.PYREVIT_ENVVAR_PREFIX + '_APPTELEMETRYEVENTFLAGS'
 
 
 # templates for telemetry file naming
@@ -72,23 +52,23 @@ def get_default_telemetry_filepath():
 
 
 def get_telemetry_state():
-    return envvars.get_pyrevit_env_var(PYREVIT_TELEMETRYSTATE_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR)
 
 
 def get_telemetry_file_dir():
-    return envvars.get_pyrevit_env_var(PYREVIT_TELEMETRYDIR_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR)
 
 
 def get_telemetry_file_path():
-    return envvars.get_pyrevit_env_var(PYREVIT_TELEMETRYFILE_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.TELEMETRYFILE_ENVVAR)
 
 
 def get_telemetry_server_url():
-    return envvars.get_pyrevit_env_var(PYREVIT_TELEMETRYSERVER_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.TELEMETRYSERVER_ENVVAR)
 
 
 def set_telemetry_state(state, configs=None):
-    envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYSTATE_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, state)
     if configs:
         tc = _get_telemetry_configs(configs)
         tc.set_option(PyRevit.PyRevit.ConfigsTelemetryStatusKey, state)
@@ -96,18 +76,18 @@ def set_telemetry_state(state, configs=None):
 
 def set_telemetry_file_dir(file_dir, configs=None):
     if op.isdir(file_dir):
-        envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYDIR_ENVVAR, file_dir)
+        envvars.set_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR, file_dir)
         if configs:
             tc = _get_telemetry_configs(configs)
             tc.set_option(PyRevit.PyRevit.ConfigsTelemetryFilePathKey, file_dir)
 
 
 def set_telemetry_file_path(file_path):
-    envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYFILE_ENVVAR, file_path)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYFILE_ENVVAR, file_path)
 
 
 def set_telemetry_server_url(server_url, configs=None):
-    envvars.set_pyrevit_env_var(PYREVIT_TELEMETRYSERVER_ENVVAR, server_url)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYSERVER_ENVVAR, server_url)
     if configs:
         tc = _get_telemetry_configs(configs)
         tc.set_option(PyRevit.PyRevit.ConfigsTelemetryServerUrlKey, server_url)
@@ -126,26 +106,26 @@ def disable_telemetry_to_server():
 
 
 def get_apptelemetry_state():
-    return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYSTATE_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR)
 
 
 def set_apptelemetry_state(state, configs=None):
-    envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYSTATE_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR, state)
     if configs:
         tc = _get_telemetry_configs(configs)
         tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryStatusKey, state)
 
 
 def get_apptelemetry_handler():
-    return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYHANDLER_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.APPTELEMETRYHANDLER_ENVVAR)
 
 
 def set_apptelemetry_handler(handler):
-    envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYHANDLER_ENVVAR, handler)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYHANDLER_ENVVAR, handler)
 
 
 def get_apptelemetry_server_url():
-    return envvars.get_pyrevit_env_var(PYREVIT_APPTELEMETRYSERVER_ENVVAR)
+    return envvars.get_pyrevit_env_var(envvars.APPTELEMETRYSERVER_ENVVAR)
 
 
 def get_apptelemetry_event_flags(config):
@@ -159,7 +139,7 @@ def get_apptelemetry_event_flags(config):
 
 
 def set_apptelemetry_server_url(server_url, configs=None):
-    envvars.set_pyrevit_env_var(PYREVIT_APPTELEMETRYSERVER_ENVVAR, server_url)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSERVER_ENVVAR, server_url)
     if configs:
         tc = _get_telemetry_configs(configs)
         tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryServerUrlKey, server_url)
@@ -170,7 +150,7 @@ def set_apptelemetry_event_flags(event_flags, config):
     flags_hex = coreutils.int2hex_long(event_flags)
     tc.set_option(PyRevit.PyRevit.ConfigsAppTelemetryEventFlagsKey, flags_hex)
     envvars.set_pyrevit_env_var(
-        PYREVIT_APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
+        envvars.APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
 
 
 def disable_apptelemetry():

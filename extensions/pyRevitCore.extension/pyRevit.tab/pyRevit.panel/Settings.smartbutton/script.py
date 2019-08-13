@@ -4,7 +4,7 @@ import os.path as op
 
 from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.framework import Windows, Controls
-from pyrevit.coreutils.loadertypes import EventType, EventUtils
+from pyrevit.coreutils.basetypes import EventType, EventUtils
 from pyrevit.loader import hooks
 from pyrevit import coreutils
 from pyrevit import telemetry

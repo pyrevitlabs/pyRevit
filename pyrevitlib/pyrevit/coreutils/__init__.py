@@ -662,12 +662,12 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
         ... ext_asm_file_name, ext_asm_full_file_name
         ... )
         >>> create_type(
-        ... module_builder,
-        ... PyRevitCommand,
-        ... "PyRevitSomeCommandUniqueName",
-        ... coreutils.create_ext_command_attrs(),
-        ... [scriptpath, atlscriptpath, searchpath, helpurl, name,
-        ... bundle, extension, uniquename, False, False])
+        ...     module_builder,
+        ...     basetypes.CommandType,
+        ...     "PyRevitSomeCommandUniqueName",
+        ...     coreutils.create_ext_command_attrs(),
+        ...     [scriptpath, atlscriptpath, searchpath, helpurl, name,
+        ...     bundle, extension, uniquename, False, False])
         <type PyRevitSomeCommandUniqueName>
     """
     # create type builder

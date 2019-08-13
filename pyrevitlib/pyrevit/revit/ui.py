@@ -8,7 +8,7 @@ from pyrevit.api import AdWindows as ad
 from pyrevit.api import UIFramework as uf
 from pyrevit.api import UIFrameworkServices as ufs
 
-from pyrevit.coreutils.loadertypes import User32, RECT
+from pyrevit.coreutils.basetypes import User32, RECT
 
 
 __all__ = ('get_mainwindow_hwnd', 'get_statusbar_hwnd',

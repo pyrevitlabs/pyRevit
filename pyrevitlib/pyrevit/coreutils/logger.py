@@ -37,12 +37,10 @@ DEFAULT_LOGGING_LEVEL = logging.WARNING
 # must be the same in this file and pyrevit/loader/basetypes/envdict.cs
 # this is because the csharp code hasn't been compiled when the
 # logger module is imported in the other modules
-GLOBAL_LOGGING_LEVEL_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_LOGGINGLEVEL'
-GLOBAL_FILELOGGING_ENVVAR = envvars.PYREVIT_ENVVAR_PREFIX + '_FILELOGGING'
 if not EXEC_PARAMS.doc_mode:
-    envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR,
+    envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR,
                                 DEFAULT_LOGGING_LEVEL)
-    envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR,
+    envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR,
                                 False)
 
 
@@ -118,9 +116,9 @@ class LoggerWrapper(logging.Logger):
         """Override logging.Logger.isEnabledFor"""
         # update current logging level and file logging state
         self._filelogstate = \
-            envvars.get_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR)
+            envvars.get_pyrevit_env_var(envvars.FILELOGGING_ENVVAR)
         self._curlevel = \
-            envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+            envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
         # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
@@ -139,7 +137,7 @@ class LoggerWrapper(logging.Logger):
     def is_enabled_for(self, level):
         """Check if logger is enabled for level in pyRevit environment."""
         self._curlevel = \
-            envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+            envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
         # the loader assembly sets EXEC_PARAMS.forced_debug_mode to true if
         # user Ctrl-clicks on the button at script runtime.
@@ -150,7 +148,7 @@ class LoggerWrapper(logging.Logger):
 
     @staticmethod
     def _reset_logger_env_vars(log_level):
-        envvars.set_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR, log_level)
+        envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR, log_level)
 
     def has_errors(self):
         """Check if logger has reported any errors."""
@@ -178,7 +176,7 @@ class LoggerWrapper(logging.Logger):
 
     def get_level(self):
         """Return current logging level."""
-        return envvars.get_pyrevit_env_var(GLOBAL_LOGGING_LEVEL_ENVVAR)
+        return envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
 
     def log_parse_except(self, parsed_file, parse_ex):
         err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
@@ -289,7 +287,7 @@ def set_file_logging(status):
     Args:
         status (bool): True to enable, False to disable
     """
-    envvars.set_pyrevit_env_var(GLOBAL_FILELOGGING_ENVVAR, status)
+    envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR, status)
 
 
 def loggers_have_errors():

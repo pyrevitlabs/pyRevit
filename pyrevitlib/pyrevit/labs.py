@@ -5,9 +5,6 @@ import logging
 from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.framework import clr
 
-from pyrevit import coreutils
-from pyrevit.coreutils import logger
-
 # try loading pyrevitlabs
 clr.AddReference('Nett')
 clr.AddReference('MadMilkman.Ini')
@@ -35,6 +32,9 @@ from pyRevitLabs import Language
 from pyRevitLabs import DeffrelDB
 from pyRevitLabs import TargetApps
 from pyRevitLabs import PyRevit
+
+from pyrevit import coreutils
+from pyrevit.coreutils import logger
 
 
 mlogger = logger.get_logger(__name__)
